@@ -2,7 +2,7 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { I18nService } from '../../../shared/i18n/i18n.service';
-import { SandikService } from '../sandik.service';
+import { SandikService } from '../../../core/services/sandik.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { SandikDetayDto, SandikIcerikDto } from '../../../core/models/api-response.model';

@@ -37,13 +37,14 @@ import { NgClass } from '@angular/common';
     .card-info { background: linear-gradient(135deg, #3584FC 0%, #60A5FA 100%); color: #fff; .stat-icon { background: rgba(255,255,255,.2); } }
     .card-danger { background: linear-gradient(135deg, #FF4023 0%, #F87171 100%); color: #fff; .stat-icon { background: rgba(255,255,255,.2); } }
     .card-warning { background: linear-gradient(135deg, #FD5812 0%, #FBBF24 100%); color: #fff; .stat-icon { background: rgba(255,255,255,.2); } }
+    .card-secondary { background: linear-gradient(135deg, #64748B 0%, #94A3B8 100%); color: #fff; .stat-icon { background: rgba(255,255,255,.2); } }
   `],
 })
 export class StatCardComponent {
   value = input.required<string | number>();
   label = input.required<string>();
   icon = input<string>('ri-folder-line');
-  color = input<'primary' | 'success' | 'info' | 'danger' | 'warning'>('primary');
+  color = input<'primary' | 'success' | 'info' | 'danger' | 'warning' | 'secondary'>('primary');
 
   colorClass = () => `card-${this.color()}`;
 }

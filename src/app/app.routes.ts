@@ -67,7 +67,11 @@ export const routes: Routes = [
       { path: 'saha-malzeme', component: ComingSoonComponent, data: { title: 'Saha Malzemesi' } },
       { path: 'hareket-gecmisi', component: ComingSoonComponent, data: { title: 'Hareket Geçmişi (Log)' } },
       { path: 'kullanicilar', component: ComingSoonComponent, data: { title: 'Kullanıcı / Yetki' } },
-      { path: 'grid/:projeId', component: ComingSoonComponent, data: { title: 'Grid Modülü' } },
+      {
+        path: 'grid/:projeId',
+        loadComponent: () =>
+          import('./features/grid/grid-urunler/grid-urunler.component').then((m) => m.GridUrunlerComponent),
+      },
       // Bilinmeyen route → dashboard'a yönlendir (login'e değil)
       { path: '**', redirectTo: 'dashboard' },
     ],

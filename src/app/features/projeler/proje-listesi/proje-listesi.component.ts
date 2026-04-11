@@ -2,7 +2,7 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { I18nService } from '../../../shared/i18n/i18n.service';
-import { ProjeService } from '../projeler.service';
+import { ProjeService } from '../../../core/services/proje.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { ProjeDto } from '../../../core/models/api-response.model';

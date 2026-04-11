@@ -48,6 +48,11 @@ table {
   font-size: 12px; border-radius: 6px; padding: 5px 14px; font-weight: 500;
   &:hover { color: #fff; }
 }
+.btn-action-grid {
+  background: linear-gradient(135deg, #FD5812, #FF8A50); color: #fff;
+  font-size: 12px; border-radius: 6px; padding: 5px 14px; font-weight: 500;
+  &:hover { color: #fff; }
+}
 
 // ===== Upload Modal =====
 .modal-overlay {

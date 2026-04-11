@@ -2,12 +2,12 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { I18nService } from '../../shared/i18n/i18n.service';
-import { BaseApiService } from '../../core/services/base-api.service';
-import { API } from '../../core/constants/api-endpoints';
+import { ProjeService } from '../../core/services/proje.service';
+import { SandikService } from '../../core/services/sandik.service';
 import { StatCardComponent } from '../../shared/components/stat-card/stat-card.component';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
-import { ProjeDto, SandikDto, ApiResult } from '../../core/models/api-response.model';
+import { ProjeDto, SandikDto } from '../../core/models/api-response.model';
 
 @Component({
   selector: 'app-depo-durumu',
@@ -18,7 +18,8 @@ import { ProjeDto, SandikDto, ApiResult } from '../../core/models/api-response.m
 })
 export class DepoDurumuComponent implements OnInit {
   i18n = inject(I18nService);
-  private api = inject(BaseApiService);
+  private projeService = inject(ProjeService);
+  private sandikService = inject(SandikService);
 
   projeler = signal<ProjeDto[]>([]);
   allSandiklar = signal<SandikDto[]>([]);
@@ -36,7 +37,7 @@ export class DepoDurumuComponent implements OnInit {
   ];
 
   ngOnInit() {
-    this.api.get<ProjeDto[]>(API.PROJE.LIST).subscribe((res) => {
+    this.projeService.getProjeListesi().subscribe((res) => {
       if (res.isSuccess && res.value) {
         this.projeler.set(res.value);
         // Her proje için sandıkları çek
@@ -50,7 +51,7 @@ export class DepoDurumuComponent implements OnInit {
         }
 
         projects.forEach((p) => {
-          this.api.get<SandikDto[]>(API.SANDIK.BY_PROJE(p.id)).subscribe((sRes) => {
+          this.sandikService.getSandiklar(p.id).subscribe((sRes) => {
             completed++;
             if (sRes.isSuccess && sRes.value) {
               total = [...total, ...sRes.value];

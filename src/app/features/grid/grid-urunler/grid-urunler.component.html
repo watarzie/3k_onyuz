@@ -1,0 +1,171 @@
+<div class="page-title-area mb-4">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-1">Grid Ürün Takibi</h2>
+      <app-breadcrumb [items]="breadcrumb" />
+    </div>
+    <button class="btn btn-sevk" [disabled]="!hasSelection" (click)="openTopluSevk()">
+      <i class="ri-truck-line me-2"></i>Toplu Sevk ({{ selectedIds().size }})
+    </button>
+  </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+  <div class="col"><app-stat-card [value]="toplamUrun()" label="Toplam Ürün" icon="ri-list-check-2" color="primary" /></div>
+  <div class="col"><app-stat-card [value]="bekliyor()" label="Bekliyor" icon="ri-time-line" color="secondary" /></div>
+  <div class="col"><app-stat-card [value]="uretimde()" label="Üretimde" icon="ri-tools-line" color="info" /></div>
+  <div class="col"><app-stat-card [value]="stokHazir()" label="Stok Hazır" icon="ri-checkbox-circle-line" color="success" /></div>
+  <div class="col"><app-stat-card [value]="sevkEdildi()" label="Sevk Edildi" icon="ri-truck-line" color="warning" /></div>
+</div>
+
+<!-- Filtre & Arama -->
+<div class="trezo-card border-0 shadow-none">
+  <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <h5 class="fw-semibold mb-0 me-3">Ürünler</h5>
+      @for (d of gridDurumlari; track d.value) {
+        <button class="btn btn-sm btn-filter" [ngClass]="{'active': filterDurum() === d.value}" (click)="onFilterDurum(d.value)">
+          {{ d.icon }} {{ d.label }}
+        </button>
+      }
+    </div>
+    <div class="search-box position-relative">
+      <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
+      <input type="text" class="form-control" placeholder="Ara..." (input)="onSearch($event)" />
+    </div>
+  </div>
+
+  <div class="card-body p-0">
+    @if (loading()) {
+      <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
+    } @else if (filtered().length === 0) {
+      <div class="text-center py-5 text-muted">Görüntülenecek ürün bulunmuyor</div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th><input type="checkbox" class="form-check-input" [checked]="allSelected" (change)="toggleSelectAll()" /></th>
+              <th>#</th>
+              <th>Barkod</th>
+              <th>Açıklama</th>
+              <th>Miktar</th>
+              <th>Sandık</th>
+              <th>Grid Durumu</th>
+              <th>3K Durumu</th>
+              <th>Genel</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (u of filtered(); track u.cekiSatiriId) {
+              <tr [ngClass]="{'row-selected': isSelected(u.cekiSatiriId)}">
+                <td><input type="checkbox" class="form-check-input" [checked]="isSelected(u.cekiSatiriId)" (change)="toggleSelect(u.cekiSatiriId)" /></td>
+                <td class="text-muted">{{ u.siraNo }}</td>
+                <td><code class="barkod">{{ u.barkodNo }}</code></td>
+                <td class="fw-medium">{{ u.aciklama }}</td>
+                <td>{{ u.istenenAdet }} {{ u.birim }}</td>
+                <td><span class="badge-sandik">{{ u.sandikNo }}</span></td>
+                <td><app-status-badge [status]="u.gridDurumu" [label]="getDurumLabel(u.gridDurumu)" /></td>
+                <td><app-status-badge [status]="u.ucKDurumu" [label]="getUcKDurumLabel(u.ucKDurumu)" /></td>
+                <td><app-status-badge [status]="u.genelDurum" [label]="u.genelDurum" /></td>
+                <td>
+                  <button class="btn btn-sm btn-action" (click)="openPanel(u)">
+                    <i class="ri-settings-3-line"></i>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+  <div class="card-footer d-flex align-items-center justify-content-between">
+    <small class="text-muted">{{ filtered().length }} / {{ urunler().length }} ürün</small>
+    @if (hasSelection) {
+      <span class="fw-semibold text-primary">{{ selectedIds().size }} ürün seçildi</span>
+    }
+  </div>
+</div>
+
+<!-- ===== Durum Güncelle Side Panel ===== -->
+@if (showPanel() && panelUrun()) {
+  <div class="detail-overlay" (click)="closePanel()"></div>
+  <div class="detail-panel">
+    <div class="panel-header d-flex align-items-center justify-content-between">
+      <h5 class="fw-semibold mb-0">Durum Güncelle</h5>
+      <button class="btn btn-sm border-0" (click)="closePanel()"><i class="ri-close-line fs-5"></i></button>
+    </div>
+    <div class="panel-body">
+      <div class="urun-ozet mb-4">
+        <h6 class="fw-semibold">{{ panelUrun()!.aciklama }}</h6>
+        <div class="d-flex gap-3 text-muted mt-1">
+          <small><i class="ri-barcode-line me-1"></i>{{ panelUrun()!.barkodNo }}</small>
+          <small><i class="ri-archive-line me-1"></i>{{ panelUrun()!.sandikNo }}</small>
+          <small><i class="ri-stack-line me-1"></i>{{ panelUrun()!.istenenAdet }} {{ panelUrun()!.birim }}</small>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Yeni Durum</label>
+        <div class="durum-secim">
+          @for (d of gridDurumlari; track d.value) {
+            <button class="btn btn-sm btn-durum" [ngClass]="{'active': panelYeniDurum() === d.value}" (click)="panelYeniDurum.set(d.value)">
+              {{ d.icon }} {{ d.label }}
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (panelYeniDurum() === 'SevkEdildi' || panelYeniDurum() === 'KismiSevkEdildi') {
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Sevk Miktarı</label>
+          <input type="number" class="form-control" [ngModel]="panelSevkMiktari()" (ngModelChange)="panelSevkMiktari.set($event)" [max]="panelUrun()!.istenenAdet" min="1" />
+        </div>
+      }
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Not</label>
+        <textarea class="form-control" rows="3" placeholder="İrsaliye no, kamyon plaka vb..." [ngModel]="panelNot()" (ngModelChange)="panelNot.set($event)"></textarea>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline flex-grow-1" (click)="closePanel()">İptal</button>
+        <button class="btn btn-save flex-grow-1" (click)="savePanel()" [disabled]="panelSaving()">
+          @if (panelSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          Kaydet
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ===== Toplu Sevk Modal ===== -->
+@if (showTopluSevkModal()) {
+  <div class="modal-overlay" (click)="closeTopluSevk()"></div>
+  <div class="upload-modal">
+    <div class="modal-header d-flex align-items-center justify-content-between">
+      <h5 class="fw-semibold mb-0"><i class="ri-truck-line me-2"></i>Toplu Sevk</h5>
+      <button class="btn btn-sm border-0" (click)="closeTopluSevk()"><i class="ri-close-line fs-5"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="alert-info-custom mb-3">
+        <i class="ri-information-line me-2"></i>
+        <strong>{{ selectedIds().size }}</strong> ürün seçildi. Tümü <strong>SevkEdildi</strong> olarak işaretlenecek.
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Sevk Notu</label>
+        <textarea class="form-control" rows="3" placeholder="Kamyon plaka, irsaliye no..." [ngModel]="topluSevkNot()" (ngModelChange)="topluSevkNot.set($event)"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer d-flex gap-2">
+      <button class="btn btn-outline flex-grow-1" (click)="closeTopluSevk()">İptal</button>
+      <button class="btn btn-sevk flex-grow-1" (click)="confirmTopluSevk()" [disabled]="topluSevkSaving()">
+        @if (topluSevkSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        <i class="ri-truck-line me-1"></i>Sevk Et
+      </button>
+    </div>
+  </div>
+}
