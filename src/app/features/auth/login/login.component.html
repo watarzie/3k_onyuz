@@ -1,0 +1,54 @@
+<div class="login-card">
+  <div class="login-header text-center mb-4">
+    <div class="logo-icon mx-auto mb-3">
+      <i class="ri-box-3-line"></i>
+    </div>
+    <h2 class="fw-bold text-white mb-1">3K</h2>
+    <p class="text-muted mb-0">{{ i18n.t().APP.TITLE }}</p>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-danger d-flex align-items-center gap-2 py-2 px-3">
+      <i class="ri-error-warning-line"></i>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="form-group mb-3">
+      <label class="form-label">{{ i18n.t().LABELS.EMAIL }}</label>
+      <div class="input-group">
+        <span class="input-group-text"><i class="ri-mail-line"></i></span>
+        <input type="email" class="form-control" formControlName="email"
+               [ngClass]="{'is-invalid': getError('email')}"
+               placeholder="admin@3k.com" />
+      </div>
+      @if (getError('email')) {
+        <small class="text-danger mt-1 d-block">{{ getError('email') }}</small>
+      }
+    </div>
+
+    <div class="form-group mb-4">
+      <label class="form-label">{{ i18n.t().LABELS.SIFRE }}</label>
+      <div class="input-group">
+        <span class="input-group-text"><i class="ri-lock-line"></i></span>
+        <input [type]="showPassword() ? 'text' : 'password'" class="form-control" formControlName="sifre"
+               [ngClass]="{'is-invalid': getError('sifre')}"
+               placeholder="••••••" />
+        <button type="button" class="input-group-text btn-toggle" (click)="togglePassword()">
+          <i [class]="showPassword() ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
+        </button>
+      </div>
+      @if (getError('sifre')) {
+        <small class="text-danger mt-1 d-block">{{ getError('sifre') }}</small>
+      }
+    </div>
+
+    <button type="submit" class="btn btn-login w-100" [disabled]="loading()">
+      @if (loading()) {
+        <span class="spinner-border spinner-border-sm me-2"></span>
+      }
+      {{ i18n.t().LABELS.GIRIS_YAP }}
+    </button>
+  </form>
+</div>

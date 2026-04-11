@@ -1,0 +1,39 @@
+<aside class="sidebar-area" [ngClass]="{'active': toggleService.isSidebarToggled()}">
+  <div class="sidebar-header d-flex align-items-center justify-content-between">
+    <a routerLink="/dashboard" class="logo d-flex align-items-center gap-2">
+      <div class="logo-icon">
+        <i class="ri-box-3-line"></i>
+      </div>
+      <span class="logo-text">3K</span>
+    </a>
+    <button class="sidebar-close d-lg-none border-0 bg-transparent" (click)="closeSidebar()">
+      <i class="ri-close-line"></i>
+    </button>
+  </div>
+  <nav class="sidebar-nav">
+    @for (item of menu; track $index) {
+      @if (item.children) {
+        <div class="nav-item has-children" [ngClass]="{'open': openIndex() === $index}">
+          <a class="nav-link" (click)="toggleSection($index)">
+            <i [class]="item.icon"></i>
+            <span>{{ item.label }}</span>
+            <i class="ri-arrow-down-s-line arrow"></i>
+          </a>
+          <div class="sub-menu">
+            @for (child of item.children; track child.route) {
+              <a class="sub-link" [routerLink]="child.route" routerLinkActive="active" (click)="closeSidebar()">
+                {{ child.label }}
+              </a>
+            }
+          </div>
+        </div>
+      } @else {
+        <a class="nav-link" [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{exact: item.route === '/dashboard'}" (click)="closeSidebar()">
+          <i [class]="item.icon"></i>
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    }
+  </nav>
+</aside>
+<div class="sidebar-overlay" [ngClass]="{'active': toggleService.isSidebarToggled()}" (click)="closeSidebar()"></div>

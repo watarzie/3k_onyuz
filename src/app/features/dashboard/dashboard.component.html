@@ -1,0 +1,82 @@
+<div class="page-title-area mb-4">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-1">{{ i18n.t().MENU.DASHBOARD }}</h2>
+      <app-breadcrumb [items]="breadcrumb" />
+    </div>
+  </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-xl col-sm-6">
+    <app-stat-card [value]="toplamProje()" [label]="i18n.t().LABELS.TOPLAM_PROJE" icon="ri-folder-line" color="primary" />
+  </div>
+  <div class="col-xl col-sm-6">
+    <app-stat-card [value]="aktifProje()" [label]="i18n.t().LABELS.AKTIF_PROJELER" icon="ri-folder-open-line" color="info" />
+  </div>
+  <div class="col-xl col-sm-6">
+    <app-stat-card [value]="toplamSandik()" [label]="i18n.t().LABELS.TOPLAM_SANDIK_SAYISI" icon="ri-archive-line" color="success" />
+  </div>
+  <div class="col-xl col-sm-6">
+    <app-stat-card [value]="eksikUrun()" [label]="i18n.t().LABELS.EKSIK_URUN_SAYISI" icon="ri-error-warning-line" color="danger" />
+  </div>
+  <div class="col-xl col-sm-6">
+    <app-stat-card [value]="sevkEdilen()" [label]="i18n.t().LABELS.SEVK_EDILEN_PROJE" icon="ri-truck-line" color="warning" />
+  </div>
+</div>
+
+<!-- Projeler Tablosu -->
+<div class="trezo-card border-0 shadow-none">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <h5 class="fw-semibold mb-0">{{ i18n.t().LABELS.PROJELER }}</h5>
+    <button class="btn btn-sm btn-outline-primary" routerLink="/projeler">
+      {{ i18n.t().ACTIONS.YENI_PROJE_EKLE }}
+    </button>
+  </div>
+  <div class="card-body p-0">
+    @if (loading()) {
+      <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
+    } @else if (projeler().length === 0) {
+      <div class="text-center py-5 text-muted">{{ i18n.t().MESSAGES.NO_DATA }}</div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>{{ i18n.t().LABELS.PROJE_NO }}</th>
+              <th>{{ i18n.t().LABELS.TOPLAM_SANDIK }}</th>
+              <th>{{ i18n.t().LABELS.LOKASYON }}</th>
+              <th>{{ i18n.t().LABELS.DURUM }}</th>
+              <th>{{ i18n.t().LABELS.TAMAMLANMA }}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of projeler(); track p.id) {
+              <tr>
+                <td class="fw-semibold">{{ p.projeNo }}</td>
+                <td>{{ p.sandikSayisi }}</td>
+                <td>{{ p.lokasyon ?? '-' }}</td>
+                <td><app-status-badge [status]="p.durum" [label]="p.durum" /></td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="progress flex-grow-1" style="height: 6px;">
+                      <div class="progress-bar bg-success" [style.width.%]="getTamamlanmaYuzdesi(p)"></div>
+                    </div>
+                    <small class="fw-semibold">{{ getTamamlanmaYuzdesi(p) }}%</small>
+                  </div>
+                </td>
+                <td>
+                  <a [routerLink]="['/sandik-yonetimi', p.id]" class="btn btn-sm btn-outline-secondary">
+                    <i class="ri-eye-line"></i>
+                  </a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,104 @@
+<div class="page-title-area mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">{{ i18n.t().MENU.DEPO_DURUMU }}</h2>
+    <app-breadcrumb [items]="breadcrumb" />
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
+} @else {
+  <!-- Toplam Sandık -->
+  <div class="trezo-card border-0 shadow-none mb-4">
+    <div class="p-4">
+      <h5 class="fw-semibold mb-3">{{ i18n.t().LABELS.TOPLAM_SANDIK_SAYISI }} <strong class="fs-3 ms-2">{{ toplamSandik() }}</strong></h5>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <app-stat-card [value]="ucKSandik()" label="3K Sandıkları" icon="ri-home-4-line" color="info" />
+        </div>
+        <div class="col-md-4">
+          <app-stat-card [value]="seymenSandik()" label="Seymen Sandıkları" icon="ri-home-5-line" color="success" />
+        </div>
+        <div class="col-md-4">
+          <app-stat-card [value]="gridSandik()" label="GRID Sandıkları" icon="ri-building-line" color="warning" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Depo Dağılım -->
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="trezo-card border-0 shadow-none h-100">
+        <div class="card-header"><h5 class="fw-semibold mb-0">{{ i18n.t().LABELS.DEPO_DAGILIM }}</h5></div>
+        <div class="card-body d-flex align-items-center justify-content-center">
+          <div class="donut-chart-wrapper">
+            <svg viewBox="0 0 42 42" class="donut-chart">
+              <circle class="donut-ring" cx="21" cy="21" r="15.9" fill="transparent" stroke="#e2e8f0" stroke-width="5"/>
+              <circle class="donut-segment donut-3k" cx="21" cy="21" r="15.9" fill="transparent" stroke="#3584FC" stroke-width="5"
+                [attr.stroke-dasharray]="getDonutPercentage(ucKSandik()) + ' ' + (100 - getDonutPercentage(ucKSandik()))"
+                stroke-dashoffset="25"/>
+              <circle class="donut-segment donut-seymen" cx="21" cy="21" r="15.9" fill="transparent" stroke="#FD5812" stroke-width="5"
+                [attr.stroke-dasharray]="getDonutPercentage(seymenSandik()) + ' ' + (100 - getDonutPercentage(seymenSandik()))"
+                [attr.stroke-dashoffset]="25 - getDonutPercentage(ucKSandik())"/>
+              <circle class="donut-segment donut-grid" cx="21" cy="21" r="15.9" fill="transparent" stroke="#25B003" stroke-width="5"
+                [attr.stroke-dasharray]="getDonutPercentage(gridSandik()) + ' ' + (100 - getDonutPercentage(gridSandik()))"
+                [attr.stroke-dashoffset]="25 - getDonutPercentage(ucKSandik()) - getDonutPercentage(seymenSandik())"/>
+              <text x="21" y="21" text-anchor="middle" dominant-baseline="central" class="donut-text">
+                <tspan class="donut-number" font-size="6" font-weight="700">{{ toplamSandik() }}</tspan>
+              </text>
+            </svg>
+            <div class="donut-legend mt-3">
+              <div class="legend-item"><span class="legend-dot" style="background:#3584FC"></span> 3K <strong class="ms-auto">{{ ucKSandik() }}</strong></div>
+              <div class="legend-item"><span class="legend-dot" style="background:#FD5812"></span> Seymen <strong class="ms-auto">{{ seymenSandik() }}</strong></div>
+              <div class="legend-item"><span class="legend-dot" style="background:#25B003"></span> GRID <strong class="ms-auto">{{ gridSandik() }}</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sandık Listesi Tablosu -->
+    <div class="col-lg-7">
+      <div class="trezo-card border-0 shadow-none h-100">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <h5 class="fw-semibold mb-0">3K {{ i18n.t().MENU.SANDIK_YONETIMI }}</h5>
+          <div class="search-box position-relative">
+            <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
+            <input type="text" class="form-control" [placeholder]="i18n.t().ACTIONS.SEARCH" />
+          </div>
+        </div>
+        <div class="card-body p-0">
+          @if (allSandiklar().length === 0) {
+            <div class="text-center py-5 text-muted">{{ i18n.t().MESSAGES.NO_DATA }}</div>
+          } @else {
+            <div class="table-responsive" style="max-height: 400px; overflow-y:auto;">
+              <table class="table table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th><input type="checkbox" class="form-check-input" /></th>
+                    <th>{{ i18n.t().LABELS.SANDIK_NO }}</th>
+                    <th>{{ i18n.t().LABELS.DURUM }}</th>
+                    <th>{{ i18n.t().LABELS.LOKASYON }}</th>
+                    <th>{{ i18n.t().LABELS.URUN }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (s of allSandiklar(); track s.id) {
+                    <tr>
+                      <td><input type="checkbox" class="form-check-input" /></td>
+                      <td class="fw-semibold">{{ s.sandikNo }}</td>
+                      <td><app-status-badge [status]="s.durum" [label]="s.durum" /></td>
+                      <td>{{ s.depoLokasyonu ?? '-' }}</td>
+                      <td>{{ s.urunSayisi }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}

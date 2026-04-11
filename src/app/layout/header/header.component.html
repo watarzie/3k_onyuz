@@ -1,0 +1,33 @@
+<header class="header-area transition" [ngClass]="{'sticky': isSticky()}">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-3">
+      <button class="sidebar-burger-menu border-0 bg-transparent p-0" (click)="toggle()">
+        <i class="ri-menu-line fs-5"></i>
+      </button>
+      <div class="search-box position-relative d-none d-md-block">
+        <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
+        <input type="text" class="form-control" [placeholder]="i18n.t().ACTIONS.SEARCH">
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+      <div class="profile-menu position-relative">
+        <button class="border-0 bg-transparent d-flex align-items-center gap-2" (click)="toggleProfile()">
+          <div class="avatar">
+            <i class="ri-user-3-line"></i>
+          </div>
+          <div class="d-none d-sm-block text-start">
+            <span class="d-block fw-semibold user-name">{{ auth.currentUser()?.adSoyad }}</span>
+            <small class="text-muted user-role">{{ auth.currentUser()?.rol }}</small>
+          </div>
+        </button>
+        @if (isProfileOpen()) {
+          <div class="dropdown-menu profile-dropdown show">
+            <a class="dropdown-item" routerLink="/dashboard"><i class="ri-dashboard-line me-2"></i>{{ i18n.t().MENU.DASHBOARD }}</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item text-danger" (click)="logout()" style="cursor:pointer"><i class="ri-logout-circle-line me-2"></i>Çıkış Yap</a>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</header>

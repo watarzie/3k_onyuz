@@ -1,0 +1,40 @@
+.page-title-area h2 { font-size: 22px; color: var(--blackColor); }
+
+.trezo-card {
+  background: var(--whiteColor);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.card-header {
+  padding: 18px 24px;
+  background: transparent;
+  border-bottom: 1px solid var(--borderColor);
+}
+.card-body { padding: 0; }
+
+table {
+  th {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--bodyColor);
+    font-weight: 600;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--borderColor);
+    background: #F8FAFC;
+  }
+  td {
+    padding: 14px 24px;
+    font-size: 13.5px;
+    border-bottom: 1px solid var(--borderColor);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover { background: #F8FAFC; }
+}
+.progress { border-radius: 3px; background: #e2e8f0; }
+.btn-outline-primary {
+  border-color: var(--primaryColor);
+  color: var(--primaryColor);
+  font-size: 13px;
+  &:hover { background: var(--primaryColor); color: #fff; }
+}

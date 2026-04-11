@@ -1,0 +1,83 @@
+.page-title-area h2 { font-size: 22px; color: var(--blackColor); }
+.trezo-card { background: var(--whiteColor); border-radius: 10px; overflow: hidden; }
+.card-header { padding: 18px 24px; background: transparent; border-bottom: 1px solid var(--borderColor); }
+.card-footer { padding: 14px 24px; background: transparent; border-top: 1px solid var(--borderColor); }
+
+// Sandık Header
+.sandik-header-card { padding: 24px; }
+.sandik-icon {
+  width: 56px; height: 56px; border-radius: 12px;
+  background: linear-gradient(135deg, #0a1929, #1a2f4a);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 24px;
+}
+.tamamlanma-yuzde { font-size: 22px; font-weight: 700; color: var(--successColor); }
+.sandik-meta {
+  small { display: block; margin-bottom: 4px; }
+}
+
+// Table
+table {
+  th {
+    font-size: 12px; text-transform: uppercase; letter-spacing: .5px;
+    color: var(--bodyColor); font-weight: 600; padding: 12px 20px;
+    border-bottom: 1px solid var(--borderColor); background: #F8FAFC;
+  }
+  td { padding: 14px 20px; font-size: 13.5px; border-bottom: 1px solid var(--borderColor); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover { background: #F8FAFC; }
+}
+.cursor-pointer { cursor: pointer; }
+.gelen-text { font-weight: 600; }
+.btn-action {
+  background: linear-gradient(135deg, #605DFF, #8B5CF6);
+  color: #fff; font-size: 12px; border-radius: 6px; padding: 4px 12px;
+  &:hover { color: #fff; transform: translateY(-1px); }
+}
+.btn-icon { color: var(--bodyColor); border: 1px solid var(--borderColor); border-radius: 6px; }
+.btn-tam-geldi { background: var(--successColor); color: #fff; border: none; font-weight: 600; }
+.btn-outline { background: transparent; color: var(--bodyColor); border: 1px solid var(--borderColor); font-size: 12px; font-weight: 500; }
+
+// Detail Panel
+.detail-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.4); z-index: 1000;
+}
+.detail-panel {
+  position: fixed; right: 0; top: 0;
+  width: 420px; max-width: 100vw; height: 100vh;
+  background: var(--whiteColor);
+  z-index: 1001; overflow-y: auto;
+  box-shadow: -4px 0 24px rgba(0,0,0,.1);
+  animation: slideIn .25s ease;
+}
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.panel-header {
+  padding: 20px 24px; border-bottom: 1px solid var(--borderColor);
+  position: sticky; top: 0; background: var(--whiteColor); z-index: 1;
+}
+.panel-body { padding: 24px; }
+.info-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  .info-item {
+    small { display: block; margin-bottom: 4px; }
+  }
+}
+.action-buttons {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.btn-action-panel {
+  font-size: 12.5px; font-weight: 600; border-radius: 6px; padding: 7px 14px; border: none;
+}
+.btn-success-soft { background: rgba(37,176,3,.12); color: #25B003; }
+.btn-warning-soft { background: rgba(255,193,7,.12); color: #e6a800; }
+.btn-danger-soft { background: rgba(255,64,35,.12); color: #FF4023; }
+.btn-info-soft { background: rgba(53,132,252,.12); color: #3584FC; }
+.btn-purple-soft { background: rgba(173,99,246,.12); color: #AD63F6; }
+.btn-save {
+  background: linear-gradient(135deg, #25B003, #34D399);
+  color: #fff; border: none; font-weight: 600; border-radius: 8px;
+}

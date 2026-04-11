@@ -1,0 +1,157 @@
+<div class="page-title-area mb-4">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-1">{{ i18n.t().MENU.SANDIK_YONETIMI }}: {{ sandik()?.sandikNo }}</h2>
+      <app-breadcrumb [items]="breadcrumb" />
+    </div>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
+} @else if (sandik()) {
+  <!-- Sandik Header Card -->
+  <div class="trezo-card border-0 shadow-none mb-4">
+    <div class="sandik-header-card">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="sandik-icon"><i class="ri-archive-line"></i></div>
+          <div>
+            <h4 class="fw-bold mb-0">{{ sandik()!.sandikNo }}</h4>
+            <small class="text-muted">{{ sandik()!.icerikler.length }} {{ i18n.t().LABELS.URUN }}</small>
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+          <div class="tamamlanma-info text-end">
+            <span class="tamamlanma-yuzde">{{ getTamamlanmaYuzdesi() }}%</span>
+            <small class="d-block text-muted">{{ i18n.t().LABELS.TAMAMLANMA }} {{ i18n.t().LABELS.DURUM }}</small>
+          </div>
+          <div class="tamamlanma-circle">
+            <svg viewBox="0 0 36 36" width="60" height="60">
+              <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e2e8f0" stroke-width="3"/>
+              <path class="circle-fill" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#25B003" stroke-width="3" [attr.stroke-dasharray]="getTamamlanmaYuzdesi() + ', 100'"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="sandik-meta mt-3 d-flex gap-4 flex-wrap">
+        <div><small class="text-muted">{{ i18n.t().LABELS.DURUM }}</small> <app-status-badge [status]="sandik()!.durum" [label]="getDurumLabel(sandik()!.durum)" /></div>
+        <div><small class="text-muted">{{ i18n.t().LABELS.LOKASYON }}</small> <span class="ms-2 fw-semibold">{{ sandik()!.depoLokasyonu ?? '-' }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ürün Tablosu -->
+  <div class="trezo-card border-0 shadow-none">
+    <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <h5 class="fw-semibold mb-0">{{ sandik()!.sandikNo }}</h5>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-icon"><i class="ri-list-check-2"></i></button>
+        <button class="btn btn-sm btn-icon"><i class="ri-eye-line"></i></button>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>{{ i18n.t().LABELS.URUN }}</th>
+              <th>{{ i18n.t().LABELS.MIKTAR }}</th>
+              <th>{{ i18n.t().LABELS.GELEN }}</th>
+              <th>{{ i18n.t().LABELS.DURUM }}</th>
+              <th>{{ i18n.t().LABELS.SATIS }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of sandik()!.icerikler; track item.id) {
+              <tr (click)="selectUrun(item)" class="cursor-pointer">
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <i class="ri-arrow-right-s-line text-muted"></i>
+                    <span class="fw-medium">{{ item.aciklama }}</span>
+                  </div>
+                </td>
+                <td>{{ item.istenenAdet }}</td>
+                <td>
+                  <span class="gelen-text" [ngClass]="{
+                    'text-success': item.konulanAdet === item.istenenAdet,
+                    'text-warning': item.konulanAdet > 0 && item.konulanAdet < item.istenenAdet,
+                    'text-danger': item.konulanAdet === 0
+                  }">{{ getGelenText(item) }}</span>
+                </td>
+                <td><app-status-badge [status]="item.durum" [label]="getDurumLabel(item.durum)" /></td>
+                <td>
+                  <button class="btn btn-sm btn-action" (click)="selectUrun(item); $event.stopPropagation()">
+                    <i class="ri-settings-3-line me-1"></i>{{ i18n.t().ACTIONS.ISLEM }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card-footer d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <small class="text-muted">{{ sandik()!.icerikler.length }} {{ i18n.t().LABELS.URUN }}</small>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-tam-geldi" (click)="onTamGeldi()"><i class="ri-checkbox-circle-line me-1"></i>{{ i18n.t().STATUS.TAM_GELDI }}</button>
+        <button class="btn btn-sm btn-outline" (click)="onEksikGeldi()">{{ i18n.t().STATUS.EKSIK_GELDI }}</button>
+        <button class="btn btn-sm btn-outline" (click)="onStokKarsila()">{{ i18n.t().LABELS.STOKTAN_KARSILA }}</button>
+        <button class="btn btn-sm btn-outline" (click)="onSandikDegistir()">{{ i18n.t().LABELS.SANDIK_DEGISTIR }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail Panel (Sağdan açılan) -->
+  @if (showDetailPanel() && selectedUrun()) {
+    <div class="detail-overlay" (click)="closePanel()"></div>
+    <div class="detail-panel">
+      <div class="panel-header d-flex align-items-center justify-content-between">
+        <h5 class="fw-semibold mb-0">{{ selectedUrun()!.aciklama }}</h5>
+        <button class="btn btn-sm border-0" (click)="closePanel()"><i class="ri-close-line fs-5"></i></button>
+      </div>
+      <div class="panel-body">
+        <div class="info-grid">
+          <div class="info-item">
+            <small class="text-muted">{{ i18n.t().LABELS.BARKOD }}</small>
+            <span class="fw-semibold">{{ selectedUrun()!.barkodNo }}</span>
+          </div>
+          <div class="info-item">
+            <small class="text-muted">{{ i18n.t().LABELS.MIKTAR }}</small>
+            <span class="fw-semibold">{{ selectedUrun()!.istenenAdet }}</span>
+          </div>
+          <div class="info-item">
+            <small class="text-muted">{{ i18n.t().LABELS.GELEN }}</small>
+            <span class="fw-semibold" [ngClass]="{
+              'text-success': selectedUrun()!.konulanAdet === selectedUrun()!.istenenAdet,
+              'text-danger': selectedUrun()!.konulanAdet === 0
+            }">{{ getGelenText(selectedUrun()!) }}</span>
+          </div>
+          <div class="info-item">
+            <small class="text-muted">{{ i18n.t().LABELS.DURUM }}</small>
+            <app-status-badge [status]="selectedUrun()!.durum" [label]="getDurumLabel(selectedUrun()!.durum)" />
+          </div>
+        </div>
+
+        <hr />
+        <h6 class="fw-semibold mb-3">{{ i18n.t().ACTIONS.ISLEM_YAP }}</h6>
+        <div class="action-buttons">
+          <button class="btn btn-action-panel btn-success-soft">{{ i18n.t().STATUS.TAM_GELDI }}</button>
+          <button class="btn btn-action-panel btn-warning-soft">{{ i18n.t().STATUS.EKSIK_GELDI }}</button>
+          <button class="btn btn-action-panel btn-danger-soft">{{ i18n.t().STATUS.GELMEDI }}</button>
+          <button class="btn btn-action-panel btn-info-soft">{{ i18n.t().LABELS.STOKTAN_KARSILA }}</button>
+          <button class="btn btn-action-panel btn-purple-soft">{{ i18n.t().LABELS.FBDEN_KARSILA }}</button>
+        </div>
+        <hr />
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline flex-grow-1">{{ i18n.t().LABELS.URUN_DEGISTIR }}</button>
+          <button class="btn btn-outline flex-grow-1">{{ i18n.t().LABELS.SANDIK_DEGISTIR }}</button>
+        </div>
+        <div class="d-flex gap-2 mt-3">
+          <button class="btn btn-outline flex-grow-1" (click)="closePanel()">{{ i18n.t().ACTIONS.CANCEL }}</button>
+          <button class="btn btn-save flex-grow-1">{{ i18n.t().ACTIONS.SAVE }}</button>
+        </div>
+      </div>
+    </div>
+  }
+}

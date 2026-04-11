@@ -1,0 +1,78 @@
+<div class="page-title-area mb-4">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-1">{{ i18n.t().MENU.SANDIK_YONETIMI }}</h2>
+      <app-breadcrumb [items]="breadcrumb" />
+    </div>
+  </div>
+</div>
+
+<div class="trezo-card border-0 shadow-none">
+  <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <h5 class="fw-semibold mb-0">{{ i18n.t().LABELS.TOPLAM_SANDIK_SAYISI }}: {{ sandiklar().length }}</h5>
+    <div class="d-flex align-items-center gap-2">
+      <div class="search-box position-relative">
+        <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
+        <input type="text" class="form-control" [placeholder]="i18n.t().ACTIONS.SEARCH" (input)="onSearch($event)" />
+      </div>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    @if (loading()) {
+      <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
+    } @else if (filteredSandiklar().length === 0) {
+      <div class="text-center py-5 text-muted">{{ i18n.t().MESSAGES.NO_DATA }}</div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th><input type="checkbox" class="form-check-input" /></th>
+              <th>{{ i18n.t().LABELS.SANDIK_NO }}</th>
+              <th>{{ i18n.t().LABELS.PROJE_NO }}</th>
+              <th>{{ i18n.t().LABELS.DURUM }}</th>
+              <th>{{ i18n.t().LABELS.TAMAMLANMA }}</th>
+              <th>{{ i18n.t().LABELS.LOKASYON }}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of filteredSandiklar(); track s.id) {
+              <tr>
+                <td><input type="checkbox" class="form-check-input" /></td>
+                <td class="fw-semibold">{{ s.sandikNo }}</td>
+                <td>-</td>
+                <td><app-status-badge [status]="s.durum" [label]="getDurumLabel(s.durum)" /></td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="progress flex-grow-1" style="height: 6px; min-width:80px;">
+                      <div class="progress-bar bg-success" [style.width.%]="s.urunSayisi > 0 ? 100 : 0"></div>
+                    </div>
+                    <small class="fw-semibold text-nowrap">{{ s.urunSayisi > 0 ? '100%' : '0%' }}</small>
+                  </div>
+                </td>
+                <td>{{ s.depoLokasyonu ?? '-' }}</td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <a [routerLink]="['/sandik-yonetimi', projeId(), s.id]" class="btn btn-sm btn-action">
+                      <i class="ri-eye-line"></i> {{ i18n.t().ACTIONS.ISLEM }}
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+  <div class="card-footer d-flex align-items-center justify-content-between">
+    <small class="text-muted">{{ filteredSandiklar().length }} {{ i18n.t().LABELS.TOPLAM_KAYIT }}</small>
+    <div class="d-flex gap-2">
+      <button class="btn btn-sm btn-status btn-tam-geldi">{{ i18n.t().STATUS.TAM_GELDI }}</button>
+      <button class="btn btn-sm btn-status btn-eksik">{{ i18n.t().STATUS.EKSIK_GELDI }}</button>
+      <button class="btn btn-sm btn-status btn-stok">{{ i18n.t().LABELS.STOKTAN_KARSILA }}</button>
+      <button class="btn btn-sm btn-status btn-degistir">{{ i18n.t().LABELS.SANDIK_DEGISTIR }}</button>
+    </div>
+  </div>
+</div>

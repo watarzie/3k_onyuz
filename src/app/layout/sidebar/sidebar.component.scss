@@ -1,0 +1,91 @@
+$sidebar-bg: #0a1929;
+$sidebar-width: 260px;
+$sidebar-text: #94a3b8;
+$sidebar-active: #25B003;
+$sidebar-hover-bg: rgba(255,255,255,.06);
+
+.sidebar-area {
+  width: $sidebar-width;
+  height: 100vh;
+  position: fixed;
+  left: 0; top: 0;
+  background: $sidebar-bg;
+  z-index: 999;
+  overflow-y: auto;
+  transition: .3s ease;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.1) transparent;
+}
+.sidebar-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.logo {
+  text-decoration: none;
+  &-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: linear-gradient(135deg, $sidebar-active, #34D399);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 20px;
+  }
+  &-text { font-size: 22px; font-weight: 800; color: #fff; letter-spacing: 1px; }
+}
+.sidebar-nav {
+  padding: 12px 0;
+}
+.nav-link {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 20px;
+  color: $sidebar-text;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: .2s;
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  i { font-size: 18px; width: 20px; text-align: center; }
+  .arrow { margin-left: auto; transition: transform .2s; }
+  &:hover { background: $sidebar-hover-bg; color: #fff; }
+  &.active {
+    background: $sidebar-hover-bg;
+    color: $sidebar-active;
+    border-left-color: $sidebar-active;
+    font-weight: 600;
+  }
+}
+.has-children {
+  &.open {
+    .arrow { transform: rotate(180deg); }
+    .sub-menu { display: block; }
+  }
+}
+.sub-menu {
+  display: none;
+  padding-left: 50px;
+  .sub-link {
+    display: block;
+    padding: 7px 16px;
+    font-size: 13px;
+    color: $sidebar-text;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: .2s;
+    &:hover { color: #fff; }
+    &.active { color: $sidebar-active; font-weight: 600; }
+  }
+}
+.sidebar-close { color: #fff; font-size: 22px; }
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 998;
+  &.active { display: block; }
+}
+
+@media (max-width: 991.98px) {
+  .sidebar-area {
+    left: -$sidebar-width;
+    &.active { left: 0; }
+  }
+}

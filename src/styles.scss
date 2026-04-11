@@ -1,0 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --fontFamily: "Inter", sans-serif;
+  --blackColor: #3A4252;
+  --whiteColor: #ffffff;
+  --bodyColor: #64748B;
+  --borderColor: #ECEEF2;
+  --transition: .5s;
+  --fontSize: 14px;
+  --primaryColor: #605DFF;
+  --secondaryColor: #3584FC;
+  --successColor: #25B003;
+  --dangerColor: #FF4023;
+  --warningColor: #ffc107;
+  --infoColor: #0dcaf0;
+  --purpleColor: #AD63F6;
+  --orangeColor: #FD5812;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  color: var(--bodyColor);
+  background-color: #F6F7F9;
+  font-size: var(--fontSize);
+  font-family: var(--fontFamily);
+}
+
+a {
+  transition: var(--transition);
+  color: var(--blackColor);
+  text-decoration: none;
+  &:hover { color: var(--primaryColor); }
+}
+
+h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
+  color: var(--blackColor);
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+// Trezo card base
+.trezo-card {
+  background: var(--whiteColor);
+  border-radius: 10px;
+  border: none;
+  box-shadow: none;
+}
+
+// Custom scrollbar
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+// Table
+.table { margin-bottom: 0; }
+
+// Utilities
+.fw-semibold { font-weight: 600; }
+
+// Bootstrap overrides
+.btn { font-size: 13px; border-radius: 8px; }
+.form-control { font-size: 14px; border-radius: 8px; }
+.form-control:focus { box-shadow: 0 0 0 3px rgba(96,93,255,.15); border-color: var(--primaryColor); }
