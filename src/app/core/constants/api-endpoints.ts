@@ -33,6 +33,10 @@ export const API = {
     DURUM_GUNCELLE: `${BASE}/grid/durum-guncelle`,
     TOPLU_SEVK: `${BASE}/grid/toplu-sevk`,
   },
+  UCK: {
+    URUNLER: (projeId: number) => `${BASE}/uck/urunler/${projeId}`,
+    DURUM_GUNCELLE: `${BASE}/uck/durum-guncelle`,
+  },
   STOK: {
     LIST: `${BASE}/stok`,
     CREATE: `${BASE}/stok`,

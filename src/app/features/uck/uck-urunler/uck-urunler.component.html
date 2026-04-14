@@ -1,0 +1,207 @@
+<div class="page-title-area mb-4">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-1"><i class="ri-archive-stack-line me-2"></i>3K — {{ sandikNo() }}</h2>
+      <app-breadcrumb [items]="breadcrumb" />
+    </div>
+  </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+  <div class="col"><app-stat-card [value]="toplamUrun()" label="Toplam" icon="ri-list-check-2" color="primary" /></div>
+  <div class="col"><app-stat-card [value]="tamamlanan()" label="Tamamlanan" icon="ri-checkbox-circle-line" color="success" /></div>
+  <div class="col"><app-stat-card [value]="tamGeldi()" label="Tam Geldi" icon="ri-check-double-line" color="info" /></div>
+  <div class="col"><app-stat-card [value]="eksikGeldi()" label="Eksik Geldi" icon="ri-error-warning-line" color="warning" /></div>
+  <div class="col"><app-stat-card [value]="kalanlar()" label="Kalan Var" icon="ri-time-line" color="danger" /></div>
+</div>
+
+<!-- Filtre & Tablo -->
+<div class="trezo-card border-0 shadow-none">
+  <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <h5 class="fw-semibold mb-0 me-3">Ürünler</h5>
+      @for (t of karsilamaTipleri; track t.value) {
+        <button class="btn btn-sm btn-filter" [ngClass]="{'active': filterTip() === t.value}" [style.--filter-color]="t.color" (click)="onFilterTip(t.value)">
+          {{ t.label }}
+        </button>
+      }
+      @if (filterTip()) {
+        <button class="btn btn-sm btn-filter-clear" (click)="onFilterTip('')">✕</button>
+      }
+    </div>
+    <div class="search-box position-relative">
+      <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
+      <input type="text" class="form-control" placeholder="Ara..." (input)="onSearch($event)" />
+    </div>
+  </div>
+
+  <div class="card-body p-0">
+    @if (loading()) {
+      <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
+    } @else if (filtered().length === 0) {
+      <div class="text-center py-5 text-muted">Görüntülenecek ürün bulunmuyor</div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th style="width:45px">#</th>
+              <th>Barkod</th>
+              <th>Tanım</th>
+              <th>Koli</th>
+              <th class="text-center">Miktar</th>
+              <th>Grid Dur.</th>
+              <th class="text-center">Grid Gelen</th>
+              <th class="text-center">Trafo</th>
+              <th>3K Karşılama</th>
+              <th class="text-center">3K Gelen</th>
+              <th>Kaynak/Hedef</th>
+              <th>Kontrol/Uyarı</th>
+              <th class="text-center">Kalan</th>
+              <th style="width:50px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (u of filtered(); track u.cekiSatiriId) {
+              <tr [ngClass]="getRowClass(u)">
+                <td class="text-muted">{{ u.siraNo }}</td>
+                <td><code class="barkod">{{ u.barkodNo }}</code></td>
+                <td class="fw-medium text-truncate" style="max-width:180px" [title]="u.aciklama">{{ u.aciklama }}</td>
+                <td><span class="badge-sandik">{{ u.sandikNo }}</span></td>
+                <td class="text-center fw-semibold">{{ u.istenenAdet }}</td>
+                <td>
+                  <span class="durum-badge-sm text-muted">{{ u.gridDurumu }}</span>
+                </td>
+                <td class="text-center">{{ u.gridGelenAdet }}</td>
+                <td class="text-center">{{ u.trafoSevkAdet > 0 ? u.trafoSevkAdet : '-' }}</td>
+                <td>
+                  <span class="durum-badge" [style.background]="getTipColor(u.ucKKarsilamaTipi) + '15'" [style.color]="getTipColor(u.ucKKarsilamaTipi)" [style.border-color]="getTipColor(u.ucKKarsilamaTipi) + '30'">
+                    {{ getTipLabel(u.ucKKarsilamaTipi) }}
+                  </span>
+                </td>
+                <td class="text-center">{{ u.gelenMiktar }}</td>
+                <td class="text-truncate" style="max-width:120px" [title]="u.kaynakHedefProjeNo ?? ''">
+                  {{ u.kaynakHedefProjeNo ?? '-' }}
+                </td>
+                <td>
+                  <span class="kontrol-text" [style.color]="getTipColor(u.ucKKarsilamaTipi)">{{ u.kontrolUyari }}</span>
+                </td>
+                <td class="text-center fw-bold" [ngClass]="{'text-danger': u.kalan > 0, 'text-success': u.kalan === 0}">
+                  {{ u.kalan }}
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle">
+                    <i class="ri-edit-line"></i>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+  <div class="card-footer d-flex align-items-center justify-content-between">
+    <small class="text-muted">{{ filtered().length }} / {{ urunler().length }} ürün</small>
+  </div>
+</div>
+
+<!-- ===== Side Panel: 3K Durum Güncelle ===== -->
+@if (showPanel() && panelUrun()) {
+  <div class="detail-overlay" (click)="closePanel()"></div>
+  <div class="detail-panel">
+    <div class="panel-header">
+      <h5 class="fw-semibold mb-0"><i class="ri-edit-line me-2"></i>3K Karşılama</h5>
+      <button class="btn btn-sm border-0" (click)="closePanel()"><i class="ri-close-line fs-5"></i></button>
+    </div>
+    <div class="panel-body">
+      <!-- Ürün Özet -->
+      <div class="urun-ozet mb-4">
+        <h6 class="fw-semibold mb-2">{{ panelUrun()!.aciklama }}</h6>
+        <div class="d-flex gap-3 flex-wrap">
+          <span class="ozet-chip"><i class="ri-barcode-line"></i> {{ panelUrun()!.barkodNo }}</span>
+          <span class="ozet-chip"><i class="ri-archive-line"></i> {{ panelUrun()!.sandikNo }}</span>
+          <span class="ozet-chip"><i class="ri-stack-line"></i> {{ panelUrun()!.istenenAdet }} {{ panelUrun()!.birim }}</span>
+        </div>
+      </div>
+
+      <!-- Hata -->
+      @if (panelError()) {
+        <div class="alert-danger-panel mb-3">
+          <i class="ri-error-warning-line me-2"></i>{{ panelError() }}
+        </div>
+      }
+
+      <!-- Uyarı/Kontrol -->
+      @if (panelUyari()) {
+        <div class="alert-uyari mb-3" [style.border-color]="getTipColor(panelTip()) + '40'" [style.background]="getTipColor(panelTip()) + '08'" [style.color]="getTipColor(panelTip())">
+          <i class="ri-information-line me-1"></i> {{ panelUyari() }}
+        </div>
+      }
+
+      <!-- 1. 3K Karşılama Tipi -->
+      <div class="mb-4">
+        <label class="form-label fw-semibold">3K Karşılama Tipi</label>
+        <div class="durum-grid">
+          @for (t of karsilamaTipleri; track t.value) {
+            <button class="btn btn-durum-card" [ngClass]="{'active': panelTip() === t.value}" [style.--durum-color]="t.color" (click)="onTipChange(t.value)">
+              <span class="durum-dot" [style.background]="t.color"></span>
+              {{ t.label }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- 2. 3K Gelen Adet -->
+      <div class="mb-3">
+        <label class="form-label fw-semibold">3K Gelen Adet</label>
+        <input type="number" class="form-control" [ngModel]="panelGelenAdet()" (ngModelChange)="panelGelenAdet.set($event); recalcPanel()" [disabled]="!isGelenAdetAktif" min="0" [max]="panelUrun()!.istenenAdet" />
+        @if (panelTip() === 'TamGeldi') {
+          <small class="text-muted">Otomatik: Miktar kadar ({{ panelUrun()!.istenenAdet }})</small>
+        }
+      </div>
+
+      <!-- Kalan Gösterge -->
+      <div class="eksik-gosterge mb-4" [ngClass]="{'eksik-var': panelKalan > 0, 'eksik-yok': panelKalan <= 0}">
+        <span>Kalan:</span>
+        <strong>{{ panelKalan }}</strong>
+      </div>
+
+      <hr />
+
+      <!-- 3. Kaynak/Hedef Proje -->
+      <div class="mb-3">
+        <label class="form-label fw-semibold">
+          {{ panelTip() === 'BaskaProyeVerildi' ? 'Hedef Proje No' : 'Kaynak Proje No' }}
+          @if (isKaynakHedefZorunlu) { <span class="text-danger">*</span> }
+        </label>
+        <input type="text" class="form-control" placeholder="Proje no girin..." [ngModel]="panelKaynakHedef()" (ngModelChange)="panelKaynakHedef.set($event)" />
+      </div>
+
+      <!-- 4. Açıklama -->
+      <div class="mb-3">
+        <label class="form-label fw-semibold">
+          Açıklama
+          @if (isAciklamaZorunlu) { <span class="text-danger">*</span> }
+        </label>
+        <textarea class="form-control" rows="2" placeholder="Detay girin..." [ngModel]="panelAciklama()" (ngModelChange)="panelAciklama.set($event)"></textarea>
+      </div>
+
+      <!-- 5. Not -->
+      <div class="mb-4">
+        <label class="form-label fw-semibold">Not</label>
+        <textarea class="form-control" rows="2" placeholder="Genel not..." [ngModel]="panelNot()" (ngModelChange)="panelNot.set($event)"></textarea>
+      </div>
+
+      <!-- Kaydet -->
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline flex-grow-1" (click)="closePanel()">İptal</button>
+        <button class="btn btn-save flex-grow-1" (click)="savePanel()" [disabled]="panelSaving()">
+          @if (panelSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          <i class="ri-save-line me-1"></i>Kaydet
+        </button>
+      </div>
+    </div>
+  </div>
+}

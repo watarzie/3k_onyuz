@@ -53,6 +53,11 @@ table {
   font-size: 12px; border-radius: 6px; padding: 5px 14px; font-weight: 500;
   &:hover { color: #fff; }
 }
+.btn-action-3k {
+  background: linear-gradient(135deg, #25B003, #34D399); color: #fff;
+  font-size: 12px; border-radius: 6px; padding: 5px 14px; font-weight: 500;
+  &:hover { color: #fff; }
+}
 
 // ===== Upload Modal =====
 .modal-overlay {

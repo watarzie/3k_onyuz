@@ -1,0 +1,60 @@
+<div class="page-title-area mb-4">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-1"><i class="ri-archive-stack-line me-2"></i>3K — Sandık Listesi</h2>
+      <app-breadcrumb [items]="breadcrumb" />
+    </div>
+  </div>
+</div>
+
+<!-- Stat Cards — mevcut StatCard bileşeni -->
+<div class="row g-3 mb-4">
+  <div class="col"><app-stat-card [value]="sandiklar().length" label="Toplam Sandık" icon="ri-archive-stack-line" color="primary" /></div>
+  <div class="col"><app-stat-card [value]="hazirCount" label="Hazır" icon="ri-checkbox-circle-line" color="success" /></div>
+  <div class="col"><app-stat-card [value]="hazirlaniyorCount" label="Hazırlanıyor" icon="ri-settings-3-line" color="warning" /></div>
+  <div class="col"><app-stat-card [value]="sevkedildiCount" label="Sevk Edildi" icon="ri-truck-line" color="info" /></div>
+</div>
+
+<!-- Sandık Grid -->
+<div class="trezo-card border-0 shadow-none">
+  <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <h5 class="fw-semibold mb-0">Sandıklar ({{ filtered().length }})</h5>
+    <div class="search-box position-relative">
+      <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
+      <input type="text" class="form-control" placeholder="Sandık ara..." (input)="onSearch($event)" />
+    </div>
+  </div>
+  <div class="card-body">
+    @if (loading()) {
+      <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
+    } @else if (filtered().length === 0) {
+      <div class="empty-state text-center py-5">
+        <div class="empty-icon mb-3"><i class="ri-inbox-line"></i></div>
+        <h5 class="fw-semibold mb-2">Sandık bulunamadı</h5>
+        <p class="text-muted mb-0">Bu projeye ait sandık henüz oluşturulmamış</p>
+      </div>
+    } @else {
+      <div class="sandik-grid">
+        @for (s of filtered(); track s.id) {
+          <a [routerLink]="['/uck', projeId(), s.sandikNo]" class="sandik-card" [ngClass]="'s-' + s.durum.toLowerCase()">
+            <!-- Üst — Numara + Ok -->
+            <div class="card-top">
+              <span class="sandik-no">{{ getDisplayNo(s.sandikNo) }}</span>
+              <span class="nav-arrow"><i class="ri-arrow-right-s-line"></i></span>
+            </div>
+            <!-- Durum -->
+            <div class="card-status">
+              <span class="status-dot" [style.background]="getDurumColor(s.durum)"></span>
+              <span class="status-text" [style.color]="getDurumColor(s.durum)">{{ getDurumLabel(s.durum) }}</span>
+            </div>
+            <!-- Meta -->
+            <div class="card-meta">
+              <span><i class="ri-file-list-3-line"></i> {{ s.urunSayisi }} Ürün</span>
+              <span><i class="ri-map-pin-line"></i> {{ s.depoLokasyonu ?? 'Belirsiz' }}</span>
+            </div>
+          </a>
+        }
+      </div>
+    }
+  </div>
+</div>

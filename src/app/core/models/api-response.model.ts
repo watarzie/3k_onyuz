@@ -191,9 +191,13 @@ export interface GridUrunDto {
   birim: string;
   sandikNo: string;
   gridDurumu: string;
+  gridGelenAdet: number;
+  trafoSevkAdet: number;
+  gridSevkDurumu: string;
   gridSevkMiktari?: number;
   gridSevkTarihi?: string;
   gridNotu?: string;
+  gridEksikMiktar: number;
   ucKDurumu: string;
   gelenMiktar: number;
   genelDurum: string;
@@ -203,6 +207,9 @@ export interface GridDurumGuncelleDto {
   cekiSatiriId: number;
   projeId: number;
   yeniDurum: string;
+  gridGelenAdet?: number;
+  trafoSevkAdet?: number;
+  gridSevkDurumu?: string;
   sevkMiktari?: number;
   not?: string;
 }
@@ -280,6 +287,50 @@ export interface EksikUrunDto {
   gridDurumu: string;
   ucKDurumu: string;
   sandikNo: string;
+}
+
+// ===== 3K (UcK) =====
+
+export interface UcKUrunDto {
+  cekiSatiriId: number;
+  siraNo: number;
+  barkodNo: string;
+  aciklama: string;
+  sandikNo: string;
+  istenenAdet: number;
+  birim: string;
+  gridDurumu: string;
+  gridGelenAdet: number;
+  trafoSevkAdet: number;
+  ucKKarsilamaTipi: string;
+  gelenMiktar: number;
+  kaynakHedefProjeNo?: string;
+  ucKAciklama?: string;
+  ucKNotu?: string;
+  kalan: number;
+  kontrolUyari: string;
+  genelDurum: string;
+}
+
+export interface UcKDurumGuncelleDto {
+  cekiSatiriId: number;
+  projeId: number;
+  karsilamaTipi: string;
+  gelenAdet?: number;
+  kaynakHedefProjeNo?: string;
+  aciklama?: string;
+  not?: string;
+}
+
+export interface ProjeTransferDto {
+  id: number;
+  kaynakProjeNo: string;
+  hedefProjeNo: string;
+  barkodNo: string;
+  miktar: number;
+  kullaniciAdi: string;
+  aciklama?: string;
+  tarih: string;
 }
 
 // ===== Hareket Gecmisi =====

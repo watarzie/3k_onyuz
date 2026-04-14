@@ -1,7 +1,7 @@
 <div class="page-title-area mb-4">
   <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
     <div>
-      <h2 class="fw-bold mb-1">Grid Ürün Takibi</h2>
+      <h2 class="fw-bold mb-1"><i class="ri-database-2-line me-2"></i>Grid Ürün Takibi</h2>
       <app-breadcrumb [items]="breadcrumb" />
     </div>
     <button class="btn btn-sevk" [disabled]="!hasSelection" (click)="openTopluSevk()">
@@ -12,22 +12,26 @@
 
 <!-- Stat Cards -->
 <div class="row g-3 mb-4">
-  <div class="col"><app-stat-card [value]="toplamUrun()" label="Toplam Ürün" icon="ri-list-check-2" color="primary" /></div>
-  <div class="col"><app-stat-card [value]="bekliyor()" label="Bekliyor" icon="ri-time-line" color="secondary" /></div>
-  <div class="col"><app-stat-card [value]="uretimde()" label="Üretimde" icon="ri-tools-line" color="info" /></div>
-  <div class="col"><app-stat-card [value]="stokHazir()" label="Stok Hazır" icon="ri-checkbox-circle-line" color="success" /></div>
-  <div class="col"><app-stat-card [value]="sevkEdildi()" label="Sevk Edildi" icon="ri-truck-line" color="warning" /></div>
+  <div class="col"><app-stat-card [value]="toplamUrun()" label="Toplam" icon="ri-list-check-2" color="primary" /></div>
+  <div class="col"><app-stat-card [value]="tamGeldi()" label="Tam Geldi" icon="ri-checkbox-circle-line" color="success" /></div>
+  <div class="col"><app-stat-card [value]="eksikGeldi()" label="Eksik Geldi" icon="ri-error-warning-line" color="warning" /></div>
+  <div class="col"><app-stat-card [value]="gelmedi()" label="Gelmedi" icon="ri-close-circle-line" color="danger" /></div>
+  <div class="col"><app-stat-card [value]="trafoSevk()" label="Trafo Sevk" icon="ri-flashlight-line" color="info" /></div>
+  <div class="col"><app-stat-card [value]="sipariste()" label="Siparişte" icon="ri-shopping-cart-line" color="secondary" /></div>
 </div>
 
-<!-- Filtre & Arama -->
+<!-- Filtre & Tablo -->
 <div class="trezo-card border-0 shadow-none">
   <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
     <div class="d-flex align-items-center gap-2 flex-wrap">
       <h5 class="fw-semibold mb-0 me-3">Ürünler</h5>
       @for (d of gridDurumlari; track d.value) {
-        <button class="btn btn-sm btn-filter" [ngClass]="{'active': filterDurum() === d.value}" (click)="onFilterDurum(d.value)">
-          {{ d.icon }} {{ d.label }}
+        <button class="btn btn-sm btn-filter" [ngClass]="{'active': filterDurum() === d.value}" [style.--filter-color]="d.color" (click)="onFilterDurum(d.value)">
+          {{ d.label }}
         </button>
+      }
+      @if (filterDurum()) {
+        <button class="btn btn-sm btn-filter-clear" (click)="onFilterDurum('')">✕</button>
       }
     </div>
     <div class="search-box position-relative">
@@ -46,33 +50,51 @@
         <table class="table table-hover align-middle mb-0">
           <thead>
             <tr>
-              <th><input type="checkbox" class="form-check-input" [checked]="allSelected" (change)="toggleSelectAll()" /></th>
-              <th>#</th>
+              <th style="width:40px"><input type="checkbox" class="form-check-input" [checked]="allSelected" (change)="toggleSelectAll()" /></th>
+              <th style="width:45px">#</th>
               <th>Barkod</th>
               <th>Açıklama</th>
-              <th>Miktar</th>
+              <th class="text-center">Miktar</th>
               <th>Sandık</th>
               <th>Grid Durumu</th>
+              <th class="text-center">Gelen</th>
+              <th class="text-center">Trafo</th>
+              <th class="text-center">Eksik</th>
+              <th>Sevk Dur.</th>
               <th>3K Durumu</th>
-              <th>Genel</th>
-              <th></th>
+              <th style="width:50px"></th>
             </tr>
           </thead>
           <tbody>
             @for (u of filtered(); track u.cekiSatiriId) {
-              <tr [ngClass]="{'row-selected': isSelected(u.cekiSatiriId)}">
+              <tr [ngClass]="[getRowClass(u), isSelected(u.cekiSatiriId) ? 'row-selected' : '']">
                 <td><input type="checkbox" class="form-check-input" [checked]="isSelected(u.cekiSatiriId)" (change)="toggleSelect(u.cekiSatiriId)" /></td>
                 <td class="text-muted">{{ u.siraNo }}</td>
                 <td><code class="barkod">{{ u.barkodNo }}</code></td>
-                <td class="fw-medium">{{ u.aciklama }}</td>
-                <td>{{ u.istenenAdet }} {{ u.birim }}</td>
+                <td class="fw-medium text-truncate" style="max-width:200px" [title]="u.aciklama">{{ u.aciklama }}</td>
+                <td class="text-center fw-semibold">{{ u.istenenAdet }}</td>
                 <td><span class="badge-sandik">{{ u.sandikNo }}</span></td>
-                <td><app-status-badge [status]="u.gridDurumu" [label]="getDurumLabel(u.gridDurumu)" /></td>
-                <td><app-status-badge [status]="u.ucKDurumu" [label]="getUcKDurumLabel(u.ucKDurumu)" /></td>
-                <td><app-status-badge [status]="u.genelDurum" [label]="u.genelDurum" /></td>
                 <td>
-                  <button class="btn btn-sm btn-action" (click)="openPanel(u)">
-                    <i class="ri-settings-3-line"></i>
+                  <span class="durum-badge" [style.background]="getDurumColor(u.gridDurumu) + '15'" [style.color]="getDurumColor(u.gridDurumu)" [style.border-color]="getDurumColor(u.gridDurumu) + '30'">
+                    {{ getDurumLabel(u.gridDurumu) }}
+                  </span>
+                </td>
+                <td class="text-center">{{ u.gridGelenAdet }}</td>
+                <td class="text-center">{{ u.trafoSevkAdet > 0 ? u.trafoSevkAdet : '-' }}</td>
+                <td class="text-center fw-semibold" [ngClass]="{'text-danger': u.gridEksikMiktar > 0, 'text-success': u.gridEksikMiktar === 0}">
+                  {{ u.gridDurumu === 'Iptal' ? '-' : u.gridEksikMiktar }}
+                </td>
+                <td>
+                  <span class="durum-badge-sm" [style.color]="getSevkDurumColor(u.gridSevkDurumu)">
+                    {{ getSevkDurumLabel(u.gridSevkDurumu) }}
+                  </span>
+                </td>
+                <td>
+                  <span class="durum-badge-sm text-muted">{{ u.ucKDurumu }}</span>
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle">
+                    <i class="ri-edit-line"></i>
                   </button>
                 </td>
               </tr>
@@ -90,52 +112,107 @@
   </div>
 </div>
 
-<!-- ===== Durum Güncelle Side Panel ===== -->
+<!-- ===== Side Panel: Durum Güncelle ===== -->
 @if (showPanel() && panelUrun()) {
   <div class="detail-overlay" (click)="closePanel()"></div>
   <div class="detail-panel">
-    <div class="panel-header d-flex align-items-center justify-content-between">
-      <h5 class="fw-semibold mb-0">Durum Güncelle</h5>
+    <div class="panel-header">
+      <h5 class="fw-semibold mb-0"><i class="ri-edit-line me-2"></i>Ürün Durumu Güncelle</h5>
       <button class="btn btn-sm border-0" (click)="closePanel()"><i class="ri-close-line fs-5"></i></button>
     </div>
     <div class="panel-body">
+      <!-- Ürün Özet -->
       <div class="urun-ozet mb-4">
-        <h6 class="fw-semibold">{{ panelUrun()!.aciklama }}</h6>
-        <div class="d-flex gap-3 text-muted mt-1">
-          <small><i class="ri-barcode-line me-1"></i>{{ panelUrun()!.barkodNo }}</small>
-          <small><i class="ri-archive-line me-1"></i>{{ panelUrun()!.sandikNo }}</small>
-          <small><i class="ri-stack-line me-1"></i>{{ panelUrun()!.istenenAdet }} {{ panelUrun()!.birim }}</small>
+        <h6 class="fw-semibold mb-2">{{ panelUrun()!.aciklama }}</h6>
+        <div class="d-flex gap-3 flex-wrap">
+          <span class="ozet-chip"><i class="ri-barcode-line"></i> {{ panelUrun()!.barkodNo }}</span>
+          <span class="ozet-chip"><i class="ri-archive-line"></i> {{ panelUrun()!.sandikNo }}</span>
+          <span class="ozet-chip"><i class="ri-stack-line"></i> {{ panelUrun()!.istenenAdet }} {{ panelUrun()!.birim }}</span>
         </div>
       </div>
 
-      <div class="mb-3">
-        <label class="form-label fw-semibold">Yeni Durum</label>
-        <div class="durum-secim">
+      <!-- Hata -->
+      @if (panelError()) {
+        <div class="alert-danger-panel mb-3">
+          <i class="ri-error-warning-line me-2"></i>{{ panelError() }}
+        </div>
+      }
+
+      <!-- Uyarı/Kontrol -->
+      @if (panelUyari()) {
+        <div class="alert-uyari mb-3" [style.border-color]="getDurumColor(panelDurum()) + '40'" [style.background]="getDurumColor(panelDurum()) + '08'" [style.color]="getDurumColor(panelDurum())">
+          <i class="ri-information-line me-1"></i> {{ panelUyari() }}
+        </div>
+      }
+
+      <!-- 1. Grid Durumu -->
+      <div class="mb-4">
+        <label class="form-label fw-semibold">Grid Durumu</label>
+        <div class="durum-grid">
           @for (d of gridDurumlari; track d.value) {
-            <button class="btn btn-sm btn-durum" [ngClass]="{'active': panelYeniDurum() === d.value}" (click)="panelYeniDurum.set(d.value)">
-              {{ d.icon }} {{ d.label }}
+            <button class="btn btn-durum-card" [ngClass]="{'active': panelDurum() === d.value}" [style.--durum-color]="d.color" (click)="onDurumChange(d.value)">
+              <span class="durum-dot" [style.background]="d.color"></span>
+              {{ d.label }}
             </button>
           }
         </div>
       </div>
 
-      @if (panelYeniDurum() === 'SevkEdildi' || panelYeniDurum() === 'KismiSevkEdildi') {
+      <!-- 2. Gelen Adet (EksikGeldi + TrafoSevk'te aktif) -->
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Grid Gelen Adet</label>
+        <input type="number" class="form-control" [ngModel]="panelGelenAdet()" (ngModelChange)="panelGelenAdet.set($event); recalcPanel()" [disabled]="!isGelenAdetAktif" min="0" [max]="panelUrun()!.istenenAdet" />
+        @if (panelDurum() === 'TamGeldi') {
+          <small class="text-muted">Otomatik: Miktar kadar ({{ panelUrun()!.istenenAdet }})</small>
+        }
+      </div>
+
+      <!-- 3. Trafo Sevk Adet (sadece TrafoSevk'te aktif) -->
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Trafo Sevk Adet</label>
+        <input type="number" class="form-control" [ngModel]="panelTrafoSevkAdet()" (ngModelChange)="panelTrafoSevkAdet.set($event); recalcPanel()" [disabled]="!isTrafoAktif" min="0" [max]="panelUrun()!.istenenAdet" />
+      </div>
+
+      <!-- Eksik Hesabı -->
+      <div class="eksik-gosterge mb-4" [ngClass]="{'eksik-var': panelEksik > 0, 'eksik-yok': panelEksik <= 0}">
+        <span>Eksik:</span>
+        <strong>{{ panelDurum() === 'Iptal' ? '-' : panelEksik }}</strong>
+      </div>
+
+      <hr />
+
+      <!-- 4. Grid Sevk Durumu -->
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Grid Sevk Durumu</label>
+        <div class="d-flex gap-2 flex-wrap">
+          @for (sd of sevkDurumlari; track sd.value) {
+            <button class="btn btn-sm btn-sevk-durum" [ngClass]="{'active': panelSevkDurumu() === sd.value}" [style.--sd-color]="sd.color" (click)="panelSevkDurumu.set(sd.value)" [disabled]="!isSevkAktif && sd.value === 'SevkEdildi'">
+              {{ sd.label }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- 5. Sevk Adet -->
+      @if (isSevkAktif) {
         <div class="mb-3">
-          <label class="form-label fw-semibold">Sevk Miktarı</label>
-          <input type="number" class="form-control" [ngModel]="panelSevkMiktari()" (ngModelChange)="panelSevkMiktari.set($event)" [max]="panelUrun()!.istenenAdet" min="1" />
+          <label class="form-label fw-semibold">Sevk Adet</label>
+          <input type="number" class="form-control" [ngModel]="panelSevkAdet()" (ngModelChange)="panelSevkAdet.set($event)" min="0" [max]="panelGelenAdet()" />
         </div>
       }
 
-      <div class="mb-3">
+      <!-- 6. Not -->
+      <div class="mb-4">
         <label class="form-label fw-semibold">Not</label>
-        <textarea class="form-control" rows="3" placeholder="İrsaliye no, kamyon plaka vb..." [ngModel]="panelNot()" (ngModelChange)="panelNot.set($event)"></textarea>
+        <textarea class="form-control" rows="2" placeholder="İrsaliye no, kamyon plaka vb..." [ngModel]="panelNot()" (ngModelChange)="panelNot.set($event)"></textarea>
       </div>
 
+      <!-- Kaydet -->
       <div class="d-flex gap-2">
         <button class="btn btn-outline flex-grow-1" (click)="closePanel()">İptal</button>
         <button class="btn btn-save flex-grow-1" (click)="savePanel()" [disabled]="panelSaving()">
           @if (panelSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-          Kaydet
+          <i class="ri-save-line me-1"></i>Kaydet
         </button>
       </div>
     </div>
@@ -145,7 +222,7 @@
 <!-- ===== Toplu Sevk Modal ===== -->
 @if (showTopluSevkModal()) {
   <div class="modal-overlay" (click)="closeTopluSevk()"></div>
-  <div class="upload-modal">
+  <div class="toplu-sevk-modal">
     <div class="modal-header d-flex align-items-center justify-content-between">
       <h5 class="fw-semibold mb-0"><i class="ri-truck-line me-2"></i>Toplu Sevk</h5>
       <button class="btn btn-sm border-0" (click)="closeTopluSevk()"><i class="ri-close-line fs-5"></i></button>
@@ -153,7 +230,7 @@
     <div class="modal-body">
       <div class="alert-info-custom mb-3">
         <i class="ri-information-line me-2"></i>
-        <strong>{{ selectedIds().size }}</strong> ürün seçildi. Tümü <strong>SevkEdildi</strong> olarak işaretlenecek.
+        <strong>{{ selectedIds().size }}</strong> ürün seçildi. Tümü <strong>SEVK EDİLDİ</strong> olarak işaretlenecek.
       </div>
       <div class="mb-3">
         <label class="form-label fw-semibold">Sevk Notu</label>

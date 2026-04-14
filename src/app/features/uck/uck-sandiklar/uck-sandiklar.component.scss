@@ -1,0 +1,98 @@
+.page-title-area h2 { font-size: 22px; color: var(--blackColor); }
+
+// ===== Card container =====
+.trezo-card { background: var(--whiteColor); border-radius: 10px; overflow: hidden; }
+.card-header { padding: 18px 24px; background: transparent; border-bottom: 1px solid var(--borderColor); }
+.card-body { padding: 20px 24px; }
+.search-box {
+  input {
+    padding-left: 36px; background: #F6F7F9; border: 1px solid var(--borderColor);
+    border-radius: 8px; height: 38px; width: 220px; font-size: 13px;
+    &:focus { border-color: var(--primaryColor); box-shadow: none; }
+  }
+  i { left: 12px; color: var(--bodyColor); }
+}
+
+// ===== Empty =====
+.empty-state {
+  .empty-icon {
+    width: 72px; height: 72px; border-radius: 18px; margin: 0 auto;
+    background: #F1F5F9; display: flex; align-items: center; justify-content: center;
+    i { font-size: 32px; color: #94A3B8; }
+  }
+}
+
+// ===== Grid =====
+.sandik-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
+  gap: 12px;
+}
+
+// ===== Sandık Kartı =====
+.sandik-card {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 14px 16px 12px; border-radius: 10px;
+  background: var(--whiteColor); border: 1px solid #E2E8F0;
+  text-decoration: none; color: inherit; cursor: pointer;
+  transition: all .2s ease; position: relative;
+
+  &:hover {
+    border-color: #C7D2FE;
+    box-shadow: 0 4px 16px rgba(99,102,241,.08);
+    transform: translateY(-2px);
+    .nav-arrow { background: var(--primaryColor); color: #fff; }
+  }
+
+  // Sol kenar — durum rengi
+  &::after {
+    content: ''; position: absolute; left: 0; top: 8px; bottom: 8px;
+    width: 3px; border-radius: 0 3px 3px 0;
+  }
+  &.s-bos::after { background: #CBD5E1; }
+  &.s-hazirlaniyor::after { background: #FD5812; }
+  &.s-hazir::after { background: #22C55E; }
+  &.s-sevkedildi::after { background: #3B82F6; }
+}
+
+// Üst satır — numara + ok
+.card-top {
+  display: flex; align-items: flex-start; justify-content: space-between;
+}
+.sandik-no {
+  font-size: 24px; font-weight: 800; line-height: 1;
+  color: var(--blackColor); letter-spacing: -.5px;
+}
+.nav-arrow {
+  width: 22px; height: 22px; border-radius: 6px;
+  background: #F1F5F9; color: #94A3B8;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; transition: .2s; flex-shrink: 0;
+}
+
+// Durum
+.card-status {
+  display: flex; align-items: center; gap: 5px;
+}
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+}
+.status-text {
+  font-size: 10px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase;
+}
+
+// Meta
+.card-meta {
+  display: flex; align-items: center; gap: 10px;
+  span {
+    font-size: 10.5px; color: #64748B; display: inline-flex; align-items: center; gap: 3px;
+    i { font-size: 12px; color: #94A3B8; }
+  }
+}
+
+// Responsive
+@media (max-width: 576px) {
+  .sandik-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+  .sandik-card { padding: 10px 12px; }
+  .sandik-no { font-size: 20px; }
+}

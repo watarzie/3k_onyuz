@@ -72,6 +72,16 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/grid/grid-urunler/grid-urunler.component').then((m) => m.GridUrunlerComponent),
       },
+      {
+        path: 'uck/:projeId',
+        loadComponent: () =>
+          import('./features/uck/uck-sandiklar/uck-sandiklar.component').then((m) => m.UcKSandiklarComponent),
+      },
+      {
+        path: 'uck/:projeId/:sandikNo',
+        loadComponent: () =>
+          import('./features/uck/uck-urunler/uck-urunler.component').then((m) => m.UcKUrunlerComponent),
+      },
       // Bilinmeyen route → dashboard'a yönlendir (login'e değil)
       { path: '**', redirectTo: 'dashboard' },
     ],
