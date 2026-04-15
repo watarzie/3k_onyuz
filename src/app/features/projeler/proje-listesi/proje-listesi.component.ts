@@ -1,21 +1,22 @@
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
-import { I18nService } from '../../../shared/i18n/i18n.service';
+import { TranslationService } from '../../../core/services/translation.service';
 import { ProjeService } from '../../../core/services/proje.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
-import { ProjeDto } from '../../../core/models/api-response.model';
+import { ProjeDto } from '../../../shared/models/index';
 
 @Component({
   selector: 'app-proje-listesi',
   standalone: true,
-  imports: [RouterLink, NgClass, StatusBadgeComponent, BreadcrumbComponent],
+  imports: [TranslatePipe, RouterLink, NgClass, StatusBadgeComponent, BreadcrumbComponent],
   templateUrl: './proje-listesi.component.html',
   styleUrl: './proje-listesi.component.scss',
 })
 export class ProjeListesiComponent implements OnInit {
-  i18n = inject(I18nService);
+  ts = inject(TranslationService);
   private projeService = inject(ProjeService);
 
   projeler = signal<ProjeDto[]>([]);

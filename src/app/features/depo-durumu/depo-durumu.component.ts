@@ -1,23 +1,24 @@
+import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
-import { I18nService } from '../../shared/i18n/i18n.service';
+import { TranslationService } from '../../core/services/translation.service';
 import { ProjeService } from '../../core/services/proje.service';
 import { SandikService } from '../../core/services/sandik.service';
 import { StatCardComponent } from '../../shared/components/stat-card/stat-card.component';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
-import { ProjeDto, SandikDto } from '../../core/models/api-response.model';
+import { ProjeDto, SandikDto } from '../../shared/models/index';
 
 @Component({
   selector: 'app-depo-durumu',
   standalone: true,
-  imports: [RouterLink, NgClass, StatCardComponent, StatusBadgeComponent, BreadcrumbComponent],
+  imports: [TranslatePipe, RouterLink, NgClass, StatCardComponent, StatusBadgeComponent, BreadcrumbComponent],
   templateUrl: './depo-durumu.component.html',
   styleUrl: './depo-durumu.component.scss',
 })
 export class DepoDurumuComponent implements OnInit {
-  i18n = inject(I18nService);
+  ts = inject(TranslationService);
   private projeService = inject(ProjeService);
   private sandikService = inject(SandikService);
 

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { BaseApiService } from '../../core/services/base-api.service';
 import { API } from '../../core/constants/api-endpoints';
-import { ApiResult, SandikDto, SandikDetayDto } from '../../core/models/api-response.model';
+import { ApiResult, SandikDto, SandikDetayDto } from '../../shared/models/index';
 
 @Injectable({ providedIn: 'root' })
 export class SandikService {

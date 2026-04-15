@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, FBTransferDto, FBTransferResultDto } from '../models/api-response.model';
+import { ApiResult, FBTransferDto, FBTransferResultDto } from '../../shared/models/index';
 
 /**
  * FBTransferController (1 endpoint):

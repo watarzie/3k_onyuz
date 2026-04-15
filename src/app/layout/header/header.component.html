@@ -6,10 +6,34 @@
       </button>
       <div class="search-box position-relative d-none d-md-block">
         <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
-        <input type="text" class="form-control" [placeholder]="i18n.t().ACTIONS.SEARCH">
+        <input type="text" class="form-control" [placeholder]="'ACTIONS.SEARCH' | translate">
       </div>
     </div>
     <div class="d-flex align-items-center gap-3">
+      <!-- Dil Seçici -->
+      <div class="lang-menu position-relative">
+        <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" (click)="toggleLang()">
+          <i class="ri-global-line"></i>
+          <span class="text-uppercase fw-semibold">{{ ts.currentLang() }}</span>
+          <i class="ri-arrow-down-s-line"></i>
+        </button>
+        @if (isLangOpen()) {
+          <div class="dropdown-menu lang-dropdown show">
+            <a class="dropdown-item d-flex align-items-center gap-2"
+               [ngClass]="{'active': ts.currentLang() === 'tr'}"
+               (click)="switchLang('tr')" style="cursor:pointer">
+              🇹🇷 <span>Türkçe</span>
+            </a>
+            <a class="dropdown-item d-flex align-items-center gap-2"
+               [ngClass]="{'active': ts.currentLang() === 'en'}"
+               (click)="switchLang('en')" style="cursor:pointer">
+              🇬🇧 <span>English</span>
+            </a>
+          </div>
+        }
+      </div>
+
+      <!-- Profil Menü -->
       <div class="profile-menu position-relative">
         <button class="border-0 bg-transparent d-flex align-items-center gap-2" (click)="toggleProfile()">
           <div class="avatar">
@@ -22,9 +46,9 @@
         </button>
         @if (isProfileOpen()) {
           <div class="dropdown-menu profile-dropdown show">
-            <a class="dropdown-item" routerLink="/dashboard"><i class="ri-dashboard-line me-2"></i>{{ i18n.t().MENU.DASHBOARD }}</a>
+            <a class="dropdown-item" routerLink="/dashboard"><i class="ri-dashboard-line me-2"></i>{{ 'MENU.DASHBOARD' | translate }}</a>
             <div class="dropdown-divider"></div>
-            <a class="dropdown-item text-danger" (click)="logout()" style="cursor:pointer"><i class="ri-logout-circle-line me-2"></i>Çıkış Yap</a>
+            <a class="dropdown-item text-danger" (click)="logout()" style="cursor:pointer"><i class="ri-logout-circle-line me-2"></i>{{ 'ACTIONS.LOGOUT' | translate }}</a>
           </div>
         }
       </div>

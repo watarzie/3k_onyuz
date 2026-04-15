@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, StokKaydiDto, StokKaydiOlusturDto, StokKarsilamaDto } from '../models/api-response.model';
+import { ApiResult, StokKaydiDto, StokKaydiOlusturDto, StokKarsilamaDto } from '../../shared/models/index';
 
 /**
  * StokController (3 endpoint):

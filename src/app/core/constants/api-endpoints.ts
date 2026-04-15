@@ -1,4 +1,6 @@
-const BASE = 'http://localhost:50447/api';
+import { environment } from '@env/environment';
+
+const BASE = environment.apiBaseUrl;
 
 export const API = {
   AUTH: {
@@ -54,5 +56,8 @@ export const API = {
   PDF: {
     INDIR: (projeId: number) => `${BASE}/pdf/indir/${projeId}`,
     EXCEL: (projeId: number) => `${BASE}/pdf/excel/${projeId}`,
+  },
+  LOOKUP: {
+    GET: `${BASE}/lookup`,
   },
 } as const;

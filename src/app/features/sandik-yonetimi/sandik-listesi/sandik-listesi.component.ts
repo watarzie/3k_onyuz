@@ -1,21 +1,22 @@
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
-import { I18nService } from '../../../shared/i18n/i18n.service';
+import { TranslationService } from '../../../core/services/translation.service';
 import { SandikService } from '../../../core/services/sandik.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
-import { SandikDto } from '../../../core/models/api-response.model';
+import { SandikDto } from '../../../shared/models/index';
 
 @Component({
   selector: 'app-sandik-listesi',
   standalone: true,
-  imports: [RouterLink, NgClass, StatusBadgeComponent, BreadcrumbComponent],
+  imports: [TranslatePipe, RouterLink, NgClass, StatusBadgeComponent, BreadcrumbComponent],
   templateUrl: './sandik-listesi.component.html',
   styleUrl: './sandik-listesi.component.scss',
 })
 export class SandikListesiComponent implements OnInit {
-  i18n = inject(I18nService);
+  ts = inject(TranslationService);
   private route = inject(ActivatedRoute);
   private sandikService = inject(SandikService);
 
@@ -31,8 +32,8 @@ export class SandikListesiComponent implements OnInit {
     const id = Number(this.route.snapshot.paramMap.get('projeId'));
     this.projeId.set(id);
     this.breadcrumb = [
-      { label: this.i18n.t().MENU.DASHBOARD, link: '/dashboard' },
-      { label: this.i18n.t().MENU.SANDIK_YONETIMI },
+      { label: this.ts.translate('MENU.DASHBOARD'), link: '/dashboard' },
+      { label: this.ts.translate('MENU.SANDIK_YONETIMI') },
     ];
     this.loadSandiklar();
   }
@@ -66,9 +67,9 @@ export class SandikListesiComponent implements OnInit {
 
   getDurumLabel(durum: string): string {
     const map: Record<string, string> = {
-      Aktif: this.i18n.t().STATUS.AKTIF,
-      Bekliyor: this.i18n.t().STATUS.BEKLIYOR,
-      Tamamlandi: this.i18n.t().STATUS.TAMAMLANDI,
+      Aktif: this.ts.translate('STATUS.AKTIF'),
+      Bekliyor: this.ts.translate('STATUS.BEKLIYOR'),
+      Tamamlandi: this.ts.translate('STATUS.TAMAMLANDI'),
     };
     return map[durum] ?? durum;
   }

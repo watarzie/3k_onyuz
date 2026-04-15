@@ -1,22 +1,23 @@
+import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { I18nService } from '../../shared/i18n/i18n.service';
+import { TranslationService } from '../../core/services/translation.service';
 import { StatCardComponent } from '../../shared/components/stat-card/stat-card.component';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
 import { BaseApiService } from '../../core/services/base-api.service';
 import { API } from '../../core/constants/api-endpoints';
-import { ProjeDto, ApiResult } from '../../core/models/api-response.model';
+import { ProjeDto, ApiResult } from '../../shared/models/index';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [StatCardComponent, StatusBadgeComponent, BreadcrumbComponent, RouterLink],
+  imports: [TranslatePipe, StatCardComponent, StatusBadgeComponent, BreadcrumbComponent, RouterLink],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent implements OnInit {
-  i18n = inject(I18nService);
+  ts = inject(TranslationService);
   private api = inject(BaseApiService);
 
   projeler = signal<ProjeDto[]>([]);

@@ -1,15 +1,16 @@
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { AuthService } from '../../../core/auth/auth.service';
-import { I18nService } from '../../../shared/i18n/i18n.service';
+import { TranslationService } from '../../../core/services/translation.service';
 import { CustomValidators } from '../../../shared/validators/custom-validators';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule, NgClass],
+  imports: [TranslatePipe, ReactiveFormsModule, NgClass],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
 })
@@ -17,7 +18,7 @@ export class LoginComponent {
   private fb = inject(FormBuilder);
   private auth = inject(AuthService);
   private router = inject(Router);
-  i18n = inject(I18nService);
+  ts = inject(TranslationService);
 
   form: FormGroup;
   loading = signal(false);
@@ -25,6 +26,10 @@ export class LoginComponent {
   showPassword = signal(false);
 
   togglePassword() { this.showPassword.update(v => !v); }
+
+  switchLang(lang: string) {
+    this.ts.switchLanguage(lang);
+  }
 
   constructor() {
     this.form = this.fb.group({
@@ -36,10 +41,9 @@ export class LoginComponent {
   getError(field: string): string {
     const control = this.form.get(field);
     if (!control?.touched || !control.errors) return '';
-    const t = this.i18n.t().VALIDATION;
-    if (control.errors['required']) return t.REQUIRED;
-    if (control.errors['emailInvalid']) return t.EMAIL_INVALID;
-    if (control.errors['passwordWeak']) return t.PASSWORD_WEAK;
+        if (control.errors['required']) return this.ts.translate('VALIDATION.REQUIRED');
+    if (control.errors['emailInvalid']) return this.ts.translate('VALIDATION.EMAIL_INVALID');
+    if (control.errors['passwordWeak']) return this.ts.translate('VALIDATION.PASSWORD_WEAK');
     return '';
   }
 
@@ -57,12 +61,12 @@ export class LoginComponent {
         if (result.isSuccess) {
           this.router.navigate(['/dashboard']);
         } else {
-          this.error.set(result.error ?? this.i18n.t().MESSAGES.LOGIN_FAIL);
+          this.error.set(result.error ?? this.ts.translate('MESSAGES.LOGIN_FAIL'));
         }
       },
       error: () => {
         this.loading.set(false);
-        this.error.set(this.i18n.t().MESSAGES.LOGIN_FAIL);
+        this.error.set(this.ts.translate('MESSAGES.LOGIN_FAIL'));
       },
     });
   }

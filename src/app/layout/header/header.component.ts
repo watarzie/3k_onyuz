@@ -1,28 +1,37 @@
+import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { Component, inject, signal, HostListener } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { ToggleService } from './toggle.service';
 import { AuthService } from '../../core/auth/auth.service';
-import { I18nService } from '../../shared/i18n/i18n.service';
+import { TranslationService } from '../../core/services/translation.service';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [RouterLink, NgClass],
+  imports: [TranslatePipe, RouterLink, NgClass],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
 })
 export class HeaderComponent {
   toggleService = inject(ToggleService);
   auth = inject(AuthService);
-  i18n = inject(I18nService);
+  ts = inject(TranslationService);
 
   isSticky = signal(false);
   isProfileOpen = signal(false);
+  isLangOpen = signal(false);
 
   toggle() { this.toggleService.toggle(); }
 
   toggleProfile() { this.isProfileOpen.update(v => !v); }
+
+  toggleLang() { this.isLangOpen.update(v => !v); }
+
+  switchLang(lang: string) {
+    this.ts.switchLanguage(lang);
+    this.isLangOpen.set(false);
+  }
 
   logout() { this.auth.logout(); }
 
@@ -33,8 +42,12 @@ export class HeaderComponent {
 
   @HostListener('document:click', ['$event'])
   onDocClick(e: Event) {
-    if (!(e.target as HTMLElement).closest('.profile-menu')) {
+    const target = e.target as HTMLElement;
+    if (!target.closest('.profile-menu')) {
       this.isProfileOpen.set(false);
+    }
+    if (!target.closest('.lang-menu')) {
+      this.isLangOpen.set(false);
     }
   }
 }
