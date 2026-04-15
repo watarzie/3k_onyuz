@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { BaseApiService } from '../../core/services/base-api.service';
 import { API } from '../../core/constants/api-endpoints';
-import { ApiResult, ProjeDto, CekiYuklemeResultDto } from '../../core/models/api-response.model';
+import { ApiResult, ProjeDto, CekiYuklemeResultDto } from '../../shared/models/index';
 
 @Injectable({ providedIn: 'root' })
 export class ProjeService {

@@ -2,13 +2,13 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { I18nService } from '../../../shared/i18n/i18n.service';
+import { TranslationService } from '../../../core/services/translation.service';
 import { GridService } from '../../../core/services/grid.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
-import { GridUrunDto, GridDurumGuncelleDto } from '../../../core/models/api-response.model';
+import { GridUrunDto, GridDurumGuncelleDto } from '../../../shared/models/index';
 
 // ===== Durum tanımları =====
 interface DurumSecenegi { value: string; label: string; color: string; bgClass: string; }
@@ -36,7 +36,7 @@ const SEVK_DURUMLARI: DurumSecenegi[] = [
   styleUrl: './grid-urunler.component.scss',
 })
 export class GridUrunlerComponent implements OnInit {
-  i18n = inject(I18nService);
+  ts = inject(TranslationService);
   private route = inject(ActivatedRoute);
   private gridService = inject(GridService);
   private auth = inject(AuthService);

@@ -1,21 +1,22 @@
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
-import { I18nService } from '../../../shared/i18n/i18n.service';
+import { TranslationService } from '../../../core/services/translation.service';
 import { SandikService } from '../../../core/services/sandik.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
-import { SandikDetayDto, SandikIcerikDto } from '../../../core/models/api-response.model';
+import { SandikDetayDto, SandikIcerikDto } from '../../../shared/models/index';
 
 @Component({
   selector: 'app-sandik-detay',
   standalone: true,
-  imports: [RouterLink, NgClass, StatusBadgeComponent, BreadcrumbComponent],
+  imports: [TranslatePipe, RouterLink, NgClass, StatusBadgeComponent, BreadcrumbComponent],
   templateUrl: './sandik-detay.component.html',
   styleUrl: './sandik-detay.component.scss',
 })
 export class SandikDetayComponent implements OnInit {
-  i18n = inject(I18nService);
+  ts = inject(TranslationService);
   private route = inject(ActivatedRoute);
   private sandikService = inject(SandikService);
 
@@ -43,8 +44,8 @@ export class SandikDetayComponent implements OnInit {
       if (res.isSuccess && res.value) {
         this.sandik.set(res.value);
         this.breadcrumb = [
-          { label: this.i18n.t().MENU.DASHBOARD, link: '/dashboard' },
-          { label: this.i18n.t().MENU.SANDIK_YONETIMI, link: `/sandik-yonetimi/${this.projeId()}` },
+          { label: this.ts.translate('MENU.DASHBOARD'), link: '/dashboard' },
+          { label: this.ts.translate('MENU.SANDIK_YONETIMI'), link: `/sandik-yonetimi/${this.projeId()}` },
           { label: `${res.value.sandikNo}` },
         ];
       }
@@ -63,11 +64,10 @@ export class SandikDetayComponent implements OnInit {
   }
 
   getDurumLabel(durum: string): string {
-    const t = this.i18n.t().STATUS;
-    const map: Record<string, string> = {
-      TamGeldi: t.TAM_GELDI, EksikGeldi: t.EKSIK_GELDI, Gelmedi: t.GELMEDI,
-      Paketlendi: t.PAKETLENDI, KontrolEdildi: t.KONTROL_EDILDI,
-      IadeEdildi: t.IADE_EDILDI, Bekliyor: t.BEKLIYOR,
+        const map: Record<string, string> = {
+      TamGeldi: this.ts.translate('STATUS.TAM_GELDI'), EksikGeldi: this.ts.translate('STATUS.EKSIK_GELDI'), Gelmedi: this.ts.translate('STATUS.GELMEDI'),
+      Paketlendi: this.ts.translate('STATUS.PAKETLENDI'), KontrolEdildi: this.ts.translate('STATUS.KONTROL_EDILDI'),
+      IadeEdildi: this.ts.translate('STATUS.IADE_EDILDI'), Bekliyor: this.ts.translate('STATUS.BEKLIYOR'),
     };
     return map[durum] ?? durum;
   }

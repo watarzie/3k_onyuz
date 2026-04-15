@@ -1,7 +1,5 @@
-import { Component, input, computed } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { I18nService } from '../../i18n/i18n.service';
-import { inject } from '@angular/core';
 
 @Component({
   selector: 'app-breadcrumb',

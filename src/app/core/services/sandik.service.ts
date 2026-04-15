@@ -6,7 +6,7 @@ import {
   ApiResult, SandikDto, SandikDetayDto, SandikEkleDto, ManuelUrunEkleDto,
   UrunGuncelleDto, SandikDegistirDto, TeslimAlDto, TopluTeslimAlDto,
   UrunIptalDto, StokKarsilamaDto, EksikUrunDto
-} from '../models/api-response.model';
+} from '../../shared/models/index';
 
 /**
  * SandikController (13 endpoint):

@@ -11,7 +11,7 @@
     </button>
   </div>
   <nav class="sidebar-nav">
-    @for (item of menu; track $index) {
+    @for (item of menu(); track $index) {
       @if (item.children) {
         <div class="nav-item has-children" [ngClass]="{'open': openIndex() === $index}">
           <a class="nav-link" (click)="toggleSection($index)">

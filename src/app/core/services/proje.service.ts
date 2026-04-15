@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiSatiriDto } from '../models/api-response.model';
+import { ApiResult, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiSatiriDto } from '../../shared/models/index';
 
 /**
  * ProjeController (2 endpoint) + CekiController (2 endpoint):

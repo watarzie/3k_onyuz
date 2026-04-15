@@ -1,7 +1,7 @@
 <div class="page-title-area mb-4">
   <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
     <div>
-      <h2 class="fw-bold mb-1">{{ i18n.t().MENU.PROJELER }}</h2>
+      <h2 class="fw-bold mb-1">{{ 'MENU.PROJELER' | translate }}</h2>
       <app-breadcrumb [items]="breadcrumb" />
     </div>
     <button class="btn btn-primary-gradient" (click)="openUploadModal()">
@@ -12,10 +12,10 @@
 
 <div class="trezo-card border-0 shadow-none">
   <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-    <h5 class="fw-semibold mb-0">{{ i18n.t().LABELS.PROJELER }} ({{ filtered().length }})</h5>
+    <h5 class="fw-semibold mb-0">{{ 'LABELS.PROJELER' | translate }} ({{ filtered().length }})</h5>
     <div class="search-box position-relative">
       <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
-      <input type="text" class="form-control" [placeholder]="i18n.t().ACTIONS.SEARCH" (input)="onSearch($event)" />
+      <input type="text" class="form-control" [placeholder]="'ACTIONS.SEARCH' | translate" (input)="onSearch($event)" />
     </div>
   </div>
   <div class="card-body p-0">
@@ -35,12 +35,12 @@
         <table class="table table-hover align-middle mb-0">
           <thead>
             <tr>
-              <th>{{ i18n.t().LABELS.PROJE_NO }}</th>
+              <th>{{ 'LABELS.PROJE_NO' | translate }}</th>
               <th>Müşteri</th>
-              <th>{{ i18n.t().LABELS.TOPLAM_SANDIK }}</th>
+              <th>{{ 'LABELS.TOPLAM_SANDIK' | translate }}</th>
               <th>Ürün Sayısı</th>
-              <th>{{ i18n.t().LABELS.DURUM }}</th>
-              <th>{{ i18n.t().LABELS.TAMAMLANMA }}</th>
+              <th>{{ 'LABELS.DURUM' | translate }}</th>
+              <th>{{ 'LABELS.TAMAMLANMA' | translate }}</th>
               <th></th>
             </tr>
           </thead>
@@ -147,7 +147,7 @@
     </div>
     <div class="modal-footer d-flex gap-2">
       <button class="btn btn-outline flex-grow-1" (click)="closeUploadModal()" [disabled]="uploading()">
-        {{ i18n.t().ACTIONS.CANCEL }}
+        {{ 'ACTIONS.CANCEL' | translate }}
       </button>
       <button class="btn btn-upload flex-grow-1" (click)="uploadCeki()" [disabled]="!selectedFile() || uploading()">
         @if (uploading()) {

@@ -3,15 +3,14 @@ import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { BaseApiService } from '../services/base-api.service';
 import { API } from '../constants/api-endpoints';
-import { KullaniciDto, LoginDto, LoginResultDto, ApiResult } from '../models/api-response.model';
-
-const TOKEN_KEY = '3k_token';
-const USER_KEY = '3k_user';
+import { SessionManager } from '../managers/session.manager';
+import { KullaniciDto, LoginDto, LoginResultDto, ApiResult } from '../../shared/models/auth.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private api = inject(BaseApiService);
   private router = inject(Router);
+  private session = inject(SessionManager);
 
   currentUser = signal<KullaniciDto | null>(this.loadUser());
   isLoggedIn = computed(() => !!this.currentUser());
@@ -28,14 +27,13 @@ export class AuthService {
   }
 
   logout(): void {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    this.session.clearAll();
     this.currentUser.set(null);
     this.router.navigate(['/auth/login']);
   }
 
   getToken(): string | null {
-    return localStorage.getItem(TOKEN_KEY);
+    return this.session.token;
   }
 
   hasRole(...roles: string[]): boolean {
@@ -44,17 +42,13 @@ export class AuthService {
   }
 
   private setSession(data: LoginResultDto): void {
-    localStorage.setItem(TOKEN_KEY, data.token);
-    localStorage.setItem(USER_KEY, JSON.stringify(data.kullanici));
+    this.session.setToken(data.token);
+    this.session.setUser(data.kullanici);
+    this.session.setRole(data.kullanici.rol);
     this.currentUser.set(data.kullanici);
   }
 
   private loadUser(): KullaniciDto | null {
-    try {
-      const raw = localStorage.getItem(USER_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
+    return this.session.getSession<KullaniciDto>('3k_user');
   }
 }

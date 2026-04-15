@@ -2,11 +2,11 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { I18nService } from '../../../shared/i18n/i18n.service';
+import { TranslationService } from '../../../core/services/translation.service';
 import { UcKService } from '../../../core/services/uck.service';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
-import { UcKUrunDto, UcKDurumGuncelleDto } from '../../../core/models/api-response.model';
+import { UcKUrunDto, UcKDurumGuncelleDto } from '../../../shared/models/index';
 
 interface KarsilamaTipi { value: string; label: string; color: string; bgClass: string; }
 
@@ -28,7 +28,7 @@ const KARSILAMA_TIPLERI: KarsilamaTipi[] = [
   styleUrl: './uck-urunler.component.scss',
 })
 export class UcKUrunlerComponent implements OnInit {
-  i18n = inject(I18nService);
+  ts = inject(TranslationService);
   private route = inject(ActivatedRoute);
   private uckService = inject(UcKService);
 

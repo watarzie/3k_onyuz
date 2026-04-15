@@ -1,3 +1,35 @@
+.login-wrapper {
+  position: relative;
+}
+.login-lang-switcher {
+  position: absolute;
+  top: -60px;
+  right: 0;
+  display: flex;
+  gap: 6px;
+
+  .lang-btn {
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,.15);
+    background: rgba(255,255,255,.06);
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+
+    &:hover {
+      background: rgba(255,255,255,.12);
+      color: #fff;
+    }
+    &.active {
+      background: rgba(37,176,3,.15);
+      border-color: #25B003;
+      color: #25B003;
+    }
+  }
+}
 .login-card {
   width: 420px;
   max-width: 95vw;

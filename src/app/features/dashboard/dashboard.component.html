@@ -1,7 +1,7 @@
 <div class="page-title-area mb-4">
   <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
     <div>
-      <h2 class="fw-bold mb-1">{{ i18n.t().MENU.DASHBOARD }}</h2>
+      <h2 class="fw-bold mb-1">{{ 'MENU.DASHBOARD' | translate }}</h2>
       <app-breadcrumb [items]="breadcrumb" />
     </div>
   </div>
@@ -10,45 +10,45 @@
 <!-- Stat Cards -->
 <div class="row g-3 mb-4">
   <div class="col-xl col-sm-6">
-    <app-stat-card [value]="toplamProje()" [label]="i18n.t().LABELS.TOPLAM_PROJE" icon="ri-folder-line" color="primary" />
+    <app-stat-card [value]="toplamProje()" [label]="'LABELS.TOPLAM_PROJE' | translate" icon="ri-folder-line" color="primary" />
   </div>
   <div class="col-xl col-sm-6">
-    <app-stat-card [value]="aktifProje()" [label]="i18n.t().LABELS.AKTIF_PROJELER" icon="ri-folder-open-line" color="info" />
+    <app-stat-card [value]="aktifProje()" [label]="'LABELS.AKTIF_PROJELER' | translate" icon="ri-folder-open-line" color="info" />
   </div>
   <div class="col-xl col-sm-6">
-    <app-stat-card [value]="toplamSandik()" [label]="i18n.t().LABELS.TOPLAM_SANDIK_SAYISI" icon="ri-archive-line" color="success" />
+    <app-stat-card [value]="toplamSandik()" [label]="'LABELS.TOPLAM_SANDIK_SAYISI' | translate" icon="ri-archive-line" color="success" />
   </div>
   <div class="col-xl col-sm-6">
-    <app-stat-card [value]="eksikUrun()" [label]="i18n.t().LABELS.EKSIK_URUN_SAYISI" icon="ri-error-warning-line" color="danger" />
+    <app-stat-card [value]="eksikUrun()" [label]="'LABELS.EKSIK_URUN_SAYISI' | translate" icon="ri-error-warning-line" color="danger" />
   </div>
   <div class="col-xl col-sm-6">
-    <app-stat-card [value]="sevkEdilen()" [label]="i18n.t().LABELS.SEVK_EDILEN_PROJE" icon="ri-truck-line" color="warning" />
+    <app-stat-card [value]="sevkEdilen()" [label]="'LABELS.SEVK_EDILEN_PROJE' | translate" icon="ri-truck-line" color="warning" />
   </div>
 </div>
 
 <!-- Projeler Tablosu -->
 <div class="trezo-card border-0 shadow-none">
   <div class="card-header d-flex align-items-center justify-content-between">
-    <h5 class="fw-semibold mb-0">{{ i18n.t().LABELS.PROJELER }}</h5>
+    <h5 class="fw-semibold mb-0">{{ 'LABELS.PROJELER' | translate }}</h5>
     <button class="btn btn-sm btn-outline-primary" routerLink="/projeler">
-      {{ i18n.t().ACTIONS.YENI_PROJE_EKLE }}
+      {{ 'ACTIONS.YENI_PROJE_EKLE' | translate }}
     </button>
   </div>
   <div class="card-body p-0">
     @if (loading()) {
       <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
     } @else if (projeler().length === 0) {
-      <div class="text-center py-5 text-muted">{{ i18n.t().MESSAGES.NO_DATA }}</div>
+      <div class="text-center py-5 text-muted">{{ 'MESSAGES.NO_DATA' | translate }}</div>
     } @else {
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
           <thead>
             <tr>
-              <th>{{ i18n.t().LABELS.PROJE_NO }}</th>
-              <th>{{ i18n.t().LABELS.TOPLAM_SANDIK }}</th>
-              <th>{{ i18n.t().LABELS.LOKASYON }}</th>
-              <th>{{ i18n.t().LABELS.DURUM }}</th>
-              <th>{{ i18n.t().LABELS.TAMAMLANMA }}</th>
+              <th>{{ 'LABELS.PROJE_NO' | translate }}</th>
+              <th>{{ 'LABELS.TOPLAM_SANDIK' | translate }}</th>
+              <th>{{ 'LABELS.LOKASYON' | translate }}</th>
+              <th>{{ 'LABELS.DURUM' | translate }}</th>
+              <th>{{ 'LABELS.TAMAMLANMA' | translate }}</th>
               <th></th>
             </tr>
           </thead>

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
-import { ApiResult } from '../models/api-response.model';
+import { ApiResult } from '../../shared/models/index';
 
 @Injectable({ providedIn: 'root' })
 export class BaseApiService {
