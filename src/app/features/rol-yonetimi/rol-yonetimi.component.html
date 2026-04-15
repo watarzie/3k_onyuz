@@ -1,0 +1,139 @@
+<!-- Breadcrumb -->
+<div class="breadcrumb-card">
+  <h5>{{ 'ROLE.TITLE' | translate }}</h5>
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="ri-home-4-line"></i> {{ 'COMMON.DASHBOARD' | translate }}</a></li>
+    <li class="breadcrumb-item active">{{ 'ROLE.TITLE' | translate }}</li>
+  </ol>
+</div>
+
+<div class="role-container">
+  <!-- ===== SOL PANEL: Rol Listesi ===== -->
+  <div class="role-list-panel">
+    <div class="panel-card">
+      <div class="panel-header">
+        <h6>{{ 'ROLE.ROLES' | translate }}</h6>
+        <button class="btn-add" (click)="openAddModal()" title="Yeni Rol Ekle">
+          <i class="ri-add-line"></i>
+        </button>
+      </div>
+
+      <!-- Arama -->
+      <div class="search-box">
+        <i class="ri-search-line"></i>
+        <input type="text" [placeholder]="'ROLE.SEARCH_PLACEHOLDER' | translate"
+               [ngModel]="roleSearchTerm()" (ngModelChange)="roleSearchTerm.set($event)">
+      </div>
+
+      <!-- Rol Listesi -->
+      <div class="role-list">
+        <div *ngIf="isLoading()" class="text-center py-4">
+          <div class="spinner-border text-primary" role="status"></div>
+        </div>
+
+        <ng-container *ngIf="!isLoading()">
+          <div *ngFor="let role of displayedRoles()"
+               class="role-item"
+               [class.active]="selectedRole()?.id === role.id"
+               (click)="onSelectRole(role)">
+            <span class="role-name">{{ role.ad }}</span>
+            <div class="role-actions">
+              <button class="btn-icon danger" (click)="deleteRole(role, $event)" title="Sil"
+                      *ngIf="role.ad !== 'Admin'">
+                <i class="ri-delete-bin-line"></i>
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="displayedRoles().length === 0" class="empty-state">
+            {{ 'COMMON.NO_DATA' | translate }}
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SAĞ PANEL: Yetki Düzenleme ===== -->
+  <div class="permission-panel">
+    <div class="panel-card">
+      <!-- Rol seçilmemişse -->
+      <div *ngIf="!selectedRole()" class="empty-right-panel">
+        <i class="ri-shield-user-line"></i>
+        <h5>{{ 'ROLE.SELECT_ROLE_TO_EDIT' | translate }}</h5>
+        <p>{{ 'ROLE.OR_CREATE_NEW_VIA_BUTTON' | translate }}</p>
+      </div>
+
+      <!-- Rol seçilmişse -->
+      <ng-container *ngIf="selectedRole()">
+        <div class="panel-header permission-header">
+          <div class="role-info">
+            <i class="ri-verified-badge-line"></i>
+            <div>
+              <h6>{{ selectedRole()!.ad }}</h6>
+              <small>{{ 'ROLE.PERMISSION_SETTINGS' | translate }}</small>
+            </div>
+          </div>
+          <button class="btn-save" (click)="savePermissions()" [disabled]="isSaving()">
+            <i class="ri-save-line" *ngIf="!isSaving()"></i>
+            <i class="ri-loader-4-line spin" *ngIf="isSaving()"></i>
+            {{ 'COMMON.SAVE' | translate }}
+          </button>
+        </div>
+
+        <div class="permission-content">
+          <!-- Legend -->
+          <div class="permission-legend">
+            <div class="legend-item">
+              <input type="checkbox" disabled [checked]="true" class="form-check-input">
+              <span>Yetkili</span>
+            </div>
+            <div class="legend-item">
+              <input type="checkbox" disabled [indeterminate]="true" class="form-check-input">
+              <span>Sadece Okuma</span>
+            </div>
+            <div class="legend-item">
+              <input type="checkbox" disabled [checked]="false" class="form-check-input">
+              <span>Yetkisiz</span>
+            </div>
+          </div>
+
+          <hr>
+
+          <!-- Loading -->
+          <div *ngIf="isDetailLoading()" class="text-center py-4">
+            <div class="spinner-border text-primary" role="status"></div>
+          </div>
+
+          <!-- Menü Ağacı -->
+          <app-menu-tree *ngIf="!isDetailLoading() && selectedRole()?.menuAgaci?.length"
+                         [nodes]="selectedRole()!.menuAgaci">
+          </app-menu-tree>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Yeni Rol Modal ===== -->
+<div class="modal-overlay" *ngIf="showAddModal()" (click)="closeAddModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h6>{{ 'ROLE.ADD_NEW' | translate }}</h6>
+      <button class="btn-close-modal" (click)="closeAddModal()">
+        <i class="ri-close-line"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <label>Rol Adı</label>
+      <input type="text" class="form-control"
+             [ngModel]="newRoleName()" (ngModelChange)="newRoleName.set($event)"
+             (keydown.enter)="addRole()" placeholder="Örn: SuperVisor" autofocus>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeAddModal()">{{ 'COMMON.CANCEL' | translate }}</button>
+      <button class="btn-confirm" (click)="addRole()" [disabled]="!newRoleName().trim()">
+        {{ 'COMMON.SAVE' | translate }}
+      </button>
+    </div>
+  </div>
+</div>

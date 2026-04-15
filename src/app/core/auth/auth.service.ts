@@ -4,7 +4,7 @@ import { Observable, tap } from 'rxjs';
 import { BaseApiService } from '../services/base-api.service';
 import { API } from '../constants/api-endpoints';
 import { SessionManager } from '../managers/session.manager';
-import { KullaniciDto, LoginDto, LoginResultDto, ApiResult } from '../../shared/models/auth.model';
+import { KullaniciAuthDto, LoginDto, LoginResultDto, ApiResult } from '../../shared/models/auth.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -12,7 +12,7 @@ export class AuthService {
   private router = inject(Router);
   private session = inject(SessionManager);
 
-  currentUser = signal<KullaniciDto | null>(this.loadUser());
+  currentUser = signal<KullaniciAuthDto | null>(this.loadUser());
   isLoggedIn = computed(() => !!this.currentUser());
   userRole = computed(() => this.currentUser()?.rol ?? '');
 
@@ -48,7 +48,7 @@ export class AuthService {
     this.currentUser.set(data.kullanici);
   }
 
-  private loadUser(): KullaniciDto | null {
-    return this.session.getSession<KullaniciDto>('3k_user');
+  private loadUser(): KullaniciAuthDto | null {
+    return this.session.getSession<KullaniciAuthDto>('3k_user');
   }
 }

@@ -126,12 +126,20 @@ export const routes: Routes = [
         data: { title: 'Hareket Geçmişi (Log)' },
       },
 
-      // --- Kullanıcı / Yetki ---
+      // --- Kullanıcı Yönetimi ---
       {
         path: 'kullanicilar',
         loadComponent: () =>
-          import('./shared/components/coming-soon/coming-soon.component').then(m => m.ComingSoonComponent),
-        data: { title: 'Kullanıcı / Yetki' },
+          import('./features/kullanici-yonetimi/kullanici-yonetimi.component').then(m => m.KullaniciYonetimiComponent),
+        data: { menuKod: 'kullanicilar' },
+      },
+
+      // --- Rol Yönetimi ---
+      {
+        path: 'rol-yonetimi',
+        loadComponent: () =>
+          import('./features/rol-yonetimi/rol-yonetimi.component').then(m => m.RolYonetimiComponent),
+        data: { menuKod: 'rol-yonetimi' },
       },
 
       // --- Wildcard → Dashboard ---

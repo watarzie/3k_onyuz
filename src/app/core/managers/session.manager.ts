@@ -69,4 +69,29 @@ export class SessionManager {
   isAuthenticated(): boolean {
     return !!this.token;
   }
+
+  /**
+   * JWT token'dan RolId claim'ini çözer.
+   * Backend'de "RolId" claim olarak set ediliyor.
+   */
+  getRolId(): number | null {
+    // Önce localStorage'dan kontrol et
+    const stored = localStorage.getItem('3k_rolId');
+    if (stored) return parseInt(stored, 10);
+
+    // JWT'den decode et
+    const token = this.token;
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const rolId = payload['RolId'];
+      return rolId ? parseInt(rolId, 10) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  setRolId(rolId: number): void {
+    localStorage.setItem('3k_rolId', rolId.toString());
+  }
 }

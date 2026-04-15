@@ -1,0 +1,151 @@
+<!-- Breadcrumb -->
+<div class="breadcrumb-card">
+  <h5>{{ 'USER.TITLE' | translate }}</h5>
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="ri-home-4-line"></i> {{ 'COMMON.DASHBOARD' | translate }}</a></li>
+    <li class="breadcrumb-item active">{{ 'USER.TITLE' | translate }}</li>
+  </ol>
+</div>
+
+<div class="users-card">
+  <!-- Header -->
+  <div class="card-header">
+    <div class="header-left">
+      <h6>{{ 'USER.USER_LIST' | translate }}</h6>
+      <span class="count-badge">{{ filteredKullanicilar().length }}</span>
+    </div>
+    <div class="header-right">
+      <div class="search-box">
+        <i class="ri-search-line"></i>
+        <input type="text" [placeholder]="'USER.SEARCH_PLACEHOLDER' | translate"
+               [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)">
+      </div>
+      <button class="btn-add" (click)="openAddModal()">
+        <i class="ri-user-add-line"></i>
+        {{ 'USER.ADD_NEW' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrapper">
+    <div *ngIf="isLoading()" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status"></div>
+    </div>
+
+    <table *ngIf="!isLoading()" class="data-table">
+      <thead>
+        <tr>
+          <th class="w-avatar"></th>
+          <th>{{ 'USER.NAME' | translate }}</th>
+          <th>{{ 'USER.EMAIL' | translate }}</th>
+          <th>{{ 'USER.ROLE' | translate }}</th>
+          <th class="w-actions">{{ 'ACTIONS.ISLEM' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let k of filteredKullanicilar()">
+          <td>
+            <div class="avatar" [attr.data-initials]="k.basHarf">{{ k.basHarf }}</div>
+          </td>
+          <td>
+            <span class="user-name">{{ k.adSoyad }}</span>
+          </td>
+          <td>
+            <span class="user-email">{{ k.email }}</span>
+          </td>
+          <td>
+            <span class="role-badge" [ngClass]="getRolBadgeClass(k.rol)">{{ k.rol }}</span>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn-icon edit" (click)="openEditModal(k)" title="Düzenle">
+                <i class="ri-edit-line"></i>
+              </button>
+              <button class="btn-icon danger" (click)="deleteUser(k)" title="Sil">
+                <i class="ri-delete-bin-line"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="filteredKullanicilar().length === 0">
+          <td colspan="5" class="empty-row">{{ 'COMMON.NO_DATA' | translate }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== Düzenleme Modali ===== -->
+<div class="modal-overlay" *ngIf="showEditModal()" (click)="closeEditModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h6>{{ 'USER.EDIT_USER' | translate }}</h6>
+      <button class="btn-close-modal" (click)="closeEditModal()"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>{{ 'USER.NAME' | translate }}</label>
+        <input type="text" class="form-control"
+               [ngModel]="editData().adSoyad" (ngModelChange)="updateEditField('adSoyad', $event)">
+      </div>
+      <div class="form-group">
+        <label>{{ 'USER.ROLE' | translate }}</label>
+        <select class="form-control"
+                [ngModel]="editData().rolId" (ngModelChange)="updateEditField('rolId', +$event)">
+          <option *ngFor="let r of roller()" [value]="r.id">{{ r.ad }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeEditModal()">{{ 'COMMON.CANCEL' | translate }}</button>
+      <button class="btn-confirm" (click)="saveEdit()" [disabled]="isSaving()">
+        <i class="ri-save-line" *ngIf="!isSaving()"></i>
+        <i class="ri-loader-4-line spin" *ngIf="isSaving()"></i>
+        {{ 'COMMON.SAVE' | translate }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Yeni Kullanıcı Modali ===== -->
+<div class="modal-overlay" *ngIf="showAddModal()" (click)="closeAddModal()">
+  <div class="modal-content modal-wide" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h6>{{ 'USER.ADD_NEW' | translate }}</h6>
+      <button class="btn-close-modal" (click)="closeAddModal()"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>{{ 'USER.NAME' | translate }}</label>
+        <input type="text" class="form-control" placeholder="Adı Soyadı"
+               [ngModel]="newUser().adSoyad" (ngModelChange)="updateNewUserField('adSoyad', $event)">
+      </div>
+      <div class="form-group">
+        <label>{{ 'USER.EMAIL' | translate }}</label>
+        <input type="email" class="form-control" placeholder="kullanici@firma.com"
+               [ngModel]="newUser().email" (ngModelChange)="updateNewUserField('email', $event)">
+      </div>
+      <div class="form-group">
+        <label>{{ 'USER.PASSWORD' | translate }}</label>
+        <input type="password" class="form-control" placeholder="••••••"
+               [ngModel]="newUser().sifre" (ngModelChange)="updateNewUserField('sifre', $event)">
+      </div>
+      <div class="form-group">
+        <label>{{ 'USER.ROLE' | translate }}</label>
+        <select class="form-control"
+                [ngModel]="newUser().rolId" (ngModelChange)="updateNewUserField('rolId', +$event)">
+          <option *ngFor="let r of roller()" [value]="r.id">{{ r.ad }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeAddModal()">{{ 'COMMON.CANCEL' | translate }}</button>
+      <button class="btn-confirm" (click)="addUser()" [disabled]="isSaving() || !newUser().adSoyad || !newUser().email || !newUser().sifre">
+        <i class="ri-user-add-line" *ngIf="!isSaving()"></i>
+        <i class="ri-loader-4-line spin" *ngIf="isSaving()"></i>
+        {{ 'USER.CREATE' | translate }}
+      </button>
+    </div>
+  </div>
+</div>

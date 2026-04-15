@@ -17,7 +17,8 @@
     "YEDEK_MALZEME": "Spare Parts",
     "SAHA_MALZEMESI": "Field Materials",
     "HAREKET_GECMISI": "Activity Log",
-    "KULLANICI_YETKI": "Users / Permissions"
+    "KULLANICI_YETKI": "Users / Permissions",
+    "ROL_YONETIMI": "Role Management"
   },
   "ACTIONS": {
     "SAVE": "Save",
@@ -123,5 +124,38 @@
     "LOADING": "Loading...",
     "SERVER_CONNECTION_ERROR": "Cannot connect to server. Please check your internet connection.",
     "SESSION_EXPIRED": "Your session has expired. Please sign in again."
+  },
+  "COMMON": {
+    "DASHBOARD": "Dashboard",
+    "SAVE": "Save",
+    "CANCEL": "Cancel",
+    "EDIT": "Edit",
+    "DELETE": "Delete",
+    "NO_DATA": "No data found",
+    "UPDATE": "Update"
+  },
+  "ROLE": {
+    "TITLE": "Role Management",
+    "ROLES": "Roles",
+    "ADD_NEW": "Add New Role",
+    "SEARCH_PLACEHOLDER": "Search roles...",
+    "SELECT_ROLE_TO_EDIT": "Select a role to edit",
+    "OR_CREATE_NEW_VIA_BUTTON": "Or create a new one via the + button",
+    "PERMISSION_SETTINGS": "Permission Settings",
+    "ADD_SUCCESS": "Role created successfully",
+    "UPDATE_SUCCESS": "Role updated successfully",
+    "DELETE_SUCCESS": "Role deleted successfully"
+  },
+  "USER": {
+    "TITLE": "User Management",
+    "USER_LIST": "User List",
+    "ADD_NEW": "New User",
+    "SEARCH_PLACEHOLDER": "Search name, email or role...",
+    "NAME": "Full Name",
+    "EMAIL": "Email",
+    "PASSWORD": "Password",
+    "ROLE": "Role",
+    "EDIT_USER": "Edit User",
+    "CREATE": "Create"
   }
 }

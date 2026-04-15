@@ -13,25 +13,19 @@ export interface RegisterDto {
   adSoyad: string;
   email: string;
   sifre: string;
-  rol: string;
+  rolId: number;
 }
 
 export interface LoginResultDto {
   token: string;
-  kullanici: KullaniciDto;
+  kullanici: KullaniciAuthDto;
 }
 
-export interface KullaniciDto {
+export interface KullaniciAuthDto {
   id: number;
   adSoyad: string;
   basHarf: string;
   rol: string;
+  rolId: number;
   email: string;
-}
-
-export interface KullaniciOlusturDto {
-  adSoyad: string;
-  email: string;
-  sifre: string;
-  rol: string;
 }

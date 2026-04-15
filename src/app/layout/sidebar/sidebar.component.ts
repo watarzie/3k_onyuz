@@ -51,6 +51,7 @@ export class SidebarComponent {
     { labelKey: 'MENU.SAHA_MALZEMESI', icon: 'ri-tools-line', route: '/saha-malzeme' },
     { labelKey: 'MENU.HAREKET_GECMISI', icon: 'ri-history-line', route: '/hareket-gecmisi' },
     { labelKey: 'MENU.KULLANICI_YETKI', icon: 'ri-user-settings-line', route: '/kullanicilar' },
+    { labelKey: 'MENU.ROL_YONETIMI', icon: 'ri-shield-user-line', route: '/rol-yonetimi' },
   ];
 
   /** Dil değiştiğinde otomatik güncellenir (computed + signal) */

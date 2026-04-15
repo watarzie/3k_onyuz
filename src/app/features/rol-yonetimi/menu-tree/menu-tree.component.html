@@ -1,0 +1,30 @@
+<ul class="menu-tree">
+  <li *ngFor="let node of nodes">
+    <div class="node-row">
+      <!-- Expand/Collapse toggle (sadece children varsa) -->
+      <div class="toggle-area" *ngIf="hasChildren(node)" (click)="toggle(node)">
+        <i class="ri-arrow-down-s-line" *ngIf="isExpanded(node)"></i>
+        <i class="ri-arrow-right-s-line" *ngIf="!isExpanded(node)"></i>
+      </div>
+      <div class="toggle-spacer" *ngIf="!hasChildren(node)"></div>
+
+      <!-- Checkbox (tri-state) -->
+      <input type="checkbox"
+             class="form-check-input"
+             [checked]="node.yetkiTipi === 'W'"
+             [indeterminate]="node.yetkiTipi === 'R'"
+             (change)="onPermissionChange(node)">
+
+      <!-- İkon -->
+      <i *ngIf="node.icon" class="{{ node.icon }} node-icon"></i>
+
+      <!-- Label -->
+      <span class="node-label">{{ node.labelKey | translate }}</span>
+    </div>
+
+    <!-- Recursive children -->
+    <app-menu-tree *ngIf="hasChildren(node) && isExpanded(node)"
+                   [nodes]="node.children">
+    </app-menu-tree>
+  </li>
+</ul>
