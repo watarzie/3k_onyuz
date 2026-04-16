@@ -4,10 +4,13 @@ import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslationService } from '../../../core/services/translation.service';
 import { GridService } from '../../../core/services/grid.service';
-import { AuthService } from '../../../core/auth/auth.service';
+import { ToastService } from '../../../core/services/toast.service';
+
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
+import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
+import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
 import { GridUrunDto, GridDurumGuncelleDto } from '../../../shared/models/index';
 
 // ===== Durum tanımları =====
@@ -31,7 +34,7 @@ const SEVK_DURUMLARI: DurumSecenegi[] = [
 @Component({
   selector: 'app-grid-urunler',
   standalone: true,
-  imports: [RouterLink, NgClass, FormsModule, StatusBadgeComponent, BreadcrumbComponent, StatCardComponent],
+  imports: [RouterLink, NgClass, FormsModule, StatusBadgeComponent, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent],
   templateUrl: './grid-urunler.component.html',
   styleUrl: './grid-urunler.component.scss',
 })
@@ -39,7 +42,7 @@ export class GridUrunlerComponent implements OnInit {
   ts = inject(TranslationService);
   private route = inject(ActivatedRoute);
   private gridService = inject(GridService);
-  private auth = inject(AuthService);
+  private toast = inject(ToastService);
 
   projeId = signal(0);
   urunler = signal<GridUrunDto[]>([]);
@@ -317,15 +320,19 @@ export class GridUrunlerComponent implements OnInit {
       next: (res) => {
         this.panelSaving.set(false);
         if (res.isSuccess) {
+          this.toast.success('Ürün durumu başarıyla güncellendi.');
           this.closePanel();
           this.loadUrunler();
         } else {
-          this.panelError.set(res.error ?? 'Kayıt başarısız.');
+          const msg = res.error ?? 'Kayıt başarısız.';
+          this.panelError.set(msg);
+          this.toast.error(msg);
         }
       },
       error: () => {
         this.panelSaving.set(false);
         this.panelError.set('Bir hata oluştu.');
+        this.toast.error('Sunucu ile iletişim kurulamadı.');
       },
     });
   }
@@ -347,12 +354,18 @@ export class GridUrunlerComponent implements OnInit {
       next: (res) => {
         this.topluSevkSaving.set(false);
         if (res.isSuccess) {
+          this.toast.success('Seçili ürünler başarıyla sevk edildi.');
           this.closeTopluSevk();
           this.selectedIds.set(new Set());
           this.loadUrunler();
+        } else {
+          this.toast.error(res.error ?? 'Toplu sevk işlemi başarısız.');
         }
       },
-      error: () => this.topluSevkSaving.set(false),
+      error: () => {
+        this.topluSevkSaving.set(false);
+        this.toast.error('Gelen hata nedeniyle toplu sevk yapılamadı.');
+      },
     });
   }
 }

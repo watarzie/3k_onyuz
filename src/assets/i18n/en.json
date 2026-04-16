@@ -18,7 +18,9 @@
     "SAHA_MALZEMESI": "Field Materials",
     "HAREKET_GECMISI": "Activity Log",
     "KULLANICI_YETKI": "Users / Permissions",
-    "ROL_YONETIMI": "Role Management"
+    "ROL_YONETIMI": "Role Management",
+    "GRID_MODULU": "Grid Module",
+    "3K_MODULU": "3K Module"
   },
   "ACTIONS": {
     "SAVE": "Save",

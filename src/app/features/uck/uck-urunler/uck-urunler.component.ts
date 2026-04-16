@@ -3,9 +3,13 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslationService } from '../../../core/services/translation.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { UcKService } from '../../../core/services/uck.service';
+
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
+import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
+import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
 import { UcKUrunDto, UcKDurumGuncelleDto } from '../../../shared/models/index';
 
 interface KarsilamaTipi { value: string; label: string; color: string; bgClass: string; }
@@ -23,7 +27,7 @@ const KARSILAMA_TIPLERI: KarsilamaTipi[] = [
 @Component({
   selector: 'app-uck-urunler',
   standalone: true,
-  imports: [RouterLink, NgClass, FormsModule, BreadcrumbComponent, StatCardComponent],
+  imports: [RouterLink, NgClass, FormsModule, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent],
   templateUrl: './uck-urunler.component.html',
   styleUrl: './uck-urunler.component.scss',
 })
@@ -31,6 +35,7 @@ export class UcKUrunlerComponent implements OnInit {
   ts = inject(TranslationService);
   private route = inject(ActivatedRoute);
   private uckService = inject(UcKService);
+  private toast = inject(ToastService);
 
   projeId = signal(0);
   sandikNo = signal('');
@@ -254,15 +259,19 @@ export class UcKUrunlerComponent implements OnInit {
       next: (res) => {
         this.panelSaving.set(false);
         if (res.isSuccess) {
+          this.toast.success('3K durumu başarıyla güncellendi.');
           this.closePanel();
           this.loadUrunler();
         } else {
-          this.panelError.set(res.error ?? 'Kayıt başarısız.');
+          const msg = res.error ?? 'Kayıt başarısız.';
+          this.panelError.set(msg);
+          this.toast.error(msg);
         }
       },
       error: () => {
         this.panelSaving.set(false);
         this.panelError.set('Bir hata oluştu.');
+        this.toast.error('Sunucu ile iletişim kurulamadı.');
       },
     });
   }

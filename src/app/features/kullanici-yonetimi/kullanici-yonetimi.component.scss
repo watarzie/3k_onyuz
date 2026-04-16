@@ -197,6 +197,10 @@
     color: #dc3545;
     &:hover { background: #dc354515; }
   }
+  &.key {
+    color: #fd7e14;
+    &:hover { background: #fd7e1415; }
+  }
 }
 
 .empty-row {
@@ -268,6 +272,37 @@
     appearance: auto;
     cursor: pointer;
   }
+}
+
+// ===== Şifre Modal =====
+.password-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #f8f9fc;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-weight: 500;
+  color: #1a2035;
+  i { color: #5a6acf; font-size: 18px; }
+}
+
+.input-password {
+  position: relative;
+  .form-control { padding-right: 40px; }
+}
+
+.btn-toggle-pw {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  i { font-size: 18px; color: #6c757d; }
+  &:hover i { color: #5a6acf; }
 }
 
 .modal-footer {

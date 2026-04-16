@@ -1,8 +1,13 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { TranslationService } from '../../../core/services/translation.service';
 import { SandikService } from '../../../core/services/sandik.service';
+import { ProjeService } from '../../../core/services/proje.service';
+import { ConfirmService } from '../../../core/services/confirm.service';
+import { ToastService } from '../../../core/services/toast.service';
+import { PermissionService } from '../../../core/services/permission.service';
+import { AuthService } from '../../../core/auth/auth.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
@@ -19,6 +24,13 @@ export class UcKSandiklarComponent implements OnInit {
   ts = inject(TranslationService);
   private route = inject(ActivatedRoute);
   private sandikService = inject(SandikService);
+  private projeService = inject(ProjeService);
+  private confirmService = inject(ConfirmService);
+  private toast = inject(ToastService);
+  private permissionService = inject(PermissionService);
+  private auth = inject(AuthService);
+
+  isAdmin = computed(() => this.auth.hasRole('Admin'));
 
   projeId = signal(0);
   sandiklar = signal<SandikDto[]>([]);
@@ -102,5 +114,37 @@ export class UcKSandiklarComponent implements OnInit {
       Bos: 'ri-inbox-line', Hazirlaniyor: 'ri-loader-4-line', Hazir: 'ri-checkbox-circle-line', Sevkedildi: 'ri-truck-line',
     };
     return map[durum] ?? 'ri-inbox-line';
+  }
+
+  async toggleSandikDurum(event: Event, sandik: SandikDto) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    if (!this.isAdmin()) return;
+
+    const isHazir = sandik.durum === 'Hazir';
+    const actionText = isHazir ? 'Sandığı tekrar "Hazırlanıyor" durumuna almak' : 'Sandığı "Hazır" olarak işaretlemek';
+    
+    const confirm = await this.confirmService.ask({
+      title: 'Sandık Durumu',
+      message: `${actionText} istediğinize emin misiniz?`,
+      confirmText: 'Evet, Değiştir',
+      cancelText: 'İptal',
+      type: isHazir ? 'warning' : 'info'
+    });
+
+    if (confirm) {
+      this.projeService.sandikKapat(sandik.id, !isHazir).subscribe({
+        next: (res) => {
+          if (res.isSuccess) {
+            this.toast.success(isHazir ? 'Sandık tekrar hazırlanıyor konumuna alındı.' : 'Sandık başarıyla hazır olarak işaretlendi.');
+            this.loadSandiklar();
+          } else {
+            this.toast.error(res.error || 'İşlem başarısız oldu.');
+          }
+        },
+        error: () => this.toast.error('Beklenmeyen bir hata oluştu.')
+      });
+    }
   }
 }

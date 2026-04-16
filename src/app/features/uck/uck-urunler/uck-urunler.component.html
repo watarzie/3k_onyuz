@@ -4,6 +4,7 @@
       <h2 class="fw-bold mb-1"><i class="ri-archive-stack-line me-2"></i>3K — {{ sandikNo() }}</h2>
       <app-breadcrumb [items]="breadcrumb" />
     </div>
+    <app-readonly-banner />
   </div>
 </div>
 
@@ -59,7 +60,7 @@
               <th>Kaynak/Hedef</th>
               <th>Kontrol/Uyarı</th>
               <th class="text-center">Kalan</th>
-              <th style="width:50px"></th>
+              <th *appCanWrite style="width:50px"></th>
             </tr>
           </thead>
           <tbody>
@@ -90,7 +91,7 @@
                 <td class="text-center fw-bold" [ngClass]="{'text-danger': u.kalan > 0, 'text-success': u.kalan === 0}">
                   {{ u.kalan }}
                 </td>
-                <td>
+                <td *appCanWrite>
                   <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle">
                     <i class="ri-edit-line"></i>
                   </button>

@@ -25,6 +25,10 @@ export class ProjeService {
     return this.api.post<unknown>(API.PROJE.CREATE, dto);
   }
 
+  sandikKapat(sandikId: number, kapali: boolean): Observable<ApiResult<boolean>> {
+    return this.api.put<boolean>(API.PROJE.SANDIK_KAPAT, { sandikId, kapali });
+  }
+
   // ===== Ceki =====
 
   cekiYukle(dosya: File): Observable<ApiResult<CekiYuklemeResultDto>> {

@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { RolService } from '../../core/services/rol.service';
+import { ToastService } from '../../core/services/toast.service';
+import { ConfirmService } from '../../core/services/confirm.service';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { RolDto, RolDetayDto, MenuTreeDto, RolYetkiItemDto, RolGuncelleRequest } from '../../shared/models';
 import { MenuTreeComponent } from './menu-tree/menu-tree.component';
@@ -16,6 +18,8 @@ import { MenuTreeComponent } from './menu-tree/menu-tree.component';
 })
 export class RolYonetimiComponent implements OnInit {
   private rolService = inject(RolService);
+  private toast = inject(ToastService);
+  private confirmSvc = inject(ConfirmService);
 
   isLoading = signal(false);
   isDetailLoading = signal(false);
@@ -89,9 +93,11 @@ export class RolYonetimiComponent implements OnInit {
         updated.menuAgaci.forEach(m => this.setParentRefs(m));
         this.selectedRole.set(updated);
         this.isSaving.set(false);
+        this.toast.success('Yetki ayarları başarıyla kaydedildi.');
       },
       error: () => {
         this.isSaving.set(false);
+        this.toast.error('Yetki ayarları kaydedilemedi.');
       },
     });
   }
@@ -113,24 +119,38 @@ export class RolYonetimiComponent implements OnInit {
 
     this.rolService.rolOlustur(name).subscribe({
       next: () => {
+        this.toast.success(`"${name}" rolü başarıyla oluşturuldu.`);
         this.showAddModal.set(false);
         this.loadRoles();
+      },
+      error: () => {
+        this.toast.error('Rol oluşturma başarısız.');
       },
     });
   }
 
   // ===== Rol Silme =====
 
-  deleteRole(role: RolDto, event: Event): void {
+  async deleteRole(role: RolDto, event: Event): Promise<void> {
     event.stopPropagation();
-    if (!confirm(`"${role.ad}" rolünü silmek istediğinize emin misiniz?`)) return;
+    const onay = await this.confirmSvc.ask({
+      title: 'Rol Sil',
+      message: `"${role.ad}" rolünü silmek istediğinize emin misiniz?`,
+      confirmText: 'Sil',
+      type: 'danger',
+    });
+    if (!onay) return;
 
     this.rolService.rolSil(role.id).subscribe({
       next: () => {
+        this.toast.success(`"${role.ad}" rolü silindi.`);
         if (this.selectedRole()?.id === role.id) {
           this.selectedRole.set(null);
         }
         this.loadRoles();
+      },
+      error: () => {
+        this.toast.error('Rol silinemedi.');
       },
     });
   }

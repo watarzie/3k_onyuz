@@ -8,6 +8,7 @@ export interface ProjeDto {
   planlananSevkTarihi?: string;
   sorumluKisi: string;
   sandikSayisi: number;
+  hazirSandikSayisi: number;
   toplamUrunSayisi: number;
   tamamlananUrunSayisi: number;
   fbNo?: string;

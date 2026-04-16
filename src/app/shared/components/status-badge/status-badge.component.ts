@@ -28,8 +28,8 @@ export class StatusBadgeComponent {
       IptalVeyaPasif: 'badge-danger',
       EksikGeldi: 'badge-warning', Eksik: 'badge-warning', KismiSevkEdildi: 'badge-warning',
       KismiGeldi: 'badge-warning', KismiTamamlandi: 'badge-warning',
-      SevkEdildi: 'badge-info', Uretimde: 'badge-info',
-      Bekliyor: 'badge-secondary', Bekletiliyor: 'badge-secondary',
+      SevkEdildi: 'badge-info', Uretimde: 'badge-info', DevamEdiyor: 'badge-info',
+      Bekliyor: 'badge-secondary', Bekletiliyor: 'badge-secondary', Hazirlaniyor: 'badge-secondary',
       SonraGidecek: 'badge-purple', GeriGonderildi: 'badge-purple', IadeEdildi: 'badge-purple',
     };
     return map[this.status()] ?? 'badge-secondary';

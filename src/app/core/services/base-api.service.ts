@@ -57,13 +57,18 @@ export class BaseApiService {
 
   private handleError<T>(error: HttpErrorResponse): Observable<ApiResult<T>> {
     let message = 'Beklenmeyen bir hata oluştu.';
-    if (error.error?.message) {
+
+    // 401 → Email veya şifre hatalı (login isteği)
+    if (error.status === 401) {
+      message = error.error?.message || 'Email veya şifre hatalı.';
+    } else if (error.error?.message) {
       message = error.error.message;
     } else if (error.error?.error) {
       message = error.error.error;
-    } else if (error.message) {
-      message = error.message;
+    } else if (error.status === 0) {
+      message = 'Sunucuya bağlanılamıyor.';
     }
+
     return of({
       isSuccess: false,
       error: message,

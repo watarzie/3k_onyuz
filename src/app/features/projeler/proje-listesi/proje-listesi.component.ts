@@ -1,9 +1,10 @@
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { TranslationService } from '../../../core/services/translation.service';
 import { ProjeService } from '../../../core/services/proje.service';
+import { PermissionService } from '../../../core/services/permission.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { ProjeDto } from '../../../shared/models/index';
@@ -18,6 +19,14 @@ import { ProjeDto } from '../../../shared/models/index';
 export class ProjeListesiComponent implements OnInit {
   ts = inject(TranslationService);
   private projeService = inject(ProjeService);
+  permissions = inject(PermissionService);
+
+  /**
+   * Grid/3K buton gösterimi — Rol Yetki ekranından yönetilir.
+   * MenuTanimi'deki "grid-modulu" ve "3k-modulu" kayıtlarına göre kontrol edilir.
+   */
+  canSeeGrid = computed(() => this.permissions.hasAccess('grid-modulu'));
+  canSee3K = computed(() => this.permissions.hasAccess('3k-modulu'));
 
   projeler = signal<ProjeDto[]>([]);
   filtered = signal<ProjeDto[]>([]);
@@ -64,8 +73,17 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   getTamamlanmaYuzdesi(p: ProjeDto): number {
-    if (p.toplamUrunSayisi === 0) return 0;
-    return Math.round((p.tamamlananUrunSayisi / p.toplamUrunSayisi) * 100);
+    if (p.sandikSayisi === 0) return 0;
+    return Math.round((p.hazirSandikSayisi / p.sandikSayisi) * 100);
+  }
+
+  getDurumLabel(durum: string): string {
+    const map: Record<string, string> = {
+      Hazirlaniyor: 'Hazırlanıyor',
+      DevamEdiyor: 'Devam Ediyor',
+      Tamamlandi: 'Tamamlandı',
+    };
+    return map[durum] ?? durum;
   }
 
   // ===== Çeki Yükleme Modal =====

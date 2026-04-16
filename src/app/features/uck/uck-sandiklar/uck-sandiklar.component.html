@@ -39,7 +39,17 @@
           <a [routerLink]="['/uck', projeId(), s.sandikNo]" class="sandik-card" [ngClass]="'s-' + s.durum.toLowerCase()">
             <!-- Üst — Numara + Ok -->
             <div class="card-top">
-              <span class="sandik-no">{{ getDisplayNo(s.sandikNo) }}</span>
+              <div class="d-flex align-items-center">
+                <span class="sandik-no">{{ getDisplayNo(s.sandikNo) }}</span>
+                @if (isAdmin()) {
+                  <button class="btn btn-sm ms-2" 
+                          [ngClass]="s.durum === 'Hazir' ? 'btn-outline-warning' : 'btn-outline-success'" 
+                          (click)="toggleSandikDurum($event, s)" 
+                          style="padding: 0.1rem 0.4rem; font-size: 0.75rem; z-index: 2; position: relative;">
+                    {{ s.durum === 'Hazir' ? 'Geri Al' : 'Hazırla' }}
+                  </button>
+                }
+              </div>
               <span class="nav-arrow"><i class="ri-arrow-right-s-line"></i></span>
             </div>
             <!-- Durum -->

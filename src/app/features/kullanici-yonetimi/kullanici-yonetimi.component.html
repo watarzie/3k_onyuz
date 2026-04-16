@@ -62,6 +62,9 @@
               <button class="btn-icon edit" (click)="openEditModal(k)" title="Düzenle">
                 <i class="ri-edit-line"></i>
               </button>
+              <button class="btn-icon key" (click)="openPasswordModal(k)" title="Şifre Değiştir">
+                <i class="ri-lock-password-line"></i>
+              </button>
               <button class="btn-icon danger" (click)="deleteUser(k)" title="Sil">
                 <i class="ri-delete-bin-line"></i>
               </button>
@@ -145,6 +148,52 @@
         <i class="ri-user-add-line" *ngIf="!isSaving()"></i>
         <i class="ri-loader-4-line spin" *ngIf="isSaving()"></i>
         {{ 'USER.CREATE' | translate }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Şifre Değiştirme Modali ===== -->
+<div class="modal-overlay" *ngIf="showPasswordModal()" (click)="closePasswordModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h6><i class="ri-lock-password-line me-2"></i>Şifre Değiştir</h6>
+      <button class="btn-close-modal" (click)="closePasswordModal()"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="password-info">
+        <i class="ri-user-line"></i>
+        <span>{{ passwordUserName() }}</span>
+      </div>
+      <div class="form-group">
+        <label>Yeni Şifre</label>
+        <div class="input-password">
+          <input [type]="showNewPassword() ? 'text' : 'password'" class="form-control"
+                 placeholder="En az 6 karakter"
+                 [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)">
+          <button class="btn-toggle-pw" (click)="toggleNewPassword()">
+            <i [class]="showNewPassword() ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
+          </button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Şifre Tekrar</label>
+        <div class="input-password">
+          <input [type]="showConfirmPassword() ? 'text' : 'password'" class="form-control"
+                 placeholder="Şifreyi tekrar girin"
+                 [ngModel]="confirmPassword()" (ngModelChange)="confirmPassword.set($event)">
+          <button class="btn-toggle-pw" (click)="toggleConfirmPassword()">
+            <i [class]="showConfirmPassword() ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closePasswordModal()">İptal</button>
+      <button class="btn-confirm" (click)="savePassword()" [disabled]="isSaving() || !newPassword() || !confirmPassword()">
+        <i class="ri-lock-password-line" *ngIf="!isSaving()"></i>
+        <i class="ri-loader-4-line spin" *ngIf="isSaving()"></i>
+        Şifreyi Kaydet
       </button>
     </div>
   </div>

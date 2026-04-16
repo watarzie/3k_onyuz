@@ -34,4 +34,8 @@ export class KullaniciService {
   sil(id: number): Observable<ApiResult<boolean>> {
     return this.api.delete<boolean>(API.KULLANICI.DELETE(id));
   }
+
+  sifreDegistir(kullaniciId: number, yeniSifre: string): Observable<ApiResult<boolean>> {
+    return this.api.put<boolean>(API.KULLANICI.SIFRE_DEGISTIR, { kullaniciId, yeniSifre });
+  }
 }

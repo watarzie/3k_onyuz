@@ -21,6 +21,7 @@ export const API = {
   PROJE: {
     LIST: `${BASE}/proje`,
     CREATE: `${BASE}/proje`,
+    SANDIK_KAPAT: `${BASE}/proje/sandik-kapat`,
   },
   CEKI: {
     YUKLE: `${BASE}/ceki/yukle`,
@@ -65,6 +66,7 @@ export const API = {
     CREATE: `${BASE}/kullanici/olustur`,
     UPDATE: `${BASE}/kullanici/guncelle`,
     DELETE: (id: number) => `${BASE}/kullanici/${id}/sil`,
+    SIFRE_DEGISTIR: `${BASE}/kullanici/sifre-degistir`,
   },
   PDF: {
     INDIR: (projeId: number) => `${BASE}/pdf/${projeId}/indir`,
@@ -79,5 +81,8 @@ export const API = {
     CREATE: `${BASE}/rol/olustur`,
     UPDATE: `${BASE}/rol/guncelle`,
     DELETE: (id: number) => `${BASE}/rol/${id}/sil`,
+  },
+  MENU: {
+    KULLANICI_MENU: `${BASE}/menu/kullanici-menu`,
   },
 } as const;
