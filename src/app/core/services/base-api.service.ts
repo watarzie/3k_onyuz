@@ -12,8 +12,8 @@ export class BaseApiService {
    * Hata durumlarında { message: "..." } döner.
    * Bu yüzden response'u ApiResult<T> formatına map ediyoruz.
    */
-  get<T>(url: string): Observable<ApiResult<T>> {
-    return this.http.get<T>(url).pipe(
+  get<T>(url: string, options?: any): Observable<ApiResult<T>> {
+    return (this.http.get(url, options) as Observable<T>).pipe(
       map((data) => this.wrapSuccess(data)),
       catchError((err) => this.handleError<T>(err))
     );

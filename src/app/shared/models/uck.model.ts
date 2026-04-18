@@ -31,6 +31,7 @@ export interface UcKDurumGuncelleDto {
   gelenAdet?: number;
   kaynakHedefProjeNo?: string;
   kaynakCekiSatiriId?: number;
+  stokKaydiId?: number;
   aciklama?: string;
   geriGonderilmeSebebi?: string;
   not?: string;

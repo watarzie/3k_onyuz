@@ -1,18 +1,20 @@
-import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { TranslationService } from '../../../core/services/translation.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { UcKService } from '../../../core/services/uck.service';
 import { ProjeService } from '../../../core/services/proje.service';
 import { GridService } from '../../../core/services/grid.service';
+import { StokService } from '../../../core/services/stok.service';
 
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
-import { UcKUrunDto, UcKDurumGuncelleDto, ProjeDto, GridUrunDto } from '../../../shared/models/index';
+import { UcKUrunDto, UcKDurumGuncelleDto, ProjeDto, GridUrunDto, StokKaydiDto } from '../../../shared/models/index';
 
 interface KarsilamaTipi { value: string; label: string; color: string; bgClass: string; }
 
@@ -35,13 +37,16 @@ const KARSILAMA_TIPLERI: KarsilamaTipi[] = [
   styleUrl: './uck-urunler.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class UcKUrunlerComponent implements OnInit {
+export class UcKUrunlerComponent implements OnInit, OnDestroy {
   ts = inject(TranslationService);
   private route = inject(ActivatedRoute);
   private uckService = inject(UcKService);
   private toast = inject(ToastService);
   private projeService = inject(ProjeService);
   private gridService = inject(GridService);
+  private stokService = inject(StokService);
+
+  private sub: Subscription = new Subscription();
 
   projeId = signal(0);
   sandikNo = signal('');
@@ -64,16 +69,22 @@ export class UcKUrunlerComponent implements OnInit {
   panelError = signal('');
   panelUyari = signal('');
 
-  // Dropdown states
+  // Proje ve Kaynak Ürün Dropdown State
   projeler = signal<ProjeDto[]>([]);
   kaynakUrunler = signal<GridUrunDto[]>([]);
-  panelKaynakCekiSatiriId = signal<number | null>(null);
-
-  projeSearchTerm = signal('');
-  urunSearchTerm = signal('');
   
   isProjeDropdownOpen = signal(false);
   isUrunDropdownOpen = signal(false);
+  
+  projeSearchTerm = signal('');
+  urunSearchTerm = signal('');
+  panelKaynakCekiSatiriId = signal<number | null>(null);
+
+  // Stok Dropdown State
+  stoklar = signal<StokKaydiDto[]>([]);
+  isStokDropdownOpen = signal(false);
+  stokSearchTerm = signal('');
+  panelStokKaydiId = signal<number | null>(null);
 
   filteredProjeler = computed(() => {
     const term = this.projeSearchTerm().toLowerCase();
@@ -86,10 +97,22 @@ export class UcKUrunlerComponent implements OnInit {
 
   filteredKaynakUrunler = computed(() => {
     const term = this.urunSearchTerm().toLowerCase();
-    if (!term) return this.kaynakUrunler();
-    return this.kaynakUrunler().filter(u => 
-      u.barkodNo?.toLowerCase().includes(term) || 
-      u.aciklama?.toLowerCase().includes(term)
+    const list = this.kaynakUrunler();
+    if (!term) return list;
+    return list.filter(u => 
+      u.barkodNo.toLowerCase().includes(term) || 
+      u.aciklama.toLowerCase().includes(term)
+    );
+  });
+
+  filteredStoklar = computed(() => {
+    const term = this.stokSearchTerm().toLowerCase();
+    const list = this.stoklar();
+    if (!term) return list;
+    return list.filter(s =>
+      (s.malzemeAdi && s.malzemeAdi.toLowerCase().includes(term)) ||
+      (s.malzemeKodu && s.malzemeKodu.toLowerCase().includes(term)) ||
+      (s.kaynakProje && s.kaynakProje.toLowerCase().includes(term))
     );
   });
 
@@ -115,14 +138,51 @@ export class UcKUrunlerComponent implements OnInit {
       { label: sNo || '3K Ürünler' },
     ];
     
+    // Stok cross-tab update dinleyicisi
+    this.sub.add(
+      this.stokService.stokListesiGuncellendi$.subscribe(() => {
+        this.loadStokDropdownList();
+      })
+    );
+
+    // Grid ve 3K çapraz-sekme ürün güncelleme dinleyicileri
+    this.sub.add(
+      this.gridService.gridGuncellendi$.subscribe(() => {
+        this.loadUrunler();
+      })
+    );
+    this.sub.add(
+      this.uckService.uckGuncellendi$.subscribe(() => {
+        this.loadUrunler();
+      })
+    );
+
     // Projeler dropdown'ı için projeleri çek
     this.projeService.getProjeListesi().subscribe(res => {
       if (res.isSuccess && res.value) {
-        this.projeler.set(res.value); // Kendi projemiz dahil tüm projeleri listele
+        this.projeler.set(res.value); 
       }
     });
 
+    // Stok dropdown'u için stokları çek
+    this.loadStokDropdownList();
+
     this.loadUrunler();
+  }
+
+  ngOnDestroy() {
+    this.sub.unsubscribe();
+  }
+
+  loadStokDropdownList() {
+    // 3K Dropdown'u için büyük bir sayfa boyutu ile aktif stokları çek
+    this.stokService.getStokListesi(undefined, 1, 10000).subscribe((res: any) => {
+      if(res.isSuccess && res.value) {
+        // value is PaginatedList due to recent changes
+        const m = res.value.items || res.value; 
+        this.stoklar.set(m.filter((s: StokKaydiDto) => s.miktar > 0 && s.durum === 'Aktif'));
+      }
+    });
   }
 
   loadUrunler() {
@@ -298,6 +358,27 @@ export class UcKUrunlerComponent implements OnInit {
     this.isProjeDropdownOpen.set(false);
   }
 
+  toggleStokDropdown() {
+    this.isStokDropdownOpen.set(!this.isStokDropdownOpen());
+    if (this.isStokDropdownOpen()) {
+      this.isProjeDropdownOpen.set(false);
+      this.isUrunDropdownOpen.set(false);
+    }
+  }
+
+  selectStokItem(stokId: number) {
+    this.panelStokKaydiId.set(stokId);
+    this.isStokDropdownOpen.set(false);
+  }
+
+  get selectedStokText(): string {
+    const sId = this.panelStokKaydiId();
+    if (!sId) return 'Stok Arayın veya Seçiniz...';
+    const s = this.stoklar().find(x => x.id === sId);
+    if (!s) return 'Stok Arayın veya Seçiniz...';
+    return `${s.malzemeAdi} (Projeden Kalan: ${s.kaynakProje}) | Bakiye: ${s.miktar} ${s.birim}`;
+  }
+
   selectUrunItem(uId: number) {
     this.panelKaynakCekiSatiriId.set(uId);
     this.isUrunDropdownOpen.set(false);
@@ -328,6 +409,17 @@ export class UcKUrunlerComponent implements OnInit {
   get isGelenAdetAktif(): boolean {
     const t = this.panelTip();
     return t !== 'Tam Geldi' && t !== 'Gelmedi' && t !== 'Geri Gönderildi' && t !== '';
+  }
+
+  isKarsilamaTipiDisabled(tip: string): boolean {
+    const u = this.panelUrun();
+    if (!u) return false;
+    
+    // Eğer grid tarafında eksik gelmemişse veya hiç gelmemişse (Gelmedi); başka projeden, stoktan veya tedarikçiden ürün karşılama kapalıdır.
+    if (tip === 'Tedarikçiden Geldi' || tip === 'Stoktan Karşılandı' || tip === 'Projeden Karşılandı') {
+      return u.gridDurumu !== 'Eksik Geldi' && u.gridDurumu !== 'Gelmedi';
+    }
+    return false;
   }
 
   get isKaynakHedefZorunlu(): boolean {
@@ -361,6 +453,12 @@ export class UcKUrunlerComponent implements OnInit {
        return 'Grid tarafından eksiksiz sevk edilmeden "Tam Geldi" olarak işaretlenemez.';
     }
 
+    if (tip === 'Tedarikçiden Geldi' || tip === 'Stoktan Karşılandı' || tip === 'Projeden Karşılandı') {
+      if (u.gridDurumu !== 'Eksik Geldi' && u.gridDurumu !== 'Gelmedi') {
+         return 'Bu işlem yalnızca ürün Grid tarafında eksik geldiğinde veya hiç gelmediğinde (GELMEDİ) yapılabilir.';
+      }
+    }
+
     if (tip === 'Eksik Geldi') {
       if (this.panelGelenAdet() <= 0) return 'Gelen adet girilmelidir.';
       if (this.panelGelenAdet() >= u.istenenAdet) return 'Gelen adet miktardan küçük olmalıdır.';
@@ -370,7 +468,25 @@ export class UcKUrunlerComponent implements OnInit {
       if (!this.panelKaynakHedef()) return 'Kaynak proje girilmelidir.';
       if (!this.panelKaynakCekiSatiriId()) return 'Kaynak ürün girilmelidir.';
     }
-    if (tip === 'Stoktan Karşılandı' || tip === 'Tedarikçiden Geldi') {
+    if (tip === 'Stoktan Karşılandı') {
+      if (this.panelGelenAdet() <= 0) return 'Gelen adet girilmelidir.';
+      if (!this.panelStokKaydiId()) return 'Kullanılacak stok seçilmelidir (Malzeme Adı veya Barkod arayın).';
+      
+      const s = this.stoklar().find(x => x.id === this.panelStokKaydiId());
+      if (s) {
+        const normalizeStr = (str: string) => {
+           if (!str) return '';
+           return str.replace(/[^\p{L}0-9\s]/gu, '').replace(/\s+/g, ' ').trim().toLocaleLowerCase('tr-TR');
+        };
+        if (normalizeStr(s.malzemeAdi) !== normalizeStr(u.aciklama)) {
+          return `Seçilen stok adı (${s.malzemeAdi}) ile proje ürün adı (${u.aciklama}) eşleşmelidir!`;
+        }
+        if (this.panelGelenAdet() > s.miktar) {
+          return `Seçtiğiniz stokta yeterli miktar yok. (Stokta: ${s.miktar})`;
+        }
+      }
+    }
+    if (tip === 'Tedarikçiden Geldi') {
       if (this.panelGelenAdet() <= 0) return 'Gelen adet girilmelidir.';
     }
     if (tip === 'Hatalı Ürün') {
@@ -379,7 +495,6 @@ export class UcKUrunlerComponent implements OnInit {
     }
     if (tip === 'Geri Gönderildi') {
       if (!this.panelGeriGonderilmeSebebi()) return 'Geri gönderilme sebebi seçilmelidir.';
-      if (!this.panelAciklama()) return 'Açıklama (opsiyonel/detay) girilebilir ama sebep zorunludur.'; // Actually requirement said "Aciklama" as GeriGonderilmeSebebi back in step 1, but we added a dedicated one. Wait, in backend request.Aciklama is mapped to GeriGonderilmeSebebi if not mapped correctly? Ah I added GeriGonderilmeSebebi to the DTO.
     }
     if (tip === 'Geri Gönderildi' && !this.panelGeriGonderilmeSebebi()) return 'Geri gönderilme sebebi seçilmelidir.';
 
@@ -399,16 +514,17 @@ export class UcKUrunlerComponent implements OnInit {
     this.panelSaving.set(true);
     this.panelError.set('');
 
+    const _aciklama = tip === 'Geri Gönderildi' ? this.panelGeriGonderilmeSebebi() : this.panelAciklama();
     const dto: UcKDurumGuncelleDto = {
       cekiSatiriId: u.cekiSatiriId,
       projeId: this.projeId(),
       karsilamaTipi: tip,
-      gelenAdet: this.isGelenAdetAktif ? this.panelGelenAdet() : undefined,
-      kaynakHedefProjeNo: this.isKaynakHedefZorunlu ? this.panelKaynakHedef() : undefined,
+      gelenAdet: this.panelGelenAdet(),
+      kaynakHedefProjeNo: this.panelKaynakHedef()?.trim(),
       kaynakCekiSatiriId: this.panelKaynakCekiSatiriId() || undefined,
-      aciklama: this.panelAciklama() || undefined,
-      geriGonderilmeSebebi: this.panelGeriGonderilmeSebebi() || undefined,
-      not: this.panelNot() || undefined,
+      stokKaydiId: this.panelStokKaydiId() || undefined,
+      aciklama: _aciklama ? _aciklama.trim() : '',
+      not: this.panelNot() ? this.panelNot().trim() : '',
     };
 
     this.uckService.durumGuncelle(dto).subscribe({
@@ -416,6 +532,7 @@ export class UcKUrunlerComponent implements OnInit {
         this.panelSaving.set(false);
         if (res.isSuccess) {
           this.toast.success('3K durumu başarıyla güncellendi.');
+          this.uckService.notifyUckUpdated();
           this.closePanel();
           this.loadUrunler();
         } else {

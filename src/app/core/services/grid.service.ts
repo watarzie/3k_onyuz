@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { BaseApiService } from '../../core/services/base-api.service';
 import { API } from '../../core/constants/api-endpoints';
 import { ApiResult, GridUrunDto, GridDurumGuncelleDto, GridTopluSevkDto } from '../../shared/models/index';
@@ -13,6 +13,23 @@ import { ApiResult, GridUrunDto, GridDurumGuncelleDto, GridTopluSevkDto } from '
 @Injectable({ providedIn: 'root' })
 export class GridService {
   private api = inject(BaseApiService);
+
+  private gridGuncellendi = new Subject<void>();
+  public gridGuncellendi$ = this.gridGuncellendi.asObservable();
+  private channel = new BroadcastChannel('grid_sync_channel');
+
+  constructor() {
+    this.channel.onmessage = (event) => {
+      if (event.data === 'GRID_UPDATED') {
+        this.gridGuncellendi.next();
+      }
+    };
+  }
+
+  notifyGridUpdated() {
+    this.gridGuncellendi.next();
+    this.channel.postMessage('GRID_UPDATED');
+  }
 
   /** Proje bazında tüm ürünlerin grid + 3K durumları */
   getUrunler(projeId: number): Observable<ApiResult<GridUrunDto[]>> {

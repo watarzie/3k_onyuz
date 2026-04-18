@@ -1,7 +1,8 @@
-import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { TranslationService } from '../../../core/services/translation.service';
 import { GridService } from '../../../core/services/grid.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -39,7 +40,7 @@ const SEVK_DURUMLARI: DurumSecenegi[] = [
   styleUrl: './grid-urunler.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class GridUrunlerComponent implements OnInit {
+export class GridUrunlerComponent implements OnInit, OnDestroy {
   ts = inject(TranslationService);
   private route = inject(ActivatedRoute);
   private gridService = inject(GridService);
@@ -86,6 +87,8 @@ export class GridUrunlerComponent implements OnInit {
 
   breadcrumb: { label: string; link?: string }[] = [];
 
+  private syncSub?: Subscription;
+
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('projeId'));
     this.projeId.set(id);
@@ -95,6 +98,17 @@ export class GridUrunlerComponent implements OnInit {
       { label: 'Grid Modülü' },
     ];
     this.loadUrunler();
+
+    // Diğer sekmelerden gelen grid güncelleme sinyallerini dinle
+    this.syncSub = this.gridService.gridGuncellendi$.subscribe(() => {
+      this.loadUrunler();
+    });
+  }
+
+  ngOnDestroy() {
+    if (this.syncSub) {
+      this.syncSub.unsubscribe();
+    }
   }
 
   loadUrunler() {
@@ -269,22 +283,22 @@ export class GridUrunlerComponent implements OnInit {
   // Alan aktiflik kontrolleri
   get isGelenAdetAktif(): boolean {
     const d = this.panelDurum();
-    return d === 'EksikGeldi' || d === 'TrafoSevk';
+    return d === 'Eksik Geldi' || d === 'Trafo Sevk';
   }
 
   get isTrafoAktif(): boolean {
-    return this.panelDurum() === 'TrafoSevk';
+    return this.panelDurum() === 'Trafo Sevk';
   }
 
   get isSevkAktif(): boolean {
     const d = this.panelDurum();
-    return d === 'TamGeldi' || d === 'EksikGeldi';
+    return d === 'Tam Geldi' || d === 'Eksik Geldi';
   }
 
   get panelEksik(): number {
     const u = this.panelUrun();
     if (!u) return 0;
-    if (this.panelDurum() === 'Iptal') return 0;
+    if (this.panelDurum() === 'İptal') return 0;
     return u.istenenAdet - this.panelGelenAdet() - this.panelTrafoSevkAdet();
   }
 
@@ -293,21 +307,21 @@ export class GridUrunlerComponent implements OnInit {
     const u = this.panelUrun()!;
     const d = this.panelDurum();
 
-    if (d === 'EksikGeldi') {
+    if (d === 'Eksik Geldi') {
       if (this.panelGelenAdet() <= 0) return 'Gelen adet girilmelidir.';
-      if (this.panelGelenAdet() >= u.istenenAdet) return 'Gelen adet miktardan küçük olmalıdır.';
+      if (this.panelGelenAdet() >= u.istenenAdet) return 'Gelen adet, toplam miktardan küçük olmalıdır.';
     }
 
-    if (d === 'TrafoSevk') {
+    if (d === 'Trafo Sevk') {
       if (this.panelTrafoSevkAdet() <= 0) return 'Trafo sevk adeti girilmelidir.';
       if (this.panelTrafoSevkAdet() > u.istenenAdet) return 'Trafo sevk adeti miktardan büyük olamaz.';
       const toplam = this.panelGelenAdet() + this.panelTrafoSevkAdet();
       if (toplam > u.istenenAdet) return 'Toplam adet, çeki miktarını aşamaz.';
     }
 
-    if (this.panelSevkDurumu() === 'SevkEdildi') {
-      if (d !== 'TamGeldi' && d !== 'EksikGeldi') return 'Sevk için durum TamGeldi veya EksikGeldi olmalıdır.';
-      if (this.panelSevkAdet() <= 0) return 'Sevk miktarı girilmelidir.';
+    if (this.panelSevkDurumu() === 'Sevk Edildi') {
+      if (d !== 'Tam Geldi' && d !== 'Eksik Geldi') return 'Sevk için durum ' + d + ' değil, "Tam Geldi" veya "Eksik Geldi" olmalıdır.';
+      if (this.panelSevkAdet() <= 0) return 'Sevk edilen miktar girilmelidir.';
     }
 
     return null;
@@ -337,6 +351,7 @@ export class GridUrunlerComponent implements OnInit {
         this.panelSaving.set(false);
         if (res.isSuccess) {
           this.toast.success('Ürün durumu başarıyla güncellendi.');
+          this.gridService.notifyGridUpdated();
           this.closePanel();
           this.loadUrunler();
         } else {
@@ -371,6 +386,7 @@ export class GridUrunlerComponent implements OnInit {
         this.topluSevkSaving.set(false);
         if (res.isSuccess) {
           this.toast.success('Seçili ürünler başarıyla sevk edildi.');
+          this.gridService.notifyGridUpdated();
           this.closeTopluSevk();
           this.selectedIds.set(new Set());
           this.loadUrunler();

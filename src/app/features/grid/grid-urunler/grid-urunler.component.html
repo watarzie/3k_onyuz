@@ -177,8 +177,8 @@
       <div class="mb-3">
         <label class="form-label fw-semibold">Grid Gelen Adet</label>
         <input type="number" class="form-control" [ngModel]="panelGelenAdet()" (ngModelChange)="panelGelenAdet.set($event); recalcPanel()" [disabled]="!isGelenAdetAktif" min="0" [max]="panelUrun()!.istenenAdet" />
-        @if (panelDurum() === 'TamGeldi') {
-          <small class="text-muted">Otomatik: Miktar kadar ({{ panelUrun()!.istenenAdet }})</small>
+        @if (panelDurum() === 'Tam Geldi') {
+          <small class="text-muted">Otomatik: Seçilen miktar ({{ panelUrun()!.istenenAdet }})</small>
         }
       </div>
 
@@ -191,7 +191,7 @@
       <!-- Eksik Hesabı -->
       <div class="eksik-gosterge mb-4" [ngClass]="{'eksik-var': panelEksik > 0, 'eksik-yok': panelEksik <= 0}">
         <span>Eksik:</span>
-        <strong>{{ panelDurum() === 'Iptal' ? '-' : panelEksik }}</strong>
+        <strong>{{ panelDurum() === 'İptal' ? '-' : panelEksik }}</strong>
       </div>
 
       <hr />
@@ -201,7 +201,7 @@
         <label class="form-label fw-semibold">Grid Sevk Durumu</label>
         <div class="d-flex gap-2 flex-wrap">
           @for (sd of sevkDurumlari; track sd.value) {
-            <button class="btn btn-sm btn-sevk-durum" [ngClass]="{'active': panelSevkDurumu() === sd.value}" [style.--sd-color]="sd.color" (click)="panelSevkDurumu.set(sd.value)" [disabled]="!isSevkAktif && sd.value === 'SevkEdildi'">
+            <button class="btn btn-sm btn-sevk-durum" [ngClass]="{'active': panelSevkDurumu() === sd.value}" [style.--sd-color]="sd.color" (click)="panelSevkDurumu.set(sd.value)" [disabled]="!isSevkAktif && sd.value === 'Sevk Edildi'">
               {{ sd.label }}
             </button>
           }

@@ -129,8 +129,8 @@ export const routes: Routes = [
         path: 'stok',
         canActivate: [menuGuard],
         loadComponent: () =>
-          import('./shared/components/coming-soon/coming-soon.component').then(m => m.ComingSoonComponent),
-        data: { menuKod: 'stok', title: 'Stok Modülü' },
+          import('./features/stok-yonetimi/stok-yonetimi').then(m => m.StokYonetimi),
+        data: { menuKod: 'stok' },
       },
 
       // --- Saha Malzeme ---

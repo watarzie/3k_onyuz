@@ -148,7 +148,7 @@
         <label class="form-label fw-semibold">3K Karşılama Tipi</label>
         <div class="durum-grid">
           @for (t of karsilamaTipleri; track t.value) {
-            <button class="btn btn-durum-card" [ngClass]="{'active': panelTip() === t.value}" [style.--durum-color]="t.color" (click)="onTipChange(t.value)">
+            <button class="btn btn-durum-card" [ngClass]="{'active': panelTip() === t.value}" [style.--durum-color]="t.color" (click)="onTipChange(t.value)" [disabled]="isKarsilamaTipiDisabled(t.value)">
               <span class="durum-dot" [style.background]="t.color"></span>
               {{ t.label }}
             </button>
@@ -245,6 +245,40 @@
           } @else if (panelKaynakHedef()) {
             <div class="text-muted mt-1 small"><i class="ri-information-line me-1"></i>Bu projeye ait kayıtlı/alınabilir ürün bulunamadı.</div>
           }
+        </div>
+      }
+
+      @if (panelTip() === 'Stoktan Karşılandı') {
+        <div class="mb-3">
+          <label class="form-label fw-semibold">
+            Merkezi Stok Seçimi <span class="text-danger">*</span>
+          </label>
+          <div class="dropdown mb-2">
+            <button class="btn btn-outline-secondary w-100 text-start d-flex justify-content-between align-items-center bg-white shadow-sm" type="button" (click)="toggleStokDropdown()" title="{{ selectedStokText }}">
+              <span class="text-truncate" style="max-width: 90%;">{{ selectedStokText }}</span>
+              <i class="ri-arrow-down-s-line"></i>
+            </button>
+            <ul class="dropdown-menu w-100 shadow p-2" [class.show]="isStokDropdownOpen()" style="max-height: 300px; overflow-y: auto;">
+              <li>
+                <input type="text" class="form-control mb-2" placeholder="Barkod, İsim veya Proje ile Ara..." [ngModel]="stokSearchTerm()" (ngModelChange)="stokSearchTerm.set($event)" (click)="$event.stopPropagation()">
+              </li>
+              @if (filteredStoklar().length === 0) {
+                <li><span class="dropdown-item text-muted disabled">Uygun stok bulunamadı.</span></li>
+              }
+              @for (stok of filteredStoklar(); track stok.id) {
+                <li>
+                  <a class="dropdown-item py-2 border-bottom" style="cursor: pointer; white-space: normal;" (click)="selectStokItem(stok.id)">
+                    <div class="d-flex justify-content-between align-items-center">
+                       <span class="fw-bold text-dark">{{ stok.malzemeAdi }}</span>
+                       <span class="badge bg-primary">Bakiye: {{ stok.miktar }} {{ stok.birim }}</span>
+                    </div>
+                    @if(stok.malzemeKodu) { <div class="text-muted small lh-sm">Barkod: {{ stok.malzemeKodu }}</div> }
+                    <div class="text-muted small lh-sm">Kaynak: <span class="badge bg-soft-secondary text-secondary">{{ stok.kaynakProje }}</span></div>
+                  </a>
+                </li>
+              }
+            </ul>
+          </div>
         </div>
       }
 

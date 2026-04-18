@@ -1,0 +1,162 @@
+<div class="page-container fadeIn">
+  <div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+      <h3 class="fw-bold text-dark mb-2">Stok Yönetimi</h3>
+      <app-breadcrumb [items]="breadcrumb"></app-breadcrumb>
+    </div>
+    <div class="col-md-6 text-end">
+      <button class="btn btn-primary d-inline-flex align-items-center gap-2" (click)="openAddModal()">
+        <i class="ri-add-line"></i> Yeni Stok Ekle
+      </button>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="row mb-4 align-items-center">
+        <div class="col-md-4">
+          <div class="search-box">
+             <i class="ri-search-line search-icon text-muted" style="position: absolute; margin: 10px;"></i>
+             <input type="text" class="form-control ps-5 rounded-pill" placeholder="Barkod, İsim veya Proje ile Ara..." [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event); onSearchChange()" />
+          </div>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        @if (loading()) {
+            <div class="text-center p-5 text-muted">
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <p>Stoklar yükleniyor...</p>
+            </div>
+        } @else if (filteredStoklar().length === 0) {
+           <div class="text-center p-5 text-muted">
+              <i class="ri-inbox-archive-line fs-1 mb-3 text-secondary"></i>
+              <p>Stok bulunamadı.</p>
+           </div>
+        } @else {
+            <table class="table align-middle table-hover text-nowrap align-middle mb-0">
+              <thead class="table-light text-muted">
+                <tr>
+                   <th>BARKOD NO</th>
+                   <th>MALZEME ADI</th>
+                   <th>MİKTAR</th>
+                   <th>KAYNAK PROJE</th>
+                   <th>GİRİŞ NEDENİ</th>
+                   <th>LOKASYON</th>
+                   <th>DURUM</th>
+                   <th class="text-end">İŞLEM</th>
+                </tr>
+              </thead>
+              <tbody>
+                 @for (s of filteredStoklar(); track s.id) {
+                    <tr>
+                       <td>{{ s.malzemeKodu || '-' }}</td>
+                       <td class="fw-semibold">{{ s.malzemeAdi }}</td>
+                       <td><span class="badge bg-soft-primary text-primary px-3">{{ s.miktar }} {{ s.birim }}</span></td>
+                       <td><span class="badge bg-soft-secondary text-secondary">{{ s.kaynakProje }}</span></td>
+                       <td><span class="text-muted">{{ s.stokGirisNedeni || '-' }}</span></td>
+                       <td>{{ s.lokasyon || '-' }}</td>
+                       <td>
+                         @if(s.durum === 'Aktif') {
+                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill">Aktif</span>
+                         } @else {
+                            <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill">{{ s.durum }}</span>
+                         }
+                       </td>
+                       <td class="text-end">
+                         <button class="btn btn-sm btn-light border-0 text-primary" (click)="openEditModal(s)" title="Düzenle">
+                           <i class="ri-edit-2-line"></i>
+                         </button>
+                       </td>
+                    </tr>
+                 }
+              </tbody>
+            </table>
+            
+            <div class="d-flex align-items-center justify-content-between p-3 border-top">
+              <div class="d-flex align-items-center gap-2">
+                <span class="text-muted small">Sayfa başına kayıt:</span>
+                <select class="form-select form-select-sm" style="width: auto;" [ngModel]="pageSize()" (change)="onPageSizeChange($event)">
+                  <option [value]="10">10</option>
+                  <option [value]="50">50</option>
+                  <option [value]="100">100</option>
+                </select>
+                <span class="text-muted small ms-2">Toplam: {{ totalCount() }} stok kaydı</span>
+              </div>
+              
+              <nav aria-label="Sayfalama">
+                <ul class="pagination pagination-sm mb-0">
+                  <li class="page-item" [class.disabled]="currentPage() === 1">
+                    <button class="page-link" (click)="onPageChange(currentPage() - 1)">Önceki</button>
+                  </li>
+                  <li class="page-item active">
+                    <span class="page-link">{{ currentPage() }} / {{ totalPages() }}</span>
+                  </li>
+                  <li class="page-item" [class.disabled]="currentPage() === totalPages()">
+                    <button class="page-link" (click)="onPageChange(currentPage() + 1)">Sonraki</button>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Stok Ekle / Düzenle -->
+<div class="modal fade" [ngClass]="{'show d-block': isAddModalOpen()}" style="background: rgba(0,0,0,0.5)">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-light border-bottom-0">
+        <h5 class="modal-title fw-bold text-dark">{{ isEditMode() ? 'Stok Kaydını Düzenle' : 'Depoya Stok Girişi Yap' }}</h5>
+        <button type="button" class="btn-close" (click)="closeAddModal()"></button>
+      </div>
+      <div class="modal-body p-4">
+        
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Malzeme Adı <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" placeholder="Örn: M5 Somun" [(ngModel)]="yeniStok.malzemeAdi" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Barkod / Malzeme Kodu <small class="text-muted">(Opsiyonel)</small></label>
+            <input type="text" class="form-control" placeholder="Okutun veya yazın..." [(ngModel)]="yeniStok.malzemeKodu" />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Miktar <span class="text-danger">*</span></label>
+            <input type="number" min="1" class="form-control" [(ngModel)]="yeniStok.miktar" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Birim <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" placeholder="Adet, Kutu vb." [(ngModel)]="yeniStok.birim" />
+          </div>
+
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Kaynak Proje / İade Projesi <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" placeholder="Hangi projeden arttı?" [(ngModel)]="yeniStok.kaynakProje" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Lokasyon</label>
+            <input type="text" class="form-control" placeholder="Raf-1" [(ngModel)]="yeniStok.lokasyon" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Stok Giriş Nedeni <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" placeholder="Sipariş İptali, Proje Artanı vb." [(ngModel)]="yeniStok.stokGirisNedeni" />
+          </div>
+        </div>
+
+        <div class="alert alert-info border-0 mt-4 mb-0">
+          <i class="ri-information-line me-2"></i><strong>Bilgi:</strong> Malzeme Adı, Miktar, Birim ve Kaynak Proje alanları zorunludur. Barkodu (Malzeme Kodu) olmayan ürünleri boş bırakabilirsiniz.
+        </div>
+      </div>
+      <div class="modal-footer border-top-0 pt-0">
+        <button type="button" class="btn btn-light px-4" (click)="closeAddModal()">Vazgeç</button>
+        <button type="button" class="btn btn-primary px-4" (click)="saveStock()">
+          <i class="ri-save-3-line me-1"></i> Kaydet
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
