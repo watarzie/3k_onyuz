@@ -5,6 +5,8 @@ import { Router } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { AuthService } from '../../../core/auth/auth.service';
 import { TranslationService } from '../../../core/services/translation.service';
+import { PermissionService } from '../../../core/services/permission.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { CustomValidators } from '../../../shared/validators/custom-validators';
 
 @Component({
@@ -18,6 +20,8 @@ export class LoginComponent {
   private fb = inject(FormBuilder);
   private auth = inject(AuthService);
   private router = inject(Router);
+  private permissionService = inject(PermissionService);
+  private toast = inject(ToastService);
   ts = inject(TranslationService);
 
   form: FormGroup;
@@ -59,14 +63,20 @@ export class LoginComponent {
       next: (result) => {
         this.loading.set(false);
         if (result.isSuccess) {
+          this.toast.success('Giriş başarılı!');
+          this.permissionService.loadPermissions();
           this.router.navigate(['/dashboard']);
         } else {
-          this.error.set(result.error ?? this.ts.translate('MESSAGES.LOGIN_FAIL'));
+          const msg = result.error ?? this.ts.translate('MESSAGES.LOGIN_FAIL');
+          this.error.set(msg);
+          this.toast.error(msg);
         }
       },
       error: () => {
         this.loading.set(false);
-        this.error.set(this.ts.translate('MESSAGES.LOGIN_FAIL'));
+        const msg = this.ts.translate('MESSAGES.LOGIN_FAIL');
+        this.error.set(msg);
+        this.toast.error(msg);
       },
     });
   }

@@ -27,8 +27,8 @@
   </div>
 
   <!-- Depo Dağılım -->
-  <div class="row g-4">
-    <div class="col-lg-5">
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-5">
       <div class="trezo-card border-0 shadow-none h-100">
         <div class="card-header"><h5 class="fw-semibold mb-0">{{ 'LABELS.DEPO_DAGILIM' | translate }}</h5></div>
         <div class="card-body d-flex align-items-center justify-content-center">
@@ -58,47 +58,65 @@
       </div>
     </div>
 
-    <!-- Sandık Listesi Tablosu -->
-    <div class="col-lg-7">
-      <div class="trezo-card border-0 shadow-none h-100">
-        <div class="card-header d-flex align-items-center justify-content-between">
-          <h5 class="fw-semibold mb-0">3K {{ 'MENU.SANDIK_YONETIMI' | translate }}</h5>
-          <div class="search-box position-relative">
-            <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
-            <input type="text" class="form-control" [placeholder]="'ACTIONS.SEARCH' | translate" />
-          </div>
-        </div>
-        <div class="card-body p-0">
-          @if (allSandiklar().length === 0) {
-            <div class="text-center py-5 text-muted">{{ 'MESSAGES.NO_DATA' | translate }}</div>
-          } @else {
-            <div class="table-responsive" style="max-height: 400px; overflow-y:auto;">
-              <table class="table table-hover align-middle mb-0">
-                <thead>
-                  <tr>
-                    <th><input type="checkbox" class="form-check-input" /></th>
-                    <th>{{ 'LABELS.SANDIK_NO' | translate }}</th>
-                    <th>{{ 'LABELS.DURUM' | translate }}</th>
-                    <th>{{ 'LABELS.LOKASYON' | translate }}</th>
-                    <th>{{ 'LABELS.URUN' | translate }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (s of allSandiklar(); track s.id) {
-                    <tr>
-                      <td><input type="checkbox" class="form-check-input" /></td>
-                      <td class="fw-semibold">{{ s.sandikNo }}</td>
-                      <td><app-status-badge [status]="s.durum" [label]="s.durum" /></td>
-                      <td>{{ s.depoLokasyonu ?? '-' }}</td>
-                      <td>{{ s.urunSayisi }}</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-        </div>
+    <!-- Ekstra İstatistikler vs buraya eklenebilir -->
+  </div>
+
+  <!-- Sandık Listesi Tablosu -->
+  <div class="trezo-card border-0 shadow-none">
+    <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <h5 class="fw-semibold mb-0"><i class="ri-list-check-2 me-2"></i>Tüm Sandıkların Genel Listesi ({{ filteredSandiklar().length }})</h5>
+      <div class="search-box position-relative" style="width: 300px;">
+        <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
+        <input type="text" class="form-control" placeholder="Proje, Sandık No veya Lokasyon ara..." (input)="onSearch($event)" />
       </div>
+    </div>
+    <div class="card-body p-0">
+      @if (filteredSandiklar().length === 0) {
+        <div class="text-center py-5 text-muted">
+           <i class="ri-inbox-line fs-1 mb-3 d-block"></i>
+           Kritere uygun sandık bulunamadı.
+        </div>
+      } @else {
+        <div class="table-responsive" style="max-height: 600px; overflow-y:auto;">
+          <table class="table table-hover align-middle mb-0 text-nowrap">
+            <thead class="table-light sticky-top">
+              <tr>
+                <th>Proje Adı</th>
+                <th>{{ 'LABELS.SANDIK_NO' | translate }}</th>
+                <th>Tipi</th>
+                <th>{{ 'LABELS.DURUM' | translate }}</th>
+                <th>{{ 'LABELS.LOKASYON' | translate }}</th>
+                <th>Tamamlanan / Gerekli</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (s of filteredSandiklar(); track s.id) {
+                <tr>
+                  <td><span class="fw-medium text-primary">{{ s.projeAdi }}</span></td>
+                  <td class="fw-bold">{{ s.sandikNo }}</td>
+                  <td><span class="badge bg-secondary-subtle text-secondary">{{ s.tip ?? 'Standart' }}</span></td>
+                  <td><app-status-badge [status]="s.durum" [label]="s.durum" /></td>
+                  <td>
+                    @if (s.depoLokasyonu) {
+                       <span class="text-dark"><i class="ri-map-pin-line text-info me-1"></i> {{ s.depoLokasyonu }}</span>
+                    } @else {
+                       <span class="text-muted"><i class="ri-map-pin-line me-1"></i> Belirsiz</span>
+                    }
+                  </td>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <span>{{ s.urunSayisi }}</span>
+                        @if (s.urunSayisi > 0 && s.durum === 'Hazir') {
+                            <i class="ri-check-double-line text-success fs-5"></i>
+                        }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
     </div>
   </div>
 }

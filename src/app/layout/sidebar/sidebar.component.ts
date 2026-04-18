@@ -1,22 +1,16 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { ToggleService } from '../header/toggle.service';
 import { TranslationService } from '../../core/services/translation.service';
-import { AuthService } from '../../core/auth/auth.service';
-
-interface MenuItemDef {
-  labelKey: string;
-  icon: string;
-  route?: string;
-  children?: { labelKey: string; route: string }[];
-}
+import { PermissionService } from '../../core/services/permission.service';
 
 interface MenuItem {
   label: string;
   icon: string;
-  route?: string;
-  children?: { label: string; route: string }[];
+  route?: string | null;
+  yetkiTipi: string;
+  children?: MenuItem[];
 }
 
 @Component({
@@ -29,43 +23,37 @@ interface MenuItem {
 export class SidebarComponent {
   toggleService = inject(ToggleService);
   ts = inject(TranslationService);
-  auth = inject(AuthService);
+  permissionService = inject(PermissionService);
 
   openIndex = signal(-1);
 
-  /** Menü tanımları — sadece key'ler tutulur */
-  private menuDefs: MenuItemDef[] = [
-    { labelKey: 'MENU.DASHBOARD', icon: 'ri-dashboard-line', route: '/dashboard' },
-    {
-      labelKey: 'MENU.PROJELER', icon: 'ri-folder-line',
-      children: [
-        { labelKey: 'MENU.AKTIF_PROJELER', route: '/projeler' },
-        { labelKey: 'MENU.SEVK_EDILEN', route: '/projeler/sevk-edilen' },
-      ],
-    },
-    { labelKey: 'MENU.SANDIK_YONETIMI', icon: 'ri-archive-line', route: '/sandik-yonetimi' },
-    { labelKey: 'MENU.EKSIK_LISTESI', icon: 'ri-error-warning-line', route: '/eksik-listesi' },
-    { labelKey: 'MENU.DEPO_DURUMU', icon: 'ri-building-2-line', route: '/depo-durumu' },
-    { labelKey: 'MENU.FB_TRANSFER', icon: 'ri-arrow-left-right-line', route: '/fb-transfer' },
-    { labelKey: 'MENU.STOK_MODULU', icon: 'ri-stack-line', route: '/stok' },
-    { labelKey: 'MENU.SAHA_MALZEMESI', icon: 'ri-tools-line', route: '/saha-malzeme' },
-    { labelKey: 'MENU.HAREKET_GECMISI', icon: 'ri-history-line', route: '/hareket-gecmisi' },
-    { labelKey: 'MENU.KULLANICI_YETKI', icon: 'ri-user-settings-line', route: '/kullanicilar' },
-  ];
-
-  /** Dil değiştiğinde otomatik güncellenir (computed + signal) */
+  /**
+   * Menü ağacı — TAMAMEN backend'den gelir.
+   * Backend yetkisiz menüleri zaten filtrelemiş olarak gönderir.
+   * Frontend sadece translate edip render eder.
+   */
   menu = computed<MenuItem[]>(() => {
-    // currentLang signal'ına bağımlılık → dil değişince yeniden hesaplanır
+    // Signal bağımlılıkları: dil + menü ağacı
     this.ts.currentLang();
-    return this.menuDefs.map(def => ({
-      label: this.ts.translate(def.labelKey),
-      icon: def.icon,
-      route: def.route,
-      children: def.children?.map(child => ({
-        label: this.ts.translate(child.labelKey),
-        route: child.route,
-      })),
-    }));
+    const menuAgaci = this.permissionService.menuAgaci();
+
+    return menuAgaci
+      .filter(node => node.route || (node.children && node.children.some(c => c.route)))
+      .map(node => ({
+        label: this.ts.translate(node.labelKey),
+        icon: node.icon || '',
+        route: node.route,
+        yetkiTipi: node.yetkiTipi,
+        // Route=null olanları sidebar'da GİZLE (grid-modulu, 3k-modulu gibi)
+        children: node.children
+          ?.filter(child => !!child.route)
+          .map(child => ({
+            label: this.ts.translate(child.labelKey),
+            icon: child.icon || '',
+            route: child.route,
+            yetkiTipi: child.yetkiTipi,
+          })),
+      }));
   });
 
   toggleSection(i: number) {

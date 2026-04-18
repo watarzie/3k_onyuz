@@ -54,9 +54,12 @@
                   </div>
                 </td>
                 <td>{{ p.musteri ?? '-' }}</td>
-                <td><span class="fw-semibold">{{ p.sandikSayisi }}</span></td>
-                <td>{{ p.tamamlananUrunSayisi }}/{{ p.toplamUrunSayisi }}</td>
-                <td><app-status-badge [status]="p.durum" [label]="p.durum" /></td>
+                <td>
+                  <span class="fw-semibold">{{ p.hazirSandikSayisi }}/{{ p.sandikSayisi }}</span>
+                  <small class="text-muted ms-1">hazır</small>
+                </td>
+                <td><span class="fw-semibold">{{ p.toplamUrunSayisi }}</span></td>
+                <td><app-status-badge [status]="p.durum" [label]="getDurumLabel(p.durum)" /></td>
                 <td>
                   <div class="d-flex align-items-center gap-2">
                     <div class="progress flex-grow-1" style="height: 6px; min-width:100px;">
@@ -71,12 +74,16 @@
                 </td>
                 <td>
                   <div class="d-flex gap-1">
-                    <a [routerLink]="['/grid', p.id]" class="btn btn-sm btn-action-grid" title="Grid Modülü">
-                      <i class="ri-database-2-line me-1"></i>Grid
-                    </a>
-                    <a [routerLink]="['/uck', p.id]" class="btn btn-sm btn-action-3k" title="3K Modülü">
-                      <i class="ri-archive-stack-line me-1"></i>3K
-                    </a>
+                    @if (canSeeGrid()) {
+                      <a [routerLink]="['/grid', p.id]" class="btn btn-sm btn-action-grid" title="Grid Modülü">
+                        <i class="ri-database-2-line me-1"></i>Grid
+                      </a>
+                    }
+                    @if (canSee3K()) {
+                      <a [routerLink]="['/uck', p.id]" class="btn btn-sm btn-action-3k" title="3K Modülü">
+                        <i class="ri-archive-stack-line me-1"></i>3K
+                      </a>
+                    }
                   </div>
                 </td>
               </tr>

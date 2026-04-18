@@ -33,13 +33,10 @@ export class LookupService {
       params = params.append('entity', e);
     });
 
-    return this.http.get<ApiResult<LookupResponse>>(API.LOOKUP.GET, { params }).pipe(
-      map(result => {
-        if (result.isSuccess && result.value) {
-          return result.value;
-        }
-        console.error('[LookupService] Lookup yüklenemedi:', result.error);
-        return {} as LookupResponse;
+    return this.http.get<any>(API.LOOKUP.GET, { params }).pipe(
+      map((result: any) => {
+        // Backend ToActionResult() extension directly returns the value dict for OkObjectResult
+        return result || {} as LookupResponse;
       })
     );
   }

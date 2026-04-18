@@ -12,3 +12,5 @@ export * from './stok.model';
 export * from './fbtransfer.model';
 export * from './hareket-gecmisi.model';
 export * from './lookup.model';
+export * from './rol.model';
+export * from './kullanici.model';

@@ -17,7 +17,10 @@
     "YEDEK_MALZEME": "Yedek Malzeme",
     "SAHA_MALZEMESI": "Saha Malzemesi",
     "HAREKET_GECMISI": "Hareket Geçmişi (Log)",
-    "KULLANICI_YETKI": "Kullanıcı / Yetki"
+    "KULLANICI_YETKI": "Kullanıcı / Yetki",
+    "ROL_YONETIMI": "Rol Yönetimi",
+    "GRID_MODULU": "Grid Modülü",
+    "3K_MODULU": "3K Modülü"
   },
   "ACTIONS": {
     "SAVE": "Kaydet",
@@ -123,5 +126,38 @@
     "LOADING": "Yükleniyor...",
     "SERVER_CONNECTION_ERROR": "Sunucuya bağlanılamıyor. Lütfen internet bağlantınızı kontrol edin.",
     "SESSION_EXPIRED": "Oturumunuz sona erdi. Lütfen tekrar giriş yapın."
+  },
+  "COMMON": {
+    "DASHBOARD": "Ana Kontrol Paneli",
+    "SAVE": "Kaydet",
+    "CANCEL": "İptal",
+    "EDIT": "Düzenle",
+    "DELETE": "Sil",
+    "NO_DATA": "Veri bulunamadı",
+    "UPDATE": "Güncelle"
+  },
+  "ROLE": {
+    "TITLE": "Rol Yönetimi",
+    "ROLES": "Roller",
+    "ADD_NEW": "Yeni Rol Ekle",
+    "SEARCH_PLACEHOLDER": "Rol ara...",
+    "SELECT_ROLE_TO_EDIT": "Düzenlemek için bir rol seçin",
+    "OR_CREATE_NEW_VIA_BUTTON": "Veya + butonu ile yeni bir rol oluşturun",
+    "PERMISSION_SETTINGS": "Yetki Ayarları",
+    "ADD_SUCCESS": "Rol başarıyla oluşturuldu",
+    "UPDATE_SUCCESS": "Rol başarıyla güncellendi",
+    "DELETE_SUCCESS": "Rol başarıyla silindi"
+  },
+  "USER": {
+    "TITLE": "Kullanıcı Yönetimi",
+    "USER_LIST": "Kullanıcı Listesi",
+    "ADD_NEW": "Yeni Kullanıcı",
+    "SEARCH_PLACEHOLDER": "Ad, e-posta veya rol ara...",
+    "NAME": "Ad Soyad",
+    "EMAIL": "E-posta",
+    "PASSWORD": "Şifre",
+    "ROLE": "Rol",
+    "EDIT_USER": "Kullanıcı Düzenle",
+    "CREATE": "Oluştur"
   }
 }

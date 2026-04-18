@@ -4,9 +4,12 @@
       <h2 class="fw-bold mb-1"><i class="ri-database-2-line me-2"></i>Grid Ürün Takibi</h2>
       <app-breadcrumb [items]="breadcrumb" />
     </div>
-    <button class="btn btn-sevk" [disabled]="!hasSelection" (click)="openTopluSevk()">
-      <i class="ri-truck-line me-2"></i>Toplu Sevk ({{ selectedIds().size }})
-    </button>
+    <div class="d-flex align-items-center gap-2">
+      <app-readonly-banner />
+      <button *appCanWrite class="btn btn-sevk" [disabled]="!hasSelection" (click)="openTopluSevk()">
+        <i class="ri-truck-line me-2"></i>Toplu Sevk ({{ selectedIds().size }})
+      </button>
+    </div>
   </div>
 </div>
 
@@ -50,7 +53,7 @@
         <table class="table table-hover align-middle mb-0">
           <thead>
             <tr>
-              <th style="width:40px"><input type="checkbox" class="form-check-input" [checked]="allSelected" (change)="toggleSelectAll()" /></th>
+              <th *appCanWrite style="width:40px"><input type="checkbox" class="form-check-input" [checked]="allSelected" (change)="toggleSelectAll()" /></th>
               <th style="width:45px">#</th>
               <th>Barkod</th>
               <th>Açıklama</th>
@@ -61,14 +64,15 @@
               <th class="text-center">Trafo</th>
               <th class="text-center">Eksik</th>
               <th>Sevk Dur.</th>
+              <th>Kaynak/Hedef FB</th>
               <th>3K Durumu</th>
-              <th style="width:50px"></th>
+              <th *appCanWrite style="width:50px"></th>
             </tr>
           </thead>
           <tbody>
             @for (u of filtered(); track u.cekiSatiriId) {
               <tr [ngClass]="[getRowClass(u), isSelected(u.cekiSatiriId) ? 'row-selected' : '']">
-                <td><input type="checkbox" class="form-check-input" [checked]="isSelected(u.cekiSatiriId)" (change)="toggleSelect(u.cekiSatiriId)" /></td>
+                <td *appCanWrite><input type="checkbox" class="form-check-input" [checked]="isSelected(u.cekiSatiriId)" (change)="toggleSelect(u.cekiSatiriId)" /></td>
                 <td class="text-muted">{{ u.siraNo }}</td>
                 <td><code class="barkod">{{ u.barkodNo }}</code></td>
                 <td class="fw-medium text-truncate" style="max-width:200px" [title]="u.aciklama">{{ u.aciklama }}</td>
@@ -90,9 +94,22 @@
                   </span>
                 </td>
                 <td>
-                  <span class="durum-badge-sm text-muted">{{ u.ucKDurumu }}</span>
+                  @if (u.kaynakHedefProjeNo) {
+                    <span class="badge rounded-pill border fw-normal" style="background:#f1f5f9; color:#0f172a; border-color:#cbd5e1!important; font-size:11px;">
+                      <i class="ri-git-merge-line text-primary border-0 me-1"></i>
+                      {{ u.kaynakHedefProjeNo }}
+                      @if (u.ucKDurumu === 'Başka Projeye Verildi') { 'ya Verildi' } @else { 'den' }
+                    </span>
+                  } @else {
+                    <span class="text-muted">-</span>
+                  }
                 </td>
                 <td>
+                  <span class="durum-badge" [style.background]="getUckDurumColor(u.ucKDurumu) + '15'" [style.color]="getUckDurumColor(u.ucKDurumu)" [style.border-color]="getUckDurumColor(u.ucKDurumu) + '30'">
+                    {{ u.ucKDurumu ? u.ucKDurumu.toUpperCase() : '-' }}
+                  </span>
+                </td>
+                <td *appCanWrite>
                   <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle">
                     <i class="ri-edit-line"></i>
                   </button>
@@ -106,9 +123,7 @@
   </div>
   <div class="card-footer d-flex align-items-center justify-content-between">
     <small class="text-muted">{{ filtered().length }} / {{ urunler().length }} ürün</small>
-    @if (hasSelection) {
-      <span class="fw-semibold text-primary">{{ selectedIds().size }} ürün seçildi</span>
-    }
+    <span *appCanWrite class="fw-semibold text-primary" [hidden]="!hasSelection">{{ selectedIds().size }} ürün seçildi</span>
   </div>
 </div>
 
@@ -158,7 +173,7 @@
         </div>
       </div>
 
-      <!-- 2. Gelen Adet (EksikGeldi + TrafoSevk'te aktif) -->
+      <!-- 2. Gelen Adet -->
       <div class="mb-3">
         <label class="form-label fw-semibold">Grid Gelen Adet</label>
         <input type="number" class="form-control" [ngModel]="panelGelenAdet()" (ngModelChange)="panelGelenAdet.set($event); recalcPanel()" [disabled]="!isGelenAdetAktif" min="0" [max]="panelUrun()!.istenenAdet" />
@@ -167,7 +182,7 @@
         }
       </div>
 
-      <!-- 3. Trafo Sevk Adet (sadece TrafoSevk'te aktif) -->
+      <!-- 3. Trafo Sevk Adet -->
       <div class="mb-3">
         <label class="form-label fw-semibold">Trafo Sevk Adet</label>
         <input type="number" class="form-control" [ngModel]="panelTrafoSevkAdet()" (ngModelChange)="panelTrafoSevkAdet.set($event); recalcPanel()" [disabled]="!isTrafoAktif" min="0" [max]="panelUrun()!.istenenAdet" />

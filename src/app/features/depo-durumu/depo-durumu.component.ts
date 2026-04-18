@@ -23,13 +23,17 @@ export class DepoDurumuComponent implements OnInit {
   private sandikService = inject(SandikService);
 
   projeler = signal<ProjeDto[]>([]);
-  allSandiklar = signal<SandikDto[]>([]);
+  allSandiklar = signal<any[]>([]);
+  filteredSandiklar = signal<any[]>([]);
   loading = signal(true);
+  searchTerm = signal('');
 
   // Depo lokasyonları bazında sandık sayıları
   ucKSandik = signal(0);
   seymenSandik = signal(0);
   gridSandik = signal(0);
+  AblokSandik = signal(0);
+  BblokSandik = signal(0);
   toplamSandik = signal(0);
 
   breadcrumb = [
@@ -41,8 +45,7 @@ export class DepoDurumuComponent implements OnInit {
     this.projeService.getProjeListesi().subscribe((res) => {
       if (res.isSuccess && res.value) {
         this.projeler.set(res.value);
-        // Her proje için sandıkları çek
-        let total: SandikDto[] = [];
+        let total: any[] = [];
         let completed = 0;
         const projects = res.value;
 
@@ -55,10 +58,14 @@ export class DepoDurumuComponent implements OnInit {
           this.sandikService.getSandiklar(p.id).subscribe((sRes) => {
             completed++;
             if (sRes.isSuccess && sRes.value) {
-              total = [...total, ...sRes.value];
+              const mapped = sRes.value.map(s => ({ ...s, projeAdi: p.projeNo }));
+              total = [...total, ...mapped];
             }
             if (completed === projects.length) {
+              // Ascending sort by extracting numbers
+              total.sort((a, b) => this.extractNumber(a.sandikNo) - this.extractNumber(b.sandikNo));
               this.allSandiklar.set(total);
+              this.applyFilter();
               this.calculateStats(total);
               this.loading.set(false);
             }
@@ -70,11 +77,38 @@ export class DepoDurumuComponent implements OnInit {
     });
   }
 
-  calculateStats(sandiklar: SandikDto[]) {
+  private extractNumber(sandikNo: string): number {
+    if (!sandikNo) return 0;
+    const match = sandikNo.match(/(\d+)/);
+    return match ? parseInt(match[1], 10) : 0;
+  }
+
+  onSearch(event: Event) {
+    this.searchTerm.set((event.target as HTMLInputElement).value.toLowerCase());
+    this.applyFilter();
+  }
+
+  applyFilter() {
+    const term = this.searchTerm();
+    if (!term) {
+      this.filteredSandiklar.set(this.allSandiklar());
+      return;
+    }
+    const filtered = this.allSandiklar().filter(s => 
+       s.sandikNo.toLowerCase().includes(term) ||
+       s.projeAdi?.toLowerCase().includes(term) ||
+       (s.depoLokasyonu && s.depoLokasyonu.toLowerCase().includes(term))
+    );
+    this.filteredSandiklar.set(filtered);
+  }
+
+  calculateStats(sandiklar: any[]) {
     this.toplamSandik.set(sandiklar.length);
-    this.ucKSandik.set(sandiklar.filter((s) => s.depoLokasyonu === '3K' || s.depoLokasyonu === 'Üçk').length);
+    this.ucKSandik.set(sandiklar.filter((s) => ['3K', '3k', 'Üçk'].includes(s.depoLokasyonu)).length);
     this.seymenSandik.set(sandiklar.filter((s) => s.depoLokasyonu === 'Seymen' || s.depoLokasyonu === 'SEYMEN').length);
     this.gridSandik.set(sandiklar.filter((s) => s.depoLokasyonu === 'Grid' || s.depoLokasyonu === 'GRID').length);
+    this.AblokSandik.set(sandiklar.filter((s) => s.depoLokasyonu === 'A-Blok').length);
+    this.BblokSandik.set(sandiklar.filter((s) => s.depoLokasyonu === 'B-Blok').length);
   }
 
   // Donut chart yüzdeleri

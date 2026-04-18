@@ -4,7 +4,7 @@ import { Observable, tap } from 'rxjs';
 import { BaseApiService } from '../services/base-api.service';
 import { API } from '../constants/api-endpoints';
 import { SessionManager } from '../managers/session.manager';
-import { KullaniciDto, LoginDto, LoginResultDto, ApiResult } from '../../shared/models/auth.model';
+import { LoginDto, LoginResultDto, ApiResult } from '../../shared/models/auth.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -12,15 +12,21 @@ export class AuthService {
   private router = inject(Router);
   private session = inject(SessionManager);
 
-  currentUser = signal<KullaniciDto | null>(this.loadUser());
-  isLoggedIn = computed(() => !!this.currentUser());
+  /**
+   * Kullanıcı bilgileri — JWT'den decode edilir.
+   * localStorage'da hassas veri SAKLANMAZ.
+   */
+  currentUser = signal(this.session.getUser());
+  isLoggedIn = computed(() => !!this.currentUser() && !this.session.isTokenExpired());
   userRole = computed(() => this.currentUser()?.rol ?? '');
 
   login(dto: LoginDto): Observable<ApiResult<LoginResultDto>> {
     return this.api.post<LoginResultDto>(API.AUTH.LOGIN, dto).pipe(
       tap((result) => {
         if (result.isSuccess && result.value) {
-          this.setSession(result.value);
+          // Sadece token'ı sakla — kullanıcı bilgileri JWT'den okunur
+          this.session.setToken(result.value.token);
+          this.currentUser.set(this.session.getUser());
         }
       })
     );
@@ -39,16 +45,5 @@ export class AuthService {
   hasRole(...roles: string[]): boolean {
     const role = this.userRole();
     return roles.includes(role);
-  }
-
-  private setSession(data: LoginResultDto): void {
-    this.session.setToken(data.token);
-    this.session.setUser(data.kullanici);
-    this.session.setRole(data.kullanici.rol);
-    this.currentUser.set(data.kullanici);
-  }
-
-  private loadUser(): KullaniciDto | null {
-    return this.session.getSession<KullaniciDto>('3k_user');
   }
 }

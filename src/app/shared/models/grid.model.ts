@@ -18,6 +18,7 @@ export interface GridUrunDto {
   gridEksikMiktar: number;
   ucKDurumu: string;
   gelenMiktar: number;
+  kaynakHedefProjeNo?: string;
   genelDurum: string;
 }
 

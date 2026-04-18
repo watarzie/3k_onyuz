@@ -13,7 +13,10 @@ export interface UcKUrunDto {
   trafoSevkAdet: number;
   ucKKarsilamaTipi: string;
   gelenMiktar: number;
+  karsilananMiktar: number;
+  hataliMiktar: number;
   kaynakHedefProjeNo?: string;
+  geriGonderilmeSebebi?: string;
   ucKAciklama?: string;
   ucKNotu?: string;
   kalan: number;
@@ -27,6 +30,8 @@ export interface UcKDurumGuncelleDto {
   karsilamaTipi: string;
   gelenAdet?: number;
   kaynakHedefProjeNo?: string;
+  kaynakCekiSatiriId?: number;
   aciklama?: string;
+  geriGonderilmeSebebi?: string;
   not?: string;
 }

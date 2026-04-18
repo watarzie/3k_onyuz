@@ -4,6 +4,7 @@
       <h2 class="fw-bold mb-1"><i class="ri-archive-stack-line me-2"></i>3K — {{ sandikNo() }}</h2>
       <app-breadcrumb [items]="breadcrumb" />
     </div>
+    <app-readonly-banner />
   </div>
 </div>
 
@@ -59,7 +60,7 @@
               <th>Kaynak/Hedef</th>
               <th>Kontrol/Uyarı</th>
               <th class="text-center">Kalan</th>
-              <th style="width:50px"></th>
+              <th *appCanWrite style="width:50px"></th>
             </tr>
           </thead>
           <tbody>
@@ -71,7 +72,9 @@
                 <td><span class="badge-sandik">{{ u.sandikNo }}</span></td>
                 <td class="text-center fw-semibold">{{ u.istenenAdet }}</td>
                 <td>
-                  <span class="durum-badge-sm text-muted">{{ u.gridDurumu }}</span>
+                  <span class="durum-badge" [style.background]="getGridDurumColor(u.gridDurumu) + '15'" [style.color]="getGridDurumColor(u.gridDurumu)" [style.border-color]="getGridDurumColor(u.gridDurumu) + '30'">
+                    {{ u.gridDurumu ? u.gridDurumu.toUpperCase() : '-' }}
+                  </span>
                 </td>
                 <td class="text-center">{{ u.gridGelenAdet }}</td>
                 <td class="text-center">{{ u.trafoSevkAdet > 0 ? u.trafoSevkAdet : '-' }}</td>
@@ -90,8 +93,8 @@
                 <td class="text-center fw-bold" [ngClass]="{'text-danger': u.kalan > 0, 'text-success': u.kalan === 0}">
                   {{ u.kalan }}
                 </td>
-                <td>
-                  <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle">
+                <td *appCanWrite>
+                  <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle" [disabled]="u.gridDurumu === 'İptal'">
                     <i class="ri-edit-line"></i>
                   </button>
                 </td>
@@ -153,31 +156,97 @@
         </div>
       </div>
 
-      <!-- 2. 3K Gelen Adet -->
+      <!-- 2. Adet -->
       <div class="mb-3">
-        <label class="form-label fw-semibold">3K Gelen Adet</label>
-        <input type="number" class="form-control" [ngModel]="panelGelenAdet()" (ngModelChange)="panelGelenAdet.set($event); recalcPanel()" [disabled]="!isGelenAdetAktif" min="0" [max]="panelUrun()!.istenenAdet" />
-        @if (panelTip() === 'TamGeldi') {
-          <small class="text-muted">Otomatik: Miktar kadar ({{ panelUrun()!.istenenAdet }})</small>
+        <label class="form-label fw-semibold">
+          Adet
+        </label>
+        <input type="number" class="form-control" [ngModel]="panelGelenAdet()" (ngModelChange)="panelGelenAdet.set($event); recalcPanel()" [disabled]="!isGelenAdetAktif" min="0" [max]="panelUrun()!.kalan" />
+        @if (panelTip() === 'Tam Geldi') {
+          <small class="text-muted">Otomatik: Kalan miktar kadar tamamlanacak</small>
         }
       </div>
 
       <!-- Kalan Gösterge -->
       <div class="eksik-gosterge mb-4" [ngClass]="{'eksik-var': panelKalan > 0, 'eksik-yok': panelKalan <= 0}">
-        <span>Kalan:</span>
+        <span>Güncel Kalan:</span>
         <strong>{{ panelKalan }}</strong>
       </div>
 
       <hr />
 
-      <!-- 3. Kaynak/Hedef Proje -->
-      <div class="mb-3">
-        <label class="form-label fw-semibold">
-          {{ panelTip() === 'BaskaProyeVerildi' ? 'Hedef Proje No' : 'Kaynak Proje No' }}
-          @if (isKaynakHedefZorunlu) { <span class="text-danger">*</span> }
-        </label>
-        <input type="text" class="form-control" placeholder="Proje no girin..." [ngModel]="panelKaynakHedef()" (ngModelChange)="panelKaynakHedef.set($event)" />
-      </div>
+      <!-- Geri Gönderilme Sebebi (Sadece Geri Gönderildi ise) -->
+      @if (panelTip() === 'Geri Gönderildi') {
+        <div class="mb-3">
+          <label class="form-label fw-semibold text-danger">
+            Geri Gönderilme Sebebi *
+          </label>
+          <select class="form-select border-danger" [ngModel]="panelGeriGonderilmeSebebi()" (ngModelChange)="panelGeriGonderilmeSebebi.set($event)">
+            <option value="">Seçiniz...</option>
+            <option value="Tadilat">Tadilat (Eksik Bekliyor)</option>
+            <option value="Iptal">İptal (Geri Gelmeyecek)</option>
+          </select>
+        </div>
+      }
+
+      <!-- 3. Kaynak Proje & Ürün Seçimi -->
+      @if (panelTip() === 'Projeden Karşılandı') {
+        <div class="mb-3">
+          <label class="form-label fw-semibold">
+            Kaynak Proje No <span class="text-danger">*</span>
+          </label>
+          
+          <div class="dropdown mb-2">
+            <button class="btn btn-outline-secondary w-100 text-start d-flex justify-content-between align-items-center bg-white shadow-sm" type="button" (click)="toggleProjeDropdown()">
+              <span class="text-truncate">{{ selectedKaynakProjeText }}</span>
+              <i class="ri-arrow-down-s-line"></i>
+            </button>
+            <ul class="dropdown-menu w-100 shadow p-2" [class.show]="isProjeDropdownOpen()" style="max-height: 250px; overflow-y: auto;">
+              <li>
+                <input type="text" class="form-control mb-2" placeholder="Proje isminde ara..." [ngModel]="projeSearchTerm()" (ngModelChange)="projeSearchTerm.set($event)" (click)="$event.stopPropagation()">
+              </li>
+              @if (filteredProjeler().length === 0) {
+                <li><span class="dropdown-item text-muted disabled">Kayıtlı proje bulunamadı.</span></li>
+              }
+              @for (p of filteredProjeler(); track p.id) {
+                <li><a class="dropdown-item" style="cursor: pointer;" (click)="selectProjeItem(p.id.toString())">{{ p.projeNo }} - {{ p.musteri }}</a></li>
+              }
+            </ul>
+          </div>
+
+          <!-- Kaynak Ürün Seçimi -->
+          @if (kaynakUrunler().length > 0) {
+            <label class="form-label fw-semibold mt-2">
+              Kaynak Ürün <span class="text-danger">*</span>
+            </label>
+            <div class="dropdown">
+              <button class="btn btn-outline-secondary w-100 text-start d-flex justify-content-between align-items-center bg-white shadow-sm" type="button" (click)="toggleUrunDropdown()" title="{{ selectedKaynakUrunText }}">
+                <span class="text-truncate" style="max-width: 90%;">{{ selectedKaynakUrunText }}</span>
+                <i class="ri-arrow-down-s-line"></i>
+              </button>
+              <ul class="dropdown-menu w-100 shadow-lg p-2" [class.show]="isUrunDropdownOpen()" style="max-height: 350px; overflow-y: auto;">
+                <li>
+                  <input type="text" class="form-control mb-2" placeholder="Ürün barkod, isim ara..." [ngModel]="urunSearchTerm()" (ngModelChange)="urunSearchTerm.set($event)" (click)="$event.stopPropagation()">
+                </li>
+                @if (filteredKaynakUrunler().length === 0) {
+                   <li><span class="dropdown-item text-muted disabled">Kayıtlı ürün bulunamadı.</span></li>
+                }
+                @for (cu of filteredKaynakUrunler(); track cu.cekiSatiriId) {
+                  <li>
+                    <a class="dropdown-item py-2 border-bottom" style="cursor: pointer; white-space: normal;" (click)="selectUrunItem(cu.cekiSatiriId)">
+                      <div class="fw-bold text-dark">{{ cu.siraNo }} - {{ cu.barkodNo }}</div>
+                      <div class="text-muted small lh-sm">{{ cu.aciklama }}</div>
+                      <div class="badge bg-primary mt-2">Gelmiş Stok: {{ cu.gelenMiktar }}</div>
+                    </a>
+                  </li>
+                }
+              </ul>
+            </div>
+          } @else if (panelKaynakHedef()) {
+            <div class="text-muted mt-1 small"><i class="ri-information-line me-1"></i>Bu projeye ait kayıtlı/alınabilir ürün bulunamadı.</div>
+          }
+        </div>
+      }
 
       <!-- 4. Açıklama -->
       <div class="mb-3">

@@ -1,0 +1,76 @@
+.menu-tree {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+
+  li {
+    margin-bottom: 2px;
+  }
+}
+
+.node-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  border-radius: 4px;
+  transition: background .15s;
+
+  &:hover {
+    background: #f8f9fc;
+  }
+}
+
+.toggle-area {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+  flex-shrink: 0;
+
+  &:hover {
+    background: #eef0f5;
+  }
+
+  i {
+    font-size: 16px;
+    color: #6c757d;
+  }
+}
+
+.toggle-spacer {
+  width: 22px;
+  flex-shrink: 0;
+}
+
+.form-check-input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+  accent-color: #5a6acf;
+}
+
+.node-icon {
+  font-size: 16px;
+  color: #3a3f7d;
+  flex-shrink: 0;
+}
+
+.node-label {
+  font-size: 14px;
+  color: #1a2035;
+  user-select: none;
+}
+
+// Recursive children indentation
+:host {
+  display: block;
+
+  ::ng-deep app-menu-tree {
+    padding-left: 28px;
+  }
+}

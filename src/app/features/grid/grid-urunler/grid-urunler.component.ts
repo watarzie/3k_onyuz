@@ -1,45 +1,49 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslationService } from '../../../core/services/translation.service';
 import { GridService } from '../../../core/services/grid.service';
-import { AuthService } from '../../../core/auth/auth.service';
+import { ToastService } from '../../../core/services/toast.service';
+
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
+import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
+import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
 import { GridUrunDto, GridDurumGuncelleDto } from '../../../shared/models/index';
 
 // ===== Durum tanımları =====
 interface DurumSecenegi { value: string; label: string; color: string; bgClass: string; }
 
 const GRID_DURUMLARI: DurumSecenegi[] = [
-  { value: 'TamGeldi',   label: 'TAM GELDİ',   color: '#25B003', bgClass: 'row-tam-geldi' },
-  { value: 'EksikGeldi', label: 'EKSİK GELDİ', color: '#FD5812', bgClass: 'row-eksik-geldi' },
+  { value: 'Tam Geldi',   label: 'TAM GELDİ',   color: '#25B003', bgClass: 'row-tam-geldi' },
+  { value: 'Eksik Geldi', label: 'EKSİK GELDİ', color: '#FD5812', bgClass: 'row-eksik-geldi' },
   { value: 'Gelmedi',    label: 'GELMEDİ',      color: '#FF4023', bgClass: 'row-gelmedi' },
-  { value: 'TrafoSevk',  label: 'TRAFO SEVK',   color: '#00BCD4', bgClass: 'row-trafo-sevk' },
-  { value: 'Iptal',      label: 'İPTAL',        color: '#FFB200', bgClass: 'row-iptal' },
-  { value: 'Sipariste',  label: 'SİPARİŞTE',    color: '#9C27B0', bgClass: 'row-sipariste' },
+  { value: 'Trafo Sevk',  label: 'TRAFO SEVK',   color: '#00BCD4', bgClass: 'row-trafo-sevk' },
+  { value: 'İptal',      label: 'İPTAL',        color: '#FFB200', bgClass: 'row-iptal' },
+  { value: 'Siparişte',  label: 'SİPARİŞTE',    color: '#9C27B0', bgClass: 'row-sipariste' },
 ];
 
 const SEVK_DURUMLARI: DurumSecenegi[] = [
-  { value: 'SevkEdildi',   label: 'SEVK EDİLDİ',    color: '#25B003', bgClass: '' },
+  { value: 'Sevk Edildi',   label: 'SEVK EDİLDİ',    color: '#25B003', bgClass: '' },
   { value: 'Bekliyor',     label: 'BEKLİYOR',        color: '#FD5812', bgClass: '' },
-  { value: 'SevkEdilmedi', label: 'SEVK EDİLMEDİ',   color: '#FF4023', bgClass: '' },
+  { value: 'Sevk Edilmedi', label: 'SEVK EDİLMEDİ',   color: '#FF4023', bgClass: '' },
 ];
 
 @Component({
   selector: 'app-grid-urunler',
   standalone: true,
-  imports: [RouterLink, NgClass, FormsModule, StatusBadgeComponent, BreadcrumbComponent, StatCardComponent],
+  imports: [RouterLink, NgClass, FormsModule, StatusBadgeComponent, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent],
   templateUrl: './grid-urunler.component.html',
   styleUrl: './grid-urunler.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GridUrunlerComponent implements OnInit {
   ts = inject(TranslationService);
   private route = inject(ActivatedRoute);
   private gridService = inject(GridService);
-  private auth = inject(AuthService);
+  private toast = inject(ToastService);
 
   projeId = signal(0);
   urunler = signal<GridUrunDto[]>([]);
@@ -55,7 +59,7 @@ export class GridUrunlerComponent implements OnInit {
   panelDurum = signal('');
   panelGelenAdet = signal<number>(0);
   panelTrafoSevkAdet = signal<number>(0);
-  panelSevkDurumu = signal('SevkEdilmedi');
+  panelSevkDurumu = signal('Sevk Edilmedi');
   panelSevkAdet = signal<number>(0);
   panelNot = signal('');
   panelSaving = signal(false);
@@ -69,12 +73,12 @@ export class GridUrunlerComponent implements OnInit {
 
   // Stats
   toplamUrun = computed(() => this.urunler().length);
-  tamGeldi = computed(() => this.urunler().filter(u => u.gridDurumu === 'TamGeldi').length);
-  eksikGeldi = computed(() => this.urunler().filter(u => u.gridDurumu === 'EksikGeldi').length);
+  tamGeldi = computed(() => this.urunler().filter(u => u.gridDurumu === 'Tam Geldi').length);
+  eksikGeldi = computed(() => this.urunler().filter(u => u.gridDurumu === 'Eksik Geldi').length);
   gelmedi = computed(() => this.urunler().filter(u => u.gridDurumu === 'Gelmedi').length);
-  trafoSevk = computed(() => this.urunler().filter(u => u.gridDurumu === 'TrafoSevk').length);
-  iptal = computed(() => this.urunler().filter(u => u.gridDurumu === 'Iptal').length);
-  sipariste = computed(() => this.urunler().filter(u => u.gridDurumu === 'Sipariste').length);
+  trafoSevk = computed(() => this.urunler().filter(u => u.gridDurumu === 'Trafo Sevk').length);
+  iptal = computed(() => this.urunler().filter(u => u.gridDurumu === 'İptal').length);
+  sipariste = computed(() => this.urunler().filter(u => u.gridDurumu === 'Siparişte').length);
   bekliyor = computed(() => this.urunler().filter(u => u.gridDurumu === 'Bekliyor').length);
 
   gridDurumlari = GRID_DURUMLARI;
@@ -170,6 +174,21 @@ export class GridUrunlerComponent implements OnInit {
     return SEVK_DURUMLARI.find(d => d.value === value)?.color ?? '#64748B';
   }
 
+  // 3K Karşılama Tipi Renkleri
+  getUckDurumColor(value: string): string {
+    const KARSILAMA_RENKLERI: Record<string, string> = {
+      'Tam Geldi': '#25B003',
+      'Eksik Geldi': '#FD5812',
+      'Projeden Karşılandı': '#3584FC',
+      'Stoktan Karşılandı': '#9C27B0',
+      'Tedarikçiden Geldi': '#1B7D3A',
+      'Gelmedi': '#808080',
+      'Geri Gönderildi': '#D32F2F',
+      'Hatalı Ürün': '#E65100',
+    };
+    return KARSILAMA_RENKLERI[value] || '#64748B';
+  }
+
   // ===== Side Panel — Durum Güncelle =====
   openPanel(urun: GridUrunDto) {
     this.panelUrun.set(urun);
@@ -195,28 +214,28 @@ export class GridUrunlerComponent implements OnInit {
     this.panelDurum.set(durum);
 
     switch (durum) {
-      case 'TamGeldi':
+      case 'Tam Geldi':
         this.panelGelenAdet.set(u.istenenAdet);
         this.panelTrafoSevkAdet.set(0);
         break;
-      case 'EksikGeldi':
+      case 'Eksik Geldi':
         this.panelGelenAdet.set(u.gridGelenAdet > 0 ? u.gridGelenAdet : 0);
         this.panelTrafoSevkAdet.set(0);
         break;
       case 'Gelmedi':
         this.panelGelenAdet.set(0);
         this.panelTrafoSevkAdet.set(0);
-        this.panelSevkDurumu.set('SevkEdilmedi');
+        this.panelSevkDurumu.set('Sevk Edilmedi');
         this.panelSevkAdet.set(0);
         break;
-      case 'TrafoSevk':
+      case 'Trafo Sevk':
         this.panelTrafoSevkAdet.set(u.trafoSevkAdet > 0 ? u.trafoSevkAdet : 0);
         break;
-      case 'Iptal':
-      case 'Sipariste':
+      case 'İptal':
+      case 'Siparişte':
         this.panelGelenAdet.set(0);
         this.panelTrafoSevkAdet.set(0);
-        this.panelSevkDurumu.set('SevkEdilmedi');
+        this.panelSevkDurumu.set('Sevk Edilmedi');
         this.panelSevkAdet.set(0);
         break;
     }
@@ -230,18 +249,18 @@ export class GridUrunlerComponent implements OnInit {
     let uyari = '';
 
     switch (durum) {
-      case 'TamGeldi': uyari = 'TAM GELDİ'; break;
-      case 'EksikGeldi': uyari = 'EKSİK GELDİ'; break;
+      case 'Tam Geldi': uyari = 'TAM GELDİ'; break;
+      case 'Eksik Geldi': uyari = 'EKSİK GELDİ'; break;
       case 'Gelmedi': uyari = 'GELMEDİ'; break;
-      case 'TrafoSevk':
+      case 'Trafo Sevk':
         const ta = this.panelTrafoSevkAdet();
         const ga = this.panelGelenAdet();
         if (ta > 0 && ga > 0) uyari = `KISMİ TRAFO SEVK + KISMİ GELİŞ`;
         else if (ta > 0) uyari = `TRAFODA SEVK: ${ta} ADET`;
         else uyari = 'TRAFO SEVK';
         break;
-      case 'Iptal': uyari = 'İPTAL'; break;
-      case 'Sipariste': uyari = 'SİPARİŞTE'; break;
+      case 'İptal': uyari = 'İPTAL'; break;
+      case 'Siparişte': uyari = 'SİPARİŞTE'; break;
     }
     this.panelUyari.set(uyari);
     this.panelError.set('');
@@ -317,15 +336,19 @@ export class GridUrunlerComponent implements OnInit {
       next: (res) => {
         this.panelSaving.set(false);
         if (res.isSuccess) {
+          this.toast.success('Ürün durumu başarıyla güncellendi.');
           this.closePanel();
           this.loadUrunler();
         } else {
-          this.panelError.set(res.error ?? 'Kayıt başarısız.');
+          const msg = res.error ?? 'Kayıt başarısız.';
+          this.panelError.set(msg);
+          this.toast.error(msg);
         }
       },
       error: () => {
         this.panelSaving.set(false);
         this.panelError.set('Bir hata oluştu.');
+        this.toast.error('Sunucu ile iletişim kurulamadı.');
       },
     });
   }
@@ -347,12 +370,18 @@ export class GridUrunlerComponent implements OnInit {
       next: (res) => {
         this.topluSevkSaving.set(false);
         if (res.isSuccess) {
+          this.toast.success('Seçili ürünler başarıyla sevk edildi.');
           this.closeTopluSevk();
           this.selectedIds.set(new Set());
           this.loadUrunler();
+        } else {
+          this.toast.error(res.error ?? 'Toplu sevk işlemi başarısız.');
         }
       },
-      error: () => this.topluSevkSaving.set(false),
+      error: () => {
+        this.topluSevkSaving.set(false);
+        this.toast.error('Gelen hata nedeniyle toplu sevk yapılamadı.');
+      },
     });
   }
 }
