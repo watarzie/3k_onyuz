@@ -84,4 +84,16 @@ export class SandikService {
   fbdenKarsila(dto: unknown): Observable<ApiResult<unknown>> {
     return this.api.post<unknown>(API.SANDIK.FBDEN_KARSILA, dto);
   }
+
+  kapat(sandikId: number, forceClose: boolean = false): Observable<any> {
+    return this.api.post<any>(API.SANDIK.KAPAT, { sandikId, forceClose });
+  }
+
+  topluKapat(sandikIds: number[], forceClose: boolean = false): Observable<any> {
+    return this.api.post<any>(API.SANDIK.TOPLU_KAPAT, { sandikIds, forceClose });
+  }
+
+  lokasyonGuncelle(sandikIds: number[], depoLokasyonu: string): Observable<ApiResult<unknown>> {
+    return this.api.put<unknown>(API.SANDIK.LOKASYON_GUNCELLE, { sandikIds, depoLokasyonu });
+  }
 }

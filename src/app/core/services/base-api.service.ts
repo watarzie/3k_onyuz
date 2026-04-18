@@ -69,10 +69,14 @@ export class BaseApiService {
       message = 'Sunucuya bağlanılamıyor.';
     }
 
+    const extraProps = typeof error.error === 'object' && error.error !== null ? error.error : {};
+
     return of({
+      ...extraProps,
       isSuccess: false,
       error: message,
+      message: message, // component'ler bazen error bazen message property arayabiliyor
       statusCode: error.status,
-    });
+    } as any);
   }
 }

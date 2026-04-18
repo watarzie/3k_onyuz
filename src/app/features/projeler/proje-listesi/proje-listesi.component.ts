@@ -1,5 +1,5 @@
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { TranslationService } from '../../../core/services/translation.service';
@@ -8,6 +8,7 @@ import { PermissionService } from '../../../core/services/permission.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { ProjeDto } from '../../../shared/models/index';
+import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-proje-listesi',
@@ -15,11 +16,13 @@ import { ProjeDto } from '../../../shared/models/index';
   imports: [TranslatePipe, RouterLink, NgClass, StatusBadgeComponent, BreadcrumbComponent],
   templateUrl: './proje-listesi.component.html',
   styleUrl: './proje-listesi.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProjeListesiComponent implements OnInit {
   ts = inject(TranslationService);
   private projeService = inject(ProjeService);
   permissions = inject(PermissionService);
+  toastService = inject(ToastService);
 
   /**
    * Grid/3K buton gösterimi — Rol Yetki ekranından yönetilir.
@@ -142,18 +145,18 @@ export class ProjeListesiComponent implements OnInit {
       next: (res) => {
         this.uploading.set(false);
         if (res.isSuccess && res.value) {
-          this.uploadResult.set({
-            success: true,
-            message: `Çeki başarıyla yüklendi! ${res.value.satirSayisi} satır, ${res.value.sandikSayisi} sandık oluşturuldu.`,
-          });
+          this.toastService.success(`Çeki başarıyla yüklendi! ${res.value.satirSayisi} satır, ${res.value.sandikSayisi} sandık oluşturuldu.`);
+          this.closeUploadModal();
           this.loadProjeler(); // Listeyi yenile
         } else {
           this.uploadResult.set({ success: false, message: res.error ?? 'Yükleme başarısız.' });
+          this.toastService.error(res.error ?? 'Yükleme başarısız. Lütfen dosyayı kontrol edin.');
         }
       },
       error: () => {
         this.uploading.set(false);
         this.uploadResult.set({ success: false, message: 'Yükleme sırasında hata oluştu.' });
+        this.toastService.error('Sunucuyla bağlantı kurulurken hata oluştu.');
       },
     });
   }

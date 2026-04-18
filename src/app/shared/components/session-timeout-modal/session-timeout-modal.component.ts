@@ -13,14 +13,14 @@ import { SessionTimeoutService } from '../../../core/services/session-timeout.se
       <div class="session-overlay">
         <div class="session-modal">
           <div class="session-header">
-            <h5>Session Timeout</h5>
+            <h5>Oturum Süresi Doluyor</h5>
             <button class="btn-close-session" (click)="timeout.cancelSession()">
               <i class="ri-close-line"></i>
             </button>
           </div>
           <div class="session-body">
             <p class="session-text">
-              Your session expires in:
+              Oturumunuzun otomatik sonlanmasına kalan süre:
               <strong class="countdown" [class.danger]="timeout.secondsRemaining() <= 10">
                 {{ formattedTime() }}
               </strong>
@@ -33,8 +33,8 @@ import { SessionTimeoutService } from '../../../core/services/session-timeout.se
             </div>
           </div>
           <div class="session-footer">
-            <button class="btn-session-cancel" (click)="timeout.cancelSession()">Cancel</button>
-            <button class="btn-session-continue" (click)="timeout.continueSession()">Continue Session</button>
+            <button class="btn-session-cancel" (click)="timeout.cancelSession()">Oturumu Kapat</button>
+            <button class="btn-session-continue" (click)="timeout.continueSession()">Oturuma Devam Et</button>
           </div>
         </div>
       </div>

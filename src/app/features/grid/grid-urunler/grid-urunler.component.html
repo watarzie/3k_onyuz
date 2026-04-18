@@ -64,6 +64,7 @@
               <th class="text-center">Trafo</th>
               <th class="text-center">Eksik</th>
               <th>Sevk Dur.</th>
+              <th>Kaynak/Hedef FB</th>
               <th>3K Durumu</th>
               <th *appCanWrite style="width:50px"></th>
             </tr>
@@ -93,7 +94,20 @@
                   </span>
                 </td>
                 <td>
-                  <span class="durum-badge-sm text-muted">{{ u.ucKDurumu }}</span>
+                  @if (u.kaynakHedefProjeNo) {
+                    <span class="badge rounded-pill border fw-normal" style="background:#f1f5f9; color:#0f172a; border-color:#cbd5e1!important; font-size:11px;">
+                      <i class="ri-git-merge-line text-primary border-0 me-1"></i>
+                      {{ u.kaynakHedefProjeNo }}
+                      @if (u.ucKDurumu === 'Başka Projeye Verildi') { 'ya Verildi' } @else { 'den' }
+                    </span>
+                  } @else {
+                    <span class="text-muted">-</span>
+                  }
+                </td>
+                <td>
+                  <span class="durum-badge" [style.background]="getUckDurumColor(u.ucKDurumu) + '15'" [style.color]="getUckDurumColor(u.ucKDurumu)" [style.border-color]="getUckDurumColor(u.ucKDurumu) + '30'">
+                    {{ u.ucKDurumu ? u.ucKDurumu.toUpperCase() : '-' }}
+                  </span>
                 </td>
                 <td *appCanWrite>
                   <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle">

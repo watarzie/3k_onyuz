@@ -17,6 +17,7 @@ export const API = {
   AUTH: {
     LOGIN: `${BASE}/auth/login`,
     SEED_ADMIN: `${BASE}/auth/seed-admin`,
+    REFRESH_TOKEN: `${BASE}/auth/refresh-token`,
   },
   PROJE: {
     LIST: `${BASE}/proje`,
@@ -40,6 +41,9 @@ export const API = {
     TESLIM_AL: `${BASE}/sandik/teslim-al`,
     TOPLU_TESLIM_AL: `${BASE}/sandik/toplu-teslim-al`,
     EKSIK_URUNLER: (projeId: number) => `${BASE}/sandik/${projeId}/eksik-urunler`,
+    KAPAT: `${BASE}/sandik/kapat`,
+    TOPLU_KAPAT: `${BASE}/sandik/toplu-kapat`,
+    LOKASYON_GUNCELLE: `${BASE}/sandik/lokasyon-guncelle`,
   },
   GRID: {
     URUNLER: (projeId: number) => `${BASE}/grid/${projeId}/urunler`,

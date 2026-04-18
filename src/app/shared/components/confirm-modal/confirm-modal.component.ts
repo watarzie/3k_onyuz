@@ -30,7 +30,7 @@ import { NgClass } from '@angular/common';
           </button>
         </div>
         <div class="confirm-body">
-          <p>{{ confirm.options().message }}</p>
+          <div [innerHTML]="confirm.options().message"></div>
         </div>
         <div class="confirm-footer">
           <button class="btn-cancel" (click)="confirm.cancel()">
@@ -71,10 +71,9 @@ import { NgClass } from '@angular/common';
       width: 36px; height: 36px;
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
+      background: rgba(var(--bs-primary-rgb), 0.1); 
+      color: var(--bs-primary);
       i { font-size: 18px; }
-      &.danger  { background: #FFF0F0; color: #dc3545; }
-      &.warning { background: #FFF8E1; color: #f59e0b; }
-      &.info    { background: #EEF2FF; color: #5a6acf; }
     }
     .btn-close-confirm {
       border: none; background: transparent; cursor: pointer;
@@ -83,6 +82,15 @@ import { NgClass } from '@angular/common';
     }
     .confirm-body {
       padding: 20px 24px;
+      max-height: 480px;
+      overflow-y: auto;
+      
+      /* Webkit Custom Scrollbar for better UI */
+      &::-webkit-scrollbar { width: 6px; }
+      &::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+      &::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+      &::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+      
       p { margin: 0; font-size: 15px; color: #495057; line-height: 1.6; }
     }
     .confirm-footer {
@@ -98,11 +106,10 @@ import { NgClass } from '@angular/common';
     }
     .btn-confirm {
       padding: 8px 24px;
+      background: var(--bs-primary);
       color: #fff; border: none; border-radius: 6px;
       font-size: 14px; font-weight: 500; cursor: pointer;
-      &.danger  { background: #dc3545; &:hover { background: #c82333; } }
-      &.warning { background: #f59e0b; &:hover { background: #d97706; } }
-      &.info    { background: #5a6acf; &:hover { background: #4a5ab8; } }
+      &:hover { filter: brightness(0.9); }
     }
     @keyframes fadeIn {
       from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }

@@ -7,7 +7,7 @@
   </div>
 </div>
 
-<!-- Stat Cards — mevcut StatCard bileşeni -->
+<!-- Stat Cards -->
 <div class="row g-3 mb-4">
   <div class="col"><app-stat-card [value]="sandiklar().length" label="Toplam Sandık" icon="ri-archive-stack-line" color="primary" /></div>
   <div class="col"><app-stat-card [value]="hazirCount" label="Hazır" icon="ri-checkbox-circle-line" color="success" /></div>
@@ -18,7 +18,39 @@
 <!-- Sandık Grid -->
 <div class="trezo-card border-0 shadow-none">
   <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-    <h5 class="fw-semibold mb-0">Sandıklar ({{ filtered().length }})</h5>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <h5 class="fw-semibold mb-0 me-3">Sandıklar ({{ filtered().length }})</h5>
+      @if (lokasyonlar().length > 0) {
+        <div class="d-flex gap-1">
+          @for (loc of lokasyonlar(); track loc) {
+            <button class="btn btn-sm btn-filter" 
+                    [ngClass]="{'active': selectedLokasyonlar().includes(loc)}" 
+                    (click)="toggleLokasyon(loc)">
+              <i class="ri-map-pin-line me-1"></i> {{ loc }}
+            </button>
+          }
+        </div>
+      }
+      
+      <!-- Toplu İşlem Butonları -->
+      @if (canWriteSandik() && filtered().length > 0) {
+        <div class="border-start ms-2 ps-3 d-flex align-items-center gap-2">
+           <div class="form-check m-0 d-flex align-items-center gap-1">
+              <input class="form-check-input" type="checkbox" id="selectAll" [checked]="isAllSelected()" (change)="toggleAll()">
+              <label class="form-check-label fs-14 fw-medium text-muted" for="selectAll" style="cursor:pointer">Tümünü Seç</label>
+           </div>
+           
+           @if (selectedSandikIds().size > 0) {
+              <button class="btn btn-sm btn-success d-flex align-items-center gap-1" (click)="topluHazirYap()">
+                 <i class="ri-checkbox-circle-line"></i> Seçilenleri ({{selectedSandikIds().size}}) Hazırla
+              </button>
+              <button class="btn btn-sm btn-info text-white d-flex align-items-center gap-1 ms-1" style="background-color: var(--bs-info); border-color: var(--bs-info);" (click)="topluLokasyonAtaModal()">
+                 <i class="ri-map-pin-add-line"></i> Toplu Lokasyon Belirle
+              </button>
+           }
+        </div>
+      }
+    </div>
     <div class="search-box position-relative">
       <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
       <input type="text" class="form-control" placeholder="Sandık ara..." (input)="onSearch($event)" />
@@ -34,37 +66,95 @@
         <p class="text-muted mb-0">Bu projeye ait sandık henüz oluşturulmamış</p>
       </div>
     } @else {
-      <div class="sandik-grid">
+      <div class="sandik-grid position-relative">
         @for (s of filtered(); track s.id) {
-          <a [routerLink]="['/uck', projeId(), s.sandikNo]" class="sandik-card" [ngClass]="'s-' + s.durum.toLowerCase()">
-            <!-- Üst — Numara + Ok -->
-            <div class="card-top">
-              <div class="d-flex align-items-center">
-                <span class="sandik-no">{{ getDisplayNo(s.sandikNo) }}</span>
-                @if (isAdmin()) {
-                  <button class="btn btn-sm ms-2" 
-                          [ngClass]="s.durum === 'Hazir' ? 'btn-outline-warning' : 'btn-outline-success'" 
-                          (click)="toggleSandikDurum($event, s)" 
-                          style="padding: 0.1rem 0.4rem; font-size: 0.75rem; z-index: 2; position: relative;">
-                    {{ s.durum === 'Hazir' ? 'Geri Al' : 'Hazırla' }}
-                  </button>
-                }
-              </div>
-              <span class="nav-arrow"><i class="ri-arrow-right-s-line"></i></span>
-            </div>
-            <!-- Durum -->
-            <div class="card-status">
-              <span class="status-dot" [style.background]="getDurumColor(s.durum)"></span>
-              <span class="status-text" [style.color]="getDurumColor(s.durum)">{{ getDurumLabel(s.durum) }}</span>
-            </div>
-            <!-- Meta -->
-            <div class="card-meta">
-              <span><i class="ri-file-list-3-line"></i> {{ s.urunSayisi }} Ürün</span>
-              <span><i class="ri-map-pin-line"></i> {{ s.depoLokasyonu ?? 'Belirsiz' }}</span>
-            </div>
-          </a>
+          <div class="position-relative">
+              @if (canWriteSandik()) {
+                 <div class="position-absolute top-0 start-0 m-2" style="z-index: 5;">
+                   <div class="form-check">
+                      <input class="form-check-input" type="checkbox" [checked]="selectedSandikIds().has(s.id)" (change)="toggleSelection(s.id)" style="transform: scale(1.2); cursor:pointer;">
+                   </div>
+                 </div>
+              }
+              
+              <a [routerLink]="['/uck', projeId(), s.sandikNo]" class="sandik-card h-100" [ngClass]="'s-' + s.durum.toLowerCase()" style="padding-top: 1.5rem;">
+                <!-- Üst — Numara + Ok -->
+                <div class="card-top">
+                  <div class="d-flex align-items-center">
+                    <span class="sandik-no ms-3">{{ getDisplayNo(s.sandikNo) }}</span>
+                    @if (canWriteSandik()) {
+                      <button class="btn btn-sm ms-2" 
+                              [ngClass]="s.durum === 'Hazir' ? 'btn-outline-warning' : 'btn-outline-success'" 
+                              (click)="toggleSandikDurum($event, s)" 
+                              style="padding: 0.1rem 0.4rem; font-size: 0.75rem; z-index: 2; position: relative;"
+                              title="Tekli Kapatma">
+                        {{ s.durum === 'Hazir' ? 'Geri Al' : 'Hazırla' }}
+                      </button>
+                    }
+                  </div>
+                  <span class="nav-arrow"><i class="ri-arrow-right-s-line"></i></span>
+                </div>
+                <!-- Durum -->
+                <div class="card-status mt-2">
+                  <span class="status-dot" [style.background]="getDurumColor(s.durum)"></span>
+                  <span class="status-text" [style.color]="getDurumColor(s.durum)">{{ getDurumLabel(s.durum) }}</span>
+                </div>
+                <!-- Meta -->
+                <div class="card-meta d-flex justify-content-between align-items-center w-100 mt-auto">
+                  <div class="d-flex flex-column gap-1">
+                    <span><i class="ri-file-list-3-line"></i> {{ s.urunSayisi }} Ürün</span>
+                    <span><i class="ri-map-pin-line"></i> {{ s.depoLokasyonu ?? 'Belirsiz' }}</span>
+                  </div>
+                  @if (canWriteSandik()) {
+                    <button class="btn btn-sm btn-outline-info" 
+                            (click)="openLokasyonModal($event, s)" 
+                            style="padding: 0.1rem 0.4rem; font-size: 0.75rem; z-index: 2; position: relative;"
+                            title="Lokasyon Ekle/Değiştir">
+                      <i class="ri-map-pin-add-line"></i>
+                    </button>
+                  }
+                </div>
+              </a>
+          </div>
         }
       </div>
     }
   </div>
 </div>
+
+<!-- ===== Sandık Lokasyon Modal ===== -->
+@if (showLokasyonModal() && selectedSandikForLocIds().length > 0) {
+  <div class="modal-overlay" (click)="closeLokasyonModal()"></div>
+  <div class="toplu-sevk-modal" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1055; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+    <div class="modal-header d-flex align-items-center justify-content-between p-3 border-bottom">
+      <h5 class="fw-semibold mb-0 text-primary"><i class="ri-map-pin-add-line me-2"></i>Lokasyon Atama</h5>
+      <button class="btn btn-sm border-0 bg-transparent shadow-none p-0" (click)="closeLokasyonModal()">
+        <i class="ri-close-line fs-3 text-muted"></i>
+      </button>
+    </div>
+    <div class="modal-body p-4 bg-white">
+      <div class="mb-3 d-flex justify-content-between align-items-center bg-light p-3 rounded">
+        <label class="form-label fw-semibold text-muted mb-0">İşlem Gören Sandık:</label>
+        <p class="form-control-plaintext mb-0 fw-bold fs-15 text-dark text-end w-auto">
+          {{ getLokasyonModalTitle() }}
+        </p>
+      </div>
+      <div class="mb-2">
+        <label class="form-label fw-semibold text-dark">Depo Lokasyonu <span class="text-danger">*</span></label>
+        <select class="form-select form-select-lg" [ngModel]="yeniLokasyon()" (ngModelChange)="yeniLokasyon.set($event)">
+           <option value="" disabled>-- Lütfen Listeden Seçiniz --</option>
+           @for(loc of sistemLokasyonlar(); track loc.id) {
+               <option [value]="loc.deger">{{ loc.deger }}</option>
+           }
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer d-flex gap-2 p-3 bg-white border-top">
+      <button class="btn btn-outline flex-grow-1" (click)="closeLokasyonModal()">Vazgeç</button>
+      <button class="btn btn-sevk flex-grow-1" style="background-color: var(--bs-primary); border-color: var(--bs-primary); color: white;" (click)="saveLokasyon()" [disabled]="isSavingLokasyon() || !yeniLokasyon()">
+        @if (isSavingLokasyon()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        <i class="ri-save-line me-1"></i>Değişikliği Kaydet
+      </button>
+    </div>
+  </div>
+}
