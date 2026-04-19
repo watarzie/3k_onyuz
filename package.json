@@ -29,6 +29,7 @@
     "@angular/forms": "^20.3.0",
     "@angular/platform-browser": "^20.3.0",
     "@angular/router": "^20.3.0",
+    "@microsoft/fetch-event-source": "^2.0.1",
     "apexcharts": "^5.10.5",
     "bootstrap": "^5.3.8",
     "ng-apexcharts": "^2.3.0",

@@ -20,7 +20,8 @@
     "KULLANICI_YETKI": "Kullanıcı / Yetki",
     "ROL_YONETIMI": "Rol Yönetimi",
     "GRID_MODULU": "Grid Modülü",
-    "3K_MODULU": "3K Modülü"
+    "3K_MODULU": "3K Modülü",
+    "ISLEM_ONAY": "İşlem Onay Merkezi"
   },
   "ACTIONS": {
     "SAVE": "Kaydet",

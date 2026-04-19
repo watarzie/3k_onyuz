@@ -29,6 +29,8 @@ const KARSILAMA_TIPLERI: KarsilamaTipi[] = [
   { value: 'Hatalı Ürün',          label: 'HATALI ÜRÜN GELDİ',     color: '#E65100', bgClass: 'row-hatali' },
 ];
 
+import { OnayService } from '../../../core/services/onay.service';
+
 @Component({
   selector: 'app-uck-urunler',
   standalone: true,
@@ -45,6 +47,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   private projeService = inject(ProjeService);
   private gridService = inject(GridService);
   private stokService = inject(StokService);
+  private onayService = inject(OnayService);
 
   private sub: Subscription = new Subscription();
 
@@ -525,13 +528,26 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       stokKaydiId: this.panelStokKaydiId() || undefined,
       aciklama: _aciklama ? _aciklama.trim() : '',
       not: this.panelNot() ? this.panelNot().trim() : '',
+      urunAdi: u.aciklama || u.barkodNo,
+      mevcutProjeNo: this.projeler().find(p => p.id === this.projeId())?.projeNo || this.projeId().toString(),
+      mevcutSandikNo: u.sandikNo || this.sandikNo(),
+      kaynakUrunAdi: this.panelTip() === 'Projeden Karşılandı' && this.panelKaynakCekiSatiriId() ? 
+                      this.kaynakUrunler().find(cu => cu.cekiSatiriId === this.panelKaynakCekiSatiriId())?.aciklama : undefined
     };
 
     this.uckService.durumGuncelle(dto).subscribe({
       next: (res) => {
         this.panelSaving.set(false);
         if (res.isSuccess) {
-          this.toast.success('3K durumu başarıyla güncellendi.');
+          // Some backend APIs wrap the 202 inside the returned JSON object body
+          const returnedStatus = (res.value as any)?.statusCode;
+          if (res.statusCode === 202 || returnedStatus === 202) {
+            this.toast.info('İşleminiz yetkili onayına sunulmuştur.');
+            // Header'a anlık bildir
+            this.onayService.notifyHeaderForNewApproval();
+          } else {
+            this.toast.success('3K durumu başarıyla güncellendi.');
+          }
           this.uckService.notifyUckUpdated();
           this.closePanel();
           this.loadUrunler();

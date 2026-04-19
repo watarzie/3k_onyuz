@@ -1,0 +1,137 @@
+<div class="page-container fade-in">
+  <!-- Header -->
+  <div class="header-actions">
+    <app-breadcrumb [items]="breadcrumb"></app-breadcrumb>
+    <div class="actions">
+      @if (isAdmin()) {
+        <button class="btn btn-primary me-2" (click)="openSettingsModal()">
+          <i class="ri-settings-3-line"></i>
+          <span>Sistem Kuralları</span>
+        </button>
+      }
+      <button class="btn btn-outline" (click)="loadData()">
+        <i class="ri-refresh-line"></i>
+        <span>Yenile</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="card panel-card fade-in">
+    <div class="card-header">
+      <div class="title-with-icon">
+        <i class="ri-check-double-fill primary-text"></i>
+        <h3>Bekleyen Onaylar</h3>
+      </div>
+      <span class="badge primary-badge">{{ bekleyenler().length }} Kayıt</span>
+    </div>
+
+    <!-- Loading -->
+    @if (loading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <span>İşlem onay listesi yükleniyor...</span>
+      </div>
+    }
+
+    <!-- Empty State -->
+    @if (!loading() && bekleyenler().length === 0) {
+      <div class="empty-state">
+        <i class="ri-shield-check-line empty-icon success-text" style="font-size: 3rem;"></i>
+        <h4>Tüm işlemler onaylanmış!</h4>
+        <p>Şu an sıraya düşmüş veya bekleyen bir kullanıcı isteği bulunmuyor.</p>
+      </div>
+    }
+
+    <!-- Table -->
+    @if (!loading() && bekleyenler().length > 0) {
+      <div class="table-container">
+        <table class="table hover-fx animate-table">
+          <thead>
+            <tr>
+              <th width="30%">İşlem Açıklaması</th>
+              <th width="25%">Talep Eden Personel</th>
+              <th width="20%">Oluşturulma Tarihi</th>
+              <th width="15%">Durum</th>
+              <th width="10%" class="text-right">Aksiyon</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (islem of bekleyenler(); track islem.id; let i = $index) {
+              <tr [style.animation-delay]="(i * 0.03) + 's'">
+                <td class="font-medium">{{ islem.islemAciklamasi }}</td>
+                <td>
+                  <div class="icon-text">
+                    <i class="ri-user-smile-line text-muted"></i>
+                    <span>{{ islem.talepEdenKisi }}</span>
+                  </div>
+                </td>
+                <td class="date-col">{{ islem.olusturulmaTarihi | date:'dd.MM.yyyy HH:mm' }}</td>
+                <td>
+                  <span class="status-badge" [ngClass]="{'bg-warning': islem.durum === 1}">Bekliyor</span>
+                </td>
+                <td class="text-right">
+                  <div class="action-buttons horizontal">
+                    <!-- Onayla -->
+                    <button class="btn-icon text-success" title="İşlemi Onayla ve Çalıştır" (click)="openOnayModal(islem.id)">
+                      <i class="ri-check-line"></i>
+                    </button>
+                    <!-- Reddet -->
+                    <button class="btn-icon text-danger" title="Talebi Reddet" (click)="openRetModal(islem.id)">
+                      <i class="ri-close-line"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Admin Rules Modal -->
+@if (showKurallarModal()) {
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal fade show" style="display: block;" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-bottom-0 pb-0">
+          <h5 class="modal-title">
+            <i class="ri-settings-3-line me-2 text-primary"></i>
+            Dinamik Onay Kuralları
+          </h5>
+          <button type="button" class="btn-close" (click)="closeSettingsModal()" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-4">Hangi 3K operasyonlarının yetkili onayına düşeceğini buradan anlık olarak (Zero-Deployment) belirleyebilirsiniz.</p>
+          
+          <div class="rules-list">
+            @for (kural of kurallar(); track kural.lookupUcKDurumId) {
+              <div class="rule-item d-flex justify-content-between align-items-center p-3 mb-2 border rounded hover-bg">
+                <div class="rule-info">
+                  <h6 class="mb-0 fw-medium">{{ kural.islemAdi }}</h6>
+                  <small class="text-muted">Onay gereksinimi: <b>{{ kural.onayGerektirirMi ? 'Evet' : 'Hayır' }}</b></small>
+                </div>
+                <div class="form-check form-switch m-0">
+                  <input class="form-check-input flexSwitchCheckChecked" type="checkbox" role="switch"
+                         [checked]="kural.onayGerektirirMi"
+                         (change)="toggleKural(kural)"
+                         style="width: 2.5rem; height: 1.25rem; cursor: pointer;">
+                </div>
+              </div>
+            }
+            @if (kurallar().length === 0) {
+              <div class="text-center p-4 text-muted">Kurallar yükleniyor...</div>
+            }
+          </div>
+        </div>
+        <div class="modal-footer border-top-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary w-100" (click)="closeSettingsModal()">Kapat</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+

@@ -59,8 +59,12 @@ export const API = {
     CREATE: `${BASE}/stok`,
     KARSILA: `${BASE}/stok/karsila`,
   },
-  FB_TRANSFER: {
-    CREATE: `${BASE}/fbtransfer`,
+  ONAY: {
+    BEKLEYENLER: `${BASE}/onay`,
+    BEKLEYEN_SAYISI: `${BASE}/onay/bekleyen-sayisi`,
+    ONAYLA: `${BASE}/onay/onayla`,
+    REDDET: `${BASE}/onay/reddet`,
+    SSE_STREAM: `${BASE}/onay/sse-stream`,
   },
   HAREKET: {
     BY_PROJE: (projeId: number) => `${BASE}/hareketgecmisi/${projeId}/gecmis`,

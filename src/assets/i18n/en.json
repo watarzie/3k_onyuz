@@ -20,7 +20,8 @@
     "KULLANICI_YETKI": "Users / Permissions",
     "ROL_YONETIMI": "Role Management",
     "GRID_MODULU": "Grid Module",
-    "3K_MODULU": "3K Module"
+    "3K_MODULU": "3K Module",
+    "ISLEM_ONAY": "Approval Center"
   },
   "ACTIONS": {
     "SAVE": "Save",

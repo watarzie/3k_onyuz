@@ -1,0 +1,27 @@
+.page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.bg-warning {
+  background-color: #fff3cd;
+  color: #856404;
+  border-color: #ffeeba;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-color);
+  
+  .empty-icon {
+    margin-bottom: 1rem;
+    display: inline-block;
+  }
+  
+  h4 {
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+  }
+}

@@ -115,13 +115,13 @@ export const routes: Routes = [
         data: { menuKod: 'eksik-listesi', title: 'Eksik Listesi' },
       },
 
-      // --- FB Transfer ---
+      // --- İşlem Onay Merkezi ---
       {
-        path: 'fb-transfer',
+        path: 'onay-merkezi',
         canActivate: [menuGuard],
         loadComponent: () =>
-          import('./shared/components/coming-soon/coming-soon.component').then(m => m.ComingSoonComponent),
-        data: { menuKod: 'fb-transfer', title: 'FB Transfer' },
+          import('./features/onay-yonetimi/onay-listesi.component').then(m => m.OnayListesiComponent),
+        data: { menuKod: 'islem-onay-merkezi', title: 'İşlem Onay Merkezi' },
       },
 
       // --- Stok ---
@@ -167,6 +167,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/rol-yonetimi/rol-yonetimi.component').then(m => m.RolYonetimiComponent),
         data: { menuKod: 'rol-yonetimi' },
+      },
+
+      // --- Not Authorized View ---
+      {
+        path: 'not-authorized',
+        loadComponent: () =>
+          import('./shared/components/not-authorized/not-authorized.component').then(m => m.NotAuthorizedComponent),
       },
 
       // --- Wildcard → Dashboard ---

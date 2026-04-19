@@ -1,25 +1,22 @@
+
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+import { CanActivateFn, Router, UrlTree } from '@angular/router';
 import { PermissionService } from '../services/permission.service';
 
 /**
  * Route Guard — Backend'den gelen yetkili menü listesine göre erişimi kontrol eder.
  *
- * GÜVENLİK: Bu guard UX amaçlıdır. Asıl güvenlik backend'dedir.
- *
  * Mantık:
- * 1. Yetki henüz yüklenmediyse → geçiş izni ver (async yükleme devam ediyor)
+ * 1. Yetki henüz yüklenmediyse → yüklenmesini bekle (Promise)
  * 2. menuKod tanımlıysa → hasAccess() kontrolü yap
- * 3. Yetkisiz → dashboard'a yönlendir
+ * 3. Yetkisiz → not-authorized'a yönlendir
  */
-export const menuGuard: CanActivateFn = (route, state) => {
+export const menuGuard: CanActivateFn = async (route, state): Promise<boolean | UrlTree> => {
   const permissionService = inject(PermissionService);
   const router = inject(Router);
 
-  // Yetki bilgisi henüz yüklenmediyse geçiş izni ver
-  if (!permissionService.loaded()) {
-    return true;
-  }
+  // Yetki ağacının API'den gelmesini bekle!
+  await permissionService.ensurePermissionsLoaded();
 
   // Dashboard her zaman erişilebilir
   const menuKod = route.data?.['menuKod'] as string;
@@ -32,7 +29,6 @@ export const menuGuard: CanActivateFn = (route, state) => {
     return true;
   }
 
-  // Yetkisiz — dashboard'a yönlendir
-  router.navigate(['/dashboard']);
-  return false;
+  // Yetkisiz — 403 sayfasına yönlendir
+  return router.createUrlTree(['/not-authorized']);
 };

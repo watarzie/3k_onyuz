@@ -9,7 +9,6 @@ export * from './sandik.model';
 export * from './grid.model';
 export * from './uck.model';
 export * from './stok.model';
-export * from './fbtransfer.model';
 export * from './hareket-gecmisi.model';
 export * from './lookup.model';
 export * from './rol.model';

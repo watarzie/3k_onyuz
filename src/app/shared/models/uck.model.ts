@@ -35,4 +35,8 @@ export interface UcKDurumGuncelleDto {
   aciklama?: string;
   geriGonderilmeSebebi?: string;
   not?: string;
+  urunAdi?: string;
+  mevcutProjeNo?: string;
+  mevcutSandikNo?: string;
+  kaynakUrunAdi?: string;
 }

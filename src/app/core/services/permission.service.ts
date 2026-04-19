@@ -34,27 +34,46 @@ export class PermissionService {
   /** Yetkili route listesi (route guard kullanır) */
   allowedRoutes = computed(() => this._allowedRoutes());
 
+  private loadPromise: Promise<boolean> | null = null;
+
+  /**
+   * Route Guard'lar tarafından yetki sisteminin yüklendiğinden emin olmak için çağrılır.
+   */
+  ensurePermissionsLoaded(): Promise<boolean> {
+    if (this.loaded()) {
+      return Promise.resolve(true);
+    }
+    
+    if (!this.loadPromise) {
+      this.loadPromise = new Promise<boolean>((resolve) => {
+        this.http.get<MenuTreeDto[]>(API.MENU.KULLANICI_MENU).subscribe({
+          next: (menuAgaci) => {
+            this._menuAgaci.set(menuAgaci);
+            const map = new Map<string, YetkiTipi>();
+            const routes = new Set<string>();
+            this.flattenTree(menuAgaci, map, routes);
+            this._yetkiMap.set(map);
+            this._allowedRoutes.set(routes);
+            this.loaded.set(true);
+            resolve(true);
+          },
+          error: () => {
+            this.loaded.set(true);
+            resolve(false);
+          },
+        });
+      });
+    }
+    
+    return this.loadPromise;
+  }
+
   /**
    * Login sonrası çağrılır.
    * Backend'den sadece yetkili menüleri çeker.
    */
   loadPermissions(): void {
-    this.http.get<MenuTreeDto[]>(API.MENU.KULLANICI_MENU).subscribe({
-      next: (menuAgaci) => {
-        this._menuAgaci.set(menuAgaci);
-
-        // Flat map oluştur
-        const map = new Map<string, YetkiTipi>();
-        const routes = new Set<string>();
-        this.flattenTree(menuAgaci, map, routes);
-        this._yetkiMap.set(map);
-        this._allowedRoutes.set(routes);
-        this.loaded.set(true);
-      },
-      error: () => {
-        this.loaded.set(true);
-      },
-    });
+    this.ensurePermissionsLoaded();
   }
 
   /** Menüye erişim var mı? (W veya R) */
