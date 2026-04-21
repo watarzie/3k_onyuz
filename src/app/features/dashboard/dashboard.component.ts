@@ -40,10 +40,10 @@ export class DashboardComponent implements OnInit {
       if (res.isSuccess && res.value) {
         this.projeler.set(res.value);
         this.toplamProje.set(res.value.length);
-        this.aktifProje.set(res.value.filter(p => p.durum === 'Aktif').length);
+        this.aktifProje.set(res.value.filter(p => p.durumMetni === 'Aktif').length);
         this.toplamSandik.set(res.value.reduce((sum, p) => sum + p.sandikSayisi, 0));
         this.eksikUrun.set(res.value.reduce((sum, p) => sum + (p.toplamUrunSayisi - p.tamamlananUrunSayisi), 0));
-        this.sevkEdilen.set(res.value.filter(p => p.durum === 'SevkEdildi' || p.durum === 'Sevkedildi').length);
+        this.sevkEdilen.set(res.value.filter(p => p.durumMetni === 'SevkEdildi' || p.durumMetni === 'Sevkedildi' || p.durumMetni === 'Sevk Edildi').length);
       }
     });
   }

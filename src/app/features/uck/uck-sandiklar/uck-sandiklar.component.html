@@ -4,6 +4,11 @@
       <h2 class="fw-bold mb-1"><i class="ri-archive-stack-line me-2"></i>3K — Sandık Listesi</h2>
       <app-breadcrumb [items]="breadcrumb" />
     </div>
+    @if (canWriteSandik()) {
+      <button class="btn btn-save d-flex align-items-center gap-2" (click)="openSandikEkleModal()">
+        <i class="ri-add-circle-line"></i> Yeni Sandık Ekle
+      </button>
+    }
   </div>
 </div>
 
@@ -77,18 +82,18 @@
                  </div>
               }
               
-              <a [routerLink]="['/uck', projeId(), s.sandikNo]" class="sandik-card h-100" [ngClass]="'s-' + s.durum.toLowerCase()" style="padding-top: 1.5rem;">
+              <a [routerLink]="['/uck', projeId(), s.sandikNo]" class="sandik-card h-100" [ngClass]="'s-' + s.durumMetni.toLowerCase()" style="padding-top: 1.5rem;">
                 <!-- Üst — Numara + Ok -->
                 <div class="card-top">
                   <div class="d-flex align-items-center">
                     <span class="sandik-no ms-3">{{ getDisplayNo(s.sandikNo) }}</span>
                     @if (canWriteSandik()) {
                       <button class="btn btn-sm ms-2" 
-                              [ngClass]="s.durum === 'Hazir' ? 'btn-outline-warning' : 'btn-outline-success'" 
+                              [ngClass]="s.durumMetni === 'Hazır' ? 'btn-outline-warning' : 'btn-outline-success'" 
                               (click)="toggleSandikDurum($event, s)" 
                               style="padding: 0.1rem 0.4rem; font-size: 0.75rem; z-index: 2; position: relative;"
                               title="Tekli Kapatma">
-                        {{ s.durum === 'Hazir' ? 'Geri Al' : 'Hazırla' }}
+                        {{ s.durumMetni === 'Hazır' ? 'Geri Al' : 'Hazırla' }}
                       </button>
                     }
                   </div>
@@ -96,14 +101,14 @@
                 </div>
                 <!-- Durum -->
                 <div class="card-status mt-2">
-                  <span class="status-dot" [style.background]="getDurumColor(s.durum)"></span>
-                  <span class="status-text" [style.color]="getDurumColor(s.durum)">{{ getDurumLabel(s.durum) }}</span>
+                  <span class="status-dot" [style.background]="getDurumColor(s.durumMetni)"></span>
+                  <span class="status-text" [style.color]="getDurumColor(s.durumMetni)">{{ getDurumLabel(s.durumMetni) }}</span>
                 </div>
                 <!-- Meta -->
                 <div class="card-meta d-flex justify-content-between align-items-center w-100 mt-auto">
                   <div class="d-flex flex-column gap-1">
                     <span><i class="ri-file-list-3-line"></i> {{ s.urunSayisi }} Ürün</span>
-                    <span><i class="ri-map-pin-line"></i> {{ s.depoLokasyonu ?? 'Belirsiz' }}</span>
+                    <span><i class="ri-map-pin-line"></i> {{ s.depoLokasyonMetni }}</span>
                   </div>
                   @if (canWriteSandik()) {
                     <button class="btn btn-sm btn-outline-info" 
@@ -112,6 +117,13 @@
                             title="Lokasyon Ekle/Değiştir">
                       <i class="ri-map-pin-add-line"></i>
                     </button>
+                    <a [routerLink]="['/sandik-yonetimi', projeId(), s.id]" 
+                       class="btn btn-sm btn-outline-primary" 
+                       (click)="$event.stopPropagation()"
+                       style="padding: 0.1rem 0.4rem; font-size: 0.75rem; z-index: 2; position: relative;"
+                       title="Sandık İçerik Yönetimi">
+                      <i class="ri-settings-3-line"></i>
+                    </a>
                   }
                 </div>
               </a>
@@ -141,19 +153,61 @@
       </div>
       <div class="mb-2">
         <label class="form-label fw-semibold text-dark">Depo Lokasyonu <span class="text-danger">*</span></label>
-        <select class="form-select form-select-lg" [ngModel]="yeniLokasyon()" (ngModelChange)="yeniLokasyon.set($event)">
-           <option value="" disabled>-- Lütfen Listeden Seçiniz --</option>
+        <select class="form-select form-select-lg" [ngModel]="yeniLokasyonId()" (ngModelChange)="yeniLokasyonId.set(+$event)">
+           <option [value]="0" disabled>-- Lütfen Listeden Seçiniz --</option>
            @for(loc of sistemLokasyonlar(); track loc.id) {
-               <option [value]="loc.deger">{{ loc.deger }}</option>
+               <option [value]="loc.id">{{ loc.deger }}</option>
            }
         </select>
       </div>
     </div>
     <div class="modal-footer d-flex gap-2 p-3 bg-white border-top">
       <button class="btn btn-outline flex-grow-1" (click)="closeLokasyonModal()">Vazgeç</button>
-      <button class="btn btn-sevk flex-grow-1" style="background-color: var(--bs-primary); border-color: var(--bs-primary); color: white;" (click)="saveLokasyon()" [disabled]="isSavingLokasyon() || !yeniLokasyon()">
+      <button class="btn btn-sevk flex-grow-1" style="background-color: var(--bs-primary); border-color: var(--bs-primary); color: white;" (click)="saveLokasyon()" [disabled]="isSavingLokasyon() || !yeniLokasyonId()">
         @if (isSavingLokasyon()) { <span class="spinner-border spinner-border-sm me-1"></span> }
         <i class="ri-save-line me-1"></i>Değişikliği Kaydet
+      </button>
+    </div>
+  </div>
+}
+
+<!-- ===== Sandık Ekleme Modal ===== -->
+@if (showSandikEkleModal()) {
+  <div class="modal-overlay" (click)="closeSandikEkleModal()"></div>
+  <div class="toplu-sevk-modal" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1055; width: 100%; max-width: 440px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+    <div class="modal-header d-flex align-items-center justify-content-between p-3 border-bottom">
+      <h5 class="fw-semibold mb-0 text-primary"><i class="ri-archive-line me-2"></i>Yeni Sandık Ekle</h5>
+      <button class="btn btn-sm border-0 bg-transparent shadow-none p-0" (click)="closeSandikEkleModal()">
+        <i class="ri-close-line fs-3 text-muted"></i>
+      </button>
+    </div>
+    <div class="modal-body p-4 bg-white">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Sandık No <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" [ngModel]="ekSandikNo()" (ngModelChange)="ekSandikNo.set($event)" placeholder="Ör: 67" />
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Sandık Tipi</label>
+        <select class="form-select" [ngModel]="ekTipId()" (ngModelChange)="ekTipId.set(+$event)">
+          @for (t of sandikTipleri(); track t.id) {
+            <option [value]="t.id">{{ t.deger }}</option>
+          }
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Depo Lokasyonu</label>
+        <select class="form-select" [ngModel]="ekLokasyonId()" (ngModelChange)="ekLokasyonId.set(+$event)">
+          @for (l of sistemLokasyonlar(); track l.id) {
+            <option [value]="l.id">{{ l.deger }}</option>
+          }
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer d-flex gap-2 p-3 bg-white border-top">
+      <button class="btn btn-outline flex-grow-1" (click)="closeSandikEkleModal()">Vazgeç</button>
+      <button class="btn btn-sevk flex-grow-1" style="background-color: var(--successColor); border-color: var(--successColor); color: white;" (click)="sandikEkle()" [disabled]="ekSaving()">
+        @if (ekSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        <i class="ri-add-circle-line me-1"></i>Oluştur
       </button>
     </div>
   </div>

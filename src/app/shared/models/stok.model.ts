@@ -9,11 +9,12 @@ export interface StokKaydiDto {
   lokasyon?: string;
   kaynakProje?: string;
   stokGirisNedeni?: string;
-  durum: string;
+  durumId: number;
+  durumMetni: string;
 }
 
 export interface StokKaydiOlusturDto {
-  id?: number;  // For generic updates if needed
+  id?: number;
   malzemeKodu: string;
   malzemeAdi: string;
   miktar: number;

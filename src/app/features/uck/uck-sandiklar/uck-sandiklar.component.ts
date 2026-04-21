@@ -54,22 +54,30 @@ export class UcKSandiklarComponent implements OnInit {
 
   // Locations derived from current crates
   lokasyonlar = computed(() => {
-    const locs = this.sandiklar().map(s => s.depoLokasyonu ?? 'Belirsiz');
+    const locs = this.sandiklar().map(s => s.depoLokasyonMetni ?? 'Belirsiz');
     return Array.from(new Set(locs)).sort();
   });
 
   // Modal
   showLokasyonModal = signal(false);
   selectedSandikForLoc = signal<SandikDto | null>(null);
-  yeniLokasyon = signal('');
+  yeniLokasyonId = signal<number>(0);
   isSavingLokasyon = signal(false);
+
+  // Sandık Ekleme Modal
+  showSandikEkleModal = signal(false);
+  ekSandikNo = signal('');
+  ekTipId = signal(1);
+  ekLokasyonId = signal(2);
+  ekSaving = signal(false);
+  sandikTipleri = signal<{id: number, deger: string}[]>([]);
 
   breadcrumb: { label: string; link?: string }[] = [];
 
   // Stats
-  get hazirCount(): number { return this.sandiklar().filter(s => s.durum === 'Hazir').length; }
-  get hazirlaniyorCount(): number { return this.sandiklar().filter(s => s.durum === 'Hazirlaniyor').length; }
-  get sevkedildiCount(): number { return this.sandiklar().filter(s => s.durum === 'Sevkedildi').length; }
+  get hazirCount(): number { return this.sandiklar().filter(s => s.durumMetni === 'Hazır').length; }
+  get hazirlaniyorCount(): number { return this.sandiklar().filter(s => s.durumMetni === 'Hazırlanıyor').length; }
+  get sevkedildiCount(): number { return this.sandiklar().filter(s => s.durumMetni === 'Sevk Edildi').length; }
 
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('projeId'));
@@ -84,9 +92,12 @@ export class UcKSandiklarComponent implements OnInit {
   }
 
   loadLookups() {
-    this.lookupService.getLookups(['LookupDepoLokasyon']).subscribe(data => {
+    this.lookupService.getLookups(['LookupDepoLokasyon', 'LookupSandikTipi']).subscribe(data => {
       if (data['LookupDepoLokasyon']) {
         this.sistemLokasyonlar.set(data['LookupDepoLokasyon']);
+      }
+      if (data['LookupSandikTipi']) {
+        this.sandikTipleri.set(data['LookupSandikTipi']);
       }
     });
   }
@@ -138,11 +149,11 @@ export class UcKSandiklarComponent implements OnInit {
     if (term) {
       list = list.filter(s =>
         s.sandikNo.toLowerCase().includes(term) ||
-        s.durum.toLowerCase().includes(term)
+        s.durumMetni.toLowerCase().includes(term)
       );
     }
     if (locs.length > 0) {
-      list = list.filter(s => locs.includes(s.depoLokasyonu ?? 'Belirsiz'));
+      list = list.filter(s => locs.includes(s.depoLokasyonMetni ?? 'Belirsiz'));
     }
     this.filtered.set(list);
   }
@@ -155,7 +166,7 @@ export class UcKSandiklarComponent implements OnInit {
     event.stopPropagation();
     if (!this.canWriteSandik()) return;
     this.selectedSandikForLocIds.set([sandik.id]);
-    this.yeniLokasyon.set(sandik.depoLokasyonu ?? '');
+    this.yeniLokasyonId.set(sandik.depoLokasyonId ?? 0);
     this.showLokasyonModal.set(true);
   }
 
@@ -163,7 +174,7 @@ export class UcKSandiklarComponent implements OnInit {
     if (this.selectedSandikIds().size === 0) return;
     if (!this.canWriteSandik()) return;
     this.selectedSandikForLocIds.set(Array.from(this.selectedSandikIds()));
-    this.yeniLokasyon.set('');
+    this.yeniLokasyonId.set(0);
     this.showLokasyonModal.set(true);
   }
 
@@ -179,19 +190,19 @@ export class UcKSandiklarComponent implements OnInit {
   closeLokasyonModal() {
     this.showLokasyonModal.set(false);
     this.selectedSandikForLocIds.set([]);
-    this.yeniLokasyon.set('');
+    this.yeniLokasyonId.set(0);
   }
 
   saveLokasyon() {
-    if (!this.yeniLokasyon().trim()) {
-      this.toast.error('Lütfen bir lokasyon seçiniz veya giriniz.');
+    if (!this.yeniLokasyonId()) {
+      this.toast.error('Lütfen bir lokasyon seçiniz.');
       return;
     }
     const ids = this.selectedSandikForLocIds();
     if (ids.length === 0) return;
 
     this.isSavingLokasyon.set(true);
-    this.sandikService.lokasyonGuncelle(ids, this.yeniLokasyon().trim()).subscribe({
+    this.sandikService.lokasyonGuncelle(ids, this.yeniLokasyonId()).subscribe({
       next: (res) => {
         this.isSavingLokasyon.set(false);
         if (res.isSuccess) {
@@ -263,7 +274,7 @@ export class UcKSandiklarComponent implements OnInit {
         <div class="text-secondary small mb-2">${item.aciklama}</div>
         <div>
           <span class="badge bg-primary text-white me-2 px-2 py-1">Kalan: ${item.kalan}</span>
-          <span class="badge bg-danger text-white px-2 py-1">Durum: ${item.durum}</span>
+          <span class="badge bg-danger text-white px-2 py-1">Durum: ${item.durumMetni}</span>
         </div>
       </div>`;
   }
@@ -330,7 +341,7 @@ export class UcKSandiklarComponent implements OnInit {
     
     if (!this.canWriteSandik()) return;
 
-    const isHazir = sandik.durum === 'Hazir';
+    const isHazir = sandik.durumMetni === 'Hazır';
     const actionText = isHazir ? 'Sandığı tekrar "Hazırlanıyor" durumuna almak' : 'Sandığı "Hazır" olarak işaretlemek';
     
     const confirm = await this.confirmService.ask({
@@ -405,6 +416,53 @@ export class UcKSandiklarComponent implements OnInit {
         } else {
            this.toast.error('Beklenmeyen bir hata oluştu.');
         }
+      }
+    });
+  }
+
+  // ===== Sandık Ekleme =====
+
+  openSandikEkleModal() {
+    const maxNo = this.sandiklar().reduce((max, s) => {
+      const num = parseInt(s.sandikNo.replace(/\D/g, ''), 10);
+      return isNaN(num) ? max : Math.max(max, num);
+    }, 0);
+    this.ekSandikNo.set((maxNo + 1).toString());
+    this.ekTipId.set(1);
+    this.ekLokasyonId.set(2);
+    this.showSandikEkleModal.set(true);
+  }
+
+  closeSandikEkleModal() {
+    this.showSandikEkleModal.set(false);
+  }
+
+  sandikEkle() {
+    const no = this.ekSandikNo().trim();
+    if (!no) {
+      this.toast.error('Sandık numarası girilmelidir.');
+      return;
+    }
+    this.ekSaving.set(true);
+    this.sandikService.sandikEkle({
+      projeId: this.projeId(),
+      sandikNo: no,
+      tipId: this.ekTipId(),
+      depoLokasyonId: this.ekLokasyonId(),
+    }).subscribe({
+      next: (res) => {
+        this.ekSaving.set(false);
+        if (res.isSuccess) {
+          this.toast.success(`Sandık "${no}" başarıyla oluşturuldu.`);
+          this.closeSandikEkleModal();
+          this.loadSandiklar();
+        } else {
+          this.toast.error(res.error ?? 'Sandık eklenemedi.');
+        }
+      },
+      error: () => {
+        this.ekSaving.set(false);
+        this.toast.error('Sandık eklenirken bir hata oluştu.');
       }
     });
   }

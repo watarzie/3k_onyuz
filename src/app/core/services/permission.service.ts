@@ -1,7 +1,8 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { API } from '../constants/api-endpoints';
-import { MenuTreeDto, YetkiTipi } from '../../shared/models';
+import { MenuTreeDto } from '../../shared/models';
+import { YetkiTipi } from '../constants/enums';
 
 /**
  * Yetki Servisi — Backend-driven RBAC.
@@ -19,8 +20,8 @@ export class PermissionService {
   /** Backend'den gelen yetkili menü ağacı */
   private _menuAgaci = signal<MenuTreeDto[]>([]);
 
-  /** Flat yetki map: menuKod → YetkiTipi (sadece W ve R olanlar gelir) */
-  private _yetkiMap = signal<Map<string, YetkiTipi>>(new Map());
+  /** Flat yetki map: menuKod → YetkiTipiId (1=N, 2=R, 3=W) */
+  private _yetkiMap = signal<Map<string, number>>(new Map());
 
   /** Yetkili route'lar (route guard için) */
   private _allowedRoutes = signal<Set<string>>(new Set());
@@ -49,7 +50,7 @@ export class PermissionService {
         this.http.get<MenuTreeDto[]>(API.MENU.KULLANICI_MENU).subscribe({
           next: (menuAgaci) => {
             this._menuAgaci.set(menuAgaci);
-            const map = new Map<string, YetkiTipi>();
+            const map = new Map<string, number>();
             const routes = new Set<string>();
             this.flattenTree(menuAgaci, map, routes);
             this._yetkiMap.set(map);
@@ -79,17 +80,17 @@ export class PermissionService {
   /** Menüye erişim var mı? (W veya R) */
   hasAccess(menuKod: string): boolean {
     const yetki = this._yetkiMap().get(menuKod);
-    return yetki === 'W' || yetki === 'R';
+    return yetki === YetkiTipi.W || yetki === YetkiTipi.R;
   }
 
   /** Menüye yazma yetkisi var mı? */
   canWrite(menuKod: string): boolean {
-    return this._yetkiMap().get(menuKod) === 'W';
+    return this._yetkiMap().get(menuKod) === YetkiTipi.W;
   }
 
   /** Menüye sadece okuma yetkisi var mı? */
   isReadOnly(menuKod: string): boolean {
-    return this._yetkiMap().get(menuKod) === 'R';
+    return this._yetkiMap().get(menuKod) === YetkiTipi.R;
   }
 
   /** Route'a erişim var mı? (Route Guard kullanır) */
@@ -109,10 +110,10 @@ export class PermissionService {
 
   // ===== Private Helpers =====
 
-  private flattenTree(nodes: MenuTreeDto[], map: Map<string, YetkiTipi>, routes: Set<string>): void {
+  private flattenTree(nodes: MenuTreeDto[], map: Map<string, number>, routes: Set<string>): void {
     for (const node of nodes) {
       if (node.kod) {
-        map.set(node.kod, node.yetkiTipi as YetkiTipi);
+        map.set(node.kod, node.yetkiTipiId);
       }
       if (node.route) {
         routes.add(node.route);

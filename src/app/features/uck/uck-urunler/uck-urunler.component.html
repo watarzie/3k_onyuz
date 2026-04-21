@@ -53,6 +53,7 @@
               <th>Koli</th>
               <th class="text-center">Miktar</th>
               <th>Grid Dur.</th>
+              <th>Sevk Dur.</th>
               <th class="text-center">Grid Gelen</th>
               <th class="text-center">Trafo</th>
               <th>3K Karşılama</th>
@@ -72,15 +73,20 @@
                 <td><span class="badge-sandik">{{ u.sandikNo }}</span></td>
                 <td class="text-center fw-semibold">{{ u.istenenAdet }}</td>
                 <td>
-                  <span class="durum-badge" [style.background]="getGridDurumColor(u.gridDurumu) + '15'" [style.color]="getGridDurumColor(u.gridDurumu)" [style.border-color]="getGridDurumColor(u.gridDurumu) + '30'">
-                    {{ u.gridDurumu ? u.gridDurumu.toUpperCase() : '-' }}
+                  <span class="durum-badge" [style.background]="getGridDurumColor(u.gridDurumuMetni) + '15'" [style.color]="getGridDurumColor(u.gridDurumuMetni)" [style.border-color]="getGridDurumColor(u.gridDurumuMetni) + '30'">
+                    {{ u.gridDurumuMetni ? u.gridDurumuMetni.toUpperCase() : '-' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="durum-badge" [style.background]="getGridDurumColor(u.gridSevkDurumuMetni) + '15'" [style.color]="getGridDurumColor(u.gridSevkDurumuMetni)" [style.border-color]="getGridDurumColor(u.gridSevkDurumuMetni) + '30'">
+                    {{ u.gridSevkDurumuMetni ? u.gridSevkDurumuMetni.toUpperCase() : '-' }}
                   </span>
                 </td>
                 <td class="text-center">{{ u.gridGelenAdet }}</td>
                 <td class="text-center">{{ u.trafoSevkAdet > 0 ? u.trafoSevkAdet : '-' }}</td>
                 <td>
-                  <span class="durum-badge" [style.background]="getTipColor(u.ucKKarsilamaTipi) + '15'" [style.color]="getTipColor(u.ucKKarsilamaTipi)" [style.border-color]="getTipColor(u.ucKKarsilamaTipi) + '30'">
-                    {{ getTipLabel(u.ucKKarsilamaTipi) }}
+                  <span class="durum-badge" [style.background]="getTipColor(u.ucKKarsilamaTipiMetni) + '15'" [style.color]="getTipColor(u.ucKKarsilamaTipiMetni)" [style.border-color]="getTipColor(u.ucKKarsilamaTipiMetni) + '30'">
+                    {{ getTipLabel(u.ucKKarsilamaTipiMetni) }}
                   </span>
                 </td>
                 <td class="text-center">{{ u.gelenMiktar }}</td>
@@ -88,13 +94,13 @@
                   {{ u.kaynakHedefProjeNo ?? '-' }}
                 </td>
                 <td>
-                  <span class="kontrol-text" [style.color]="getTipColor(u.ucKKarsilamaTipi)">{{ u.kontrolUyari }}</span>
+                  <span class="kontrol-text" [style.color]="getTipColor(u.ucKKarsilamaTipiMetni)">{{ u.kontrolUyari }}</span>
                 </td>
                 <td class="text-center fw-bold" [ngClass]="{'text-danger': u.kalan > 0, 'text-success': u.kalan === 0}">
                   {{ u.kalan }}
                 </td>
                 <td *appCanWrite>
-                  <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle" [disabled]="u.gridDurumu === 'İptal'">
+                  <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle" [disabled]="u.gridDurumuMetni === 'İptal' || u.gridDurumuMetni === 'Trafo Sevk' || u.gridDurumuMetni === 'İptal Edildi'">
                     <i class="ri-edit-line"></i>
                   </button>
                 </td>

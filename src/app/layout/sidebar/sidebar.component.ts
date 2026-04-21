@@ -9,7 +9,7 @@ interface MenuItem {
   label: string;
   icon: string;
   route?: string | null;
-  yetkiTipi: string;
+  yetkiTipiId: number;
   children?: MenuItem[];
 }
 
@@ -43,7 +43,7 @@ export class SidebarComponent {
         label: this.ts.translate(node.labelKey),
         icon: node.icon || '',
         route: node.route,
-        yetkiTipi: node.yetkiTipi,
+        yetkiTipiId: node.yetkiTipiId,
         // Route=null olanları sidebar'da GİZLE (grid-modulu, 3k-modulu gibi)
         children: node.children
           ?.filter(child => !!child.route)
@@ -51,7 +51,7 @@ export class SidebarComponent {
             label: this.ts.translate(child.labelKey),
             icon: child.icon || '',
             route: child.route,
-            yetkiTipi: child.yetkiTipi,
+            yetkiTipiId: child.yetkiTipiId,
           })),
       }));
   });

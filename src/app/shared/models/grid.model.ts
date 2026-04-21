@@ -8,27 +8,31 @@ export interface GridUrunDto {
   istenenAdet: number;
   birim: string;
   sandikNo: string;
-  gridDurumu: string;
+  gridDurumuId: number;
+  gridDurumuMetni: string;
   gridGelenAdet: number;
   trafoSevkAdet: number;
-  gridSevkDurumu: string;
+  gridSevkDurumuId: number;
+  gridSevkDurumuMetni: string;
   gridSevkMiktari?: number;
   gridSevkTarihi?: string;
   gridNotu?: string;
   gridEksikMiktar: number;
-  ucKDurumu: string;
+  ucKDurumuId: number;
+  ucKDurumuMetni: string;
   gelenMiktar: number;
   kaynakHedefProjeNo?: string;
-  genelDurum: string;
+  genelDurumId: number;
+  genelDurumMetni: string;
 }
 
 export interface GridDurumGuncelleDto {
   cekiSatiriId: number;
   projeId: number;
-  yeniDurum: string;
+  yeniDurumId: number;
   gridGelenAdet?: number;
   trafoSevkAdet?: number;
-  gridSevkDurumu?: string;
+  gridSevkDurumuId?: number;
   sevkMiktari?: number;
   not?: string;
 }

@@ -44,7 +44,7 @@ export class SandikService {
     return this.api.post<unknown>(API.SANDIK.FBDEN_KARSILA, body);
   }
 
-  sandikEkle(body: { projeId: number; sandikNo: string; tip: string; depoLokasyonu: string }): Observable<ApiResult<unknown>> {
+  sandikEkle(body: { projeId: number; sandikNo: string; tipId: number; depoLokasyonId: number }): Observable<ApiResult<unknown>> {
     return this.api.post<unknown>(API.SANDIK.EKLE, body);
   }
 

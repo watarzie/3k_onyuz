@@ -164,7 +164,7 @@ export class RolYonetimiComponent implements OnInit {
 
   private collectPermissions(nodes: MenuTreeDto[], result: RolYetkiItemDto[]): void {
     for (const node of nodes) {
-      result.push({ menuTanimiId: node.id, yetkiTipi: node.yetkiTipi });
+      result.push({ menuTanimiId: node.id, yetkiTipiId: node.yetkiTipiId });
       if (node.children?.length) {
         this.collectPermissions(node.children, result);
       }

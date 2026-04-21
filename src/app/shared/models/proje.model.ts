@@ -4,7 +4,8 @@ export interface ProjeDto {
   id: number;
   projeNo: string;
   musteri: string;
-  durum: string;
+  durumId: number;
+  durumMetni: string;
   planlananSevkTarihi?: string;
   sorumluKisi: string;
   sandikSayisi: number;

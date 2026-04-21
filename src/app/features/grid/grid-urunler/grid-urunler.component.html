@@ -1,4 +1,4 @@
-<div class="page-title-area mb-4">
+﻿<div class="page-title-area mb-4">
   <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
     <div>
       <h2 class="fw-bold mb-1"><i class="ri-database-2-line me-2"></i>Grid Ürün Takibi</h2>
@@ -79,18 +79,18 @@
                 <td class="text-center fw-semibold">{{ u.istenenAdet }}</td>
                 <td><span class="badge-sandik">{{ u.sandikNo }}</span></td>
                 <td>
-                  <span class="durum-badge" [style.background]="getDurumColor(u.gridDurumu) + '15'" [style.color]="getDurumColor(u.gridDurumu)" [style.border-color]="getDurumColor(u.gridDurumu) + '30'">
-                    {{ getDurumLabel(u.gridDurumu) }}
+                  <span class="durum-badge" [style.background]="getDurumColor(u.gridDurumuMetni) + '15'" [style.color]="getDurumColor(u.gridDurumuMetni)" [style.border-color]="getDurumColor(u.gridDurumuMetni) + '30'">
+                    {{ getDurumLabel(u.gridDurumuMetni) }}
                   </span>
                 </td>
                 <td class="text-center">{{ u.gridGelenAdet }}</td>
                 <td class="text-center">{{ u.trafoSevkAdet > 0 ? u.trafoSevkAdet : '-' }}</td>
                 <td class="text-center fw-semibold" [ngClass]="{'text-danger': u.gridEksikMiktar > 0, 'text-success': u.gridEksikMiktar === 0}">
-                  {{ u.gridDurumu === 'Iptal' ? '-' : u.gridEksikMiktar }}
+                  {{ u.gridDurumuMetni === 'Iptal' ? '-' : u.gridEksikMiktar }}
                 </td>
                 <td>
-                  <span class="durum-badge-sm" [style.color]="getSevkDurumColor(u.gridSevkDurumu)">
-                    {{ getSevkDurumLabel(u.gridSevkDurumu) }}
+                  <span class="durum-badge-sm" [style.color]="getSevkDurumColor(u.gridSevkDurumuMetni)">
+                    {{ getSevkDurumLabel(u.gridSevkDurumuMetni) }}
                   </span>
                 </td>
                 <td>
@@ -98,15 +98,15 @@
                     <span class="badge rounded-pill border fw-normal" style="background:#f1f5f9; color:#0f172a; border-color:#cbd5e1!important; font-size:11px;">
                       <i class="ri-git-merge-line text-primary border-0 me-1"></i>
                       {{ u.kaynakHedefProjeNo }}
-                      @if (u.ucKDurumu === 'Başka Projeye Verildi') { 'ya Verildi' } @else { 'den' }
+                      @if (u.ucKDurumuMetni === 'Başka Projeye Verildi') { 'ya Verildi' } @else { 'den' }
                     </span>
                   } @else {
                     <span class="text-muted">-</span>
                   }
                 </td>
                 <td>
-                  <span class="durum-badge" [style.background]="getUckDurumColor(u.ucKDurumu) + '15'" [style.color]="getUckDurumColor(u.ucKDurumu)" [style.border-color]="getUckDurumColor(u.ucKDurumu) + '30'">
-                    {{ u.ucKDurumu ? u.ucKDurumu.toUpperCase() : '-' }}
+                  <span class="durum-badge" [style.background]="getUckDurumColor(u.ucKDurumuMetni) + '15'" [style.color]="getUckDurumColor(u.ucKDurumuMetni)" [style.border-color]="getUckDurumColor(u.ucKDurumuMetni) + '30'">
+                    {{ u.ucKDurumuMetni ? u.ucKDurumuMetni.toUpperCase() : '-' }}
                   </span>
                 </td>
                 <td *appCanWrite>

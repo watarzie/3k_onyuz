@@ -5,7 +5,7 @@ import { API } from '../constants/api-endpoints';
 import {
   ApiResult, SandikDto, SandikDetayDto, SandikEkleDto, ManuelUrunEkleDto,
   UrunGuncelleDto, SandikDegistirDto, TeslimAlDto, TopluTeslimAlDto,
-  UrunIptalDto, StokKarsilamaDto, EksikUrunDto
+  UrunIptalDto, StokKarsilamaDto, EksikUrunDto, UrunTasiDto
 } from '../../shared/models/index';
 
 /**
@@ -93,7 +93,11 @@ export class SandikService {
     return this.api.post<any>(API.SANDIK.TOPLU_KAPAT, { sandikIds, forceClose });
   }
 
-  lokasyonGuncelle(sandikIds: number[], depoLokasyonu: string): Observable<ApiResult<unknown>> {
-    return this.api.put<unknown>(API.SANDIK.LOKASYON_GUNCELLE, { sandikIds, depoLokasyonu });
+  lokasyonGuncelle(sandikIds: number[], depoLokasyonId: number): Observable<ApiResult<unknown>> {
+    return this.api.put<unknown>(API.SANDIK.LOKASYON_GUNCELLE, { sandikIds, depoLokasyonId });
+  }
+
+  urunTasi(dto: UrunTasiDto): Observable<ApiResult<unknown>> {
+    return this.api.post<unknown>(API.SANDIK.URUN_TASI, dto);
   }
 }

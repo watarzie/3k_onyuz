@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+﻿import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
@@ -159,7 +159,7 @@ export class StokYonetimi implements OnInit {
     }
 
     if (this.isEditMode()) {
-       payload.depoLokasyonu = payload.lokasyon; 
+       payload.depoLokasyonMetni = payload.lokasyon; 
        this.stokService.stokGuncelle(this.editId()!, payload).subscribe({
           next: (res) => {
             if (res.isSuccess) {

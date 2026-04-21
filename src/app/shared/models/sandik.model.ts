@@ -3,16 +3,20 @@
 export interface SandikDto {
   id: number;
   sandikNo: string;
-  durum: string;
-  depoLokasyonu?: string;
+  durumId: number;
+  durumMetni: string;
+  depoLokasyonId: number;
+  depoLokasyonMetni: string;
   urunSayisi: number;
 }
 
 export interface SandikDetayDto {
   id: number;
   sandikNo: string;
-  durum: string;
-  depoLokasyonu?: string;
+  durumId: number;
+  durumMetni: string;
+  depoLokasyonId: number;
+  depoLokasyonMetni: string;
   icerikler: SandikIcerikDto[];
 }
 
@@ -25,7 +29,8 @@ export interface SandikIcerikDto {
   istenenAdet: number;
   konulanAdet: number;
   eksikAdet: number;
-  durum: string;
+  durumId: number;
+  durumMetni: string;
   paketleyenBasHarf?: string;
   kontrolEdenBasHarf?: string;
   remarks?: string;
@@ -34,8 +39,8 @@ export interface SandikIcerikDto {
 export interface SandikEkleDto {
   projeId: number;
   sandikNo: string;
-  tip: string;
-  depoLokasyonu: string;
+  tipId: number;
+  depoLokasyonId: number;
 }
 
 export interface ManuelUrunEkleDto {
@@ -50,12 +55,14 @@ export interface ManuelUrunEkleDto {
 
 export interface UrunGuncelleDto {
   cekiSatiriId: number;
+  sandikId: number;
   konulanAdet?: number;
   eksikAdet?: number;
+  gridDurumuId?: number;
+  ucKDurumuId?: number;
   paketleyenId?: number;
   kontrolEdenId?: number;
   aciklama?: string;
-  yeniFiiliSandikNo?: string;
   kullaniciId: number;
   projeId: number;
 }
@@ -94,7 +101,16 @@ export interface EksikUrunDto {
   istenenAdet: number;
   gelenMiktar: number;
   eksikMiktar: number;
-  gridDurumu: string;
-  ucKDurumu: string;
+  gridDurumuId: number;
+  gridDurumuMetni: string;
+  ucKDurumuId: number;
+  ucKDurumuMetni: string;
   sandikNo: string;
+}
+
+export interface UrunTasiDto {
+  kaynakSandikIcerikId: number;
+  hedefSandikId: number;
+  tasinanAdet: number;
+  projeId: number;
 }

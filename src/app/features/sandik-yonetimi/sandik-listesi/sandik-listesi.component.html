@@ -4,6 +4,9 @@
       <h2 class="fw-bold mb-1">{{ 'MENU.SANDIK_YONETIMI' | translate }}</h2>
       <app-breadcrumb [items]="breadcrumb" />
     </div>
+    <button class="btn btn-save d-flex align-items-center gap-2" (click)="openEkleModal()">
+      <i class="ri-add-circle-line"></i> Yeni Sandık Ekle
+    </button>
   </div>
 </div>
 
@@ -27,11 +30,9 @@
         <table class="table table-hover align-middle mb-0">
           <thead>
             <tr>
-              <th><input type="checkbox" class="form-check-input" /></th>
               <th>{{ 'LABELS.SANDIK_NO' | translate }}</th>
-              <th>{{ 'LABELS.PROJE_NO' | translate }}</th>
-              <th>{{ 'LABELS.DURUM' | translate }}</th>
-              <th>{{ 'LABELS.TAMAMLANMA' | translate }}</th>
+              <th>{{ 'LABELS.durumMetni' | translate }}</th>
+              <th>Ürün Sayısı</th>
               <th>{{ 'LABELS.LOKASYON' | translate }}</th>
               <th></th>
             </tr>
@@ -39,25 +40,16 @@
           <tbody>
             @for (s of filteredSandiklar(); track s.id) {
               <tr>
-                <td><input type="checkbox" class="form-check-input" /></td>
                 <td class="fw-semibold">{{ s.sandikNo }}</td>
-                <td>-</td>
-                <td><app-status-badge [status]="s.durum" [label]="getDurumLabel(s.durum)" /></td>
+                <td><app-status-badge [status]="s.durumMetni" [label]="getDurumLabel(s.durumMetni)" /></td>
                 <td>
-                  <div class="d-flex align-items-center gap-2">
-                    <div class="progress flex-grow-1" style="height: 6px; min-width:80px;">
-                      <div class="progress-bar bg-success" [style.width.%]="s.urunSayisi > 0 ? 100 : 0"></div>
-                    </div>
-                    <small class="fw-semibold text-nowrap">{{ s.urunSayisi > 0 ? '100%' : '0%' }}</small>
-                  </div>
+                  <span class="badge bg-secondary-subtle text-secondary">{{ s.urunSayisi }}</span>
                 </td>
-                <td>{{ s.depoLokasyonu ?? '-' }}</td>
+                <td>{{ s.depoLokasyonMetni }}</td>
                 <td>
-                  <div class="d-flex gap-1">
-                    <a [routerLink]="['/sandik-yonetimi', projeId(), s.id]" class="btn btn-sm btn-action">
-                      <i class="ri-eye-line"></i> {{ 'ACTIONS.ISLEM' | translate }}
-                    </a>
-                  </div>
+                  <a [routerLink]="['/sandik-yonetimi', projeId(), s.id]" class="btn btn-sm btn-action">
+                    <i class="ri-eye-line me-1"></i> Detay
+                  </a>
                 </td>
               </tr>
             }
@@ -66,13 +58,49 @@
       </div>
     }
   </div>
-  <div class="card-footer d-flex align-items-center justify-content-between">
+  <div class="card-footer">
     <small class="text-muted">{{ filteredSandiklar().length }} {{ 'LABELS.TOPLAM_KAYIT' | translate }}</small>
-    <div class="d-flex gap-2">
-      <button class="btn btn-sm btn-status btn-tam-geldi">{{ 'STATUS.TAM_GELDI' | translate }}</button>
-      <button class="btn btn-sm btn-status btn-eksik">{{ 'STATUS.EKSIK_GELDI' | translate }}</button>
-      <button class="btn btn-sm btn-status btn-stok">{{ 'LABELS.STOKTAN_KARSILA' | translate }}</button>
-      <button class="btn btn-sm btn-status btn-degistir">{{ 'LABELS.SANDIK_DEGISTIR' | translate }}</button>
-    </div>
   </div>
 </div>
+
+<!-- ===== Sandık Ekleme Modal ===== -->
+@if (showEkleModal()) {
+  <div class="modal-overlay" (click)="closeEkleModal()"></div>
+  <div class="modal-container">
+    <div class="modal-header-custom">
+      <h5 class="fw-semibold mb-0"><i class="ri-archive-line me-2"></i>Yeni Sandık Ekle</h5>
+      <button class="btn btn-sm border-0" (click)="closeEkleModal()"><i class="ri-close-line fs-5"></i></button>
+    </div>
+    <div class="modal-body-custom">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Sandık No <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" [ngModel]="yeniSandikNo()" (ngModelChange)="yeniSandikNo.set($event)" placeholder="Ör: 5" />
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Sandık Tipi</label>
+        <select class="form-select" [ngModel]="yeniTipId()" (ngModelChange)="yeniTipId.set(+$event)">
+          @for (t of sandikTipleri(); track t.id) {
+            <option [value]="t.id">{{ t.deger }}</option>
+          }
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Depo Lokasyonu</label>
+        <select class="form-select" [ngModel]="yeniLokasyonId()" (ngModelChange)="yeniLokasyonId.set(+$event)">
+          @for (l of lokasyonlar(); track l.id) {
+            <option [value]="l.id">{{ l.deger }}</option>
+          }
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer-custom">
+      <button class="btn btn-outline flex-grow-1" (click)="closeEkleModal()">İptal</button>
+      <button class="btn btn-save flex-grow-1" (click)="sandikEkle()" [disabled]="eklemeSaving()">
+        @if (eklemeSaving()) {
+          <span class="spinner-border spinner-border-sm me-1"></span>
+        }
+        Oluştur
+      </button>
+    </div>
+  </div>
+}

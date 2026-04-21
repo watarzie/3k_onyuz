@@ -36,56 +36,75 @@
           <thead>
             <tr>
               <th>{{ 'LABELS.PROJE_NO' | translate }}</th>
-              <th>Müşteri</th>
+              @if (isSandikYonetimi()) {
+                <th>Müşteri</th>
+              }
               <th>{{ 'LABELS.TOPLAM_SANDIK' | translate }}</th>
-              <th>Ürün Sayısı</th>
-              <th>{{ 'LABELS.DURUM' | translate }}</th>
+              @if (isSandikYonetimi()) {
+                <th>Ürün Sayısı</th>
+              } @else {
+                <th>{{ 'LABELS.LOKASYON' | translate }}</th>
+              }
+              <th>{{ 'LABELS.durumMetni' | translate }}</th>
               <th>{{ 'LABELS.TAMAMLANMA' | translate }}</th>
-              <th></th>
+              @if (isSandikYonetimi()) {
+                <th>İşlemler</th>
+              }
             </tr>
           </thead>
           <tbody>
             @for (p of filtered(); track p.id) {
               <tr>
+                <td class="fw-semibold">
+                  @if (isSandikYonetimi()) {
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="proje-icon"><i class="ri-folder-line"></i></div>
+                      <span>{{ p.projeNo }}</span>
+                    </div>
+                  } @else {
+                    {{ p.projeNo }}
+                  }
+                </td>
+                @if (isSandikYonetimi()) {
+                  <td>{{ p.musteri ?? '-' }}</td>
+                  <td>
+                    <span class="fw-semibold">{{ p.hazirSandikSayisi }}/{{ p.sandikSayisi }}</span>
+                    <small class="text-muted ms-1">hazır</small>
+                  </td>
+                  <td><span class="fw-semibold">{{ p.toplamUrunSayisi }}</span></td>
+                } @else {
+                  <td>{{ p.sandikSayisi }}</td>
+                  <td>{{ p.lokasyon ?? '-' }}</td>
+                }
+                <td><app-status-badge [status]="p.durumMetni" [label]="getDurumLabel(p.durumMetni)" /></td>
                 <td>
                   <div class="d-flex align-items-center gap-2">
-                    <div class="proje-icon"><i class="ri-folder-line"></i></div>
-                    <span class="fw-semibold">{{ p.projeNo }}</span>
-                  </div>
-                </td>
-                <td>{{ p.musteri ?? '-' }}</td>
-                <td>
-                  <span class="fw-semibold">{{ p.hazirSandikSayisi }}/{{ p.sandikSayisi }}</span>
-                  <small class="text-muted ms-1">hazır</small>
-                </td>
-                <td><span class="fw-semibold">{{ p.toplamUrunSayisi }}</span></td>
-                <td><app-status-badge [status]="p.durum" [label]="getDurumLabel(p.durum)" /></td>
-                <td>
-                  <div class="d-flex align-items-center gap-2">
-                    <div class="progress flex-grow-1" style="height: 6px; min-width:100px;">
+                    <div class="progress flex-grow-1" style="height: 6px; min-width: 100px;">
                       <div class="progress-bar" [ngClass]="{
                         'bg-success': getTamamlanmaYuzdesi(p) === 100,
                         'bg-primary': getTamamlanmaYuzdesi(p) > 0 && getTamamlanmaYuzdesi(p) < 100,
                         'bg-secondary': getTamamlanmaYuzdesi(p) === 0
                       }" [style.width.%]="getTamamlanmaYuzdesi(p)"></div>
                     </div>
-                    <small class="fw-semibold text-nowrap">{{ getTamamlanmaYuzdesi(p) }}%</small>
+                    <small class="fw-semibold">{{ getTamamlanmaYuzdesi(p) }}%</small>
                   </div>
                 </td>
-                <td>
-                  <div class="d-flex gap-1">
-                    @if (canSeeGrid()) {
-                      <a [routerLink]="['/grid', p.id]" class="btn btn-sm btn-action-grid" title="Grid Modülü">
-                        <i class="ri-database-2-line me-1"></i>Grid
-                      </a>
-                    }
-                    @if (canSee3K()) {
-                      <a [routerLink]="['/uck', p.id]" class="btn btn-sm btn-action-3k" title="3K Modülü">
-                        <i class="ri-archive-stack-line me-1"></i>3K
-                      </a>
-                    }
-                  </div>
-                </td>
+                @if (isSandikYonetimi()) {
+                  <td>
+                    <div class="d-flex gap-1">
+                      @if (canSeeGrid()) {
+                        <a [routerLink]="['/grid', p.id]" class="btn btn-sm btn-action-grid" title="Grid Modülü">
+                          <i class="ri-database-2-line me-1"></i>Grid
+                        </a>
+                      }
+                      @if (canSee3K()) {
+                        <a [routerLink]="['/uck', p.id]" class="btn btn-sm btn-action-3k" title="3K Modülü">
+                          <i class="ri-archive-stack-line me-1"></i>3K
+                        </a>
+                      }
+                    </div>
+                  </td>
+                }
               </tr>
             }
           </tbody>

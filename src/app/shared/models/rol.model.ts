@@ -1,7 +1,4 @@
-/**
- * Yetki tipleri: W = Tam Yetki (Write), R = Sadece Okuma (Read), N = Yetkisiz (None)
- */
-export type YetkiTipi = 'W' | 'R' | 'N';
+import { YetkiTipi } from '../../core/constants/enums';
 
 /** GET /api/rol — liste */
 export interface RolDto {
@@ -24,7 +21,8 @@ export interface MenuTreeDto {
   icon: string;
   route?: string;
   sira: number;
-  yetkiTipi: YetkiTipi;
+  yetkiTipiId: number;
+  yetkiTipiMetni: string;
   children: MenuTreeDto[];
   /** UI-only state: parent referansı (set edildikten sonra) */
   parent?: MenuTreeDto;
@@ -33,7 +31,7 @@ export interface MenuTreeDto {
 /** PUT /api/rol — yetki kayıt item */
 export interface RolYetkiItemDto {
   menuTanimiId: number;
-  yetkiTipi: YetkiTipi;
+  yetkiTipiId: number;
 }
 
 /** PUT /api/rol — request body */

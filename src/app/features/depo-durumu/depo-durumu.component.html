@@ -84,7 +84,7 @@
                 <th>Proje Adı</th>
                 <th>{{ 'LABELS.SANDIK_NO' | translate }}</th>
                 <th>Tipi</th>
-                <th>{{ 'LABELS.DURUM' | translate }}</th>
+                <th>{{ 'LABELS.durumMetni' | translate }}</th>
                 <th>{{ 'LABELS.LOKASYON' | translate }}</th>
                 <th>Tamamlanan / Gerekli</th>
               </tr>
@@ -95,10 +95,10 @@
                   <td><span class="fw-medium text-primary">{{ s.projeAdi }}</span></td>
                   <td class="fw-bold">{{ s.sandikNo }}</td>
                   <td><span class="badge bg-secondary-subtle text-secondary">{{ s.tip ?? 'Standart' }}</span></td>
-                  <td><app-status-badge [status]="s.durum" [label]="s.durum" /></td>
+                  <td><app-status-badge [status]="s.durumMetni" [label]="s.durumMetni" /></td>
                   <td>
-                    @if (s.depoLokasyonu) {
-                       <span class="text-dark"><i class="ri-map-pin-line text-info me-1"></i> {{ s.depoLokasyonu }}</span>
+                    @if (s.depoLokasyonMetni) {
+                       <span class="text-dark"><i class="ri-map-pin-line text-info me-1"></i> {{ s.depoLokasyonMetni }}</span>
                     } @else {
                        <span class="text-muted"><i class="ri-map-pin-line me-1"></i> Belirsiz</span>
                     }
@@ -106,7 +106,7 @@
                   <td>
                     <div class="d-flex align-items-center gap-2">
                         <span>{{ s.urunSayisi }}</span>
-                        @if (s.urunSayisi > 0 && s.durum === 'Hazir') {
+                        @if (s.urunSayisi > 0 && s.durumMetni === 'Hazır') {
                             <i class="ri-check-double-line text-success fs-5"></i>
                         }
                     </div>

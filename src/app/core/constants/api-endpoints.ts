@@ -44,6 +44,7 @@ export const API = {
     KAPAT: `${BASE}/sandik/kapat`,
     TOPLU_KAPAT: `${BASE}/sandik/toplu-kapat`,
     LOKASYON_GUNCELLE: `${BASE}/sandik/lokasyon-guncelle`,
+    URUN_TASI: `${BASE}/sandik/urun-tasi`,
   },
   GRID: {
     URUNLER: (projeId: number) => `${BASE}/grid/${projeId}/urunler`,

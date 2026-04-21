@@ -11,8 +11,8 @@
       <!-- Checkbox (tri-state) -->
       <input type="checkbox"
              class="form-check-input"
-             [checked]="node.yetkiTipi === 'W'"
-             [indeterminate]="node.yetkiTipi === 'R'"
+             [checked]="node.yetkiTipiId === 3"
+             [indeterminate]="node.yetkiTipiId === 2"
              (change)="onPermissionChange(node)">
 
       <!-- İkon -->

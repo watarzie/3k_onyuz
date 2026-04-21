@@ -15,18 +15,19 @@ import { StatCardComponent } from '../../../shared/components/stat-card/stat-car
 import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
 import { UcKUrunDto, UcKDurumGuncelleDto, ProjeDto, GridUrunDto, StokKaydiDto } from '../../../shared/models/index';
+import { UcKDurum, GridSevkDurum, GridDurum } from '../../../core/constants/enums';
 
-interface KarsilamaTipi { value: string; label: string; color: string; bgClass: string; }
+interface KarsilamaTipi { id: number; value: string; label: string; color: string; bgClass: string; }
 
 const KARSILAMA_TIPLERI: KarsilamaTipi[] = [
-  { value: 'Tam Geldi',            label: 'TAM GELDİ',            color: '#25B003', bgClass: 'row-tam-geldi' },
-  { value: 'Eksik Geldi',          label: 'EKSİK GELDİ',          color: '#FD5812', bgClass: 'row-eksik-geldi' },
-  { value: 'Projeden Karşılandı',  label: 'PROJEDEN KARŞILANDI',   color: '#3584FC', bgClass: 'row-projeden' },
-  { value: 'Stoktan Karşılandı',   label: 'STOKTAN KARŞILANDI',    color: '#9C27B0', bgClass: 'row-stoktan' },
-  { value: 'Tedarikçiden Geldi',   label: 'TEDARİKÇİDEN GELDİ',   color: '#1B7D3A', bgClass: 'row-tedarikci' },
-  { value: 'Gelmedi',             label: 'GELMEDİ',              color: '#808080', bgClass: 'row-gelmedi' },
-  { value: 'Geri Gönderildi',      label: 'GERİ GÖNDERİLDİ',      color: '#D32F2F', bgClass: 'row-geri-gonderildi' },
-  { value: 'Hatalı Ürün',          label: 'HATALI ÜRÜN GELDİ',     color: '#E65100', bgClass: 'row-hatali' },
+  { id: UcKDurum.TamGeldi,            value: 'Tam Geldi',            label: 'TAM GELDİ',            color: '#25B003', bgClass: 'row-tam-geldi' },
+  { id: UcKDurum.EksikGeldi,          value: 'Eksik Geldi',          label: 'EKSİK GELDİ',          color: '#FD5812', bgClass: 'row-eksik-geldi' },
+  { id: UcKDurum.ProjedenKarsilandi,  value: 'Projeden Karşılandı',  label: 'PROJEDEN KARŞILANDI',   color: '#3584FC', bgClass: 'row-projeden' },
+  { id: UcKDurum.StoktanKarsilandi,   value: 'Stoktan Karşılandı',   label: 'STOKTAN KARŞILANDI',    color: '#9C27B0', bgClass: 'row-stoktan' },
+  { id: UcKDurum.TedarikcidenGeldi,   value: 'Tedarikçiden Geldi',   label: 'TEDARİKÇİDEN GELDİ',   color: '#1B7D3A', bgClass: 'row-tedarikci' },
+  { id: UcKDurum.Gelmedi,             value: 'Gelmedi',             label: 'GELMEDİ',              color: '#808080', bgClass: 'row-gelmedi' },
+  { id: UcKDurum.GeriGonderildi,      value: 'Geri Gönderildi',      label: 'GERİ GÖNDERİLDİ',      color: '#D32F2F', bgClass: 'row-geri-gonderildi' },
+  { id: UcKDurum.HataliUrun,          value: 'Hatalı Ürün',          label: 'HATALI ÜRÜN GELDİ',     color: '#E65100', bgClass: 'row-hatali' },
 ];
 
 import { OnayService } from '../../../core/services/onay.service';
@@ -91,11 +92,16 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   filteredProjeler = computed(() => {
     const term = this.projeSearchTerm().toLowerCase();
-    if (!term) return this.projeler();
-    return this.projeler().filter(p => 
-      p.projeNo?.toLowerCase().includes(term) || 
-      p.musteri?.toLowerCase().includes(term)
-    );
+    const currentId = this.projeId();
+    // Kendi projesi hariç — bir proje kendisinden ürün karşılayamaz
+    let list = this.projeler().filter(p => p.id !== currentId);
+    if (term) {
+      list = list.filter(p => 
+        p.projeNo?.toLowerCase().includes(term) || 
+        p.musteri?.toLowerCase().includes(term)
+      );
+    }
+    return list;
   });
 
   filteredKaynakUrunler = computed(() => {
@@ -121,9 +127,9 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   // Stats
   toplamUrun = computed(() => this.urunler().length);
-  tamGeldi = computed(() => this.urunler().filter(u => u.ucKKarsilamaTipi === 'Tam Geldi').length);
-  eksikGeldi = computed(() => this.urunler().filter(u => u.ucKKarsilamaTipi === 'Eksik Geldi').length);
-  tamamlanan = computed(() => this.urunler().filter(u => u.kalan === 0 && u.ucKKarsilamaTipi !== 'Bekliyor').length);
+  tamGeldi = computed(() => this.urunler().filter(u => u.ucKKarsilamaTipiMetni === 'Tam Geldi').length);
+  eksikGeldi = computed(() => this.urunler().filter(u => u.ucKKarsilamaTipiMetni === 'Eksik Geldi').length);
+  tamamlanan = computed(() => this.urunler().filter(u => u.kalan === 0 && u.ucKKarsilamaTipiMetni !== 'Bekliyor').length);
   kalanlar = computed(() => this.urunler().filter(u => u.kalan > 0).length);
 
   karsilamaTipleri = KARSILAMA_TIPLERI;
@@ -183,7 +189,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       if(res.isSuccess && res.value) {
         // value is PaginatedList due to recent changes
         const m = res.value.items || res.value; 
-        this.stoklar.set(m.filter((s: StokKaydiDto) => s.miktar > 0 && s.durum === 'Aktif'));
+        this.stoklar.set(m.filter((s: StokKaydiDto) => s.miktar > 0 && s.durumMetni === 'Aktif'));
       }
     });
   }
@@ -206,7 +212,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     let list = this.urunler();
     const tip = this.filterTip();
     const term = this.searchTerm().toLowerCase();
-    if (tip) list = list.filter(u => u.ucKKarsilamaTipi === tip);
+    if (tip) list = list.filter(u => u.ucKKarsilamaTipiMetni === tip);
     if (term) list = list.filter(u =>
       u.aciklama.toLowerCase().includes(term) ||
       u.barkodNo.toLowerCase().includes(term) ||
@@ -239,7 +245,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   }
 
   getRowClass(u: UcKUrunDto): string {
-    return KARSILAMA_TIPLERI.find(t => t.value === u.ucKKarsilamaTipi)?.bgClass ?? '';
+    return KARSILAMA_TIPLERI.find(t => t.value === u.ucKKarsilamaTipiMetni)?.bgClass ?? '';
   }
 
   getTipLabel(value: string): string {
@@ -253,12 +259,12 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   // ===== Side Panel =====
   openPanel(urun: UcKUrunDto) {
     this.panelUrun.set(urun);
-    this.panelTip.set(urun.ucKKarsilamaTipi === 'Bekliyor' ? '' : urun.ucKKarsilamaTipi);
+    this.panelTip.set(urun.ucKKarsilamaTipiMetni === 'Bekliyor' ? '' : urun.ucKKarsilamaTipiMetni);
     this.panelGelenAdet.set(urun.gelenMiktar);
     this.panelKaynakHedef.set(urun.kaynakHedefProjeNo ?? '');
     this.panelKaynakCekiSatiriId.set(null);
     this.panelAciklama.set(urun.ucKAciklama ?? '');
-    this.panelGeriGonderilmeSebebi.set(urun.geriGonderilmeSebebi ?? '');
+    this.panelGeriGonderilmeSebebi.set(urun.geriGonderilmeSebebiMetni ?? '');
     this.panelNot.set(urun.ucKNotu ?? '');
     this.panelError.set('');
     
@@ -417,11 +423,29 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   isKarsilamaTipiDisabled(tip: string): boolean {
     const u = this.panelUrun();
     if (!u) return false;
-    
-    // Eğer grid tarafında eksik gelmemişse veya hiç gelmemişse (Gelmedi); başka projeden, stoktan veya tedarikçiden ürün karşılama kapalıdır.
-    if (tip === 'Tedarikçiden Geldi' || tip === 'Stoktan Karşılandı' || tip === 'Projeden Karşılandı') {
-      return u.gridDurumu !== 'Eksik Geldi' && u.gridDurumu !== 'Gelmedi';
+
+    // Grid İptal → tüm seçenekler kapalı
+    if (u.gridDurumuId === GridDurum.Iptal) return true;
+
+    // Grid Trafo Sevk → tüm seçenekler kapalı
+    if (u.gridDurumuId === GridDurum.TrafoSevk) return true;
+
+    // Grid Gelmedi → yalnızca Projeden/Stoktan/Tedarikçi açık
+    if (u.gridDurumuId === GridDurum.Gelmedi) {
+      return tip !== 'Projeden Karşılandı' && tip !== 'Stoktan Karşılandı' && tip !== 'Tedarikçiden Geldi';
     }
+
+    // Hatalı Ürün → Grid sevk edilmiş olmalı
+    if (tip === 'Hatalı Ürün' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) return true;
+
+    // Tam Geldi → Grid sevk edilmiş olmalı
+    if (tip === 'Tam Geldi' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) return true;
+
+    // Projeden/Stoktan/Tedarikçi → Grid eksik gelmiş veya gelmemiş olmalı
+    if (tip === 'Tedarikçiden Geldi' || tip === 'Stoktan Karşılandı' || tip === 'Projeden Karşılandı') {
+      return u.gridDurumuMetni !== 'Eksik Geldi' && u.gridDurumuMetni !== 'Gelmedi';
+    }
+
     return false;
   }
 
@@ -452,12 +476,31 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     const tip = this.panelTip();
     if (!tip) return 'Karşılama tipi seçilmelidir.';
 
-    if (tip === 'Tam Geldi' && u.gridDurumu !== 'Sevk Edildi') {
+    // Grid İptal blokajı
+    if (u.gridDurumuId === GridDurum.Iptal) return 'Bu ürün Grid tarafından iptal edildiği için işlem yapılamaz.';
+
+    // Grid Trafo Sevk blokajı
+    if (u.gridDurumuId === GridDurum.TrafoSevk) return 'Bu ürün Grid tarafından Trafo Sevk olarak işaretlendiğinden 3K işlemi yapılamaz.';
+
+    // Grid Gelmedi → sadece Projeden/Stoktan/Tedarikçi
+    if (u.gridDurumuId === GridDurum.Gelmedi) {
+      if (tip !== 'Projeden Karşılandı' && tip !== 'Stoktan Karşılandı' && tip !== 'Tedarikçiden Geldi') {
+        return 'Grid "Gelmedi" durumunda yalnızca Projeden, Stoktan veya Tedarikçiden karşılama yapılabilir.';
+      }
+    }
+
+    // Tam Geldi → Grid sevk edilmiş olmalı
+    if (tip === 'Tam Geldi' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) {
        return 'Grid tarafından eksiksiz sevk edilmeden "Tam Geldi" olarak işaretlenemez.';
     }
 
+    // Hatalı Ürün → Grid sevk edilmiş olmalı
+    if (tip === 'Hatalı Ürün' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) {
+       return 'Grid tarafından sevk edilmeden "Hatalı Ürün" işaretlenemez.';
+    }
+
     if (tip === 'Tedarikçiden Geldi' || tip === 'Stoktan Karşılandı' || tip === 'Projeden Karşılandı') {
-      if (u.gridDurumu !== 'Eksik Geldi' && u.gridDurumu !== 'Gelmedi') {
+      if (u.gridDurumuMetni !== 'Eksik Geldi' && u.gridDurumuMetni !== 'Gelmedi') {
          return 'Bu işlem yalnızca ürün Grid tarafında eksik geldiğinde veya hiç gelmediğinde (GELMEDİ) yapılabilir.';
       }
     }
@@ -521,7 +564,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     const dto: UcKDurumGuncelleDto = {
       cekiSatiriId: u.cekiSatiriId,
       projeId: this.projeId(),
-      karsilamaTipi: tip,
+      karsilamaTipiId: KARSILAMA_TIPLERI.find(t => t.value === tip)?.id ?? 0,
       gelenAdet: this.panelGelenAdet(),
       kaynakHedefProjeNo: this.panelKaynakHedef()?.trim(),
       kaynakCekiSatiriId: this.panelKaynakCekiSatiriId() || undefined,

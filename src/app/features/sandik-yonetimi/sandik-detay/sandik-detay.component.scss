@@ -81,3 +81,26 @@ table {
   background: linear-gradient(135deg, #25B003, #34D399);
   color: #fff; border: none; font-weight: 600; border-radius: 8px;
 }
+
+// ===== Modal Styles =====
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1040;
+  animation: fadeIn .2s ease;
+}
+.modal-container {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: var(--whiteColor); border-radius: 12px; width: 480px; max-width: 92vw;
+  z-index: 1050; box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  animation: slideUp .25s ease;
+}
+.modal-header-custom {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 24px; border-bottom: 1px solid var(--borderColor);
+}
+.modal-body-custom { padding: 20px 24px; }
+.modal-footer-custom {
+  display: flex; gap: 12px; padding: 16px 24px;
+  border-top: 1px solid var(--borderColor);
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translate(-50%, -45%); } to { opacity: 1; transform: translate(-50%, -50%); } }

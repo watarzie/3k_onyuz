@@ -8,32 +8,38 @@ export interface UcKUrunDto {
   sandikNo: string;
   istenenAdet: number;
   birim: string;
-  gridDurumu: string;
+  gridDurumuId: number;
+  gridDurumuMetni: string;
   gridGelenAdet: number;
   trafoSevkAdet: number;
-  ucKKarsilamaTipi: string;
+  gridSevkDurumuId: number;
+  gridSevkDurumuMetni: string;
+  ucKKarsilamaTipiId: number;
+  ucKKarsilamaTipiMetni: string;
   gelenMiktar: number;
   karsilananMiktar: number;
   hataliMiktar: number;
   kaynakHedefProjeNo?: string;
-  geriGonderilmeSebebi?: string;
+  geriGonderilmeSebebiId?: number;
+  geriGonderilmeSebebiMetni?: string;
   ucKAciklama?: string;
   ucKNotu?: string;
   kalan: number;
   kontrolUyari: string;
-  genelDurum: string;
+  genelDurumId: number;
+  genelDurumMetni: string;
 }
 
 export interface UcKDurumGuncelleDto {
   cekiSatiriId: number;
   projeId: number;
-  karsilamaTipi: string;
+  karsilamaTipiId: number;
   gelenAdet?: number;
   kaynakHedefProjeNo?: string;
   kaynakCekiSatiriId?: number;
   stokKaydiId?: number;
   aciklama?: string;
-  geriGonderilmeSebebi?: string;
+  geriGonderilmeSebebiId?: number;
   not?: string;
   urunAdi?: string;
   mevcutProjeNo?: string;

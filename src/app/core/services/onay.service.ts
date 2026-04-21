@@ -18,14 +18,17 @@ export class OnayService {
 
   private _auth = inject(AuthService); // Assuming AuthService is provided in root
   private sseCtrl: AbortController | null = null;
+  private sseRetryCount = 0;
+  private readonly MAX_SSE_RETRIES = 10;
 
   connectToApprovalStream() {
     if (this.sseCtrl) return; // Already connected
     const token = this._auth.getToken();
     if (!token) return;
 
+    this.sseRetryCount = 0;
     this.sseCtrl = new AbortController();
-    const url = API.ONAY.SSE_STREAM || 'http://localhost:5000/api/onay/sse-stream'; // Update mapping in endpoints
+    const url = API.ONAY.SSE_STREAM || 'http://localhost:5000/api/onay/sse-stream';
 
     import('@microsoft/fetch-event-source').then(({ fetchEventSource }) => {
       fetchEventSource(url, {
@@ -35,14 +38,19 @@ export class OnayService {
         },
         signal: this.sseCtrl!.signal,
         onmessage: (ev) => {
+          this.sseRetryCount = 0; // Başarılı mesaj → sayacı sıfırla
           if (ev.event === 'approval_update') {
-            // Signal Header to re-fetch immediately
             this.notifyHeaderForNewApproval();
           }
         },
         onerror: (err) => {
-          console.error('SSE Error:', err);
-          // Optional: rethrow to stop reconnection, or return nothing to let it autoreconnect
+          this.sseRetryCount++;
+          console.error(`SSE Error (${this.sseRetryCount}/${this.MAX_SSE_RETRIES}):`, err);
+          if (this.sseRetryCount >= this.MAX_SSE_RETRIES) {
+            console.warn('SSE: Maksimum deneme sayısına ulaşıldı, bağlantı kesiliyor.');
+            this.disconnectStream();
+            throw err; // fetchEventSource reconnect'i durdurur
+          }
         }
       }).catch(err => console.error("Could not connect to SSE", err));
     });

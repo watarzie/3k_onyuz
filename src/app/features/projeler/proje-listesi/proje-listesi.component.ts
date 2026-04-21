@@ -1,6 +1,6 @@
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { RouterLink, ActivatedRoute } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { TranslationService } from '../../../core/services/translation.service';
 import { ProjeService } from '../../../core/services/proje.service';
@@ -23,6 +23,9 @@ export class ProjeListesiComponent implements OnInit {
   private projeService = inject(ProjeService);
   permissions = inject(PermissionService);
   toastService = inject(ToastService);
+  private route = inject(ActivatedRoute);
+
+  isSandikYonetimi = signal(false);
 
   /**
    * Grid/3K buton gösterimi — Rol Yetki ekranından yönetilir.
@@ -48,6 +51,15 @@ export class ProjeListesiComponent implements OnInit {
   ];
 
   ngOnInit() {
+    this.isSandikYonetimi.set(this.route.snapshot.data['menuKod'] === 'sandik-yonetimi');
+    
+    if (this.isSandikYonetimi()) {
+      this.breadcrumb = [
+        { label: 'Ana Kontrol Paneli', link: '/dashboard' },
+        { label: 'Sandık Yönetimi' },
+      ];
+    }
+    
     this.loadProjeler();
   }
 

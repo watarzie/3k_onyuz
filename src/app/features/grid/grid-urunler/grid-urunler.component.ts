@@ -13,23 +13,24 @@ import { StatCardComponent } from '../../../shared/components/stat-card/stat-car
 import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
 import { GridUrunDto, GridDurumGuncelleDto } from '../../../shared/models/index';
+import { GridDurum, GridSevkDurum } from '../../../core/constants/enums';
 
 // ===== Durum tanımları =====
-interface DurumSecenegi { value: string; label: string; color: string; bgClass: string; }
+interface DurumSecenegi { id: number; value: string; label: string; color: string; bgClass: string; }
 
 const GRID_DURUMLARI: DurumSecenegi[] = [
-  { value: 'Tam Geldi',   label: 'TAM GELDİ',   color: '#25B003', bgClass: 'row-tam-geldi' },
-  { value: 'Eksik Geldi', label: 'EKSİK GELDİ', color: '#FD5812', bgClass: 'row-eksik-geldi' },
-  { value: 'Gelmedi',    label: 'GELMEDİ',      color: '#FF4023', bgClass: 'row-gelmedi' },
-  { value: 'Trafo Sevk',  label: 'TRAFO SEVK',   color: '#00BCD4', bgClass: 'row-trafo-sevk' },
-  { value: 'İptal',      label: 'İPTAL',        color: '#FFB200', bgClass: 'row-iptal' },
-  { value: 'Siparişte',  label: 'SİPARİŞTE',    color: '#9C27B0', bgClass: 'row-sipariste' },
+  { id: GridDurum.TamGeldi,   value: 'Tam Geldi',   label: 'TAM GELDİ',   color: '#25B003', bgClass: 'row-tam-geldi' },
+  { id: GridDurum.EksikGeldi, value: 'Eksik Geldi', label: 'EKSİK GELDİ', color: '#FD5812', bgClass: 'row-eksik-geldi' },
+  { id: GridDurum.Gelmedi,    value: 'Gelmedi',    label: 'GELMEDİ',      color: '#FF4023', bgClass: 'row-gelmedi' },
+  { id: GridDurum.TrafoSevk,  value: 'Trafo Sevk',  label: 'TRAFO SEVK',   color: '#00BCD4', bgClass: 'row-trafo-sevk' },
+  { id: GridDurum.Iptal,      value: 'İptal',      label: 'İPTAL',        color: '#FFB200', bgClass: 'row-iptal' },
+  { id: GridDurum.Sipariste,  value: 'Siparişte',  label: 'SİPARİŞTE',    color: '#9C27B0', bgClass: 'row-sipariste' },
 ];
 
 const SEVK_DURUMLARI: DurumSecenegi[] = [
-  { value: 'Sevk Edildi',   label: 'SEVK EDİLDİ',    color: '#25B003', bgClass: '' },
-  { value: 'Bekliyor',     label: 'BEKLİYOR',        color: '#FD5812', bgClass: '' },
-  { value: 'Sevk Edilmedi', label: 'SEVK EDİLMEDİ',   color: '#FF4023', bgClass: '' },
+  { id: GridSevkDurum.SevkEdildi,   value: 'Sevk Edildi',   label: 'SEVK EDİLDİ',    color: '#25B003', bgClass: '' },
+  { id: GridSevkDurum.Bekliyor,     value: 'Bekliyor',     label: 'BEKLİYOR',        color: '#FD5812', bgClass: '' },
+  { id: GridSevkDurum.SevkEdilmedi, value: 'Sevk Edilmedi', label: 'SEVK EDİLMEDİ',   color: '#FF4023', bgClass: '' },
 ];
 
 @Component({
@@ -74,13 +75,13 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   // Stats
   toplamUrun = computed(() => this.urunler().length);
-  tamGeldi = computed(() => this.urunler().filter(u => u.gridDurumu === 'Tam Geldi').length);
-  eksikGeldi = computed(() => this.urunler().filter(u => u.gridDurumu === 'Eksik Geldi').length);
-  gelmedi = computed(() => this.urunler().filter(u => u.gridDurumu === 'Gelmedi').length);
-  trafoSevk = computed(() => this.urunler().filter(u => u.gridDurumu === 'Trafo Sevk').length);
-  iptal = computed(() => this.urunler().filter(u => u.gridDurumu === 'İptal').length);
-  sipariste = computed(() => this.urunler().filter(u => u.gridDurumu === 'Siparişte').length);
-  bekliyor = computed(() => this.urunler().filter(u => u.gridDurumu === 'Bekliyor').length);
+  tamGeldi = computed(() => this.urunler().filter(u => u.gridDurumuMetni === 'Tam Geldi').length);
+  eksikGeldi = computed(() => this.urunler().filter(u => u.gridDurumuMetni === 'Eksik Geldi').length);
+  gelmedi = computed(() => this.urunler().filter(u => u.gridDurumuMetni === 'Gelmedi').length);
+  trafoSevk = computed(() => this.urunler().filter(u => u.gridDurumuMetni === 'Trafo Sevk').length);
+  iptal = computed(() => this.urunler().filter(u => u.gridDurumuMetni === 'İptal').length);
+  sipariste = computed(() => this.urunler().filter(u => u.gridDurumuMetni === 'Siparişte').length);
+  bekliyor = computed(() => this.urunler().filter(u => u.gridDurumuMetni === 'Bekliyor').length);
 
   gridDurumlari = GRID_DURUMLARI;
   sevkDurumlari = SEVK_DURUMLARI;
@@ -131,7 +132,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     let list = this.urunler();
     const durum = this.filterDurum();
     const term = this.searchTerm().toLowerCase();
-    if (durum) list = list.filter(u => u.gridDurumu === durum);
+    if (durum) list = list.filter(u => u.gridDurumuMetni === durum);
     if (term) list = list.filter(u =>
       u.aciklama.toLowerCase().includes(term) ||
       u.barkodNo.toLowerCase().includes(term) ||
@@ -169,7 +170,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   // ===== Satır rengi =====
   getRowClass(u: GridUrunDto): string {
-    return GRID_DURUMLARI.find(d => d.value === u.gridDurumu)?.bgClass ?? '';
+    return GRID_DURUMLARI.find(d => d.value === u.gridDurumuMetni)?.bgClass ?? '';
   }
 
   getDurumLabel(value: string): string {
@@ -206,10 +207,10 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   // ===== Side Panel — Durum Güncelle =====
   openPanel(urun: GridUrunDto) {
     this.panelUrun.set(urun);
-    this.panelDurum.set(urun.gridDurumu);
+    this.panelDurum.set(urun.gridDurumuMetni);
     this.panelGelenAdet.set(urun.gridGelenAdet);
     this.panelTrafoSevkAdet.set(urun.trafoSevkAdet);
-    this.panelSevkDurumu.set(urun.gridSevkDurumu);
+    this.panelSevkDurumu.set(urun.gridSevkDurumuMetni);
     this.panelSevkAdet.set(urun.gridSevkMiktari ?? 0);
     this.panelNot.set(urun.gridNotu ?? '');
     this.panelError.set('');
@@ -338,10 +339,10 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     const dto: GridDurumGuncelleDto = {
       cekiSatiriId: u.cekiSatiriId,
       projeId: this.projeId(),
-      yeniDurum: this.panelDurum(),
+      yeniDurumId: GRID_DURUMLARI.find(d => d.value === this.panelDurum())?.id ?? 0,
       gridGelenAdet: this.panelGelenAdet(),
       trafoSevkAdet: this.panelTrafoSevkAdet(),
-      gridSevkDurumu: this.panelSevkDurumu(),
+      gridSevkDurumuId: SEVK_DURUMLARI.find(d => d.value === this.panelSevkDurumu())?.id,
       sevkMiktari: this.isSevkAktif ? this.panelSevkAdet() : undefined,
       not: this.panelNot() || undefined,
     };

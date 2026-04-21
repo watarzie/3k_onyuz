@@ -1,4 +1,4 @@
-import { TranslatePipe } from '../../shared/pipes/translate.pipe';
+﻿import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
@@ -97,18 +97,18 @@ export class DepoDurumuComponent implements OnInit {
     const filtered = this.allSandiklar().filter(s => 
        s.sandikNo.toLowerCase().includes(term) ||
        s.projeAdi?.toLowerCase().includes(term) ||
-       (s.depoLokasyonu && s.depoLokasyonu.toLowerCase().includes(term))
+       (s.depoLokasyonMetni && s.depoLokasyonMetni.toLowerCase().includes(term))
     );
     this.filteredSandiklar.set(filtered);
   }
 
   calculateStats(sandiklar: any[]) {
     this.toplamSandik.set(sandiklar.length);
-    this.ucKSandik.set(sandiklar.filter((s) => ['3K', '3k', 'Üçk'].includes(s.depoLokasyonu)).length);
-    this.seymenSandik.set(sandiklar.filter((s) => s.depoLokasyonu === 'Seymen' || s.depoLokasyonu === 'SEYMEN').length);
-    this.gridSandik.set(sandiklar.filter((s) => s.depoLokasyonu === 'Grid' || s.depoLokasyonu === 'GRID').length);
-    this.AblokSandik.set(sandiklar.filter((s) => s.depoLokasyonu === 'A-Blok').length);
-    this.BblokSandik.set(sandiklar.filter((s) => s.depoLokasyonu === 'B-Blok').length);
+    this.ucKSandik.set(sandiklar.filter((s) => ['3K', '3k', 'Üçk'].includes(s.depoLokasyonMetni)).length);
+    this.seymenSandik.set(sandiklar.filter((s) => s.depoLokasyonMetni === 'Seymen' || s.depoLokasyonMetni === 'SEYMEN').length);
+    this.gridSandik.set(sandiklar.filter((s) => s.depoLokasyonMetni === 'Grid' || s.depoLokasyonMetni === 'GRID').length);
+    this.AblokSandik.set(sandiklar.filter((s) => s.depoLokasyonMetni === 'A-Blok').length);
+    this.BblokSandik.set(sandiklar.filter((s) => s.depoLokasyonMetni === 'B-Blok').length);
   }
 
   // Donut chart yüzdeleri

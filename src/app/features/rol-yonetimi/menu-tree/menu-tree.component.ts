@@ -1,7 +1,8 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
-import { MenuTreeDto, YetkiTipi } from '../../../shared/models';
+import { MenuTreeDto } from '../../../shared/models';
+import { YetkiTipi } from '../../../core/constants/enums';
 
 @Component({
   selector: 'app-menu-tree',
@@ -29,14 +30,14 @@ export class MenuTreeComponent {
 
   /**
    * Checkbox tıklandığında yetki döngüsü:
-   * N → R → W → N
+   * N(1) → R(2) → W(3) → N(1)
    */
   onPermissionChange(node: MenuTreeDto): void {
     this.cyclePermission(node);
 
     // Children varsa aynı yetkiyi children'a da uygula
     if (node.children?.length) {
-      this.setPermissionToChildren(node, node.yetkiTipi);
+      this.setPermissionToChildren(node, node.yetkiTipiId);
     }
 
     // Parent varsa yukarı doğru hesapla
@@ -45,22 +46,27 @@ export class MenuTreeComponent {
     }
   }
 
-  /** N → R → W → N döngüsü */
+  /** N(1) → R(2) → W(3) → N(1) döngüsü */
   private cyclePermission(node: MenuTreeDto): void {
-    if (node.yetkiTipi === 'N') {
-      node.yetkiTipi = 'R';
-    } else if (node.yetkiTipi === 'R') {
-      node.yetkiTipi = 'W';
+    if (node.yetkiTipiId === YetkiTipi.N) {
+      node.yetkiTipiId = YetkiTipi.R;
+      node.yetkiTipiMetni = 'R';
+    } else if (node.yetkiTipiId === YetkiTipi.R) {
+      node.yetkiTipiId = YetkiTipi.W;
+      node.yetkiTipiMetni = 'W';
     } else {
-      node.yetkiTipi = 'N';
+      node.yetkiTipiId = YetkiTipi.N;
+      node.yetkiTipiMetni = 'N';
     }
   }
 
   /** Tüm alt menülere aynı yetkiyi ata */
-  private setPermissionToChildren(node: MenuTreeDto, flag: YetkiTipi): void {
+  private setPermissionToChildren(node: MenuTreeDto, flag: number): void {
     if (!node.children?.length) return;
+    const metni = flag === YetkiTipi.W ? 'W' : flag === YetkiTipi.R ? 'R' : 'N';
     node.children.forEach(child => {
-      child.yetkiTipi = flag;
+      child.yetkiTipiId = flag;
+      child.yetkiTipiMetni = metni;
       this.setPermissionToChildren(child, flag);
     });
   }
@@ -70,15 +76,18 @@ export class MenuTreeComponent {
     const children = parent.children;
     if (!children?.length) return;
 
-    const allW = children.every(c => c.yetkiTipi === 'W');
-    const allN = children.every(c => c.yetkiTipi === 'N');
+    const allW = children.every(c => c.yetkiTipiId === YetkiTipi.W);
+    const allN = children.every(c => c.yetkiTipiId === YetkiTipi.N);
 
     if (allW) {
-      parent.yetkiTipi = 'W';
+      parent.yetkiTipiId = YetkiTipi.W;
+      parent.yetkiTipiMetni = 'W';
     } else if (allN) {
-      parent.yetkiTipi = 'N';
+      parent.yetkiTipiId = YetkiTipi.N;
+      parent.yetkiTipiMetni = 'N';
     } else {
-      parent.yetkiTipi = 'R'; // karışık → indeterminate
+      parent.yetkiTipiId = YetkiTipi.R; // karışık → indeterminate
+      parent.yetkiTipiMetni = 'R';
     }
 
     // Yukarı devam

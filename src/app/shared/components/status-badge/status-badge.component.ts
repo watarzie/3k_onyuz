@@ -1,6 +1,16 @@
-import { Component, input } from '@angular/core';
+import { Component, input, computed } from '@angular/core';
 import { NgClass } from '@angular/common';
+import { STATUS_BADGE_MAP } from '../../../core/constants/enums';
 
+/**
+ * Status Badge Component — Metni bazlı renklendirme.
+ *
+ * Kullanım:
+ *   <app-status-badge [status]="item.durumMetni" [label]="item.durumMetni" />
+ *
+ * status → CSS class'ını belirler (enums.ts'deki STATUS_BADGE_MAP, Enum Name ile eşleşir)
+ * label  → Kullanıcıya gösterilecek metin
+ */
 @Component({
   selector: 'app-status-badge',
   standalone: true,
@@ -17,21 +27,12 @@ import { NgClass } from '@angular/common';
   `],
 })
 export class StatusBadgeComponent {
+  /** Durum adı (Enum adı, backend *Metni alanından gelir). CSS class'ını belirler. */
   status = input.required<string>();
+  /** Gösterilecek etiket metni (backend'den gelir). */
   label = input.required<string>();
 
-  badgeClass = () => {
-    const map: Record<string, string> = {
-      TamGeldi: 'badge-success', Tamamlandi: 'badge-success', Paketlendi: 'badge-success',
-      KontrolEdildi: 'badge-success', Aktif: 'badge-success', StokHazir: 'badge-success',
-      Gelmedi: 'badge-danger', Kayip: 'badge-danger', IptalEdildi: 'badge-danger',
-      IptalVeyaPasif: 'badge-danger',
-      EksikGeldi: 'badge-warning', Eksik: 'badge-warning', KismiSevkEdildi: 'badge-warning',
-      KismiGeldi: 'badge-warning', KismiTamamlandi: 'badge-warning',
-      SevkEdildi: 'badge-info', Uretimde: 'badge-info', DevamEdiyor: 'badge-info',
-      Bekliyor: 'badge-secondary', Bekletiliyor: 'badge-secondary', Hazirlaniyor: 'badge-secondary',
-      SonraGidecek: 'badge-purple', GeriGonderildi: 'badge-purple', IadeEdildi: 'badge-purple',
-    };
-    return map[this.status()] ?? 'badge-secondary';
-  };
+  badgeClass = computed(() => {
+    return STATUS_BADGE_MAP[this.status()] ?? 'badge-secondary';
+  });
 }
