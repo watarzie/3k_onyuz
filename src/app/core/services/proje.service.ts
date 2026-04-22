@@ -21,6 +21,10 @@ export class ProjeService {
     return this.api.get<ProjeDto[]>(API.PROJE.LIST);
   }
 
+  getProjeListesiByTip(projeTipiId: number): Observable<ApiResult<ProjeDto[]>> {
+    return this.api.get<ProjeDto[]>(API.PROJE.LIST_BY_TIP(projeTipiId));
+  }
+
   projeOlustur(dto: ProjeOlusturDto): Observable<ApiResult<unknown>> {
     return this.api.post<unknown>(API.PROJE.CREATE, dto);
   }
@@ -35,6 +39,18 @@ export class ProjeService {
 
   kilidiAc(projeId: number): Observable<ApiResult<boolean>> {
     return this.api.post<boolean>(API.PROJE.KILIDI_AC(projeId), {});
+  }
+
+  // ===== Sandık Sevk =====
+
+  sandikSevkEt(projeId: number, sandikId: number): Observable<ApiResult<boolean>> {
+    return this.api.post<boolean>(API.SANDIK.SEVK_ET, { projeId, sandikId });
+  }
+
+  // ===== Saha/Yedek Malzeme =====
+
+  sahaYedekMalzemeEkle(payload: { projeId: number; sandikId: number; barkodNo?: string; isim: string; miktar: number; birim?: string }): Observable<ApiResult<boolean>> {
+    return this.api.post<boolean>(API.SANDIK.SAHA_YEDEK_MALZEME_EKLE, payload);
   }
 
   // ===== Ceki =====

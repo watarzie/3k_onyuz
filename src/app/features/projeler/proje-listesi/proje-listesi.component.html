@@ -1,33 +1,55 @@
 <div class="page-title-area mb-4">
   <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
     <div>
-      <h2 class="fw-bold mb-1">{{ 'MENU.PROJELER' | translate }}</h2>
+      <h2 class="fw-bold mb-1">
+        @if (isSahaYonetimi()) {
+          <i class="ri-tools-line me-2"></i>Saha Yönetimi
+        } @else if (isYedekYonetimi()) {
+          <i class="ri-box-3-line me-2"></i>Yedek Yönetimi
+        } @else {
+          {{ 'MENU.PROJELER' | translate }}
+        }
+      </h2>
       <app-breadcrumb [items]="breadcrumb" />
     </div>
-    @if (!isSevkEdilen()) {
-      <button class="btn btn-primary-gradient" (click)="openUploadModal()">
-        <i class="ri-upload-2-line me-2"></i>Çeki Yükle
-      </button>
-    }
+    <div class="d-flex gap-2">
+      @if (isSahaYonetimi() || isYedekYonetimi()) {
+        <button class="btn btn-primary-gradient" (click)="openProjeOlusturModal()">
+          <i class="ri-add-line me-2"></i>Proje Oluştur
+        </button>
+      } @else if (!isSevkEdilen()) {
+        <button class="btn btn-primary-gradient" (click)="openUploadModal()">
+          <i class="ri-upload-2-line me-2"></i>Çeki Yükle
+        </button>
+      }
+    </div>
   </div>
 </div>
 
-<div class="trezo-card border-0 shadow-none">
+<div class="trezo-card border-0 shadow-none mb-4">
   <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-    <h5 class="fw-semibold mb-0">{{ 'LABELS.PROJELER' | translate }} ({{ filtered().length }})</h5>
-    <div class="search-box position-relative">
-      <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
-      <input type="text" class="form-control" [placeholder]="'ACTIONS.SEARCH' | translate" (input)="onSearch($event)" />
+    <h5 class="fw-semibold mb-0">{{ isSahaYonetimi() ? 'Saha Projeleri' : isYedekYonetimi() ? 'Yedek Projeleri' : 'Projeler' }} ({{ filtered().length }})</h5>
+    <div class="search-box position-relative" style="width: 250px;">
+      <i class="ri-search-line position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+      <input type="text" class="form-control ps-5" placeholder="Ara..." (input)="onSearch($event)" />
     </div>
   </div>
+
   <div class="card-body p-0">
     @if (loading()) {
       <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
     } @else if (filtered().length === 0) {
-      <div class="empty-state text-center py-5">
+      <div class="text-center py-5">
         @if (isSevkEdilen()) {
           <div class="empty-icon mb-3 text-muted" style="font-size: 3rem;"><i class="ri-truck-line"></i></div>
           <h5 class="fw-semibold mb-2">Sevk edilen proje bulunmuyor</h5>
+        } @else if (isSahaYonetimi() || isYedekYonetimi()) {
+          <div class="empty-icon mb-3" style="font-size: 3rem;"><i class="ri-archive-drawer-line"></i></div>
+          <h5 class="fw-semibold mb-2">Henüz {{ isSahaYonetimi() ? 'saha' : 'yedek' }} projesi bulunmuyor</h5>
+          <p class="text-muted mb-3">Başlamak için yeni bir proje oluşturun</p>
+          <button class="btn btn-primary-gradient" (click)="openProjeOlusturModal()">
+            <i class="ri-add-line me-2"></i>Proje Oluştur
+          </button>
         } @else {
           <div class="empty-icon mb-3"><i class="ri-folder-add-line"></i></div>
           <h5 class="fw-semibold mb-2">Henüz proje bulunmuyor</h5>
@@ -43,18 +65,18 @@
           <thead>
             <tr>
               <th>{{ 'LABELS.PROJE_NO' | translate }}</th>
-              @if (isSandikYonetimi()) {
+              @if (isSandikMode()) {
                 <th>Müşteri</th>
               }
               <th>{{ 'LABELS.TOPLAM_SANDIK' | translate }}</th>
-              @if (isSandikYonetimi()) {
+              @if (isSandikMode()) {
                 <th>Ürün Sayısı</th>
               } @else {
                 <th>{{ 'LABELS.LOKASYON' | translate }}</th>
               }
               <th>{{ 'LABELS.durumMetni' | translate }}</th>
               <th>{{ 'LABELS.TAMAMLANMA' | translate }}</th>
-              @if (isSandikYonetimi() || (!isSandikYonetimi() && canSevkEt())) {
+              @if (isSandikMode() || (!isSandikMode() && canSevkEt())) {
                 <th>İşlemler</th>
               }
             </tr>
@@ -63,7 +85,7 @@
             @for (p of filtered(); track p.id) {
               <tr>
                 <td class="fw-semibold">
-                  @if (isSandikYonetimi()) {
+                  @if (isSandikMode()) {
                     <div class="d-flex align-items-center gap-2">
                       <div class="proje-icon"><i class="ri-folder-line"></i></div>
                       <span>{{ p.projeNo }}</span>
@@ -72,7 +94,7 @@
                     {{ p.projeNo }}
                   }
                 </td>
-                @if (isSandikYonetimi()) {
+                @if (isSandikMode()) {
                   <td>{{ p.musteri ?? '-' }}</td>
                   <td>
                     <span class="fw-semibold">{{ p.hazirSandikSayisi }}/{{ p.sandikSayisi }}</span>
@@ -96,18 +118,23 @@
                     <small class="fw-semibold">{{ getTamamlanmaYuzdesi(p) }}%</small>
                   </div>
                 </td>
-                @if (isSandikYonetimi() || (!isSandikYonetimi() && canSevkEt())) {
+                @if (isSandikMode() || (!isSandikMode() && canSevkEt())) {
                   <td>
                     <div class="d-flex gap-1">
-                      @if (isSandikYonetimi()) {
-                        @if (canSeeGrid()) {
+                      @if (isSandikMode()) {
+                        @if (canSeeGrid() && !isSahaYonetimi() && !isYedekYonetimi()) {
                           <a [routerLink]="['/grid', p.id]" class="btn btn-sm btn-action-grid" title="Grid Modülü">
                             <i class="ri-database-2-line me-1"></i>Grid
                           </a>
                         }
-                        @if (canSee3K()) {
+                        @if (canSee3K() && !isSahaYonetimi() && !isYedekYonetimi()) {
                           <a [routerLink]="['/uck', p.id]" class="btn btn-sm btn-action-3k" title="3K Modülü">
                             <i class="ri-archive-stack-line me-1"></i>3K
+                          </a>
+                        }
+                        @if (isSahaYonetimi() || isYedekYonetimi()) {
+                          <a [routerLink]="[routePrefix, p.id]" class="btn btn-sm btn-outline-primary" title="Sandıklar">
+                            <i class="ri-inbox-line me-1"></i>Sandıklar
                           </a>
                         }
                       } @else if (canSevkEt()) {
@@ -155,51 +182,74 @@
 
       <!-- Drag & Drop Zone -->
       @if (!selectedFile()) {
-        <div class="drop-zone" [ngClass]="{'drag-over': dragOver()}"
-             (dragover)="onDragOver($event)" (dragleave)="onDragLeave()" (drop)="onDrop($event)">
-          <div class="drop-icon"><i class="ri-file-excel-2-line"></i></div>
-          <h6 class="fw-semibold mb-1">Excel dosyasını sürükleyin</h6>
-          <p class="text-muted mb-3">veya dosya seçin</p>
-          <label class="btn btn-outline-choose">
-            Dosya Seç
-            <input type="file" accept=".xlsx,.xls" (change)="onFileSelected($event)" hidden />
-          </label>
-          <small class="d-block text-muted mt-2">.xlsx, .xls formatları desteklenir</small>
+        <div class="upload-zone text-center p-5 border rounded bg-light"
+             (dragover)="onDragOver($event)" (drop)="onDrop($event)">
+          <i class="ri-file-excel-2-line text-primary mb-3" style="font-size: 3rem;"></i>
+          <h6>Excel dosyasını sürükleyip bırakın</h6>
+          <p class="text-muted small mb-3">Sadece .xlsx dosyaları kabul edilir</p>
+          <input type="file" id="fileInput" class="d-none" accept=".xlsx" (change)="onFileSelected($event)">
+          <button class="btn btn-outline-primary btn-sm" onclick="document.getElementById('fileInput').click()">Dosya Seç</button>
         </div>
       } @else {
-        <!-- Seçilen Dosya -->
-        <div class="selected-file">
-          <div class="d-flex align-items-center gap-3">
-            <div class="file-icon"><i class="ri-file-excel-2-line"></i></div>
-            <div class="flex-grow-1">
-              <span class="fw-semibold d-block">{{ selectedFile()!.name }}</span>
-              <small class="text-muted">{{ formatFileSize(selectedFile()!.size) }}</small>
-            </div>
-            <button class="btn btn-sm btn-remove" (click)="removeFile()" [disabled]="uploading()">
-              <i class="ri-close-line"></i>
-            </button>
+        <div class="file-preview d-flex align-items-center p-3 border rounded">
+          <div class="icon me-3 text-success" style="font-size: 2rem;">
+            <i class="ri-file-excel-fill"></i>
           </div>
-          @if (uploading()) {
-            <div class="upload-progress mt-3">
-              <div class="progress" style="height: 4px;">
-                <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 100%"></div>
-              </div>
-              <small class="text-muted mt-1 d-block">Yükleniyor...</small>
-            </div>
-          }
+          <div class="flex-grow-1">
+            <h6 class="mb-0">{{ selectedFile()!.name }}</h6>
+            <small class="text-muted">{{ (selectedFile()!.size / 1024).toFixed(2) }} KB</small>
+          </div>
+          <button class="btn btn-sm btn-light text-danger" (click)="selectedFile.set(null)" [disabled]="uploading()">
+            <i class="ri-delete-bin-line"></i>
+          </button>
         </div>
       }
     </div>
     <div class="modal-footer d-flex gap-2">
-      <button class="btn btn-outline flex-grow-1" (click)="closeUploadModal()" [disabled]="uploading()">
-        {{ 'ACTIONS.CANCEL' | translate }}
-      </button>
-      <button class="btn btn-upload flex-grow-1" (click)="uploadCeki()" [disabled]="!selectedFile() || uploading()">
+      <button class="btn btn-outline flex-grow-1" (click)="closeUploadModal()" [disabled]="uploading()">İptal</button>
+      <button class="btn btn-primary-gradient flex-grow-1" (click)="uploadCeki()" [disabled]="!selectedFile() || uploading()">
         @if (uploading()) {
-          <span class="spinner-border spinner-border-sm me-2"></span>
+          <span class="spinner-border spinner-border-sm me-2"></span>Yükleniyor...
+        } @else {
+          Yükle ve İşle
         }
-        <i class="ri-upload-2-line me-1"></i>Yükle
       </button>
+    </div>
+  </div>
+}
+
+<!-- Proje Oluştur Modal (Saha/Yedek) -->
+@if (showProjeOlusturModal()) {
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal fade show d-block" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Yeni {{ isSahaYonetimi() ? 'Saha' : 'Yedek' }} Projesi Oluştur</h5>
+          <button type="button" class="btn-close" (click)="closeProjeOlusturModal()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Proje No</label>
+            <input type="text" class="form-control" [(ngModel)]="yeniProjeForm().projeNo" placeholder="Örn: PRJ-2026-001" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Müşteri</label>
+            <input type="text" class="form-control" [(ngModel)]="yeniProjeForm().musteri" placeholder="Örn: ABC A.Ş." />
+          </div>
+        </div>
+        <div class="modal-footer d-flex gap-2">
+          <button class="btn btn-outline flex-grow-1" (click)="closeProjeOlusturModal()" [disabled]="creatingProje()">
+            İptal
+          </button>
+          <button class="btn btn-primary-gradient flex-grow-1" (click)="submitProjeOlustur()" [disabled]="creatingProje()">
+            @if (creatingProje()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>
+            }
+            Oluştur
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 }

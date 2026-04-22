@@ -1,5 +1,6 @@
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterLink, ActivatedRoute } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { TranslationService } from '../../../core/services/translation.service';
@@ -14,7 +15,7 @@ import { ConfirmService } from '../../../core/services/confirm.service';
 @Component({
   selector: 'app-proje-listesi',
   standalone: true,
-  imports: [TranslatePipe, RouterLink, NgClass, StatusBadgeComponent, BreadcrumbComponent],
+  imports: [TranslatePipe, RouterLink, NgClass, StatusBadgeComponent, BreadcrumbComponent, FormsModule],
   templateUrl: './proje-listesi.component.html',
   styleUrl: './proje-listesi.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -30,6 +31,8 @@ export class ProjeListesiComponent implements OnInit {
   isSandikYonetimi = signal(false);
   isSevkEdilen = signal(false);
   isAktifProjeler = signal(false);
+  isSahaYonetimi = signal(false);
+  isYedekYonetimi = signal(false);
 
   /**
    * Grid/3K buton gösterimi — Rol Yetki ekranından yönetilir.
@@ -49,40 +52,77 @@ export class ProjeListesiComponent implements OnInit {
   uploadResult = signal<{ success: boolean; message: string } | null>(null);
   dragOver = signal(false);
 
+  // Proje Oluştur (Saha/Yedek)
+  showProjeOlusturModal = signal(false);
+  creatingProje = signal(false);
+  yeniProjeForm = signal({ projeNo: '', musteri: '' });
+
   breadcrumb = [
     { label: 'Ana Kontrol Paneli', link: '/dashboard' },
     { label: 'Projeler' },
   ];
+
+  /** Saha/Yedek modülleri sandık yönetimine benzer akış kullanır ama farklı routePrefix */
+  routePrefix = '';
 
   ngOnInit() {
     const menuKod = this.route.snapshot.data['menuKod'];
     this.isSandikYonetimi.set(menuKod === 'sandik-yonetimi');
     this.isSevkEdilen.set(menuKod === 'sevk-edilen');
     this.isAktifProjeler.set(menuKod === 'aktif-projeler');
+    this.isSahaYonetimi.set(menuKod === 'saha-yonetimi');
+    this.isYedekYonetimi.set(menuKod === 'yedek-yonetimi');
     
     if (this.isSandikYonetimi()) {
       this.breadcrumb = [
         { label: 'Ana Kontrol Paneli', link: '/dashboard' },
         { label: 'Sandık Yönetimi' },
       ];
+      this.routePrefix = '/sandik-yonetimi';
     } else if (this.isSevkEdilen()) {
       this.breadcrumb = [
         { label: 'Ana Kontrol Paneli', link: '/dashboard' },
         { label: 'Sevk Edilen Projeler' },
       ];
+    } else if (this.isSahaYonetimi()) {
+      this.breadcrumb = [
+        { label: 'Ana Kontrol Paneli', link: '/dashboard' },
+        { label: 'Saha Yönetimi' },
+      ];
+      this.routePrefix = '/saha-yonetimi';
+    } else if (this.isYedekYonetimi()) {
+      this.breadcrumb = [
+        { label: 'Ana Kontrol Paneli', link: '/dashboard' },
+        { label: 'Yedek Yönetimi' },
+      ];
+      this.routePrefix = '/yedek-yonetimi';
     }
     
     this.loadProjeler();
   }
 
+  /** Sandık yönetimi moduna giren tüm modlar için ortak kontrol */
+  isSandikMode = computed(() => this.isSandikYonetimi() || this.isSahaYonetimi() || this.isYedekYonetimi());
+
   loadProjeler() {
     this.loading.set(true);
-    this.projeService.getProjeListesi().subscribe((res) => {
+
+    // Saha/Yedek modüllerinde sadece o tipteki projeleri çek
+    let obs;
+    if (this.isSahaYonetimi()) {
+      obs = this.projeService.getProjeListesiByTip(2); // Saha
+    } else if (this.isYedekYonetimi()) {
+      obs = this.projeService.getProjeListesiByTip(3); // Yedek
+    } else {
+      obs = this.projeService.getProjeListesiByTip(1); // Sadece Normal projeler
+    }
+
+    obs.subscribe((res) => {
       this.loading.set(false);
       if (res.isSuccess && res.value) {
         let data = res.value;
 
-        // Sekmeye göre filtrele
+        // Sekmeye göre filtrele (normal projeler için)
         if (this.isSevkEdilen()) {
           data = data.filter(p => p.durumMetni === 'SevkEdildi' || p.durumMetni === 'Sevk Edildi');
         } else if (this.isAktifProjeler() || this.isSandikYonetimi()) {
@@ -203,6 +243,50 @@ export class ProjeListesiComponent implements OnInit {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+
+  // ===== Proje Oluştur Modal (Saha/Yedek) =====
+
+  openProjeOlusturModal() {
+    this.yeniProjeForm.set({ projeNo: '', musteri: '' });
+    this.showProjeOlusturModal.set(true);
+  }
+
+  closeProjeOlusturModal() {
+    this.showProjeOlusturModal.set(false);
+  }
+
+  submitProjeOlustur() {
+    const form = this.yeniProjeForm();
+    if (!form.projeNo.trim() || !form.musteri.trim()) {
+      this.toastService.error('Proje No ve Müşteri alanları zorunludur.');
+      return;
+    }
+
+    this.creatingProje.set(true);
+    const tipId = this.isSahaYonetimi() ? 2 : 3;
+
+    this.projeService.projeOlustur({
+      projeNo: form.projeNo,
+      musteri: form.musteri,
+      projeTipiId: tipId,
+      sorumluKisi: ''
+    }).subscribe({
+      next: (res) => {
+        this.creatingProje.set(false);
+        if (res.isSuccess) {
+          this.toastService.success('Proje başarıyla oluşturuldu.');
+          this.closeProjeOlusturModal();
+          this.loadProjeler();
+        } else {
+          this.toastService.error(res.error || 'Proje oluşturulamadı.');
+        }
+      },
+      error: () => {
+        this.creatingProje.set(false);
+        this.toastService.error('Sunucu hatası oluştu.');
+      }
+    });
   }
 
   // ===== Proje Sevk (Kilitleme) İşlemleri =====

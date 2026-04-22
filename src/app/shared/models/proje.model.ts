@@ -6,6 +6,8 @@ export interface ProjeDto {
   musteri: string;
   durumId: number;
   durumMetni: string;
+  projeTipiId: number;
+  projeTipiMetni: string;
   planlananSevkTarihi?: string;
   sorumluKisi: string;
   sandikSayisi: number;
@@ -25,6 +27,7 @@ export interface ProjeDto {
 export interface ProjeOlusturDto {
   projeNo: string;
   musteri: string;
+  projeTipiId?: number;
   planlananSevkTarihi?: string;
   sorumluKisi: string;
 }

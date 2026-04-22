@@ -5,6 +5,7 @@ import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslationService } from '../../../core/services/translation.service';
 import { SandikService } from '../../../core/services/sandik.service';
+import { ProjeService } from '../../../core/services/proje.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
@@ -22,6 +23,7 @@ export class SandikDetayComponent implements OnInit {
   ts = inject(TranslationService);
   private route = inject(ActivatedRoute);
   private sandikService = inject(SandikService);
+  private projeService = inject(ProjeService);
   private toast = inject(ToastService);
   private auth = inject(AuthService);
 
@@ -43,6 +45,15 @@ export class SandikDetayComponent implements OnInit {
   yeniNeden = signal('');
   urunEklemeSaving = signal(false);
 
+  // Özellik Güncelleme Modal State
+  showOzellikModal = signal(false);
+  ozellikSaving = signal(false);
+  ozellikEn = signal<number | null>(null);
+  ozellikBoy = signal<number | null>(null);
+  ozellikYukseklik = signal<number | null>(null);
+  ozellikNetKg = signal<number | null>(null);
+  ozellikGrossKg = signal<number | null>(null);
+
   // Ürün taşıma modal
   showTasiModal = signal(false);
   tasiUrun = signal<SandikIcerikDto | null>(null);
@@ -57,9 +68,14 @@ export class SandikDetayComponent implements OnInit {
 
   breadcrumb: { label: string; link?: string }[] = [];
 
+  isSahaYedek = signal(false);
+
   ngOnInit() {
     const pId = Number(this.route.snapshot.paramMap.get('projeId'));
     const sId = Number(this.route.snapshot.paramMap.get('sandikId'));
+    const menuKod = this.route.snapshot.data['menuKod'] || 'sandik-yonetimi';
+    this.isSahaYedek.set(menuKod === 'saha-yonetimi' || menuKod === 'yedek-yonetimi');
+    
     this.projeId.set(pId);
     this.sandikId.set(sId);
     this.loadSandik();
@@ -72,9 +88,22 @@ export class SandikDetayComponent implements OnInit {
       this.loading.set(false);
       if (res.isSuccess && res.value) {
         this.sandik.set(res.value);
+        
+        let parentLabel = this.ts.translate('MENU.SANDIK_YONETIMI');
+        let parentLink = `/sandik-yonetimi/${this.projeId()}`;
+        
+        const menuKod = this.route.snapshot.data['menuKod'];
+        if (menuKod === 'saha-yonetimi') {
+          parentLabel = 'Saha Yönetimi';
+          parentLink = `/saha-yonetimi/${this.projeId()}`;
+        } else if (menuKod === 'yedek-yonetimi') {
+          parentLabel = 'Yedek Yönetimi';
+          parentLink = `/yedek-yonetimi/${this.projeId()}`;
+        }
+
         this.breadcrumb = [
           { label: this.ts.translate('MENU.DASHBOARD'), link: '/dashboard' },
-          { label: this.ts.translate('MENU.SANDIK_YONETIMI'), link: `/sandik-yonetimi/${this.projeId()}` },
+          { label: parentLabel, link: parentLink },
           { label: `${res.value.sandikNo}` },
         ];
       }
@@ -138,6 +167,49 @@ export class SandikDetayComponent implements OnInit {
     this.showUrunEkleModal.set(false);
   }
 
+  // ===== Özellik Güncelleme =====
+  openOzellikGuncelleModal() {
+    const s = this.sandik();
+    if (!s) return;
+    this.ozellikEn.set(s.en ?? null);
+    this.ozellikBoy.set(s.boy ?? null);
+    this.ozellikYukseklik.set(s.yukseklik ?? null);
+    this.ozellikNetKg.set(s.netKg ?? null);
+    this.ozellikGrossKg.set(s.grossKg ?? null);
+    this.showOzellikModal.set(true);
+  }
+
+  closeOzellikModal() {
+    this.showOzellikModal.set(false);
+  }
+
+  kaydetOzellikler() {
+    this.ozellikSaving.set(true);
+    this.sandikService.ozellikGuncelle({
+      sandikId: this.sandikId(),
+      en: this.ozellikEn() ?? undefined,
+      boy: this.ozellikBoy() ?? undefined,
+      yukseklik: this.ozellikYukseklik() ?? undefined,
+      netKg: this.ozellikNetKg() ?? undefined,
+      grossKg: this.ozellikGrossKg() ?? undefined
+    }).subscribe({
+      next: (res) => {
+        this.ozellikSaving.set(false);
+        if (res.isSuccess) {
+          this.toast.success('Sandık özellikleri güncellendi.');
+          this.closeOzellikModal();
+          this.loadSandik();
+        } else {
+          this.toast.error(res.error ?? 'Güncellenemedi.');
+        }
+      },
+      error: () => {
+        this.ozellikSaving.set(false);
+        this.toast.error('Hata oluştu.');
+      }
+    });
+  }
+
   manuelUrunEkle() {
     if (!this.yeniAciklama().trim()) {
       this.toast.error('Açıklama girilmelidir.');
@@ -148,16 +220,31 @@ export class SandikDetayComponent implements OnInit {
       return;
     }
     this.urunEklemeSaving.set(true);
-    this.sandikService.manuelUrunEkle({
+
+    const isSahaYedek = this.isSahaYedek();
+    const payload = {
       projeId: this.projeId(),
       sandikId: this.sandikId(),
-      barkodNo: this.yeniBarkod().trim() || 'MANUEL',
+      barkodNo: this.yeniBarkod().trim() || (isSahaYedek ? '' : 'MANUEL'),
       aciklama: this.yeniAciklama().trim(),
       istenenAdet: this.yeniAdet(),
       birim: this.yeniBirim(),
       eklemeNedeni: this.yeniNeden().trim() || undefined,
-    }).subscribe({
-      next: (res) => {
+    };
+    
+    // Rename property for SahaYedek API which expects 'isim' and 'miktar' instead of 'aciklama' and 'istenenAdet'
+    const sahaYedekPayload = {
+      ...payload,
+      isim: payload.aciklama,
+      miktar: payload.istenenAdet
+    };
+
+    const obs = isSahaYedek 
+      ? this.projeService.sahaYedekMalzemeEkle(sahaYedekPayload)
+      : this.sandikService.manuelUrunEkle(payload);
+
+    obs.subscribe({
+      next: (res: any) => {
         this.urunEklemeSaving.set(false);
         if (res.isSuccess) {
           this.toast.success('Ürün başarıyla eklendi.');

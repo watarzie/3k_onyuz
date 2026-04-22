@@ -37,12 +37,66 @@
           </div>
         </div>
       </div>
-      <div class="sandik-meta mt-3 d-flex gap-4 flex-wrap">
-        <div><small class="text-muted">Durum</small> <app-status-badge [status]="sandik()!.durumMetni" [label]="getDurumLabel(sandik()!.durumMetni)" /></div>
-        <div><small class="text-muted">{{ 'LABELS.LOKASYON' | translate }}</small> <span class="ms-2 fw-semibold">{{ sandik()!.depoLokasyonMetni }}</span></div>
+        <div class="sandik-meta mt-3 d-flex gap-4 flex-wrap align-items-center">
+          <div><small class="text-muted">Durum</small> <app-status-badge [status]="sandik()!.durumMetni" [label]="getDurumLabel(sandik()!.durumMetni)" /></div>
+          <div><small class="text-muted">{{ 'LABELS.LOKASYON' | translate }}</small> <span class="ms-2 fw-semibold">{{ sandik()!.depoLokasyonMetni }}</span></div>
+          <div class="vr"></div>
+          <div><small class="text-muted">En:</small> <span class="ms-1 fw-semibold">{{ sandik()!.en ? sandik()!.en + ' cm' : '-' }}</span></div>
+          <div><small class="text-muted">Boy:</small> <span class="ms-1 fw-semibold">{{ sandik()!.boy ? sandik()!.boy + ' cm' : '-' }}</span></div>
+          <div><small class="text-muted">Yük.:</small> <span class="ms-1 fw-semibold">{{ sandik()!.yukseklik ? sandik()!.yukseklik + ' cm' : '-' }}</span></div>
+          <div><small class="text-muted">Net:</small> <span class="ms-1 fw-semibold">{{ sandik()!.netKg ? sandik()!.netKg + ' kg' : '-' }}</span></div>
+          <div><small class="text-muted">Gross:</small> <span class="ms-1 fw-semibold">{{ sandik()!.grossKg ? sandik()!.grossKg + ' kg' : '-' }}</span></div>
+          <button class="btn btn-sm btn-outline ms-auto" (click)="openOzellikGuncelleModal()"><i class="ri-edit-line me-1"></i> Özellikleri Güncelle</button>
+        </div>
       </div>
     </div>
-  </div>
+
+    <!-- Özellik Güncelleme Modal -->
+    @if (showOzellikModal()) {
+      <div class="modal-overlay" (click)="closeOzellikModal()"></div>
+      <div class="modal-container">
+        <div class="modal-header-custom">
+          <h5 class="fw-semibold mb-0"><i class="ri-ruler-line me-2"></i>Sandık Özellikleri</h5>
+          <button class="btn btn-sm border-0" (click)="closeOzellikModal()"><i class="ri-close-line fs-5"></i></button>
+        </div>
+        <div class="modal-body-custom">
+          <div class="row g-3">
+            <div class="col-4">
+              <label class="form-label fw-semibold">En (cm)</label>
+              <input type="number" step="0.01" class="form-control" [ngModel]="ozellikEn()" (ngModelChange)="ozellikEn.set($event)" />
+            </div>
+            <div class="col-4">
+              <label class="form-label fw-semibold">Boy (cm)</label>
+              <input type="number" step="0.01" class="form-control" [ngModel]="ozellikBoy()" (ngModelChange)="ozellikBoy.set($event)" />
+            </div>
+            <div class="col-4">
+              <label class="form-label fw-semibold">Yükseklik (cm)</label>
+              <input type="number" step="0.01" class="form-control" [ngModel]="ozellikYukseklik()" (ngModelChange)="ozellikYukseklik.set($event)" />
+            </div>
+          </div>
+          <div class="row g-3 mt-1">
+            <div class="col-6">
+              <label class="form-label fw-semibold">Net Kg</label>
+              <input type="number" step="0.01" class="form-control" [ngModel]="ozellikNetKg()" (ngModelChange)="ozellikNetKg.set($event)" />
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold">Gross Kg</label>
+              <input type="number" step="0.01" class="form-control" [ngModel]="ozellikGrossKg()" (ngModelChange)="ozellikGrossKg.set($event)" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer-custom">
+          <button class="btn btn-outline flex-grow-1" (click)="closeOzellikModal()">İptal</button>
+          <button class="btn btn-primary flex-grow-1" (click)="kaydetOzellikler()" [disabled]="ozellikSaving()">
+            @if (ozellikSaving()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>Güncelleniyor...
+            } @else {
+              Kaydet
+            }
+          </button>
+        </div>
+      </div>
+    }
 
   <!-- Ürün Tablosu -->
   <div class="trezo-card border-0 shadow-none">
@@ -201,21 +255,21 @@
     <div class="modal-overlay" (click)="closeUrunEkleModal()"></div>
     <div class="modal-container">
       <div class="modal-header-custom">
-        <h5 class="fw-semibold mb-0"><i class="ri-add-circle-line me-2"></i>Manuel Ürün Ekle</h5>
+        <h5 class="fw-semibold mb-0"><i class="ri-add-circle-line me-2"></i>{{ isSahaYedek() ? 'Malzeme Ekle' : 'Manuel Ürün Ekle' }}</h5>
         <button class="btn btn-sm border-0" (click)="closeUrunEkleModal()"><i class="ri-close-line fs-5"></i></button>
       </div>
       <div class="modal-body-custom">
         <div class="mb-3">
           <label class="form-label fw-semibold">Barkod No</label>
-          <input type="text" class="form-control" [ngModel]="yeniBarkod()" (ngModelChange)="yeniBarkod.set($event)" placeholder="Boş bırakılırsa 'MANUEL' atanır" />
+          <input type="text" class="form-control" [ngModel]="yeniBarkod()" (ngModelChange)="yeniBarkod.set($event)" [placeholder]="isSahaYedek() ? 'İsteğe bağlı' : 'Boş bırakılırsa \'MANUEL\' atanır'" />
         </div>
         <div class="mb-3">
-          <label class="form-label fw-semibold">Açıklama <span class="text-danger">*</span></label>
-          <input type="text" class="form-control" [ngModel]="yeniAciklama()" (ngModelChange)="yeniAciklama.set($event)" placeholder="Ürün açıklaması" />
+          <label class="form-label fw-semibold">{{ isSahaYedek() ? 'Malzeme İsmi' : 'Açıklama' }} <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" [ngModel]="yeniAciklama()" (ngModelChange)="yeniAciklama.set($event)" [placeholder]="isSahaYedek() ? 'Malzeme adı' : 'Ürün açıklaması'" />
         </div>
         <div class="row g-3">
           <div class="col-6">
-            <label class="form-label fw-semibold">Adet <span class="text-danger">*</span></label>
+            <label class="form-label fw-semibold">{{ isSahaYedek() ? 'Miktar' : 'Adet' }} <span class="text-danger">*</span></label>
             <input type="number" class="form-control" min="1" [ngModel]="yeniAdet()" (ngModelChange)="yeniAdet.set($event)" />
           </div>
           <div class="col-6">
@@ -229,10 +283,12 @@
             </select>
           </div>
         </div>
-        <div class="mb-3 mt-3">
-          <label class="form-label fw-semibold">Ekleme Nedeni</label>
-          <textarea class="form-control" rows="2" [ngModel]="yeniNeden()" (ngModelChange)="yeniNeden.set($event)" placeholder="Neden ekleniyor? (isteğe bağlı)"></textarea>
-        </div>
+        @if (!isSahaYedek()) {
+          <div class="mb-3 mt-3">
+            <label class="form-label fw-semibold">Ekleme Nedeni</label>
+            <textarea class="form-control" rows="2" [ngModel]="yeniNeden()" (ngModelChange)="yeniNeden.set($event)" placeholder="Neden ekleniyor? (isteğe bağlı)"></textarea>
+          </div>
+        }
       </div>
       <div class="modal-footer-custom">
         <button class="btn btn-outline flex-grow-1" (click)="closeUrunEkleModal()">İptal</button>

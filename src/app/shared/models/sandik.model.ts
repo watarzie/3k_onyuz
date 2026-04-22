@@ -8,6 +8,11 @@ export interface SandikDto {
   depoLokasyonId: number;
   depoLokasyonMetni: string;
   urunSayisi: number;
+  en?: number;
+  boy?: number;
+  yukseklik?: number;
+  netKg?: number;
+  grossKg?: number;
 }
 
 export interface SandikDetayDto {
@@ -17,6 +22,11 @@ export interface SandikDetayDto {
   durumMetni: string;
   depoLokasyonId: number;
   depoLokasyonMetni: string;
+  en?: number;
+  boy?: number;
+  yukseklik?: number;
+  netKg?: number;
+  grossKg?: number;
   icerikler: SandikIcerikDto[];
 }
 
@@ -41,6 +51,11 @@ export interface SandikEkleDto {
   sandikNo: string;
   tipId: number;
   depoLokasyonId: number;
+  en?: number;
+  boy?: number;
+  yukseklik?: number;
+  netKg?: number;
+  grossKg?: number;
 }
 
 export interface ManuelUrunEkleDto {
@@ -72,6 +87,15 @@ export interface SandikDegistirDto {
   yeniFiiliSandikNo: string;
   projeId: number;
   kullaniciId: number;
+}
+
+export interface SandikOzellikGuncelleDto {
+  sandikId: number;
+  en?: number;
+  boy?: number;
+  yukseklik?: number;
+  netKg?: number;
+  grossKg?: number;
 }
 
 export interface TeslimAlDto {

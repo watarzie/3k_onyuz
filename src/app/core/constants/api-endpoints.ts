@@ -21,6 +21,7 @@ export const API = {
   },
   PROJE: {
     LIST: `${BASE}/proje`,
+    LIST_BY_TIP: (tipId: number) => `${BASE}/proje?projeTipiId=${tipId}`,
     CREATE: `${BASE}/proje`,
     SANDIK_KAPAT: `${BASE}/proje/sandik-kapat`,
     SEVK_ET: (id: number) => `${BASE}/proje/${id}/sevk-et`,
@@ -36,6 +37,7 @@ export const API = {
     EKLE: `${BASE}/sandik/ekle`,
     MANUEL_EKLE: `${BASE}/sandik/manuel-ekle`,
     URUN_GUNCELLE: `${BASE}/sandik/urun-guncelle`,
+    OZELLIK_GUNCELLE: `${BASE}/sandik/ozellik-guncelle`,
     DEGISTIR: `${BASE}/sandik/degistir`,
     IPTAL: `${BASE}/sandik/iptal`,
     STOKTAN_KARSILA: `${BASE}/sandik/stoktan-karsila`,
@@ -47,6 +49,8 @@ export const API = {
     TOPLU_KAPAT: `${BASE}/sandik/toplu-kapat`,
     LOKASYON_GUNCELLE: `${BASE}/sandik/lokasyon-guncelle`,
     URUN_TASI: `${BASE}/sandik/urun-tasi`,
+    SAHA_YEDEK_MALZEME_EKLE: `${BASE}/sandik/saha-yedek-malzeme-ekle`,
+    SEVK_ET: `${BASE}/sandik/sevk-et`,
   },
   GRID: {
     URUNLER: (projeId: number) => `${BASE}/grid/${projeId}/urunler`,

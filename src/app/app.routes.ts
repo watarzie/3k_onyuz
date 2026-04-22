@@ -106,15 +106,6 @@ export const routes: Routes = [
         data: { menuKod: 'depo-durumu' },
       },
 
-      // --- Eksik Liste ---
-      {
-        path: 'eksik-listesi',
-        canActivate: [menuGuard],
-        loadComponent: () =>
-          import('./shared/components/coming-soon/coming-soon.component').then(m => m.ComingSoonComponent),
-        data: { menuKod: 'eksik-listesi', title: 'Eksik Listesi' },
-      },
-
       // --- İşlem Onay Merkezi ---
       {
         path: 'onay-merkezi',
@@ -133,13 +124,50 @@ export const routes: Routes = [
         data: { menuKod: 'stok' },
       },
 
-      // --- Saha Malzeme ---
+      // --- Saha Yönetimi ---
       {
-        path: 'saha-malzeme',
+        path: 'saha-yonetimi',
         canActivate: [menuGuard],
         loadComponent: () =>
-          import('./shared/components/coming-soon/coming-soon.component').then(m => m.ComingSoonComponent),
-        data: { menuKod: 'saha-malzeme', title: 'Saha Malzemesi' },
+          import('./features/projeler/proje-listesi/proje-listesi.component').then(m => m.ProjeListesiComponent),
+        data: { menuKod: 'saha-yonetimi' },
+      },
+      {
+        path: 'saha-yonetimi/:projeId',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/sandik-yonetimi/sandik-listesi/sandik-listesi.component').then(m => m.SandikListesiComponent),
+        data: { menuKod: 'saha-yonetimi' },
+      },
+      {
+        path: 'saha-yonetimi/:projeId/:sandikId',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/sandik-yonetimi/sandik-detay/sandik-detay.component').then(m => m.SandikDetayComponent),
+        data: { menuKod: 'saha-yonetimi' },
+      },
+
+      // --- Yedek Yönetimi ---
+      {
+        path: 'yedek-yonetimi',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/projeler/proje-listesi/proje-listesi.component').then(m => m.ProjeListesiComponent),
+        data: { menuKod: 'yedek-yonetimi' },
+      },
+      {
+        path: 'yedek-yonetimi/:projeId',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/sandik-yonetimi/sandik-listesi/sandik-listesi.component').then(m => m.SandikListesiComponent),
+        data: { menuKod: 'yedek-yonetimi' },
+      },
+      {
+        path: 'yedek-yonetimi/:projeId/:sandikId',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/sandik-yonetimi/sandik-detay/sandik-detay.component').then(m => m.SandikDetayComponent),
+        data: { menuKod: 'yedek-yonetimi' },
       },
 
       // --- Hareket Geçmişi ---

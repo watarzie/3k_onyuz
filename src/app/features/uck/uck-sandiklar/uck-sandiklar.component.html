@@ -187,14 +187,6 @@
         <input type="text" class="form-control" [ngModel]="ekSandikNo()" (ngModelChange)="ekSandikNo.set($event)" placeholder="Ör: 67" />
       </div>
       <div class="mb-3">
-        <label class="form-label fw-semibold">Sandık Tipi</label>
-        <select class="form-select" [ngModel]="ekTipId()" (ngModelChange)="ekTipId.set(+$event)">
-          @for (t of sandikTipleri(); track t.id) {
-            <option [value]="t.id">{{ t.deger }}</option>
-          }
-        </select>
-      </div>
-      <div class="mb-3">
         <label class="form-label fw-semibold">Depo Lokasyonu</label>
         <select class="form-select" [ngModel]="ekLokasyonId()" (ngModelChange)="ekLokasyonId.set(+$event)">
           @for (l of sistemLokasyonlar(); track l.id) {
