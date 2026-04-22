@@ -1,0 +1,168 @@
+<div class="row align-items-center mb-4">
+  <div class="col-sm-4">
+    <div class="d-flex align-items-center gap-3">
+      <h5 class="mb-0">Hareket Geçmişi (Log)</h5>
+      
+      <div class="proje-select">
+        <select class="form-select form-select-sm" [ngModel]="selectedProjeId()" (ngModelChange)="selectedProjeId.set($event); onProjeChange()">
+          @for (p of projeler(); track p.id) {
+            <option [ngValue]="p.id">{{ p.projeNo }} - {{ p.musteri }}</option>
+          }
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-8 text-sm-end mt-3 mt-sm-0">
+    <div class="d-flex justify-content-sm-end gap-2">
+      <div class="filter-box">
+        <select class="form-select form-select-sm" [ngModel]="selectedIslemTipi()" (ngModelChange)="selectedIslemTipi.set($event); currentPage.set(1)" style="min-width: 160px;">
+          <option value="">Tüm İşlemler</option>
+          @for (tip of islemTipleri(); track tip) {
+            <option [value]="tip">{{ tip }}</option>
+          }
+        </select>
+      </div>
+      <div class="search-box">
+        <i class="ri-search-line"></i>
+        <input type="text" class="form-control form-control-sm" placeholder="İşlem, kullanıcı veya referans ara..." [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event); currentPage.set(1)">
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card bg-white border-0 rounded-3 mb-4 shadow-sm">
+  <div class="card-body p-0">
+    
+    @if (loading()) {
+      <div class="text-center p-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Yükleniyor...</span>
+        </div>
+        <p class="mt-2 text-muted">Geçmiş yükleniyor...</p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover table-nowrap align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th scope="col" style="width: 150px;">TARİH</th>
+              <th scope="col">KULLANICI</th>
+              <th scope="col">İŞLEM TİPİ</th>
+              <th scope="col">REFERANS</th>
+              <th scope="col" style="width: 250px;">DEĞİŞİM (Eski &rarr; Yeni)</th>
+              <th scope="col">AÇIKLAMA</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (h of paginatedHareketler(); track h.id) {
+              <tr>
+                <td class="text-muted">
+                  <div class="d-flex flex-column">
+                    <span class="fw-medium text-dark">{{ h.tarih | date:'dd.MM.yyyy' }}</span>
+                    <small style="font-size: 11px;">{{ h.tarih | date:'HH:mm:ss' }}</small>
+                  </div>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="avatar-sm rounded-circle bg-primary-transparent text-primary d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 12px; font-weight: 600;">
+                      {{ h.kullaniciAdi ? h.kullaniciAdi.charAt(0).toUpperCase() : '?' }}
+                    </div>
+                    <span class="fw-medium">{{ h.kullaniciAdi }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="getBadgeClass(h.islemTipiMetni || h.islem)">
+                    {{ h.islemTipiMetni || h.islem }}
+                  </span>
+                </td>
+                <td>
+                  @if (h.referansTipi && h.referansId) {
+                    <div class="d-flex flex-column">
+                      <span style="font-size: 11px;" class="text-muted text-uppercase">{{ h.referansTipi }}</span>
+                      <span class="fw-medium">{{ h.referansId }}</span>
+                    </div>
+                  } @else {
+                    <span class="text-muted">-</span>
+                  }
+                </td>
+                <td>
+                  @if (h.eskiDeger || h.yeniDeger) {
+                    <div class="d-flex align-items-center gap-2" style="font-size: 13px;">
+                      @if (h.eskiDeger) {
+                        <span class="text-danger bg-danger-transparent px-2 py-1 rounded" style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" [title]="h.eskiDeger">{{ h.eskiDeger }}</span>
+                      } @else {
+                        <span class="text-muted">-</span>
+                      }
+                      
+                      <i class="ri-arrow-right-line text-muted"></i>
+                      
+                      @if (h.yeniDeger) {
+                        <span class="text-success bg-success-transparent px-2 py-1 rounded" style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" [title]="h.yeniDeger">{{ h.yeniDeger }}</span>
+                      } @else {
+                        <span class="text-muted">-</span>
+                      }
+                    </div>
+                  } @else {
+                    <span class="text-muted">-</span>
+                  }
+                </td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted d-inline-block" style="max-width: 200px; overflow: hidden; white-space: nowrap; text-overflow: clip;" [title]="h.aciklama || ''">
+                      {{ h.aciklama || '-' }}
+                    </span>
+                    @if (h.aciklama && h.aciklama.length > 30) {
+                      <button class="btn btn-sm btn-light border p-0 d-flex align-items-center justify-content-center text-muted" 
+                              style="width: 24px; height: 24px; border-radius: 4px;" 
+                              (click)="showFullText('Açıklama Detayı', h.aciklama)"
+                              title="Tümünü Gör">
+                        <i class="ri-eye-line"></i>
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+            @if (filteredHareketler().length === 0 && !loading()) {
+              <tr>
+                <td colspan="6" class="text-center py-4 text-muted">
+                  Bu proje için henüz bir hareket bulunmuyor veya arama kriterine uyan kayıt yok.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (!loading() && totalPages() >= 1) {
+        <div class="card-footer bg-white border-top border-light px-4 py-3 rounded-bottom-3">
+          <div class="d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3">
+            <div class="text-muted" style="font-size: 13px;">
+              Toplam <strong class="text-dark">{{ filteredHareketler().length }}</strong> kayıttan 
+              <strong class="text-dark">{{ (currentPage() - 1) * pageSize() + (filteredHareketler().length > 0 ? 1 : 0) }}</strong> - 
+              <strong class="text-dark">{{ mathMin(currentPage() * pageSize(), filteredHareketler().length) }}</strong> arası gösteriliyor.
+            </div>
+            @if (totalPages() > 1) {
+              <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm mb-0">
+                  <li class="page-item" [class.disabled]="currentPage() === 1">
+                    <a class="page-link" href="javascript:void(0)" (click)="changePage(currentPage() - 1)">Önceki</a>
+                  </li>
+                  
+                  <li class="page-item active">
+                    <span class="page-link">{{ currentPage() }} / {{ totalPages() }}</span>
+                  </li>
+                  
+                  <li class="page-item" [class.disabled]="currentPage() === totalPages()">
+                    <a class="page-link" href="javascript:void(0)" (click)="changePage(currentPage() + 1)">Sonraki</a>
+                  </li>
+                </ul>
+              </nav>
+            }
+          </div>
+        </div>
+      }
+    }
+
+  </div>
+</div>

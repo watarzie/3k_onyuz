@@ -147,7 +147,7 @@ export const routes: Routes = [
         path: 'hareket-gecmisi',
         canActivate: [menuGuard],
         loadComponent: () =>
-          import('./shared/components/coming-soon/coming-soon.component').then(m => m.ComingSoonComponent),
+          import('./features/hareket-gecmisi/hareket-gecmisi.component').then(m => m.HareketGecmisiComponent),
         data: { menuKod: 'hareket-gecmisi', title: 'Hareket Geçmişi (Log)' },
       },
 

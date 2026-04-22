@@ -33,9 +33,11 @@ import { NgClass } from '@angular/common';
           <div [innerHTML]="confirm.options().message"></div>
         </div>
         <div class="confirm-footer">
-          <button class="btn-cancel" (click)="confirm.cancel()">
-            {{ confirm.options().cancelText }}
-          </button>
+          @if (confirm.options().cancelText) {
+            <button class="btn-cancel" (click)="confirm.cancel()">
+              {{ confirm.options().cancelText }}
+            </button>
+          }
           <button class="btn-confirm" [ngClass]="confirm.options().type || 'danger'" (click)="confirm.confirm()">
             {{ confirm.options().confirmText }}
           </button>
