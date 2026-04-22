@@ -23,6 +23,8 @@ export const API = {
     LIST: `${BASE}/proje`,
     CREATE: `${BASE}/proje`,
     SANDIK_KAPAT: `${BASE}/proje/sandik-kapat`,
+    SEVK_ET: (id: number) => `${BASE}/proje/${id}/sevk-et`,
+    KILIDI_AC: (id: number) => `${BASE}/proje/${id}/kilidi-ac`,
   },
   CEKI: {
     YUKLE: `${BASE}/ceki/yukle`,

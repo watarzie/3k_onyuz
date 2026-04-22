@@ -21,14 +21,14 @@
           </a>
           <div class="sub-menu">
             @for (child of item.children; track child.route) {
-              <a class="sub-link" [routerLink]="child.route" routerLinkActive="active" (click)="closeSidebar()">
+              <a class="sub-link" [routerLink]="child.route" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="closeSidebar()">
                 {{ child.label }}
               </a>
             }
           </div>
         </div>
       } @else {
-        <a class="nav-link" [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{exact: item.route === '/dashboard'}" (click)="closeSidebar()">
+        <a class="nav-link" [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="closeSidebar()">
           <i [class]="item.icon"></i>
           <span>{{ item.label }}</span>
         </a>

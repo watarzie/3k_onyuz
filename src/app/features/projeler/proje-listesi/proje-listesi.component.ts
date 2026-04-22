@@ -9,6 +9,7 @@ import { StatusBadgeComponent } from '../../../shared/components/status-badge/st
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { ProjeDto } from '../../../shared/models/index';
 import { ToastService } from '../../../core/services/toast.service';
+import { ConfirmService } from '../../../core/services/confirm.service';
 
 @Component({
   selector: 'app-proje-listesi',
@@ -23,9 +24,12 @@ export class ProjeListesiComponent implements OnInit {
   private projeService = inject(ProjeService);
   permissions = inject(PermissionService);
   toastService = inject(ToastService);
+  confirmService = inject(ConfirmService);
   private route = inject(ActivatedRoute);
 
   isSandikYonetimi = signal(false);
+  isSevkEdilen = signal(false);
+  isAktifProjeler = signal(false);
 
   /**
    * Grid/3K buton gösterimi — Rol Yetki ekranından yönetilir.
@@ -51,12 +55,20 @@ export class ProjeListesiComponent implements OnInit {
   ];
 
   ngOnInit() {
-    this.isSandikYonetimi.set(this.route.snapshot.data['menuKod'] === 'sandik-yonetimi');
+    const menuKod = this.route.snapshot.data['menuKod'];
+    this.isSandikYonetimi.set(menuKod === 'sandik-yonetimi');
+    this.isSevkEdilen.set(menuKod === 'sevk-edilen');
+    this.isAktifProjeler.set(menuKod === 'aktif-projeler');
     
     if (this.isSandikYonetimi()) {
       this.breadcrumb = [
         { label: 'Ana Kontrol Paneli', link: '/dashboard' },
         { label: 'Sandık Yönetimi' },
+      ];
+    } else if (this.isSevkEdilen()) {
+      this.breadcrumb = [
+        { label: 'Ana Kontrol Paneli', link: '/dashboard' },
+        { label: 'Sevk Edilen Projeler' },
       ];
     }
     
@@ -68,8 +80,17 @@ export class ProjeListesiComponent implements OnInit {
     this.projeService.getProjeListesi().subscribe((res) => {
       this.loading.set(false);
       if (res.isSuccess && res.value) {
-        this.projeler.set(res.value);
-        this.filtered.set(res.value);
+        let data = res.value;
+
+        // Sekmeye göre filtrele
+        if (this.isSevkEdilen()) {
+          data = data.filter(p => p.durumMetni === 'SevkEdildi' || p.durumMetni === 'Sevk Edildi');
+        } else if (this.isAktifProjeler() || this.isSandikYonetimi()) {
+          data = data.filter(p => p.durumMetni !== 'SevkEdildi' && p.durumMetni !== 'Sevk Edildi');
+        }
+
+        this.projeler.set(data);
+        this.filtered.set(data);
       }
     });
   }
@@ -182,5 +203,61 @@ export class ProjeListesiComponent implements OnInit {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+
+  // ===== Proje Sevk (Kilitleme) İşlemleri =====
+
+  canSevkEt = computed(() => this.permissions.hasAccess('proje-sevk-et'));
+
+  async sevkEt(proje: ProjeDto) {
+    const onay = await this.confirmService.ask({
+      title: 'Projeyi Sevk Et / Kilitle',
+      message: `<strong>${proje.projeNo}</strong> numaralı projeyi sevk etmek istediğinize emin misiniz?<br><br>
+                <div class="alert alert-warning py-2 mb-0">
+                  <i class="ri-alert-line me-1"></i> Bu işlem projeyi kilitler. Proje üzerinde hiçbir modülde değişiklik yapılamaz.
+                </div>`,
+      confirmText: 'Evet, Sevk Et',
+      cancelText: 'Vazgeç',
+      type: 'warning'
+    });
+
+    if (onay) {
+      this.projeService.sevkEt(proje.id).subscribe({
+        next: (res) => {
+          if (res.isSuccess) {
+            this.toastService.success('Proje başarıyla sevk edildi ve kilitlendi.');
+            this.loadProjeler();
+          } else {
+            this.toastService.error(res.error || 'İşlem başarısız.');
+          }
+        },
+        error: () => this.toastService.error('Sunucu hatası oluştu.')
+      });
+    }
+  }
+
+  async kilidiAc(proje: ProjeDto) {
+    const onay = await this.confirmService.ask({
+      title: 'Proje Kilidini Aç',
+      message: `<strong>${proje.projeNo}</strong> numaralı projenin kilidini açmak istediğinize emin misiniz?<br>
+                Proje yeniden "Devam" durumuna geçecek ve işlemlere izin verilecektir.`,
+      confirmText: 'Evet, Kilidi Aç',
+      cancelText: 'Vazgeç',
+      type: 'info'
+    });
+
+    if (onay) {
+      this.projeService.kilidiAc(proje.id).subscribe({
+        next: (res) => {
+          if (res.isSuccess) {
+            this.toastService.success('Proje kilidi başarıyla açıldı.');
+            this.loadProjeler();
+          } else {
+            this.toastService.error(res.error || 'İşlem başarısız.');
+          }
+        },
+        error: () => this.toastService.error('Sunucu hatası oluştu.')
+      });
+    }
   }
 }

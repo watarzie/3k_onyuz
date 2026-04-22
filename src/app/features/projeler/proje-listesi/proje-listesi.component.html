@@ -4,9 +4,11 @@
       <h2 class="fw-bold mb-1">{{ 'MENU.PROJELER' | translate }}</h2>
       <app-breadcrumb [items]="breadcrumb" />
     </div>
-    <button class="btn btn-primary-gradient" (click)="openUploadModal()">
-      <i class="ri-upload-2-line me-2"></i>Çeki Yükle
-    </button>
+    @if (!isSevkEdilen()) {
+      <button class="btn btn-primary-gradient" (click)="openUploadModal()">
+        <i class="ri-upload-2-line me-2"></i>Çeki Yükle
+      </button>
+    }
   </div>
 </div>
 
@@ -23,12 +25,17 @@
       <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
     } @else if (filtered().length === 0) {
       <div class="empty-state text-center py-5">
-        <div class="empty-icon mb-3"><i class="ri-folder-add-line"></i></div>
-        <h5 class="fw-semibold mb-2">Henüz proje bulunmuyor</h5>
-        <p class="text-muted mb-3">Başlamak için bir çeki dosyası yükleyin</p>
-        <button class="btn btn-primary-gradient" (click)="openUploadModal()">
-          <i class="ri-upload-2-line me-2"></i>Çeki Yükle
-        </button>
+        @if (isSevkEdilen()) {
+          <div class="empty-icon mb-3 text-muted" style="font-size: 3rem;"><i class="ri-truck-line"></i></div>
+          <h5 class="fw-semibold mb-2">Sevk edilen proje bulunmuyor</h5>
+        } @else {
+          <div class="empty-icon mb-3"><i class="ri-folder-add-line"></i></div>
+          <h5 class="fw-semibold mb-2">Henüz proje bulunmuyor</h5>
+          <p class="text-muted mb-3">Başlamak için bir çeki dosyası yükleyin</p>
+          <button class="btn btn-primary-gradient" (click)="openUploadModal()">
+            <i class="ri-upload-2-line me-2"></i>Çeki Yükle
+          </button>
+        }
       </div>
     } @else {
       <div class="table-responsive">
@@ -47,7 +54,7 @@
               }
               <th>{{ 'LABELS.durumMetni' | translate }}</th>
               <th>{{ 'LABELS.TAMAMLANMA' | translate }}</th>
-              @if (isSandikYonetimi()) {
+              @if (isSandikYonetimi() || (!isSandikYonetimi() && canSevkEt())) {
                 <th>İşlemler</th>
               }
             </tr>
@@ -89,18 +96,30 @@
                     <small class="fw-semibold">{{ getTamamlanmaYuzdesi(p) }}%</small>
                   </div>
                 </td>
-                @if (isSandikYonetimi()) {
+                @if (isSandikYonetimi() || (!isSandikYonetimi() && canSevkEt())) {
                   <td>
                     <div class="d-flex gap-1">
-                      @if (canSeeGrid()) {
-                        <a [routerLink]="['/grid', p.id]" class="btn btn-sm btn-action-grid" title="Grid Modülü">
-                          <i class="ri-database-2-line me-1"></i>Grid
-                        </a>
-                      }
-                      @if (canSee3K()) {
-                        <a [routerLink]="['/uck', p.id]" class="btn btn-sm btn-action-3k" title="3K Modülü">
-                          <i class="ri-archive-stack-line me-1"></i>3K
-                        </a>
+                      @if (isSandikYonetimi()) {
+                        @if (canSeeGrid()) {
+                          <a [routerLink]="['/grid', p.id]" class="btn btn-sm btn-action-grid" title="Grid Modülü">
+                            <i class="ri-database-2-line me-1"></i>Grid
+                          </a>
+                        }
+                        @if (canSee3K()) {
+                          <a [routerLink]="['/uck', p.id]" class="btn btn-sm btn-action-3k" title="3K Modülü">
+                            <i class="ri-archive-stack-line me-1"></i>3K
+                          </a>
+                        }
+                      } @else if (canSevkEt()) {
+                        @if (p.durumMetni === 'SevkEdildi' || p.durumMetni === 'Sevk Edildi') {
+                          <button class="btn btn-sm btn-outline-primary" (click)="kilidiAc(p)">
+                            <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
+                          </button>
+                        } @else {
+                          <button class="btn btn-sm btn-warning" (click)="sevkEt(p)">
+                            <i class="ri-truck-line me-1"></i>Sevk Et
+                          </button>
+                        }
                       }
                     </div>
                   </td>

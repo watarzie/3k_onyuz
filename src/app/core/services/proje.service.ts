@@ -29,6 +29,14 @@ export class ProjeService {
     return this.api.put<boolean>(API.PROJE.SANDIK_KAPAT, { sandikId, kapali });
   }
 
+  sevkEt(projeId: number): Observable<ApiResult<boolean>> {
+    return this.api.post<boolean>(API.PROJE.SEVK_ET(projeId), {});
+  }
+
+  kilidiAc(projeId: number): Observable<ApiResult<boolean>> {
+    return this.api.post<boolean>(API.PROJE.KILIDI_AC(projeId), {});
+  }
+
   // ===== Ceki =====
 
   cekiYukle(dosya: File): Observable<ApiResult<CekiYuklemeResultDto>> {

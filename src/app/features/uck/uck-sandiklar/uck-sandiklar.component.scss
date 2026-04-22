@@ -96,3 +96,16 @@
   .sandik-card { padding: 10px 12px; }
   .sandik-no { font-size: 20px; }
 }
+
+// ===== Modals =====
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1050;
+  backdrop-filter: blur(2px);
+}
+.toplu-sevk-modal {
+  border-radius: 12px;
+  overflow: hidden;
+}
