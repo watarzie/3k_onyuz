@@ -24,6 +24,11 @@ export interface UcKUrunDto {
   geriGonderilmeSebebiMetni?: string;
   ucKAciklama?: string;
   ucKNotu?: string;
+  // Parçalı karşılama (Madde 2)
+  stokKarsilanan: number;
+  projeKarsilanan: number;
+  tedarikciKarsilanan: number;
+  eksikMiktar: number;
   kalan: number;
   kontrolUyari: string;
   genelDurumId: number;
@@ -45,4 +50,29 @@ export interface UcKDurumGuncelleDto {
   mevcutProjeNo?: string;
   mevcutSandikNo?: string;
   kaynakUrunAdi?: string;
+}
+
+export interface TopluTamGeldiDto {
+  projeId: number;
+  cekiSatiriIdler: number[];
+  aciklama?: string;
+}
+
+export interface NotEkleDto {
+  bagliReferansTipi: string;
+  bagliReferansId: number;
+  cekiSatiriId?: number;
+  icerik: string;
+  projeId: number;
+}
+
+export interface NotDto {
+  id: number;
+  yazanTaraf: string;
+  icerik: string;
+  tarih: string;
+  kullaniciAdi: string;
+  kullaniciBasHarf?: string;
+  bagliReferansTipi: string;
+  bagliReferansId: number;
 }

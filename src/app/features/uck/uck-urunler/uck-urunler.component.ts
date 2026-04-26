@@ -1,6 +1,6 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { NgClass } from '@angular/common';
+import { NgClass, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { TranslationService } from '../../../core/services/translation.service';
@@ -14,7 +14,7 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
-import { UcKUrunDto, UcKDurumGuncelleDto, ProjeDto, GridUrunDto, StokKaydiDto } from '../../../shared/models/index';
+import { UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, NotDto, NotEkleDto, ProjeDto, GridUrunDto, StokKaydiDto } from '../../../shared/models/index';
 import { UcKDurum, GridSevkDurum, GridDurum } from '../../../core/constants/enums';
 
 interface KarsilamaTipi { id: number; value: string; label: string; color: string; bgClass: string; }
@@ -35,7 +35,7 @@ import { OnayService } from '../../../core/services/onay.service';
 @Component({
   selector: 'app-uck-urunler',
   standalone: true,
-  imports: [RouterLink, NgClass, FormsModule, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent],
+  imports: [RouterLink, NgClass, DatePipe, FormsModule, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent],
   templateUrl: './uck-urunler.component.html',
   styleUrl: './uck-urunler.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -72,6 +72,19 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   panelSaving = signal(false);
   panelError = signal('');
   panelUyari = signal('');
+
+  // Checkbox + Toplu TamGeldi
+  selectedIds = signal<Set<number>>(new Set());
+  showTopluModal = signal(false);
+  topluAciklama = signal('');
+  topluSaving = signal(false);
+
+  // Not Paneli
+  showNotPanel = signal(false);
+  notPanelUrun = signal<UcKUrunDto | null>(null);
+  notlar = signal<NotDto[]>([]);
+  yeniNot = signal('');
+  notSaving = signal(false);
 
   // Proje ve Kaynak Ürün Dropdown State
   projeler = signal<ProjeDto[]>([]);
@@ -131,6 +144,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   eksikGeldi = computed(() => this.urunler().filter(u => u.ucKKarsilamaTipiMetni === 'Eksik Geldi').length);
   tamamlanan = computed(() => this.urunler().filter(u => u.kalan === 0 && u.ucKKarsilamaTipiMetni !== 'Bekliyor').length);
   kalanlar = computed(() => this.urunler().filter(u => u.kalan > 0).length);
+  get hasSelection(): boolean { return this.selectedIds().size > 0; }
+  get selectionCount(): number { return this.selectedIds().size; }
 
   karsilamaTipleri = KARSILAMA_TIPLERI;
   breadcrumb: { label: string; link?: string }[] = [];
@@ -604,6 +619,117 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
         this.panelSaving.set(false);
         this.panelError.set('Bir hata oluştu.');
         this.toast.error('Sunucu ile iletişim kurulamadı.');
+      },
+    });
+  }
+
+  // ===== Checkbox Selection =====
+  toggleSelect(id: number) {
+    const s = new Set(this.selectedIds());
+    s.has(id) ? s.delete(id) : s.add(id);
+    this.selectedIds.set(s);
+  }
+  toggleSelectAll() {
+    if (this.selectedIds().size === this.filtered().length) {
+      this.selectedIds.set(new Set());
+    } else {
+      this.selectedIds.set(new Set(this.filtered().map(u => u.cekiSatiriId)));
+    }
+  }
+  isSelected(id: number): boolean { return this.selectedIds().has(id); }
+  get allSelected(): boolean { return this.filtered().length > 0 && this.selectedIds().size === this.filtered().length; }
+
+  // ===== Toplu Tam Geldi Modal =====
+  openTopluTamGeldi() {
+    this.topluAciklama.set('');
+    this.showTopluModal.set(true);
+  }
+  closeTopluTamGeldi() { this.showTopluModal.set(false); }
+
+  confirmTopluTamGeldi() {
+    this.topluSaving.set(true);
+    const dto: TopluTamGeldiDto = {
+      projeId: this.projeId(),
+      cekiSatiriIdler: Array.from(this.selectedIds()),
+      aciklama: this.topluAciklama() || undefined,
+    };
+    this.uckService.topluTamGeldi(dto).subscribe({
+      next: (res) => {
+        this.topluSaving.set(false);
+        if (res.isSuccess) {
+          this.toast.success(`${dto.cekiSatiriIdler.length} ürün Tam Geldi olarak işaretlendi.`);
+          this.uckService.notifyUckUpdated();
+          this.closeTopluTamGeldi();
+          this.selectedIds.set(new Set());
+          this.loadUrunler();
+        } else {
+          this.toast.error(res.error ?? 'Toplu güncelleme başarısız.');
+        }
+      },
+      error: () => {
+        this.topluSaving.set(false);
+        this.toast.error('Sunucu ile iletişim kurulamadı.');
+      },
+    });
+  }
+
+  // ===== Toplu TamGeldi için [disabled] mantığı =====
+  isTopluTamGeldiDisabled(u: UcKUrunDto): boolean {
+    // Grid İptal veya TrafoSevk → seçilemez
+    if (u.gridDurumuId === GridDurum.Iptal || u.gridDurumuId === GridDurum.TrafoSevk) return true;
+    // Grid henüz sevk etmediyse → seçilemez
+    if (u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) return true;
+    // Zaten TamGeldi → seçilemez
+    if (u.ucKKarsilamaTipiId === UcKDurum.TamGeldi) return true;
+    return false;
+  }
+
+  // ===== Not Paneli =====
+  openNotPanel(urun: UcKUrunDto) {
+    this.notPanelUrun.set(urun);
+    this.yeniNot.set('');
+    this.notlar.set([]);
+    this.showNotPanel.set(true);
+    this.loadNotlar(urun.cekiSatiriId);
+  }
+  closeNotPanel() {
+    this.showNotPanel.set(false);
+    this.notPanelUrun.set(null);
+  }
+
+  loadNotlar(cekiSatiriId: number) {
+    this.uckService.getNotlar('CekiSatiri', cekiSatiriId).subscribe(res => {
+      if (res.isSuccess && res.value) {
+        this.notlar.set(res.value);
+      }
+    });
+  }
+
+  notKaydet() {
+    const urun = this.notPanelUrun();
+    if (!urun || !this.yeniNot().trim()) return;
+    this.notSaving.set(true);
+    const dto: NotEkleDto = {
+      bagliReferansTipi: 'CekiSatiri',
+      bagliReferansId: urun.cekiSatiriId,
+      cekiSatiriId: urun.cekiSatiriId,
+      icerik: this.yeniNot().trim(),
+      projeId: this.projeId(),
+    };
+    this.uckService.notEkle(dto).subscribe({
+      next: (res) => {
+        this.notSaving.set(false);
+        if (res.isSuccess) {
+          this.toast.success('Not eklendi.');
+          this.yeniNot.set('');
+          this.loadNotlar(urun.cekiSatiriId);
+        } else {
+          this.toast.error(res.error ?? 'Not eklenemedi.');
+        }
+      },
+      error: () => {
+        this.notSaving.set(false);
+        this.toast.error('Sunucu hatası.');
       },
     });
   }

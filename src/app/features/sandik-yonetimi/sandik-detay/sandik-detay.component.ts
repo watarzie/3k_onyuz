@@ -11,6 +11,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { SandikDetayDto, SandikIcerikDto, SandikDto } from '../../../shared/models/index';
+import { Birim } from '../../../core/constants/enums';
 
 @Component({
   selector: 'app-sandik-detay',
@@ -41,7 +42,7 @@ export class SandikDetayComponent implements OnInit {
   yeniBarkod = signal('');
   yeniAciklama = signal('');
   yeniAdet = signal(1);
-  yeniBirim = signal('ADET');
+  yeniBirim = signal(Birim.Adet);
   yeniNeden = signal('');
   urunEklemeSaving = signal(false);
 
@@ -158,7 +159,7 @@ export class SandikDetayComponent implements OnInit {
     this.yeniBarkod.set('');
     this.yeniAciklama.set('');
     this.yeniAdet.set(1);
-    this.yeniBirim.set('ADET');
+    this.yeniBirim.set(Birim.Adet);
     this.yeniNeden.set('');
     this.showUrunEkleModal.set(true);
   }
@@ -228,7 +229,7 @@ export class SandikDetayComponent implements OnInit {
       barkodNo: this.yeniBarkod().trim() || (isSahaYedek ? '' : 'MANUEL'),
       aciklama: this.yeniAciklama().trim(),
       istenenAdet: this.yeniAdet(),
-      birim: this.yeniBirim(),
+      birimId: this.yeniBirim(),
       eklemeNedeni: this.yeniNeden().trim() || undefined,
     };
     

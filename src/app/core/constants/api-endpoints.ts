@@ -60,6 +60,11 @@ export const API = {
   UCK: {
     URUNLER: (projeId: number) => `${BASE}/uck/${projeId}/urunler`,
     DURUM_GUNCELLE: `${BASE}/uck/durum-guncelle`,
+    TOPLU_TAM_GELDI: `${BASE}/uck/toplu-tam-geldi`,
+  },
+  NOT: {
+    EKLE: `${BASE}/not/ekle`,
+    BY_REF: (tip: string, id: number) => `${BASE}/not/${tip}/${id}/notlar`,
   },
   STOK: {
     LIST: `${BASE}/stok`,

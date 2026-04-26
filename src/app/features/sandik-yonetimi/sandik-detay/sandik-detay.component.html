@@ -274,12 +274,17 @@
           </div>
           <div class="col-6">
             <label class="form-label fw-semibold">Birim</label>
-            <select class="form-select" [ngModel]="yeniBirim()" (ngModelChange)="yeniBirim.set($event)">
-              <option value="ADET">ADET</option>
-              <option value="KG">KG</option>
-              <option value="MT">MT</option>
-              <option value="LT">LT</option>
-              <option value="TAKIM">TAKIM</option>
+            <select class="form-select" [ngModel]="yeniBirim()" (ngModelChange)="yeniBirim.set(+$event)">
+              <option [value]="1">ADET</option>
+              <option [value]="2">SET</option>
+              <option [value]="3">METRE</option>
+              <option [value]="4">KG</option>
+              <option [value]="5">LİTRE</option>
+              <option [value]="6">TAKIM</option>
+              <option [value]="7">PAKET</option>
+              <option [value]="8">TON</option>
+              <option [value]="9">METREKARE</option>
+              <option [value]="10">METREKÜP</option>
             </select>
           </div>
         </div>

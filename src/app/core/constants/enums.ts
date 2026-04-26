@@ -132,6 +132,20 @@ export enum GridSevkDurum {
   SevkEdilmedi = 3,
 }
 
+// ===== Birim =====
+export enum Birim {
+  Adet = 1,
+  Set = 2,
+  Metre = 3,
+  Kg = 4,
+  Litre = 5,
+  Takim = 6,
+  Paket = 7,
+  Ton = 8,
+  Metrekare = 9,
+  Metrekup = 10,
+}
+
 // ===== İşlem Tipi =====
 export enum IslemTipi {
   CekiYuklendi = 1,

@@ -18,6 +18,12 @@ export interface GridUrunDto {
   gridSevkTarihi?: string;
   gridNotu?: string;
   gridEksikMiktar: number;
+  // Parçalı karşılama (Madde 2)
+  stokKarsilanan: number;
+  projeKarsilanan: number;
+  tedarikciKarsilanan: number;
+  eksikMiktar: number;
+  kalanMiktar: number;
   ucKDurumuId: number;
   ucKDurumuMetni: string;
   gelenMiktar: number;

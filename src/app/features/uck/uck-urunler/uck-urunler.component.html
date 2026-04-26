@@ -31,9 +31,14 @@
         <button class="btn btn-sm btn-filter-clear" (click)="onFilterTip('')">✕</button>
       }
     </div>
-    <div class="search-box position-relative">
-      <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
-      <input type="text" class="form-control" placeholder="Ara..." (input)="onSearch($event)" />
+    <div class="d-flex align-items-center gap-2">
+      <button *appCanWrite class="btn btn-sm btn-success" [disabled]="!hasSelection" (click)="openTopluTamGeldi()" title="Seçili ürünleri Tam Geldi olarak işaretle">
+        <i class="ri-check-double-line me-1"></i>Toplu Tam Geldi ({{ selectionCount }})
+      </button>
+      <div class="search-box position-relative">
+        <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
+        <input type="text" class="form-control" placeholder="Ara..." (input)="onSearch($event)" />
+      </div>
     </div>
   </div>
 
@@ -47,6 +52,9 @@
         <table class="table table-hover align-middle mb-0">
           <thead>
             <tr>
+              <th *appCanWrite style="width:36px">
+                <input type="checkbox" class="form-check-input" [checked]="allSelected" (change)="toggleSelectAll()" />
+              </th>
               <th style="width:45px">#</th>
               <th>Barkod</th>
               <th>Tanım</th>
@@ -61,12 +69,15 @@
               <th>Kaynak/Hedef</th>
               <th>Kontrol/Uyarı</th>
               <th class="text-center">Kalan</th>
-              <th *appCanWrite style="width:50px"></th>
+              <th *appCanWrite style="width:80px"></th>
             </tr>
           </thead>
           <tbody>
             @for (u of filtered(); track u.cekiSatiriId) {
               <tr [ngClass]="getRowClass(u)">
+                <td *appCanWrite>
+                  <input type="checkbox" class="form-check-input" [checked]="isSelected(u.cekiSatiriId)" (change)="toggleSelect(u.cekiSatiriId)" [disabled]="isTopluTamGeldiDisabled(u)" />
+                </td>
                 <td class="text-muted">{{ u.siraNo }}</td>
                 <td><code class="barkod">{{ u.barkodNo }}</code></td>
                 <td class="fw-medium text-truncate" style="max-width:180px" [title]="u.aciklama">{{ u.aciklama }}</td>
@@ -100,9 +111,14 @@
                   {{ u.kalan }}
                 </td>
                 <td *appCanWrite>
-                  <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle" [disabled]="u.gridDurumuMetni === 'İptal' || u.gridDurumuMetni === 'Trafo Sevk' || u.gridDurumuMetni === 'İptal Edildi'">
-                    <i class="ri-edit-line"></i>
-                  </button>
+                  <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle" [disabled]="u.gridDurumuId === 12 || u.gridDurumuId === 11">
+                      <i class="ri-edit-line"></i>
+                    </button>
+                    <button class="btn btn-sm btn-action" (click)="openNotPanel(u)" title="Notlar">
+                      <i class="ri-chat-3-line"></i>
+                    </button>
+                  </div>
                 </td>
               </tr>
             }
@@ -311,6 +327,77 @@
           <i class="ri-save-line me-1"></i>Kaydet
         </button>
       </div>
+    </div>
+  </div>
+}
+
+<!-- ===== Toplu Tam Geldi Onay Modalı ===== -->
+@if (showTopluModal()) {
+  <div class="modal-overlay" (click)="closeTopluTamGeldi()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h5 class="fw-semibold mb-0"><i class="ri-check-double-line me-2 text-success"></i>Toplu Tam Geldi</h5>
+        <button class="btn btn-sm border-0" (click)="closeTopluTamGeldi()"><i class="ri-close-line fs-5"></i></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3"><strong>{{ selectionCount }}</strong> ürün "Tam Geldi" olarak işaretlenecek.</p>
+        <p class="text-muted small mb-3">Grid iptal, trafo sevk veya henüz sevk edilmemiş ürünler otomatik atlanır.</p>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Açıklama (Opsiyonel)</label>
+          <textarea class="form-control" rows="2" placeholder="Toplu işlem açıklaması..." [ngModel]="topluAciklama()" (ngModelChange)="topluAciklama.set($event)"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" (click)="closeTopluTamGeldi()">Vazgeç</button>
+        <button class="btn btn-success" (click)="confirmTopluTamGeldi()" [disabled]="topluSaving()">
+          @if (topluSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          <i class="ri-check-double-line me-1"></i>Onayla
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ===== Not Paneli ===== -->
+@if (showNotPanel() && notPanelUrun()) {
+  <div class="detail-overlay" (click)="closeNotPanel()"></div>
+  <div class="detail-panel">
+    <div class="panel-header">
+      <h5 class="fw-semibold mb-0"><i class="ri-chat-3-line me-2"></i>Notlar — {{ notPanelUrun()!.aciklama }}</h5>
+      <button class="btn btn-sm border-0" (click)="closeNotPanel()"><i class="ri-close-line fs-5"></i></button>
+    </div>
+    <div class="panel-body">
+      <!-- Not Yaz -->
+      <div class="mb-4">
+        <label class="form-label fw-semibold">Yeni Not</label>
+        <textarea class="form-control" rows="3" placeholder="Not yazınız... (max 2000 karakter)" maxlength="2000" [ngModel]="yeniNot()" (ngModelChange)="yeniNot.set($event)"></textarea>
+        <div class="d-flex justify-content-end mt-2">
+          <button class="btn btn-sm btn-save" (click)="notKaydet()" [disabled]="notSaving() || !yeniNot().trim()">
+            @if (notSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            <i class="ri-send-plane-line me-1"></i>Gönder
+          </button>
+        </div>
+      </div>
+      <hr />
+      <!-- Not Listesi -->
+      @if (notlar().length === 0) {
+        <div class="text-center text-muted py-4"><i class="ri-chat-off-line fs-3 d-block mb-2"></i>Henüz not yok.</div>
+      } @else {
+        <div class="not-listesi">
+          @for (n of notlar(); track n.id) {
+            <div class="not-item" [ngClass]="{'not-grid': n.yazanTaraf === 'Grid', 'not-uck': n.yazanTaraf === '3K'}">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="fw-semibold">
+                  <span class="badge" [ngClass]="n.yazanTaraf === 'Grid' ? 'bg-info' : 'bg-success'">{{ n.yazanTaraf }}</span>
+                  {{ n.kullaniciAdi }}
+                </span>
+                <small class="text-muted">{{ n.tarih | date:'dd.MM.yyyy HH:mm' }}</small>
+              </div>
+              <p class="mb-0">{{ n.icerik }}</p>
+            </div>
+          }
+        </div>
+      }
     </div>
   </div>
 }
