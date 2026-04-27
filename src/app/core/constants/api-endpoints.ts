@@ -26,6 +26,7 @@ export const API = {
     SANDIK_KAPAT: `${BASE}/proje/sandik-kapat`,
     SEVK_ET: (id: number) => `${BASE}/proje/${id}/sevk-et`,
     KILIDI_AC: (id: number) => `${BASE}/proje/${id}/kilidi-ac`,
+    SEVK_TARIHI_GUNCELLE: `${BASE}/proje/sevk-tarihi-guncelle`,
   },
   CEKI: {
     YUKLE: `${BASE}/ceki/yukle`,
@@ -62,10 +63,6 @@ export const API = {
     DURUM_GUNCELLE: `${BASE}/uck/durum-guncelle`,
     TOPLU_TAM_GELDI: `${BASE}/uck/toplu-tam-geldi`,
   },
-  NOT: {
-    EKLE: `${BASE}/not/ekle`,
-    BY_REF: (tip: string, id: number) => `${BASE}/not/${tip}/${id}/notlar`,
-  },
   STOK: {
     LIST: `${BASE}/stok`,
     CREATE: `${BASE}/stok`,
@@ -91,6 +88,8 @@ export const API = {
   PDF: {
     INDIR: (projeId: number) => `${BASE}/pdf/${projeId}/indir`,
     EXCEL: (projeId: number) => `${BASE}/pdf/${projeId}/excel`,
+    SAHA_SANDIK: (sandikId: number) => `${BASE}/pdf/saha-sandik/${sandikId}`,
+    SAHA_PROJE: (projeId: number) => `${BASE}/pdf/saha-proje/${projeId}`,
   },
   LOOKUP: {
     GET: `${BASE}/lookup`,

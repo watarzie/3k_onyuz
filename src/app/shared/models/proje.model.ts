@@ -9,6 +9,7 @@ export interface ProjeDto {
   projeTipiId: number;
   projeTipiMetni: string;
   planlananSevkTarihi?: string;
+  gerceklesenSevkTarihi?: string;
   sorumluKisi: string;
   sandikSayisi: number;
   hazirSandikSayisi: number;
@@ -30,6 +31,7 @@ export interface ProjeOlusturDto {
   projeTipiId?: number;
   planlananSevkTarihi?: string;
   sorumluKisi: string;
+  lokasyon?: string;
 }
 
 export interface ProjeTransferDto {

@@ -4,9 +4,16 @@
       <h2 class="fw-bold mb-1">{{ 'MENU.SANDIK_YONETIMI' | translate }}: {{ sandik()?.sandikNo }}</h2>
       <app-breadcrumb [items]="breadcrumb" />
     </div>
-    <button class="btn btn-save d-flex align-items-center gap-2" (click)="openUrunEkleModal()">
-      <i class="ri-add-line"></i> Manuel Ürün Ekle
-    </button>
+    <div class="d-flex gap-2">
+      @if (isSahaYedek() && sandik()?.durumMetni !== 'Hazır' && sandik()?.durumMetni !== 'Sevkedildi') {
+        <button class="btn btn-success d-flex align-items-center gap-2" (click)="sandikHazirla()">
+          <i class="ri-check-double-line"></i> Sandığı Hazırla
+        </button>
+      }
+      <button class="btn btn-save d-flex align-items-center gap-2" (click)="openUrunEkleModal()" [disabled]="sandik()?.durumMetni === 'Sevkedildi'">
+        <i class="ri-add-line"></i> {{ isSahaYedek() ? 'Malzeme Ekle' : 'Manuel Ürün Ekle' }}
+      </button>
+    </div>
   </div>
 </div>
 
@@ -46,7 +53,7 @@
           <div><small class="text-muted">Yük.:</small> <span class="ms-1 fw-semibold">{{ sandik()!.yukseklik ? sandik()!.yukseklik + ' cm' : '-' }}</span></div>
           <div><small class="text-muted">Net:</small> <span class="ms-1 fw-semibold">{{ sandik()!.netKg ? sandik()!.netKg + ' kg' : '-' }}</span></div>
           <div><small class="text-muted">Gross:</small> <span class="ms-1 fw-semibold">{{ sandik()!.grossKg ? sandik()!.grossKg + ' kg' : '-' }}</span></div>
-          <button class="btn btn-sm btn-outline ms-auto" (click)="openOzellikGuncelleModal()"><i class="ri-edit-line me-1"></i> Özellikleri Güncelle</button>
+          <button class="btn btn-sm btn-outline ms-auto" (click)="openOzellikGuncelleModal()" [disabled]="sandik()?.durumMetni === 'Sevkedildi'"><i class="ri-edit-line me-1"></i> Özellikleri Güncelle</button>
         </div>
       </div>
     </div>
@@ -145,7 +152,7 @@
                     <button class="btn btn-sm btn-action" (click)="selectUrun(item)" title="Düzenle">
                       <i class="ri-edit-line"></i>
                     </button>
-                    <button class="btn btn-sm btn-outline-info" (click)="openTasiModal(item)" title="Sandık Taşı">
+                    <button class="btn btn-sm btn-outline-info" (click)="openTasiModal(item)" title="Sandık Taşı" [disabled]="sandik()?.durumMetni === 'Sevkedildi'">
                       <i class="ri-swap-line"></i>
                     </button>
                   </div>
@@ -192,7 +199,7 @@
           <input type="number" class="form-control" style="width: 100px;" min="0" [max]="selectedUrun()!.istenenAdet"
             [ngModel]="guncelKonulanAdet()" (ngModelChange)="guncelKonulanAdet.set($event)" />
           <span class="text-muted">/ {{ selectedUrun()!.istenenAdet }}</span>
-          <button class="btn btn-save btn-sm" (click)="konulanGuncelle()" [disabled]="guncelleSaving()">
+          <button class="btn btn-save btn-sm" (click)="konulanGuncelle()" [disabled]="guncelleSaving() || sandik()?.durumMetni === 'Sevkedildi'">
             @if (guncelleSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
             Güncelle
           </button>

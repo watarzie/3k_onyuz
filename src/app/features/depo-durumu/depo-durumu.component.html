@@ -6,117 +6,236 @@
 </div>
 
 @if (loading()) {
-  <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
+<div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
 } @else {
-  <!-- Toplam Sandık -->
-  <div class="trezo-card border-0 shadow-none mb-4">
-    <div class="p-4">
-      <h5 class="fw-semibold mb-3">{{ 'LABELS.TOPLAM_SANDIK_SAYISI' | translate }} <strong class="fs-3 ms-2">{{ toplamSandik() }}</strong></h5>
-      <div class="row g-3">
-        <div class="col-md-4">
-          <app-stat-card [value]="ucKSandik()" label="3K Sandıkları" icon="ri-home-4-line" color="info" />
-        </div>
-        <div class="col-md-4">
-          <app-stat-card [value]="seymenSandik()" label="Seymen Sandıkları" icon="ri-home-5-line" color="success" />
-        </div>
-        <div class="col-md-4">
-          <app-stat-card [value]="gridSandik()" label="GRID Sandıkları" icon="ri-building-line" color="warning" />
+<!-- Toplam İstatistikler Kategorisi -->
+<div class="row g-4 mb-4">
+  <!-- Genel Toplam -->
+  <div class="col-12 col-md-3">
+    <div class="trezo-card border-0 bg-white h-100" style="border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border-left: 4px solid #3584FC !important;">
+      <div class="p-4 text-center">
+        <h6 class="fw-semibold mb-2 text-uppercase" style="font-size: 12px; color: #64748b;">Genel Toplam Sandık</h6>
+        <h2 class="fw-bold mb-3 text-dark" style="font-size: 32px;">{{ globalStats().toplam }}</h2>
+        <div class="d-flex justify-content-center gap-2 flex-wrap">
+          <span class="badge bg-info-subtle text-info px-3 py-2 fs-6 rounded-pill"><i class="ri-home-4-line me-1"></i>3K: <strong>{{ globalStats().ucK }}</strong></span>
+          <span class="badge bg-success-subtle text-success px-3 py-2 fs-6 rounded-pill"><i class="ri-home-5-line me-1"></i>Seymen: <strong>{{ globalStats().seymen }}</strong></span>
+          <span class="badge bg-warning-subtle text-warning px-3 py-2 fs-6 rounded-pill"><i class="ri-building-line me-1"></i>GRID: <strong>{{ globalStats().grid }}</strong></span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Depo Dağılım -->
-  <div class="row g-4 mb-4">
-    <div class="col-12 col-md-5">
-      <div class="trezo-card border-0 shadow-none h-100">
-        <div class="card-header"><h5 class="fw-semibold mb-0">{{ 'LABELS.DEPO_DAGILIM' | translate }}</h5></div>
-        <div class="card-body d-flex align-items-center justify-content-center">
-          <div class="donut-chart-wrapper">
-            <svg viewBox="0 0 42 42" class="donut-chart">
-              <circle class="donut-ring" cx="21" cy="21" r="15.9" fill="transparent" stroke="#e2e8f0" stroke-width="5"/>
-              <circle class="donut-segment donut-3k" cx="21" cy="21" r="15.9" fill="transparent" stroke="#3584FC" stroke-width="5"
-                [attr.stroke-dasharray]="getDonutPercentage(ucKSandik()) + ' ' + (100 - getDonutPercentage(ucKSandik()))"
-                stroke-dashoffset="25"/>
-              <circle class="donut-segment donut-seymen" cx="21" cy="21" r="15.9" fill="transparent" stroke="#FD5812" stroke-width="5"
-                [attr.stroke-dasharray]="getDonutPercentage(seymenSandik()) + ' ' + (100 - getDonutPercentage(seymenSandik()))"
-                [attr.stroke-dashoffset]="25 - getDonutPercentage(ucKSandik())"/>
-              <circle class="donut-segment donut-grid" cx="21" cy="21" r="15.9" fill="transparent" stroke="#25B003" stroke-width="5"
-                [attr.stroke-dasharray]="getDonutPercentage(gridSandik()) + ' ' + (100 - getDonutPercentage(gridSandik()))"
-                [attr.stroke-dashoffset]="25 - getDonutPercentage(ucKSandik()) - getDonutPercentage(seymenSandik())"/>
-              <text x="21" y="21" text-anchor="middle" dominant-baseline="central" class="donut-text">
-                <tspan class="donut-number" font-size="6" font-weight="700">{{ toplamSandik() }}</tspan>
-              </text>
-            </svg>
-            <div class="donut-legend mt-3">
-              <div class="legend-item"><span class="legend-dot" style="background:#3584FC"></span> 3K <strong class="ms-auto">{{ ucKSandik() }}</strong></div>
-              <div class="legend-item"><span class="legend-dot" style="background:#FD5812"></span> Seymen <strong class="ms-auto">{{ seymenSandik() }}</strong></div>
-              <div class="legend-item"><span class="legend-dot" style="background:#25B003"></span> GRID <strong class="ms-auto">{{ gridSandik() }}</strong></div>
-            </div>
+  <!-- Normal Projeler -->
+  <div class="col-12 col-md-3">
+    <div class="trezo-card border-0 bg-white h-100" style="border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.03);">
+      <div class="p-4 text-center">
+        <h6 class="fw-semibold mb-2 text-uppercase" style="font-size: 12px; color: #64748b;">Normal Projeler</h6>
+        <h2 class="fw-bold mb-3 text-dark" style="font-size: 32px;">{{ normalStats().toplam }}</h2>
+        <div class="d-flex justify-content-center gap-2 flex-wrap">
+          <span class="badge bg-info-subtle text-info px-3 py-2 fs-6 rounded-pill">3K: <strong>{{ normalStats().ucK }}</strong></span>
+          <span class="badge bg-success-subtle text-success px-3 py-2 fs-6 rounded-pill">Seymen: <strong>{{ normalStats().seymen }}</strong></span>
+          <span class="badge bg-warning-subtle text-warning px-3 py-2 fs-6 rounded-pill">GRID: <strong>{{ normalStats().grid }}</strong></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Saha Projeleri -->
+  <div class="col-12 col-md-3">
+    <div class="trezo-card border-0 bg-white h-100" style="border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.03);">
+      <div class="p-4 text-center">
+        <h6 class="fw-semibold mb-2 text-uppercase" style="font-size: 12px; color: #64748b;">Saha Projeleri</h6>
+        <h2 class="fw-bold mb-3 text-dark" style="font-size: 32px;">{{ sahaStats().toplam }}</h2>
+        <div class="d-flex justify-content-center gap-2 flex-wrap">
+          <span class="badge bg-info-subtle text-info px-3 py-2 fs-6 rounded-pill">3K: <strong>{{ sahaStats().ucK }}</strong></span>
+          <span class="badge bg-success-subtle text-success px-3 py-2 fs-6 rounded-pill">Seymen: <strong>{{ sahaStats().seymen }}</strong></span>
+          <span class="badge bg-warning-subtle text-warning px-3 py-2 fs-6 rounded-pill">GRID: <strong>{{ sahaStats().grid }}</strong></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Yedek Projeleri -->
+  <div class="col-12 col-md-3">
+    <div class="trezo-card border-0 bg-white h-100" style="border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.03);">
+      <div class="p-4 text-center">
+        <h6 class="fw-semibold mb-2 text-uppercase" style="font-size: 12px; color: #64748b;">Yedek Projeleri</h6>
+        <h2 class="fw-bold mb-3 text-dark" style="font-size: 32px;">{{ yedekStats().toplam }}</h2>
+        <div class="d-flex justify-content-center gap-2 flex-wrap">
+          <span class="badge bg-info-subtle text-info px-3 py-2 fs-6 rounded-pill">3K: <strong>{{ yedekStats().ucK }}</strong></span>
+          <span class="badge bg-success-subtle text-success px-3 py-2 fs-6 rounded-pill">Seymen: <strong>{{ yedekStats().seymen }}</strong></span>
+          <span class="badge bg-warning-subtle text-warning px-3 py-2 fs-6 rounded-pill">GRID: <strong>{{ yedekStats().grid }}</strong></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Depo Dağılım Grafiği (Genel) -->
+<div class="row mb-4 justify-content-center">
+  <div class="col-12 col-md-8 col-lg-6">
+    <div class="trezo-card border-0 bg-white h-100" style="border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.03);">
+      <div class="card-header border-0 pb-0 pt-4 px-4 text-center">
+        <h5 class="fw-bold mb-0 text-dark">{{ 'LABELS.DEPO_DAGILIM' | translate }}</h5>
+      </div>
+      <div class="card-body p-4 d-flex flex-column flex-sm-row align-items-center justify-content-center gap-5">
+        <div style="width: 200px; height: 200px; flex-shrink: 0;">
+          <svg viewBox="0 0 42 42" class="donut-chart w-100 h-100">
+            <circle class="donut-ring" cx="21" cy="21" r="15.9" fill="transparent" stroke="#f1f5f9" stroke-width="5" />
+            <circle class="donut-segment donut-3k" cx="21" cy="21" r="15.9" fill="transparent" stroke="#3584FC"
+              stroke-width="5"
+              [attr.stroke-dasharray]="getDonutPercentage(globalStats().ucK, globalStats().toplam) + ' ' + (100 - getDonutPercentage(globalStats().ucK, globalStats().toplam))"
+              stroke-dashoffset="25" />
+            <circle class="donut-segment donut-seymen" cx="21" cy="21" r="15.9" fill="transparent" stroke="#10b981"
+              stroke-width="5"
+              [attr.stroke-dasharray]="getDonutPercentage(globalStats().seymen, globalStats().toplam) + ' ' + (100 - getDonutPercentage(globalStats().seymen, globalStats().toplam))"
+              [attr.stroke-dashoffset]="25 - getDonutPercentage(globalStats().ucK, globalStats().toplam)" />
+            <circle class="donut-segment donut-grid" cx="21" cy="21" r="15.9" fill="transparent" stroke="#f59e0b"
+              stroke-width="5"
+              [attr.stroke-dasharray]="getDonutPercentage(globalStats().grid, globalStats().toplam) + ' ' + (100 - getDonutPercentage(globalStats().grid, globalStats().toplam))"
+              [attr.stroke-dashoffset]="25 - getDonutPercentage(globalStats().ucK, globalStats().toplam) - getDonutPercentage(globalStats().seymen, globalStats().toplam)" />
+            <text x="21" y="19" text-anchor="middle" dominant-baseline="central" class="donut-text">
+              <tspan class="donut-number" font-size="8" font-weight="800" fill="#1e293b">{{ globalStats().toplam }}</tspan>
+            </text>
+            <text x="21" y="25" text-anchor="middle" dominant-baseline="central">
+              <tspan font-size="3.5" fill="#64748b" font-weight="500">Toplam</tspan>
+            </text>
+          </svg>
+        </div>
+        <div class="d-flex flex-column gap-3" style="min-width: 150px;">
+          <div class="d-flex align-items-center">
+            <span style="width: 12px; height: 12px; border-radius: 50%; background-color: #3584FC; margin-right: 12px;"></span>
+            <span class="text-secondary fw-medium">3K</span>
+            <strong class="ms-auto text-dark fs-5">{{ globalStats().ucK }}</strong>
+          </div>
+          <div class="d-flex align-items-center">
+            <span style="width: 12px; height: 12px; border-radius: 50%; background-color: #10b981; margin-right: 12px;"></span>
+            <span class="text-secondary fw-medium">Seymen</span>
+            <strong class="ms-auto text-dark fs-5">{{ globalStats().seymen }}</strong>
+          </div>
+          <div class="d-flex align-items-center">
+            <span style="width: 12px; height: 12px; border-radius: 50%; background-color: #f59e0b; margin-right: 12px;"></span>
+            <span class="text-secondary fw-medium">GRID</span>
+            <strong class="ms-auto text-dark fs-5">{{ globalStats().grid }}</strong>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- Ekstra İstatistikler vs buraya eklenebilir -->
   </div>
+</div>
 
-  <!-- Sandık Listesi Tablosu -->
-  <div class="trezo-card border-0 shadow-none">
-    <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-      <h5 class="fw-semibold mb-0"><i class="ri-list-check-2 me-2"></i>Tüm Sandıkların Genel Listesi ({{ filteredSandiklar().length }})</h5>
-      <div class="search-box position-relative" style="width: 300px;">
-        <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
-        <input type="text" class="form-control" placeholder="Proje, Sandık No veya Lokasyon ara..." (input)="onSearch($event)" />
-      </div>
+<!-- Proje Bazlı Sandık Listesi -->
+<div class="trezo-card border-0 bg-white" style="border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.03);">
+  <div class="card-header border-0 pb-0 pt-4 px-4 d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+    <h4 class="fw-bold mb-0 text-dark">Proje Bazlı Depo Dağılımı <span class="badge bg-secondary-subtle text-secondary ms-2 rounded-pill fs-6">{{ filteredProjectsList().length }}</span></h4>
+    <div class="search-box position-relative" style="width: 320px;">
+      <i class="ri-search-2-line position-absolute top-50 translate-middle-y text-muted" style="left: 15px;"></i>
+      <input type="text" class="form-control bg-light border-0" style="padding-left: 40px; border-radius: 20px;" placeholder="Proje veya Sandık No ara..." (input)="onSearch($event)" />
     </div>
-    <div class="card-body p-0">
-      @if (filteredSandiklar().length === 0) {
-        <div class="text-center py-5 text-muted">
-           <i class="ri-inbox-line fs-1 mb-3 d-block"></i>
-           Kritere uygun sandık bulunamadı.
-        </div>
-      } @else {
-        <div class="table-responsive" style="max-height: 600px; overflow-y:auto;">
-          <table class="table table-hover align-middle mb-0 text-nowrap">
-            <thead class="table-light sticky-top">
-              <tr>
-                <th>Proje Adı</th>
-                <th>{{ 'LABELS.SANDIK_NO' | translate }}</th>
-                <th>Tipi</th>
-                <th>{{ 'LABELS.durumMetni' | translate }}</th>
-                <th>{{ 'LABELS.LOKASYON' | translate }}</th>
-                <th>Tamamlanan / Gerekli</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (s of filteredSandiklar(); track s.id) {
-                <tr>
-                  <td><span class="fw-medium text-primary">{{ s.projeAdi }}</span></td>
-                  <td class="fw-bold">{{ s.sandikNo }}</td>
-                  <td><span class="badge bg-secondary-subtle text-secondary">{{ s.tip ?? 'Standart' }}</span></td>
-                  <td><app-status-badge [status]="s.durumMetni" [label]="s.durumMetni" /></td>
-                  <td>
-                    @if (s.depoLokasyonMetni) {
-                       <span class="text-dark"><i class="ri-map-pin-line text-info me-1"></i> {{ s.depoLokasyonMetni }}</span>
-                    } @else {
-                       <span class="text-muted"><i class="ri-map-pin-line me-1"></i> Belirsiz</span>
-                    }
-                  </td>
-                  <td>
-                    <div class="d-flex align-items-center gap-2">
-                        <span>{{ s.urunSayisi }}</span>
-                        @if (s.urunSayisi > 0 && s.durumMetni === 'Hazır') {
-                            <i class="ri-check-double-line text-success fs-5"></i>
+  </div>
+  <div class="card-body p-0">
+    @if (filteredProjectsList().length === 0) {
+    <div class="text-center py-5 text-muted">
+      <i class="ri-inbox-line fs-1 mb-3 d-block"></i>
+      Kritere uygun proje bulunamadı.
+    </div>
+    } @else {
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0 text-nowrap">
+        <thead class="bg-light">
+          <tr>
+            <th style="width: 50px;" class="border-bottom-0"></th>
+            <th class="text-uppercase text-secondary fw-semibold border-bottom-0" style="font-size: 11px; letter-spacing: 0.5px;">PROJE NO</th>
+            <th class="text-uppercase text-secondary fw-semibold border-bottom-0" style="font-size: 11px; letter-spacing: 0.5px;">PROJE TİPİ</th>
+            <th class="text-uppercase text-secondary fw-semibold border-bottom-0" style="font-size: 11px; letter-spacing: 0.5px;">TOPLAM SANDIK</th>
+            <th class="text-uppercase text-secondary fw-semibold text-center border-bottom-0" style="font-size: 11px; letter-spacing: 0.5px;">3K DEPO</th>
+            <th class="text-uppercase text-secondary fw-semibold text-center border-bottom-0" style="font-size: 11px; letter-spacing: 0.5px;">SEYMEN DEPO</th>
+            <th class="text-uppercase text-secondary fw-semibold text-center border-bottom-0" style="font-size: 11px; letter-spacing: 0.5px;">GRID DEPO</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of filteredProjectsList(); track p.id) {
+          <!-- Proje Satırı -->
+          <tr [class.bg-light]="p.expanded" (click)="toggleRow(p)" style="cursor: pointer; transition: all 0.2s ease;">
+            <td class="text-center py-3">
+              <i [class]="p.expanded ? 'ri-arrow-down-s-line' : 'ri-arrow-right-s-line'" class="fs-5 text-primary"></i>
+            </td>
+            <td class="fw-bold text-dark py-3">{{ p.projeNo }}</td>
+            <td class="py-3">
+              <span class="badge px-3 py-1 rounded-pill" [ngClass]="{
+                  'bg-info-subtle text-info': p.projeTipiId === 1,
+                  'bg-success-subtle text-success': p.projeTipiId === 2,
+                  'bg-warning-subtle text-warning': p.projeTipiId === 3
+                }">{{ p.projeTipiId === 1 ? 'Normal' : (p.projeTipiId === 2 ? 'Saha' : 'Yedek') }}</span>
+            </td>
+            <td class="fw-semibold text-dark py-3">{{ p.toplamSandik }}</td>
+            <td class="text-center py-3">
+              @if (p.ucKSandik > 0) { <span class="badge bg-info-subtle text-info rounded-pill px-3">{{ p.ucKSandik }}</span> }
+              @else { <span class="text-muted" style="opacity: 0.5;">-</span> }
+            </td>
+            <td class="text-center py-3">
+              @if (p.seymenSandik > 0) { <span class="badge bg-success-subtle text-success rounded-pill px-3">{{ p.seymenSandik }}</span> }
+              @else { <span class="text-muted" style="opacity: 0.5;">-</span> }
+            </td>
+            <td class="text-center py-3">
+              @if (p.gridSandik > 0) { <span class="badge bg-warning-subtle text-warning rounded-pill px-3">{{ p.gridSandik }}</span> }
+              @else { <span class="text-muted" style="opacity: 0.5;">-</span> }
+            </td>
+          </tr>
+
+          <!-- Genişletilmiş Sandık Detayı (Akordeon) -->
+          @if (p.expanded) {
+          <tr>
+            <td colspan="7" class="p-0 border-0">
+              <div class="bg-light p-4" style="box-shadow: inset 0px 4px 6px -6px rgba(0,0,0,0.05);">
+                @if (p.sandiklar.length === 0) {
+                <div class="text-center py-3 text-muted small"><i class="ri-information-line me-1"></i>Bu projeye ait sandık bulunmuyor.</div>
+                } @else {
+                <table class="table table-sm bg-white mb-0 border rounded overflow-hidden">
+                  <thead class="bg-light text-secondary text-uppercase fw-semibold" style="font-size: 10px; letter-spacing: 0.5px;">
+                    <tr>
+                      <th class="border-bottom-0 py-2 px-3">SANDIK NO</th>
+                      <th class="border-bottom-0 py-2 px-3">TİPİ</th>
+                      <th class="border-bottom-0 py-2 px-3">DURUM</th>
+                      <th class="border-bottom-0 py-2 px-3">LOKASYON</th>
+                      <th class="border-bottom-0 py-2 px-3">ÜRÜN (TAMAMLANAN / GEREKLİ)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (s of p.sandiklar; track s.id) {
+                    <tr>
+                      <td class="fw-bold text-dark py-2 px-3">{{ s.sandikNo }}</td>
+                      <td class="py-2 px-3"><span class="badge bg-light text-secondary">{{ s.tip ?? 'Standart' }}</span></td>
+                      <td class="py-2 px-3"><app-status-badge [status]="s.durumMetni" [label]="s.durumMetni" /></td>
+                      <td class="py-2 px-3">
+                        @if (s.depoLokasyonMetni) {
+                        <span class="text-dark"><i class="ri-map-pin-line text-info me-1"></i> {{ s.depoLokasyonMetni }}</span>
+                        } @else {
+                        <span class="text-muted"><i class="ri-map-pin-line me-1"></i> Belirsiz</span>
                         }
-                    </div>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      }
+                      </td>
+                      <td class="py-2 px-3">
+                        <div class="d-flex align-items-center gap-2">
+                          <span class="fw-semibold">{{ s.urunSayisi }}</span>
+                          @if (s.urunSayisi > 0 && s.durumMetni === 'Hazır') {
+                          <i class="ri-check-double-line text-success fs-5"></i>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                    }
+                  </tbody>
+                </table>
+                }
+              </div>
+            </td>
+          </tr>
+          }
+          }
+        </tbody>
+      </table>
     </div>
+    }
   </div>
+</div>
 }

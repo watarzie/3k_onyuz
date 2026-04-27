@@ -1,6 +1,6 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { NgClass, DatePipe } from '@angular/common';
+import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { TranslationService } from '../../../core/services/translation.service';
@@ -14,20 +14,20 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
-import { UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, NotDto, NotEkleDto, ProjeDto, GridUrunDto, StokKaydiDto } from '../../../shared/models/index';
+import { UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, ProjeDto, GridUrunDto, StokKaydiDto } from '../../../shared/models/index';
 import { UcKDurum, GridSevkDurum, GridDurum } from '../../../core/constants/enums';
 
 interface KarsilamaTipi { id: number; value: string; label: string; color: string; bgClass: string; }
 
 const KARSILAMA_TIPLERI: KarsilamaTipi[] = [
-  { id: UcKDurum.TamGeldi,            value: 'Tam Geldi',            label: 'TAM GELDİ',            color: '#25B003', bgClass: 'row-tam-geldi' },
-  { id: UcKDurum.EksikGeldi,          value: 'Eksik Geldi',          label: 'EKSİK GELDİ',          color: '#FD5812', bgClass: 'row-eksik-geldi' },
-  { id: UcKDurum.ProjedenKarsilandi,  value: 'Projeden Karşılandı',  label: 'PROJEDEN KARŞILANDI',   color: '#3584FC', bgClass: 'row-projeden' },
-  { id: UcKDurum.StoktanKarsilandi,   value: 'Stoktan Karşılandı',   label: 'STOKTAN KARŞILANDI',    color: '#9C27B0', bgClass: 'row-stoktan' },
-  { id: UcKDurum.TedarikcidenGeldi,   value: 'Tedarikçiden Geldi',   label: 'TEDARİKÇİDEN GELDİ',   color: '#1B7D3A', bgClass: 'row-tedarikci' },
-  { id: UcKDurum.Gelmedi,             value: 'Gelmedi',             label: 'GELMEDİ',              color: '#808080', bgClass: 'row-gelmedi' },
-  { id: UcKDurum.GeriGonderildi,      value: 'Geri Gönderildi',      label: 'GERİ GÖNDERİLDİ',      color: '#D32F2F', bgClass: 'row-geri-gonderildi' },
-  { id: UcKDurum.HataliUrun,          value: 'Hatalı Ürün',          label: 'HATALI ÜRÜN GELDİ',     color: '#E65100', bgClass: 'row-hatali' },
+  { id: UcKDurum.TamGeldi, value: 'Tam Geldi', label: 'TAM GELDİ', color: '#25B003', bgClass: 'row-tam-geldi' },
+  { id: UcKDurum.EksikGeldi, value: 'Eksik Geldi', label: 'EKSİK GELDİ', color: '#FD5812', bgClass: 'row-eksik-geldi' },
+  { id: UcKDurum.ProjedenKarsilandi, value: 'Projeden Karşılandı', label: 'PROJEDEN KARŞILANDI', color: '#3584FC', bgClass: 'row-projeden' },
+  { id: UcKDurum.StoktanKarsilandi, value: 'Stoktan Karşılandı', label: 'STOKTAN KARŞILANDI', color: '#9C27B0', bgClass: 'row-stoktan' },
+  { id: UcKDurum.TedarikcidenGeldi, value: 'Tedarikçiden Geldi', label: 'TEDARİKÇİDEN GELDİ', color: '#1B7D3A', bgClass: 'row-tedarikci' },
+  { id: UcKDurum.Gelmedi, value: 'Gelmedi', label: 'GELMEDİ', color: '#808080', bgClass: 'row-gelmedi' },
+  { id: UcKDurum.GeriGonderildi, value: 'Geri Gönderildi', label: 'GERİ GÖNDERİLDİ', color: '#D32F2F', bgClass: 'row-geri-gonderildi' },
+  { id: UcKDurum.HataliUrun, value: 'Hatalı Ürün', label: 'HATALI ÜRÜN GELDİ', color: '#E65100', bgClass: 'row-hatali' },
 ];
 
 import { OnayService } from '../../../core/services/onay.service';
@@ -35,7 +35,7 @@ import { OnayService } from '../../../core/services/onay.service';
 @Component({
   selector: 'app-uck-urunler',
   standalone: true,
-  imports: [RouterLink, NgClass, DatePipe, FormsModule, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent],
+  imports: [RouterLink, NgClass, FormsModule, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent],
   templateUrl: './uck-urunler.component.html',
   styleUrl: './uck-urunler.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -68,7 +68,6 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   panelKaynakHedef = signal('');
   panelAciklama = signal('');
   panelGeriGonderilmeSebebi = signal('');
-  panelNot = signal('');
   panelSaving = signal(false);
   panelError = signal('');
   panelUyari = signal('');
@@ -79,20 +78,15 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   topluAciklama = signal('');
   topluSaving = signal(false);
 
-  // Not Paneli
-  showNotPanel = signal(false);
-  notPanelUrun = signal<UcKUrunDto | null>(null);
-  notlar = signal<NotDto[]>([]);
-  yeniNot = signal('');
-  notSaving = signal(false);
+
 
   // Proje ve Kaynak Ürün Dropdown State
   projeler = signal<ProjeDto[]>([]);
   kaynakUrunler = signal<GridUrunDto[]>([]);
-  
+
   isProjeDropdownOpen = signal(false);
   isUrunDropdownOpen = signal(false);
-  
+
   projeSearchTerm = signal('');
   urunSearchTerm = signal('');
   panelKaynakCekiSatiriId = signal<number | null>(null);
@@ -109,8 +103,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     // Kendi projesi hariç — bir proje kendisinden ürün karşılayamaz
     let list = this.projeler().filter(p => p.id !== currentId);
     if (term) {
-      list = list.filter(p => 
-        p.projeNo?.toLowerCase().includes(term) || 
+      list = list.filter(p =>
+        p.projeNo?.toLowerCase().includes(term) ||
         p.musteri?.toLowerCase().includes(term)
       );
     }
@@ -121,8 +115,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     const term = this.urunSearchTerm().toLowerCase();
     const list = this.kaynakUrunler();
     if (!term) return list;
-    return list.filter(u => 
-      u.barkodNo.toLowerCase().includes(term) || 
+    return list.filter(u =>
+      u.barkodNo.toLowerCase().includes(term) ||
       u.aciklama.toLowerCase().includes(term)
     );
   });
@@ -161,7 +155,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       { label: '3K Sandıklar', link: `/uck/${id}` },
       { label: sNo || '3K Ürünler' },
     ];
-    
+
     // Stok cross-tab update dinleyicisi
     this.sub.add(
       this.stokService.stokListesiGuncellendi$.subscribe(() => {
@@ -184,7 +178,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     // Projeler dropdown'ı için projeleri çek
     this.projeService.getProjeListesi().subscribe(res => {
       if (res.isSuccess && res.value) {
-        this.projeler.set(res.value); 
+        this.projeler.set(res.value);
       }
     });
 
@@ -201,9 +195,9 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   loadStokDropdownList() {
     // 3K Dropdown'u için büyük bir sayfa boyutu ile aktif stokları çek
     this.stokService.getStokListesi(undefined, 1, 10000).subscribe((res: any) => {
-      if(res.isSuccess && res.value) {
+      if (res.isSuccess && res.value) {
         // value is PaginatedList due to recent changes
-        const m = res.value.items || res.value; 
+        const m = res.value.items || res.value;
         this.stoklar.set(m.filter((s: StokKaydiDto) => s.miktar > 0 && s.durumMetni === 'Aktif'));
       }
     });
@@ -280,9 +274,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     this.panelKaynakCekiSatiriId.set(null);
     this.panelAciklama.set(urun.ucKAciklama ?? '');
     this.panelGeriGonderilmeSebebi.set(urun.geriGonderilmeSebebiMetni ?? '');
-    this.panelNot.set(urun.ucKNotu ?? '');
     this.panelError.set('');
-    
+
     // Eğer önceden girilmiş bir proje varsa, kaynak ürünleri yükle
     if (urun.kaynakHedefProjeNo) {
       const selectedProje = this.projeler().find(p => p.projeNo === urun.kaynakHedefProjeNo);
@@ -321,7 +314,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       case 'Stoktan Karşılandı':
       case 'Tedarikçiden Geldi':
       case 'Hatalı Ürün':
-        this.panelGelenAdet.set(0); 
+        this.panelGelenAdet.set(0);
         this.panelKaynakHedef.set('');
         break;
       case 'Geri Gönderildi':
@@ -340,10 +333,10 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     }
     const pId = Number(projeIdStr);
     const proje = this.projeler().find(p => p.id === pId);
-    if(proje) {
+    if (proje) {
       this.panelKaynakHedef.set(proje.projeNo);
     }
-    
+
     this.gridService.getUrunler(pId).subscribe(res => {
       if (res.isSuccess && res.value) {
         this.kaynakUrunler.set(res.value);
@@ -506,17 +499,17 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
     // Tam Geldi → Grid sevk edilmiş olmalı
     if (tip === 'Tam Geldi' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) {
-       return 'Grid tarafından eksiksiz sevk edilmeden "Tam Geldi" olarak işaretlenemez.';
+      return 'Grid tarafından eksiksiz sevk edilmeden "Tam Geldi" olarak işaretlenemez.';
     }
 
     // Hatalı Ürün → Grid sevk edilmiş olmalı
     if (tip === 'Hatalı Ürün' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) {
-       return 'Grid tarafından sevk edilmeden "Hatalı Ürün" işaretlenemez.';
+      return 'Grid tarafından sevk edilmeden "Hatalı Ürün" işaretlenemez.';
     }
 
     if (tip === 'Tedarikçiden Geldi' || tip === 'Stoktan Karşılandı' || tip === 'Projeden Karşılandı') {
       if (u.gridDurumuMetni !== 'Eksik Geldi' && u.gridDurumuMetni !== 'Gelmedi') {
-         return 'Bu işlem yalnızca ürün Grid tarafında eksik geldiğinde veya hiç gelmediğinde (GELMEDİ) yapılabilir.';
+        return 'Bu işlem yalnızca ürün Grid tarafında eksik geldiğinde veya hiç gelmediğinde (GELMEDİ) yapılabilir.';
       }
     }
 
@@ -532,12 +525,12 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     if (tip === 'Stoktan Karşılandı') {
       if (this.panelGelenAdet() <= 0) return 'Gelen adet girilmelidir.';
       if (!this.panelStokKaydiId()) return 'Kullanılacak stok seçilmelidir (Malzeme Adı veya Barkod arayın).';
-      
+
       const s = this.stoklar().find(x => x.id === this.panelStokKaydiId());
       if (s) {
         const normalizeStr = (str: string) => {
-           if (!str) return '';
-           return str.replace(/[^\p{L}0-9\s]/gu, '').replace(/\s+/g, ' ').trim().toLocaleLowerCase('tr-TR');
+          if (!str) return '';
+          return str.replace(/[^\p{L}0-9\s]/gu, '').replace(/\s+/g, ' ').trim().toLocaleLowerCase('tr-TR');
         };
         if (normalizeStr(s.malzemeAdi) !== normalizeStr(u.aciklama)) {
           return `Seçilen stok adı (${s.malzemeAdi}) ile proje ürün adı (${u.aciklama}) eşleşmelidir!`;
@@ -585,12 +578,11 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       kaynakCekiSatiriId: this.panelKaynakCekiSatiriId() || undefined,
       stokKaydiId: this.panelStokKaydiId() || undefined,
       aciklama: _aciklama ? _aciklama.trim() : '',
-      not: this.panelNot() ? this.panelNot().trim() : '',
       urunAdi: u.aciklama || u.barkodNo,
       mevcutProjeNo: this.projeler().find(p => p.id === this.projeId())?.projeNo || this.projeId().toString(),
       mevcutSandikNo: u.sandikNo || this.sandikNo(),
-      kaynakUrunAdi: this.panelTip() === 'Projeden Karşılandı' && this.panelKaynakCekiSatiriId() ? 
-                      this.kaynakUrunler().find(cu => cu.cekiSatiriId === this.panelKaynakCekiSatiriId())?.aciklama : undefined
+      kaynakUrunAdi: this.panelTip() === 'Projeden Karşılandı' && this.panelKaynakCekiSatiriId() ?
+        this.kaynakUrunler().find(cu => cu.cekiSatiriId === this.panelKaynakCekiSatiriId())?.aciklama : undefined
     };
 
     this.uckService.durumGuncelle(dto).subscribe({
@@ -682,55 +674,5 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     // Zaten TamGeldi → seçilemez
     if (u.ucKKarsilamaTipiId === UcKDurum.TamGeldi) return true;
     return false;
-  }
-
-  // ===== Not Paneli =====
-  openNotPanel(urun: UcKUrunDto) {
-    this.notPanelUrun.set(urun);
-    this.yeniNot.set('');
-    this.notlar.set([]);
-    this.showNotPanel.set(true);
-    this.loadNotlar(urun.cekiSatiriId);
-  }
-  closeNotPanel() {
-    this.showNotPanel.set(false);
-    this.notPanelUrun.set(null);
-  }
-
-  loadNotlar(cekiSatiriId: number) {
-    this.uckService.getNotlar('CekiSatiri', cekiSatiriId).subscribe(res => {
-      if (res.isSuccess && res.value) {
-        this.notlar.set(res.value);
-      }
-    });
-  }
-
-  notKaydet() {
-    const urun = this.notPanelUrun();
-    if (!urun || !this.yeniNot().trim()) return;
-    this.notSaving.set(true);
-    const dto: NotEkleDto = {
-      bagliReferansTipi: 'CekiSatiri',
-      bagliReferansId: urun.cekiSatiriId,
-      cekiSatiriId: urun.cekiSatiriId,
-      icerik: this.yeniNot().trim(),
-      projeId: this.projeId(),
-    };
-    this.uckService.notEkle(dto).subscribe({
-      next: (res) => {
-        this.notSaving.set(false);
-        if (res.isSuccess) {
-          this.toast.success('Not eklendi.');
-          this.yeniNot.set('');
-          this.loadNotlar(urun.cekiSatiriId);
-        } else {
-          this.toast.error(res.error ?? 'Not eklenemedi.');
-        }
-      },
-      error: () => {
-        this.notSaving.set(false);
-        this.toast.error('Sunucu hatası.');
-      },
-    });
   }
 }

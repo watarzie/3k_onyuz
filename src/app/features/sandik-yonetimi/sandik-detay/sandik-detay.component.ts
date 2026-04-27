@@ -13,6 +13,8 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { SandikDetayDto, SandikIcerikDto, SandikDto } from '../../../shared/models/index';
 import { Birim } from '../../../core/constants/enums';
 
+import { ConfirmService } from '../../../core/services/confirm.service';
+
 @Component({
   selector: 'app-sandik-detay',
   standalone: true,
@@ -27,6 +29,7 @@ export class SandikDetayComponent implements OnInit {
   private projeService = inject(ProjeService);
   private toast = inject(ToastService);
   private auth = inject(AuthService);
+  private confirmService = inject(ConfirmService);
 
   projeId = signal(0);
   sandikId = signal(0);
@@ -81,6 +84,33 @@ export class SandikDetayComponent implements OnInit {
     this.sandikId.set(sId);
     this.loadSandik();
     this.loadProjeSandiklari();
+  }
+
+  async sandikHazirla() {
+    const s = this.sandik();
+    if (!s) return;
+
+    const onay = await this.confirmService.ask({
+      title: 'Sandığı Hazırla',
+      message: `<strong>${s.sandikNo}</strong> numaralı sandığı "Hazır" durumuna getirmek istediğinize emin misiniz?<br><br>Bu işlem geri alınabilir.`,
+      confirmText: 'Evet, Hazırla',
+      cancelText: 'Vazgeç',
+      type: 'info'
+    });
+
+    if (onay) {
+      this.projeService.sandikKapat(s.id, true).subscribe({
+        next: (res) => {
+          if (res.isSuccess) {
+            this.toast.success('Sandık hazırlandı.');
+            this.loadSandik();
+          } else {
+            this.toast.error(res.error || 'İşlem başarısız.');
+          }
+        },
+        error: () => this.toast.error('Sunucu hatası oluştu.')
+      });
+    }
   }
 
   loadSandik() {

@@ -11,6 +11,7 @@ import { StatusBadgeComponent } from '../../../shared/components/status-badge/st
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { SandikDto } from '../../../shared/models/index';
 import { SandikTipi, DepoLokasyon } from '../../../core/constants/enums';
+import { PdfService } from '../../../core/services/pdf.service';
 
 @Component({
   selector: 'app-sandik-listesi',
@@ -25,12 +26,14 @@ export class SandikListesiComponent implements OnInit {
   private sandikService = inject(SandikService);
   private lookupService = inject(LookupService);
   private toast = inject(ToastService);
+  private pdfService = inject(PdfService);
 
   projeId = signal(0);
   sandiklar = signal<SandikDto[]>([]);
   filteredSandiklar = signal<SandikDto[]>([]);
   loading = signal(true);
   searchTerm = signal('');
+  downloadingPdf = signal<number | null>(null);
 
   // Sandık Ekleme Modal
   showEkleModal = signal(false);
@@ -117,6 +120,26 @@ export class SandikListesiComponent implements OnInit {
       Tamamlandi: this.ts.translate('STATUS.TAMAMLANDI'),
     };
     return map[durum] ?? durum;
+  }
+
+  indirPdf(sandikId: number) {
+    this.downloadingPdf.set(sandikId);
+    this.pdfService.sahaSandikPdf(sandikId).subscribe({
+      next: (blob) => {
+        this.downloadingPdf.set(null);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `SahaSandikRaporu_${sandikId}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.toast.success('Rapor başarıyla indirildi.');
+      },
+      error: () => {
+        this.downloadingPdf.set(null);
+        this.toast.error('Rapor indirilirken bir hata oluştu.');
+      }
+    });
   }
 
   // ===== Sandık Ekleme =====

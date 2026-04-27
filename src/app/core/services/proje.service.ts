@@ -41,6 +41,10 @@ export class ProjeService {
     return this.api.post<boolean>(API.PROJE.KILIDI_AC(projeId), {});
   }
 
+  sevkTarihiGuncelle(projeId: number, planlananSevkTarihi: string | null): Observable<ApiResult<boolean>> {
+    return this.api.put<boolean>(API.PROJE.SEVK_TARIHI_GUNCELLE, { projeId, planlananSevkTarihi });
+  }
+
   // ===== Sandık Sevk =====
 
   sandikSevkEt(projeId: number, sandikId: number): Observable<ApiResult<boolean>> {

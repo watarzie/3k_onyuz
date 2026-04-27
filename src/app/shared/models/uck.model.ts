@@ -23,7 +23,8 @@ export interface UcKUrunDto {
   geriGonderilmeSebebiId?: number;
   geriGonderilmeSebebiMetni?: string;
   ucKAciklama?: string;
-  ucKNotu?: string;
+  // Çapraz açıklama: Grid tarafının açıklaması (3K tarafı görür)
+  gridAciklama?: string;
   // Parçalı karşılama (Madde 2)
   stokKarsilanan: number;
   projeKarsilanan: number;
@@ -45,7 +46,6 @@ export interface UcKDurumGuncelleDto {
   stokKaydiId?: number;
   aciklama?: string;
   geriGonderilmeSebebiId?: number;
-  not?: string;
   urunAdi?: string;
   mevcutProjeNo?: string;
   mevcutSandikNo?: string;
@@ -56,23 +56,4 @@ export interface TopluTamGeldiDto {
   projeId: number;
   cekiSatiriIdler: number[];
   aciklama?: string;
-}
-
-export interface NotEkleDto {
-  bagliReferansTipi: string;
-  bagliReferansId: number;
-  cekiSatiriId?: number;
-  icerik: string;
-  projeId: number;
-}
-
-export interface NotDto {
-  id: number;
-  yazanTaraf: string;
-  icerik: string;
-  tarih: string;
-  kullaniciAdi: string;
-  kullaniciBasHarf?: string;
-  bagliReferansTipi: string;
-  bagliReferansId: number;
 }

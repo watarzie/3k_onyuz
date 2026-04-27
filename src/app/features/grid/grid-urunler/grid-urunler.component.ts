@@ -19,18 +19,18 @@ import { GridDurum, GridSevkDurum } from '../../../core/constants/enums';
 interface DurumSecenegi { id: number; value: string; label: string; color: string; bgClass: string; }
 
 const GRID_DURUMLARI: DurumSecenegi[] = [
-  { id: GridDurum.TamGeldi,   value: 'Tam Geldi',   label: 'TAM GELDİ',   color: '#25B003', bgClass: 'row-tam-geldi' },
+  { id: GridDurum.TamGeldi, value: 'Tam Geldi', label: 'TAM GELDİ', color: '#25B003', bgClass: 'row-tam-geldi' },
   { id: GridDurum.EksikGeldi, value: 'Eksik Geldi', label: 'EKSİK GELDİ', color: '#FD5812', bgClass: 'row-eksik-geldi' },
-  { id: GridDurum.Gelmedi,    value: 'Gelmedi',    label: 'GELMEDİ',      color: '#FF4023', bgClass: 'row-gelmedi' },
-  { id: GridDurum.TrafoSevk,  value: 'Trafo Sevk',  label: 'TRAFO SEVK',   color: '#00BCD4', bgClass: 'row-trafo-sevk' },
-  { id: GridDurum.Iptal,      value: 'İptal',      label: 'İPTAL',        color: '#FFB200', bgClass: 'row-iptal' },
-  { id: GridDurum.Sipariste,  value: 'Siparişte',  label: 'SİPARİŞTE',    color: '#9C27B0', bgClass: 'row-sipariste' },
+  { id: GridDurum.Gelmedi, value: 'Gelmedi', label: 'GELMEDİ', color: '#FF4023', bgClass: 'row-gelmedi' },
+  { id: GridDurum.TrafoSevk, value: 'Trafo Sevk', label: 'TRAFO SEVK', color: '#00BCD4', bgClass: 'row-trafo-sevk' },
+  { id: GridDurum.Iptal, value: 'İptal', label: 'İPTAL', color: '#FFB200', bgClass: 'row-iptal' },
+  { id: GridDurum.Sipariste, value: 'Siparişte', label: 'SİPARİŞTE', color: '#9C27B0', bgClass: 'row-sipariste' },
 ];
 
 const SEVK_DURUMLARI: DurumSecenegi[] = [
-  { id: GridSevkDurum.SevkEdildi,   value: 'Sevk Edildi',   label: 'SEVK EDİLDİ',    color: '#25B003', bgClass: '' },
-  { id: GridSevkDurum.Bekliyor,     value: 'Bekliyor',     label: 'BEKLİYOR',        color: '#FD5812', bgClass: '' },
-  { id: GridSevkDurum.SevkEdilmedi, value: 'Sevk Edilmedi', label: 'SEVK EDİLMEDİ',   color: '#FF4023', bgClass: '' },
+  { id: GridSevkDurum.SevkEdildi, value: 'Sevk Edildi', label: 'SEVK EDİLDİ', color: '#25B003', bgClass: '' },
+  { id: GridSevkDurum.Bekliyor, value: 'Bekliyor', label: 'BEKLİYOR', color: '#FD5812', bgClass: '' },
+  { id: GridSevkDurum.SevkEdilmedi, value: 'Sevk Edilmedi', label: 'SEVK EDİLMEDİ', color: '#FF4023', bgClass: '' },
 ];
 
 @Component({
@@ -63,14 +63,14 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   panelTrafoSevkAdet = signal<number>(0);
   panelSevkDurumu = signal('Sevk Edilmedi');
   panelSevkAdet = signal<number>(0);
-  panelNot = signal('');
+  panelAciklama = signal('');
   panelSaving = signal(false);
   panelError = signal('');
   panelUyari = signal('');
 
   // Toplu Sevk Modal
   showTopluSevkModal = signal(false);
-  topluSevkNot = signal('');
+  topluSevkAciklama = signal('');
   topluSevkSaving = signal(false);
 
   // Stats
@@ -212,7 +212,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     this.panelTrafoSevkAdet.set(urun.trafoSevkAdet);
     this.panelSevkDurumu.set(urun.gridSevkDurumuMetni);
     this.panelSevkAdet.set(urun.gridSevkMiktari ?? 0);
-    this.panelNot.set(urun.gridNotu ?? '');
+    this.panelAciklama.set(urun.gridAciklama ?? '');
     this.panelError.set('');
     this.recalcPanel();
     this.showPanel.set(true);
@@ -344,7 +344,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       trafoSevkAdet: this.panelTrafoSevkAdet(),
       gridSevkDurumuId: SEVK_DURUMLARI.find(d => d.value === this.panelSevkDurumu())?.id,
       sevkMiktari: this.isSevkAktif ? this.panelSevkAdet() : undefined,
-      not: this.panelNot() || undefined,
+      aciklama: this.panelAciklama() || undefined,
     };
 
     this.gridService.durumGuncelle(dto).subscribe({
@@ -371,7 +371,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   // ===== Toplu Sevk =====
   openTopluSevk() {
-    this.topluSevkNot.set('');
+    this.topluSevkAciklama.set('');
     this.showTopluSevkModal.set(true);
   }
   closeTopluSevk() { this.showTopluSevkModal.set(false); }
@@ -381,7 +381,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     this.gridService.topluSevk({
       projeId: this.projeId(),
       cekiSatiriIdler: Array.from(this.selectedIds()),
-      not: this.topluSevkNot() || undefined,
+      aciklama: this.topluSevkAciklama() || undefined,
     }).subscribe({
       next: (res) => {
         this.topluSevkSaving.set(false);

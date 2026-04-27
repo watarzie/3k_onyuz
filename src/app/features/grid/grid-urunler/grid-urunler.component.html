@@ -1,4 +1,4 @@
-﻿<div class="page-title-area mb-4">
+<div class="page-title-area mb-4">
   <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
     <div>
       <h2 class="fw-bold mb-1"><i class="ri-database-2-line me-2"></i>Grid Ürün Takibi</h2>
@@ -66,6 +66,7 @@
               <th>Sevk Dur.</th>
               <th>Kaynak/Hedef FB</th>
               <th>3K Durumu</th>
+              <th>3K Açıklama</th>
               <th *appCanWrite style="width:50px"></th>
             </tr>
           </thead>
@@ -108,6 +109,16 @@
                   <span class="durum-badge" [style.background]="getUckDurumColor(u.ucKDurumuMetni) + '15'" [style.color]="getUckDurumColor(u.ucKDurumuMetni)" [style.border-color]="getUckDurumColor(u.ucKDurumuMetni) + '30'">
                     {{ u.ucKDurumuMetni ? u.ucKDurumuMetni.toUpperCase() : '-' }}
                   </span>
+                </td>
+                <td>
+                  @if (u.ucKAciklama) {
+                    <div class="aciklama-cell">
+                      <span class="aciklama-text text-success">{{ u.ucKAciklama }}</span>
+                      <div class="aciklama-popup">{{ u.ucKAciklama }}</div>
+                    </div>
+                  } @else {
+                    <span class="text-muted" style="font-size:12px">-</span>
+                  }
                 </td>
                 <td *appCanWrite>
                   <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle">
@@ -216,10 +227,10 @@
         </div>
       }
 
-      <!-- 6. Not -->
+      <!-- 6. Açıklama -->
       <div class="mb-4">
-        <label class="form-label fw-semibold">Not</label>
-        <textarea class="form-control" rows="2" placeholder="İrsaliye no, kamyon plaka vb..." [ngModel]="panelNot()" (ngModelChange)="panelNot.set($event)"></textarea>
+        <label class="form-label fw-semibold">Açıklama</label>
+        <textarea class="form-control" rows="2" placeholder="İrsaliye no, kamyon plaka vb..." [ngModel]="panelAciklama()" (ngModelChange)="panelAciklama.set($event)"></textarea>
       </div>
 
       <!-- Kaydet -->
@@ -248,8 +259,8 @@
         <strong>{{ selectedIds().size }}</strong> ürün seçildi. Tümü <strong>SEVK EDİLDİ</strong> olarak işaretlenecek.
       </div>
       <div class="mb-3">
-        <label class="form-label fw-semibold">Sevk Notu</label>
-        <textarea class="form-control" rows="3" placeholder="Kamyon plaka, irsaliye no..." [ngModel]="topluSevkNot()" (ngModelChange)="topluSevkNot.set($event)"></textarea>
+        <label class="form-label fw-semibold">Açıklama</label>
+        <textarea class="form-control" rows="3" placeholder="Kamyon plaka, irsaliye no..." [ngModel]="topluSevkAciklama()" (ngModelChange)="topluSevkAciklama.set($event)"></textarea>
       </div>
     </div>
     <div class="modal-footer d-flex gap-2">

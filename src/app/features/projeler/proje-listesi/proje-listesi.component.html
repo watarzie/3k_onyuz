@@ -65,6 +65,9 @@
           <thead>
             <tr>
               <th>{{ 'LABELS.PROJE_NO' | translate }}</th>
+              @if (isSevkEdilen()) {
+                <th>Proje Tipi</th>
+              }
               @if (isSandikMode()) {
                 <th>Müşteri</th>
               }
@@ -75,6 +78,7 @@
                 <th>{{ 'LABELS.LOKASYON' | translate }}</th>
               }
               <th>{{ 'LABELS.durumMetni' | translate }}</th>
+              <th>Sevk Tarihi</th>
               <th>{{ 'LABELS.TAMAMLANMA' | translate }}</th>
               @if (isSandikMode() || (!isSandikMode() && canSevkEt())) {
                 <th>İşlemler</th>
@@ -94,6 +98,15 @@
                     {{ p.projeNo }}
                   }
                 </td>
+                @if (isSevkEdilen()) {
+                  <td>
+                    <span class="badge" [ngClass]="{
+                      'bg-primary-subtle text-primary': p.projeTipiId === 1,
+                      'bg-success-subtle text-success': p.projeTipiId === 2,
+                      'bg-info-subtle text-info': p.projeTipiId === 3
+                    }">{{ p.projeTipiId === 1 ? 'Normal' : (p.projeTipiId === 2 ? 'Saha' : 'Yedek') }}</span>
+                  </td>
+                }
                 @if (isSandikMode()) {
                   <td>{{ p.musteri ?? '-' }}</td>
                   <td>
@@ -106,6 +119,15 @@
                   <td>{{ p.lokasyon ?? '-' }}</td>
                 }
                 <td><app-status-badge [status]="p.durumMetni" [label]="getDurumLabel(p.durumMetni)" /></td>
+                <td>
+                  @if (p.gerceklesenSevkTarihi) {
+                    <span class="fw-semibold text-success">{{ p.gerceklesenSevkTarihi | date:'dd.MM.yyyy' }}</span>
+                  } @else if (p.planlananSevkTarihi) {
+                    {{ p.planlananSevkTarihi | date:'dd.MM.yyyy' }}
+                  } @else {
+                    <span class="text-muted">-</span>
+                  }
+                </td>
                 <td>
                   <div class="d-flex align-items-center gap-2">
                     <div class="progress flex-grow-1" style="height: 6px; min-width: 100px;">
@@ -133,18 +155,30 @@
                           </a>
                         }
                         @if (isSahaYonetimi() || isYedekYonetimi()) {
+                          <button class="btn btn-sm btn-outline-primary" (click)="indirSahaProjePdf(p.id)" [disabled]="downloadingPdf() === p.id" title="Toplu PDF Raporu">
+                            @if (downloadingPdf() === p.id) {
+                              <span class="spinner-border spinner-border-sm"></span>
+                            } @else {
+                              <i class="ri-file-pdf-2-line"></i>
+                            }
+                          </button>
                           <a [routerLink]="[routePrefix, p.id]" class="btn btn-sm btn-outline-primary" title="Sandıklar">
                             <i class="ri-inbox-line me-1"></i>Sandıklar
                           </a>
                         }
-                      } @else if (canSevkEt()) {
+                      }
+                      
+                      @if (canSevkEt() && (!isSandikMode() || isSahaYonetimi() || isYedekYonetimi())) {
                         @if (p.durumMetni === 'SevkEdildi' || p.durumMetni === 'Sevk Edildi') {
                           <button class="btn btn-sm btn-outline-primary" (click)="kilidiAc(p)">
                             <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
                           </button>
                         } @else {
-                          <button class="btn btn-sm btn-warning" (click)="sevkEt(p)">
-                            <i class="ri-truck-line me-1"></i>Sevk Et
+                          <button class="btn btn-sm btn-outline-primary" (click)="openSevkTarihiModal(p)" title="Sevk Tarihi Gir">
+                            <i class="ri-calendar-event-line"></i>
+                          </button>
+                          <button class="btn btn-sm btn-warning" (click)="sevkEt(p)" title="Projeyi Sevk Et">
+                            <i class="ri-truck-line me-1"></i> Sevk Et
                           </button>
                         }
                       }
@@ -159,6 +193,35 @@
     }
   </div>
 </div>
+
+<!-- ===== Sevk Tarihi Güncelle Modal ===== -->
+@if (showSevkTarihiModal()) {
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal fade show d-block" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="ri-calendar-event-line me-2"></i>Sevk Tarihi Gir</h5>
+          <button type="button" class="btn-close" (click)="closeSevkTarihiModal()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Planlanan Sevk Tarihi</label>
+            <input type="date" class="form-control" [ngModel]="guncelSevkTarihi()" (ngModelChange)="guncelSevkTarihi.set($event)" />
+            <small class="text-muted d-block mt-1">Bu alan opsiyoneldir. Proje fiilen sevk edildiğinde tarih otomatik olarak güncellenir.</small>
+          </div>
+        </div>
+        <div class="modal-footer d-flex gap-2">
+          <button class="btn btn-outline flex-grow-1" (click)="closeSevkTarihiModal()" [disabled]="sevkTarihiSaving()">İptal</button>
+          <button class="btn btn-primary-gradient flex-grow-1" (click)="kaydetSevkTarihi()" [disabled]="sevkTarihiSaving()">
+            @if (sevkTarihiSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            Kaydet
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
 
 <!-- ===== Çeki Yükle Modal ===== -->
 @if (showUploadModal()) {
@@ -236,6 +299,10 @@
           <div class="mb-3">
             <label class="form-label">Müşteri</label>
             <input type="text" class="form-control" [(ngModel)]="yeniProjeForm().musteri" placeholder="Örn: ABC A.Ş." />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Lokasyon</label>
+            <input type="text" class="form-control" [(ngModel)]="yeniProjeForm().lokasyon" placeholder="Örn: Dubai" />
           </div>
         </div>
         <div class="modal-footer d-flex gap-2">

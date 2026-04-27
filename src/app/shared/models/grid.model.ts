@@ -16,7 +16,7 @@ export interface GridUrunDto {
   gridSevkDurumuMetni: string;
   gridSevkMiktari?: number;
   gridSevkTarihi?: string;
-  gridNotu?: string;
+  gridAciklama?: string;
   gridEksikMiktar: number;
   // Parçalı karşılama (Madde 2)
   stokKarsilanan: number;
@@ -28,6 +28,8 @@ export interface GridUrunDto {
   ucKDurumuMetni: string;
   gelenMiktar: number;
   kaynakHedefProjeNo?: string;
+  // Çapraz açıklama: 3K tarafının açıklaması (Grid tarafı görür)
+  ucKAciklama?: string;
   genelDurumId: number;
   genelDurumMetni: string;
 }
@@ -40,11 +42,11 @@ export interface GridDurumGuncelleDto {
   trafoSevkAdet?: number;
   gridSevkDurumuId?: number;
   sevkMiktari?: number;
-  not?: string;
+  aciklama?: string;
 }
 
 export interface GridTopluSevkDto {
   projeId: number;
   cekiSatiriIdler: number[];
-  not?: string;
+  aciklama?: string;
 }

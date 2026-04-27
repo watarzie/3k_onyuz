@@ -2,15 +2,13 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, NotEkleDto, NotDto } from '../../shared/models/index';
+import { ApiResult, UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto } from '../../shared/models/index';
 
 /**
- * UcKController + Not endpoints:
+ * UcKController:
  *  GET  /api/uck/{projeId}/urunler
  *  PUT  /api/uck/durum-guncelle
  *  POST /api/uck/toplu-tam-geldi
- *  POST /api/not/ekle
- *  GET  /api/not/{tip}/{id}/notlar
  */
 @Injectable({ providedIn: 'root' })
 export class UcKService {
@@ -43,13 +41,5 @@ export class UcKService {
 
   topluTamGeldi(dto: TopluTamGeldiDto): Observable<ApiResult<unknown>> {
     return this.api.post<unknown>(API.UCK.TOPLU_TAM_GELDI, dto);
-  }
-
-  notEkle(dto: NotEkleDto): Observable<ApiResult<unknown>> {
-    return this.api.post<unknown>(API.NOT.EKLE, dto);
-  }
-
-  getNotlar(bagliTip: string, bagliId: number): Observable<ApiResult<NotDto[]>> {
-    return this.api.get<NotDto[]>(API.NOT.BY_REF(bagliTip, bagliId));
   }
 }

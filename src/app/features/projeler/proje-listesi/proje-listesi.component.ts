@@ -2,7 +2,7 @@ import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, ActivatedRoute } from '@angular/router';
-import { NgClass } from '@angular/common';
+import { NgClass, DatePipe } from '@angular/common';
 import { TranslationService } from '../../../core/services/translation.service';
 import { ProjeService } from '../../../core/services/proje.service';
 import { PermissionService } from '../../../core/services/permission.service';
@@ -11,11 +11,12 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { ProjeDto } from '../../../shared/models/index';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmService } from '../../../core/services/confirm.service';
+import { PdfService } from '../../../core/services/pdf.service';
 
 @Component({
   selector: 'app-proje-listesi',
   standalone: true,
-  imports: [TranslatePipe, RouterLink, NgClass, StatusBadgeComponent, BreadcrumbComponent, FormsModule],
+  imports: [TranslatePipe, RouterLink, NgClass, StatusBadgeComponent, BreadcrumbComponent, FormsModule, DatePipe],
   templateUrl: './proje-listesi.component.html',
   styleUrl: './proje-listesi.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,12 +28,15 @@ export class ProjeListesiComponent implements OnInit {
   toastService = inject(ToastService);
   confirmService = inject(ConfirmService);
   private route = inject(ActivatedRoute);
+  private pdfService = inject(PdfService);
 
   isSandikYonetimi = signal(false);
   isSevkEdilen = signal(false);
   isAktifProjeler = signal(false);
   isSahaYonetimi = signal(false);
   isYedekYonetimi = signal(false);
+
+  downloadingPdf = signal<number | null>(null);
 
   /**
    * Grid/3K buton gösterimi — Rol Yetki ekranından yönetilir.
@@ -55,9 +59,15 @@ export class ProjeListesiComponent implements OnInit {
   // Proje Oluştur (Saha/Yedek)
   showProjeOlusturModal = signal(false);
   creatingProje = signal(false);
-  yeniProjeForm = signal({ projeNo: '', musteri: '' });
+  yeniProjeForm = signal({ projeNo: '', musteri: '', lokasyon: '' });
 
-  breadcrumb = [
+  // Sevk Tarihi Güncelle Modal
+  showSevkTarihiModal = signal(false);
+  selectedProjeId = signal(0);
+  guncelSevkTarihi = signal('');
+  sevkTarihiSaving = signal(false);
+
+  breadcrumb: { label: string; link?: string }[] = [
     { label: 'Ana Kontrol Paneli', link: '/dashboard' },
     { label: 'Projeler' },
   ];
@@ -113,6 +123,8 @@ export class ProjeListesiComponent implements OnInit {
       obs = this.projeService.getProjeListesiByTip(2); // Saha
     } else if (this.isYedekYonetimi()) {
       obs = this.projeService.getProjeListesiByTip(3); // Yedek
+    } else if (this.isSevkEdilen()) {
+      obs = this.projeService.getProjeListesi(); // Tüm projeler
     } else {
       obs = this.projeService.getProjeListesiByTip(1); // Sadece Normal projeler
     }
@@ -160,6 +172,26 @@ export class ProjeListesiComponent implements OnInit {
       Tamamlandi: 'Tamamlandı',
     };
     return map[durum] ?? durum;
+  }
+
+  indirSahaProjePdf(projeId: number) {
+    this.downloadingPdf.set(projeId);
+    this.pdfService.sahaProjePdf(projeId).subscribe({
+      next: (blob) => {
+        this.downloadingPdf.set(null);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `SahaProje_TopluRapor_${projeId}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.toastService.success('Toplu rapor başarıyla indirildi.');
+      },
+      error: () => {
+        this.downloadingPdf.set(null);
+        this.toastService.error('Rapor indirilirken bir hata oluştu.');
+      }
+    });
   }
 
   // ===== Çeki Yükleme Modal =====
@@ -245,10 +277,47 @@ export class ProjeListesiComponent implements OnInit {
     return (bytes / 1048576).toFixed(1) + ' MB';
   }
 
+  // ===== Sevk Tarihi Güncelle =====
+  
+  openSevkTarihiModal(proje: ProjeDto) {
+    this.selectedProjeId.set(proje.id);
+    this.guncelSevkTarihi.set(proje.planlananSevkTarihi ? proje.planlananSevkTarihi.substring(0, 10) : '');
+    this.showSevkTarihiModal.set(true);
+  }
+
+  closeSevkTarihiModal() {
+    this.showSevkTarihiModal.set(false);
+    this.selectedProjeId.set(0);
+    this.guncelSevkTarihi.set('');
+  }
+
+  kaydetSevkTarihi() {
+    this.sevkTarihiSaving.set(true);
+    // string to YYYY-MM-DD
+    const tarih = this.guncelSevkTarihi() ? new Date(this.guncelSevkTarihi()).toISOString() : null;
+    
+    this.projeService.sevkTarihiGuncelle(this.selectedProjeId(), tarih).subscribe({
+      next: (res) => {
+        this.sevkTarihiSaving.set(false);
+        if (res.isSuccess) {
+          this.toastService.success('Sevk tarihi güncellendi.');
+          this.closeSevkTarihiModal();
+          this.loadProjeler();
+        } else {
+          this.toastService.error(res.error || 'İşlem başarısız.');
+        }
+      },
+      error: () => {
+        this.sevkTarihiSaving.set(false);
+        this.toastService.error('Sunucu hatası oluştu.');
+      }
+    });
+  }
+
   // ===== Proje Oluştur Modal (Saha/Yedek) =====
 
   openProjeOlusturModal() {
-    this.yeniProjeForm.set({ projeNo: '', musteri: '' });
+    this.yeniProjeForm.set({ projeNo: '', musteri: '', lokasyon: '' });
     this.showProjeOlusturModal.set(true);
   }
 
@@ -258,8 +327,8 @@ export class ProjeListesiComponent implements OnInit {
 
   submitProjeOlustur() {
     const form = this.yeniProjeForm();
-    if (!form.projeNo.trim() || !form.musteri.trim()) {
-      this.toastService.error('Proje No ve Müşteri alanları zorunludur.');
+    if (!form.projeNo.trim() || !form.musteri.trim() || !form.lokasyon.trim()) {
+      this.toastService.error('Proje No, Müşteri ve Lokasyon alanları zorunludur.');
       return;
     }
 
@@ -270,7 +339,8 @@ export class ProjeListesiComponent implements OnInit {
       projeNo: form.projeNo,
       musteri: form.musteri,
       projeTipiId: tipId,
-      sorumluKisi: ''
+      sorumluKisi: '',
+      lokasyon: form.lokasyon
     }).subscribe({
       next: (res) => {
         this.creatingProje.set(false);

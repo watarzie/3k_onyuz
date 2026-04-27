@@ -68,6 +68,7 @@
               <th class="text-center">3K Gelen</th>
               <th>Kaynak/Hedef</th>
               <th>Kontrol/Uyarı</th>
+              <th>Grid Açıklama</th>
               <th class="text-center">Kalan</th>
               <th *appCanWrite style="width:80px"></th>
             </tr>
@@ -107,18 +108,23 @@
                 <td>
                   <span class="kontrol-text" [style.color]="getTipColor(u.ucKKarsilamaTipiMetni)">{{ u.kontrolUyari }}</span>
                 </td>
+                <td>
+                  @if (u.gridAciklama) {
+                    <div class="aciklama-cell">
+                      <span class="aciklama-text text-info">{{ u.gridAciklama }}</span>
+                      <div class="aciklama-popup">{{ u.gridAciklama }}</div>
+                    </div>
+                  } @else {
+                    <span class="text-muted" style="font-size:12px">-</span>
+                  }
+                </td>
                 <td class="text-center fw-bold" [ngClass]="{'text-danger': u.kalan > 0, 'text-success': u.kalan === 0}">
                   {{ u.kalan }}
                 </td>
                 <td *appCanWrite>
-                  <div class="d-flex gap-1">
-                    <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle" [disabled]="u.gridDurumuId === 12 || u.gridDurumuId === 11">
-                      <i class="ri-edit-line"></i>
-                    </button>
-                    <button class="btn btn-sm btn-action" (click)="openNotPanel(u)" title="Notlar">
-                      <i class="ri-chat-3-line"></i>
-                    </button>
-                  </div>
+                  <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle" [disabled]="u.gridDurumuId === 12 || u.gridDurumuId === 11">
+                    <i class="ri-edit-line"></i>
+                  </button>
                 </td>
               </tr>
             }
@@ -305,18 +311,12 @@
       }
 
       <!-- 4. Açıklama -->
-      <div class="mb-3">
+      <div class="mb-4">
         <label class="form-label fw-semibold">
           Açıklama
           @if (isAciklamaZorunlu) { <span class="text-danger">*</span> }
         </label>
         <textarea class="form-control" rows="2" placeholder="Detay girin..." [ngModel]="panelAciklama()" (ngModelChange)="panelAciklama.set($event)"></textarea>
-      </div>
-
-      <!-- 5. Not -->
-      <div class="mb-4">
-        <label class="form-label fw-semibold">Not</label>
-        <textarea class="form-control" rows="2" placeholder="Genel not..." [ngModel]="panelNot()" (ngModelChange)="panelNot.set($event)"></textarea>
       </div>
 
       <!-- Kaydet -->
@@ -358,46 +358,3 @@
   </div>
 }
 
-<!-- ===== Not Paneli ===== -->
-@if (showNotPanel() && notPanelUrun()) {
-  <div class="detail-overlay" (click)="closeNotPanel()"></div>
-  <div class="detail-panel">
-    <div class="panel-header">
-      <h5 class="fw-semibold mb-0"><i class="ri-chat-3-line me-2"></i>Notlar — {{ notPanelUrun()!.aciklama }}</h5>
-      <button class="btn btn-sm border-0" (click)="closeNotPanel()"><i class="ri-close-line fs-5"></i></button>
-    </div>
-    <div class="panel-body">
-      <!-- Not Yaz -->
-      <div class="mb-4">
-        <label class="form-label fw-semibold">Yeni Not</label>
-        <textarea class="form-control" rows="3" placeholder="Not yazınız... (max 2000 karakter)" maxlength="2000" [ngModel]="yeniNot()" (ngModelChange)="yeniNot.set($event)"></textarea>
-        <div class="d-flex justify-content-end mt-2">
-          <button class="btn btn-sm btn-save" (click)="notKaydet()" [disabled]="notSaving() || !yeniNot().trim()">
-            @if (notSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-            <i class="ri-send-plane-line me-1"></i>Gönder
-          </button>
-        </div>
-      </div>
-      <hr />
-      <!-- Not Listesi -->
-      @if (notlar().length === 0) {
-        <div class="text-center text-muted py-4"><i class="ri-chat-off-line fs-3 d-block mb-2"></i>Henüz not yok.</div>
-      } @else {
-        <div class="not-listesi">
-          @for (n of notlar(); track n.id) {
-            <div class="not-item" [ngClass]="{'not-grid': n.yazanTaraf === 'Grid', 'not-uck': n.yazanTaraf === '3K'}">
-              <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="fw-semibold">
-                  <span class="badge" [ngClass]="n.yazanTaraf === 'Grid' ? 'bg-info' : 'bg-success'">{{ n.yazanTaraf }}</span>
-                  {{ n.kullaniciAdi }}
-                </span>
-                <small class="text-muted">{{ n.tarih | date:'dd.MM.yyyy HH:mm' }}</small>
-              </div>
-              <p class="mb-0">{{ n.icerik }}</p>
-            </div>
-          }
-        </div>
-      }
-    </div>
-  </div>
-}

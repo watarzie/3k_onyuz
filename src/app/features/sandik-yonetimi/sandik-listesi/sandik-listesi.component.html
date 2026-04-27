@@ -47,9 +47,20 @@
                 </td>
                 <td>{{ s.depoLokasyonMetni }}</td>
                 <td>
-                  <a [routerLink]="[routePrefix(), projeId(), s.id]" class="btn btn-sm btn-action">
-                    <i class="ri-eye-line me-1"></i> Detay
-                  </a>
+                  <div class="d-flex gap-2">
+                    @if (isSahaYedek()) {
+                      <button class="btn btn-sm btn-outline-primary" (click)="indirPdf(s.id)" [disabled]="downloadingPdf() === s.id" title="PDF Raporu İndir">
+                        @if (downloadingPdf() === s.id) {
+                          <span class="spinner-border spinner-border-sm"></span>
+                        } @else {
+                          <i class="ri-file-pdf-2-line"></i>
+                        }
+                      </button>
+                    }
+                    <a [routerLink]="[routePrefix(), projeId(), s.id]" class="btn btn-sm btn-action">
+                      <i class="ri-eye-line me-1"></i> Detay
+                    </a>
+                  </div>
                 </td>
               </tr>
             }

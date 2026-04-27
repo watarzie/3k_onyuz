@@ -19,4 +19,12 @@ export class PdfService {
   indirExcel(projeId: number): Observable<Blob> {
     return this.api.downloadFile(API.PDF.EXCEL(projeId));
   }
+
+  sahaSandikPdf(sandikId: number): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.SAHA_SANDIK(sandikId));
+  }
+
+  sahaProjePdf(projeId: number): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.SAHA_PROJE(projeId));
+  }
 }

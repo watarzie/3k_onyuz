@@ -126,13 +126,26 @@ table {
 .modal-body { padding: 24px; }
 .modal-footer { padding: 14px 24px; border-top: 1px solid var(--borderColor); display: flex; gap: 8px; justify-content: flex-end; }
 
-// Not Paneli
-.not-listesi {
-  display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto;
+// Açıklama hücresi — hover ile tam metni gösterir
+.aciklama-cell {
+  position: relative; cursor: default;
+  max-width: 130px;
+  .aciklama-text {
+    display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: 12px;
+  }
+  .aciklama-popup {
+    display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+    min-width: 200px; max-width: 340px; width: max-content;
+    padding: 10px 14px; border-radius: 8px; font-size: 12.5px; line-height: 1.5;
+    color: #fff; background: #1e293b; box-shadow: 0 4px 16px rgba(0,0,0,.2);
+    white-space: normal; word-break: break-word; z-index: 100;
+    animation: popFade .15s ease;
+    &::after {
+      content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+      border: 6px solid transparent; border-top-color: #1e293b;
+    }
+  }
+  &:hover .aciklama-popup { display: block; }
 }
-.not-item {
-  padding: 12px 16px; border-radius: 10px; border: 1px solid var(--borderColor);
-  &.not-grid { border-left: 3px solid #0dcaf0; background: rgba(13,202,240,.04); }
-  &.not-uck { border-left: 3px solid #25B003; background: rgba(37,176,3,.04); }
-  p { font-size: 13px; line-height: 1.5; color: var(--blackColor); }
-}
+@keyframes popFade { from { opacity: 0; transform: translateX(-50%) translateY(4px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
