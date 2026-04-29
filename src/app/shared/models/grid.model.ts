@@ -50,3 +50,9 @@ export interface GridTopluSevkDto {
   cekiSatiriIdler: number[];
   aciklama?: string;
 }
+
+export interface GridDurumSifirlaDto {
+  cekiSatiriId: number;
+  projeId: number;
+  aciklama?: string;
+}

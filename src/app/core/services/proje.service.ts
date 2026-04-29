@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiSatiriDto } from '../../shared/models/index';
+import { ApiResult, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiSatiriDto, ProjeDropdownDto } from '../../shared/models/index';
 
 /**
  * ProjeController (2 endpoint) + CekiController (2 endpoint):
@@ -23,6 +23,11 @@ export class ProjeService {
 
   getProjeListesiByTip(projeTipiId: number): Observable<ApiResult<ProjeDto[]>> {
     return this.api.get<ProjeDto[]>(API.PROJE.LIST_BY_TIP(projeTipiId));
+  }
+
+  /** Dropdown'lar için hafif proje listesi — Include yok, sadece Id/ProjeNo/Musteri */
+  getProjeDropdownListesi(): Observable<ApiResult<ProjeDropdownDto[]>> {
+    return this.api.get<ProjeDropdownDto[]>(API.PROJE.DROPDOWN);
   }
 
   projeOlustur(dto: ProjeOlusturDto): Observable<ApiResult<unknown>> {

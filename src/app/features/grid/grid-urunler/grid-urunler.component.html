@@ -66,7 +66,11 @@
               <th>Sevk Dur.</th>
               <th>Kaynak/Hedef FB</th>
               <th>3K Durumu</th>
+              <th class="text-center">Stok K.</th>
+              <th class="text-center">Proje K.</th>
+              <th class="text-center">Tedarikçi K.</th>
               <th>3K Açıklama</th>
+              <th class="text-center">Kalan</th>
               <th *appCanWrite style="width:50px"></th>
             </tr>
           </thead>
@@ -110,6 +114,9 @@
                     {{ u.ucKDurumuMetni ? u.ucKDurumuMetni.toUpperCase() : '-' }}
                   </span>
                 </td>
+                <td class="text-center" [ngClass]="{'text-purple fw-semibold': u.stokKarsilanan > 0}">{{ u.stokKarsilanan > 0 ? u.stokKarsilanan : '-' }}</td>
+                <td class="text-center" [ngClass]="{'text-primary fw-semibold': u.projeKarsilanan > 0}">{{ u.projeKarsilanan > 0 ? u.projeKarsilanan : '-' }}</td>
+                <td class="text-center" [ngClass]="{'text-success fw-semibold': u.tedarikciKarsilanan > 0}">{{ u.tedarikciKarsilanan > 0 ? u.tedarikciKarsilanan : '-' }}</td>
                 <td>
                   @if (u.ucKAciklama) {
                     <div class="aciklama-cell">
@@ -119,6 +126,9 @@
                   } @else {
                     <span class="text-muted" style="font-size:12px">-</span>
                   }
+                </td>
+                <td class="text-center fw-bold" [ngClass]="{'text-danger': u.kalanMiktar > 0, 'text-success': u.kalanMiktar === 0}">
+                  {{ u.kalanMiktar }}
                 </td>
                 <td *appCanWrite>
                   <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle">
@@ -236,6 +246,11 @@
       <!-- Kaydet -->
       <div class="d-flex gap-2">
         <button class="btn btn-outline flex-grow-1" (click)="closePanel()">İptal</button>
+        @if (panelUrun()?.gridDurumuMetni !== 'Bekliyor' && panelUrun()?.gridDurumuMetni !== 'Gelmedi') {
+          <button class="btn btn-outline-danger" (click)="durumSifirla()" [disabled]="panelSaving()" title="Grid durumunu sıfırla (Ham duruma döndür)">
+            <i class="ri-arrow-go-back-line me-1"></i>Geri Al
+          </button>
+        }
         <button class="btn btn-save flex-grow-1" (click)="savePanel()" [disabled]="panelSaving()">
           @if (panelSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
           <i class="ri-save-line me-1"></i>Kaydet

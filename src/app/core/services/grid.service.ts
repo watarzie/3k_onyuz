@@ -2,12 +2,13 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { BaseApiService } from '../../core/services/base-api.service';
 import { API } from '../../core/constants/api-endpoints';
-import { ApiResult, GridUrunDto, GridDurumGuncelleDto, GridTopluSevkDto } from '../../shared/models/index';
+import { ApiResult, GridUrunDto, GridDurumGuncelleDto, GridTopluSevkDto, GridDurumSifirlaDto } from '../../shared/models/index';
 
 /**
  * GridController (3 endpoint):
  *  GET  /api/grid/urunler/{projeId}
  *  PUT  /api/grid/durum-guncelle
+ *  PUT  /api/grid/durum-sifirla
  *  POST /api/grid/toplu-sevk
  */
 @Injectable({ providedIn: 'root' })
@@ -39,6 +40,11 @@ export class GridService {
   /** Tekli ürün durumu güncelle (Üretimde → StokHazır → SevkEdildi vb.) */
   durumGuncelle(dto: GridDurumGuncelleDto): Observable<ApiResult<unknown>> {
     return this.api.put<unknown>(API.GRID.DURUM_GUNCELLE, dto);
+  }
+
+  /** Grid durumını sıfırla — çeki yüklenme öncesi ham duruma döndür */
+  durumSifirla(dto: GridDurumSifirlaDto): Observable<ApiResult<unknown>> {
+    return this.api.put<unknown>(API.GRID.DURUM_SIFIRLA, dto);
   }
 
   /** Birden fazla ürünü tek seferde SevkEdildi yap */

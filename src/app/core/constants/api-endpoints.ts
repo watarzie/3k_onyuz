@@ -22,6 +22,7 @@ export const API = {
   PROJE: {
     LIST: `${BASE}/proje`,
     LIST_BY_TIP: (tipId: number) => `${BASE}/proje?projeTipiId=${tipId}`,
+    DROPDOWN: `${BASE}/proje/dropdown`,
     CREATE: `${BASE}/proje`,
     SANDIK_KAPAT: `${BASE}/proje/sandik-kapat`,
     SEVK_ET: (id: number) => `${BASE}/proje/${id}/sevk-et`,
@@ -56,11 +57,13 @@ export const API = {
   GRID: {
     URUNLER: (projeId: number) => `${BASE}/grid/${projeId}/urunler`,
     DURUM_GUNCELLE: `${BASE}/grid/durum-guncelle`,
+    DURUM_SIFIRLA: `${BASE}/grid/durum-sifirla`,
     TOPLU_SEVK: `${BASE}/grid/toplu-sevk`,
   },
   UCK: {
     URUNLER: (projeId: number) => `${BASE}/uck/${projeId}/urunler`,
     DURUM_GUNCELLE: `${BASE}/uck/durum-guncelle`,
+    DURUM_SIFIRLA: `${BASE}/uck/durum-sifirla`,
     TOPLU_TAM_GELDI: `${BASE}/uck/toplu-tam-geldi`,
   },
   STOK: {

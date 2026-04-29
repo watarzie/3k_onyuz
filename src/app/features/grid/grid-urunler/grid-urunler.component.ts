@@ -369,6 +369,42 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ===== Durum Sıfırlama (Geri Alma) =====
+  durumSifirla() {
+    const u = this.panelUrun();
+    if (!u) return;
+
+    if (!confirm(`"${u.aciklama}" ürününün Grid durumunu sıfırlamak istediğinize emin misiniz?\n\nGridDurum, GelenAdet, TrafoSevkAdet, SevkDurumu vb. tüm Grid alanları sıfırlanacak ve ürün çeki yüklendiğindeki ham durumuna dönecektir.\n\nBu işlem geri alınamaz.`))
+      return;
+
+    this.panelSaving.set(true);
+    this.panelError.set('');
+
+    this.gridService.durumSifirla({
+      cekiSatiriId: u.cekiSatiriId,
+      projeId: this.projeId(),
+    }).subscribe({
+      next: (res) => {
+        this.panelSaving.set(false);
+        if (res.isSuccess) {
+          this.toast.success('Grid durumu başarıyla sıfırlandı.');
+          this.gridService.notifyGridUpdated();
+          this.closePanel();
+          this.loadUrunler();
+        } else {
+          const msg = res.error ?? 'Sıfırlama başarısız.';
+          this.panelError.set(msg);
+          this.toast.error(msg);
+        }
+      },
+      error: () => {
+        this.panelSaving.set(false);
+        this.panelError.set('Bir hata oluştu.');
+        this.toast.error('Sunucu ile iletişim kurulamadı.');
+      },
+    });
+  }
+
   // ===== Toplu Sevk =====
   openTopluSevk() {
     this.topluSevkAciklama.set('');

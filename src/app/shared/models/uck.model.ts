@@ -57,3 +57,9 @@ export interface TopluTamGeldiDto {
   cekiSatiriIdler: number[];
   aciklama?: string;
 }
+
+export interface UcKDurumSifirlaDto {
+  cekiSatiriId: number;
+  projeId: number;
+  aciklama?: string;
+}

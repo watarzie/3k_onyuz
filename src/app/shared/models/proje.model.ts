@@ -44,3 +44,10 @@ export interface ProjeTransferDto {
   aciklama?: string;
   tarih: string;
 }
+
+/** Dropdown'lar için hafif proje DTO — sadece Id/ProjeNo/Musteri */
+export interface ProjeDropdownDto {
+  id: number;
+  projeNo: string;
+  musteri: string;
+}

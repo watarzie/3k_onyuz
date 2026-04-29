@@ -32,8 +32,8 @@
       }
     </div>
     <div class="d-flex align-items-center gap-2">
-      <button *appCanWrite class="btn btn-sm btn-success" [disabled]="!hasSelection" (click)="openTopluTamGeldi()" title="Seçili ürünleri Tam Geldi olarak işaretle">
-        <i class="ri-check-double-line me-1"></i>Toplu Tam Geldi ({{ selectionCount }})
+      <button *appCanWrite class="btn btn-sm btn-success" [disabled]="!hasSelection" (click)="openTopluTamGeldi()" title="Seçili ürünleri Sevk Adeti Tam Geldi olarak işaretle">
+        <i class="ri-check-double-line me-1"></i>Toplu Sevk Adeti Tam Geldi ({{ selectionCount }})
       </button>
       <div class="search-box position-relative">
         <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
@@ -66,6 +66,9 @@
               <th class="text-center">Trafo</th>
               <th>3K Karşılama</th>
               <th class="text-center">3K Gelen</th>
+              <th class="text-center">Stok K.</th>
+              <th class="text-center">Proje K.</th>
+              <th class="text-center">Tedarikçi K.</th>
               <th>Kaynak/Hedef</th>
               <th>Kontrol/Uyarı</th>
               <th>Grid Açıklama</th>
@@ -102,6 +105,9 @@
                   </span>
                 </td>
                 <td class="text-center">{{ u.gelenMiktar }}</td>
+                <td class="text-center" [ngClass]="{'text-purple fw-semibold': u.stokKarsilanan > 0}">{{ u.stokKarsilanan > 0 ? u.stokKarsilanan : '-' }}</td>
+                <td class="text-center" [ngClass]="{'text-primary fw-semibold': u.projeKarsilanan > 0}">{{ u.projeKarsilanan > 0 ? u.projeKarsilanan : '-' }}</td>
+                <td class="text-center" [ngClass]="{'text-success fw-semibold': u.tedarikciKarsilanan > 0}">{{ u.tedarikciKarsilanan > 0 ? u.tedarikciKarsilanan : '-' }}</td>
                 <td class="text-truncate" style="max-width:120px" [title]="u.kaynakHedefProjeNo ?? ''">
                   {{ u.kaynakHedefProjeNo ?? '-' }}
                 </td>
@@ -191,7 +197,7 @@
         </label>
         <input type="number" class="form-control" [ngModel]="panelGelenAdet()" (ngModelChange)="panelGelenAdet.set($event); recalcPanel()" [disabled]="!isGelenAdetAktif" min="0" [max]="panelUrun()!.kalan" />
         @if (panelTip() === 'Tam Geldi') {
-          <small class="text-muted">Otomatik: Kalan miktar kadar tamamlanacak</small>
+          <small class="text-muted">Otomatik: Grid sevk miktarı kadar teslim alınacak</small>
         }
       </div>
 
@@ -322,6 +328,11 @@
       <!-- Kaydet -->
       <div class="d-flex gap-2">
         <button class="btn btn-outline flex-grow-1" (click)="closePanel()">İptal</button>
+        @if (panelUrun()?.ucKKarsilamaTipiMetni !== 'Bekliyor') {
+          <button class="btn btn-outline-danger" (click)="durumSifirla()" [disabled]="panelSaving()" title="3K karşılama durumunu sıfırla (Bekliyor'a döndür)">
+            <i class="ri-arrow-go-back-line me-1"></i>Geri Al
+          </button>
+        }
         <button class="btn btn-save flex-grow-1" (click)="savePanel()" [disabled]="panelSaving()">
           @if (panelSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
           <i class="ri-save-line me-1"></i>Kaydet
@@ -336,12 +347,12 @@
   <div class="modal-overlay" (click)="closeTopluTamGeldi()">
     <div class="modal-box" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h5 class="fw-semibold mb-0"><i class="ri-check-double-line me-2 text-success"></i>Toplu Tam Geldi</h5>
+        <h5 class="fw-semibold mb-0"><i class="ri-check-double-line me-2 text-success"></i>Toplu Sevk Adeti Tam Geldi</h5>
         <button class="btn btn-sm border-0" (click)="closeTopluTamGeldi()"><i class="ri-close-line fs-5"></i></button>
       </div>
       <div class="modal-body">
-        <p class="mb-3"><strong>{{ selectionCount }}</strong> ürün "Tam Geldi" olarak işaretlenecek.</p>
-        <p class="text-muted small mb-3">Grid iptal, trafo sevk veya henüz sevk edilmemiş ürünler otomatik atlanır.</p>
+        <p class="mb-3"><strong>{{ selectionCount }}</strong> ürün "Sevk Adeti Tam Geldi" olarak işaretlenecek.</p>
+        <p class="text-muted small mb-3">Grid iptal, trafo sevk veya henüz sevk edilmemiş ürünler otomatik atlanır. Her ürün için Grid sevk miktarı kadar teslim alınacaktır.</p>
         <div class="mb-3">
           <label class="form-label fw-semibold">Açıklama (Opsiyonel)</label>
           <textarea class="form-control" rows="2" placeholder="Toplu işlem açıklaması..." [ngModel]="topluAciklama()" (ngModelChange)="topluAciklama.set($event)"></textarea>

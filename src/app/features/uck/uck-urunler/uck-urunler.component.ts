@@ -14,14 +14,14 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
-import { UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, ProjeDto, GridUrunDto, StokKaydiDto } from '../../../shared/models/index';
+import { UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, ProjeDropdownDto, GridUrunDto, StokKaydiDto } from '../../../shared/models/index';
 import { UcKDurum, GridSevkDurum, GridDurum } from '../../../core/constants/enums';
 
 interface KarsilamaTipi { id: number; value: string; label: string; color: string; bgClass: string; }
 
 const KARSILAMA_TIPLERI: KarsilamaTipi[] = [
-  { id: UcKDurum.TamGeldi, value: 'Tam Geldi', label: 'TAM GELDİ', color: '#25B003', bgClass: 'row-tam-geldi' },
-  { id: UcKDurum.EksikGeldi, value: 'Eksik Geldi', label: 'EKSİK GELDİ', color: '#FD5812', bgClass: 'row-eksik-geldi' },
+  { id: UcKDurum.TamGeldi, value: 'Tam Geldi', label: 'SEVK ADETİ TAM GELDİ', color: '#25B003', bgClass: 'row-tam-geldi' },
+  { id: UcKDurum.EksikGeldi, value: 'Eksik Geldi', label: 'SEVK ADETİ EKSİK GELDİ', color: '#FD5812', bgClass: 'row-eksik-geldi' },
   { id: UcKDurum.ProjedenKarsilandi, value: 'Projeden Karşılandı', label: 'PROJEDEN KARŞILANDI', color: '#3584FC', bgClass: 'row-projeden' },
   { id: UcKDurum.StoktanKarsilandi, value: 'Stoktan Karşılandı', label: 'STOKTAN KARŞILANDI', color: '#9C27B0', bgClass: 'row-stoktan' },
   { id: UcKDurum.TedarikcidenGeldi, value: 'Tedarikçiden Geldi', label: 'TEDARİKÇİDEN GELDİ', color: '#1B7D3A', bgClass: 'row-tedarikci' },
@@ -81,7 +81,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
 
   // Proje ve Kaynak Ürün Dropdown State
-  projeler = signal<ProjeDto[]>([]);
+  projeler = signal<ProjeDropdownDto[]>([]);
   kaynakUrunler = signal<GridUrunDto[]>([]);
 
   isProjeDropdownOpen = signal(false);
@@ -136,7 +136,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   toplamUrun = computed(() => this.urunler().length);
   tamGeldi = computed(() => this.urunler().filter(u => u.ucKKarsilamaTipiMetni === 'Tam Geldi').length);
   eksikGeldi = computed(() => this.urunler().filter(u => u.ucKKarsilamaTipiMetni === 'Eksik Geldi').length);
-  tamamlanan = computed(() => this.urunler().filter(u => u.kalan === 0 && u.ucKKarsilamaTipiMetni !== 'Bekliyor').length);
+  tamamlanan = computed(() => this.urunler().filter(u => u.kalan === 0).length);
   kalanlar = computed(() => this.urunler().filter(u => u.kalan > 0).length);
   get hasSelection(): boolean { return this.selectedIds().size > 0; }
   get selectionCount(): number { return this.selectedIds().size; }
@@ -176,7 +176,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     );
 
     // Projeler dropdown'ı için projeleri çek
-    this.projeService.getProjeListesi().subscribe(res => {
+    // Hafif dropdown endpoint — Include yok, sadece Id/ProjeNo/Musteri
+    this.projeService.getProjeDropdownListesi().subscribe(res => {
       if (res.isSuccess && res.value) {
         this.projeler.set(res.value);
       }
@@ -194,7 +195,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   loadStokDropdownList() {
     // 3K Dropdown'u için büyük bir sayfa boyutu ile aktif stokları çek
-    this.stokService.getStokListesi(undefined, 1, 10000).subscribe((res: any) => {
+    this.stokService.getStokListesi(undefined, 1, 500).subscribe((res: any) => {
       if (res.isSuccess && res.value) {
         // value is PaginatedList due to recent changes
         const m = res.value.items || res.value;
@@ -300,8 +301,12 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
     switch (tip) {
       case 'Tam Geldi':
+        // KURAL 1: Backend GridSevkMiktari kadar otomatik alacak, UI sadece gösterir
+        this.panelGelenAdet.set(0);
+        this.panelKaynakHedef.set('');
+        break;
       case 'Gelmedi':
-        this.panelGelenAdet.set(0); // backend handles it
+        this.panelGelenAdet.set(0);
         this.panelKaynakHedef.set('');
         break;
       case 'Eksik Geldi':
@@ -410,7 +415,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     const tip = this.panelTip();
     let uyari = '';
     switch (tip) {
-      case 'Tam Geldi': uyari = 'EKSİKSİZ TAM GELDİ'; break;
+      case 'Tam Geldi': uyari = 'SANDIK İÇERİĞİ TAM — SEVK MİKTARI KADAR TESLİM ALINACAK'; break;
       case 'Eksik Geldi': uyari = 'EKSİK GELDİ MİKTAR GİRİN'; break;
       case 'Projeden Karşılandı': uyari = 'LÜTFEN BİR PROJE VE ÜRÜN SEÇİNİZ'; break;
       case 'Stoktan Karşılandı': uyari = 'DEPO STOĞUNDAN KARŞILANACAKTIR'; break;
@@ -466,17 +471,13 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     return this.panelTip() === 'Hatalı Ürün';
   }
 
+  // KURAL 3 (Dumb UI): Kalan miktar backend'den gelir, frontend hesaplama yapmaz.
+  // Panel açıkken de backend'in son hesapladığı değer gösterilir.
+  // Kayıt sonrası loadUrunler() ile güncel değer çekilir.
   get panelKalan(): number {
     const u = this.panelUrun();
     if (!u) return 0;
-    const tip = this.panelTip();
-    if (tip === 'Gelmedi' || tip === 'Geri Gönderildi') return u.kalan;
-    if (tip === 'Tam Geldi') return 0;
-
-    // Dinamik hesap (Mevcut kalan - bu ekranda girilen adet)
-    // HataliUrun kalan'dan düşürülür mü? Normalde "hatalı ürün geldiğinde kalan 0 ASLA yapılmamalı". Ancak dinamik textbox için.
-    // Şimdilik kümülatif kalandan düşelim, zaten backend'de Kalan=0 olursa bile HataliMiktar > 0 ise KalanMiktar=1 yapılıyor.
-    return Math.max(0, u.kalan - this.panelGelenAdet());
+    return u.kalan;
   }
 
   validatePanel(): string | null {
@@ -552,9 +553,9 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     }
     if (tip === 'Geri Gönderildi' && !this.panelGeriGonderilmeSebebi()) return 'Geri gönderilme sebebi seçilmelidir.';
 
+    // KURAL 3 (Dumb UI): Overflow kontrolü backend'de yapılır.
+    // Frontend sadece basit validasyonları (boş alan kontrolü) yapar.
     if (this.panelGelenAdet() > u.kalan && tip !== 'Tam Geldi') return 'Gelen adet kalandan büyük olamaz.';
-    if (this.panelGelenAdet() + u.gelenMiktar + (u.karsilananMiktar || 0) > u.istenenAdet && tip !== 'Tam Geldi')
-      return 'Toplam tamamlanan adet, çeki miktarını aşamaz.';
 
     return null;
   }
@@ -603,6 +604,42 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
           this.loadUrunler();
         } else {
           const msg = res.error ?? 'Kayıt başarısız.';
+          this.panelError.set(msg);
+          this.toast.error(msg);
+        }
+      },
+      error: () => {
+        this.panelSaving.set(false);
+        this.panelError.set('Bir hata oluştu.');
+        this.toast.error('Sunucu ile iletişim kurulamadı.');
+      },
+    });
+  }
+
+  // ===== Durum Sıfırlama (Geri Alma) =====
+  durumSifirla() {
+    const u = this.panelUrun();
+    if (!u) return;
+
+    if (!confirm(`"${u.aciklama}" ürününün 3K karşılama durumunu sıfırlamak istediğinize emin misiniz?\n\nGelenMiktar, StokKarsilanan, ProjeKarsilanan vb. tüm 3K alanları sıfırlanacak ve ürün "Bekliyor" durumuna dönecektir.\n\nBu işlem geri alınamaz.`))
+      return;
+
+    this.panelSaving.set(true);
+    this.panelError.set('');
+
+    this.uckService.durumSifirla({
+      cekiSatiriId: u.cekiSatiriId,
+      projeId: this.projeId(),
+    }).subscribe({
+      next: (res) => {
+        this.panelSaving.set(false);
+        if (res.isSuccess) {
+          this.toast.success('3K durumu başarıyla sıfırlandı.');
+          this.closePanel();
+          this.loadUrunler();
+          this.uckService.notifyUckUpdated();
+        } else {
+          const msg = res.error ?? 'Sıfırlama başarısız.';
           this.panelError.set(msg);
           this.toast.error(msg);
         }

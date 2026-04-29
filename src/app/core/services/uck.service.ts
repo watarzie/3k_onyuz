@@ -2,12 +2,13 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto } from '../../shared/models/index';
+import { ApiResult, UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, UcKDurumSifirlaDto } from '../../shared/models/index';
 
 /**
  * UcKController:
  *  GET  /api/uck/{projeId}/urunler
  *  PUT  /api/uck/durum-guncelle
+ *  PUT  /api/uck/durum-sifirla
  *  POST /api/uck/toplu-tam-geldi
  */
 @Injectable({ providedIn: 'root' })
@@ -37,6 +38,10 @@ export class UcKService {
 
   durumGuncelle(dto: UcKDurumGuncelleDto): Observable<ApiResult<unknown>> {
     return this.api.put<unknown>(API.UCK.DURUM_GUNCELLE, dto);
+  }
+
+  durumSifirla(dto: UcKDurumSifirlaDto): Observable<ApiResult<unknown>> {
+    return this.api.put<unknown>(API.UCK.DURUM_SIFIRLA, dto);
   }
 
   topluTamGeldi(dto: TopluTamGeldiDto): Observable<ApiResult<unknown>> {
