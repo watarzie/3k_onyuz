@@ -1,19 +1,19 @@
-﻿<div class="page-title-area mb-4">
+<div class="page-title-area mb-4">
   <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
     <div>
-      <h2 class="fw-bold mb-1">{{ 'MENU.DASHBOARD' | translate }}</h2>
+      <h2 class="fw-bold mb-1">ANA KONTROL PANELİ</h2>
       <app-breadcrumb [items]="breadcrumb" />
     </div>
   </div>
 </div>
 
-<!-- Stat Cards -->
+<!-- ===== STAT CARDS ===== -->
 <div class="row g-3 mb-4">
   <div class="col-xl col-sm-6">
     <app-stat-card [value]="toplamProje()" [label]="'LABELS.TOPLAM_PROJE' | translate" icon="ri-folder-line" color="primary" />
   </div>
   <div class="col-xl col-sm-6">
-    <app-stat-card [value]="aktifProje()" [label]="'LABELS.AKTIF_PROJELER' | translate" icon="ri-folder-open-line" color="info" />
+    <app-stat-card [value]="aktifProje()" label="Hazırlanan Projeler" icon="ri-folder-open-line" color="info" />
   </div>
   <div class="col-xl col-sm-6">
     <app-stat-card [value]="toplamSandik()" [label]="'LABELS.TOPLAM_SANDIK_SAYISI' | translate" icon="ri-archive-line" color="success" />
@@ -26,54 +26,274 @@
   </div>
 </div>
 
-<!-- Projeler Tablosu -->
-<div class="trezo-card border-0 shadow-none">
-  <div class="card-header d-flex align-items-center justify-content-between">
-    <h5 class="fw-semibold mb-0">{{ 'LABELS.PROJELER' | translate }}</h5>
-    <button class="btn btn-sm btn-outline-primary" routerLink="/projeler">
-      {{ 'ACTIONS.YENI_PROJE_EKLE' | translate }}
-    </button>
-  </div>
-  <div class="card-body p-0">
-    @if (loading()) {
-      <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
-    } @else if (projeler().length === 0) {
-      <div class="text-center py-5 text-muted">{{ 'MESSAGES.NO_DATA' | translate }}</div>
-    } @else {
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead>
-            <tr>
-              <th>{{ 'LABELS.PROJE_NO' | translate }}</th>
-              <th>{{ 'LABELS.TOPLAM_SANDIK' | translate }}</th>
-              <th>{{ 'LABELS.LOKASYON' | translate }}</th>
-              <th>{{ 'LABELS.durumMetni' | translate }}</th>
-              <th>{{ 'LABELS.TAMAMLANMA' | translate }}</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (p of projeler(); track p.id) {
-              <tr>
-                <td class="fw-semibold">{{ p.projeNo }}</td>
-                <td>{{ p.sandikSayisi }}</td>
-                <td>{{ p.lokasyon ?? '-' }}</td>
-                <td><app-status-badge [status]="p.durumMetni" [label]="p.durumMetni" /></td>
-                <td>
-                  <div class="d-flex align-items-center gap-2">
-                    <div class="progress flex-grow-1" style="height: 6px;">
-                      <div class="progress-bar bg-success" [style.width.%]="getTamamlanmaYuzdesi(p)"></div>
-                    </div>
-                    <small class="fw-semibold">{{ getTamamlanmaYuzdesi(p) }}%</small>
-                  </div>
-                </td>
-                <td>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+<!-- ===== ROW 2: Projeler + Sağ Panel ===== -->
+<div class="row g-3 mb-4">
+
+  <!-- Projeler Tablosu -->
+  <div class="col-xl-8">
+    <div class="dash-card h-100">
+      <div class="dash-card-header">
+        <h5 class="fw-semibold mb-0"><i class="ri-folder-chart-line me-2 text-primary"></i>Projeler</h5>
+        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" routerLink="/projeler">
+          <i class="ri-add-line me-1"></i> Yeni Proje Ekle
+        </button>
       </div>
-    }
+      <div class="dash-card-body p-0">
+        @if (loading()) {
+          <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
+        } @else if (projeler().length === 0) {
+          <div class="text-center py-5 text-muted">Henüz proje bulunmuyor.</div>
+        } @else {
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Proje No</th>
+                  <th>Toplam Sandık</th>
+                  <th>Lokasyon</th>
+                  <th>Durum</th>
+                  <th>Tamamlanma</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of pagedProjeler(); track p.id) {
+                  <tr>
+                    <td class="fw-semibold">
+                      <span class="proje-dot" [style.background]="getProgressColor(getTamamlanmaYuzdesi(p))"></span>
+                      {{ p.projeNo }}
+                    </td>
+                    <td>{{ p.sandikSayisi }}</td>
+                    <td><span class="badge bg-soft-secondary text-secondary rounded-pill">{{ p.lokasyon ?? '-' }}</span></td>
+                    <td><app-status-badge [status]="p.durumMetni" [label]="p.durumMetni" /></td>
+                    <td style="min-width: 140px;">
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="progress flex-grow-1" style="height: 6px;">
+                          <div class="progress-bar" [style.width.%]="getTamamlanmaYuzdesi(p)" [style.background]="getProgressColor(getTamamlanmaYuzdesi(p))"></div>
+                        </div>
+                        <small class="fw-bold" [style.color]="getProgressColor(getTamamlanmaYuzdesi(p))">{{ getTamamlanmaYuzdesi(p) }}%</small>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <!-- Pagination -->
+          <div class="dash-card-footer">
+            <span class="text-muted small">Sayfa {{ projelerPage() }} / {{ projelerSayfaSayisi() }}</span>
+            <span class="text-muted small ms-3">{{ (projelerPage()-1)*projelerPageSize + 1 }}-{{ projelerPage() * projelerPageSize > projelerToplam() ? projelerToplam() : projelerPage() * projelerPageSize }} arası toplam {{ projelerToplam() }} kayıttan</span>
+            <div class="ms-auto d-flex gap-1">
+              <button class="btn btn-sm btn-light" (click)="projelerPrev()" [disabled]="projelerPage() === 1"><i class="ri-arrow-left-s-line"></i></button>
+              <button class="btn btn-sm btn-light" (click)="projelerNext()" [disabled]="projelerPage() === projelerSayfaSayisi()"><i class="ri-arrow-right-s-line"></i></button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Sağ Panel: Eksik Listesi + Proje Özeti -->
+  <div class="col-xl-4">
+    <!-- Eksik Ürünler -->
+    <div class="dash-card mb-3">
+      <div class="dash-card-header">
+        <h6 class="fw-semibold mb-0"><i class="ri-error-warning-line me-2 text-danger"></i>Kritik Eksikler</h6>
+      </div>
+      <div class="dash-card-body p-0">
+        @if (kritikProjeler().length === 0) {
+          <div class="text-center py-4 text-muted small">Eksik proje yok 🎉</div>
+        } @else {
+          <div class="kritik-list">
+            @for (k of kritikProjeler(); track k.projeNo) {
+              <div class="kritik-item">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="kritik-badge">{{ k.sandik }}</span>
+                  <div>
+                    <div class="fw-semibold small">{{ k.projeNo }}</div>
+                    <div class="text-muted" style="font-size: 11px;">{{ k.toplam }} üründen {{ k.eksik }} eksik</div>
+                  </div>
+                </div>
+                <span class="badge bg-danger bg-opacity-10 text-danger fw-bold">{{ k.eksik }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Proje Özeti -->
+    <div class="dash-card">
+      <div class="dash-card-header">
+        <h6 class="fw-semibold mb-0"><i class="ri-pie-chart-line me-2 text-primary"></i>Proje Özeti</h6>
+      </div>
+      <div class="dash-card-body">
+        <div class="ozet-row">
+          <div class="ozet-item">
+            <div class="ozet-number text-primary">{{ aktifProje() }}</div>
+            <div class="ozet-label">Hazırlanıyor</div>
+          </div>
+          <div class="ozet-item">
+            <div class="ozet-number text-success">{{ sevkEdilen() }}</div>
+            <div class="ozet-label">Sevk Edilen</div>
+          </div>
+          <div class="ozet-item">
+            <div class="ozet-number text-warning">{{ beklemede() }}</div>
+            <div class="ozet-label">Beklemede</div>
+          </div>
+          <div class="ozet-item">
+            <div class="ozet-number text-info">{{ tamamlanan() }}</div>
+            <div class="ozet-label">Tamamlanan</div>
+          </div>
+        </div>
+        <div class="mt-3">
+          <div class="mini-progress-row">
+            <span class="small text-muted">Durum Dağılımı</span>
+            <div class="progress" style="height: 8px;">
+              @if (toplamProje() > 0) {
+                <div class="progress-bar bg-primary" [style.width.%]="(aktifProje() / toplamProje()) * 100"></div>
+                <div class="progress-bar bg-success" [style.width.%]="(sevkEdilen() / toplamProje()) * 100"></div>
+                <div class="progress-bar bg-warning" [style.width.%]="(beklemede() / toplamProje()) * 100"></div>
+                <div class="progress-bar bg-info" [style.width.%]="(tamamlanan() / toplamProje()) * 100"></div>
+              }
+            </div>
+            <div class="d-flex gap-3 mt-2 flex-wrap">
+              <span class="mini-legend"><span class="legend-dot bg-primary"></span> Hazırlanıyor</span>
+              <span class="mini-legend"><span class="legend-dot bg-success"></span> Sevk</span>
+              <span class="mini-legend"><span class="legend-dot bg-warning"></span> Beklemede</span>
+              <span class="mini-legend"><span class="legend-dot bg-info"></span> Tamamlanan</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ROW 3: Depo Dağılım + Sandık Tipleri + Proje Eksik Sıralaması ===== -->
+<div class="row g-3 mb-4">
+
+  <!-- Depo Dağılım Kartı -->
+  <div class="col-xl-4">
+    <div class="dash-card h-100">
+      <div class="dash-card-header">
+        <h6 class="fw-semibold mb-0"><i class="ri-map-pin-line me-2 text-success"></i>Depo Dağılım Grafiği</h6>
+      </div>
+      <div class="dash-card-body">
+        <div class="depo-chart">
+          <div class="depo-donut">
+            <svg viewBox="0 0 36 36" class="donut-svg">
+              @if (toplamSandik() > 0) {
+                <!-- 3K -->
+                <circle class="donut-segment" cx="18" cy="18" r="15.9"
+                  [attr.stroke-dasharray]="(depo3K() / toplamSandik()) * 100 + ' ' + (100 - (depo3K() / toplamSandik()) * 100)"
+                  stroke-dashoffset="25" stroke="#3b82f6" />
+                <!-- Seymen -->
+                <circle class="donut-segment" cx="18" cy="18" r="15.9"
+                  [attr.stroke-dasharray]="(depoSeymen() / toplamSandik()) * 100 + ' ' + (100 - (depoSeymen() / toplamSandik()) * 100)"
+                  [attr.stroke-dashoffset]="25 - (depo3K() / toplamSandik()) * 100" stroke="#22c55e" />
+                <!-- Grid -->
+                <circle class="donut-segment" cx="18" cy="18" r="15.9"
+                  [attr.stroke-dasharray]="(depoGrid() / toplamSandik()) * 100 + ' ' + (100 - (depoGrid() / toplamSandik()) * 100)"
+                  [attr.stroke-dashoffset]="25 - (depo3K() / toplamSandik()) * 100 - (depoSeymen() / toplamSandik()) * 100" stroke="#f59e0b" />
+              }
+            </svg>
+            <div class="donut-center">
+              <span class="donut-total">{{ toplamSandik() }}</span>
+              <span class="donut-label">Toplam</span>
+            </div>
+          </div>
+          <div class="depo-legend">
+            <div class="depo-legend-item"><span class="legend-dot" style="background: #3b82f6;"></span> 3K <strong>{{ depo3K() }}</strong></div>
+            <div class="depo-legend-item"><span class="legend-dot" style="background: #22c55e;"></span> Seymen <strong>{{ depoSeymen() }}</strong></div>
+            <div class="depo-legend-item"><span class="legend-dot" style="background: #f59e0b;"></span> GRID <strong>{{ depoGrid() }}</strong></div>
+            <div class="depo-legend-item"><span class="legend-dot" style="background: #94a3b8;"></span> Diğer <strong>{{ depoDiger() }}</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Yedek & Saha Sandık Grafiği -->
+  <div class="col-xl-4">
+    <div class="dash-card h-100">
+      <div class="dash-card-header">
+        <h6 class="fw-semibold mb-0"><i class="ri-bar-chart-box-line me-2 text-info"></i>Sandık Tip Dağılımı</h6>
+      </div>
+      <div class="dash-card-body">
+        <div class="tip-bars">
+          <!-- Normal -->
+          <div class="tip-bar-row">
+            <div class="tip-bar-label"><i class="ri-folder-line text-primary me-1"></i> Normal</div>
+            <div class="tip-bar-track">
+              <div class="tip-bar-fill bg-primary" [style.width.%]="toplamSandik() > 0 ? (normalSandik() / toplamSandik()) * 100 : 0"></div>
+            </div>
+            <div class="tip-bar-val">{{ normalSandik() }}</div>
+          </div>
+          <!-- Saha -->
+          <div class="tip-bar-row">
+            <div class="tip-bar-label"><i class="ri-map-pin-line text-success me-1"></i> Saha</div>
+            <div class="tip-bar-track">
+              <div class="tip-bar-fill bg-success" [style.width.%]="toplamSandik() > 0 ? (sahaSandik() / toplamSandik()) * 100 : 0"></div>
+            </div>
+            <div class="tip-bar-val">{{ sahaSandik() }}</div>
+          </div>
+          <!-- Yedek -->
+          <div class="tip-bar-row">
+            <div class="tip-bar-label"><i class="ri-shield-star-line text-warning me-1"></i> Yedek</div>
+            <div class="tip-bar-track">
+              <div class="tip-bar-fill bg-warning" [style.width.%]="toplamSandik() > 0 ? (yedekSandik() / toplamSandik()) * 100 : 0"></div>
+            </div>
+            <div class="tip-bar-val">{{ yedekSandik() }}</div>
+          </div>
+        </div>
+
+        <!-- Tamamlanma Yüzdeleri -->
+        <div class="yuzde-circles mt-4">
+          <div class="yuzde-item">
+            <div class="yuzde-circle" [style.background]="'conic-gradient(#22c55e ' + sahaYuzde() * 3.6 + 'deg, #e2e8f0 0deg)'">
+              <span>{{ sahaYuzde() }}%</span>
+            </div>
+            <div class="yuzde-label">Saha Tamamlanma</div>
+          </div>
+          <div class="yuzde-item">
+            <div class="yuzde-circle" [style.background]="'conic-gradient(#f59e0b ' + yedekYuzde() * 3.6 + 'deg, #e2e8f0 0deg)'">
+              <span>{{ yedekYuzde() }}%</span>
+            </div>
+            <div class="yuzde-label">Yedek Tamamlanma</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- En Çok Eksik Olan Projeler -->
+  <div class="col-xl-4">
+    <div class="dash-card h-100">
+      <div class="dash-card-header">
+        <h6 class="fw-semibold mb-0"><i class="ri-bar-chart-horizontal-line me-2 text-danger"></i>Eksik Sıralaması</h6>
+      </div>
+      <div class="dash-card-body">
+        @if (topEksikProje().length === 0) {
+          <div class="text-center py-4 text-muted small">Eksik yok 🎉</div>
+        } @else {
+          <div class="eksik-ranking">
+            @for (e of topEksikProje(); track e.projeNo; let i = $index) {
+              <div class="eksik-rank-item">
+                <span class="rank-num" [ngClass]="{'rank-1': i===0, 'rank-2': i===1, 'rank-3': i===2}">{{ i + 1 }}</span>
+                <div class="flex-grow-1">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-semibold small">{{ e.projeNo }}</span>
+                    <span class="badge bg-danger bg-opacity-10 text-danger small">{{ e.eksikAdet }} eksik</span>
+                  </div>
+                  <div class="progress" style="height: 4px;">
+                    <div class="progress-bar bg-danger" [style.width.%]="e.eksikYuzde"></div>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
   </div>
 </div>

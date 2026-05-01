@@ -142,7 +142,7 @@
                 </td>
                 @if (isSandikMode() || (!isSandikMode() && canSevkEt())) {
                   <td>
-                    <div class="d-flex gap-1">
+                    <div class="d-flex gap-1 flex-wrap">
                       @if (isSandikMode()) {
                         @if (canSeeGrid() && !isSahaYonetimi() && !isYedekYonetimi()) {
                           <a [routerLink]="['/grid', p.id]" class="btn btn-sm btn-action-grid" title="Grid Modülü">
@@ -154,12 +154,21 @@
                             <i class="ri-archive-stack-line me-1"></i>3K
                           </a>
                         }
+                        @if (!isSahaYonetimi() && !isYedekYonetimi()) {
+                          <button class="btn btn-sm btn-danger" (click)="indirEksikUrunlerPdf(p)" [disabled]="downloadingEksikPdf() === p.id" title="Eksik Ürünler Raporu">
+                            @if (downloadingEksikPdf() === p.id) {
+                              <span class="spinner-border spinner-border-sm"></span>
+                            } @else {
+                              <i class="ri-file-warning-line me-1"></i>Eksik Raporu
+                            }
+                          </button>
+                        }
                         @if (isSahaYonetimi() || isYedekYonetimi()) {
-                          <button class="btn btn-sm btn-outline-primary" (click)="indirSahaProjePdf(p.id)" [disabled]="downloadingPdf() === p.id" title="Toplu PDF Raporu">
+                          <button class="btn btn-sm btn-danger" (click)="indirSahaProjePdf(p)" [disabled]="downloadingPdf() === p.id" [title]="isSahaYonetimi() ? 'Saha Raporu' : 'Yedek Raporu'">
                             @if (downloadingPdf() === p.id) {
                               <span class="spinner-border spinner-border-sm"></span>
                             } @else {
-                              <i class="ri-file-pdf-2-line"></i>
+                              <i class="ri-file-pdf-2-line me-1"></i>{{ isYedekYonetimi() ? 'Yedek Raporu' : 'Saha Raporu' }}
                             }
                           </button>
                           <a [routerLink]="[routePrefix, p.id]" class="btn btn-sm btn-outline-primary" title="Sandıklar">
@@ -174,10 +183,10 @@
                             <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
                           </button>
                         } @else {
-                          <button class="btn btn-sm btn-outline-primary" (click)="openSevkTarihiModal(p)" title="Sevk Tarihi Gir">
-                            <i class="ri-calendar-event-line"></i>
+                          <button class="btn btn-sm btn-warning" (click)="openSevkTarihiModal(p)" title="Planlanan Sevk Tarihi Gir">
+                            <i class="ri-calendar-event-line me-1"></i>Planlanan Sevk Tarihi
                           </button>
-                          <button class="btn btn-sm btn-warning" (click)="sevkEt(p)" title="Projeyi Sevk Et">
+                          <button class="btn btn-sm btn-warning" (click)="openSevkEtModal(p)" title="Projeyi Sevk Et">
                             <i class="ri-truck-line me-1"></i> Sevk Et
                           </button>
                         }
@@ -196,26 +205,30 @@
 
 <!-- ===== Sevk Tarihi Güncelle Modal ===== -->
 @if (showSevkTarihiModal()) {
-  <div class="modal-backdrop fade show"></div>
-  <div class="modal fade show d-block" tabindex="-1">
+  <div class="modal-backdrop fade show" (click)="closeSevkTarihiModal()"></div>
+  <div class="modal d-block fade show" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title"><i class="ri-calendar-event-line me-2"></i>Sevk Tarihi Gir</h5>
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-warning text-dark border-0">
+          <h5 class="modal-title"><i class="ri-calendar-event-line me-2"></i> Planlanan Sevk Tarihi</h5>
           <button type="button" class="btn-close" (click)="closeSevkTarihiModal()"></button>
         </div>
         <div class="modal-body">
-          <div class="mb-3">
+          <p class="mb-3">
+            <strong>{{ sevkTarihiProje()?.projeNo }}</strong> numaralı proje için planlanan sevk tarihini giriniz.
+          </p>
+          <div class="mb-0">
             <label class="form-label fw-semibold">Planlanan Sevk Tarihi</label>
-            <input type="date" class="form-control" [ngModel]="guncelSevkTarihi()" (ngModelChange)="guncelSevkTarihi.set($event)" />
+            <input type="date" class="form-control"
+                   [ngModel]="guncelSevkTarihi()" (ngModelChange)="guncelSevkTarihi.set($event)" />
             <small class="text-muted d-block mt-1">Bu alan opsiyoneldir. Proje fiilen sevk edildiğinde tarih otomatik olarak güncellenir.</small>
           </div>
         </div>
-        <div class="modal-footer d-flex gap-2">
-          <button class="btn btn-outline flex-grow-1" (click)="closeSevkTarihiModal()" [disabled]="sevkTarihiSaving()">İptal</button>
-          <button class="btn btn-primary-gradient flex-grow-1" (click)="kaydetSevkTarihi()" [disabled]="sevkTarihiSaving()">
-            @if (sevkTarihiSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-            Kaydet
+        <div class="modal-footer border-0 d-flex gap-2">
+          <button class="btn btn-light flex-grow-1" (click)="closeSevkTarihiModal()" [disabled]="sevkTarihiSaving()">Vazgeç</button>
+          <button class="btn btn-warning flex-grow-1" (click)="kaydetSevkTarihi()" [disabled]="sevkTarihiSaving()">
+            @if (sevkTarihiSaving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+            <i class="ri-save-line me-1"></i> Kaydet
           </button>
         </div>
       </div>
@@ -314,6 +327,44 @@
               <span class="spinner-border spinner-border-sm me-2"></span>
             }
             Oluştur
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ===== SEVK ET MODAL ===== -->
+@if (showSevkEtModal()) {
+  <div class="modal-backdrop fade show" (click)="closeSevkEtModal()"></div>
+  <div class="modal d-block fade show" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-warning text-dark border-0">
+          <h5 class="modal-title"><i class="ri-truck-line me-2"></i> Projeyi Sevk Et</h5>
+          <button type="button" class="btn-close" (click)="closeSevkEtModal()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-warning py-2 mb-3">
+            <i class="ri-alert-line me-1"></i> Bu işlem projeyi kilitler. Proje üzerinde hiçbir modülde değişiklik yapılamaz.
+          </div>
+          <p class="mb-3">
+            <strong>{{ sevkEtProje()?.projeNo }}</strong> numaralı projeyi sevk etmek istediğinize emin misiniz?
+          </p>
+          <div class="mb-0">
+            <label class="form-label fw-semibold">Sevk Tarihi <span class="text-danger">*</span></label>
+            <input type="date" class="form-control"
+                   [value]="sevkEtTarihi()"
+                   (input)="sevkEtTarihi.set($any($event.target).value)" />
+          </div>
+        </div>
+        <div class="modal-footer border-0 d-flex gap-2">
+          <button class="btn btn-light flex-grow-1" (click)="closeSevkEtModal()">Vazgeç</button>
+          <button class="btn btn-warning flex-grow-1" (click)="sevkEtOnayla()" [disabled]="sevkEtSaving()">
+            @if (sevkEtSaving()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>
+            }
+            <i class="ri-truck-line me-1"></i> Evet, Sevk Et
           </button>
         </div>
       </div>

@@ -1,10 +1,18 @@
-﻿<div class="page-container fadeIn">
+<div class="page-container fadeIn">
   <div class="row mb-4 align-items-center">
     <div class="col-md-6">
       <h3 class="fw-bold text-dark mb-2">Stok Yönetimi</h3>
       <app-breadcrumb [items]="breadcrumb"></app-breadcrumb>
     </div>
-    <div class="col-md-6 text-end">
+    <div class="col-md-6 text-end d-flex gap-2 justify-content-end">
+      <button class="btn btn-danger d-inline-flex align-items-center gap-2" (click)="indirStokPdf()" [disabled]="downloadingPdf()">
+        @if (downloadingPdf()) {
+          <span class="spinner-border spinner-border-sm"></span>
+        } @else {
+          <i class="ri-file-pdf-2-line"></i>
+        }
+        Stok Raporu
+      </button>
       <button class="btn btn-primary d-inline-flex align-items-center gap-2" (click)="openAddModal()">
         <i class="ri-add-line"></i> Yeni Stok Ekle
       </button>

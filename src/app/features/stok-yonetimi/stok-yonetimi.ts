@@ -1,8 +1,9 @@
-﻿import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
 import { StokService } from '../../core/services/stok.service';
+import { PdfService } from '../../core/services/pdf.service';
 import { StokKaydiDto, StokKaydiOlusturDto } from '../../shared/models/index';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
 
@@ -16,11 +17,13 @@ import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcru
 export class StokYonetimi implements OnInit {
   private stokService = inject(StokService);
   private toastService = inject(ToastService);
+  private pdfService = inject(PdfService);
 
   // Veriler
   stoklar = signal<StokKaydiDto[]>([]);
   filteredStoklar = signal<StokKaydiDto[]>([]);
   loading = signal<boolean>(false);
+  downloadingPdf = signal<boolean>(false);
   searchTerm = signal<string>('');
 
   // Pagination State
@@ -189,5 +192,27 @@ export class StokYonetimi implements OnInit {
          error: () => this.toastService.error('Stok eklenirken bir ağ hatası oluştu.')
        });
     }
+  }
+
+  // ===== Stok PDF Raporu =====
+  indirStokPdf() {
+    this.downloadingPdf.set(true);
+    this.pdfService.stokPdf().subscribe({
+      next: (blob) => {
+        this.downloadingPdf.set(false);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const tarih = new Date().toISOString().split('T')[0].replace(/-/g, '');
+        a.download = `StokRaporu_${tarih}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.toastService.success('Stok raporu indirildi.');
+      },
+      error: () => {
+        this.downloadingPdf.set(false);
+        this.toastService.error('Stok raporu indirilirken bir hata oluştu.');
+      }
+    });
   }
 }

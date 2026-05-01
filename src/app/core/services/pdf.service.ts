@@ -27,4 +27,12 @@ export class PdfService {
   sahaProjePdf(projeId: number): Observable<Blob> {
     return this.api.downloadFile(API.PDF.SAHA_PROJE(projeId));
   }
+
+  eksikUrunlerPdf(projeId: number): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.EKSIK_URUNLER(projeId));
+  }
+
+  stokPdf(): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.STOK);
+  }
 }

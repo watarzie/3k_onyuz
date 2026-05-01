@@ -61,6 +61,7 @@
               <th>Sandık</th>
               <th>Grid Durumu</th>
               <th class="text-center">Gelen</th>
+              <th class="text-center">Grid Sevk</th>
               <th class="text-center">Trafo</th>
               <th class="text-center">Eksik</th>
               <th>Sevk Dur.</th>
@@ -68,7 +69,9 @@
               <th>3K Durumu</th>
               <th class="text-center">Stok K.</th>
               <th class="text-center">Proje K.</th>
+              <th class="text-center">Proje G.</th>
               <th class="text-center">Tedarikçi K.</th>
+              <th class="text-center">Geri Gön.</th>
               <th>3K Açıklama</th>
               <th class="text-center">Kalan</th>
               <th *appCanWrite style="width:50px"></th>
@@ -89,6 +92,7 @@
                   </span>
                 </td>
                 <td class="text-center">{{ u.gridGelenAdet }}</td>
+                <td class="text-center" [ngClass]="{'text-info fw-semibold': u.gridSevkMiktari && u.gridSevkMiktari > 0}">{{ u.gridSevkMiktari && u.gridSevkMiktari > 0 ? u.gridSevkMiktari : '-' }}</td>
                 <td class="text-center">{{ u.trafoSevkAdet > 0 ? u.trafoSevkAdet : '-' }}</td>
                 <td class="text-center fw-semibold" [ngClass]="{'text-danger': u.gridEksikMiktar > 0, 'text-success': u.gridEksikMiktar === 0}">
                   {{ u.gridDurumuMetni === 'Iptal' ? '-' : u.gridEksikMiktar }}
@@ -98,15 +102,23 @@
                     {{ getSevkDurumLabel(u.gridSevkDurumuMetni) }}
                   </span>
                 </td>
-                <td>
-                  @if (u.kaynakHedefProjeNo) {
-                    <span class="badge rounded-pill border fw-normal" style="background:#f1f5f9; color:#0f172a; border-color:#cbd5e1!important; font-size:11px;">
-                      <i class="ri-git-merge-line text-primary border-0 me-1"></i>
-                      {{ u.kaynakHedefProjeNo }}
-                      @if (u.ucKDurumuMetni === 'Başka Projeye Verildi') { 'ya Verildi' } @else { 'den' }
-                    </span>
-                  } @else {
-                    <span class="text-muted">-</span>
+                <td style="max-width:160px">
+                  @if (u.projeKarsilanan > 0 && u.kaynakHedefProjeNo) {
+                    <div class="d-flex align-items-center gap-1">
+                      <i class="ri-arrow-left-line text-primary"></i>
+                      <span class="text-primary fw-semibold text-truncate" [title]="'Karşılandı ← ' + u.kaynakHedefProjeNo + ' (' + u.projeKarsilanan + ' adet)'">{{ u.kaynakHedefProjeNo }}</span>
+                      <span class="badge bg-primary-subtle text-primary" style="font-size:10px">{{ u.projeKarsilanan }}</span>
+                    </div>
+                  }
+                  @if (u.projeGonderilen > 0 && u.kaynakHedefProjeNo) {
+                    <div class="d-flex align-items-center gap-1" [class.mt-1]="u.projeKarsilanan > 0">
+                      <i class="ri-arrow-right-line text-warning"></i>
+                      <span class="text-warning fw-semibold text-truncate" [title]="'Gönderildi → ' + u.kaynakHedefProjeNo + ' (' + u.projeGonderilen + ' adet)'">{{ u.kaynakHedefProjeNo }}</span>
+                      <span class="badge bg-warning-subtle text-warning" style="font-size:10px">{{ u.projeGonderilen }}</span>
+                    </div>
+                  }
+                  @if (!u.projeKarsilanan && !u.projeGonderilen) {
+                    <span class="text-muted">{{ u.kaynakHedefProjeNo ?? '-' }}</span>
                   }
                 </td>
                 <td>
@@ -116,7 +128,9 @@
                 </td>
                 <td class="text-center" [ngClass]="{'text-purple fw-semibold': u.stokKarsilanan > 0}">{{ u.stokKarsilanan > 0 ? u.stokKarsilanan : '-' }}</td>
                 <td class="text-center" [ngClass]="{'text-primary fw-semibold': u.projeKarsilanan > 0}">{{ u.projeKarsilanan > 0 ? u.projeKarsilanan : '-' }}</td>
+                <td class="text-center" [ngClass]="{'text-warning fw-semibold': u.projeGonderilen > 0}">{{ u.projeGonderilen > 0 ? u.projeGonderilen : '-' }}</td>
                 <td class="text-center" [ngClass]="{'text-success fw-semibold': u.tedarikciKarsilanan > 0}">{{ u.tedarikciKarsilanan > 0 ? u.tedarikciKarsilanan : '-' }}</td>
+                <td class="text-center" [ngClass]="{'text-danger fw-semibold': u.geriGonderilenMiktar > 0}">{{ u.geriGonderilenMiktar > 0 ? u.geriGonderilenMiktar : '-' }}</td>
                 <td>
                   @if (u.ucKAciklama) {
                     <div class="aciklama-cell">

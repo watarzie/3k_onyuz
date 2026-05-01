@@ -104,4 +104,21 @@ export class SandikService {
   urunTasi(dto: UrunTasiDto): Observable<ApiResult<unknown>> {
     return this.api.post<unknown>(API.SANDIK.URUN_TASI, dto);
   }
+
+  // ===== Silme =====
+
+  manuelUrunSil(projeId: number, cekiSatiriId?: number, sandikIcerikId?: number): Observable<ApiResult<unknown>> {
+    let url = `${API.SANDIK.MANUEL_URUN_SIL}?projeId=${projeId}`;
+    if (cekiSatiriId) url += `&cekiSatiriId=${cekiSatiriId}`;
+    if (sandikIcerikId) url += `&sandikIcerikId=${sandikIcerikId}`;
+    return this.api.delete<unknown>(url);
+  }
+
+  sandikSil(sandikId: number, projeId: number): Observable<ApiResult<unknown>> {
+    return this.api.delete<unknown>(`${API.SANDIK.SIL}?sandikId=${sandikId}&projeId=${projeId}`);
+  }
+
+  getEksikUrunlerByProje(projeId: number): Observable<ApiResult<any[]>> {
+    return this.api.get<any[]>(API.SANDIK.EKSIK_URUNLER_BY_PROJE(projeId));
+  }
 }

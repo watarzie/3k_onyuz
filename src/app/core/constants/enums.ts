@@ -26,9 +26,8 @@ export enum SandikDurum {
 
 // ===== Sandık Tipi =====
 export enum SandikTipi {
-  Proje = 1,
-  Yedek = 2,
-  Saha = 3,
+  AhsapKapali = 1,
+  KatlanirSandik = 2,
 }
 
 // ===== Depo Lokasyonu =====
@@ -61,6 +60,7 @@ export enum UrunDurum {
   TrafoSevk = 18,
   BaskaProyeVerildi = 19,
   HataliUrun = 20,
+  HataliUyumsuzGonderim = 21,
 }
 
 // ===== Grid Durumu =====
@@ -78,6 +78,7 @@ export enum GridDurum {
   TrafoSevk = 11,
   Iptal = 12,
   Sipariste = 13,
+  GridKapandi = 14,
 }
 
 // ===== 3K (UcK) Durumu =====
@@ -86,13 +87,14 @@ export enum UcKDurum {
   TamGeldi = 2,
   EksikGeldi = 3,
   Gelmedi = 4,
-  Paketlendi = 5,
+  Paketlendi = 5, // deprecated - artık "Tamamlandı"
+  Tamamlandi = 5,
   KontrolEdildi = 6,
   IadeEdildi = 7,
   ProjedenKarsilandi = 8,
   StoktanKarsilandi = 9,
   TedarikcidenGeldi = 10,
-  // BaskaProyeVerildi = 11, -- kaldırıldı
+  BaskaProyeVerildi = 11,
   GeriGonderildi = 12,
   HataliUrun = 13,
 }
@@ -109,6 +111,7 @@ export enum GeriGonderilmeSebebi {
   Tadilat = 1,
   Iptal = 2,
   ProyeGeriDonus = 3,
+  HataliUrun = 4,
 }
 
 // ===== Yetki Tipi =====
@@ -149,18 +152,38 @@ export enum Birim {
 // ===== İşlem Tipi =====
 export enum IslemTipi {
   CekiYuklendi = 1,
-  SandikOlusturuldu = 2,
-  SandikBolundu = 3,
-  SandikDegisti = 4,
-  UrunTasindi = 5,
-  FBTransferi = 6,
-  StokKullanimi = 7,
-  EksikKapatildi = 8,
-  PDFAlindi = 9,
-  MailGonderildi = 10,
-  UrunGuncellendi = 11,
-  KullaniciOlusturuldu = 12,
-  ProjeOlusturuldu = 13,
+  ProjeOlusturuldu = 2,
+  GridDurumGuncellendi = 3,
+  GridTopluSevkEdildi = 4,
+  UcKDurumGuncellendi = 5,
+  UcKTeslimAlindi = 6,
+  UcKTopluTeslimAlindi = 7,
+  ManuelUrunEklendi = 8,
+  UrunTasindi = 9,
+  UrunGuncellendi = 10,
+  UrunIptalEdildi = 11,
+  StoktanKarsilandi = 12,
+  FBDenKarsilandi = 13,
+  SandikKapatildi = 14,
+  TopluSandikKapatildi = 15,
+  FiiliSandikDegistirildi = 16,
+  SandikLokasyonGuncellendi = 17,
+  SandikOtomatikHazirlandi = 18,
+  ExcelIndirildi = 19,
+  PDFIndirildi = 20,
+  SandikOlusturuldu = 21,
+  KullaniciOlusturuldu = 22,
+  ProjeSevkEdildi = 23,
+  SandikSevkEdildi = 24,
+  SahaYedekMalzemeEklendi = 25,
+  TopluDurumGuncellendi = 26,
+  NotEklendi = 27,
+  ManuelUrunSandikEklendi = 28,
+  SandikKapandi = 29,
+  UcKDurumSifirlandi = 30,
+  GridDurumSifirlandi = 31,
+  ManuelUrunSilindi = 32,
+  SandikSilindi = 33,
 }
 
 /**
@@ -171,6 +194,8 @@ export enum IslemTipi {
 export const STATUS_BADGE_MAP: Record<string, string> = {
   // === Yeşil (Başarılı / Tamamlandı) ===
   'TamGeldi': 'badge-success',
+  'Tam Geldi': 'badge-success',
+  'Sevk Adeti Tam Geldi': 'badge-success',
   'Tamamlandi': 'badge-success',
   'Paketlendi': 'badge-success',
   'KontrolEdildi': 'badge-success',
@@ -188,6 +213,8 @@ export const STATUS_BADGE_MAP: Record<string, string> = {
 
   // === Sarı (Uyarı / Eksik) ===
   'EksikGeldi': 'badge-warning',
+  'Eksik Geldi': 'badge-warning',
+  'Sevk Adeti Eksik Geldi': 'badge-warning',
   'Eksik': 'badge-warning',
   'KismiSevkEdildi': 'badge-warning',
   'KismiGeldi': 'badge-warning',
@@ -219,5 +246,14 @@ export const STATUS_BADGE_MAP: Record<string, string> = {
   'BaskaProyeVerildi': 'badge-purple',
   'ProjedenKarsilandi': 'badge-purple',
   'StoktanKarsilandi': 'badge-purple',
+
+  // === Turuncu (Hatalı/Uyumsuz) ===
+  'HataliUyumsuzGonderim': 'badge-warning',
+
+  // === Kapanı ===
+  'Kapandi': 'badge-success',
+  'Grid Kapandı': 'badge-dark',
+  'GridKapandi': 'badge-dark',
+  'Siparişte': 'badge-purple',
 };
 

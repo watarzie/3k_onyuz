@@ -37,6 +37,7 @@ export class ProjeListesiComponent implements OnInit {
   isYedekYonetimi = signal(false);
 
   downloadingPdf = signal<number | null>(null);
+  downloadingEksikPdf = signal<number | null>(null);
 
   /**
    * Grid/3K buton gösterimi — Rol Yetki ekranından yönetilir.
@@ -64,8 +65,15 @@ export class ProjeListesiComponent implements OnInit {
   // Sevk Tarihi Güncelle Modal
   showSevkTarihiModal = signal(false);
   selectedProjeId = signal(0);
+  sevkTarihiProje = signal<ProjeDto | null>(null);
   guncelSevkTarihi = signal('');
   sevkTarihiSaving = signal(false);
+
+  // Sevk Et Modal
+  showSevkEtModal = signal(false);
+  sevkEtProje = signal<ProjeDto | null>(null);
+  sevkEtTarihi = signal('');
+  sevkEtSaving = signal(false);
 
   breadcrumb: { label: string; link?: string }[] = [
     { label: 'Ana Kontrol Paneli', link: '/dashboard' },
@@ -174,21 +182,42 @@ export class ProjeListesiComponent implements OnInit {
     return map[durum] ?? durum;
   }
 
-  indirSahaProjePdf(projeId: number) {
-    this.downloadingPdf.set(projeId);
-    this.pdfService.sahaProjePdf(projeId).subscribe({
+  indirSahaProjePdf(proje: ProjeDto) {
+    this.downloadingPdf.set(proje.id);
+    const tipStr = this.isYedekYonetimi() ? 'YedekRaporu' : 'SahaRaporu';
+    this.pdfService.sahaProjePdf(proje.id).subscribe({
       next: (blob) => {
         this.downloadingPdf.set(null);
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `SahaProje_TopluRapor_${projeId}.pdf`;
+        a.download = `${proje.projeNo}_${tipStr}.pdf`;
         a.click();
         window.URL.revokeObjectURL(url);
-        this.toastService.success('Toplu rapor başarıyla indirildi.');
+        this.toastService.success(`${tipStr} başarıyla indirildi.`);
       },
       error: () => {
         this.downloadingPdf.set(null);
+        this.toastService.error('Rapor indirilirken bir hata oluştu.');
+      }
+    });
+  }
+
+  indirEksikUrunlerPdf(proje: ProjeDto) {
+    this.downloadingEksikPdf.set(proje.id);
+    this.pdfService.eksikUrunlerPdf(proje.id).subscribe({
+      next: (blob) => {
+        this.downloadingEksikPdf.set(null);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${proje.projeNo}_EksikRaporu.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.toastService.success('Eksik ürünler raporu indirildi.');
+      },
+      error: () => {
+        this.downloadingEksikPdf.set(null);
         this.toastService.error('Rapor indirilirken bir hata oluştu.');
       }
     });
@@ -281,6 +310,7 @@ export class ProjeListesiComponent implements OnInit {
   
   openSevkTarihiModal(proje: ProjeDto) {
     this.selectedProjeId.set(proje.id);
+    this.sevkTarihiProje.set(proje);
     this.guncelSevkTarihi.set(proje.planlananSevkTarihi ? proje.planlananSevkTarihi.substring(0, 10) : '');
     this.showSevkTarihiModal.set(true);
   }
@@ -288,6 +318,7 @@ export class ProjeListesiComponent implements OnInit {
   closeSevkTarihiModal() {
     this.showSevkTarihiModal.set(false);
     this.selectedProjeId.set(0);
+    this.sevkTarihiProje.set(null);
     this.guncelSevkTarihi.set('');
   }
 
@@ -363,31 +394,43 @@ export class ProjeListesiComponent implements OnInit {
 
   canSevkEt = computed(() => this.permissions.hasAccess('proje-sevk-et'));
 
-  async sevkEt(proje: ProjeDto) {
-    const onay = await this.confirmService.ask({
-      title: 'Projeyi Sevk Et / Kilitle',
-      message: `<strong>${proje.projeNo}</strong> numaralı projeyi sevk etmek istediğinize emin misiniz?<br><br>
-                <div class="alert alert-warning py-2 mb-0">
-                  <i class="ri-alert-line me-1"></i> Bu işlem projeyi kilitler. Proje üzerinde hiçbir modülde değişiklik yapılamaz.
-                </div>`,
-      confirmText: 'Evet, Sevk Et',
-      cancelText: 'Vazgeç',
-      type: 'warning'
-    });
+  openSevkEtModal(proje: ProjeDto) {
+    this.sevkEtProje.set(proje);
+    this.sevkEtTarihi.set(new Date().toISOString().substring(0, 10));
+    this.showSevkEtModal.set(true);
+  }
 
-    if (onay) {
-      this.projeService.sevkEt(proje.id).subscribe({
-        next: (res) => {
-          if (res.isSuccess) {
-            this.toastService.success('Proje başarıyla sevk edildi ve kilitlendi.');
-            this.loadProjeler();
-          } else {
-            this.toastService.error(res.error || 'İşlem başarısız.');
-          }
-        },
-        error: () => this.toastService.error('Sunucu hatası oluştu.')
-      });
+  closeSevkEtModal() {
+    this.showSevkEtModal.set(false);
+    this.sevkEtProje.set(null);
+    this.sevkEtTarihi.set('');
+  }
+
+  sevkEtOnayla() {
+    const proje = this.sevkEtProje();
+    if (!proje) return;
+    if (!this.sevkEtTarihi()) {
+      this.toastService.error('Sevk tarihi girilmelidir.');
+      return;
     }
+    this.sevkEtSaving.set(true);
+    const tarih = new Date(this.sevkEtTarihi()).toISOString();
+    this.projeService.sevkEt(proje.id, tarih).subscribe({
+      next: (res) => {
+        this.sevkEtSaving.set(false);
+        if (res.isSuccess) {
+          this.toastService.success('Proje başarıyla sevk edildi ve kilitlendi.');
+          this.closeSevkEtModal();
+          this.loadProjeler();
+        } else {
+          this.toastService.error(res.error || 'İşlem başarısız.');
+        }
+      },
+      error: () => {
+        this.sevkEtSaving.set(false);
+        this.toastService.error('Sunucu hatası oluştu.');
+      }
+    });
   }
 
   async kilidiAc(proje: ProjeDto) {

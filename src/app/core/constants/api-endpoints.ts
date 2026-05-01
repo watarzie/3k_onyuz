@@ -53,6 +53,9 @@ export const API = {
     URUN_TASI: `${BASE}/sandik/urun-tasi`,
     SAHA_YEDEK_MALZEME_EKLE: `${BASE}/sandik/saha-yedek-malzeme-ekle`,
     SEVK_ET: `${BASE}/sandik/sevk-et`,
+    MANUEL_URUN_SIL: `${BASE}/sandik/manuel-urun-sil`,
+    SIL: `${BASE}/sandik/sil`,
+    EKSIK_URUNLER_BY_PROJE: (projeId: number) => `${BASE}/sandik/eksik-urunler-by-proje/${projeId}`,
   },
   GRID: {
     URUNLER: (projeId: number) => `${BASE}/grid/${projeId}/urunler`,
@@ -93,6 +96,8 @@ export const API = {
     EXCEL: (projeId: number) => `${BASE}/pdf/${projeId}/excel`,
     SAHA_SANDIK: (sandikId: number) => `${BASE}/pdf/saha-sandik/${sandikId}`,
     SAHA_PROJE: (projeId: number) => `${BASE}/pdf/saha-proje/${projeId}`,
+    EKSIK_URUNLER: (projeId: number) => `${BASE}/pdf/eksik-urunler/${projeId}`,
+    STOK: `${BASE}/pdf/stok`,
   },
   LOOKUP: {
     GET: `${BASE}/lookup`,

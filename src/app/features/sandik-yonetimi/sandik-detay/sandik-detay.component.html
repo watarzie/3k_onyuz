@@ -132,6 +132,9 @@
                     <div>
                       <span class="fw-medium">{{ item.aciklama }}</span>
                       <small class="d-block text-muted">{{ item.barkodNo }}</small>
+                      @if (item.kaynakProjeNo) {
+                        <small class="d-block text-primary fw-semibold"><i class="ri-folder-line me-1"></i>{{ item.kaynakProjeNo }}</small>
+                      }
                     </div>
                   </div>
                 </td>
@@ -155,6 +158,11 @@
                     <button class="btn btn-sm btn-outline-info" (click)="openTasiModal(item)" title="Sandık Taşı" [disabled]="sandik()?.durumMetni === 'Sevkedildi'">
                       <i class="ri-swap-line"></i>
                     </button>
+                    @if (item.isManuelEklenen || isSahaYedek()) {
+                      <button class="btn btn-sm btn-outline-danger" (click)="manuelUrunSil(item)" title="Ürünü sil" [disabled]="sandik()?.durumMetni === 'Sevkedildi'">
+                        <i class="ri-delete-bin-line"></i>
+                      </button>
+                    }
                   </div>
                 </td>
               </tr>
@@ -260,54 +268,124 @@
   <!-- ===== Manuel Ürün Ekleme Modal ===== -->
   @if (showUrunEkleModal()) {
     <div class="modal-overlay" (click)="closeUrunEkleModal()"></div>
-    <div class="modal-container">
+    <div class="modal-container" style="max-width: 700px;">
       <div class="modal-header-custom">
         <h5 class="fw-semibold mb-0"><i class="ri-add-circle-line me-2"></i>{{ isSahaYedek() ? 'Malzeme Ekle' : 'Manuel Ürün Ekle' }}</h5>
         <button class="btn btn-sm border-0" (click)="closeUrunEkleModal()"><i class="ri-close-line fs-5"></i></button>
       </div>
       <div class="modal-body-custom">
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Barkod No</label>
-          <input type="text" class="form-control" [ngModel]="yeniBarkod()" (ngModelChange)="yeniBarkod.set($event)" [placeholder]="isSahaYedek() ? 'İsteğe bağlı' : 'Boş bırakılırsa \'MANUEL\' atanır'" />
-        </div>
-        <div class="mb-3">
-          <label class="form-label fw-semibold">{{ isSahaYedek() ? 'Malzeme İsmi' : 'Açıklama' }} <span class="text-danger">*</span></label>
-          <input type="text" class="form-control" [ngModel]="yeniAciklama()" (ngModelChange)="yeniAciklama.set($event)" [placeholder]="isSahaYedek() ? 'Malzeme adı' : 'Ürün açıklaması'" />
-        </div>
-        <div class="row g-3">
-          <div class="col-6">
-            <label class="form-label fw-semibold">{{ isSahaYedek() ? 'Miktar' : 'Adet' }} <span class="text-danger">*</span></label>
-            <input type="number" class="form-control" min="1" [ngModel]="yeniAdet()" (ngModelChange)="yeniAdet.set($event)" />
+        @if (isSahaYedek()) {
+          <div class="d-flex gap-2 mb-3">
+            <button class="btn btn-sm" [ngClass]="eklemeMode() === 'manuel' ? 'btn-primary' : 'btn-outline-primary'" (click)="eklemeMode.set('manuel')">
+              <i class="ri-edit-line me-1"></i>Manuel Giriş
+            </button>
+            <button class="btn btn-sm" [ngClass]="eklemeMode() === 'projeden' ? 'btn-primary' : 'btn-outline-primary'" (click)="eklemeMode.set('projeden')">
+              <i class="ri-folder-transfer-line me-1"></i>Projeden Seç
+            </button>
           </div>
-          <div class="col-6">
-            <label class="form-label fw-semibold">Birim</label>
-            <select class="form-select" [ngModel]="yeniBirim()" (ngModelChange)="yeniBirim.set(+$event)">
-              <option [value]="1">ADET</option>
-              <option [value]="2">SET</option>
-              <option [value]="3">METRE</option>
-              <option [value]="4">KG</option>
-              <option [value]="5">LİTRE</option>
-              <option [value]="6">TAKIM</option>
-              <option [value]="7">PAKET</option>
-              <option [value]="8">TON</option>
-              <option [value]="9">METREKARE</option>
-              <option [value]="10">METREKÜP</option>
+        }
+
+        @if (eklemeMode() === 'manuel') {
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Barkod No</label>
+            <input type="text" class="form-control" [ngModel]="yeniBarkod()" (ngModelChange)="yeniBarkod.set($event)" [placeholder]="isSahaYedek() ? 'İsteğe bağlı' : 'Boş bırakılırsa \'MANUEL\' atanır'" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">{{ isSahaYedek() ? 'Malzeme İsmi' : 'Açıklama' }} <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [ngModel]="yeniAciklama()" (ngModelChange)="yeniAciklama.set($event)" [placeholder]="isSahaYedek() ? 'Malzeme adı' : 'Ürün açıklaması'" />
+          </div>
+          <div class="row g-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold">{{ isSahaYedek() ? 'Miktar' : 'Adet' }} <span class="text-danger">*</span></label>
+              <input type="number" class="form-control" min="1" [ngModel]="yeniAdet()" (ngModelChange)="yeniAdet.set($event)" />
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold">Birim</label>
+              <select class="form-select" [ngModel]="yeniBirim()" (ngModelChange)="yeniBirim.set(+$event)">
+                <option [value]="1">ADET</option>
+                <option [value]="2">SET</option>
+                <option [value]="3">METRE</option>
+                <option [value]="4">KG</option>
+                <option [value]="5">LİTRE</option>
+                <option [value]="6">TAKIM</option>
+                <option [value]="7">PAKET</option>
+                <option [value]="8">TON</option>
+                <option [value]="9">METREKARE</option>
+                <option [value]="10">METREKÜP</option>
+              </select>
+            </div>
+          </div>
+          @if (!isSahaYedek()) {
+            <div class="mb-3 mt-3">
+              <label class="form-label fw-semibold">Ekleme Nedeni</label>
+              <textarea class="form-control" rows="2" [ngModel]="yeniNeden()" (ngModelChange)="yeniNeden.set($event)" placeholder="Neden ekleniyor? (isteğe bağlı)"></textarea>
+            </div>
+          }
+        } @else {
+          <!-- Projeden Seç Modu -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Kaynak Proje <span class="text-danger">*</span></label>
+            <select class="form-select" [ngModel]="secilenKaynakProjeId()" (ngModelChange)="onKaynakProjeChange(+$event)">
+              <option [value]="0" disabled>Proje Seçiniz...</option>
+              @for (p of normalProjeler(); track p.id) {
+                <option [value]="p.id">{{ p.projeNo }} — {{ p.musteri }}</option>
+              }
             </select>
           </div>
-        </div>
-        @if (!isSahaYedek()) {
-          <div class="mb-3 mt-3">
-            <label class="form-label fw-semibold">Ekleme Nedeni</label>
-            <textarea class="form-control" rows="2" [ngModel]="yeniNeden()" (ngModelChange)="yeniNeden.set($event)" placeholder="Neden ekleniyor? (isteğe bağlı)"></textarea>
-          </div>
+
+          @if (kaynakUrunlerLoading()) {
+            <div class="text-center py-3"><span class="spinner-border spinner-border-sm text-primary"></span> Yükleniyor...</div>
+          } @else if (kaynakUrunler().length > 0) {
+            <div class="alert alert-info py-2 mb-2" style="font-size:12px;">
+              <i class="ri-information-line me-1"></i>Kalan > 0 olan {{ kaynakUrunler().length }} ürün listeleniyor. Seçili: {{ secilenKaynakUrunler().size }}
+            </div>
+            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+              <table class="table table-sm table-hover align-middle mb-0">
+                <thead class="sticky-top bg-white">
+                  <tr>
+                    <th style="width:30px;"></th>
+                    <th>Ürün</th>
+                    <th>Sandık</th>
+                    <th>İstenen</th>
+                    <th>Kalan</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (u of kaynakUrunler(); track u.cekiSatiriId) {
+                    <tr (click)="toggleKaynakUrun(u.cekiSatiriId)" class="cursor-pointer" [ngClass]="{'table-primary': secilenKaynakUrunler().has(u.cekiSatiriId)}">
+                      <td>
+                        <input type="checkbox" class="form-check-input" [checked]="secilenKaynakUrunler().has(u.cekiSatiriId)" (click)="$event.stopPropagation()" (change)="toggleKaynakUrun(u.cekiSatiriId)" />
+                      </td>
+                      <td>
+                        <span class="fw-medium">{{ u.aciklama }}</span>
+                        <small class="d-block text-muted">{{ u.barkodNo }}</small>
+                      </td>
+                      <td><small>{{ u.sandikNo }}</small></td>
+                      <td>{{ u.istenenAdet }}</td>
+                      <td class="fw-bold text-danger">{{ u.kalanMiktar }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else if (secilenKaynakProjeId() > 0) {
+            <div class="text-center py-3 text-muted">Bu projede kalan > 0 olan ürün bulunamadı.</div>
+          }
         }
       </div>
       <div class="modal-footer-custom">
         <button class="btn btn-outline flex-grow-1" (click)="closeUrunEkleModal()">İptal</button>
-        <button class="btn btn-save flex-grow-1" (click)="manuelUrunEkle()" [disabled]="urunEklemeSaving()">
-          @if (urunEklemeSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-          Ekle
-        </button>
+        @if (eklemeMode() === 'manuel') {
+          <button class="btn btn-save flex-grow-1" (click)="manuelUrunEkle()" [disabled]="urunEklemeSaving()">
+            @if (urunEklemeSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            Ekle
+          </button>
+        } @else {
+          <button class="btn btn-save flex-grow-1" (click)="projedenUrunEkle()" [disabled]="urunEklemeSaving() || secilenKaynakUrunler().size === 0">
+            @if (urunEklemeSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            Seçilenleri Ekle ({{ secilenKaynakUrunler().size }})
+          </button>
+        }
       </div>
     </div>
   }

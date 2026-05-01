@@ -14,6 +14,7 @@ export interface UcKUrunDto {
   trafoSevkAdet: number;
   gridSevkDurumuId: number;
   gridSevkDurumuMetni: string;
+  gridSevkMiktari?: number;
   ucKKarsilamaTipiId: number;
   ucKKarsilamaTipiMetni: string;
   gelenMiktar: number;
@@ -22,18 +23,21 @@ export interface UcKUrunDto {
   kaynakHedefProjeNo?: string;
   geriGonderilmeSebebiId?: number;
   geriGonderilmeSebebiMetni?: string;
+  geriGonderilenMiktar: number;
   ucKAciklama?: string;
   // Çapraz açıklama: Grid tarafının açıklaması (3K tarafı görür)
   gridAciklama?: string;
   // Parçalı karşılama (Madde 2)
   stokKarsilanan: number;
   projeKarsilanan: number;
+  projeGonderilen: number;
   tedarikciKarsilanan: number;
   eksikMiktar: number;
   kalan: number;
   kontrolUyari: string;
   genelDurumId: number;
   genelDurumMetni: string;
+  isManuelEklenen: boolean;
 }
 
 export interface UcKDurumGuncelleDto {

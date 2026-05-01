@@ -44,6 +44,7 @@ export interface SandikIcerikDto {
   paketleyenBasHarf?: string;
   kontrolEdenBasHarf?: string;
   remarks?: string;
+  isManuelEklenen: boolean;
   // Saha/Yedek
   isim?: string;
   miktar: number;
@@ -53,6 +54,7 @@ export interface SandikIcerikDto {
   stokKarsilanan: number;
   projeKarsilanan: number;
   tedarikciKarsilanan: number;
+  kaynakProjeNo?: string;
 }
 
 export interface SandikEkleDto {
@@ -146,4 +148,17 @@ export interface UrunTasiDto {
   hedefSandikId: number;
   tasinanAdet: number;
   projeId: number;
+}
+
+export interface EksikUrunForSandikDto {
+  cekiSatiriId: number;
+  siraNo: number;
+  barkodNo: string;
+  aciklama: string;
+  sandikNo: string;
+  istenenAdet: number;
+  gelenMiktar: number;
+  kalanMiktar: number;
+  birim: string;
+  projeNo: string;
 }

@@ -38,8 +38,8 @@ export class ProjeService {
     return this.api.put<boolean>(API.PROJE.SANDIK_KAPAT, { sandikId, kapali });
   }
 
-  sevkEt(projeId: number): Observable<ApiResult<boolean>> {
-    return this.api.post<boolean>(API.PROJE.SEVK_ET(projeId), {});
+  sevkEt(projeId: number, sevkTarihi?: string): Observable<ApiResult<boolean>> {
+    return this.api.post<boolean>(API.PROJE.SEVK_ET(projeId), { sevkTarihi: sevkTarihi || null });
   }
 
   kilidiAc(projeId: number): Observable<ApiResult<boolean>> {

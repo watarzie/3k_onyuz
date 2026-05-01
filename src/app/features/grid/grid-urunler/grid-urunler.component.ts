@@ -25,6 +25,7 @@ const GRID_DURUMLARI: DurumSecenegi[] = [
   { id: GridDurum.TrafoSevk, value: 'Trafo Sevk', label: 'TRAFO SEVK', color: '#00BCD4', bgClass: 'row-trafo-sevk' },
   { id: GridDurum.Iptal, value: 'İptal', label: 'İPTAL', color: '#FFB200', bgClass: 'row-iptal' },
   { id: GridDurum.Sipariste, value: 'Siparişte', label: 'SİPARİŞTE', color: '#9C27B0', bgClass: 'row-sipariste' },
+  { id: GridDurum.GridKapandi, value: 'Grid Kapandı', label: 'GRİD KAPANDI', color: '#37474F', bgClass: 'row-grid-kapandi' },
 ];
 
 const SEVK_DURUMLARI: DurumSecenegi[] = [

@@ -466,4 +466,39 @@ export class UcKSandiklarComponent implements OnInit {
       }
     });
   }
+
+  // ===== Sandık Silme =====
+  async sandikSil(event: Event, sandik: SandikDto) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!this.canWriteSandik()) return;
+
+    const confirm = await this.confirmService.ask({
+      title: 'Sandık Sil',
+      message: `<strong>${sandik.sandikNo}</strong> numaralı sandığı silmek istediğinize emin misiniz?<br><br>
+                <div class="alert alert-danger py-2 mb-0">
+                  <i class="ri-alert-line me-1"></i> Bu işlem geri alınamaz.
+                </div>`,
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      type: 'warning'
+    });
+
+    if (confirm) {
+      this.sandikService.sandikSil(sandik.id, this.projeId()).subscribe({
+        next: (res) => {
+          if (res.isSuccess) {
+            this.toast.success(`Sandık "${sandik.sandikNo}" başarıyla silindi.`);
+            this.loadSandiklar();
+          } else {
+            this.toast.error(res.error || 'Sandık silinemedi. İçinde ürün olabilir.');
+          }
+        },
+        error: (err) => {
+          const msg = err.error?.error || err.error?.message || 'Sandık silinirken hata oluştu.';
+          this.toast.error(msg);
+        }
+      });
+    }
+  }
 }

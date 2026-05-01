@@ -12,8 +12,8 @@
 <div class="row g-3 mb-4">
   <div class="col"><app-stat-card [value]="toplamUrun()" label="Toplam" icon="ri-list-check-2" color="primary" /></div>
   <div class="col"><app-stat-card [value]="tamamlanan()" label="Tamamlanan" icon="ri-checkbox-circle-line" color="success" /></div>
-  <div class="col"><app-stat-card [value]="tamGeldi()" label="Tam Geldi" icon="ri-check-double-line" color="info" /></div>
-  <div class="col"><app-stat-card [value]="eksikGeldi()" label="Eksik Geldi" icon="ri-error-warning-line" color="warning" /></div>
+  <div class="col"><app-stat-card [value]="tamGeldi()" label="Sevk Adeti Tam" icon="ri-check-double-line" color="info" /></div>
+  <div class="col"><app-stat-card [value]="eksikGeldi()" label="Sevk Adeti Eksik" icon="ri-error-warning-line" color="warning" /></div>
   <div class="col"><app-stat-card [value]="kalanlar()" label="Kalan Var" icon="ri-time-line" color="danger" /></div>
 </div>
 
@@ -63,12 +63,15 @@
               <th>Grid Dur.</th>
               <th>Sevk Dur.</th>
               <th class="text-center">Grid Gelen</th>
+              <th class="text-center">Grid Sevk</th>
               <th class="text-center">Trafo</th>
               <th>3K Karşılama</th>
               <th class="text-center">3K Gelen</th>
               <th class="text-center">Stok K.</th>
               <th class="text-center">Proje K.</th>
+              <th class="text-center">Proje G.</th>
               <th class="text-center">Tedarikçi K.</th>
+              <th class="text-center">Geri Gön.</th>
               <th>Kaynak/Hedef</th>
               <th>Kontrol/Uyarı</th>
               <th>Grid Açıklama</th>
@@ -98,6 +101,7 @@
                   </span>
                 </td>
                 <td class="text-center">{{ u.gridGelenAdet }}</td>
+                <td class="text-center" [ngClass]="{'text-info fw-semibold': u.gridSevkMiktari && u.gridSevkMiktari > 0}">{{ u.gridSevkMiktari && u.gridSevkMiktari > 0 ? u.gridSevkMiktari : '-' }}</td>
                 <td class="text-center">{{ u.trafoSevkAdet > 0 ? u.trafoSevkAdet : '-' }}</td>
                 <td>
                   <span class="durum-badge" [style.background]="getTipColor(u.ucKKarsilamaTipiMetni) + '15'" [style.color]="getTipColor(u.ucKKarsilamaTipiMetni)" [style.border-color]="getTipColor(u.ucKKarsilamaTipiMetni) + '30'">
@@ -107,9 +111,27 @@
                 <td class="text-center">{{ u.gelenMiktar }}</td>
                 <td class="text-center" [ngClass]="{'text-purple fw-semibold': u.stokKarsilanan > 0}">{{ u.stokKarsilanan > 0 ? u.stokKarsilanan : '-' }}</td>
                 <td class="text-center" [ngClass]="{'text-primary fw-semibold': u.projeKarsilanan > 0}">{{ u.projeKarsilanan > 0 ? u.projeKarsilanan : '-' }}</td>
+                <td class="text-center" [ngClass]="{'text-warning fw-semibold': u.projeGonderilen > 0}">{{ u.projeGonderilen > 0 ? u.projeGonderilen : '-' }}</td>
                 <td class="text-center" [ngClass]="{'text-success fw-semibold': u.tedarikciKarsilanan > 0}">{{ u.tedarikciKarsilanan > 0 ? u.tedarikciKarsilanan : '-' }}</td>
-                <td class="text-truncate" style="max-width:120px" [title]="u.kaynakHedefProjeNo ?? ''">
-                  {{ u.kaynakHedefProjeNo ?? '-' }}
+                <td class="text-center" [ngClass]="{'text-danger fw-semibold': u.geriGonderilenMiktar > 0}">{{ u.geriGonderilenMiktar > 0 ? u.geriGonderilenMiktar : '-' }}</td>
+                <td style="max-width:160px">
+                  @if (u.projeKarsilanan > 0 && u.kaynakHedefProjeNo) {
+                    <div class="d-flex align-items-center gap-1">
+                      <i class="ri-arrow-left-line text-primary"></i>
+                      <span class="text-primary fw-semibold text-truncate" [title]="'Karşılandı ← ' + u.kaynakHedefProjeNo + ' (' + u.projeKarsilanan + ' adet)'">{{ u.kaynakHedefProjeNo }}</span>
+                      <span class="badge bg-primary-subtle text-primary" style="font-size:10px">{{ u.projeKarsilanan }}</span>
+                    </div>
+                  }
+                  @if (u.projeGonderilen > 0 && u.kaynakHedefProjeNo) {
+                    <div class="d-flex align-items-center gap-1" [class.mt-1]="u.projeKarsilanan > 0">
+                      <i class="ri-arrow-right-line text-warning"></i>
+                      <span class="text-warning fw-semibold text-truncate" [title]="'Gönderildi → ' + u.kaynakHedefProjeNo + ' (' + u.projeGonderilen + ' adet)'">{{ u.kaynakHedefProjeNo }}</span>
+                      <span class="badge bg-warning-subtle text-warning" style="font-size:10px">{{ u.projeGonderilen }}</span>
+                    </div>
+                  }
+                  @if (!u.projeKarsilanan && !u.projeGonderilen) {
+                    <span class="text-muted">{{ u.kaynakHedefProjeNo ?? '-' }}</span>
+                  }
                 </td>
                 <td>
                   <span class="kontrol-text" [style.color]="getTipColor(u.ucKKarsilamaTipiMetni)">{{ u.kontrolUyari }}</span>
@@ -128,9 +150,16 @@
                   {{ u.kalan }}
                 </td>
                 <td *appCanWrite>
-                  <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle" [disabled]="u.gridDurumuId === 12 || u.gridDurumuId === 11">
-                    <i class="ri-edit-line"></i>
-                  </button>
+                  <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle" [disabled]="u.gridDurumuId === 12 || u.gridDurumuId === 11">
+                      <i class="ri-edit-line"></i>
+                    </button>
+                    @if (u.isManuelEklenen) {
+                      <button class="btn btn-sm btn-outline-danger" (click)="manuelUrunSil(u)" title="Manuel ürünü sil">
+                        <i class="ri-delete-bin-line"></i>
+                      </button>
+                    }
+                  </div>
                 </td>
               </tr>
             }
@@ -196,7 +225,7 @@
           Adet
         </label>
         <input type="number" class="form-control" [ngModel]="panelGelenAdet()" (ngModelChange)="panelGelenAdet.set($event); recalcPanel()" [disabled]="!isGelenAdetAktif" min="0" [max]="panelUrun()!.kalan" />
-        @if (panelTip() === 'Tam Geldi') {
+        @if (panelTip() === 'Sevk Adeti Tam Geldi') {
           <small class="text-muted">Otomatik: Grid sevk miktarı kadar teslim alınacak</small>
         }
       </div>
@@ -217,8 +246,10 @@
           </label>
           <select class="form-select border-danger" [ngModel]="panelGeriGonderilmeSebebi()" (ngModelChange)="panelGeriGonderilmeSebebi.set($event)">
             <option value="">Seçiniz...</option>
-            <option value="Tadilat">Tadilat (Eksik Bekliyor)</option>
-            <option value="Iptal">İptal (Geri Gelmeyecek)</option>
+            <option value="1">Tadilat (Eksik Bekliyor)</option>
+            <option value="2">İptal (Geri Gelmeyecek)</option>
+            <option value="3">Projeye Geri Dönüş</option>
+            <option value="4">Hatalı Ürün</option>
           </select>
         </div>
       }
@@ -270,14 +301,14 @@
                     <a class="dropdown-item py-2 border-bottom" style="cursor: pointer; white-space: normal;" (click)="selectUrunItem(cu.cekiSatiriId)">
                       <div class="fw-bold text-dark">{{ cu.siraNo }} - {{ cu.barkodNo }}</div>
                       <div class="text-muted small lh-sm">{{ cu.aciklama }}</div>
-                      <div class="badge bg-primary mt-2">Gelmiş Stok: {{ cu.gelenMiktar }}</div>
+                      <div class="badge bg-primary mt-2">3K Gelen: {{ cu.gelenMiktar }}</div>
                     </a>
                   </li>
                 }
               </ul>
             </div>
           } @else if (panelKaynakHedef()) {
-            <div class="text-muted mt-1 small"><i class="ri-information-line me-1"></i>Bu projeye ait kayıtlı/alınabilir ürün bulunamadı.</div>
+            <div class="text-muted mt-1 small"><i class="ri-information-line me-1"></i>Bu projede eşleşen isimli veya 3K'ya gelmiş ürün bulunamadı.</div>
           }
         </div>
       }

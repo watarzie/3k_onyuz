@@ -12,6 +12,7 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { SandikDto } from '../../../shared/models/index';
 import { SandikTipi, DepoLokasyon } from '../../../core/constants/enums';
 import { PdfService } from '../../../core/services/pdf.service';
+import { ConfirmService } from '../../../core/services/confirm.service';
 
 @Component({
   selector: 'app-sandik-listesi',
@@ -27,6 +28,7 @@ export class SandikListesiComponent implements OnInit {
   private lookupService = inject(LookupService);
   private toast = inject(ToastService);
   private pdfService = inject(PdfService);
+  private confirmService = inject(ConfirmService);
 
   projeId = signal(0);
   sandiklar = signal<SandikDto[]>([]);
@@ -38,7 +40,7 @@ export class SandikListesiComponent implements OnInit {
   // Sandık Ekleme Modal
   showEkleModal = signal(false);
   yeniSandikNo = signal('');
-  yeniTipId = signal(SandikTipi.Proje);
+  yeniTipId = signal(SandikTipi.AhsapKapali);
   yeniLokasyonId = signal(DepoLokasyon.UcK);
   eklemeSaving = signal(false);
   yeniEn = signal<number | null>(null);
@@ -150,7 +152,7 @@ export class SandikListesiComponent implements OnInit {
       return isNaN(num) ? max : Math.max(max, num);
     }, 0);
     this.yeniSandikNo.set((maxNo + 1).toString());
-    this.yeniTipId.set(SandikTipi.Proje);
+    this.yeniTipId.set(SandikTipi.AhsapKapali);
     this.yeniLokasyonId.set(DepoLokasyon.UcK);
     this.yeniEn.set(null);
     this.yeniBoy.set(null);
@@ -197,5 +199,31 @@ export class SandikListesiComponent implements OnInit {
         this.toast.error('Sandık eklenirken bir hata oluştu.');
       }
     });
+  }
+
+  // ===== Sandık Silme =====
+
+  async sandikSil(s: SandikDto) {
+    const onay = await this.confirmService.ask({
+      title: 'Sandık Sil',
+      message: `<strong>${s.sandikNo}</strong> numaralı boş sandığı silmek istediğinize emin misiniz?<br><br><small class="text-muted">Bu işlem geri alınamaz.</small>`,
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      type: 'danger'
+    });
+
+    if (onay) {
+      this.sandikService.sandikSil(s.id, this.projeId()).subscribe({
+        next: (res) => {
+          if (res.isSuccess) {
+            this.toast.success(`Sandık "${s.sandikNo}" başarıyla silindi.`);
+            this.loadSandiklar();
+          } else {
+            this.toast.error(res.error ?? 'Sandık silinemedi.');
+          }
+        },
+        error: () => this.toast.error('Silme sırasında hata oluştu.')
+      });
+    }
   }
 }

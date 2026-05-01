@@ -9,6 +9,9 @@ import { UcKService } from '../../../core/services/uck.service';
 import { ProjeService } from '../../../core/services/proje.service';
 import { GridService } from '../../../core/services/grid.service';
 import { StokService } from '../../../core/services/stok.service';
+import { SandikService } from '../../../core/services/sandik.service';
+import { ConfirmService } from '../../../core/services/confirm.service';
+import { PdfService } from '../../../core/services/pdf.service';
 
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
@@ -20,14 +23,13 @@ import { UcKDurum, GridSevkDurum, GridDurum } from '../../../core/constants/enum
 interface KarsilamaTipi { id: number; value: string; label: string; color: string; bgClass: string; }
 
 const KARSILAMA_TIPLERI: KarsilamaTipi[] = [
-  { id: UcKDurum.TamGeldi, value: 'Tam Geldi', label: 'SEVK ADETİ TAM GELDİ', color: '#25B003', bgClass: 'row-tam-geldi' },
-  { id: UcKDurum.EksikGeldi, value: 'Eksik Geldi', label: 'SEVK ADETİ EKSİK GELDİ', color: '#FD5812', bgClass: 'row-eksik-geldi' },
+  { id: UcKDurum.TamGeldi, value: 'Sevk Adeti Tam Geldi', label: 'SEVK ADETİ TAM GELDİ', color: '#25B003', bgClass: 'row-tam-geldi' },
+  { id: UcKDurum.EksikGeldi, value: 'Sevk Adeti Eksik Geldi', label: 'SEVK ADETİ EKSİK GELDİ', color: '#FD5812', bgClass: 'row-eksik-geldi' },
   { id: UcKDurum.ProjedenKarsilandi, value: 'Projeden Karşılandı', label: 'PROJEDEN KARŞILANDI', color: '#3584FC', bgClass: 'row-projeden' },
   { id: UcKDurum.StoktanKarsilandi, value: 'Stoktan Karşılandı', label: 'STOKTAN KARŞILANDI', color: '#9C27B0', bgClass: 'row-stoktan' },
   { id: UcKDurum.TedarikcidenGeldi, value: 'Tedarikçiden Geldi', label: 'TEDARİKÇİDEN GELDİ', color: '#1B7D3A', bgClass: 'row-tedarikci' },
   { id: UcKDurum.Gelmedi, value: 'Gelmedi', label: 'GELMEDİ', color: '#808080', bgClass: 'row-gelmedi' },
   { id: UcKDurum.GeriGonderildi, value: 'Geri Gönderildi', label: 'GERİ GÖNDERİLDİ', color: '#D32F2F', bgClass: 'row-geri-gonderildi' },
-  { id: UcKDurum.HataliUrun, value: 'Hatalı Ürün', label: 'HATALI ÜRÜN GELDİ', color: '#E65100', bgClass: 'row-hatali' },
 ];
 
 import { OnayService } from '../../../core/services/onay.service';
@@ -49,6 +51,9 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   private gridService = inject(GridService);
   private stokService = inject(StokService);
   private onayService = inject(OnayService);
+  private sandikService = inject(SandikService);
+  private confirmService = inject(ConfirmService);
+  private pdfService = inject(PdfService);
 
   private sub: Subscription = new Subscription();
 
@@ -113,12 +118,26 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   filteredKaynakUrunler = computed(() => {
     const term = this.urunSearchTerm().toLowerCase();
-    const list = this.kaynakUrunler();
-    if (!term) return list;
-    return list.filter(u =>
-      u.barkodNo.toLowerCase().includes(term) ||
-      u.aciklama.toLowerCase().includes(term)
-    );
+    const hedefUrun = this.panelUrun();
+    let list = this.kaynakUrunler();
+
+    // KURAL 1: İsim eşleşme — sadece hedef ürünle aynı isme sahip olanlar
+    if (hedefUrun) {
+      const hedefIsim = this.normalizeAciklama(hedefUrun.aciklama);
+      list = list.filter(u => this.normalizeAciklama(u.aciklama) === hedefIsim);
+    }
+
+    // KURAL 2: 3K'ya gelmiş olma — gelenMiktar > 0
+    list = list.filter(u => u.gelenMiktar > 0);
+
+    // Arama filtresi
+    if (term) {
+      list = list.filter(u =>
+        u.barkodNo.toLowerCase().includes(term) ||
+        u.aciklama.toLowerCase().includes(term)
+      );
+    }
+    return list;
   });
 
   filteredStoklar = computed(() => {
@@ -134,8 +153,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   // Stats
   toplamUrun = computed(() => this.urunler().length);
-  tamGeldi = computed(() => this.urunler().filter(u => u.ucKKarsilamaTipiMetni === 'Tam Geldi').length);
-  eksikGeldi = computed(() => this.urunler().filter(u => u.ucKKarsilamaTipiMetni === 'Eksik Geldi').length);
+  tamGeldi = computed(() => this.urunler().filter(u => u.ucKKarsilamaTipiMetni === 'Sevk Adeti Tam Geldi').length);
+  eksikGeldi = computed(() => this.urunler().filter(u => u.ucKKarsilamaTipiMetni === 'Sevk Adeti Eksik Geldi').length);
   tamamlanan = computed(() => this.urunler().filter(u => u.kalan === 0).length);
   kalanlar = computed(() => this.urunler().filter(u => u.kalan > 0).length);
   get hasSelection(): boolean { return this.selectedIds().size > 0; }
@@ -274,7 +293,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     this.panelKaynakHedef.set(urun.kaynakHedefProjeNo ?? '');
     this.panelKaynakCekiSatiriId.set(null);
     this.panelAciklama.set(urun.ucKAciklama ?? '');
-    this.panelGeriGonderilmeSebebi.set(urun.geriGonderilmeSebebiMetni ?? '');
+    this.panelGeriGonderilmeSebebi.set(urun.geriGonderilmeSebebiId ? urun.geriGonderilmeSebebiId.toString() : '');
     this.panelError.set('');
 
     // Eğer önceden girilmiş bir proje varsa, kaynak ürünleri yükle
@@ -300,16 +319,16 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     this.panelTip.set(tip);
 
     switch (tip) {
-      case 'Tam Geldi':
-        // KURAL 1: Backend GridSevkMiktari kadar otomatik alacak, UI sadece gösterir
-        this.panelGelenAdet.set(0);
+      case 'Sevk Adeti Tam Geldi':
+        // KURAL 1: Grid sevk miktarı kadar otomatik set et
+        this.panelGelenAdet.set(u.gridSevkMiktari ?? u.istenenAdet);
         this.panelKaynakHedef.set('');
         break;
       case 'Gelmedi':
         this.panelGelenAdet.set(0);
         this.panelKaynakHedef.set('');
         break;
-      case 'Eksik Geldi':
+      case 'Sevk Adeti Eksik Geldi':
         this.panelGelenAdet.set(u.gelenMiktar > 0 ? u.gelenMiktar : 0);
         this.panelKaynakHedef.set('');
         break;
@@ -318,7 +337,6 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
         break;
       case 'Stoktan Karşılandı':
       case 'Tedarikçiden Geldi':
-      case 'Hatalı Ürün':
         this.panelGelenAdet.set(0);
         this.panelKaynakHedef.set('');
         break;
@@ -362,7 +380,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     if (!uId) return 'Ürün Seçiniz...';
     const u = this.kaynakUrunler().find(x => x.cekiSatiriId === uId);
     if (!u) return 'Ürün Seçiniz...';
-    return `${u.siraNo} - ${u.barkodNo} (${u.aciklama}) | Stok: ${u.gelenMiktar}`;
+    return `${u.siraNo} - ${u.barkodNo} (${u.aciklama}) | 3K Gelen: ${u.gelenMiktar}`;
   }
 
   toggleProjeDropdown() {
@@ -406,6 +424,12 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     this.isUrunDropdownOpen.set(false);
   }
 
+  /** Açıklama alanını normalize eder — ters slash temizler, fazla boşlukları kaldırır, küçük harfe çevirir */
+  private normalizeAciklama(str: string): string {
+    if (!str) return '';
+    return str.replace(/\\/g, '').replace(/\s+/g, ' ').trim().toLocaleLowerCase('tr-TR');
+  }
+
   getProjeIdByNo(projeNo: string): string {
     const p = this.projeler().find(x => x.projeNo === projeNo);
     return p ? p.id.toString() : '';
@@ -415,14 +439,13 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     const tip = this.panelTip();
     let uyari = '';
     switch (tip) {
-      case 'Tam Geldi': uyari = 'SANDIK İÇERİĞİ TAM — SEVK MİKTARI KADAR TESLİM ALINACAK'; break;
-      case 'Eksik Geldi': uyari = 'EKSİK GELDİ MİKTAR GİRİN'; break;
+      case 'Sevk Adeti Tam Geldi': uyari = 'SANDIK İÇERİĞİ TAM — SEVK MİKTARI KADAR TESLİM ALINACAK'; break;
+      case 'Sevk Adeti Eksik Geldi': uyari = 'EKSİK GELDİ MİKTAR GİRİN'; break;
       case 'Projeden Karşılandı': uyari = 'LÜTFEN BİR PROJE VE ÜRÜN SEÇİNİZ'; break;
       case 'Stoktan Karşılandı': uyari = 'DEPO STOĞUNDAN KARŞILANACAKTIR'; break;
       case 'Tedarikçiden Geldi': uyari = 'TEDARİKÇİDEN DİREKT GELDİ'; break;
       case 'Gelmedi': uyari = 'GELMEDİ OLARAK İŞARETLENECEK'; break;
-      case 'Geri Gönderildi': uyari = 'ÜRETİME GERİ GÖNDERİLECEK, GEREKÇE SEÇİN'; break;
-      case 'Hatalı Ürün': uyari = 'ÜRÜN HATALI, TUTANAK/NOT GİRİNİZ'; break;
+      case 'Geri Gönderildi': uyari = 'GERİ GÖNDERİLECEK — SEBEP SEÇİN VE ADET GİRİN'; break;
     };
     this.panelUyari.set(uyari || 'BEKLİYOR');
     this.panelError.set('');
@@ -430,7 +453,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   get isGelenAdetAktif(): boolean {
     const t = this.panelTip();
-    return t !== 'Tam Geldi' && t !== 'Gelmedi' && t !== 'Geri Gönderildi' && t !== '';
+    return t !== 'Sevk Adeti Tam Geldi' && t !== 'Gelmedi' && t !== '';
   }
 
   isKarsilamaTipiDisabled(tip: string): boolean {
@@ -448,11 +471,10 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       return tip !== 'Projeden Karşılandı' && tip !== 'Stoktan Karşılandı' && tip !== 'Tedarikçiden Geldi';
     }
 
-    // Hatalı Ürün → Grid sevk edilmiş olmalı
-    if (tip === 'Hatalı Ürün' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) return true;
+    // Hatalı Ürün seçeneği kaldırıldı — GeriGonderilmeSebebi içine taşındı
 
-    // Tam Geldi → Grid sevk edilmiş olmalı
-    if (tip === 'Tam Geldi' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) return true;
+    // Sevk Adeti Tam Geldi → Grid sevk edilmiş olmalı
+    if (tip === 'Sevk Adeti Tam Geldi' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) return true;
 
     // Projeden/Stoktan/Tedarikçi → Grid eksik gelmiş veya gelmemiş olmalı
     if (tip === 'Tedarikçiden Geldi' || tip === 'Stoktan Karşılandı' || tip === 'Projeden Karşılandı') {
@@ -468,7 +490,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   }
 
   get isAciklamaZorunlu(): boolean {
-    return this.panelTip() === 'Hatalı Ürün';
+    return false;
   }
 
   // KURAL 3 (Dumb UI): Kalan miktar backend'den gelir, frontend hesaplama yapmaz.
@@ -498,9 +520,9 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       }
     }
 
-    // Tam Geldi → Grid sevk edilmiş olmalı
-    if (tip === 'Tam Geldi' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) {
-      return 'Grid tarafından eksiksiz sevk edilmeden "Tam Geldi" olarak işaretlenemez.';
+    // Sevk Adeti Tam Geldi → Grid sevk edilmiş olmalı
+    if (tip === 'Sevk Adeti Tam Geldi' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) {
+      return 'Grid tarafından eksiksiz sevk edilmeden "Sevk Adeti Tam Geldi" olarak işaretlenemez.';
     }
 
     // Hatalı Ürün → Grid sevk edilmiş olmalı
@@ -514,7 +536,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       }
     }
 
-    if (tip === 'Eksik Geldi') {
+    if (tip === 'Sevk Adeti Eksik Geldi') {
       if (this.panelGelenAdet() <= 0) return 'Gelen adet girilmelidir.';
       if (this.panelGelenAdet() >= u.istenenAdet) return 'Gelen adet miktardan küçük olmalıdır.';
     }
@@ -522,6 +544,11 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       if (this.panelGelenAdet() <= 0) return 'Karşılanan adet girilmelidir.';
       if (!this.panelKaynakHedef()) return 'Kaynak proje girilmelidir.';
       if (!this.panelKaynakCekiSatiriId()) return 'Kaynak ürün girilmelidir.';
+      // KURAL 3: Stok yeterliliği — karşılama adedi ≤ kaynak ürünün gelenMiktar'ı
+      const kaynakUrun = this.kaynakUrunler().find(x => x.cekiSatiriId === this.panelKaynakCekiSatiriId());
+      if (kaynakUrun && this.panelGelenAdet() > kaynakUrun.gelenMiktar) {
+        return `Kaynak üründe yeterli miktar yok. (3K Gelen: ${kaynakUrun.gelenMiktar})`;
+      }
     }
     if (tip === 'Stoktan Karşılandı') {
       if (this.panelGelenAdet() <= 0) return 'Gelen adet girilmelidir.';
@@ -544,18 +571,16 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     if (tip === 'Tedarikçiden Geldi') {
       if (this.panelGelenAdet() <= 0) return 'Gelen adet girilmelidir.';
     }
-    if (tip === 'Hatalı Ürün') {
-      if (this.panelGelenAdet() <= 0) return 'Gelen adet girilmelidir.';
-      if (!this.panelAciklama()) return 'Hatalı ürün açıklaması girilmelidir.';
-    }
     if (tip === 'Geri Gönderildi') {
       if (!this.panelGeriGonderilmeSebebi()) return 'Geri gönderilme sebebi seçilmelidir.';
+      if (this.panelGelenAdet() <= 0) return 'Geri gönderilen adet girilmelidir.';
+      const u2 = this.panelUrun()!;
+      if (this.panelGelenAdet() > u2.gelenMiktar) return `Geri gönderilen adet (${this.panelGelenAdet()}), 3K gelen miktardan (${u2.gelenMiktar}) büyük olamaz.`;
     }
-    if (tip === 'Geri Gönderildi' && !this.panelGeriGonderilmeSebebi()) return 'Geri gönderilme sebebi seçilmelidir.';
 
     // KURAL 3 (Dumb UI): Overflow kontrolü backend'de yapılır.
     // Frontend sadece basit validasyonları (boş alan kontrolü) yapar.
-    if (this.panelGelenAdet() > u.kalan && tip !== 'Tam Geldi') return 'Gelen adet kalandan büyük olamaz.';
+    if (this.panelGelenAdet() > u.kalan && tip !== 'Sevk Adeti Tam Geldi' && tip !== 'Geri Gönderildi') return 'Gelen adet kalandan büyük olamaz.';
 
     return null;
   }
@@ -569,7 +594,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     this.panelSaving.set(true);
     this.panelError.set('');
 
-    const _aciklama = tip === 'Geri Gönderildi' ? this.panelGeriGonderilmeSebebi() : this.panelAciklama();
+    const _aciklama = tip === 'Geri Gönderildi' ? this.panelAciklama() : this.panelAciklama();
     const dto: UcKDurumGuncelleDto = {
       cekiSatiriId: u.cekiSatiriId,
       projeId: this.projeId(),
@@ -579,6 +604,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       kaynakCekiSatiriId: this.panelKaynakCekiSatiriId() || undefined,
       stokKaydiId: this.panelStokKaydiId() || undefined,
       aciklama: _aciklama ? _aciklama.trim() : '',
+      geriGonderilmeSebebiId: tip === 'Geri Gönderildi' ? +this.panelGeriGonderilmeSebebi() : undefined,
       urunAdi: u.aciklama || u.barkodNo,
       mevcutProjeNo: this.projeler().find(p => p.id === this.projeId())?.projeNo || this.projeId().toString(),
       mevcutSandikNo: u.sandikNo || this.sandikNo(),
@@ -686,7 +712,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.topluSaving.set(false);
         if (res.isSuccess) {
-          this.toast.success(`${dto.cekiSatiriIdler.length} ürün Tam Geldi olarak işaretlendi.`);
+          this.toast.success(`${dto.cekiSatiriIdler.length} ürün Sevk Adeti Tam Geldi olarak işaretlendi.`);
           this.uckService.notifyUckUpdated();
           this.closeTopluTamGeldi();
           this.selectedIds.set(new Set());
@@ -711,5 +737,47 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     // Zaten TamGeldi → seçilemez
     if (u.ucKKarsilamaTipiId === UcKDurum.TamGeldi) return true;
     return false;
+  }
+
+  // ===== Eksik Ürünler Raporu İndirme =====
+  eksikUrunlerRaporuIndir() {
+    this.toast.info('Rapor hazırlanıyor...');
+    this.pdfService.eksikUrunlerPdf(this.projeId()).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `EksikUrunlerRaporu_${this.projeId()}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.toast.success('Rapor indirildi.');
+      },
+      error: () => this.toast.error('Rapor indirilemedi.')
+    });
+  }
+
+  // ===== Manuel Ürün Silme =====
+  async manuelUrunSil(u: UcKUrunDto) {
+    const onay = await this.confirmService.ask({
+      title: 'Manuel Ürün Sil',
+      message: `<strong>${u.aciklama}</strong> ürününü silmek istediğinize emin misiniz?<br><br><small class="text-muted">Bu işlem geri alınamaz.</small>`,
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      type: 'danger'
+    });
+
+    if (onay) {
+      this.sandikService.manuelUrunSil(this.projeId(), u.cekiSatiriId).subscribe({
+        next: (res) => {
+          if (res.isSuccess) {
+            this.toast.success('Ürün başarıyla silindi.');
+            this.loadUrunler();
+          } else {
+            this.toast.error(res.error ?? 'Ürün silinemedi.');
+          }
+        },
+        error: () => this.toast.error('Silme sırasında hata oluştu.')
+      });
+    }
   }
 }

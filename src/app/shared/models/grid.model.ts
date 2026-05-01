@@ -21,12 +21,14 @@ export interface GridUrunDto {
   // Parçalı karşılama (Madde 2)
   stokKarsilanan: number;
   projeKarsilanan: number;
+  projeGonderilen: number;
   tedarikciKarsilanan: number;
   eksikMiktar: number;
   kalanMiktar: number;
   ucKDurumuId: number;
   ucKDurumuMetni: string;
   gelenMiktar: number;
+  geriGonderilenMiktar: number;
   kaynakHedefProjeNo?: string;
   // Çapraz açıklama: 3K tarafının açıklaması (Grid tarafı görür)
   ucKAciklama?: string;

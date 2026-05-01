@@ -1,40 +1,235 @@
 .page-title-area h2 { font-size: 22px; color: var(--blackColor); }
 
-.trezo-card {
+// ===== Dashboard Card =====
+.dash-card {
   background: var(--whiteColor);
-  border-radius: 10px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
   overflow: hidden;
+  transition: box-shadow .2s;
+  &:hover { box-shadow: 0 4px 24px rgba(0,0,0,.06); }
 }
-.card-header {
-  padding: 18px 24px;
-  background: transparent;
-  border-bottom: 1px solid var(--borderColor);
+.dash-card-header {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f1f5f9;
+  h5, h6 { margin: 0; }
 }
-.card-body { padding: 0; }
+.dash-card-body { padding: 16px 20px; }
+.dash-card-footer {
+  padding: 10px 20px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+}
 
+// ===== Projeler Table =====
 table {
   th {
-    font-size: 12px;
+    font-size: 11px;
     text-transform: uppercase;
     letter-spacing: .5px;
-    color: var(--bodyColor);
-    font-weight: 600;
-    padding: 12px 24px;
-    border-bottom: 1px solid var(--borderColor);
-    background: #F8FAFC;
+    color: #64748b;
+    font-weight: 700;
+    padding: 10px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
   }
   td {
-    padding: 14px 24px;
-    font-size: 13.5px;
-    border-bottom: 1px solid var(--borderColor);
+    padding: 12px 20px;
+    font-size: 13px;
+    border-bottom: 1px solid #f1f5f9;
   }
   tr:last-child td { border-bottom: none; }
-  tr:hover { background: #F8FAFC; }
+  tr:hover { background: #fafbfd; }
 }
-.progress { border-radius: 3px; background: #e2e8f0; }
+.progress { border-radius: 4px; background: #e2e8f0; }
+.proje-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+// ===== Kritik Eksikler =====
+.kritik-list { padding: 0; }
+.kritik-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background .15s;
+  &:hover { background: #fafbfd; }
+  &:last-child { border-bottom: none; }
+}
+.kritik-badge {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 12px; color: #475569;
+  flex-shrink: 0;
+}
+
+// ===== Proje Özeti =====
+.ozet-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.ozet-item { text-align: center; }
+.ozet-number { font-size: 28px; font-weight: 800; line-height: 1.1; }
+.ozet-label { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+.mini-progress-row { margin-top: 8px; }
+.mini-legend {
+  font-size: 11px; color: #64748b;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.legend-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+// ===== Depo Dağılım =====
+.depo-chart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.depo-donut {
+  position: relative;
+  width: 160px; height: 160px;
+}
+.donut-svg {
+  width: 100%; height: 100%;
+  transform: rotate(-90deg);
+}
+.donut-segment {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.donut-center {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+.donut-total { display: block; font-size: 28px; font-weight: 800; color: var(--blackColor); }
+.donut-label { display: block; font-size: 11px; color: #94a3b8; }
+
+.depo-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.depo-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #475569;
+  strong { margin-left: 2px; }
+}
+
+// ===== Tip Dağılım Barları =====
+.tip-bars { display: flex; flex-direction: column; gap: 14px; }
+.tip-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tip-bar-label {
+  width: 80px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+.tip-bar-track {
+  flex: 1;
+  height: 10px;
+  background: #f1f5f9;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.tip-bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width .4s ease;
+}
+.tip-bar-val {
+  width: 36px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--blackColor);
+}
+
+// ===== Yüzde Daireleri =====
+.yuzde-circles {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+}
+.yuzde-item { text-align: center; }
+.yuzde-circle {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 6px;
+  span {
+    background: var(--whiteColor);
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800; color: var(--blackColor);
+  }
+}
+.yuzde-label { font-size: 11px; color: #64748b; }
+
+// ===== Eksik Sıralaması =====
+.eksik-ranking { display: flex; flex-direction: column; gap: 10px; }
+.eksik-rank-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rank-num {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; color: #94a3b8;
+  flex-shrink: 0;
+  &.rank-1 { background: #fef3c7; color: #d97706; }
+  &.rank-2 { background: #e2e8f0; color: #475569; }
+  &.rank-3 { background: #fce7f3; color: #be185d; }
+}
+
+// ===== Btn =====
 .btn-outline-primary {
   border-color: var(--primaryColor);
   color: var(--primaryColor);
-  font-size: 13px;
+  font-size: 12px;
   &:hover { background: var(--primaryColor); color: #fff; }
+}
+
+// ===== Badge helpers =====
+.bg-soft-secondary {
+  background: #f1f5f9 !important;
+}
+
+// ===== Responsive =====
+@media (max-width: 768px) {
+  .ozet-row { grid-template-columns: repeat(2, 1fr); }
+  .depo-legend { gap: 8px; }
+  .yuzde-circles { gap: 16px; }
 }

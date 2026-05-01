@@ -124,6 +124,14 @@
                        title="Sandık İçerik Yönetimi">
                       <i class="ri-settings-3-line"></i>
                     </a>
+                    @if (s.urunSayisi === 0) {
+                      <button class="btn btn-sm btn-outline-danger" 
+                              (click)="sandikSil($event, s)" 
+                              style="padding: 0.1rem 0.4rem; font-size: 0.75rem; z-index: 2; position: relative;"
+                              title="Sandığı Sil">
+                        <i class="ri-delete-bin-line"></i>
+                      </button>
+                    }
                   }
                 </div>
               </a>

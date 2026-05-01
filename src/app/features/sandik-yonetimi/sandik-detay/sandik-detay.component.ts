@@ -49,6 +49,14 @@ export class SandikDetayComponent implements OnInit {
   yeniNeden = signal('');
   urunEklemeSaving = signal(false);
 
+  // Projeden Seç
+  eklemeMode = signal<'manuel' | 'projeden'>('manuel');
+  normalProjeler = signal<any[]>([]);
+  secilenKaynakProjeId = signal(0);
+  kaynakUrunler = signal<any[]>([]);
+  kaynakUrunlerLoading = signal(false);
+  secilenKaynakUrunler = signal<Set<number>>(new Set());
+
   // Özellik Güncelleme Modal State
   showOzellikModal = signal(false);
   ozellikSaving = signal(false);
@@ -154,7 +162,7 @@ export class SandikDetayComponent implements OnInit {
     const s = this.sandik();
     if (!s || s.icerikler.length === 0) return 0;
     const tamamlanan = s.icerikler.filter((i) =>
-      i.durumMetni === 'TamGeldi' || i.durumMetni === 'Tam Geldi' ||
+      i.durumMetni === 'TamGeldi' || i.durumMetni === 'Sevk Adeti Tam Geldi' ||
       i.durumMetni === 'Paketlendi' || i.durumMetni === 'KontrolEdildi' ||
       i.durumMetni === 'Tamamlandı'
     ).length;
@@ -191,11 +199,108 @@ export class SandikDetayComponent implements OnInit {
     this.yeniAdet.set(1);
     this.yeniBirim.set(Birim.Adet);
     this.yeniNeden.set('');
+    this.eklemeMode.set('manuel');
+    this.secilenKaynakProjeId.set(0);
+    this.kaynakUrunler.set([]);
+    this.secilenKaynakUrunler.set(new Set());
     this.showUrunEkleModal.set(true);
+
+    // Saha/Yedek modundaysa normal projeleri yükle
+    if (this.isSahaYedek()) {
+      this.projeService.getProjeListesiByTip(1).subscribe(res => {
+        if (res.isSuccess && res.value) {
+          this.normalProjeler.set(res.value);
+        }
+      });
+    }
   }
 
   closeUrunEkleModal() {
     this.showUrunEkleModal.set(false);
+  }
+
+  // ===== Projeden Ürün Seçme =====
+
+  onKaynakProjeChange(projeId: number) {
+    this.secilenKaynakProjeId.set(projeId);
+    this.secilenKaynakUrunler.set(new Set());
+    if (projeId <= 0) {
+      this.kaynakUrunler.set([]);
+      return;
+    }
+    this.kaynakUrunlerLoading.set(true);
+    this.sandikService.getEksikUrunlerByProje(projeId).subscribe({
+      next: (res) => {
+        this.kaynakUrunlerLoading.set(false);
+        if (res.isSuccess && res.value) {
+          this.kaynakUrunler.set(res.value);
+        } else {
+          this.kaynakUrunler.set([]);
+          this.toast.error(res.error ?? 'Ürünler yüklenemedi.');
+        }
+      },
+      error: () => {
+        this.kaynakUrunlerLoading.set(false);
+        this.toast.error('Ürünler yüklenirken hata oluştu.');
+      }
+    });
+  }
+
+  toggleKaynakUrun(cekiSatiriId: number) {
+    const set = new Set(this.secilenKaynakUrunler());
+    if (set.has(cekiSatiriId)) set.delete(cekiSatiriId);
+    else set.add(cekiSatiriId);
+    this.secilenKaynakUrunler.set(set);
+  }
+
+  projedenUrunEkle() {
+    const secilen = this.secilenKaynakUrunler();
+    if (secilen.size === 0) {
+      this.toast.error('En az bir ürün seçiniz.');
+      return;
+    }
+    this.urunEklemeSaving.set(true);
+    const urunler = this.kaynakUrunler().filter(u => secilen.has(u.cekiSatiriId));
+    let tamamlanan = 0;
+    let hata = 0;
+
+    for (const u of urunler) {
+      const payload = {
+        projeId: this.projeId(),
+        sandikId: this.sandikId(),
+        barkodNo: u.barkodNo || '',
+        isim: u.aciklama,
+        miktar: u.kalanMiktar,
+        birimId: null,
+        cekiSatiriId: u.cekiSatiriId,
+        kaynakProjeNo: u.projeNo
+      };
+      this.projeService.sahaYedekMalzemeEkle(payload).subscribe({
+        next: (res: any) => {
+          tamamlanan++;
+          if (!res.isSuccess) hata++;
+          if (tamamlanan === urunler.length) {
+            this.urunEklemeSaving.set(false);
+            if (hata === 0) {
+              this.toast.success(`${urunler.length} ürün başarıyla eklendi.`);
+              this.closeUrunEkleModal();
+              this.loadSandik();
+            } else {
+              this.toast.error(`${hata} ürün eklenemedi.`);
+              this.loadSandik();
+            }
+          }
+        },
+        error: () => {
+          tamamlanan++;
+          hata++;
+          if (tamamlanan === urunler.length) {
+            this.urunEklemeSaving.set(false);
+            this.toast.error(`${hata} ürün eklenemedi.`);
+          }
+        }
+      });
+    }
   }
 
   // ===== Özellik Güncelleme =====
@@ -376,5 +481,38 @@ export class SandikDetayComponent implements OnInit {
         this.toast.error('Güncelleme sırasında hata oluştu.');
       }
     });
+  }
+
+  // ===== Manuel Ürün Silme =====
+
+  async manuelUrunSil(item: SandikIcerikDto) {
+    const onay = await this.confirmService.ask({
+      title: 'Manuel Ürün Sil',
+      message: `<strong>${item.aciklama}</strong> ürününü silmek istediğinize emin misiniz?<br><br><small class="text-muted">Bu işlem geri alınamaz.</small>`,
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      type: 'danger'
+    });
+
+    if (onay) {
+      // Saha/Yedek modunda her zaman sandikIcerikId ile sil
+      const useSandikIcerikId = this.isSahaYedek();
+      const hasCeki = !useSandikIcerikId && item.cekiSatiriId && item.cekiSatiriId > 0;
+      this.sandikService.manuelUrunSil(
+        this.projeId(),
+        hasCeki ? item.cekiSatiriId : undefined,
+        (!hasCeki || useSandikIcerikId) ? item.id : undefined
+      ).subscribe({
+        next: (res) => {
+          if (res.isSuccess) {
+            this.toast.success('Ürün başarıyla silindi.');
+            this.loadSandik();
+          } else {
+            this.toast.error(res.error ?? 'Ürün silinemedi.');
+          }
+        },
+        error: () => this.toast.error('Silme sırasında hata oluştu.')
+      });
+    }
   }
 }
