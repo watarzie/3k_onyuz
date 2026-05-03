@@ -730,8 +730,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   // ===== Toplu TamGeldi için [disabled] mantığı =====
   isTopluTamGeldiDisabled(u: UcKUrunDto): boolean {
-    // Grid İptal veya TrafoSevk → seçilemez
-    if (u.gridDurumuId === GridDurum.Iptal || u.gridDurumuId === GridDurum.TrafoSevk) return true;
+    // Grid İptal, TrafoSevk veya GridKapandı → seçilemez
+    if (u.gridDurumuId === GridDurum.Iptal || u.gridDurumuId === GridDurum.TrafoSevk || u.gridDurumuId === GridDurum.GridKapandi) return true;
     // Grid henüz sevk etmediyse → seçilemez
     if (u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) return true;
     // Zaten TamGeldi → seçilemez
