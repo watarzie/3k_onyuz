@@ -320,14 +320,20 @@
       <div class="row g-3 mb-3">
         <div class="col-6">
           <label class="form-label fw-semibold">Sandık No <span class="text-danger">*</span></label>
-          <input type="text" class="form-control" [ngModel]="yeniSandikNo()" (ngModelChange)="yeniSandikNo.set($event)" placeholder="Hangi sandığa eklenecek?" />
+          <input type="text" class="form-control" [ngModel]="yeniSandikNo()" (ngModelChange)="onYeniSandikNoChange($event)" placeholder="Hangi sandığa eklenecek?" />
         </div>
         <div class="col-6">
           <label class="form-label fw-semibold">Sandık İsmi</label>
-          <input type="text" class="form-control" [ngModel]="yeniSandikIsmi()" (ngModelChange)="yeniSandikIsmi.set($event)" placeholder="Yeni ise isim girin" />
+          <input type="text" class="form-control" [ngModel]="yeniSandikIsmi()" (ngModelChange)="yeniSandikIsmi.set($event)" [disabled]="sandikIsmiKilitli()" [placeholder]="sandikIsmiKilitli() ? 'Mevcut sandıkta isim değiştirilemez' : 'Yeni ise isim girin'" />
         </div>
         <div class="col-12 mt-1">
-          <small class="text-muted">Eğer bu sandık numarası yoksa otomatik oluşturulacaktır.</small>
+          @if (sandikIsmiKilitli()) {
+            <small class="text-warning fw-semibold">
+              <i class="ri-lock-line me-1"></i>{{ mevcutManuelSandikNo() }} numaralı sandık zaten var; isim alanı yalnızca yeni sandık oluştururken kullanılır.
+            </small>
+          } @else {
+            <small class="text-muted">Eğer bu sandık numarası yoksa otomatik oluşturulacaktır.</small>
+          }
         </div>
       </div>
       <div class="mb-3">

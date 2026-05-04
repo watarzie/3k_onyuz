@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { TranslationService } from '../../../core/services/translation.service';
 import { GridService } from '../../../core/services/grid.service';
+import { SandikService } from '../../../core/services/sandik.service';
 import { ToastService } from '../../../core/services/toast.service';
 
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
@@ -46,11 +47,13 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   ts = inject(TranslationService);
   private route = inject(ActivatedRoute);
   private gridService = inject(GridService);
+  private sandikService = inject(SandikService);
   private toast = inject(ToastService);
 
   projeId = signal(0);
   urunler = signal<GridUrunDto[]>([]);
   filtered = signal<GridUrunDto[]>([]);
+  mevcutSandikNolari = signal<string[]>([]);
   loading = signal(true);
   selectedIds = signal<Set<number>>(new Set());
   filterDurum = signal('');
@@ -85,6 +88,20 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   yeniSandikIsmi = signal('');
   manuelSaving = signal(false);
 
+  mevcutManuelSandikNo = computed(() => {
+    const sandikNo = this.normalizeSandikNo(this.yeniSandikNo());
+    if (!sandikNo) return null;
+
+    const sandikNolari = [
+      ...this.mevcutSandikNolari(),
+      ...this.urunler().map(u => u.sandikNo),
+    ];
+
+    return sandikNolari.find(no => this.normalizeSandikNo(no) === sandikNo) ?? null;
+  });
+
+  sandikIsmiKilitli = computed(() => this.mevcutManuelSandikNo() !== null);
+
   // Stats
   toplamUrun = computed(() => this.urunler().length);
   tamGeldi = computed(() => this.urunler().filter(u => u.gridDurumuMetni === 'Tam Geldi').length);
@@ -111,6 +128,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       { label: 'Grid Modülü' },
     ];
     this.loadUrunler();
+    this.loadSandiklar();
 
     // Diğer sekmelerden gelen grid güncelleme sinyallerini dinle
     this.syncSub = this.gridService.gridGuncellendi$.subscribe(() => {
@@ -155,6 +173,18 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       u.sandikNo.toLowerCase().includes(term)
     );
     this.filtered.set(list);
+  }
+
+  loadSandiklar() {
+    this.sandikService.getSandiklar(this.projeId()).subscribe((res) => {
+      if (res.isSuccess && res.value) {
+        this.mevcutSandikNolari.set(res.value.map(s => s.sandikNo));
+      }
+    });
+  }
+
+  private normalizeSandikNo(value: string | null | undefined): string {
+    return (value ?? '').trim().toLocaleLowerCase('tr-TR');
   }
 
   onSearch(event: Event) {
@@ -469,6 +499,13 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     this.showManuelEkleModal.set(false);
   }
 
+  onYeniSandikNoChange(value: string) {
+    this.yeniSandikNo.set(value);
+    if (this.sandikIsmiKilitli()) {
+      this.yeniSandikIsmi.set('');
+    }
+  }
+
   kaydetManuelUrun() {
     if (!this.yeniSandikNo().trim()) {
       this.toast.error('Sandık numarası zorunludur.');
@@ -487,7 +524,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     this.gridService.manuelUrunEkle({
       projeId: this.projeId(),
       sandikNo: this.yeniSandikNo().trim(),
-      sandikIsmi: this.yeniSandikIsmi().trim() || undefined,
+      sandikIsmi: this.sandikIsmiKilitli() ? undefined : (this.yeniSandikIsmi().trim() || undefined),
       barkodNo: this.yeniBarkod().trim() || 'MANUEL',
       aciklama: this.yeniAciklama().trim(),
       istenenAdet: this.yeniAdet(),
@@ -501,6 +538,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
           this.gridService.notifyGridUpdated();
           this.closeManuelEkleModal();
           this.loadUrunler(false);
+          this.loadSandiklar();
         } else {
           this.toast.error(res.error ?? 'Ürün eklenemedi.');
         }
