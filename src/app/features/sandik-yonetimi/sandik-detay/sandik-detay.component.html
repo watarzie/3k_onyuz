@@ -5,9 +5,9 @@
       <app-breadcrumb [items]="breadcrumb" />
     </div>
     <div class="d-flex gap-2">
-      @if (isSahaYedek() && sandik()?.durumMetni !== 'Hazır' && sandik()?.durumMetni !== 'Sevkedildi') {
+      @if (isSahaYedek() && sandik()?.durumMetni !== 'Kapandı' && sandik()?.durumMetni !== 'Sevkedildi') {
         <button class="btn btn-success d-flex align-items-center gap-2" (click)="sandikHazirla()">
-          <i class="ri-check-double-line"></i> Sandığı Hazırla
+          <i class="ri-lock-line"></i> Sandığı Kapat
         </button>
       }
       <button class="btn btn-save d-flex align-items-center gap-2" (click)="openUrunEkleModal()" [disabled]="sandik()?.durumMetni === 'Sevkedildi'">
@@ -67,6 +67,10 @@
           <button class="btn btn-sm border-0" (click)="closeOzellikModal()"><i class="ri-close-line fs-5"></i></button>
         </div>
         <div class="modal-body-custom">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Sandık İsmi</label>
+            <input type="text" class="form-control" [ngModel]="ozellikSandikIsmi()" (ngModelChange)="ozellikSandikIsmi.set($event)" placeholder="Ör: Elektrik, Mekanik vb." />
+          </div>
           <div class="row g-3">
             <div class="col-4">
               <label class="form-label fw-semibold">En (cm)</label>
@@ -320,6 +324,17 @@
               <label class="form-label fw-semibold">Ekleme Nedeni</label>
               <textarea class="form-control" rows="2" [ngModel]="yeniNeden()" (ngModelChange)="yeniNeden.set($event)" placeholder="Neden ekleniyor? (isteğe bağlı)"></textarea>
             </div>
+          } @else {
+            <div class="row g-3 mt-1 mb-3">
+              <div class="col-12">
+                <label class="form-label fw-semibold">Proje No <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" [ngModel]="yeniKaynakProjeNo()" (ngModelChange)="yeniKaynakProjeNo.set($event)" placeholder="Zorunlu alan" />
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Açıklama</label>
+              <textarea class="form-control" rows="2" [ngModel]="yeniEkAciklama()" (ngModelChange)="yeniEkAciklama.set($event)" placeholder="Ekstra not/açıklama (isteğe bağlı)"></textarea>
+            </div>
           }
         } @else {
           <!-- Projeden Seç Modu -->
@@ -367,6 +382,10 @@
                   }
                 </tbody>
               </table>
+            </div>
+            <div class="mb-3 mt-3">
+              <label class="form-label fw-semibold">Açıklama</label>
+              <textarea class="form-control" rows="2" [ngModel]="yeniEkAciklama()" (ngModelChange)="yeniEkAciklama.set($event)" placeholder="Seçilen malzemeler için ortak not (isteğe bağlı)"></textarea>
             </div>
           } @else if (secilenKaynakProjeId() > 0) {
             <div class="text-center py-3 text-muted">Bu projede kalan > 0 olan ürün bulunamadı.</div>

@@ -3,6 +3,7 @@
 export interface SandikDto {
   id: number;
   sandikNo: string;
+  ad?: string;
   durumId: number;
   durumMetni: string;
   depoLokasyonId: number;
@@ -18,6 +19,7 @@ export interface SandikDto {
 export interface SandikDetayDto {
   id: number;
   sandikNo: string;
+  ad?: string;
   durumId: number;
   durumMetni: string;
   depoLokasyonId: number;
@@ -60,6 +62,7 @@ export interface SandikIcerikDto {
 export interface SandikEkleDto {
   projeId: number;
   sandikNo: string;
+  sandikIsmi?: string;
   tipId: number;
   depoLokasyonId: number;
   en?: number;
@@ -80,7 +83,8 @@ export interface ManuelUrunEkleDto {
 }
 
 export interface UrunGuncelleDto {
-  cekiSatiriId: number;
+  cekiSatiriId?: number | null;
+  sandikIcerikId?: number;
   sandikId: number;
   konulanAdet?: number;
   eksikAdet?: number;
@@ -102,6 +106,7 @@ export interface SandikDegistirDto {
 
 export interface SandikOzellikGuncelleDto {
   sandikId: number;
+  sandikIsmi?: string;
   en?: number;
   boy?: number;
   yukseklik?: number;

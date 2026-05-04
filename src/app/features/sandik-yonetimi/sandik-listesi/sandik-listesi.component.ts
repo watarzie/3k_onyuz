@@ -40,6 +40,7 @@ export class SandikListesiComponent implements OnInit {
   // Sandık Ekleme Modal
   showEkleModal = signal(false);
   yeniSandikNo = signal('');
+  yeniSandikIsmi = signal('');
   yeniTipId = signal(SandikTipi.AhsapKapali);
   yeniLokasyonId = signal(DepoLokasyon.UcK);
   eklemeSaving = signal(false);
@@ -152,6 +153,7 @@ export class SandikListesiComponent implements OnInit {
       return isNaN(num) ? max : Math.max(max, num);
     }, 0);
     this.yeniSandikNo.set((maxNo + 1).toString());
+    this.yeniSandikIsmi.set('');
     this.yeniTipId.set(SandikTipi.AhsapKapali);
     this.yeniLokasyonId.set(DepoLokasyon.UcK);
     this.yeniEn.set(null);
@@ -176,6 +178,7 @@ export class SandikListesiComponent implements OnInit {
     this.sandikService.sandikEkle({
       projeId: this.projeId(),
       sandikNo: no,
+      sandikIsmi: this.yeniSandikIsmi().trim() || undefined,
       tipId: this.yeniTipId(),
       depoLokasyonId: this.yeniLokasyonId(),
       en: this.yeniEn() ?? undefined,

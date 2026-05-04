@@ -51,4 +51,9 @@ export class GridService {
   topluSevk(dto: GridTopluSevkDto): Observable<ApiResult<unknown>> {
     return this.api.post<unknown>(API.GRID.TOPLU_SEVK, dto);
   }
+
+  /** Grid sayfasından manuel ürün ekle */
+  manuelUrunEkle(dto: any): Observable<ApiResult<unknown>> {
+    return this.api.post<unknown>(API.GRID.MANUEL_EKLE, dto);
+  }
 }

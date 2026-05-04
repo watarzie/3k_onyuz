@@ -47,6 +47,8 @@ export class SandikDetayComponent implements OnInit {
   yeniAdet = signal(1);
   yeniBirim = signal(Birim.Adet);
   yeniNeden = signal('');
+  yeniEkAciklama = signal('');
+  yeniKaynakProjeNo = signal('');
   urunEklemeSaving = signal(false);
 
   // Projeden Seç
@@ -60,6 +62,7 @@ export class SandikDetayComponent implements OnInit {
   // Özellik Güncelleme Modal State
   showOzellikModal = signal(false);
   ozellikSaving = signal(false);
+  ozellikSandikIsmi = signal('');
   ozellikEn = signal<number | null>(null);
   ozellikBoy = signal<number | null>(null);
   ozellikYukseklik = signal<number | null>(null);
@@ -99,9 +102,9 @@ export class SandikDetayComponent implements OnInit {
     if (!s) return;
 
     const onay = await this.confirmService.ask({
-      title: 'Sandığı Hazırla',
-      message: `<strong>${s.sandikNo}</strong> numaralı sandığı "Hazır" durumuna getirmek istediğinize emin misiniz?<br><br>Bu işlem geri alınabilir.`,
-      confirmText: 'Evet, Hazırla',
+      title: 'Sandığı Kapat',
+      message: `<strong>${s.sandikNo}</strong> numaralı sandığı kapatmak istediğinize emin misiniz?<br><br>Bu işlem geri alınabilir.`,
+      confirmText: 'Evet, Kapat',
       cancelText: 'Vazgeç',
       type: 'info'
     });
@@ -110,7 +113,7 @@ export class SandikDetayComponent implements OnInit {
       this.projeService.sandikKapat(s.id, true).subscribe({
         next: (res) => {
           if (res.isSuccess) {
-            this.toast.success('Sandık hazırlandı.');
+            this.toast.success('Sandık başarıyla kapatıldı.');
             this.loadSandik();
           } else {
             this.toast.error(res.error || 'İşlem başarısız.');
@@ -199,6 +202,8 @@ export class SandikDetayComponent implements OnInit {
     this.yeniAdet.set(1);
     this.yeniBirim.set(Birim.Adet);
     this.yeniNeden.set('');
+    this.yeniEkAciklama.set('');
+    this.yeniKaynakProjeNo.set('');
     this.eklemeMode.set('manuel');
     this.secilenKaynakProjeId.set(0);
     this.kaynakUrunler.set([]);
@@ -273,7 +278,8 @@ export class SandikDetayComponent implements OnInit {
         miktar: u.kalanMiktar,
         birimId: null,
         cekiSatiriId: u.cekiSatiriId,
-        kaynakProjeNo: u.projeNo
+        kaynakProjeNo: u.projeNo,
+        aciklama: this.yeniEkAciklama().trim() || undefined
       };
       this.projeService.sahaYedekMalzemeEkle(payload).subscribe({
         next: (res: any) => {
@@ -307,6 +313,7 @@ export class SandikDetayComponent implements OnInit {
   openOzellikGuncelleModal() {
     const s = this.sandik();
     if (!s) return;
+    this.ozellikSandikIsmi.set(s.ad ?? '');
     this.ozellikEn.set(s.en ?? null);
     this.ozellikBoy.set(s.boy ?? null);
     this.ozellikYukseklik.set(s.yukseklik ?? null);
@@ -323,6 +330,7 @@ export class SandikDetayComponent implements OnInit {
     this.ozellikSaving.set(true);
     this.sandikService.ozellikGuncelle({
       sandikId: this.sandikId(),
+      sandikIsmi: this.ozellikSandikIsmi().trim() || undefined,
       en: this.ozellikEn() ?? undefined,
       boy: this.ozellikBoy() ?? undefined,
       yukseklik: this.ozellikYukseklik() ?? undefined,
@@ -372,7 +380,9 @@ export class SandikDetayComponent implements OnInit {
     const sahaYedekPayload = {
       ...payload,
       isim: payload.aciklama,
-      miktar: payload.istenenAdet
+      miktar: payload.istenenAdet,
+      kaynakProjeNo: this.yeniKaynakProjeNo().trim() || undefined,
+      aciklama: this.yeniEkAciklama().trim() || undefined
     };
 
     const obs = isSahaYedek 
@@ -460,7 +470,8 @@ export class SandikDetayComponent implements OnInit {
     this.guncelleSaving.set(true);
     const user = this.auth.currentUser();
     this.sandikService.urunGuncelle({
-      cekiSatiriId: urun.cekiSatiriId,
+      cekiSatiriId: urun.cekiSatiriId || null,
+      sandikIcerikId: urun.id,
       sandikId: this.sandikId(),
       konulanAdet: yeniAdet,
       kullaniciId: user?.id ?? 0,

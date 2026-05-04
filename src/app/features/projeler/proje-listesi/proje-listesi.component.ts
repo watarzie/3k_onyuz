@@ -358,8 +358,8 @@ export class ProjeListesiComponent implements OnInit {
 
   submitProjeOlustur() {
     const form = this.yeniProjeForm();
-    if (!form.projeNo.trim() || !form.musteri.trim() || !form.lokasyon.trim()) {
-      this.toastService.error('Proje No, Müşteri ve Lokasyon alanları zorunludur.');
+    if (!form.projeNo.trim()) {
+      this.toastService.error('Proje No zorunludur.');
       return;
     }
 
@@ -368,10 +368,10 @@ export class ProjeListesiComponent implements OnInit {
 
     this.projeService.projeOlustur({
       projeNo: form.projeNo,
-      musteri: form.musteri,
+      musteri: form.musteri || '-',
       projeTipiId: tipId,
       sorumluKisi: '',
-      lokasyon: form.lokasyon
+      lokasyon: form.lokasyon || '-'
     }).subscribe({
       next: (res) => {
         this.creatingProje.set(false);

@@ -4,8 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
 import { StokService } from '../../core/services/stok.service';
 import { PdfService } from '../../core/services/pdf.service';
-import { StokKaydiDto, StokKaydiOlusturDto } from '../../shared/models/index';
+import { StokKaydiDto, StokKaydiOlusturDto, ProjeDropdownDto } from '../../shared/models/index';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
+import { ProjeService } from '../../core/services/proje.service';
 
 @Component({
   selector: 'app-stok-yonetimi',
@@ -18,8 +19,10 @@ export class StokYonetimi implements OnInit {
   private stokService = inject(StokService);
   private toastService = inject(ToastService);
   private pdfService = inject(PdfService);
+  private projeService = inject(ProjeService);
 
   // Veriler
+  projeler = signal<ProjeDropdownDto[]>([]);
   stoklar = signal<StokKaydiDto[]>([]);
   filteredStoklar = signal<StokKaydiDto[]>([]);
   loading = signal<boolean>(false);
@@ -42,7 +45,7 @@ export class StokYonetimi implements OnInit {
     malzemeKodu: '',
     malzemeAdi: '',
     miktar: 1,
-    birim: 'Adet',
+    birimId: 1,
     kaynakProje: '',
     lokasyon: ''
   };
@@ -54,6 +57,17 @@ export class StokYonetimi implements OnInit {
 
   ngOnInit(): void {
     this.loadStoklar();
+    this.loadProjeler();
+  }
+
+  loadProjeler() {
+    this.projeService.getProjeDropdownListesi().subscribe({
+      next: (res) => {
+        if (res.isSuccess && res.value) {
+          this.projeler.set(res.value);
+        }
+      }
+    });
   }
 
   loadStoklar() {
@@ -105,7 +119,7 @@ export class StokYonetimi implements OnInit {
       malzemeKodu: '',
       malzemeAdi: '',
       miktar: 1,
-      birim: 'Adet',
+      birimId: 1,
       kaynakProje: '',
       lokasyon: '',
       stokGirisNedeni: ''
@@ -121,7 +135,7 @@ export class StokYonetimi implements OnInit {
       malzemeKodu: stok.malzemeKodu,
       malzemeAdi: stok.malzemeAdi,
       miktar: stok.miktar,
-      birim: stok.birim,
+      birimId: stok.birimId || 1,
       kaynakProje: stok.kaynakProje,
       lokasyon: stok.lokasyon,
       stokGirisNedeni: stok.stokGirisNedeni
@@ -141,7 +155,6 @@ export class StokYonetimi implements OnInit {
     if (typeof payload.malzemeKodu === 'string') payload.malzemeKodu = payload.malzemeKodu.trim();
     if (typeof payload.kaynakProje === 'string') payload.kaynakProje = payload.kaynakProje.trim();
     if (typeof payload.lokasyon === 'string') payload.lokasyon = payload.lokasyon.trim();
-    if (typeof payload.birim === 'string') payload.birim = payload.birim.trim();
     if (typeof payload.stokGirisNedeni === 'string') payload.stokGirisNedeni = payload.stokGirisNedeni.trim();
 
     if (!payload.malzemeAdi || payload.malzemeAdi === '') {

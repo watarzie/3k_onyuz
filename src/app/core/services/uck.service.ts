@@ -47,4 +47,8 @@ export class UcKService {
   topluTamGeldi(dto: TopluTamGeldiDto): Observable<ApiResult<unknown>> {
     return this.api.post<unknown>(API.UCK.TOPLU_TAM_GELDI, dto);
   }
+
+  topluTedarikci(dto: TopluTamGeldiDto): Observable<ApiResult<unknown>> {
+    return this.api.post<unknown>(API.UCK.TOPLU_TEDARIKCI, dto);
+  }
 }

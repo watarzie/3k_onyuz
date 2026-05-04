@@ -62,12 +62,14 @@ export const API = {
     DURUM_GUNCELLE: `${BASE}/grid/durum-guncelle`,
     DURUM_SIFIRLA: `${BASE}/grid/durum-sifirla`,
     TOPLU_SEVK: `${BASE}/grid/toplu-sevk`,
+    MANUEL_EKLE: `${BASE}/grid/manuel-urun-ekle`,
   },
   UCK: {
     URUNLER: (projeId: number) => `${BASE}/uck/${projeId}/urunler`,
     DURUM_GUNCELLE: `${BASE}/uck/durum-guncelle`,
     DURUM_SIFIRLA: `${BASE}/uck/durum-sifirla`,
     TOPLU_TAM_GELDI: `${BASE}/uck/toplu-tam-geldi`,
+    TOPLU_TEDARIKCI: `${BASE}/uck/toplu-tedarikci`,
   },
   STOK: {
     LIST: `${BASE}/stok`,

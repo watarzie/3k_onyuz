@@ -5,7 +5,8 @@ export interface StokKaydiDto {
   malzemeKodu: string;
   malzemeAdi: string;
   miktar: number;
-  birim: string;
+  birimId: number;
+  birimMetni: string;
   lokasyon?: string;
   kaynakProje?: string;
   stokGirisNedeni?: string;
@@ -18,7 +19,7 @@ export interface StokKaydiOlusturDto {
   malzemeKodu: string;
   malzemeAdi: string;
   miktar: number;
-  birim: string;
+  birimId: number;
   lokasyon?: string;
   kaynakProje?: string;
   stokGirisNedeni?: string;

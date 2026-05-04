@@ -6,6 +6,9 @@
     </div>
     <div class="d-flex align-items-center gap-2">
       <app-readonly-banner />
+      <button *appCanWrite class="btn btn-primary" (click)="openManuelEkleModal()">
+        <i class="ri-add-line me-2"></i>Manuel Ürün Ekle
+      </button>
       <button *appCanWrite class="btn btn-sevk" [disabled]="!hasSelection" (click)="openTopluSevk()">
         <i class="ri-truck-line me-2"></i>Toplu Sevk ({{ selectedIds().size }})
       </button>
@@ -297,6 +300,75 @@
       <button class="btn btn-sevk flex-grow-1" (click)="confirmTopluSevk()" [disabled]="topluSevkSaving()">
         @if (topluSevkSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
         <i class="ri-truck-line me-1"></i>Sevk Et
+      </button>
+    </div>
+  </div>
+}
+
+<!-- ===== Manuel Ürün Ekleme Modal ===== -->
+@if (showManuelEkleModal()) {
+  <div class="modal-overlay" (click)="closeManuelEkleModal()"></div>
+  <div class="toplu-sevk-modal">
+    <div class="modal-header d-flex align-items-center justify-content-between">
+      <h5 class="fw-semibold mb-0"><i class="ri-add-circle-line me-2"></i>Manuel Ürün Ekle</h5>
+      <button class="btn btn-sm border-0" (click)="closeManuelEkleModal()"><i class="ri-close-line fs-5"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="alert-info-custom mb-3 py-2" style="font-size:13px;">
+        <i class="ri-information-line me-1"></i>Eklenen manuel ürün doğrudan <strong>Tam Geldi</strong> durumunda Grid'e yansıyacaktır.
+      </div>
+      <div class="row g-3 mb-3">
+        <div class="col-6">
+          <label class="form-label fw-semibold">Sandık No <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" [ngModel]="yeniSandikNo()" (ngModelChange)="yeniSandikNo.set($event)" placeholder="Hangi sandığa eklenecek?" />
+        </div>
+        <div class="col-6">
+          <label class="form-label fw-semibold">Sandık İsmi</label>
+          <input type="text" class="form-control" [ngModel]="yeniSandikIsmi()" (ngModelChange)="yeniSandikIsmi.set($event)" placeholder="Yeni ise isim girin" />
+        </div>
+        <div class="col-12 mt-1">
+          <small class="text-muted">Eğer bu sandık numarası yoksa otomatik oluşturulacaktır.</small>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Barkod No</label>
+        <input type="text" class="form-control" [ngModel]="yeniBarkod()" (ngModelChange)="yeniBarkod.set($event)" placeholder="Boş bırakılırsa 'MANUEL' atanır" />
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Açıklama <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" [ngModel]="yeniAciklama()" (ngModelChange)="yeniAciklama.set($event)" placeholder="Ürün açıklaması" />
+      </div>
+      <div class="row g-3">
+        <div class="col-6">
+          <label class="form-label fw-semibold">Adet <span class="text-danger">*</span></label>
+          <input type="number" class="form-control" min="1" [ngModel]="yeniAdet()" (ngModelChange)="yeniAdet.set($event)" />
+        </div>
+        <div class="col-6">
+          <label class="form-label fw-semibold">Birim</label>
+          <select class="form-select" [ngModel]="yeniBirim()" (ngModelChange)="yeniBirim.set(+$event)">
+            <option [value]="1">ADET</option>
+            <option [value]="2">SET</option>
+            <option [value]="3">METRE</option>
+            <option [value]="4">KG</option>
+            <option [value]="5">LİTRE</option>
+            <option [value]="6">TAKIM</option>
+            <option [value]="7">PAKET</option>
+            <option [value]="8">TON</option>
+            <option [value]="9">METREKARE</option>
+            <option [value]="10">METREKÜP</option>
+          </select>
+        </div>
+      </div>
+      <div class="mb-3 mt-3">
+        <label class="form-label fw-semibold">Ekleme Nedeni</label>
+        <textarea class="form-control" rows="2" [ngModel]="yeniNeden()" (ngModelChange)="yeniNeden.set($event)" placeholder="Neden ekleniyor? (isteğe bağlı)"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer d-flex gap-2">
+      <button class="btn btn-outline flex-grow-1" (click)="closeManuelEkleModal()">İptal</button>
+      <button class="btn btn-primary flex-grow-1" (click)="kaydetManuelUrun()" [disabled]="manuelSaving()">
+        @if (manuelSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        Ekle
       </button>
     </div>
   </div>

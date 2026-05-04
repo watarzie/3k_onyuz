@@ -32,8 +32,11 @@
       }
     </div>
     <div class="d-flex align-items-center gap-2">
-      <button *appCanWrite class="btn btn-sm btn-success" [disabled]="!hasSelection" (click)="openTopluTamGeldi()" title="Seçili ürünleri Sevk Adeti Tam Geldi olarak işaretle">
+      <button *appCanWrite class="btn btn-sm btn-success" [disabled]="!isTopluTamGeldiAllowed" (click)="openTopluTamGeldi()" title="Seçili ürünleri Sevk Adeti Tam Geldi olarak işaretle">
         <i class="ri-check-double-line me-1"></i>Toplu Sevk Adeti Tam Geldi ({{ selectionCount }})
+      </button>
+      <button *appCanWrite class="btn btn-sm" style="background:#1B7D3A;color:#fff" [disabled]="!hasSelection" (click)="openTopluTedarikci()" title="Seçili ürünleri Tedarikçiden Geldi olarak işaretle">
+        <i class="ri-truck-line me-1"></i>Toplu Tedarikçiden Karşıla ({{ selectionCount }})
       </button>
       <div class="search-box position-relative">
         <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
@@ -83,7 +86,7 @@
             @for (u of filtered(); track u.cekiSatiriId) {
               <tr [ngClass]="getRowClass(u)">
                 <td *appCanWrite>
-                  <input type="checkbox" class="form-check-input" [checked]="isSelected(u.cekiSatiriId)" (change)="toggleSelect(u.cekiSatiriId)" [disabled]="isTopluTamGeldiDisabled(u)" />
+                  <input type="checkbox" class="form-check-input" [checked]="isSelected(u.cekiSatiriId)" (change)="toggleSelect(u.cekiSatiriId)" [disabled]="isCheckboxDisabled(u)" />
                 </td>
                 <td class="text-muted">{{ u.siraNo }}</td>
                 <td><code class="barkod">{{ u.barkodNo }}</code></td>
@@ -335,7 +338,7 @@
                   <a class="dropdown-item py-2 border-bottom" style="cursor: pointer; white-space: normal;" (click)="selectStokItem(stok.id)">
                     <div class="d-flex justify-content-between align-items-center">
                        <span class="fw-bold text-dark">{{ stok.malzemeAdi }}</span>
-                       <span class="badge bg-primary">Bakiye: {{ stok.miktar }} {{ stok.birim }}</span>
+                       <span class="badge bg-primary">Bakiye: {{ stok.miktar }} {{ stok.birimMetni }}</span>
                     </div>
                     @if(stok.malzemeKodu) { <div class="text-muted small lh-sm">Barkod: {{ stok.malzemeKodu }}</div> }
                     <div class="text-muted small lh-sm">Kaynak: <span class="badge bg-soft-secondary text-secondary">{{ stok.kaynakProje }}</span></div>
@@ -400,3 +403,29 @@
   </div>
 }
 
+<!-- ===== Toplu Tedarikçiden Karşıla Onay Modalı ===== -->
+@if (showTopluTedarikciModal()) {
+  <div class="modal-overlay" (click)="closeTopluTedarikci()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h5 class="fw-semibold mb-0"><i class="ri-truck-line me-2" style="color:#1B7D3A"></i>Toplu Tedarikçiden Karşıla</h5>
+        <button class="btn btn-sm border-0" (click)="closeTopluTedarikci()"><i class="ri-close-line fs-5"></i></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3"><strong>{{ selectionCount }}</strong> ürün "Tedarikçiden Geldi" olarak işaretlenecek.</p>
+        <p class="text-muted small mb-3">Her ürün için kalan miktar kadar tedarikçiden karşılama yapılacaktır. Grid iptal veya kapalı ürünler otomatik atlanır.</p>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Açıklama (Opsiyonel)</label>
+          <textarea class="form-control" rows="2" placeholder="Toplu tedarikçi işlem açıklaması..." [ngModel]="topluTedarikciAciklama()" (ngModelChange)="topluTedarikciAciklama.set($event)"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" (click)="closeTopluTedarikci()">Vazgeç</button>
+        <button class="btn" style="background:#1B7D3A;color:#fff" (click)="confirmTopluTedarikci()" [disabled]="topluTedarikciSaving()">
+          @if (topluTedarikciSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          <i class="ri-truck-line me-1"></i>Onayla
+        </button>
+      </div>
+    </div>
+  </div>
+}

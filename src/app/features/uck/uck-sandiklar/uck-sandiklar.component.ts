@@ -44,13 +44,13 @@ export class UcKSandiklarComponent implements OnInit {
 
   // Bulk Selection
   selectedSandikIds = signal<Set<number>>(new Set());
-  
+
   // Filter & Search
   searchTerm = signal('');
   selectedLokasyonlar = signal<string[]>([]);
-  
+
   // System defined DepoLocations via Lookup
-  sistemLokasyonlar = signal<{id: number, deger: string}[]>([]);
+  sistemLokasyonlar = signal<{ id: number, deger: string }[]>([]);
 
   // Locations derived from current crates
   lokasyonlar = computed(() => {
@@ -67,15 +67,16 @@ export class UcKSandiklarComponent implements OnInit {
   // Sandık Ekleme Modal
   showSandikEkleModal = signal(false);
   ekSandikNo = signal('');
+  ekSandikIsmi = signal('');
   ekTipId = signal(1);
   ekLokasyonId = signal(2);
   ekSaving = signal(false);
-  sandikTipleri = signal<{id: number, deger: string}[]>([]);
+  sandikTipleri = signal<{ id: number, deger: string }[]>([]);
 
   breadcrumb: { label: string; link?: string }[] = [];
 
   // Stats
-  get hazirCount(): number { return this.sandiklar().filter(s => s.durumMetni === 'Hazır').length; }
+  get hazirCount(): number { return this.sandiklar().filter(s => s.durumMetni === 'Kapandı').length; }
   get hazirlaniyorCount(): number { return this.sandiklar().filter(s => s.durumMetni === 'Hazırlanıyor').length; }
   get sevkedildiCount(): number { return this.sandiklar().filter(s => s.durumMetni === 'Sevk Edildi').length; }
 
@@ -160,7 +161,7 @@ export class UcKSandiklarComponent implements OnInit {
 
   // --- Lokasyon Güncelleme ---
   selectedSandikForLocIds = signal<number[]>([]);
-  
+
   openLokasyonModal(event: Event, sandik: SandikDto) {
     event.preventDefault();
     event.stopPropagation();
@@ -223,21 +224,21 @@ export class UcKSandiklarComponent implements OnInit {
 
   getDurumLabel(durum: string): string {
     const map: Record<string, string> = {
-      Bos: 'BOŞ', Hazirlaniyor: 'HAZIRLANIYOR', Hazir: 'HAZIR', Sevkedildi: 'SEVK EDİLDİ',
+      Bos: 'BOŞ', Hazirlaniyor: 'HAZIRLANIYOR', 'Kapandı': 'KAPANDI', Sevkedildi: 'SEVK EDİLDİ',
     };
     return map[durum] ?? durum;
   }
 
   getDurumColor(durum: string): string {
     const map: Record<string, string> = {
-      Bos: '#94A3B8', Hazirlaniyor: '#FD5812', Hazir: '#25B003', Sevkedildi: '#3584FC',
+      Bos: '#94A3B8', Hazirlaniyor: '#FD5812', 'Kapandı': '#25B003', Sevkedildi: '#3584FC',
     };
     return map[durum] ?? '#94A3B8';
   }
 
   getDurumIcon(durum: string): string {
     const map: Record<string, string> = {
-      Bos: 'ri-inbox-line', Hazirlaniyor: 'ri-loader-4-line', Hazir: 'ri-checkbox-circle-line', Sevkedildi: 'ri-truck-line',
+      Bos: 'ri-inbox-line', Hazirlaniyor: 'ri-loader-4-line', 'Kapandı': 'ri-lock-line', Sevkedildi: 'ri-truck-line',
     };
     return map[durum] ?? 'ri-inbox-line';
   }
@@ -283,53 +284,53 @@ export class UcKSandiklarComponent implements OnInit {
     this.sandikService.topluKapat(ids, forceClose).subscribe({
       next: async (apiRes) => {
         const res = apiRes.value ?? apiRes;
-        
+
         if (res.isSuccess) {
-          this.toast.success(res.message || 'Sandıklar başarıyla hazırlandı.');
+          this.toast.success(res.message || 'Sandıklar başarıyla kapatıldı.');
           this.selectedSandikIds.set(new Set());
           this.loadSandiklar();
         } else if (res.hasMissingOrDefectiveItems) {
-           const warningList = res.uyariDetaylari?.map((u:any) => `
+          const warningList = res.uyariDetaylari?.map((u: any) => `
              <div class="text-dark fw-bold mb-2">Sandık ${u.sandikNo}</div>
              <div class="mb-3">${u.urunHatalari.map((item: any) => this.generateMissingItemHtml(item)).join('')}</div>
            `).join('') || '';
-           
-           const warningConfirm = await this.confirmService.ask({
-             title: 'Eksik / Hatalı Ürünler',
-             message: `<div class="mb-3 text-dark">Seçili sandıklarda işlem bekleyen eksik veya hatalı ürünler bulundu. Onaylarsanız bu sandıklar <b>'Hazır'</b> konumuna alınacaktır:</div><div class="text-start mb-0">${warningList}</div>`,
-             confirmText: 'Yine de Hazırla',
-             cancelText: 'Vazgeç',
-             type: 'info'
-           });
-           
-           if (warningConfirm) {
-             this.topluKapatConfirm(ids, true);
-           }
+
+          const warningConfirm = await this.confirmService.ask({
+            title: 'Eksik / Hatalı Ürünler',
+            message: `<div class="mb-3 text-dark">Seçili sandıklarda işlem bekleyen eksik veya hatalı ürünler bulundu. Onaylarsanız bu sandıklar <b>'Kapandı'</b> konumuna alınacaktır:</div><div class="text-start mb-0">${warningList}</div>`,
+            confirmText: 'Yine de Kapat',
+            cancelText: 'Vazgeç',
+            type: 'info'
+          });
+
+          if (warningConfirm) {
+            this.topluKapatConfirm(ids, true);
+          }
         } else {
-           this.toast.error(res.message || 'İşlem başarısız oldu.');
+          this.toast.error(res.message || 'İşlem başarısız oldu.');
         }
       },
       error: async (err) => {
         const errorBody = err.error?.value ?? err.error;
         if (errorBody && errorBody.hasMissingOrDefectiveItems) {
-           const warningList = errorBody.uyariDetaylari?.map((u:any) => `
+          const warningList = errorBody.uyariDetaylari?.map((u: any) => `
              <div class="text-dark fw-bold mb-2">Sandık ${u.sandikNo}</div>
              <div class="mb-3">${u.urunHatalari.map((item: any) => this.generateMissingItemHtml(item)).join('')}</div>
            `).join('') || '';
-           
-           const warningConfirm = await this.confirmService.ask({
-             title: 'Eksik / Hatalı Ürünler',
-             message: `<div class="mb-3 text-dark">Seçili sandıklarda işlem bekleyen eksik veya hatalı ürünler bulundu. Onaylarsanız bu sandıklar <b>'Hazır'</b> konumuna alınacaktır:</div><div class="text-start mb-0">${warningList}</div>`,
-             confirmText: 'Zorla Kapat',
-             cancelText: 'İptal Et',
-             type: 'info'
-           });
-           
-           if (warningConfirm) {
-             this.topluKapatConfirm(ids, true);
-           }
+
+          const warningConfirm = await this.confirmService.ask({
+            title: 'Eksik / Hatalı Ürünler',
+            message: `<div class="mb-3 text-dark">Seçili sandıklarda işlem bekleyen eksik veya hatalı ürünler bulundu. Onaylarsanız bu sandıklar <b>'Kapandı'</b> konumuna alınacaktır:</div><div class="text-start mb-0">${warningList}</div>`,
+            confirmText: 'Zorla Kapat',
+            cancelText: 'İptal Et',
+            type: 'info'
+          });
+
+          if (warningConfirm) {
+            this.topluKapatConfirm(ids, true);
+          }
         } else {
-           this.toast.error('Beklenmeyen bir hata oluştu veya sunucuya ulaşılamıyor.');
+          this.toast.error('Beklenmeyen bir hata oluştu veya sunucuya ulaşılamıyor.');
         }
       }
     });
@@ -338,22 +339,22 @@ export class UcKSandiklarComponent implements OnInit {
   async toggleSandikDurum(event: Event, sandik: SandikDto) {
     event.preventDefault();
     event.stopPropagation();
-    
+
     if (!this.canWriteSandik()) return;
 
-    const isHazir = sandik.durumMetni === 'Hazır';
-    const actionText = isHazir ? 'Sandığı tekrar "Hazırlanıyor" durumuna almak' : 'Sandığı "Hazır" olarak işaretlemek';
-    
+    const isKapandi = sandik.durumMetni === 'Kapandı';
+    const actionText = isKapandi ? 'Sandığı tekrar "Hazırlanıyor" durumuna almak' : 'Sandığı kapatmak';
+
     const confirm = await this.confirmService.ask({
       title: 'Sandık Durumu',
       message: `${actionText} istediğinize emin misiniz?`,
       confirmText: 'Evet, Değiştir',
       cancelText: 'İptal',
-      type: isHazir ? 'warning' : 'info'
+      type: isKapandi ? 'warning' : 'info'
     });
 
     if (confirm) {
-      if (isHazir) {
+      if (isKapandi) {
         // Sandığı Aç ("Hazırlanıyor" yap)
         this.projeService.sandikKapat(sandik.id, false).subscribe({
           next: (res) => {
@@ -367,7 +368,7 @@ export class UcKSandiklarComponent implements OnInit {
           error: () => this.toast.error('Beklenmeyen bir hata oluştu.')
         });
       } else {
-        // Sandığı Kapat ("Hazır" yap)
+        // Sandığı Kapat ("Kapandı" yap)
         this.kapatSandikConfirm(sandik.id, false);
       }
     }
@@ -377,44 +378,44 @@ export class UcKSandiklarComponent implements OnInit {
     this.sandikService.kapat(sandikId, forceClose).subscribe({
       next: async (apiRes) => {
         const res = apiRes.value ?? apiRes;
-        
+
         if (res.isSuccess) {
-           this.toast.success('Sandık başarıyla hazır olarak işaretlendi.');
-           this.loadSandiklar();
+          this.toast.success('Sandık başarıyla kapatıldı.');
+          this.loadSandiklar();
         } else if (res.hasMissingOrDefectiveItems) {
-           const warningList = res.missingItemDetails?.map((item:any) => this.generateMissingItemHtml(item)).join('') || '';
-           const warningConfirm = await this.confirmService.ask({
-             title: 'Eksik / Hatalı Ürün Var',
-             message: `<div class="mb-3 text-dark">${res.message}</div><div class="text-start mb-0">${warningList}</div>`,
-             confirmText: 'Yine de Hazırla',
-             cancelText: 'Vazgeç',
-             type: 'info'
-           });
-           
-           if (warningConfirm) {
-             this.kapatSandikConfirm(sandikId, true);
-           }
+          const warningList = res.missingItemDetails?.map((item: any) => this.generateMissingItemHtml(item)).join('') || '';
+          const warningConfirm = await this.confirmService.ask({
+            title: 'Eksik / Hatalı Ürün Var',
+            message: `<div class="mb-3 text-dark">${res.message}</div><div class="text-start mb-0">${warningList}</div>`,
+            confirmText: 'Yine de Kapat',
+            cancelText: 'Vazgeç',
+            type: 'info'
+          });
+
+          if (warningConfirm) {
+            this.kapatSandikConfirm(sandikId, true);
+          }
         } else {
-           this.toast.error(res.message || 'İşlem başarısız oldu.');
+          this.toast.error(res.message || 'İşlem başarısız oldu.');
         }
       },
       error: async (err) => {
         const errorBody = err.error?.value ?? err.error;
         if (errorBody && errorBody.hasMissingOrDefectiveItems) {
-           const warningList = (errorBody.missingItemDetails || []).map((item:any)=> this.generateMissingItemHtml(item)).join('');
-           const warningConfirm = await this.confirmService.ask({
-             title: 'Eksik / Hatalı Ürün Var',
-             message: `<div class="mb-3 text-dark">${errorBody.message}</div><div class="text-start mb-0">${warningList}</div>`,
-             confirmText: 'Yine de Hazırla',
-             cancelText: 'Vazgeç',
-             type: 'info'
-           });
-           
-           if (warningConfirm) {
-             this.kapatSandikConfirm(sandikId, true);
-           }
+          const warningList = (errorBody.missingItemDetails || []).map((item: any) => this.generateMissingItemHtml(item)).join('');
+          const warningConfirm = await this.confirmService.ask({
+            title: 'Eksik / Hatalı Ürün Var',
+            message: `<div class="mb-3 text-dark">${errorBody.message}</div><div class="text-start mb-0">${warningList}</div>`,
+            confirmText: 'Yine de Kapat',
+            cancelText: 'Vazgeç',
+            type: 'info'
+          });
+
+          if (warningConfirm) {
+            this.kapatSandikConfirm(sandikId, true);
+          }
         } else {
-           this.toast.error('Beklenmeyen bir hata oluştu.');
+          this.toast.error('Beklenmeyen bir hata oluştu.');
         }
       }
     });
@@ -428,6 +429,7 @@ export class UcKSandiklarComponent implements OnInit {
       return isNaN(num) ? max : Math.max(max, num);
     }, 0);
     this.ekSandikNo.set((maxNo + 1).toString());
+    this.ekSandikIsmi.set('');
     this.ekTipId.set(1);
     this.ekLokasyonId.set(2);
     this.showSandikEkleModal.set(true);
@@ -447,6 +449,7 @@ export class UcKSandiklarComponent implements OnInit {
     this.sandikService.sandikEkle({
       projeId: this.projeId(),
       sandikNo: no,
+      sandikIsmi: this.ekSandikIsmi().trim() || undefined,
       tipId: this.ekTipId(),
       depoLokasyonId: this.ekLokasyonId(),
     }).subscribe({

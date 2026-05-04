@@ -83,7 +83,10 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   topluAciklama = signal('');
   topluSaving = signal(false);
 
-
+  // Toplu Tedarikçi
+  showTopluTedarikciModal = signal(false);
+  topluTedarikciAciklama = signal('');
+  topluTedarikciSaving = signal(false);
 
   // Proje ve Kaynak Ürün Dropdown State
   projeler = signal<ProjeDropdownDto[]>([]);
@@ -416,7 +419,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     if (!sId) return 'Stok Arayın veya Seçiniz...';
     const s = this.stoklar().find(x => x.id === sId);
     if (!s) return 'Stok Arayın veya Seçiniz...';
-    return `${s.malzemeAdi} (Projeden Kalan: ${s.kaynakProje}) | Bakiye: ${s.miktar} ${s.birim}`;
+    return `${s.malzemeAdi} (Projeden Kalan: ${s.kaynakProje}) | Bakiye: ${s.miktar} ${s.birimMetni}`;
   }
 
   selectUrunItem(uId: number) {
@@ -728,15 +731,57 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ===== Toplu TamGeldi için [disabled] mantığı =====
-  isTopluTamGeldiDisabled(u: UcKUrunDto): boolean {
-    // Grid İptal, TrafoSevk veya GridKapandı → seçilemez
-    if (u.gridDurumuId === GridDurum.Iptal || u.gridDurumuId === GridDurum.TrafoSevk || u.gridDurumuId === GridDurum.GridKapandi) return true;
-    // Grid henüz sevk etmediyse → seçilemez
-    if (u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) return true;
-    // Zaten TamGeldi → seçilemez
-    if (u.ucKKarsilamaTipiId === UcKDurum.TamGeldi) return true;
+  // ===== Toplu Tedarikçiden Karşıla Modal =====
+  openTopluTedarikci() {
+    this.topluTedarikciAciklama.set('');
+    this.showTopluTedarikciModal.set(true);
+  }
+  closeTopluTedarikci() { this.showTopluTedarikciModal.set(false); }
+
+  confirmTopluTedarikci() {
+    this.topluTedarikciSaving.set(true);
+    const dto: TopluTamGeldiDto = {
+      projeId: this.projeId(),
+      cekiSatiriIdler: Array.from(this.selectedIds()),
+      aciklama: this.topluTedarikciAciklama() || undefined,
+    };
+    this.uckService.topluTedarikci(dto).subscribe({
+      next: (res) => {
+        this.topluTedarikciSaving.set(false);
+        if (res.isSuccess) {
+          this.toast.success(`${dto.cekiSatiriIdler.length} ürün Tedarikçiden Karşılandı olarak işaretlendi.`);
+          this.uckService.notifyUckUpdated();
+          this.closeTopluTedarikci();
+          this.selectedIds.set(new Set());
+          this.loadUrunler();
+        } else {
+          this.toast.error(res.error ?? 'Toplu güncelleme başarısız.');
+        }
+      },
+      error: () => {
+        this.topluTedarikciSaving.set(false);
+        this.toast.error('Sunucu ile iletişim kurulamadı.');
+      },
+    });
+  }
+
+  // ===== Checkbox [disabled] — sadece kesin blokaj durumları =====
+  isCheckboxDisabled(u: UcKUrunDto): boolean {
+    // Grid İptal veya GridKapandı → hiçbir toplu işlem yapılamaz
+    if (u.gridDurumuId === GridDurum.Iptal || u.gridDurumuId === GridDurum.GridKapandi) return true;
     return false;
+  }
+
+  // ===== Toplu Tam Geldi butonu aktif mi? =====
+  // Seçili ürünlerin TÜMÜ Grid tarafından sevk edilmiş olmalı
+  get isTopluTamGeldiAllowed(): boolean {
+    if (this.selectedIds().size === 0) return false;
+    const ids = this.selectedIds();
+    return this.filtered().filter(u => ids.has(u.cekiSatiriId)).every(u =>
+      u.gridSevkDurumuId === GridSevkDurum.SevkEdildi &&
+      u.ucKKarsilamaTipiId !== UcKDurum.TamGeldi &&
+      u.gridDurumuId !== GridDurum.TrafoSevk
+    );
   }
 
   // ===== Eksik Ürünler Raporu İndirme =====

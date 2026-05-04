@@ -60,7 +60,7 @@
                     <tr>
                        <td>{{ s.malzemeKodu || '-' }}</td>
                        <td class="fw-semibold">{{ s.malzemeAdi }}</td>
-                       <td><span class="badge bg-soft-primary text-primary px-3">{{ s.miktar }} {{ s.birim }}</span></td>
+                       <td><span class="badge bg-soft-primary text-primary px-3">{{ s.miktar }} {{ s.birimMetni }}</span></td>
                        <td><span class="badge bg-soft-secondary text-secondary">{{ s.kaynakProje }}</span></td>
                        <td><span class="text-muted">{{ s.stokGirisNedeni || '-' }}</span></td>
                        <td>{{ s.lokasyon || '-' }}</td>
@@ -134,16 +134,32 @@
 
           <div class="col-md-3">
             <label class="form-label fw-semibold">Miktar <span class="text-danger">*</span></label>
-            <input type="number" min="1" class="form-control" [(ngModel)]="yeniStok.miktar" />
+            <input type="number" min="0" step="any" class="form-control" [(ngModel)]="yeniStok.miktar" />
           </div>
           <div class="col-md-3">
             <label class="form-label fw-semibold">Birim <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" placeholder="Adet, Kutu vb." [(ngModel)]="yeniStok.birim" />
+            <select class="form-select" [(ngModel)]="yeniStok.birimId">
+              <option [value]="1">ADET</option>
+              <option [value]="2">SET</option>
+              <option [value]="3">METRE</option>
+              <option [value]="4">KG</option>
+              <option [value]="5">LİTRE</option>
+              <option [value]="6">TAKIM</option>
+              <option [value]="7">PAKET</option>
+              <option [value]="8">TON</option>
+              <option [value]="9">METREKARE</option>
+              <option [value]="10">METREKÜP</option>
+            </select>
           </div>
 
           <div class="col-md-5">
             <label class="form-label fw-semibold">Kaynak Proje / İade Projesi <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" placeholder="Hangi projeden arttı?" [(ngModel)]="yeniStok.kaynakProje" />
+            <select class="form-select" [(ngModel)]="yeniStok.kaynakProje">
+              <option value="" disabled selected>Proje Seçiniz...</option>
+              @for (p of projeler(); track p.id) {
+                 <option [value]="p.projeNo">{{ p.projeNo }} — {{ p.musteri }}</option>
+              }
+            </select>
           </div>
           <div class="col-md-3">
             <label class="form-label fw-semibold">Lokasyon</label>

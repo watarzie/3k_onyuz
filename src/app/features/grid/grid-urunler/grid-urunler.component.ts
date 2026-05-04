@@ -74,6 +74,17 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   topluSevkAciklama = signal('');
   topluSevkSaving = signal(false);
 
+  // Manuel Ürün Ekle
+  showManuelEkleModal = signal(false);
+  yeniBarkod = signal('');
+  yeniSandikNo = signal('');
+  yeniAciklama = signal('');
+  yeniAdet = signal(1);
+  yeniBirim = signal(1); // Birim enum
+  yeniNeden = signal('');
+  yeniSandikIsmi = signal('');
+  manuelSaving = signal(false);
+
   // Stats
   toplamUrun = computed(() => this.urunler().length);
   tamGeldi = computed(() => this.urunler().filter(u => u.gridDurumuMetni === 'Tam Geldi').length);
@@ -103,7 +114,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
     // Diğer sekmelerden gelen grid güncelleme sinyallerini dinle
     this.syncSub = this.gridService.gridGuncellendi$.subscribe(() => {
-      this.loadUrunler();
+      this.loadUrunler(false);
     });
   }
 
@@ -113,10 +124,14 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     }
   }
 
-  loadUrunler() {
-    this.loading.set(true);
+  loadUrunler(showLoader = true) {
+    if (showLoader) {
+      this.loading.set(true);
+    }
     this.gridService.getUrunler(this.projeId()).subscribe((res) => {
-      this.loading.set(false);
+      if (showLoader) {
+        this.loading.set(false);
+      }
       if (res.isSuccess && res.value) {
         const sorted = [...res.value].sort((a, b) => {
           const na = parseInt(a.sandikNo.replace(/\D/g, '') || '0', 10);
@@ -355,7 +370,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
           this.toast.success('Ürün durumu başarıyla güncellendi.');
           this.gridService.notifyGridUpdated();
           this.closePanel();
-          this.loadUrunler();
+          this.loadUrunler(false);
         } else {
           const msg = res.error ?? 'Kayıt başarısız.';
           this.panelError.set(msg);
@@ -391,7 +406,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
           this.toast.success('Grid durumu başarıyla sıfırlandı.');
           this.gridService.notifyGridUpdated();
           this.closePanel();
-          this.loadUrunler();
+          this.loadUrunler(false);
         } else {
           const msg = res.error ?? 'Sıfırlama başarısız.';
           this.panelError.set(msg);
@@ -427,7 +442,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
           this.gridService.notifyGridUpdated();
           this.closeTopluSevk();
           this.selectedIds.set(new Set());
-          this.loadUrunler();
+          this.loadUrunler(false);
         } else {
           this.toast.error(res.error ?? 'Toplu sevk işlemi başarısız.');
         }
@@ -436,6 +451,64 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
         this.topluSevkSaving.set(false);
         this.toast.error('Gelen hata nedeniyle toplu sevk yapılamadı.');
       },
+    });
+  }
+  // ===== Manuel Ürün Ekle =====
+  openManuelEkleModal() {
+    this.yeniBarkod.set('');
+    this.yeniSandikNo.set('');
+    this.yeniSandikIsmi.set('');
+    this.yeniAciklama.set('');
+    this.yeniAdet.set(1);
+    this.yeniBirim.set(1);
+    this.yeniNeden.set('');
+    this.showManuelEkleModal.set(true);
+  }
+
+  closeManuelEkleModal() {
+    this.showManuelEkleModal.set(false);
+  }
+
+  kaydetManuelUrun() {
+    if (!this.yeniSandikNo().trim()) {
+      this.toast.error('Sandık numarası zorunludur.');
+      return;
+    }
+    if (!this.yeniAciklama().trim()) {
+      this.toast.error('Açıklama alanı zorunludur.');
+      return;
+    }
+    if (this.yeniAdet() <= 0) {
+      this.toast.error('Adet 0\'dan büyük olmalıdır.');
+      return;
+    }
+
+    this.manuelSaving.set(true);
+    this.gridService.manuelUrunEkle({
+      projeId: this.projeId(),
+      sandikNo: this.yeniSandikNo().trim(),
+      sandikIsmi: this.yeniSandikIsmi().trim() || undefined,
+      barkodNo: this.yeniBarkod().trim() || 'MANUEL',
+      aciklama: this.yeniAciklama().trim(),
+      istenenAdet: this.yeniAdet(),
+      birimId: this.yeniBirim(),
+      eklemeNedeni: this.yeniNeden().trim() || undefined
+    }).subscribe({
+      next: (res) => {
+        this.manuelSaving.set(false);
+        if (res.isSuccess) {
+          this.toast.success('Manuel ürün başarıyla eklendi.');
+          this.gridService.notifyGridUpdated();
+          this.closeManuelEkleModal();
+          this.loadUrunler(false);
+        } else {
+          this.toast.error(res.error ?? 'Ürün eklenemedi.');
+        }
+      },
+      error: () => {
+        this.manuelSaving.set(false);
+        this.toast.error('Sunucu hatası oluştu.');
+      }
     });
   }
 }

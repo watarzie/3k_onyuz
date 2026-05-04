@@ -309,14 +309,6 @@
             <label class="form-label">Proje No</label>
             <input type="text" class="form-control" [(ngModel)]="yeniProjeForm().projeNo" placeholder="Örn: PRJ-2026-001" />
           </div>
-          <div class="mb-3">
-            <label class="form-label">Müşteri</label>
-            <input type="text" class="form-control" [(ngModel)]="yeniProjeForm().musteri" placeholder="Örn: ABC A.Ş." />
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Lokasyon</label>
-            <input type="text" class="form-control" [(ngModel)]="yeniProjeForm().lokasyon" placeholder="Örn: Dubai" />
-          </div>
         </div>
         <div class="modal-footer d-flex gap-2">
           <button class="btn btn-outline flex-grow-1" (click)="closeProjeOlusturModal()" [disabled]="creatingProje()">
