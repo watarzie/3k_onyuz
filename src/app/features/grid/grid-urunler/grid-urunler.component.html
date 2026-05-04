@@ -75,6 +75,7 @@
               <th class="text-center">Proje G.</th>
               <th class="text-center">Tedarikçi K.</th>
               <th class="text-center">Geri Gön.</th>
+              <th>Grid Açıklama</th>
               <th>3K Açıklama</th>
               <th class="text-center">Kalan</th>
               <th *appCanWrite style="width:50px"></th>
@@ -134,6 +135,16 @@
                 <td class="text-center" [ngClass]="{'text-warning fw-semibold': u.projeGonderilen > 0}">{{ u.projeGonderilen > 0 ? u.projeGonderilen : '-' }}</td>
                 <td class="text-center" [ngClass]="{'text-success fw-semibold': u.tedarikciKarsilanan > 0}">{{ u.tedarikciKarsilanan > 0 ? u.tedarikciKarsilanan : '-' }}</td>
                 <td class="text-center" [ngClass]="{'text-danger fw-semibold': u.geriGonderilenMiktar > 0}">{{ u.geriGonderilenMiktar > 0 ? u.geriGonderilenMiktar : '-' }}</td>
+                <td>
+                  @if (u.gridAciklama) {
+                    <div class="aciklama-cell">
+                      <span class="aciklama-text text-info">{{ u.gridAciklama }}</span>
+                      <div class="aciklama-popup">{{ u.gridAciklama }}</div>
+                    </div>
+                  } @else {
+                    <span class="text-muted" style="font-size:12px">-</span>
+                  }
+                </td>
                 <td>
                   @if (u.ucKAciklama) {
                     <div class="aciklama-cell">

@@ -27,6 +27,10 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
   gap: 12px;
+
+  > .position-relative:hover {
+    z-index: 20;
+  }
 }
 
 // ===== Sandık Kartı =====
@@ -82,6 +86,81 @@
     background: #FEE2E2; border-color: #FCA5A5; color: #DC2626;
     box-shadow: 0 2px 8px rgba(239,68,68,.16);
   }
+}
+
+.sandik-ismi-wrap {
+  position: relative;
+  max-width: 100%;
+  margin-top: 4px;
+  padding: 0 0.75rem;
+  cursor: default;
+}
+
+.sandik-ismi {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  min-width: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #374151;
+
+  i {
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    color: #6B7280;
+  }
+}
+
+.sandik-ismi-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sandik-ismi-popup {
+  position: absolute;
+  left: 0.75rem;
+  bottom: calc(100% + 10px);
+  min-width: 150px;
+  max-width: 260px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: #172033;
+  color: #FFFFFF;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.24);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s ease;
+  z-index: 40;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 18px;
+    top: 100%;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid #172033;
+  }
+}
+
+.sandik-ismi-wrap:hover .sandik-ismi-popup,
+.sandik-ismi-wrap:focus-within .sandik-ismi-popup {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
 }
 
 // Durum

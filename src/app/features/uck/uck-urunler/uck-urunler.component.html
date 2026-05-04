@@ -78,6 +78,7 @@
               <th>Kaynak/Hedef</th>
               <th>Kontrol/Uyarı</th>
               <th>Grid Açıklama</th>
+              <th>3K Açıklama</th>
               <th class="text-center">Kalan</th>
               <th *appCanWrite style="width:80px"></th>
             </tr>
@@ -144,6 +145,16 @@
                     <div class="aciklama-cell">
                       <span class="aciklama-text text-info">{{ u.gridAciklama }}</span>
                       <div class="aciklama-popup">{{ u.gridAciklama }}</div>
+                    </div>
+                  } @else {
+                    <span class="text-muted" style="font-size:12px">-</span>
+                  }
+                </td>
+                <td>
+                  @if (u.ucKAciklama) {
+                    <div class="aciklama-cell">
+                      <span class="aciklama-text text-success">{{ u.ucKAciklama }}</span>
+                      <div class="aciklama-popup">{{ u.ucKAciklama }}</div>
                     </div>
                   } @else {
                     <span class="text-muted" style="font-size:12px">-</span>
