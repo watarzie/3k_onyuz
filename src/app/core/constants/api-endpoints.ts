@@ -99,6 +99,7 @@ export const API = {
     SAHA_SANDIK: (sandikId: number) => `${BASE}/pdf/saha-sandik/${sandikId}`,
     SAHA_PROJE: (projeId: number) => `${BASE}/pdf/saha-proje/${projeId}`,
     EKSIK_URUNLER: (projeId: number) => `${BASE}/pdf/eksik-urunler/${projeId}`,
+    GERCEKLESEN_CEKI_LISTESI: (projeId: number) => `${BASE}/pdf/gerceklesen-ceki-listesi/${projeId}`,
     STOK: `${BASE}/pdf/stok`,
   },
   LOOKUP: {

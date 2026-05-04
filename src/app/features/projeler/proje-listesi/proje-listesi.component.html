@@ -80,7 +80,7 @@
               <th>{{ 'LABELS.durumMetni' | translate }}</th>
               <th>Sevk Tarihi</th>
               <th>{{ 'LABELS.TAMAMLANMA' | translate }}</th>
-              @if (isSandikMode() || (!isSandikMode() && canSevkEt())) {
+                  @if (isSandikMode() || isSevkEdilen() || (!isSandikMode() && canSevkEt())) {
                 <th>İşlemler</th>
               }
             </tr>
@@ -140,9 +140,18 @@
                     <small class="fw-semibold">{{ getTamamlanmaYuzdesi(p) }}%</small>
                   </div>
                 </td>
-                @if (isSandikMode() || (!isSandikMode() && canSevkEt())) {
+                @if (isSandikMode() || isSevkEdilen() || (!isSandikMode() && canSevkEt())) {
                   <td>
                     <div class="d-flex gap-1 flex-wrap">
+                      @if (isSevkEdilen() && p.projeTipiId === 1) {
+                        <button class="btn btn-sm btn-danger" (click)="indirGerceklesenCekiListesiPdf(p)" [disabled]="downloadingGerceklesenPdf() === p.id" title="Gerçekleşen Çeki Listesi Raporu">
+                          @if (downloadingGerceklesenPdf() === p.id) {
+                            <span class="spinner-border spinner-border-sm"></span>
+                          } @else {
+                            <i class="ri-file-list-3-line me-1"></i>Gerçekleşen Çeki
+                          }
+                        </button>
+                      }
                       @if (isSandikMode()) {
                         @if (canSeeGrid() && !isSahaYonetimi() && !isYedekYonetimi()) {
                           <a [routerLink]="['/grid', p.id]" class="btn btn-sm btn-action-grid" title="Grid Modülü">

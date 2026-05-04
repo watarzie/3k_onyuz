@@ -32,6 +32,10 @@ export class PdfService {
     return this.api.downloadFile(API.PDF.EKSIK_URUNLER(projeId));
   }
 
+  gerceklesenCekiListesiPdf(projeId: number): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.GERCEKLESEN_CEKI_LISTESI(projeId));
+  }
+
   stokPdf(): Observable<Blob> {
     return this.api.downloadFile(API.PDF.STOK);
   }

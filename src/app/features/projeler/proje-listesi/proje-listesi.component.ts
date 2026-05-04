@@ -38,6 +38,7 @@ export class ProjeListesiComponent implements OnInit {
 
   downloadingPdf = signal<number | null>(null);
   downloadingEksikPdf = signal<number | null>(null);
+  downloadingGerceklesenPdf = signal<number | null>(null);
 
   /**
    * Grid/3K buton gösterimi — Rol Yetki ekranından yönetilir.
@@ -224,6 +225,26 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   // ===== Çeki Yükleme Modal =====
+
+  indirGerceklesenCekiListesiPdf(proje: ProjeDto) {
+    this.downloadingGerceklesenPdf.set(proje.id);
+    this.pdfService.gerceklesenCekiListesiPdf(proje.id).subscribe({
+      next: (blob) => {
+        this.downloadingGerceklesenPdf.set(null);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${proje.projeNo}_GerceklesenCekiListesi.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.toastService.success('Gerçekleşen çeki listesi raporu indirildi.');
+      },
+      error: () => {
+        this.downloadingGerceklesenPdf.set(null);
+        this.toastService.error('Rapor indirilirken bir hata oluştu.');
+      }
+    });
+  }
 
   openUploadModal() {
     this.showUploadModal.set(true);
