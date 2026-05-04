@@ -104,7 +104,17 @@
               </button>
               }
             </div>
-            <span class="nav-arrow"><i class="ri-arrow-right-s-line"></i></span>
+            @if (canWriteSandik() && s.silinebilirMi) {
+            <div class="card-top-actions">
+              <button
+                class="card-icon-btn card-delete-btn"
+                (click)="sandikSil($event, s)"
+                title="Sandığı Sil"
+                aria-label="Sandığı Sil">
+                <i class="ri-delete-bin-line"></i>
+              </button>
+            </div>
+            }
           </div>
           @if (s.ad) {
           <div class="sandik-ismi text-truncate" [title]="s.ad"
@@ -141,15 +151,6 @@
                 title="Sandık İçerik Yönetimi">
                 <i class="ri-settings-3-line"></i>
               </a>
-              @if (s.urunSayisi === 0) {
-              <button
-                class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center flex-shrink-0"
-                (click)="sandikSil($event, s)"
-                style="width: 26px; height: 26px; padding: 0; font-size: 0.85rem; z-index: 2; position: relative;"
-                title="Sandığı Sil">
-                <i class="ri-delete-bin-line"></i>
-              </button>
-              }
             </div>
             }
           </div>

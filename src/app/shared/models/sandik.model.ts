@@ -9,6 +9,8 @@ export interface SandikDto {
   depoLokasyonId: number;
   depoLokasyonMetni: string;
   urunSayisi: number;
+  isManuelSandik: boolean;
+  silinebilirMi: boolean;
   en?: number;
   boy?: number;
   yukseklik?: number;

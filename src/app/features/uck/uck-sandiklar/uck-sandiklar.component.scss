@@ -41,7 +41,6 @@
     border-color: #C7D2FE;
     box-shadow: 0 4px 16px rgba(99,102,241,.08);
     transform: translateY(-2px);
-    .nav-arrow { background: var(--primaryColor); color: #fff; }
   }
 
   // Sol kenar — durum rengi
@@ -57,17 +56,32 @@
 
 // Üst satır — numara + ok
 .card-top {
-  display: flex; align-items: flex-start; justify-content: space-between;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+
+  > .d-flex { min-width: 0; }
 }
 .sandik-no {
   font-size: 24px; font-weight: 800; line-height: 1;
   color: var(--blackColor); letter-spacing: -.5px;
 }
-.nav-arrow {
+.card-top-actions {
+  width: 22px; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-left: 8px;
+}
+.card-icon-btn {
   width: 22px; height: 22px; border-radius: 6px;
-  background: #F1F5F9; color: #94A3B8;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; transition: .2s; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0; font-size: 13px; line-height: 1;
+  position: relative; z-index: 2; transition: .2s;
+}
+.card-delete-btn {
+  background: #FFF7F7; border: 1px solid #FECACA; color: #EF4444;
+
+  &:hover,
+  &:focus {
+    background: #FEE2E2; border-color: #FCA5A5; color: #DC2626;
+    box-shadow: 0 2px 8px rgba(239,68,68,.16);
+  }
 }
 
 // Durum

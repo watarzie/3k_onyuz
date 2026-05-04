@@ -476,9 +476,13 @@ export class UcKSandiklarComponent implements OnInit {
     event.stopPropagation();
     if (!this.canWriteSandik()) return;
 
+    const silmeDetayi = sandik.isManuelSandik && sandik.urunSayisi > 0
+      ? `<br><br><small class="text-muted">Bu manuel sandığın içindeki ${sandik.urunSayisi} manuel ürün de silinecek.</small>`
+      : '';
+
     const confirm = await this.confirmService.ask({
       title: 'Sandık Sil',
-      message: `<strong>${sandik.sandikNo}</strong> numaralı sandığı silmek istediğinize emin misiniz?<br><br>
+      message: `<strong>${sandik.sandikNo}</strong> numaralı sandığı silmek istediğinize emin misiniz?${silmeDetayi}<br><br>
                 <div class="alert alert-danger py-2 mb-0">
                   <i class="ri-alert-line me-1"></i> Bu işlem geri alınamaz.
                 </div>`,
@@ -494,7 +498,7 @@ export class UcKSandiklarComponent implements OnInit {
             this.toast.success(`Sandık "${sandik.sandikNo}" başarıyla silindi.`);
             this.loadSandiklar();
           } else {
-            this.toast.error(res.error || 'Sandık silinemedi. İçinde ürün olabilir.');
+            this.toast.error(res.error || 'Sandık silinemedi. İçinde silinemeyen ürün olabilir.');
           }
         },
         error: (err) => {

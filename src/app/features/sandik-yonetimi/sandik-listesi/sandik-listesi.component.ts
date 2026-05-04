@@ -207,9 +207,13 @@ export class SandikListesiComponent implements OnInit {
   // ===== Sandık Silme =====
 
   async sandikSil(s: SandikDto) {
+    const silmeDetayi = s.isManuelSandik && s.urunSayisi > 0
+      ? `<br><br><small class="text-muted">Bu manuel sandığın içindeki ${s.urunSayisi} manuel ürün de silinecek.</small>`
+      : '';
+
     const onay = await this.confirmService.ask({
       title: 'Sandık Sil',
-      message: `<strong>${s.sandikNo}</strong> numaralı boş sandığı silmek istediğinize emin misiniz?<br><br><small class="text-muted">Bu işlem geri alınamaz.</small>`,
+      message: `<strong>${s.sandikNo}</strong> numaralı sandığı silmek istediğinize emin misiniz?${silmeDetayi}<br><br><small class="text-muted">Bu işlem geri alınamaz.</small>`,
       confirmText: 'Evet, Sil',
       cancelText: 'Vazgeç',
       type: 'danger'
