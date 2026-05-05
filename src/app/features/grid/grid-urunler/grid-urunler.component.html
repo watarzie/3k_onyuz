@@ -79,9 +79,9 @@
             <th>Açıklama</th>
             <th class="text-center">Miktar</th>
             <th>Sandık</th>
-            <th>Grid Durumu</th>
             <th>Kalite</th>
             <th>Süreç</th>
+            <th>Grid Durumu</th>
             <th class="text-center">Gelen</th>
             <th class="text-center">Grid Sevk</th>
             <th class="text-center">Trafo</th>
@@ -110,13 +110,6 @@
             <td class="fw-medium text-truncate" style="max-width:200px" [title]="u.aciklama">{{ u.aciklama }}</td>
             <td class="text-center fw-semibold">{{ u.istenenAdet }} <small class="text-muted fw-normal">{{ u.birim }}</small></td>
             <td><span class="badge-sandik">{{ u.sandikNo }}</span></td>
-            <td>
-              <span class="durum-badge" [style.background]="getDurumColor(u.gridDurumuMetni) + '15'"
-                [style.color]="getDurumColor(u.gridDurumuMetni)"
-                [style.border-color]="getDurumColor(u.gridDurumuMetni) + '30'">
-                {{ getDurumLabel(u.gridDurumuMetni) }}
-              </span>
-            </td>
             <!-- Kalite -->
             <td>
               <span class="durum-badge" [style.background]="getKaliteDurumColor(u.kaliteDurumMetni) + '15'"
@@ -131,6 +124,13 @@
                 [style.color]="getSurecDurumColor(u.surecDurumMetni)"
                 [style.border-color]="getSurecDurumColor(u.surecDurumMetni) + '30'">
                 {{ u.surecDurumMetni ?? '-' }}
+              </span>
+            </td>
+            <td>
+              <span class="durum-badge" [style.background]="getDurumColor(u.gridDurumuMetni) + '15'"
+                [style.color]="getDurumColor(u.gridDurumuMetni)"
+                [style.border-color]="getDurumColor(u.gridDurumuMetni) + '30'">
+                {{ getDurumLabel(u.gridDurumuMetni) }}
               </span>
             </td>
             <td class="text-center">{{ u.gridGelenAdet }} <small class="text-muted">{{ u.birim }}</small></td>
