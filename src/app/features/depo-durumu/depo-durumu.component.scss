@@ -3,6 +3,110 @@
 .card-header { padding: 18px 24px; background: transparent; border-bottom: 1px solid var(--borderColor); }
 .card-body { padding: 24px; }
 
+.report-action {
+  position: relative;
+  display: inline-flex;
+  z-index: 12;
+}
+
+.report-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  box-shadow: 0 8px 18px rgba(220, 53, 69, .14);
+}
+
+.report-chevron {
+  font-size: 18px;
+  line-height: 1;
+  transition: transform .18s ease;
+
+  &.open {
+    transform: rotate(180deg);
+  }
+}
+
+.report-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 230px;
+  padding: 8px;
+  border: 1px solid var(--borderColor);
+  border-radius: 10px;
+  background: var(--whiteColor);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, .14);
+}
+
+.report-menu::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  right: 22px;
+  width: 12px;
+  height: 12px;
+  border-left: 1px solid var(--borderColor);
+  border-top: 1px solid var(--borderColor);
+  background: var(--whiteColor);
+  transform: rotate(45deg);
+}
+
+.report-menu-item {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 10px;
+  color: var(--blackColor);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  transition: background-color .16s ease, color .16s ease;
+
+  &:hover {
+    background: #F8FAFC;
+  }
+}
+
+.report-menu-icon {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  flex: 0 0 auto;
+  font-size: 16px;
+}
+
+.report-menu-item.is-all .report-menu-icon {
+  color: var(--primaryColor);
+  background: rgba(53, 132, 252, .12);
+}
+
+.report-menu-item.is-normal .report-menu-icon {
+  color: #0EA5E9;
+  background: #DDF7FF;
+}
+
+.report-menu-item.is-saha .report-menu-icon {
+  color: #078A55;
+  background: #DDF2E8;
+}
+
+.report-menu-item.is-yedek .report-menu-icon {
+  color: #F59E0B;
+  background: #FFF2CC;
+}
+
 .donut-chart-wrapper { text-align: center; }
 .donut-chart { width: 200px; height: 200px; }
 .donut-text { fill: var(--blackColor); }

@@ -101,6 +101,8 @@ export const API = {
     EKSIK_URUNLER: (projeId: number) => `${BASE}/pdf/eksik-urunler/${projeId}`,
     GERCEKLESEN_CEKI_LISTESI: (projeId: number) => `${BASE}/pdf/gerceklesen-ceki-listesi/${projeId}`,
     STOK: `${BASE}/pdf/stok`,
+    DEPO_SANDIK: (projeTipiId?: number | null) =>
+      projeTipiId ? `${BASE}/pdf/depo-sandik?projeTipiId=${projeTipiId}` : `${BASE}/pdf/depo-sandik`,
   },
   LOOKUP: {
     GET: `${BASE}/lookup`,

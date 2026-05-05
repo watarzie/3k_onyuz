@@ -1,7 +1,41 @@
 <div class="page-title-area mb-4">
-  <div>
-    <h2 class="fw-bold mb-1">{{ 'MENU.DEPO_DURUMU' | translate }}</h2>
-    <app-breadcrumb [items]="breadcrumb" />
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-1">{{ 'MENU.DEPO_DURUMU' | translate }}</h2>
+      <app-breadcrumb [items]="breadcrumb" />
+    </div>
+    <div class="report-action" (click)="$event.stopPropagation()">
+      <button type="button" class="btn btn-danger report-trigger" (click)="toggleReportMenu($event)" [disabled]="downloadingPdf()">
+        @if (downloadingPdf()) {
+          <span class="spinner-border spinner-border-sm"></span>
+        } @else {
+          <i class="ri-file-pdf-2-line"></i>
+        }
+        <span>Depo Sandık Raporu</span>
+        <i class="ri-arrow-down-s-line report-chevron" [class.open]="reportMenuOpen()"></i>
+      </button>
+
+      @if (reportMenuOpen()) {
+      <div class="report-menu">
+        <button type="button" class="report-menu-item is-all" (click)="indirDepoSandikPdf(null)" [disabled]="downloadingPdf()">
+          <span class="report-menu-icon"><i class="ri-apps-2-line"></i></span>
+          <span>Tüm Projeler</span>
+        </button>
+        <button type="button" class="report-menu-item is-normal" (click)="indirDepoSandikPdf(1)" [disabled]="downloadingPdf()">
+          <span class="report-menu-icon"><i class="ri-building-2-line"></i></span>
+          <span>Normal Projeler</span>
+        </button>
+        <button type="button" class="report-menu-item is-saha" (click)="indirDepoSandikPdf(2)" [disabled]="downloadingPdf()">
+          <span class="report-menu-icon"><i class="ri-map-pin-line"></i></span>
+          <span>Saha Projeleri</span>
+        </button>
+        <button type="button" class="report-menu-item is-yedek" (click)="indirDepoSandikPdf(3)" [disabled]="downloadingPdf()">
+          <span class="report-menu-icon"><i class="ri-archive-line"></i></span>
+          <span>Yedek Projeleri</span>
+        </button>
+      </div>
+      }
+    </div>
   </div>
 </div>
 
@@ -205,7 +239,7 @@
                     @for (s of p.sandiklar; track s.id) {
                     <tr>
                       <td class="fw-bold text-dark py-2 px-3">{{ s.sandikNo }}</td>
-                      <td class="py-2 px-3"><span class="badge bg-light text-secondary">{{ s.tip ?? 'Standart' }}</span></td>
+                      <td class="py-2 px-3"><span class="badge bg-light text-secondary">Standart</span></td>
                       <td class="py-2 px-3"><app-status-badge [status]="s.durumMetni" [label]="s.durumMetni" /></td>
                       <td class="py-2 px-3">
                         @if (s.depoLokasyonMetni) {

@@ -1,14 +1,14 @@
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
-import { Component, inject, signal, OnInit } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, HostListener, inject, signal, OnInit } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { TranslationService } from '../../core/services/translation.service';
 import { ProjeService } from '../../core/services/proje.service';
 import { SandikService } from '../../core/services/sandik.service';
-import { StatCardComponent } from '../../shared/components/stat-card/stat-card.component';
+import { PdfService } from '../../core/services/pdf.service';
+import { ToastService } from '../../core/services/toast.service';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
-import { ProjeDto, SandikDto } from '../../shared/models/index';
+import { SandikDto } from '../../shared/models/index';
 
 export interface DepoStats {
   toplam: number;
@@ -25,14 +25,14 @@ export interface ProjectWarehouseStat {
   ucKSandik: number;
   seymenSandik: number;
   gridSandik: number;
-  sandiklar: any[];
+  sandiklar: SandikDto[];
   expanded: boolean;
 }
 
 @Component({
   selector: 'app-depo-durumu',
   standalone: true,
-  imports: [TranslatePipe, RouterLink, NgClass, StatCardComponent, StatusBadgeComponent, BreadcrumbComponent],
+  imports: [TranslatePipe, NgClass, StatusBadgeComponent, BreadcrumbComponent],
   templateUrl: './depo-durumu.component.html',
   styleUrl: './depo-durumu.component.scss',
 })
@@ -40,11 +40,15 @@ export class DepoDurumuComponent implements OnInit {
   ts = inject(TranslationService);
   private projeService = inject(ProjeService);
   private sandikService = inject(SandikService);
+  private pdfService = inject(PdfService);
+  private toastService = inject(ToastService);
 
   projectsList = signal<ProjectWarehouseStat[]>([]);
   filteredProjectsList = signal<ProjectWarehouseStat[]>([]);
   loading = signal(true);
+  downloadingPdf = signal(false);
   searchTerm = signal('');
+  reportMenuOpen = signal(false);
 
   // İstatistikler
   globalStats = signal<DepoStats>({ toplam: 0, ucK: 0, seymen: 0, grid: 0 });
@@ -72,9 +76,9 @@ export class DepoDurumuComponent implements OnInit {
         projects.forEach((p) => {
           this.sandikService.getSandiklar(p.id).subscribe((sRes) => {
             completed++;
-            let sandiklar: any[] = [];
+            let sandiklar: SandikDto[] = [];
             if (sRes.isSuccess && sRes.value) {
-              sandiklar = sRes.value.map(s => ({ ...s, projeAdi: p.projeNo }));
+              sandiklar = sRes.value.filter(s => this.isDepodaSayilacakSandik(s));
               // Sort crates
               sandiklar.sort((a, b) => this.extractNumber(a.sandikNo) - this.extractNumber(b.sandikNo));
             }
@@ -83,17 +87,19 @@ export class DepoDurumuComponent implements OnInit {
             const seymen = sandiklar.filter((s) => s.depoLokasyonMetni === 'Seymen' || s.depoLokasyonMetni === 'SEYMEN').length;
             const grid = sandiklar.filter((s) => s.depoLokasyonMetni === 'Grid' || s.depoLokasyonMetni === 'GRID').length;
 
-            projectStats.push({
-              id: p.id,
-              projeNo: p.projeNo,
-              projeTipiId: p.projeTipiId,
-              toplamSandik: sandiklar.length,
-              ucKSandik: ucK,
-              seymenSandik: seymen,
-              gridSandik: grid,
-              sandiklar: sandiklar,
-              expanded: false
-            });
+            if (sandiklar.length > 0) {
+              projectStats.push({
+                id: p.id,
+                projeNo: p.projeNo,
+                projeTipiId: p.projeTipiId,
+                toplamSandik: sandiklar.length,
+                ucKSandik: ucK,
+                seymenSandik: seymen,
+                gridSandik: grid,
+                sandiklar: sandiklar,
+                expanded: false
+              });
+            }
 
             if (completed === projects.length) {
               // Proje no'ya göre sırala
@@ -115,6 +121,10 @@ export class DepoDurumuComponent implements OnInit {
     if (!sandikNo) return 0;
     const match = sandikNo.match(/(\d+)/);
     return match ? parseInt(match[1], 10) : 0;
+  }
+
+  private isDepodaSayilacakSandik(sandik: SandikDto): boolean {
+    return sandik.durumId !== 4;
   }
 
   onSearch(event: Event) {
@@ -165,5 +175,50 @@ export class DepoDurumuComponent implements OnInit {
 
   getDonutPercentage(count: number, total: number): number {
     return total > 0 ? Math.round((count / total) * 100) : 0;
+  }
+
+  @HostListener('document:click')
+  closeReportMenu() {
+    this.reportMenuOpen.set(false);
+  }
+
+  toggleReportMenu(event: MouseEvent) {
+    event.stopPropagation();
+    if (this.downloadingPdf()) return;
+    this.reportMenuOpen.update(open => !open);
+  }
+
+  private getReportTypeLabel(projeTipiId: number | null): string {
+    switch (projeTipiId) {
+      case 1:
+        return 'Normal';
+      case 2:
+        return 'Saha';
+      case 3:
+        return 'Yedek';
+      default:
+        return 'TumProjeler';
+    }
+  }
+
+  indirDepoSandikPdf(projeTipiId: number | null = null) {
+    this.reportMenuOpen.set(false);
+    this.downloadingPdf.set(true);
+    this.pdfService.depoSandikPdf(projeTipiId).subscribe({
+      next: (blob) => {
+        this.downloadingPdf.set(false);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const tarih = new Date().toISOString().split('T')[0].replace(/-/g, '');
+        a.download = `DepoSandikRaporu_${this.getReportTypeLabel(projeTipiId)}_${tarih}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.downloadingPdf.set(false);
+        this.toastService.error('Depo sandık raporu indirilirken bir hata oluştu.');
+      }
+    });
   }
 }
