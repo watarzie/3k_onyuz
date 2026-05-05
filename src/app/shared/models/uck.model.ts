@@ -37,6 +37,11 @@ export interface UcKUrunDto {
   kontrolUyari: string;
   genelDurumId: number;
   genelDurumMetni: string;
+  // Kalite & Süreç (read-only)
+  kaliteDurumId?: number;
+  kaliteDurumMetni?: string;
+  surecDurumId?: number;
+  surecDurumMetni?: string;
   isManuelEklenen: boolean;
 }
 

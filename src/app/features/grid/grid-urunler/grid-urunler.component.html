@@ -12,6 +12,16 @@
       <button *appCanWrite class="btn btn-sevk" [disabled]="!hasSelection" (click)="openTopluSevk()">
         <i class="ri-truck-line me-2"></i>Toplu Sevk ({{ selectedIds().size }})
       </button>
+      @if (canKalite) {
+      <button class="btn btn-outline-warning" [disabled]="!hasSelection" (click)="openKaliteModal()">
+        <i class="ri-shield-check-line me-1"></i>Kalite ({{ selectedIds().size }})
+      </button>
+      }
+      @if (canSurec) {
+      <button class="btn btn-outline-info" [disabled]="!hasSelection" (click)="openSurecModal()">
+        <i class="ri-settings-3-line me-1"></i>Süreç ({{ selectedIds().size }})
+      </button>
+      }
     </div>
   </div>
 </div>
@@ -70,6 +80,8 @@
             <th class="text-center">Miktar</th>
             <th>Sandık</th>
             <th>Grid Durumu</th>
+            <th>Kalite</th>
+            <th>Süreç</th>
             <th class="text-center">Gelen</th>
             <th class="text-center">Grid Sevk</th>
             <th class="text-center">Trafo</th>
@@ -103,6 +115,22 @@
                 [style.color]="getDurumColor(u.gridDurumuMetni)"
                 [style.border-color]="getDurumColor(u.gridDurumuMetni) + '30'">
                 {{ getDurumLabel(u.gridDurumuMetni) }}
+              </span>
+            </td>
+            <!-- Kalite -->
+            <td>
+              <span class="durum-badge" [style.background]="getKaliteDurumColor(u.kaliteDurumMetni) + '15'"
+                [style.color]="getKaliteDurumColor(u.kaliteDurumMetni)"
+                [style.border-color]="getKaliteDurumColor(u.kaliteDurumMetni) + '30'">
+                {{ u.kaliteDurumMetni ?? '-' }}
+              </span>
+            </td>
+            <!-- Süreç -->
+            <td>
+              <span class="durum-badge" [style.background]="getSurecDurumColor(u.surecDurumMetni) + '15'"
+                [style.color]="getSurecDurumColor(u.surecDurumMetni)"
+                [style.border-color]="getSurecDurumColor(u.surecDurumMetni) + '30'">
+                {{ u.surecDurumMetni ?? '-' }}
               </span>
             </td>
             <td class="text-center">{{ u.gridGelenAdet }} <small class="text-muted">{{ u.birim }}</small></td>
@@ -183,7 +211,7 @@
               {{ u.kalanMiktar }} <small class="text-muted fw-normal">{{ u.birim }}</small>
             </td>
             <td *appCanWrite>
-              @if (isUcKIslemYapilmis(u)) {
+              @if (isUcKIslemYapilmis(u) || isTadilatta(u)) {
               <button class="btn btn-sm btn-action btn-locked" disabled [title]="getUcKBlokajMesaji(u)">
                 <i class="ri-lock-line"></i>
               </button>
@@ -440,6 +468,70 @@
       @if (manuelSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
       Ekle
     </button>
+  </div>
+</div>
+}
+
+<!-- ===== Kalite Toplu Atama Modal ===== -->
+@if (showKaliteModal()) {
+<div class="modal-backdrop show" (click)="closeKaliteModal()"></div>
+<div class="modal d-block" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="ri-shield-check-line me-2 text-warning"></i>Kalite Durumu Ata</h5>
+        <button class="btn-close" (click)="closeKaliteModal()"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-3"><strong>{{ selectedIds().size }}</strong> ürün seçildi.</p>
+        <label class="form-label fw-semibold">Kalite Durumu</label>
+        <select class="form-select" [ngModel]="kaliteDurumSecim()" (ngModelChange)="kaliteDurumSecim.set(+$event)">
+          <option [value]="0" disabled>Seçiniz...</option>
+          <option [value]="1">Onaylandı</option>
+          <option [value]="2">Tadilatta</option>
+        </select>
+      </div>
+      <div class="modal-footer d-flex gap-2">
+        <button class="btn btn-outline flex-grow-1" (click)="closeKaliteModal()">İptal</button>
+        <button class="btn btn-warning flex-grow-1" (click)="confirmKalite()" [disabled]="kaliteSaving() || !kaliteDurumSecim()">
+          @if (kaliteSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          Uygula
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+}
+
+<!-- ===== Süreç Toplu Atama Modal ===== -->
+@if (showSurecModal()) {
+<div class="modal-backdrop show" (click)="closeSurecModal()"></div>
+<div class="modal d-block" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="ri-settings-3-line me-2 text-info"></i>Süreç Durumu Ata</h5>
+        <button class="btn-close" (click)="closeSurecModal()"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-3"><strong>{{ selectedIds().size }}</strong> ürün seçildi.</p>
+        <label class="form-label fw-semibold">Süreç Durumu</label>
+        <select class="form-select" [ngModel]="surecDurumSecim()" (ngModelChange)="surecDurumSecim.set(+$event)">
+          <option [value]="0" disabled>Seçiniz...</option>
+          <option [value]="1">Ambar</option>
+          <option [value]="2">İmalat</option>
+          <option [value]="3">Tedarik</option>
+          <option [value]="4">Tedarik 3K Teslim</option>
+        </select>
+      </div>
+      <div class="modal-footer d-flex gap-2">
+        <button class="btn btn-outline flex-grow-1" (click)="closeSurecModal()">İptal</button>
+        <button class="btn btn-info flex-grow-1" (click)="confirmSurec()" [disabled]="surecSaving() || !surecDurumSecim()">
+          @if (surecSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          Uygula
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 }

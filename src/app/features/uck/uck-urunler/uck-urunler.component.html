@@ -70,6 +70,8 @@
             <th>Koli</th>
             <th class="text-center">Miktar</th>
             <th>Grid Dur.</th>
+            <th>Kalite</th>
+            <th>Süreç</th>
             <th>Sevk Dur.</th>
             <th class="text-center">Grid Gelen</th>
             <th class="text-center">Grid Sevk</th>
@@ -106,6 +108,22 @@
                 [style.color]="getGridDurumColor(u.gridDurumuMetni)"
                 [style.border-color]="getGridDurumColor(u.gridDurumuMetni) + '30'">
                 {{ u.gridDurumuMetni ? u.gridDurumuMetni.toUpperCase() : '-' }}
+              </span>
+            </td>
+            <!-- Kalite (read-only) -->
+            <td>
+              <span class="durum-badge" [style.background]="getKaliteDurumColor(u.kaliteDurumMetni) + '15'"
+                [style.color]="getKaliteDurumColor(u.kaliteDurumMetni)"
+                [style.border-color]="getKaliteDurumColor(u.kaliteDurumMetni) + '30'">
+                {{ u.kaliteDurumMetni ?? '-' }}
+              </span>
+            </td>
+            <!-- Süreç (read-only) -->
+            <td>
+              <span class="durum-badge" [style.background]="getSurecDurumColor(u.surecDurumMetni) + '15'"
+                [style.color]="getSurecDurumColor(u.surecDurumMetni)"
+                [style.border-color]="getSurecDurumColor(u.surecDurumMetni) + '30'">
+                {{ u.surecDurumMetni ?? '-' }}
               </span>
             </td>
             <td>
@@ -190,7 +208,7 @@
             <td *appCanWrite>
               <div class="d-flex gap-1">
                 <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle"
-                  [disabled]="u.gridDurumuId === 12 || u.gridDurumuId === 11 || u.gridDurumuId === 14">
+                  [disabled]="u.gridDurumuId === 12 || u.gridDurumuId === 11 || u.gridDurumuId === 14 || u.kaliteDurumMetni === 'Tadilatta'">
                   <i class="ri-edit-line"></i>
                 </button>
                 @if (u.isManuelEklenen) {

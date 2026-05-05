@@ -271,6 +271,23 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     return GRID_RENKLERI[value] || '#64748B';
   }
 
+  // Kalite Durumu Renkleri
+  getKaliteDurumColor(value?: string): string {
+    if (!value) return '#94a3b8';
+    return value === 'Onaylandı' ? '#25B003' : '#E65100';
+  }
+
+  // Süreç Durumu Renkleri
+  getSurecDurumColor(value?: string): string {
+    const renkler: Record<string, string> = {
+      'Ambar': '#607D8B',
+      'İmalat': '#3584FC',
+      'Tedarik': '#9C27B0',
+      'Tedarik 3K Teslim': '#1B7D3A',
+    };
+    return value ? (renkler[value] || '#94a3b8') : '#94a3b8';
+  }
+
   onFilterTip(tip: string) {
     this.filterTip.set(this.filterTip() === tip ? '' : tip);
     this.applyFilter();

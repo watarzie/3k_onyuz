@@ -63,6 +63,8 @@ export const API = {
     DURUM_SIFIRLA: `${BASE}/grid/durum-sifirla`,
     TOPLU_SEVK: `${BASE}/grid/toplu-sevk`,
     MANUEL_EKLE: `${BASE}/grid/manuel-urun-ekle`,
+    KALITE_DURUM: `${BASE}/grid/kalite-durum`,
+    SUREC_DURUM: `${BASE}/grid/surec-durum`,
   },
   UCK: {
     URUNLER: (projeId: number) => `${BASE}/uck/${projeId}/urunler`,

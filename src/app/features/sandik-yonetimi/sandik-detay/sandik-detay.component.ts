@@ -1,5 +1,5 @@
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -8,6 +8,7 @@ import { SandikService } from '../../../core/services/sandik.service';
 import { ProjeService } from '../../../core/services/proje.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/auth/auth.service';
+import { PermissionService } from '../../../core/services/permission.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { SandikDetayDto, SandikIcerikDto, SandikDto } from '../../../shared/models/index';
@@ -29,6 +30,7 @@ export class SandikDetayComponent implements OnInit {
   private projeService = inject(ProjeService);
   private toast = inject(ToastService);
   private auth = inject(AuthService);
+  private permissionService = inject(PermissionService);
   private confirmService = inject(ConfirmService);
 
   projeId = signal(0);
@@ -84,6 +86,7 @@ export class SandikDetayComponent implements OnInit {
   breadcrumb: { label: string; link?: string }[] = [];
 
   isSahaYedek = signal(false);
+  canWriteSandik = computed(() => this.permissionService.canWrite('sandik-yonetimi') || this.auth.hasRole('Admin'));
 
   ngOnInit() {
     const pId = Number(this.route.snapshot.paramMap.get('projeId'));

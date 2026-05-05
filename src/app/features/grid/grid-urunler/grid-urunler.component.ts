@@ -15,6 +15,7 @@ import { CanWriteDirective } from '../../../shared/directives/can-write.directiv
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
 import { GridUrunDto, GridDurumGuncelleDto } from '../../../shared/models/index';
 import { GridDurum, GridSevkDurum, UcKDurum } from '../../../core/constants/enums';
+import { PermissionService } from '../../../core/services/permission.service';
 
 // ===== Durum tanımları =====
 interface DurumSecenegi { id: number; value: string; label: string; color: string; bgClass: string; }
@@ -49,6 +50,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   private gridService = inject(GridService);
   private sandikService = inject(SandikService);
   private toast = inject(ToastService);
+  permissions = inject(PermissionService);
 
   projeId = signal(0);
   urunler = signal<GridUrunDto[]>([]);
@@ -76,6 +78,14 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   showTopluSevkModal = signal(false);
   topluSevkAciklama = signal('');
   topluSevkSaving = signal(false);
+
+  // Kalite & Süreç toplu atama
+  showKaliteModal = signal(false);
+  kaliteDurumSecim = signal(0);
+  kaliteSaving = signal(false);
+  showSurecModal = signal(false);
+  surecDurumSecim = signal(0);
+  surecSaving = signal(false);
 
   // Manuel Ürün Ekle
   showManuelEkleModal = signal(false);
@@ -557,9 +567,112 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
 
   getUcKBlokajMesaji(u: GridUrunDto): string {
+    if (this.isTadilatta(u)) {
+      return 'Kalite: Tadilatta — düzenleme kilitli';
+    }
     if (this.isUcKIslemYapilmis(u)) {
       return '3K tarafında işlem yapılmış. Grid durumu değiştirilemez.';
     }
     return '';
+  }
+
+  /** Kalite = Tadilatta ise Grid düzenleme kilitlenir */
+  isTadilatta(u: GridUrunDto): boolean {
+    return u.kaliteDurumMetni === 'Tadilatta';
+  }
+
+  /** Menü bazlı kontrol - Kalite butonlarını görme yetkisi */
+  get canKalite(): boolean {
+    return this.permissions.canWrite('kalite-modulu');
+  }
+
+  /** Menü bazlı kontrol - Süreç butonlarını görme yetkisi */
+  get canSurec(): boolean {
+    return this.permissions.canWrite('surec-modulu');
+  }
+
+  /** Kalite durumu rengi */
+  getKaliteDurumColor(value?: string): string {
+    if (!value) return '#94a3b8';
+    return value === 'Onaylandı' ? '#25B003' : '#E65100';
+  }
+
+  /** Süreç durumu rengi */
+  getSurecDurumColor(value?: string): string {
+    const renkler: Record<string, string> = {
+      'Ambar': '#607D8B',
+      'İmalat': '#3584FC',
+      'Tedarik': '#9C27B0',
+      'Tedarik 3K Teslim': '#1B7D3A',
+    };
+    return value ? (renkler[value] || '#94a3b8') : '#94a3b8';
+  }
+
+  // ===== Toplu Kalite Atama =====
+  openKaliteModal() {
+    this.kaliteDurumSecim.set(0);
+    this.showKaliteModal.set(true);
+  }
+  closeKaliteModal() { this.showKaliteModal.set(false); }
+
+  confirmKalite() {
+    if (!this.kaliteDurumSecim()) { this.toast.error('Kalite durumu seçiniz.'); return; }
+    this.kaliteSaving.set(true);
+    this.gridService.kaliteDurumGuncelle({
+      projeId: this.projeId(),
+      cekiSatiriIdler: Array.from(this.selectedIds()),
+      kaliteDurumId: this.kaliteDurumSecim(),
+    }).subscribe({
+      next: (res) => {
+        this.kaliteSaving.set(false);
+        if (res.isSuccess) {
+          this.toast.success('Kalite durumu başarıyla güncellendi.');
+          this.gridService.notifyGridUpdated();
+          this.closeKaliteModal();
+          this.selectedIds.set(new Set());
+          this.loadUrunler(false);
+        } else {
+          this.toast.error(res.error ?? 'Kalite güncelleme başarısız.');
+        }
+      },
+      error: () => {
+        this.kaliteSaving.set(false);
+        this.toast.error('Sunucu hatası oluştu.');
+      },
+    });
+  }
+
+  // ===== Toplu Süreç Atama =====
+  openSurecModal() {
+    this.surecDurumSecim.set(0);
+    this.showSurecModal.set(true);
+  }
+  closeSurecModal() { this.showSurecModal.set(false); }
+
+  confirmSurec() {
+    if (!this.surecDurumSecim()) { this.toast.error('Süreç durumu seçiniz.'); return; }
+    this.surecSaving.set(true);
+    this.gridService.surecDurumGuncelle({
+      projeId: this.projeId(),
+      cekiSatiriIdler: Array.from(this.selectedIds()),
+      surecDurumId: this.surecDurumSecim(),
+    }).subscribe({
+      next: (res) => {
+        this.surecSaving.set(false);
+        if (res.isSuccess) {
+          this.toast.success('Süreç durumu başarıyla güncellendi.');
+          this.gridService.notifyGridUpdated();
+          this.closeSurecModal();
+          this.selectedIds.set(new Set());
+          this.loadUrunler(false);
+        } else {
+          this.toast.error(res.error ?? 'Süreç güncelleme başarısız.');
+        }
+      },
+      error: () => {
+        this.surecSaving.set(false);
+        this.toast.error('Sunucu hatası oluştu.');
+      },
+    });
   }
 }

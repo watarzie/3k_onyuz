@@ -34,6 +34,11 @@ export interface GridUrunDto {
   ucKAciklama?: string;
   genelDurumId: number;
   genelDurumMetni: string;
+  // Kalite & Süreç
+  kaliteDurumId?: number;
+  kaliteDurumMetni?: string;
+  surecDurumId?: number;
+  surecDurumMetni?: string;
 }
 
 export interface GridDurumGuncelleDto {
@@ -57,4 +62,16 @@ export interface GridDurumSifirlaDto {
   cekiSatiriId: number;
   projeId: number;
   aciklama?: string;
+}
+
+export interface KaliteDurumGuncelleDto {
+  projeId: number;
+  cekiSatiriIdler: number[];
+  kaliteDurumId: number;
+}
+
+export interface SurecDurumGuncelleDto {
+  projeId: number;
+  cekiSatiriIdler: number[];
+  surecDurumId: number;
 }

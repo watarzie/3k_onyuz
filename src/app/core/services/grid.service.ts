@@ -2,14 +2,16 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { BaseApiService } from '../../core/services/base-api.service';
 import { API } from '../../core/constants/api-endpoints';
-import { ApiResult, GridUrunDto, GridDurumGuncelleDto, GridTopluSevkDto, GridDurumSifirlaDto } from '../../shared/models/index';
+import { ApiResult, GridUrunDto, GridDurumGuncelleDto, GridTopluSevkDto, GridDurumSifirlaDto, KaliteDurumGuncelleDto, SurecDurumGuncelleDto } from '../../shared/models/index';
 
 /**
- * GridController (3 endpoint):
+ * GridController endpoints:
  *  GET  /api/grid/urunler/{projeId}
  *  PUT  /api/grid/durum-guncelle
  *  PUT  /api/grid/durum-sifirla
  *  POST /api/grid/toplu-sevk
+ *  PUT  /api/grid/kalite-durum
+ *  PUT  /api/grid/surec-durum
  */
 @Injectable({ providedIn: 'root' })
 export class GridService {
@@ -37,12 +39,12 @@ export class GridService {
     return this.api.get<GridUrunDto[]>(API.GRID.URUNLER(projeId));
   }
 
-  /** Tekli ürün durumu güncelle (Üretimde → StokHazır → SevkEdildi vb.) */
+  /** Tekli ürün durumu güncelle */
   durumGuncelle(dto: GridDurumGuncelleDto): Observable<ApiResult<unknown>> {
     return this.api.put<unknown>(API.GRID.DURUM_GUNCELLE, dto);
   }
 
-  /** Grid durumını sıfırla — çeki yüklenme öncesi ham duruma döndür */
+  /** Grid durumını sıfırla */
   durumSifirla(dto: GridDurumSifirlaDto): Observable<ApiResult<unknown>> {
     return this.api.put<unknown>(API.GRID.DURUM_SIFIRLA, dto);
   }
@@ -56,4 +58,15 @@ export class GridService {
   manuelUrunEkle(dto: any): Observable<ApiResult<unknown>> {
     return this.api.post<unknown>(API.GRID.MANUEL_EKLE, dto);
   }
+
+  /** Kalite durumunu güncelle (tekli/toplu) */
+  kaliteDurumGuncelle(dto: KaliteDurumGuncelleDto): Observable<ApiResult<unknown>> {
+    return this.api.put<unknown>(API.GRID.KALITE_DURUM, dto);
+  }
+
+  /** Süreç durumunu güncelle (tekli/toplu) */
+  surecDurumGuncelle(dto: SurecDurumGuncelleDto): Observable<ApiResult<unknown>> {
+    return this.api.put<unknown>(API.GRID.SUREC_DURUM, dto);
+  }
 }
+
