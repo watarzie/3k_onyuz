@@ -11,9 +11,12 @@
 <!-- Stat Cards -->
 <div class="row g-3 mb-4">
   <div class="col"><app-stat-card [value]="toplamUrun()" label="Toplam" icon="ri-list-check-2" color="primary" /></div>
-  <div class="col"><app-stat-card [value]="tamamlanan()" label="Tamamlanan" icon="ri-checkbox-circle-line" color="success" /></div>
-  <div class="col"><app-stat-card [value]="tamGeldi()" label="Sevk Adeti Tam" icon="ri-check-double-line" color="info" /></div>
-  <div class="col"><app-stat-card [value]="eksikGeldi()" label="Sevk Adeti Eksik" icon="ri-error-warning-line" color="warning" /></div>
+  <div class="col"><app-stat-card [value]="tamamlanan()" label="Tamamlanan" icon="ri-checkbox-circle-line"
+      color="success" /></div>
+  <div class="col"><app-stat-card [value]="tamGeldi()" label="Sevk Adeti Tam" icon="ri-check-double-line"
+      color="info" /></div>
+  <div class="col"><app-stat-card [value]="eksikGeldi()" label="Sevk Adeti Eksik" icon="ri-error-warning-line"
+      color="warning" /></div>
   <div class="col"><app-stat-card [value]="kalanlar()" label="Kalan Var" icon="ri-time-line" color="danger" /></div>
 </div>
 
@@ -23,19 +26,22 @@
     <div class="d-flex align-items-center gap-2 flex-wrap">
       <h5 class="fw-semibold mb-0 me-3">Ürünler</h5>
       @for (t of karsilamaTipleri; track t.value) {
-        <button class="btn btn-sm btn-filter" [ngClass]="{'active': filterTip() === t.value}" [style.--filter-color]="t.color" (click)="onFilterTip(t.value)">
-          {{ t.label }}
-        </button>
+      <button class="btn btn-sm btn-filter" [ngClass]="{'active': filterTip() === t.value}"
+        [style.--filter-color]="t.color" (click)="onFilterTip(t.value)">
+        {{ t.label }}
+      </button>
       }
       @if (filterTip()) {
-        <button class="btn btn-sm btn-filter-clear" (click)="onFilterTip('')">✕</button>
+      <button class="btn btn-sm btn-filter-clear" (click)="onFilterTip('')">✕</button>
       }
     </div>
     <div class="d-flex align-items-center gap-2">
-      <button *appCanWrite class="btn btn-sm btn-success" [disabled]="!isTopluTamGeldiAllowed" (click)="openTopluTamGeldi()" title="Seçili ürünleri Sevk Adeti Tam Geldi olarak işaretle">
+      <button *appCanWrite class="btn btn-sm btn-success" [disabled]="!isTopluTamGeldiAllowed"
+        (click)="openTopluTamGeldi()" title="Seçili ürünleri Sevk Adeti Tam Geldi olarak işaretle">
         <i class="ri-check-double-line me-1"></i>Toplu Sevk Adeti Tam Geldi ({{ selectionCount }})
       </button>
-      <button *appCanWrite class="btn btn-sm" style="background:#1B7D3A;color:#fff" [disabled]="!hasSelection" (click)="openTopluTedarikci()" title="Seçili ürünleri Tedarikçiden Geldi olarak işaretle">
+      <button *appCanWrite class="btn btn-sm" style="background:#1B7D3A;color:#fff" [disabled]="!hasSelection"
+        (click)="openTopluTedarikci()" title="Seçili ürünleri Tedarikçiden Geldi olarak işaretle">
         <i class="ri-truck-line me-1"></i>Toplu Tedarikçiden Karşıla ({{ selectionCount }})
       </button>
       <div class="search-box position-relative">
@@ -47,139 +53,158 @@
 
   <div class="card-body p-0">
     @if (loading()) {
-      <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
+    <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
     } @else if (filtered().length === 0) {
-      <div class="text-center py-5 text-muted">Görüntülenecek ürün bulunmuyor</div>
+    <div class="text-center py-5 text-muted">Görüntülenecek ürün bulunmuyor</div>
     } @else {
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead>
-            <tr>
-              <th *appCanWrite style="width:36px">
-                <input type="checkbox" class="form-check-input" [checked]="allSelected" (change)="toggleSelectAll()" />
-              </th>
-              <th style="width:45px">#</th>
-              <th>Barkod</th>
-              <th>Tanım</th>
-              <th>Koli</th>
-              <th class="text-center">Miktar</th>
-              <th>Grid Dur.</th>
-              <th>Sevk Dur.</th>
-              <th class="text-center">Grid Gelen</th>
-              <th class="text-center">Grid Sevk</th>
-              <th class="text-center">Trafo</th>
-              <th>3K Karşılama</th>
-              <th class="text-center">3K Gelen</th>
-              <th class="text-center">Stok K.</th>
-              <th class="text-center">Proje K.</th>
-              <th class="text-center">Proje G.</th>
-              <th class="text-center">Tedarikçi K.</th>
-              <th class="text-center">Geri Gön.</th>
-              <th>Kaynak/Hedef</th>
-              <th>Kontrol/Uyarı</th>
-              <th>Grid Açıklama</th>
-              <th>3K Açıklama</th>
-              <th class="text-center">Kalan</th>
-              <th *appCanWrite style="width:80px"></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (u of filtered(); track u.cekiSatiriId) {
-              <tr [ngClass]="getRowClass(u)">
-                <td *appCanWrite>
-                  <input type="checkbox" class="form-check-input" [checked]="isSelected(u.cekiSatiriId)" (change)="toggleSelect(u.cekiSatiriId)" [disabled]="isCheckboxDisabled(u)" />
-                </td>
-                <td class="text-muted">{{ u.siraNo }}</td>
-                <td><code class="barkod">{{ u.barkodNo }}</code></td>
-                <td class="fw-medium text-truncate" style="max-width:180px" [title]="u.aciklama">{{ u.aciklama }}</td>
-                <td><span class="badge-sandik">{{ u.sandikNo }}</span></td>
-                <td class="text-center fw-semibold">{{ u.istenenAdet }}</td>
-                <td>
-                  <span class="durum-badge" [style.background]="getGridDurumColor(u.gridDurumuMetni) + '15'" [style.color]="getGridDurumColor(u.gridDurumuMetni)" [style.border-color]="getGridDurumColor(u.gridDurumuMetni) + '30'">
-                    {{ u.gridDurumuMetni ? u.gridDurumuMetni.toUpperCase() : '-' }}
-                  </span>
-                </td>
-                <td>
-                  <span class="durum-badge" [style.background]="getGridDurumColor(u.gridSevkDurumuMetni) + '15'" [style.color]="getGridDurumColor(u.gridSevkDurumuMetni)" [style.border-color]="getGridDurumColor(u.gridSevkDurumuMetni) + '30'">
-                    {{ u.gridSevkDurumuMetni ? u.gridSevkDurumuMetni.toUpperCase() : '-' }}
-                  </span>
-                </td>
-                <td class="text-center">{{ u.gridGelenAdet }}</td>
-                <td class="text-center" [ngClass]="{'text-info fw-semibold': u.gridSevkMiktari && u.gridSevkMiktari > 0}">{{ u.gridSevkMiktari && u.gridSevkMiktari > 0 ? u.gridSevkMiktari : '-' }}</td>
-                <td class="text-center">{{ u.trafoSevkAdet > 0 ? u.trafoSevkAdet : '-' }}</td>
-                <td>
-                  <span class="durum-badge" [style.background]="getTipColor(u.ucKKarsilamaTipiMetni) + '15'" [style.color]="getTipColor(u.ucKKarsilamaTipiMetni)" [style.border-color]="getTipColor(u.ucKKarsilamaTipiMetni) + '30'">
-                    {{ getTipLabel(u.ucKKarsilamaTipiMetni) }}
-                  </span>
-                </td>
-                <td class="text-center">{{ u.gelenMiktar }}</td>
-                <td class="text-center" [ngClass]="{'text-purple fw-semibold': u.stokKarsilanan > 0}">{{ u.stokKarsilanan > 0 ? u.stokKarsilanan : '-' }}</td>
-                <td class="text-center" [ngClass]="{'text-primary fw-semibold': u.projeKarsilanan > 0}">{{ u.projeKarsilanan > 0 ? u.projeKarsilanan : '-' }}</td>
-                <td class="text-center" [ngClass]="{'text-warning fw-semibold': u.projeGonderilen > 0}">{{ u.projeGonderilen > 0 ? u.projeGonderilen : '-' }}</td>
-                <td class="text-center" [ngClass]="{'text-success fw-semibold': u.tedarikciKarsilanan > 0}">{{ u.tedarikciKarsilanan > 0 ? u.tedarikciKarsilanan : '-' }}</td>
-                <td class="text-center" [ngClass]="{'text-danger fw-semibold': u.geriGonderilenMiktar > 0}">{{ u.geriGonderilenMiktar > 0 ? u.geriGonderilenMiktar : '-' }}</td>
-                <td style="max-width:160px">
-                  @if (u.projeKarsilanan > 0 && u.kaynakHedefProjeNo) {
-                    <div class="d-flex align-items-center gap-1">
-                      <i class="ri-arrow-left-line text-primary"></i>
-                      <span class="text-primary fw-semibold text-truncate" [title]="'Karşılandı ← ' + u.kaynakHedefProjeNo + ' (' + u.projeKarsilanan + ' adet)'">{{ u.kaynakHedefProjeNo }}</span>
-                      <span class="badge bg-primary-subtle text-primary" style="font-size:10px">{{ u.projeKarsilanan }}</span>
-                    </div>
-                  }
-                  @if (u.projeGonderilen > 0 && u.kaynakHedefProjeNo) {
-                    <div class="d-flex align-items-center gap-1" [class.mt-1]="u.projeKarsilanan > 0">
-                      <i class="ri-arrow-right-line text-warning"></i>
-                      <span class="text-warning fw-semibold text-truncate" [title]="'Gönderildi → ' + u.kaynakHedefProjeNo + ' (' + u.projeGonderilen + ' adet)'">{{ u.kaynakHedefProjeNo }}</span>
-                      <span class="badge bg-warning-subtle text-warning" style="font-size:10px">{{ u.projeGonderilen }}</span>
-                    </div>
-                  }
-                  @if (!u.projeKarsilanan && !u.projeGonderilen) {
-                    <span class="text-muted">{{ u.kaynakHedefProjeNo ?? '-' }}</span>
-                  }
-                </td>
-                <td>
-                  <span class="kontrol-text" [style.color]="getTipColor(u.ucKKarsilamaTipiMetni)">{{ u.kontrolUyari }}</span>
-                </td>
-                <td>
-                  @if (u.gridAciklama) {
-                    <div class="aciklama-cell">
-                      <span class="aciklama-text text-info">{{ u.gridAciklama }}</span>
-                      <div class="aciklama-popup">{{ u.gridAciklama }}</div>
-                    </div>
-                  } @else {
-                    <span class="text-muted" style="font-size:12px">-</span>
-                  }
-                </td>
-                <td>
-                  @if (u.ucKAciklama) {
-                    <div class="aciklama-cell">
-                      <span class="aciklama-text text-success">{{ u.ucKAciklama }}</span>
-                      <div class="aciklama-popup">{{ u.ucKAciklama }}</div>
-                    </div>
-                  } @else {
-                    <span class="text-muted" style="font-size:12px">-</span>
-                  }
-                </td>
-                <td class="text-center fw-bold" [ngClass]="{'text-danger': u.kalan > 0, 'text-success': u.kalan === 0}">
-                  {{ u.kalan }}
-                </td>
-                <td *appCanWrite>
-                  <div class="d-flex gap-1">
-                    <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle" [disabled]="u.gridDurumuId === 12 || u.gridDurumuId === 11 || u.gridDurumuId === 14">
-                      <i class="ri-edit-line"></i>
-                    </button>
-                    @if (u.isManuelEklenen) {
-                      <button class="btn btn-sm btn-outline-danger" (click)="manuelUrunSil(u)" title="Manuel ürünü sil">
-                        <i class="ri-delete-bin-line"></i>
-                      </button>
-                    }
-                  </div>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th *appCanWrite style="width:36px">
+              <input type="checkbox" class="form-check-input" [checked]="allSelected" (change)="toggleSelectAll()" />
+            </th>
+            <th style="width:45px">#</th>
+            <th>Barkod</th>
+            <th>Tanım</th>
+            <th>Koli</th>
+            <th class="text-center">Miktar</th>
+            <th>Grid Dur.</th>
+            <th>Sevk Dur.</th>
+            <th class="text-center">Grid Gelen</th>
+            <th class="text-center">Grid Sevk</th>
+            <th class="text-center">Trafo</th>
+            <th>3K Karşılama</th>
+            <th class="text-center">3K Gelen</th>
+            <th class="text-center">Stok K.</th>
+            <th class="text-center">Proje K.</th>
+            <th class="text-center">Proje G.</th>
+            <th class="text-center">Tedarikçi K.</th>
+            <th class="text-center">Geri Gön.</th>
+            <th>Kaynak/Hedef</th>
+            <th>Kontrol/Uyarı</th>
+            <th>Grid Açıklama</th>
+            <th>3K Açıklama</th>
+            <th class="text-center">Kalan</th>
+            <th *appCanWrite style="width:80px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of filtered(); track u.cekiSatiriId) {
+          <tr [ngClass]="getRowClass(u)">
+            <td *appCanWrite>
+              <input type="checkbox" class="form-check-input" [checked]="isSelected(u.cekiSatiriId)"
+                (change)="toggleSelect(u.cekiSatiriId)" [disabled]="isCheckboxDisabled(u)" />
+            </td>
+            <td class="text-muted">{{ u.siraNo }}</td>
+            <td><code class="barkod">{{ u.barkodNo }}</code></td>
+            <td class="fw-medium text-truncate" style="max-width:180px" [title]="u.aciklama">{{ u.aciklama }}</td>
+            <td><span class="badge-sandik">{{ u.sandikNo }}</span></td>
+            <td class="text-center fw-semibold">{{ u.istenenAdet }} <small class="text-muted fw-normal">{{ u.birim }}</small></td>
+            <td>
+              <span class="durum-badge" [style.background]="getGridDurumColor(u.gridDurumuMetni) + '15'"
+                [style.color]="getGridDurumColor(u.gridDurumuMetni)"
+                [style.border-color]="getGridDurumColor(u.gridDurumuMetni) + '30'">
+                {{ u.gridDurumuMetni ? u.gridDurumuMetni.toUpperCase() : '-' }}
+              </span>
+            </td>
+            <td>
+              <span class="durum-badge" [style.background]="getGridDurumColor(u.gridSevkDurumuMetni) + '15'"
+                [style.color]="getGridDurumColor(u.gridSevkDurumuMetni)"
+                [style.border-color]="getGridDurumColor(u.gridSevkDurumuMetni) + '30'">
+                {{ u.gridSevkDurumuMetni ? u.gridSevkDurumuMetni.toUpperCase() : '-' }}
+              </span>
+            </td>
+            <td class="text-center">{{ u.gridGelenAdet }}</td>
+            <td class="text-center" [ngClass]="{'text-info fw-semibold': u.gridSevkMiktari && u.gridSevkMiktari > 0}">{{
+              u.gridSevkMiktari && u.gridSevkMiktari > 0 ? u.gridSevkMiktari : '-' }}</td>
+            <td class="text-center">{{ u.trafoSevkAdet > 0 ? u.trafoSevkAdet : '-' }}</td>
+            <td>
+              <span class="durum-badge" [style.background]="getTipColor(u.ucKKarsilamaTipiMetni) + '15'"
+                [style.color]="getTipColor(u.ucKKarsilamaTipiMetni)"
+                [style.border-color]="getTipColor(u.ucKKarsilamaTipiMetni) + '30'">
+                {{ getTipLabel(u.ucKKarsilamaTipiMetni) }}
+              </span>
+            </td>
+            <td class="text-center">{{ u.gelenMiktar }}</td>
+            <td class="text-center" [ngClass]="{'text-purple fw-semibold': u.stokKarsilanan > 0}">{{ u.stokKarsilanan >
+              0 ? u.stokKarsilanan : '-' }}</td>
+            <td class="text-center" [ngClass]="{'text-primary fw-semibold': u.projeKarsilanan > 0}">{{ u.projeKarsilanan
+              > 0 ? u.projeKarsilanan : '-' }}</td>
+            <td class="text-center" [ngClass]="{'text-warning fw-semibold': u.projeGonderilen > 0}">{{ u.projeGonderilen
+              > 0 ? u.projeGonderilen : '-' }}</td>
+            <td class="text-center" [ngClass]="{'text-success fw-semibold': u.tedarikciKarsilanan > 0}">{{
+              u.tedarikciKarsilanan > 0 ? u.tedarikciKarsilanan : '-' }}</td>
+            <td class="text-center" [ngClass]="{'text-danger fw-semibold': u.geriGonderilenMiktar > 0}">{{
+              u.geriGonderilenMiktar > 0 ? u.geriGonderilenMiktar : '-' }}</td>
+            <td style="max-width:160px">
+              @if (u.projeKarsilanan > 0 && u.kaynakHedefProjeNo) {
+              <div class="d-flex align-items-center gap-1">
+                <i class="ri-arrow-left-line text-primary"></i>
+                <span class="text-primary fw-semibold text-truncate"
+                  [title]="'Karşılandı ← ' + u.kaynakHedefProjeNo + ' (' + u.projeKarsilanan + ' adet)'">{{
+                  u.kaynakHedefProjeNo }}</span>
+                <span class="badge bg-primary-subtle text-primary" style="font-size:10px">{{ u.projeKarsilanan }}</span>
+              </div>
+              }
+              @if (u.projeGonderilen > 0 && u.kaynakHedefProjeNo) {
+              <div class="d-flex align-items-center gap-1" [class.mt-1]="u.projeKarsilanan > 0">
+                <i class="ri-arrow-right-line text-warning"></i>
+                <span class="text-warning fw-semibold text-truncate"
+                  [title]="'Gönderildi → ' + u.kaynakHedefProjeNo + ' (' + u.projeGonderilen + ' adet)'">{{
+                  u.kaynakHedefProjeNo }}</span>
+                <span class="badge bg-warning-subtle text-warning" style="font-size:10px">{{ u.projeGonderilen }}</span>
+              </div>
+              }
+              @if (!u.projeKarsilanan && !u.projeGonderilen) {
+              <span class="text-muted">{{ u.kaynakHedefProjeNo ?? '-' }}</span>
+              }
+            </td>
+            <td>
+              <span class="kontrol-text" [style.color]="getTipColor(u.ucKKarsilamaTipiMetni)">{{ u.kontrolUyari
+                }}</span>
+            </td>
+            <td>
+              @if (u.gridAciklama) {
+              <div class="aciklama-cell">
+                <span class="aciklama-text text-info">{{ u.gridAciklama }}</span>
+                <div class="aciklama-popup">{{ u.gridAciklama }}</div>
+              </div>
+              } @else {
+              <span class="text-muted" style="font-size:12px">-</span>
+              }
+            </td>
+            <td>
+              @if (u.ucKAciklama) {
+              <div class="aciklama-cell">
+                <span class="aciklama-text text-success">{{ u.ucKAciklama }}</span>
+                <div class="aciklama-popup">{{ u.ucKAciklama }}</div>
+              </div>
+              } @else {
+              <span class="text-muted" style="font-size:12px">-</span>
+              }
+            </td>
+            <td class="text-center fw-bold" [ngClass]="{'text-danger': u.kalan > 0, 'text-success': u.kalan === 0}">
+              {{ u.kalan }} <small class="text-muted fw-normal">{{ u.birim }}</small>
+            </td>
+            <td *appCanWrite>
+              <div class="d-flex gap-1">
+                <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle"
+                  [disabled]="u.gridDurumuId === 12 || u.gridDurumuId === 11 || u.gridDurumuId === 14">
+                  <i class="ri-edit-line"></i>
+                </button>
+                @if (u.isManuelEklenen) {
+                <button class="btn btn-sm btn-outline-danger" (click)="manuelUrunSil(u)" title="Manuel ürünü sil">
+                  <i class="ri-delete-bin-line"></i>
+                </button>
+                }
+              </div>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
     }
   </div>
   <div class="card-footer d-flex align-items-center justify-content-between">
@@ -189,254 +214,288 @@
 
 <!-- ===== Side Panel: 3K Durum Güncelle ===== -->
 @if (showPanel() && panelUrun()) {
-  <div class="detail-overlay" (click)="closePanel()"></div>
-  <div class="detail-panel">
-    <div class="panel-header">
-      <h5 class="fw-semibold mb-0"><i class="ri-edit-line me-2"></i>3K Karşılama</h5>
-      <button class="btn btn-sm border-0" (click)="closePanel()"><i class="ri-close-line fs-5"></i></button>
+<div class="detail-overlay" (click)="closePanel()"></div>
+<div class="detail-panel">
+  <div class="panel-header">
+    <h5 class="fw-semibold mb-0"><i class="ri-edit-line me-2"></i>3K Karşılama</h5>
+    <button class="btn btn-sm border-0" (click)="closePanel()"><i class="ri-close-line fs-5"></i></button>
+  </div>
+  <div class="panel-body">
+    <!-- Ürün Özet -->
+    <div class="urun-ozet mb-4">
+      <h6 class="fw-semibold mb-2">{{ panelUrun()!.aciklama }}</h6>
+      <div class="d-flex gap-3 flex-wrap">
+        <span class="ozet-chip"><i class="ri-barcode-line"></i> {{ panelUrun()!.barkodNo }}</span>
+        <span class="ozet-chip"><i class="ri-archive-line"></i> {{ panelUrun()!.sandikNo }}</span>
+        <span class="ozet-chip"><i class="ri-stack-line"></i> {{ panelUrun()!.istenenAdet }} {{ panelUrun()!.birim
+          }}</span>
+      </div>
     </div>
-    <div class="panel-body">
-      <!-- Ürün Özet -->
-      <div class="urun-ozet mb-4">
-        <h6 class="fw-semibold mb-2">{{ panelUrun()!.aciklama }}</h6>
-        <div class="d-flex gap-3 flex-wrap">
-          <span class="ozet-chip"><i class="ri-barcode-line"></i> {{ panelUrun()!.barkodNo }}</span>
-          <span class="ozet-chip"><i class="ri-archive-line"></i> {{ panelUrun()!.sandikNo }}</span>
-          <span class="ozet-chip"><i class="ri-stack-line"></i> {{ panelUrun()!.istenenAdet }} {{ panelUrun()!.birim }}</span>
-        </div>
-      </div>
 
-      <!-- Hata -->
-      @if (panelError()) {
-        <div class="alert-danger-panel mb-3">
-          <i class="ri-error-warning-line me-2"></i>{{ panelError() }}
-        </div>
-      }
+    <!-- Hata -->
+    @if (panelError()) {
+    <div class="alert-danger-panel mb-3">
+      <i class="ri-error-warning-line me-2"></i>{{ panelError() }}
+    </div>
+    }
 
-      <!-- Uyarı/Kontrol -->
-      @if (panelUyari()) {
-        <div class="alert-uyari mb-3" [style.border-color]="getTipColor(panelTip()) + '40'" [style.background]="getTipColor(panelTip()) + '08'" [style.color]="getTipColor(panelTip())">
-          <i class="ri-information-line me-1"></i> {{ panelUyari() }}
-        </div>
-      }
+    <!-- Uyarı/Kontrol -->
+    @if (panelUyari()) {
+    <div class="alert-uyari mb-3" [style.border-color]="getTipColor(panelTip()) + '40'"
+      [style.background]="getTipColor(panelTip()) + '08'" [style.color]="getTipColor(panelTip())">
+      <i class="ri-information-line me-1"></i> {{ panelUyari() }}
+    </div>
+    }
 
-      <!-- 1. 3K Karşılama Tipi -->
-      <div class="mb-4">
-        <label class="form-label fw-semibold">3K Karşılama Tipi</label>
-        <div class="durum-grid">
-          @for (t of karsilamaTipleri; track t.value) {
-            <button class="btn btn-durum-card" [ngClass]="{'active': panelTip() === t.value}" [style.--durum-color]="t.color" (click)="onTipChange(t.value)" [disabled]="isKarsilamaTipiDisabled(t.value)">
-              <span class="durum-dot" [style.background]="t.color"></span>
-              {{ t.label }}
-            </button>
-          }
-        </div>
-      </div>
-
-      <!-- 2. Adet -->
-      <div class="mb-3">
-        <label class="form-label fw-semibold">
-          Adet
-        </label>
-        <input type="number" class="form-control" [ngModel]="panelGelenAdet()" (ngModelChange)="panelGelenAdet.set($event); recalcPanel()" [disabled]="!isGelenAdetAktif" min="0" [max]="panelUrun()!.kalan" />
-        @if (panelTip() === 'Sevk Adeti Tam Geldi') {
-          <small class="text-muted">Otomatik: Grid sevk miktarı kadar teslim alınacak</small>
-        }
-      </div>
-
-      <!-- Kalan Gösterge -->
-      <div class="eksik-gosterge mb-4" [ngClass]="{'eksik-var': panelKalan > 0, 'eksik-yok': panelKalan <= 0}">
-        <span>Güncel Kalan:</span>
-        <strong>{{ panelKalan }}</strong>
-      </div>
-
-      <hr />
-
-      <!-- Geri Gönderilme Sebebi (Sadece Geri Gönderildi ise) -->
-      @if (panelTip() === 'Geri Gönderildi') {
-        <div class="mb-3">
-          <label class="form-label fw-semibold text-danger">
-            Geri Gönderilme Sebebi *
-          </label>
-          <select class="form-select border-danger" [ngModel]="panelGeriGonderilmeSebebi()" (ngModelChange)="panelGeriGonderilmeSebebi.set($event)">
-            <option value="">Seçiniz...</option>
-            <option value="1">Tadilat (Eksik Bekliyor)</option>
-            <option value="2">İptal (Geri Gelmeyecek)</option>
-            <option value="3">Projeye Geri Dönüş</option>
-            <option value="4">Hatalı Ürün</option>
-          </select>
-        </div>
-      }
-
-      <!-- 3. Kaynak Proje & Ürün Seçimi -->
-      @if (panelTip() === 'Projeden Karşılandı') {
-        <div class="mb-3">
-          <label class="form-label fw-semibold">
-            Kaynak Proje No <span class="text-danger">*</span>
-          </label>
-          
-          <div class="dropdown mb-2">
-            <button class="btn btn-outline-secondary w-100 text-start d-flex justify-content-between align-items-center bg-white shadow-sm" type="button" (click)="toggleProjeDropdown()">
-              <span class="text-truncate">{{ selectedKaynakProjeText }}</span>
-              <i class="ri-arrow-down-s-line"></i>
-            </button>
-            <ul class="dropdown-menu w-100 shadow p-2" [class.show]="isProjeDropdownOpen()" style="max-height: 250px; overflow-y: auto;">
-              <li>
-                <input type="text" class="form-control mb-2" placeholder="Proje isminde ara..." [ngModel]="projeSearchTerm()" (ngModelChange)="projeSearchTerm.set($event)" (click)="$event.stopPropagation()">
-              </li>
-              @if (filteredProjeler().length === 0) {
-                <li><span class="dropdown-item text-muted disabled">Kayıtlı proje bulunamadı.</span></li>
-              }
-              @for (p of filteredProjeler(); track p.id) {
-                <li><a class="dropdown-item" style="cursor: pointer;" (click)="selectProjeItem(p.id.toString())">{{ p.projeNo }} - {{ p.musteri }}</a></li>
-              }
-            </ul>
-          </div>
-
-          <!-- Kaynak Ürün Seçimi -->
-          @if (kaynakUrunler().length > 0) {
-            <label class="form-label fw-semibold mt-2">
-              Kaynak Ürün <span class="text-danger">*</span>
-            </label>
-            <div class="dropdown">
-              <button class="btn btn-outline-secondary w-100 text-start d-flex justify-content-between align-items-center bg-white shadow-sm" type="button" (click)="toggleUrunDropdown()" title="{{ selectedKaynakUrunText }}">
-                <span class="text-truncate" style="max-width: 90%;">{{ selectedKaynakUrunText }}</span>
-                <i class="ri-arrow-down-s-line"></i>
-              </button>
-              <ul class="dropdown-menu w-100 shadow-lg p-2" [class.show]="isUrunDropdownOpen()" style="max-height: 350px; overflow-y: auto;">
-                <li>
-                  <input type="text" class="form-control mb-2" placeholder="Ürün barkod, isim ara..." [ngModel]="urunSearchTerm()" (ngModelChange)="urunSearchTerm.set($event)" (click)="$event.stopPropagation()">
-                </li>
-                @if (filteredKaynakUrunler().length === 0) {
-                   <li><span class="dropdown-item text-muted disabled">Kayıtlı ürün bulunamadı.</span></li>
-                }
-                @for (cu of filteredKaynakUrunler(); track cu.cekiSatiriId) {
-                  <li>
-                    <a class="dropdown-item py-2 border-bottom" style="cursor: pointer; white-space: normal;" (click)="selectUrunItem(cu.cekiSatiriId)">
-                      <div class="fw-bold text-dark">{{ cu.siraNo }} - {{ cu.barkodNo }}</div>
-                      <div class="text-muted small lh-sm">{{ cu.aciklama }}</div>
-                      <div class="badge bg-primary mt-2">3K Gelen: {{ cu.gelenMiktar }}</div>
-                    </a>
-                  </li>
-                }
-              </ul>
-            </div>
-          } @else if (panelKaynakHedef()) {
-            <div class="text-muted mt-1 small"><i class="ri-information-line me-1"></i>Bu projede eşleşen isimli veya 3K'ya gelmiş ürün bulunamadı.</div>
-          }
-        </div>
-      }
-
-      @if (panelTip() === 'Stoktan Karşılandı') {
-        <div class="mb-3">
-          <label class="form-label fw-semibold">
-            Merkezi Stok Seçimi <span class="text-danger">*</span>
-          </label>
-          <div class="dropdown mb-2">
-            <button class="btn btn-outline-secondary w-100 text-start d-flex justify-content-between align-items-center bg-white shadow-sm" type="button" (click)="toggleStokDropdown()" title="{{ selectedStokText }}">
-              <span class="text-truncate" style="max-width: 90%;">{{ selectedStokText }}</span>
-              <i class="ri-arrow-down-s-line"></i>
-            </button>
-            <ul class="dropdown-menu w-100 shadow p-2" [class.show]="isStokDropdownOpen()" style="max-height: 300px; overflow-y: auto;">
-              <li>
-                <input type="text" class="form-control mb-2" placeholder="Barkod, İsim veya Proje ile Ara..." [ngModel]="stokSearchTerm()" (ngModelChange)="stokSearchTerm.set($event)" (click)="$event.stopPropagation()">
-              </li>
-              @if (filteredStoklar().length === 0) {
-                <li><span class="dropdown-item text-muted disabled">Uygun stok bulunamadı.</span></li>
-              }
-              @for (stok of filteredStoklar(); track stok.id) {
-                <li>
-                  <a class="dropdown-item py-2 border-bottom" style="cursor: pointer; white-space: normal;" (click)="selectStokItem(stok.id)">
-                    <div class="d-flex justify-content-between align-items-center">
-                       <span class="fw-bold text-dark">{{ stok.malzemeAdi }}</span>
-                       <span class="badge bg-primary">Bakiye: {{ stok.miktar }} {{ stok.birimMetni }}</span>
-                    </div>
-                    @if(stok.malzemeKodu) { <div class="text-muted small lh-sm">Barkod: {{ stok.malzemeKodu }}</div> }
-                    <div class="text-muted small lh-sm">Kaynak: <span class="badge bg-soft-secondary text-secondary">{{ stok.kaynakProje }}</span></div>
-                  </a>
-                </li>
-              }
-            </ul>
-          </div>
-        </div>
-      }
-
-      <!-- 4. Açıklama -->
-      <div class="mb-4">
-        <label class="form-label fw-semibold">
-          Açıklama
-          @if (isAciklamaZorunlu) { <span class="text-danger">*</span> }
-        </label>
-        <textarea class="form-control" rows="2" placeholder="Detay girin..." [ngModel]="panelAciklama()" (ngModelChange)="panelAciklama.set($event)"></textarea>
-      </div>
-
-      <!-- Kaydet -->
-      <div class="d-flex gap-2">
-        <button class="btn btn-outline flex-grow-1" (click)="closePanel()">İptal</button>
-        @if (panelUrun()?.ucKKarsilamaTipiMetni !== 'Bekliyor') {
-          <button class="btn btn-outline-danger" (click)="durumSifirla()" [disabled]="panelSaving()" title="3K karşılama durumunu sıfırla (Bekliyor'a döndür)">
-            <i class="ri-arrow-go-back-line me-1"></i>Geri Al
-          </button>
-        }
-        <button class="btn btn-save flex-grow-1" (click)="savePanel()" [disabled]="panelSaving()">
-          @if (panelSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-          <i class="ri-save-line me-1"></i>Kaydet
+    <!-- 1. 3K Karşılama Tipi -->
+    <div class="mb-4">
+      <label class="form-label fw-semibold">3K Karşılama Tipi</label>
+      <div class="durum-grid">
+        @for (t of karsilamaTipleri; track t.value) {
+        <button class="btn btn-durum-card" [ngClass]="{'active': panelTip() === t.value}"
+          [style.--durum-color]="t.color" (click)="onTipChange(t.value)" [disabled]="isKarsilamaTipiDisabled(t.value)">
+          <span class="durum-dot" [style.background]="t.color"></span>
+          {{ t.label }}
         </button>
+        }
       </div>
+    </div>
+
+    <!-- 2. Adet -->
+    <div class="mb-3">
+      <label class="form-label fw-semibold">
+        Adet
+      </label>
+      <input type="number" class="form-control" [ngModel]="panelGelenAdet()"
+        (ngModelChange)="panelGelenAdet.set($event); recalcPanel()" [disabled]="!isGelenAdetAktif" min="0"
+        [max]="panelUrun()!.kalan" step="any" />
+      @if (panelTip() === 'Sevk Adeti Tam Geldi') {
+      <small class="text-muted">Otomatik: Grid sevk miktarı kadar teslim alınacak</small>
+      }
+    </div>
+
+    <!-- Kalan Gösterge -->
+    <div class="eksik-gosterge mb-4" [ngClass]="{'eksik-var': panelKalan > 0, 'eksik-yok': panelKalan <= 0}">
+      <span>Güncel Kalan:</span>
+      <strong>{{ panelKalan }}</strong>
+    </div>
+
+    <hr />
+
+    <!-- Geri Gönderilme Sebebi (Sadece Geri Gönderildi ise) -->
+    @if (panelTip() === 'Geri Gönderildi') {
+    <div class="mb-3">
+      <label class="form-label fw-semibold text-danger">
+        Geri Gönderilme Sebebi *
+      </label>
+      <select class="form-select border-danger" [ngModel]="panelGeriGonderilmeSebebi()"
+        (ngModelChange)="panelGeriGonderilmeSebebi.set($event)">
+        <option value="">Seçiniz...</option>
+        <option value="1">Tadilat (Eksik Bekliyor)</option>
+        <option value="2">İptal (Geri Gelmeyecek)</option>
+        <option value="3">Projeye Geri Dönüş</option>
+        <option value="4">Hatalı Ürün</option>
+      </select>
+    </div>
+    }
+
+    <!-- 3. Kaynak Proje & Ürün Seçimi -->
+    @if (panelTip() === 'Projeden Karşılandı') {
+    <div class="mb-3">
+      <label class="form-label fw-semibold">
+        Kaynak Proje No <span class="text-danger">*</span>
+      </label>
+
+      <div class="dropdown mb-2">
+        <button
+          class="btn btn-outline-secondary w-100 text-start d-flex justify-content-between align-items-center bg-white shadow-sm"
+          type="button" (click)="toggleProjeDropdown()">
+          <span class="text-truncate">{{ selectedKaynakProjeText }}</span>
+          <i class="ri-arrow-down-s-line"></i>
+        </button>
+        <ul class="dropdown-menu w-100 shadow p-2" [class.show]="isProjeDropdownOpen()"
+          style="max-height: 250px; overflow-y: auto;">
+          <li>
+            <input type="text" class="form-control mb-2" placeholder="Proje isminde ara..."
+              [ngModel]="projeSearchTerm()" (ngModelChange)="projeSearchTerm.set($event)"
+              (click)="$event.stopPropagation()">
+          </li>
+          @if (filteredProjeler().length === 0) {
+          <li><span class="dropdown-item text-muted disabled">Kayıtlı proje bulunamadı.</span></li>
+          }
+          @for (p of filteredProjeler(); track p.id) {
+          <li><a class="dropdown-item" style="cursor: pointer;" (click)="selectProjeItem(p.id.toString())">{{ p.projeNo
+              }} - {{ p.musteri }}</a></li>
+          }
+        </ul>
+      </div>
+
+      <!-- Kaynak Ürün Seçimi -->
+      @if (kaynakUrunler().length > 0) {
+      <label class="form-label fw-semibold mt-2">
+        Kaynak Ürün <span class="text-danger">*</span>
+      </label>
+      <div class="dropdown">
+        <button
+          class="btn btn-outline-secondary w-100 text-start d-flex justify-content-between align-items-center bg-white shadow-sm"
+          type="button" (click)="toggleUrunDropdown()" title="{{ selectedKaynakUrunText }}">
+          <span class="text-truncate" style="max-width: 90%;">{{ selectedKaynakUrunText }}</span>
+          <i class="ri-arrow-down-s-line"></i>
+        </button>
+        <ul class="dropdown-menu w-100 shadow-lg p-2" [class.show]="isUrunDropdownOpen()"
+          style="max-height: 350px; overflow-y: auto;">
+          <li>
+            <input type="text" class="form-control mb-2" placeholder="Ürün barkod, isim ara..."
+              [ngModel]="urunSearchTerm()" (ngModelChange)="urunSearchTerm.set($event)"
+              (click)="$event.stopPropagation()">
+          </li>
+          @if (filteredKaynakUrunler().length === 0) {
+          <li><span class="dropdown-item text-muted disabled">Kayıtlı ürün bulunamadı.</span></li>
+          }
+          @for (cu of filteredKaynakUrunler(); track cu.cekiSatiriId) {
+          <li>
+            <a class="dropdown-item py-2 border-bottom" style="cursor: pointer; white-space: normal;"
+              (click)="selectUrunItem(cu.cekiSatiriId)">
+              <div class="fw-bold text-dark">{{ cu.siraNo }} - {{ cu.barkodNo }}</div>
+              <div class="text-muted small lh-sm">{{ cu.aciklama }}</div>
+              <div class="badge bg-primary mt-2">3K Gelen: {{ cu.gelenMiktar }}</div>
+            </a>
+          </li>
+          }
+        </ul>
+      </div>
+      } @else if (panelKaynakHedef()) {
+      <div class="text-muted mt-1 small"><i class="ri-information-line me-1"></i>Bu projede eşleşen isimli veya 3K'ya
+        gelmiş ürün bulunamadı.</div>
+      }
+    </div>
+    }
+
+    @if (panelTip() === 'Stoktan Karşılandı') {
+    <div class="mb-3">
+      <label class="form-label fw-semibold">
+        Merkezi Stok Seçimi <span class="text-danger">*</span>
+      </label>
+      <div class="dropdown mb-2">
+        <button
+          class="btn btn-outline-secondary w-100 text-start d-flex justify-content-between align-items-center bg-white shadow-sm"
+          type="button" (click)="toggleStokDropdown()" title="{{ selectedStokText }}">
+          <span class="text-truncate" style="max-width: 90%;">{{ selectedStokText }}</span>
+          <i class="ri-arrow-down-s-line"></i>
+        </button>
+        <ul class="dropdown-menu w-100 shadow p-2" [class.show]="isStokDropdownOpen()"
+          style="max-height: 300px; overflow-y: auto;">
+          <li>
+            <input type="text" class="form-control mb-2" placeholder="Barkod, İsim veya Proje ile Ara..."
+              [ngModel]="stokSearchTerm()" (ngModelChange)="stokSearchTerm.set($event)"
+              (click)="$event.stopPropagation()">
+          </li>
+          @if (filteredStoklar().length === 0) {
+          <li><span class="dropdown-item text-muted disabled">Uygun stok bulunamadı.</span></li>
+          }
+          @for (stok of filteredStoklar(); track stok.id) {
+          <li>
+            <a class="dropdown-item py-2 border-bottom" style="cursor: pointer; white-space: normal;"
+              (click)="selectStokItem(stok.id)">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-dark">{{ stok.malzemeAdi }}</span>
+                <span class="badge bg-primary">Bakiye: {{ stok.miktar }} {{ stok.birimMetni }}</span>
+              </div>
+              @if(stok.malzemeKodu) { <div class="text-muted small lh-sm">Barkod: {{ stok.malzemeKodu }}</div> }
+              <div class="text-muted small lh-sm">Kaynak: <span class="badge bg-soft-secondary text-secondary">{{
+                  stok.kaynakProje }}</span></div>
+            </a>
+          </li>
+          }
+        </ul>
+      </div>
+    </div>
+    }
+
+    <!-- 4. Açıklama -->
+    <div class="mb-4">
+      <label class="form-label fw-semibold">
+        Açıklama
+        @if (isAciklamaZorunlu) { <span class="text-danger">*</span> }
+      </label>
+      <textarea class="form-control" rows="2" placeholder="Detay girin..." [ngModel]="panelAciklama()"
+        (ngModelChange)="panelAciklama.set($event)"></textarea>
+    </div>
+
+    <!-- Kaydet -->
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline flex-grow-1" (click)="closePanel()">İptal</button>
+      @if (panelUrun()?.ucKKarsilamaTipiMetni !== 'Bekliyor') {
+      <button class="btn btn-outline-danger" (click)="durumSifirla()" [disabled]="panelSaving()"
+        title="3K karşılama durumunu sıfırla (Bekliyor'a döndür)">
+        <i class="ri-arrow-go-back-line me-1"></i>Geri Al
+      </button>
+      }
+      <button class="btn btn-save flex-grow-1" (click)="savePanel()" [disabled]="panelSaving()">
+        @if (panelSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        <i class="ri-save-line me-1"></i>Kaydet
+      </button>
     </div>
   </div>
+</div>
 }
 
 <!-- ===== Toplu Tam Geldi Onay Modalı ===== -->
 @if (showTopluModal()) {
-  <div class="modal-overlay" (click)="closeTopluTamGeldi()">
-    <div class="modal-box" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h5 class="fw-semibold mb-0"><i class="ri-check-double-line me-2 text-success"></i>Toplu Sevk Adeti Tam Geldi</h5>
-        <button class="btn btn-sm border-0" (click)="closeTopluTamGeldi()"><i class="ri-close-line fs-5"></i></button>
-      </div>
-      <div class="modal-body">
-        <p class="mb-3"><strong>{{ selectionCount }}</strong> ürün "Sevk Adeti Tam Geldi" olarak işaretlenecek.</p>
-        <p class="text-muted small mb-3">Grid iptal, trafo sevk veya henüz sevk edilmemiş ürünler otomatik atlanır. Her ürün için Grid sevk miktarı kadar teslim alınacaktır.</p>
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Açıklama (Opsiyonel)</label>
-          <textarea class="form-control" rows="2" placeholder="Toplu işlem açıklaması..." [ngModel]="topluAciklama()" (ngModelChange)="topluAciklama.set($event)"></textarea>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline-secondary" (click)="closeTopluTamGeldi()">Vazgeç</button>
-        <button class="btn btn-success" (click)="confirmTopluTamGeldi()" [disabled]="topluSaving()">
-          @if (topluSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-          <i class="ri-check-double-line me-1"></i>Onayla
-        </button>
+<div class="modal-overlay" (click)="closeTopluTamGeldi()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h5 class="fw-semibold mb-0"><i class="ri-check-double-line me-2 text-success"></i>Toplu Sevk Adeti Tam Geldi</h5>
+      <button class="btn btn-sm border-0" (click)="closeTopluTamGeldi()"><i class="ri-close-line fs-5"></i></button>
+    </div>
+    <div class="modal-body">
+      <p class="mb-3"><strong>{{ selectionCount }}</strong> ürün "Sevk Adeti Tam Geldi" olarak işaretlenecek.</p>
+      <p class="text-muted small mb-3">Grid iptal, trafo sevk veya henüz sevk edilmemiş ürünler otomatik atlanır. Her
+        ürün için Grid sevk miktarı kadar teslim alınacaktır.</p>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Açıklama (Opsiyonel)</label>
+        <textarea class="form-control" rows="2" placeholder="Toplu işlem açıklaması..." [ngModel]="topluAciklama()"
+          (ngModelChange)="topluAciklama.set($event)"></textarea>
       </div>
     </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline-secondary" (click)="closeTopluTamGeldi()">Vazgeç</button>
+      <button class="btn btn-success" (click)="confirmTopluTamGeldi()" [disabled]="topluSaving()">
+        @if (topluSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        <i class="ri-check-double-line me-1"></i>Onayla
+      </button>
+    </div>
   </div>
+</div>
 }
 
 <!-- ===== Toplu Tedarikçiden Karşıla Onay Modalı ===== -->
 @if (showTopluTedarikciModal()) {
-  <div class="modal-overlay" (click)="closeTopluTedarikci()">
-    <div class="modal-box" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h5 class="fw-semibold mb-0"><i class="ri-truck-line me-2" style="color:#1B7D3A"></i>Toplu Tedarikçiden Karşıla</h5>
-        <button class="btn btn-sm border-0" (click)="closeTopluTedarikci()"><i class="ri-close-line fs-5"></i></button>
-      </div>
-      <div class="modal-body">
-        <p class="mb-3"><strong>{{ selectionCount }}</strong> ürün "Tedarikçiden Geldi" olarak işaretlenecek.</p>
-        <p class="text-muted small mb-3">Her ürün için kalan miktar kadar tedarikçiden karşılama yapılacaktır. Grid iptal veya kapalı ürünler otomatik atlanır.</p>
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Açıklama (Opsiyonel)</label>
-          <textarea class="form-control" rows="2" placeholder="Toplu tedarikçi işlem açıklaması..." [ngModel]="topluTedarikciAciklama()" (ngModelChange)="topluTedarikciAciklama.set($event)"></textarea>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline-secondary" (click)="closeTopluTedarikci()">Vazgeç</button>
-        <button class="btn" style="background:#1B7D3A;color:#fff" (click)="confirmTopluTedarikci()" [disabled]="topluTedarikciSaving()">
-          @if (topluTedarikciSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-          <i class="ri-truck-line me-1"></i>Onayla
-        </button>
+<div class="modal-overlay" (click)="closeTopluTedarikci()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h5 class="fw-semibold mb-0"><i class="ri-truck-line me-2" style="color:#1B7D3A"></i>Toplu Tedarikçiden Karşıla
+      </h5>
+      <button class="btn btn-sm border-0" (click)="closeTopluTedarikci()"><i class="ri-close-line fs-5"></i></button>
+    </div>
+    <div class="modal-body">
+      <p class="mb-3"><strong>{{ selectionCount }}</strong> ürün "Tedarikçiden Geldi" olarak işaretlenecek.</p>
+      <p class="text-muted small mb-3">Her ürün için kalan miktar kadar tedarikçiden karşılama yapılacaktır. Grid iptal
+        veya kapalı ürünler otomatik atlanır.</p>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Açıklama (Opsiyonel)</label>
+        <textarea class="form-control" rows="2" placeholder="Toplu tedarikçi işlem açıklaması..."
+          [ngModel]="topluTedarikciAciklama()" (ngModelChange)="topluTedarikciAciklama.set($event)"></textarea>
       </div>
     </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline-secondary" (click)="closeTopluTedarikci()">Vazgeç</button>
+      <button class="btn" style="background:#1B7D3A;color:#fff" (click)="confirmTopluTedarikci()"
+        [disabled]="topluTedarikciSaving()">
+        @if (topluTedarikciSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        <i class="ri-truck-line me-1"></i>Onayla
+      </button>
+    </div>
   </div>
+</div>
 }

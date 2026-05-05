@@ -14,7 +14,7 @@ import { StatCardComponent } from '../../../shared/components/stat-card/stat-car
 import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
 import { GridUrunDto, GridDurumGuncelleDto } from '../../../shared/models/index';
-import { GridDurum, GridSevkDurum } from '../../../core/constants/enums';
+import { GridDurum, GridSevkDurum, UcKDurum } from '../../../core/constants/enums';
 
 // ===== Durum tanımları =====
 interface DurumSecenegi { id: number; value: string; label: string; color: string; bgClass: string; }
@@ -548,5 +548,18 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
         this.toast.error('Sunucu hatası oluştu.');
       }
     });
+  }
+
+  // ===== 3K İşlem Blokajı =====
+  /** 3K tarafında işlem yapılmışsa Grid düzenleme yapamaz */
+  isUcKIslemYapilmis(u: GridUrunDto): boolean {
+    return u.ucKDurumuId !== UcKDurum.Bekliyor || u.gelenMiktar > 0;
+  }
+
+  getUcKBlokajMesaji(u: GridUrunDto): string {
+    if (this.isUcKIslemYapilmis(u)) {
+      return '3K tarafında işlem yapılmış. Grid durumu değiştirilemez.';
+    }
+    return '';
   }
 }

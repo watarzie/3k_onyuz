@@ -43,6 +43,7 @@ table {
 .row-trafo-sevk { border-left: 3px solid #00BCD4; }
 .row-iptal { border-left: 3px solid #FFB200; }
 .row-sipariste { border-left: 3px solid #9C27B0; }
+.row-grid-kapandi { border-left: 3px solid #37474F; }
 .row-selected { background: rgba(96,93,255,.04) !important; }
 
 .barkod { font-size: 10.5px; background: #F0F0F5; padding: 2px 6px; border-radius: 4px; color: var(--bodyColor); font-family: monospace; }
@@ -58,6 +59,11 @@ table {
 .btn-action {
   color: var(--bodyColor); border: 1px solid var(--borderColor); border-radius: 6px; padding: 4px 8px;
   &:hover { border-color: var(--primaryColor); color: var(--primaryColor); }
+}
+.btn-locked {
+  color: #FD5812 !important; border: 1px solid rgba(253, 88, 18, .3) !important;
+  background: rgba(253, 88, 18, .06) !important; border-radius: 6px; padding: 4px 8px;
+  cursor: not-allowed; opacity: .8;
 }
 .btn-sevk {
   background: linear-gradient(135deg, #FD5812, #FF8A50); color: #fff; border: none;
