@@ -1,12 +1,9 @@
 <div class="login-wrapper">
-
-  <div class="login-card">
-    <div class="login-header text-center mb-4">
-      <div class="logo-icon mx-auto mb-3">
-        <i class="ri-box-3-line"></i>
-      </div>
-      <h2 class="fw-bold text-white mb-1">3K</h2>
-      <p class="text-muted mb-0">{{ 'APP.TITLE' | translate }}</p>
+  <div class="login-card" aria-label="3K giriş formu">
+    <div class="login-header text-center">
+      <img class="brand-mark mx-auto" src="/images/3k-emblem.svg" alt="3K amblem" />
+      <h1>3K</h1>
+      <p>All Processes. <span>One Flow.</span></p>
     </div>
 
     @if (error()) {
@@ -17,33 +14,47 @@
     }
 
     <form [formGroup]="form" (ngSubmit)="submit()">
-      <div class="form-group mb-3">
-        <label class="form-label">{{ 'LABELS.EMAIL' | translate }}</label>
-        <div class="input-group">
-          <span class="input-group-text"><i class="ri-mail-line"></i></span>
-          <input type="email" class="form-control" formControlName="email"
-                 [ngClass]="{'is-invalid': getError('email')}"
-                 placeholder="admin@3k.com" />
+      <div class="form-group">
+        <div class="input-shell">
+          <i class="ri-mail-line field-icon"></i>
+          <input
+            type="email"
+            class="form-control"
+            formControlName="email"
+            autocomplete="username"
+            [ngClass]="{'is-invalid': getError('email')}"
+            placeholder="Email" />
         </div>
         @if (getError('email')) {
           <small class="text-danger mt-1 d-block">{{ getError('email') }}</small>
         }
       </div>
 
-      <div class="form-group mb-4">
-        <label class="form-label">{{ 'LABELS.SIFRE' | translate }}</label>
-        <div class="input-group">
-          <span class="input-group-text"><i class="ri-lock-line"></i></span>
-          <input [type]="showPassword() ? 'text' : 'password'" class="form-control" formControlName="sifre"
-                 [ngClass]="{'is-invalid': getError('sifre')}"
-                 placeholder="••••••" />
-          <button type="button" class="input-group-text btn-toggle" (click)="togglePassword()">
+      <div class="form-group">
+        <div class="input-shell">
+          <i class="ri-lock-2-line field-icon"></i>
+          <input
+            [type]="showPassword() ? 'text' : 'password'"
+            class="form-control"
+            formControlName="sifre"
+            autocomplete="current-password"
+            [ngClass]="{'is-invalid': getError('sifre')}"
+            placeholder="Şifre" />
+          <button type="button" class="btn-toggle" (click)="togglePassword()" aria-label="Şifre görünürlüğünü değiştir">
             <i [class]="showPassword() ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
           </button>
         </div>
         @if (getError('sifre')) {
           <small class="text-danger mt-1 d-block">{{ getError('sifre') }}</small>
         }
+      </div>
+
+      <div class="login-options">
+        <label class="remember-option">
+          <input type="checkbox" formControlName="rememberMe" />
+          <span class="checkmark"></span>
+          Beni Hatırla
+        </label>
       </div>
 
       <button type="submit" class="btn btn-login w-100" [disabled]="loading()">
@@ -53,5 +64,7 @@
         {{ 'LABELS.GIRIS_YAP' | translate }}
       </button>
     </form>
+
+    <div class="login-footer">© 2026 3K. Tüm hakları saklıdır.</div>
   </div>
 </div>

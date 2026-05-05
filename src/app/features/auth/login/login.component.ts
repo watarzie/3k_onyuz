@@ -39,6 +39,7 @@ export class LoginComponent {
     this.form = this.fb.group({
       email: ['', [Validators.required, CustomValidators.email]],
       sifre: ['', [Validators.required, CustomValidators.passwordStrength]],
+      rememberMe: [false],
     });
   }
 
@@ -59,7 +60,9 @@ export class LoginComponent {
     this.loading.set(true);
     this.error.set('');
 
-    this.auth.login(this.form.value).subscribe({
+    const { email, sifre } = this.form.value;
+
+    this.auth.login({ email, sifre }).subscribe({
       next: (result) => {
         this.loading.set(false);
         if (result.isSuccess) {
