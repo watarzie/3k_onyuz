@@ -29,13 +29,23 @@ import { ConfirmModalComponent } from '../../shared/components/confirm-modal/con
   styles: [`
     .main-content {
       margin-left: 260px;
-      min-height: 100vh;
+      min-height: 100dvh;
       background: #F6F7F9;
       transition: .3s ease;
+      min-width: 0;
+      overflow-x: hidden;
     }
-    .content-wrapper { padding: 25px; }
-    @media (max-width: 991.98px) {
+    .content-wrapper {
+      padding: clamp(14px, 2vw, 25px);
+      max-width: 100%;
+      min-width: 0;
+      overflow-x: hidden;
+    }
+    @media (max-width: 1199.98px) {
       .main-content { margin-left: 0; }
+    }
+    @media (max-width: 575.98px) {
+      .content-wrapper { padding: 12px; }
     }
   `],
 })

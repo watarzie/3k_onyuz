@@ -6,6 +6,7 @@ $sidebar-hover-bg: rgba(255,255,255,.06);
 
 .sidebar-area {
   width: $sidebar-width;
+  max-width: 82vw;
   height: 100vh;
   position: fixed;
   left: 0; top: 0;
@@ -85,12 +86,14 @@ $sidebar-hover-bg: rgba(255,255,255,.06);
   inset: 0;
   background: rgba(0,0,0,.5);
   z-index: 998;
-  &.active { display: block; }
 }
 
-@media (max-width: 991.98px) {
+@media (max-width: 1199.98px) {
   .sidebar-area {
     left: -$sidebar-width;
+    box-shadow: 12px 0 30px rgba(0,0,0,.18);
     &.active { left: 0; }
   }
+
+  .sidebar-overlay.active { display: block; }
 }

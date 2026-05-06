@@ -19,25 +19,54 @@ import { NgClass } from '@angular/common';
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      min-width: 0;
+      height: 100%;
+    }
     .stat-card {
       padding: 20px 24px;
       border-radius: 10px;
       transition: transform .2s ease;
+      min-height: 96px;
+      height: 100%;
       &:hover { transform: translateY(-2px); }
+      > .d-flex { min-width: 0; }
     }
     .stat-icon {
       width: 50px; height: 50px; border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
       font-size: 22px;
+      flex: 0 0 50px;
     }
-    .stat-label { font-size: 13px; opacity: .8; margin-top: 2px; }
-    h3 { font-size: 28px; }
+    .stat-label {
+      display: block;
+      font-size: 13px;
+      line-height: 1.25;
+      opacity: .8;
+      margin-top: 2px;
+      overflow-wrap: anywhere;
+    }
+    h3 { font-size: clamp(22px, 2.4vw, 28px); line-height: 1.1; overflow-wrap: anywhere; }
     .card-primary { background: linear-gradient(135deg, #605DFF 0%, #8B5CF6 100%); color: #fff; .stat-icon { background: rgba(255,255,255,.2); } }
     .card-success { background: linear-gradient(135deg, #25B003 0%, #34D399 100%); color: #fff; .stat-icon { background: rgba(255,255,255,.2); } }
     .card-info { background: linear-gradient(135deg, #3584FC 0%, #60A5FA 100%); color: #fff; .stat-icon { background: rgba(255,255,255,.2); } }
     .card-danger { background: linear-gradient(135deg, #FF4023 0%, #F87171 100%); color: #fff; .stat-icon { background: rgba(255,255,255,.2); } }
     .card-warning { background: linear-gradient(135deg, #FD5812 0%, #FBBF24 100%); color: #fff; .stat-icon { background: rgba(255,255,255,.2); } }
     .card-secondary { background: linear-gradient(135deg, #64748B 0%, #94A3B8 100%); color: #fff; .stat-icon { background: rgba(255,255,255,.2); } }
+    @media (max-width: 575.98px) {
+      .stat-card {
+        padding: 14px 16px;
+        min-height: 84px;
+      }
+      .stat-icon {
+        width: 42px;
+        height: 42px;
+        flex-basis: 42px;
+        font-size: 19px;
+      }
+      .stat-label { font-size: 12px; }
+    }
   `],
 })
 export class StatCardComponent {

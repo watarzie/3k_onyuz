@@ -22,6 +22,17 @@
   i { left: 12px; color: var(--bodyColor); }
 }
 
+.page-actions {
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+
 // Geniş tablolarda yatay scroll sayfanın dibine kaçmadan görünür kalır.
 .table-responsive {
   width: 100%;
@@ -64,6 +75,50 @@
 @media (max-height: 760px) {
   .table-responsive {
     max-height: calc(100vh - 330px);
+  }
+}
+
+@media (max-width: 991.98px) {
+  .card-header {
+    align-items: flex-start !important;
+  }
+
+  .card-header > .d-flex,
+  .card-header > .search-box {
+    width: 100%;
+  }
+
+  .card-header > .search-box {
+    flex: 1 1 100%;
+  }
+
+  .table-responsive {
+    max-height: 58vh;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .page-actions {
+    width: 100%;
+
+    .btn {
+      flex: 1 1 150px;
+    }
+
+    app-readonly-banner {
+      flex: 1 1 100%;
+    }
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+    gap: 10px;
+  }
+}
+
+@media (max-width: 380px) {
+  .stat-grid {
+    grid-template-columns: 1fr;
   }
 }
 

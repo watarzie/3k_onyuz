@@ -9,15 +9,15 @@
 </div>
 
 <!-- Stat Cards -->
-<div class="row g-3 mb-4">
-  <div class="col"><app-stat-card [value]="toplamUrun()" label="Toplam" icon="ri-list-check-2" color="primary" /></div>
-  <div class="col"><app-stat-card [value]="tamamlanan()" label="Tamamlanan" icon="ri-checkbox-circle-line"
+<div class="stat-grid mb-4">
+  <div><app-stat-card [value]="toplamUrun()" label="Toplam" icon="ri-list-check-2" color="primary" /></div>
+  <div><app-stat-card [value]="tamamlanan()" label="Tamamlanan" icon="ri-checkbox-circle-line"
       color="success" /></div>
-  <div class="col"><app-stat-card [value]="tamGeldi()" label="Sevk Adeti Tam" icon="ri-check-double-line"
+  <div><app-stat-card [value]="tamGeldi()" label="Sevk Adeti Tam" icon="ri-check-double-line"
       color="info" /></div>
-  <div class="col"><app-stat-card [value]="eksikGeldi()" label="Sevk Adeti Eksik" icon="ri-error-warning-line"
+  <div><app-stat-card [value]="eksikGeldi()" label="Sevk Adeti Eksik" icon="ri-error-warning-line"
       color="warning" /></div>
-  <div class="col"><app-stat-card [value]="kalanlar()" label="Kalan Var" icon="ri-time-line" color="danger" /></div>
+  <div><app-stat-card [value]="kalanlar()" label="Kalan Var" icon="ri-time-line" color="danger" /></div>
 </div>
 
 <!-- Filtre & Tablo -->
@@ -35,7 +35,7 @@
       <button class="btn btn-sm btn-filter-clear" (click)="onFilterTip('')">✕</button>
       }
     </div>
-    <div class="d-flex align-items-center gap-2">
+    <div class="table-actions d-flex align-items-center gap-2 flex-wrap">
       <button *appCanWrite class="btn btn-sm btn-success" [disabled]="!isTopluTamGeldiAllowed"
         (click)="openTopluTamGeldi()" title="Seçili ürünleri Sevk Adeti Tam Geldi olarak işaretle">
         <i class="ri-check-double-line me-1"></i>Toplu Sevk Adeti Tam Geldi ({{ selectionCount }})
