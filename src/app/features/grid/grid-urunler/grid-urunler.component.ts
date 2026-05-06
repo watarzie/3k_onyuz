@@ -122,6 +122,13 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   sipariste = computed(() => this.urunler().filter(u => u.gridDurumuMetni === 'Siparişte').length);
   bekliyor = computed(() => this.urunler().filter(u => u.gridDurumuMetni === 'Bekliyor').length);
 
+  selectedUrunler = computed(() => this.urunler().filter(u => this.selectedIds().has(u.cekiSatiriId)));
+  selectedTadilattaCount = computed(() => this.selectedUrunler().filter(u => this.isTadilatta(u)).length);
+  topluSevkKilitMesaji = computed(() => {
+    const count = this.selectedTadilattaCount();
+    return count > 0 ? `${count} ürün Kalite: Tadilatta durumunda. Tadilattaki ürünler toplu sevk edilemez.` : '';
+  });
+
   gridDurumlari = GRID_DURUMLARI;
   sevkDurumlari = SEVK_DURUMLARI;
 
@@ -463,12 +470,22 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   // ===== Toplu Sevk =====
   openTopluSevk() {
+    if (this.selectedTadilattaCount() > 0) {
+      this.toast.error(this.topluSevkKilitMesaji());
+      return;
+    }
+
     this.topluSevkAciklama.set('');
     this.showTopluSevkModal.set(true);
   }
   closeTopluSevk() { this.showTopluSevkModal.set(false); }
 
   confirmTopluSevk() {
+    if (this.selectedTadilattaCount() > 0) {
+      this.toast.error(this.topluSevkKilitMesaji());
+      return;
+    }
+
     this.topluSevkSaving.set(true);
     this.gridService.topluSevk({
       projeId: this.projeId(),

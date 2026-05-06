@@ -9,7 +9,8 @@
       <button *appCanWrite class="btn btn-primary" (click)="openManuelEkleModal()">
         <i class="ri-add-line me-2"></i>Manuel Ürün Ekle
       </button>
-      <button *appCanWrite class="btn btn-sevk" [disabled]="!hasSelection" (click)="openTopluSevk()">
+      <button *appCanWrite class="btn btn-sevk" [disabled]="!hasSelection || selectedTadilattaCount() > 0"
+        [title]="topluSevkKilitMesaji()" (click)="openTopluSevk()">
         <i class="ri-truck-line me-2"></i>Toplu Sevk ({{ selectedIds().size }})
       </button>
       @if (canKalite) {
@@ -380,7 +381,8 @@
   </div>
   <div class="modal-footer d-flex gap-2">
     <button class="btn btn-outline flex-grow-1" (click)="closeTopluSevk()">İptal</button>
-    <button class="btn btn-sevk flex-grow-1" (click)="confirmTopluSevk()" [disabled]="topluSevkSaving()">
+    <button class="btn btn-sevk flex-grow-1" (click)="confirmTopluSevk()"
+      [disabled]="topluSevkSaving() || selectedTadilattaCount() > 0">
       @if (topluSevkSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
       <i class="ri-truck-line me-1"></i>Sevk Et
     </button>
