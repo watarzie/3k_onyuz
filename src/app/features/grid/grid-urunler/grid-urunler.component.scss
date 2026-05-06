@@ -2,6 +2,17 @@
 .trezo-card { background: var(--whiteColor); border-radius: 10px; overflow: hidden; }
 .card-header { padding: 18px 24px; background: transparent; border-bottom: 1px solid var(--borderColor); }
 .card-footer { padding: 14px 24px; background: transparent; border-top: 1px solid var(--borderColor); }
+:host {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+.trezo-card,
+.card-body {
+  max-width: 100%;
+  min-width: 0;
+}
 .search-box {
   input {
     padding-left: 36px; background: #F6F7F9; border: 1px solid var(--borderColor);
@@ -9,6 +20,51 @@
     &:focus { border-color: var(--primaryColor); box-shadow: none; }
   }
   i { left: 12px; color: var(--bodyColor); }
+}
+
+// Geniş tablolarda yatay scroll sayfanın dibine kaçmadan görünür kalır.
+.table-responsive {
+  width: 100%;
+  max-width: 100%;
+  max-height: calc(100vh - 430px);
+  overflow: auto;
+  scrollbar-gutter: stable;
+  border-bottom: 1px solid var(--borderColor);
+
+  table {
+    min-width: 1680px;
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  &::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #EEF2F7;
+    border-radius: 999px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #94A3B8;
+    border-radius: 999px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #64748B;
+  }
+}
+
+@media (max-height: 760px) {
+  .table-responsive {
+    max-height: calc(100vh - 330px);
+  }
 }
 
 // ===== Filter Buttons =====
