@@ -22,6 +22,9 @@
       <button class="btn btn-outline-info" [disabled]="!hasSelection" (click)="openSurecModal()">
         <i class="ri-settings-3-line me-1"></i>Süreç ({{ selectedIds().size }})
       </button>
+      <button class="btn btn-ambar-talep" [disabled]="!hasSelection" (click)="openAmbarTalepModal()">
+        <i class="ri-file-list-3-line me-1"></i>Ambar Talep Formu
+      </button>
       }
     </div>
   </div>
@@ -69,7 +72,7 @@
     } @else if (filtered().length === 0) {
     <div class="text-center py-5 text-muted">Görüntülenecek ürün bulunmuyor</div>
     } @else {
-    <div class="table-responsive">
+    <div class="table-responsive module-table-scroll">
       <table class="table table-hover align-middle mb-0">
         <thead>
           <tr>
@@ -531,6 +534,78 @@
         <button class="btn btn-info flex-grow-1" (click)="confirmSurec()" [disabled]="surecSaving() || !surecDurumSecim()">
           @if (surecSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
           Uygula
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+}
+
+<!-- ===== Ambar Talep Formu Modal ===== -->
+@if (showAmbarTalepModal()) {
+<div class="modal-backdrop show" (click)="closeAmbarTalepModal()"></div>
+<div class="modal d-block" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content ambar-talep-modal">
+      <div class="modal-header ambar-talep-header">
+        <div class="d-flex align-items-center gap-2">
+          <div class="ambar-icon-wrapper">
+            <i class="ri-file-list-3-line"></i>
+          </div>
+          <div>
+            <h5 class="modal-title fw-bold mb-0">Ambar Talep Formu</h5>
+            <small class="text-white-50">Seçili ürünler için talep formu oluşturun</small>
+          </div>
+        </div>
+        <button class="btn-close btn-close-white" (click)="closeAmbarTalepModal()"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="ambar-info-bar">
+          <i class="ri-information-line me-2"></i>
+          <span><strong>{{ ambarTalepItems().length }}</strong> ürün listelendi. Miktarları düzenleyip PDF olarak indirebilirsiniz.</span>
+        </div>
+        <div class="table-responsive" style="max-height: 400px">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th style="width:45px" class="text-center">#</th>
+                <th>Barkod</th>
+                <th>Ürün Açıklaması</th>
+                <th style="width:140px" class="text-center">İstenen Miktar</th>
+                <th style="width:50px"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of ambarTalepItems(); track $index) {
+              <tr>
+                <td class="text-center text-muted">{{ $index + 1 }}</td>
+                <td><code class="barkod">{{ item.barkodNo }}</code></td>
+                <td class="fw-medium text-truncate" style="max-width:280px" [title]="item.aciklama">{{ item.aciklama }}</td>
+                <td class="text-center">
+                  <div class="d-flex align-items-center justify-content-center gap-1">
+                    <input type="number" class="form-control form-control-sm talep-miktar-input"
+                      [ngModel]="item.istenenMiktar" (ngModelChange)="updateTalepMiktar($index, $event)"
+                      min="0.01" step="any" />
+                    <small class="text-muted">{{ item.birim }}</small>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <button class="btn btn-sm btn-outline-danger border-0" (click)="removeTalepItem($index)" title="Kaldır">
+                    <i class="ri-delete-bin-line"></i>
+                  </button>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer ambar-talep-footer">
+        <button class="btn btn-outline flex-grow-1" (click)="closeAmbarTalepModal()">İptal</button>
+        <button class="btn btn-ambar-generate flex-grow-1" (click)="generateAmbarTalepPdf()"
+          [disabled]="ambarTalepGenerating() || ambarTalepItems().length === 0">
+          @if (ambarTalepGenerating()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          <i class="ri-file-pdf-2-line me-1"></i>PDF Oluştur ve İndir
         </button>
       </div>
     </div>

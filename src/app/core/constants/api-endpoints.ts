@@ -28,6 +28,7 @@ export const API = {
     SEVK_ET: (id: number) => `${BASE}/proje/${id}/sevk-et`,
     KILIDI_AC: (id: number) => `${BASE}/proje/${id}/kilidi-ac`,
     SEVK_TARIHI_GUNCELLE: `${BASE}/proje/sevk-tarihi-guncelle`,
+    DELETE: (id: number) => `${BASE}/proje/${id}`,
   },
   CEKI: {
     YUKLE: `${BASE}/ceki/yukle`,

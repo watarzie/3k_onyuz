@@ -80,7 +80,7 @@
               <th>{{ 'LABELS.durumMetni' | translate }}</th>
               <th>Sevk Tarihi</th>
               <th>{{ 'LABELS.TAMAMLANMA' | translate }}</th>
-                  @if (isSandikMode() || isSevkEdilen() || (!isSandikMode() && canSevkEt())) {
+                  @if (isSandikMode() || isSevkEdilen() || (!isSandikMode() && canSevkEt()) || isAdmin()) {
                 <th>İşlemler</th>
               }
             </tr>
@@ -140,7 +140,7 @@
                     <small class="fw-semibold">{{ getTamamlanmaYuzdesi(p) }}%</small>
                   </div>
                 </td>
-                @if (isSandikMode() || isSevkEdilen() || (!isSandikMode() && canSevkEt())) {
+                @if (isSandikMode() || isSevkEdilen() || (!isSandikMode() && canSevkEt()) || isAdmin()) {
                   <td>
                     <div class="d-flex gap-1 flex-wrap">
                       @if (isSevkEdilen() && p.projeTipiId === 1) {
@@ -199,6 +199,12 @@
                             <i class="ri-truck-line me-1"></i> Sevk Et
                           </button>
                         }
+                      }
+
+                      @if (isAdmin()) {
+                        <button class="btn btn-sm btn-outline-danger" (click)="projeSil(p)" title="Projeyi Sil">
+                          <i class="ri-delete-bin-line"></i>
+                        </button>
                       }
                     </div>
                   </td>

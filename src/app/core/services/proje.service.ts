@@ -50,6 +50,10 @@ export class ProjeService {
     return this.api.put<boolean>(API.PROJE.SEVK_TARIHI_GUNCELLE, { projeId, planlananSevkTarihi });
   }
 
+  projeSil(projeId: number): Observable<ApiResult<boolean>> {
+    return this.api.delete<boolean>(API.PROJE.DELETE(projeId));
+  }
+
   // ===== Sandık Sevk =====
 
   sandikSevkEt(projeId: number, sandikId: number): Observable<ApiResult<boolean>> {

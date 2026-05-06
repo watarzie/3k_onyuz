@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy, ChangeDetectionStrategy, WritableSignal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -16,6 +16,16 @@ import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-ban
 import { GridUrunDto, GridDurumGuncelleDto } from '../../../shared/models/index';
 import { GridDurum, GridSevkDurum, UcKDurum } from '../../../core/constants/enums';
 import { PermissionService } from '../../../core/services/permission.service';
+
+declare const pdfMake: any;
+
+interface AmbarTalepItem {
+  cekiSatiriId: number;
+  barkodNo: string;
+  aciklama: string;
+  istenenMiktar: number;
+  birim: string;
+}
 
 // ===== Durum tanımları =====
 interface DurumSecenegi { id: number; value: string; label: string; color: string; bgClass: string; }
@@ -86,6 +96,11 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   showSurecModal = signal(false);
   surecDurumSecim = signal(0);
   surecSaving = signal(false);
+
+  // Ambar Talep Formu
+  showAmbarTalepModal = signal(false);
+  ambarTalepItems: WritableSignal<AmbarTalepItem[]> = signal([]);
+  ambarTalepGenerating = signal(false);
 
   // Manuel Ürün Ekle
   showManuelEkleModal = signal(false);
@@ -691,5 +706,200 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
         this.toast.error('Sunucu hatası oluştu.');
       },
     });
+  }
+
+  // ===== Ambar Talep Formu =====
+  openAmbarTalepModal() {
+    const selected = this.selectedUrunler();
+    if (selected.length === 0) {
+      this.toast.error('Lütfen en az bir ürün seçiniz.');
+      return;
+    }
+    const items: AmbarTalepItem[] = selected.map(u => ({
+      cekiSatiriId: u.cekiSatiriId,
+      barkodNo: u.barkodNo,
+      aciklama: u.aciklama,
+      istenenMiktar: u.istenenAdet,
+      birim: u.birim,
+    }));
+    this.ambarTalepItems.set(items);
+    this.showAmbarTalepModal.set(true);
+  }
+
+  closeAmbarTalepModal() {
+    this.showAmbarTalepModal.set(false);
+  }
+
+  updateTalepMiktar(index: number, value: number) {
+    const items = [...this.ambarTalepItems()];
+    items[index] = { ...items[index], istenenMiktar: value };
+    this.ambarTalepItems.set(items);
+  }
+
+  removeTalepItem(index: number) {
+    const items = [...this.ambarTalepItems()];
+    items.splice(index, 1);
+    this.ambarTalepItems.set(items);
+    if (items.length === 0) this.closeAmbarTalepModal();
+  }
+
+  generateAmbarTalepPdf() {
+    const items = this.ambarTalepItems();
+    if (items.length === 0) return;
+    this.ambarTalepGenerating.set(true);
+
+    try {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const timeStr = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+
+      const tableBody: any[][] = items.map((item, i) => [
+        { text: (i + 1).toString(), alignment: 'center' },
+        { text: item.barkodNo, alignment: 'center', bold: true },
+        { text: item.aciklama },
+        { text: `${item.istenenMiktar} ${item.birim}`, alignment: 'center' },
+      ]);
+
+      const docDefinition: any = {
+        pageSize: 'A4',
+        pageMargins: [30, 100, 30, 60],
+        header: () => ({
+          stack: [
+            {
+              canvas: [
+                { type: 'rect', x: 0, y: 0, w: 595.28, h: 85, color: '#1e3a5f' },
+                { type: 'rect', x: 0, y: 85, w: 595.28, h: 4, color: '#3b82f6' },
+              ],
+            },
+            {
+              text: 'AMBAR TALEP FORMU',
+              fontSize: 22,
+              bold: true,
+              color: '#ffffff',
+              alignment: 'center',
+              margin: [0, -75, 0, 0],
+            },
+            {
+              text: `Tarih: ${dateStr}  |  Saat: ${timeStr}`,
+              fontSize: 10,
+              color: '#cbd5e1',
+              alignment: 'center',
+              margin: [0, 6, 0, 0],
+            },
+            {
+              text: `Toplam ${items.length} kalem`,
+              fontSize: 9,
+              color: '#94a3b8',
+              alignment: 'center',
+              margin: [0, 4, 0, 0],
+            },
+          ],
+        }),
+        content: [
+          // Table
+          {
+            table: {
+              headerRows: 1,
+              widths: [25, 80, '*', 70],
+              body: [
+                [
+                  { text: '#', style: 'tableHeader', alignment: 'center' },
+                  { text: 'BARKOD', style: 'tableHeader', alignment: 'center' },
+                  { text: '\u00dcR\u00dcN A\u00c7IKLAMASI', style: 'tableHeader' },
+                  { text: '\u0130STENEN M\u0130KTAR', style: 'tableHeader', alignment: 'center' },
+                ],
+                ...tableBody,
+              ],
+            },
+            layout: {
+              hLineWidth: () => 0.5,
+              vLineWidth: () => 0.5,
+              hLineColor: (i: number) => i === 1 ? '#3b82f6' : '#e2e8f0',
+              vLineColor: () => '#e2e8f0',
+              fillColor: (rowIndex: number) => {
+                if (rowIndex === 0) return '#1e3a5f';
+                return rowIndex % 2 === 0 ? '#f5f7fa' : null;
+              },
+              paddingLeft: () => 8,
+              paddingRight: () => 8,
+              paddingTop: () => 6,
+              paddingBottom: () => 6,
+            },
+          },
+          // Signature area
+          { text: '', margin: [0, 40, 0, 0] },
+          {
+            columns: [
+              {
+                width: '50%',
+                stack: [
+                  { text: 'Talep Eden:', bold: true, fontSize: 10, color: '#374151' },
+                  { text: '', margin: [0, 30, 0, 0] },
+                  { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 150, y2: 0, lineWidth: 0.5, lineColor: '#9ca3af' }] },
+                  { text: 'Ad Soyad / \u0130mza', fontSize: 8, color: '#6b7280', margin: [0, 4, 0, 0] },
+                ],
+              },
+              {
+                width: '50%',
+                stack: [
+                  { text: 'Onaylayan:', bold: true, fontSize: 10, color: '#374151' },
+                  { text: '', margin: [0, 30, 0, 0] },
+                  { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 150, y2: 0, lineWidth: 0.5, lineColor: '#9ca3af' }] },
+                  { text: 'Ad Soyad / \u0130mza', fontSize: 8, color: '#6b7280', margin: [0, 4, 0, 0] },
+                ],
+              },
+            ],
+          },
+        ],
+        footer: (currentPage: number, pageCount: number) => ({
+          columns: [
+            { text: 'Bu form sistem taraf\u0131ndan otomatik olu\u015fturulmu\u015ftur.', fontSize: 7, color: '#9ca3af', margin: [30, 0, 0, 0] },
+            { text: `Sayfa ${currentPage} / ${pageCount}`, fontSize: 7, color: '#9ca3af', alignment: 'right', margin: [0, 0, 30, 0] },
+          ],
+        }),
+        styles: {
+          tableHeader: {
+            bold: true,
+            fontSize: 9,
+            color: '#ffffff',
+          },
+        },
+        defaultStyle: {
+          fontSize: 9,
+          color: '#1e1e1e',
+        },
+      };
+
+      const fileName = `Ambar_Talep_Formu_${dateStr.replace(/\./g, '-')}_${timeStr.replace(':', '')}`;
+      pdfMake.createPdf(docDefinition).download(`${fileName}.pdf`);
+      this.toast.success('Ambar Talep Formu PDF olarak indirildi.');
+
+      // Se\u00e7ili \u00fcr\u00fcnlerin S\u00fcre\u00e7 durumunu "Ambar" (ID: 1) olarak g\u00fcncelle
+      const cekiIdler = items.map(i => i.cekiSatiriId);
+      this.gridService.surecDurumGuncelle({
+        projeId: this.projeId(),
+        cekiSatiriIdler: cekiIdler,
+        surecDurumId: 1,
+      }).subscribe({
+        next: (res) => {
+          if (res.isSuccess) {
+            this.toast.success('Se\u00e7ili \u00fcr\u00fcnlerin s\u00fcre\u00e7 durumu "Ambar" olarak g\u00fcncellendi.');
+            this.gridService.notifyGridUpdated();
+            this.selectedIds.set(new Set());
+            this.loadUrunler(false);
+          } else {
+            this.toast.error(res.error ?? 'S\u00fcre\u00e7 durumu g\u00fcncellenemedi.');
+          }
+        },
+        error: () => this.toast.error('S\u00fcre\u00e7 durumu g\u00fcncellenirken hata olu\u015ftu.'),
+      });
+
+      this.closeAmbarTalepModal();
+    } catch (e) {
+      console.error('PDF olu\u015fturma hatas\u0131:', e);
+      this.toast.error('PDF olu\u015fturulurken bir hata olu\u015ftu.');
+    } finally {
+      this.ambarTalepGenerating.set(false);
+    }
   }
 }

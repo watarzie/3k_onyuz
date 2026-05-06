@@ -28,11 +28,11 @@
   gap: 12px;
 }
 
-// Geniş tablolarda yatay scroll sayfanın dibine kaçmadan görünür kalır.
-.table-responsive {
+// Geniş ana tabloda yatay scroll sayfanın dibine kaçmadan görünür kalır.
+.module-table-scroll {
   width: 100%;
   max-width: 100%;
-  max-height: calc(100vh - 390px);
+  max-height: clamp(260px, calc(100dvh - 390px), 58dvh);
   overflow: auto;
   scrollbar-gutter: stable;
   border-bottom: 1px solid var(--borderColor);
@@ -68,8 +68,8 @@
 }
 
 @media (max-height: 760px) {
-  .table-responsive {
-    max-height: calc(100vh - 320px);
+  .module-table-scroll {
+    max-height: clamp(260px, calc(100dvh - 320px), 58dvh);
   }
 }
 
@@ -87,7 +87,7 @@
     flex: 1 1 220px;
   }
 
-  .table-responsive {
+  .module-table-scroll {
     max-height: 58vh;
   }
 }

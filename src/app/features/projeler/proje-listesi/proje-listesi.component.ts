@@ -6,6 +6,7 @@ import { NgClass, DatePipe } from '@angular/common';
 import { TranslationService } from '../../../core/services/translation.service';
 import { ProjeService } from '../../../core/services/proje.service';
 import { PermissionService } from '../../../core/services/permission.service';
+import { AuthService } from '../../../core/auth/auth.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { ProjeDto } from '../../../shared/models/index';
@@ -29,6 +30,7 @@ export class ProjeListesiComponent implements OnInit {
   confirmService = inject(ConfirmService);
   private route = inject(ActivatedRoute);
   private pdfService = inject(PdfService);
+  private authService = inject(AuthService);
 
   isSandikYonetimi = signal(false);
   isSevkEdilen = signal(false);
@@ -46,6 +48,7 @@ export class ProjeListesiComponent implements OnInit {
    */
   canSeeGrid = computed(() => this.permissions.hasAccess('grid-modulu'));
   canSee3K = computed(() => this.permissions.hasAccess('3k-modulu'));
+  isAdmin = computed(() => this.authService.hasRole('Admin'));
 
   projeler = signal<ProjeDto[]>([]);
   filtered = signal<ProjeDto[]>([]);
@@ -472,6 +475,33 @@ export class ProjeListesiComponent implements OnInit {
             this.loadProjeler();
           } else {
             this.toastService.error(res.error || 'İşlem başarısız.');
+          }
+        },
+        error: () => this.toastService.error('Sunucu hatası oluştu.')
+      });
+    }
+  }
+
+  // ===== Proje Sil (Admin) =====
+
+  async projeSil(proje: ProjeDto) {
+    const onay = await this.confirmService.ask({
+      title: 'Projeyi Sil',
+      message: `<strong>${proje.projeNo}</strong> numaralı projeyi silmek istediğinize emin misiniz?<br>
+                <span class="text-danger">Bu işlem geri alınamaz! Projeye ait tüm sandıklar, ürünler ve veriler silinecektir.</span>`,
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      type: 'danger'
+    });
+
+    if (onay) {
+      this.projeService.projeSil(proje.id).subscribe({
+        next: (res) => {
+          if (res.isSuccess) {
+            this.toastService.success(`${proje.projeNo} projesi ve tüm verileri başarıyla silindi.`);
+            this.loadProjeler();
+          } else {
+            this.toastService.error(res.error || 'Proje silinemedi.');
           }
         },
         error: () => this.toastService.error('Sunucu hatası oluştu.')
