@@ -371,7 +371,18 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   get isSevkAktif(): boolean {
     const d = this.panelDurum();
-    return d === 'Tam Geldi' || d === 'Eksik Geldi';
+    return d === 'Tam Geldi' || d === 'Eksik Geldi' || (d === 'Trafo Sevk' && this.panelGelenAdet() > 0);
+  }
+
+  get maxSevkAdet(): number {
+    return Math.max(this.panelGelenAdet(), 0);
+  }
+
+  onSevkDurumChange(durum: string) {
+    this.panelSevkDurumu.set(durum);
+    if (durum === 'Sevk Edildi' && this.panelSevkAdet() <= 0) {
+      this.panelSevkAdet.set(this.maxSevkAdet);
+    }
   }
 
   get panelEksik(): number {
@@ -399,8 +410,9 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     }
 
     if (this.panelSevkDurumu() === 'Sevk Edildi') {
-      if (d !== 'Tam Geldi' && d !== 'Eksik Geldi') return 'Sevk için durum ' + d + ' değil, "Tam Geldi" veya "Eksik Geldi" olmalıdır.';
+      if (d !== 'Tam Geldi' && d !== 'Eksik Geldi' && !(d === 'Trafo Sevk' && this.panelGelenAdet() > 0)) return 'Sevk için durum Tam Geldi, Eksik Geldi veya Grid gelen adedi olan Trafo Sevk olmalıdır.';
       if (this.panelSevkAdet() <= 0) return 'Sevk edilen miktar girilmelidir.';
+      if (this.panelSevkAdet() > this.maxSevkAdet) return 'Sevk edilen miktar Grid gelen adetten büyük olamaz.';
     }
 
     return null;

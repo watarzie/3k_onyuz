@@ -208,7 +208,7 @@
             <td *appCanWrite>
               <div class="d-flex gap-1">
                 <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle"
-                  [disabled]="u.gridDurumuId === 12 || u.gridDurumuId === 11 || u.gridDurumuId === 14 || u.kaliteDurumMetni === 'Tadilatta'">
+                  [disabled]="isEditDisabled(u)">
                   <i class="ri-edit-line"></i>
                 </button>
                 @if (u.isManuelEklenen) {
@@ -468,8 +468,8 @@
     </div>
     <div class="modal-body">
       <p class="mb-3"><strong>{{ selectionCount }}</strong> ürün "Sevk Adeti Tam Geldi" olarak işaretlenecek.</p>
-      <p class="text-muted small mb-3">Grid iptal, trafo sevk veya henüz sevk edilmemiş ürünler otomatik atlanır. Her
-        ürün için Grid sevk miktarı kadar teslim alınacaktır.</p>
+      <p class="text-muted small mb-3">Grid iptal veya henüz sevk edilmemiş ürünler otomatik atlanır. Kısmi trafo sevk
+        satırlarında yalnızca Grid'in 3K'ya sevk ettiği miktar teslim alınacaktır.</p>
       <div class="mb-3">
         <label class="form-label fw-semibold">Açıklama (Opsiyonel)</label>
         <textarea class="form-control" rows="2" placeholder="Toplu işlem açıklaması..." [ngModel]="topluAciklama()"

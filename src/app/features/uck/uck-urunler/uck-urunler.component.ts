@@ -483,8 +483,16 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     // Grid İptal → tüm seçenekler kapalı
     if (u.gridDurumuId === GridDurum.Iptal) return true;
 
-    // Grid Trafo Sevk → tüm seçenekler kapalı
-    if (u.gridDurumuId === GridDurum.TrafoSevk) return true;
+    if (u.gridDurumuId === GridDurum.TrafoSevk) {
+      const kismiSevkVar = u.gridSevkDurumuId === GridSevkDurum.SevkEdildi && (u.gridSevkMiktari ?? 0) > 0;
+      const fizikselTip = tip === 'Sevk Adeti Tam Geldi' || tip === 'Sevk Adeti Eksik Geldi' || tip === 'Gelmedi';
+      const kaynakTip = tip === 'Projeden Karşılandı' || tip === 'Stoktan Karşılandı' || tip === 'Tedarikçiden Geldi';
+
+      if (fizikselTip) return !kismiSevkVar;
+      if (kaynakTip) return u.kalan <= 0;
+      if (tip === 'Geri Gönderildi') return u.gelenMiktar <= 0;
+      return true;
+    }
 
     // Grid Gelmedi → yalnızca Projeden/Stoktan/Tedarikçi açık
     if (u.gridDurumuId === GridDurum.Gelmedi) {
@@ -498,7 +506,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
     // Projeden/Stoktan/Tedarikçi → Grid eksik gelmiş veya gelmemiş olmalı
     if (tip === 'Tedarikçiden Geldi' || tip === 'Stoktan Karşılandı' || tip === 'Projeden Karşılandı') {
-      return u.gridDurumuMetni !== 'Eksik Geldi' && u.gridDurumuMetni !== 'Gelmedi';
+      return u.gridDurumuMetni !== 'Eksik Geldi' && u.gridDurumuMetni !== 'Gelmedi' && u.gridDurumuMetni !== 'Trafo Sevk';
     }
 
     return false;
@@ -530,8 +538,18 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     // Grid İptal blokajı
     if (u.gridDurumuId === GridDurum.Iptal) return 'Bu ürün Grid tarafından iptal edildiği için işlem yapılamaz.';
 
-    // Grid Trafo Sevk blokajı
-    if (u.gridDurumuId === GridDurum.TrafoSevk) return 'Bu ürün Grid tarafından Trafo Sevk olarak işaretlendiğinden 3K işlemi yapılamaz.';
+    if (u.gridDurumuId === GridDurum.TrafoSevk) {
+      const kismiSevkVar = u.gridSevkDurumuId === GridSevkDurum.SevkEdildi && (u.gridSevkMiktari ?? 0) > 0;
+      const fizikselTip = tip === 'Sevk Adeti Tam Geldi' || tip === 'Sevk Adeti Eksik Geldi' || tip === 'Gelmedi';
+      const kaynakTip = tip === 'Projeden Karşılandı' || tip === 'Stoktan Karşılandı' || tip === 'Tedarikçiden Geldi';
+
+      if (fizikselTip && !kismiSevkVar) {
+        return 'Trafo sevk satırında 3K işlemi için Grid gelen miktar önce 3K’ya sevk edilmelidir.';
+      }
+      if (kaynakTip && u.kalan <= 0) {
+        return 'Bu trafo sevk satırında karşılanacak kalan miktar yok.';
+      }
+    }
 
     // Grid Gelmedi → sadece Projeden/Stoktan/Tedarikçi
     if (u.gridDurumuId === GridDurum.Gelmedi) {
@@ -551,8 +569,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     }
 
     if (tip === 'Tedarikçiden Geldi' || tip === 'Stoktan Karşılandı' || tip === 'Projeden Karşılandı') {
-      if (u.gridDurumuMetni !== 'Eksik Geldi' && u.gridDurumuMetni !== 'Gelmedi') {
-        return 'Bu işlem yalnızca ürün Grid tarafında eksik geldiğinde veya hiç gelmediğinde (GELMEDİ) yapılabilir.';
+      if (u.gridDurumuMetni !== 'Eksik Geldi' && u.gridDurumuMetni !== 'Gelmedi' && u.gridDurumuMetni !== 'Trafo Sevk') {
+        return 'Bu işlem yalnızca ürün Grid tarafında eksik geldiğinde, hiç gelmediğinde veya kısmi trafo sevk olduğunda yapılabilir.';
       }
     }
 
@@ -783,6 +801,28 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   }
 
   // ===== Checkbox [disabled] — sadece kesin blokaj durumları =====
+  isEditDisabled(u: UcKUrunDto): boolean {
+    if (u.gridDurumuId === GridDurum.Iptal || u.gridDurumuId === GridDurum.GridKapandi) return true;
+    if (u.kaliteDurumMetni === 'Tadilatta') return true;
+
+    if (u.gridDurumuId === GridDurum.TrafoSevk) {
+      const gridSevkVar = u.gridSevkDurumuId === GridSevkDurum.SevkEdildi && (u.gridSevkMiktari ?? 0) > 0;
+      const kaynaklaKarsilanacakKalanVar = u.kalan > 0;
+      return !gridSevkVar && !kaynaklaKarsilanacakKalanVar;
+    }
+
+    return false;
+  }
+
+  getEditDisabledReason(u: UcKUrunDto): string {
+    if (!this.isEditDisabled(u)) return '';
+    if (u.kaliteDurumMetni === 'Tadilatta') return 'Kalite Tadilatta olduğu için işlem yapılamaz.';
+    if (u.gridDurumuId === GridDurum.Iptal) return 'Grid iptal ettiği için işlem yapılamaz.';
+    if (u.gridDurumuId === GridDurum.GridKapandi) return 'Grid kapandığı için işlem yapılamaz.';
+    if (u.gridDurumuId === GridDurum.TrafoSevk) return 'Tamamı trafoda sevk edildiği için 3K fiziksel işlem yok.';
+    return '';
+  }
+
   isCheckboxDisabled(u: UcKUrunDto): boolean {
     // Grid İptal veya GridKapandı → hiçbir toplu işlem yapılamaz
     if (u.gridDurumuId === GridDurum.Iptal || u.gridDurumuId === GridDurum.GridKapandi) return true;
@@ -797,7 +837,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     return this.filtered().filter(u => ids.has(u.cekiSatiriId)).every(u =>
       u.gridSevkDurumuId === GridSevkDurum.SevkEdildi &&
       u.ucKKarsilamaTipiId !== UcKDurum.TamGeldi &&
-      u.gridDurumuId !== GridDurum.TrafoSevk
+      (u.gridDurumuId !== GridDurum.TrafoSevk || (u.gridSevkMiktari ?? 0) > 0)
     );
   }
 

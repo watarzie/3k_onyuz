@@ -321,7 +321,7 @@
       <div class="d-flex gap-2 flex-wrap">
         @for (sd of sevkDurumlari; track sd.value) {
         <button class="btn btn-sm btn-sevk-durum" [ngClass]="{'active': panelSevkDurumu() === sd.value}"
-          [style.--sd-color]="sd.color" (click)="panelSevkDurumu.set(sd.value)"
+          [style.--sd-color]="sd.color" (click)="onSevkDurumChange(sd.value)"
           [disabled]="!isSevkAktif && sd.value === 'Sevk Edildi'">
           {{ sd.label }}
         </button>
@@ -334,7 +334,7 @@
     <div class="mb-3">
       <label class="form-label fw-semibold">Sevk Adet</label>
       <input type="number" class="form-control" [ngModel]="panelSevkAdet()" (ngModelChange)="panelSevkAdet.set($event)"
-        min="0" [max]="panelGelenAdet()" step="any" />
+        min="0" [max]="maxSevkAdet" step="any" />
     </div>
     }
 
@@ -374,7 +374,8 @@
   <div class="modal-body">
     <div class="alert-info-custom mb-3">
       <i class="ri-information-line me-2"></i>
-      <strong>{{ selectedIds().size }}</strong> ürün seçildi. Tümü <strong>SEVK EDİLDİ</strong> olarak işaretlenecek.
+      <strong>{{ selectedIds().size }}</strong> ürün seçildi. Kısmi trafo sevk satırlarında yalnızca
+      <strong>Grid gelen adet</strong> 3K'ya sevk edilecek.
     </div>
     <div class="mb-3">
       <label class="form-label fw-semibold">Açıklama</label>
