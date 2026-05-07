@@ -15,6 +15,7 @@ export interface GridUrunDto {
   gridSevkDurumuId: number;
   gridSevkDurumuMetni: string;
   gridSevkMiktari?: number;
+  yenidenSevkGerekliAdet: number;
   gridSevkTarihi?: string;
   gridAciklama?: string;
   gridEksikMiktar: number;
@@ -29,6 +30,8 @@ export interface GridUrunDto {
   ucKDurumuMetni: string;
   gelenMiktar: number;
   geriGonderilenMiktar: number;
+  geriGonderilmeSebebiId?: number;
+  geriGonderilmeSebebiMetni?: string;
   kaynakHedefProjeNo?: string;
   // Çapraz açıklama: 3K tarafının açıklaması (Grid tarafı görür)
   ucKAciklama?: string;

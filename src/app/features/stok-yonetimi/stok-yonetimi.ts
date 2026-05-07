@@ -165,10 +165,7 @@ export class StokYonetimi implements OnInit {
       this.toastService.error('Stok giriş nedeni zorunludur.');
       return;
     }
-    if (!payload.kaynakProje || payload.kaynakProje === '') {
-      this.toastService.error('Kaynak Proje zorunludur.');
-      return;
-    }
+    // kaynakProje artık opsiyonel — zorunluluk kaldırıldı
     if (payload.miktar < 0) {
       this.toastService.error('Miktar negatif olamaz.');
       return;

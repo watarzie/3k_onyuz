@@ -133,6 +133,7 @@ export enum GridSevkDurum {
   SevkEdildi = 1,
   Bekliyor = 2,
   SevkEdilmedi = 3,
+  YenidenSevkGerekli = 4,
 }
 
 // ===== Birim =====
@@ -256,4 +257,3 @@ export const STATUS_BADGE_MAP: Record<string, string> = {
   'GridKapandi': 'badge-dark',
   'Siparişte': 'badge-purple',
 };
-

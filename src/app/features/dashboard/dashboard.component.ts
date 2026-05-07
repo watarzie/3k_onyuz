@@ -63,10 +63,11 @@ export class DashboardComponent implements OnInit {
   });
 
   // Depo Dağılım (computed)
-  depo3K = computed(() => this.projeler().filter(p => p.lokasyon?.toUpperCase()?.includes('3K')).reduce((s, p) => s + p.sandikSayisi, 0));
-  depoSeymen = computed(() => this.projeler().filter(p => p.lokasyon?.toUpperCase()?.includes('SEYMEN')).reduce((s, p) => s + p.sandikSayisi, 0));
-  depoGrid = computed(() => this.projeler().filter(p => p.lokasyon?.toUpperCase()?.includes('GRID')).reduce((s, p) => s + p.sandikSayisi, 0));
-  depoDiger = computed(() => this.toplamSandik() - this.depo3K() - this.depoSeymen() - this.depoGrid());
+  toplamDepoSandik = computed(() => this.projeler().reduce((s, p) => s + (p.depoSandikSayisi ?? 0), 0));
+  depo3K = computed(() => this.projeler().reduce((s, p) => s + (p.depoUcKSandikSayisi ?? 0), 0));
+  depoSeymen = computed(() => this.projeler().reduce((s, p) => s + (p.depoSeymenSandikSayisi ?? 0), 0));
+  depoGrid = computed(() => this.projeler().reduce((s, p) => s + (p.depoGridSandikSayisi ?? 0), 0));
+  depoDiger = computed(() => this.toplamDepoSandik() - this.depo3K() - this.depoSeymen() - this.depoGrid());
 
   // Proje Özeti — lookup değerleri: "Hazırlanıyor", "Tamamlandı", "Beklemede", "Sevk Edildi", "Eksik Sevk Edildi"
   devamEden = computed(() => this.projeler().filter(p => p.durumMetni === 'Hazırlanıyor').length);

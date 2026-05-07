@@ -149,6 +149,9 @@
               <span class="durum-badge-sm" [style.color]="getSevkDurumColor(u.gridSevkDurumuMetni)">
                 {{ getSevkDurumLabel(u.gridSevkDurumuMetni) }}
               </span>
+              @if (u.yenidenSevkGerekliAdet > 0) {
+              <div class="small text-warning fw-semibold mt-1">{{ u.yenidenSevkGerekliAdet }} {{ u.birim }}</div>
+              }
             </td>
             <td style="max-width:160px">
               @if (u.projeKarsilanan > 0 && u.kaynakHedefProjeNo) {
@@ -188,8 +191,14 @@
               > 0 ? u.projeGonderilen : '-' }}</td>
             <td class="text-center" [ngClass]="{'text-success fw-semibold': u.tedarikciKarsilanan > 0}">{{
               u.tedarikciKarsilanan > 0 ? u.tedarikciKarsilanan : '-' }}</td>
-            <td class="text-center" [ngClass]="{'text-danger fw-semibold': u.geriGonderilenMiktar > 0}">{{
-              u.geriGonderilenMiktar > 0 ? u.geriGonderilenMiktar : '-' }}</td>
+            <td class="text-center" [ngClass]="{'text-danger fw-semibold': u.geriGonderilenMiktar > 0}">
+              {{ u.geriGonderilenMiktar > 0 ? u.geriGonderilenMiktar : '-' }}
+              @if (u.geriGonderilmeSebebiMetni) {
+              <div class="small text-danger mt-1" [title]="u.geriGonderilmeSebebiMetni">
+                {{ u.geriGonderilmeSebebiMetni }}
+              </div>
+              }
+            </td>
             <td>
               @if (u.gridAciklama) {
               <div class="aciklama-cell">
@@ -374,8 +383,9 @@
   <div class="modal-body">
     <div class="alert-info-custom mb-3">
       <i class="ri-information-line me-2"></i>
-      <strong>{{ selectedIds().size }}</strong> ürün seçildi. Kısmi trafo sevk satırlarında yalnızca
-      <strong>Grid gelen adet</strong> 3K'ya sevk edilecek.
+      <strong>{{ selectedIds().size }}</strong> ürün seçildi. Yeniden sevk gerekli satırlarda yalnızca
+      <strong>yeniden sevk adedi</strong>, kısmi trafo sevk satırlarında yalnızca <strong>Grid gelen adet</strong>
+      3K'ya sevk edilecek.
     </div>
     <div class="mb-3">
       <label class="form-label fw-semibold">Açıklama</label>

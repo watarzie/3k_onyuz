@@ -476,6 +476,37 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     return t !== 'Sevk Adeti Tam Geldi' && t !== 'Gelmedi' && t !== '';
   }
 
+  private getTipId(tip: string): number {
+    return KARSILAMA_TIPLERI.find(t => t.value === tip)?.id ?? 0;
+  }
+
+  private isKaynakKarsilamaTip(tip: string): boolean {
+    const tipId = this.getTipId(tip);
+    return tipId === UcKDurum.ProjedenKarsilandi ||
+      tipId === UcKDurum.StoktanKarsilandi ||
+      tipId === UcKDurum.TedarikcidenGeldi;
+  }
+
+  private isFizikselSevkTip(tip: string): boolean {
+    const tipId = this.getTipId(tip);
+    return tipId === UcKDurum.TamGeldi ||
+      tipId === UcKDurum.EksikGeldi ||
+      tipId === UcKDurum.Gelmedi;
+  }
+
+  private isGridKaynakKarsilamaAcik(u: UcKUrunDto): boolean {
+    return u.gridDurumuId === GridDurum.EksikGeldi ||
+      u.gridDurumuId === GridDurum.Gelmedi ||
+      u.gridDurumuId === GridDurum.TrafoSevk;
+  }
+
+  private isGeriGonderimSonrasiKaynakAcik(u: UcKUrunDto): boolean {
+    return u.kalan > 0 &&
+      (u.ucKKarsilamaTipiId === UcKDurum.GeriGonderildi ||
+        (u.geriGonderilenMiktar ?? 0) > 0 ||
+        u.gridSevkDurumuId === GridSevkDurum.YenidenSevkGerekli);
+  }
+
   isKarsilamaTipiDisabled(tip: string): boolean {
     const u = this.panelUrun();
     if (!u) return false;
@@ -485,8 +516,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
     if (u.gridDurumuId === GridDurum.TrafoSevk) {
       const kismiSevkVar = u.gridSevkDurumuId === GridSevkDurum.SevkEdildi && (u.gridSevkMiktari ?? 0) > 0;
-      const fizikselTip = tip === 'Sevk Adeti Tam Geldi' || tip === 'Sevk Adeti Eksik Geldi' || tip === 'Gelmedi';
-      const kaynakTip = tip === 'Projeden Karşılandı' || tip === 'Stoktan Karşılandı' || tip === 'Tedarikçiden Geldi';
+      const fizikselTip = this.isFizikselSevkTip(tip);
+      const kaynakTip = this.isKaynakKarsilamaTip(tip);
 
       if (fizikselTip) return !kismiSevkVar;
       if (kaynakTip) return u.kalan <= 0;
@@ -496,7 +527,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
     // Grid Gelmedi → yalnızca Projeden/Stoktan/Tedarikçi açık
     if (u.gridDurumuId === GridDurum.Gelmedi) {
-      return tip !== 'Projeden Karşılandı' && tip !== 'Stoktan Karşılandı' && tip !== 'Tedarikçiden Geldi';
+      return !this.isKaynakKarsilamaTip(tip);
     }
 
     // Hatalı Ürün seçeneği kaldırıldı — GeriGonderilmeSebebi içine taşındı
@@ -504,9 +535,9 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     // Sevk Adeti Tam Geldi → Grid sevk edilmiş olmalı
     if (tip === 'Sevk Adeti Tam Geldi' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) return true;
 
-    // Projeden/Stoktan/Tedarikçi → Grid eksik gelmiş veya gelmemiş olmalı
-    if (tip === 'Tedarikçiden Geldi' || tip === 'Stoktan Karşılandı' || tip === 'Projeden Karşılandı') {
-      return u.gridDurumuMetni !== 'Eksik Geldi' && u.gridDurumuMetni !== 'Gelmedi' && u.gridDurumuMetni !== 'Trafo Sevk';
+    // Projeden/Stoktan/Tedarikçi → Grid eksik/gelmedi/trafo veya 3K geri gönderim sonrası kalan açık olmalı
+    if (this.isKaynakKarsilamaTip(tip)) {
+      return !this.isGridKaynakKarsilamaAcik(u) && !this.isGeriGonderimSonrasiKaynakAcik(u);
     }
 
     return false;
@@ -540,8 +571,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
     if (u.gridDurumuId === GridDurum.TrafoSevk) {
       const kismiSevkVar = u.gridSevkDurumuId === GridSevkDurum.SevkEdildi && (u.gridSevkMiktari ?? 0) > 0;
-      const fizikselTip = tip === 'Sevk Adeti Tam Geldi' || tip === 'Sevk Adeti Eksik Geldi' || tip === 'Gelmedi';
-      const kaynakTip = tip === 'Projeden Karşılandı' || tip === 'Stoktan Karşılandı' || tip === 'Tedarikçiden Geldi';
+      const fizikselTip = this.isFizikselSevkTip(tip);
+      const kaynakTip = this.isKaynakKarsilamaTip(tip);
 
       if (fizikselTip && !kismiSevkVar) {
         return 'Trafo sevk satırında 3K işlemi için Grid gelen miktar önce 3K’ya sevk edilmelidir.';
@@ -553,7 +584,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
     // Grid Gelmedi → sadece Projeden/Stoktan/Tedarikçi
     if (u.gridDurumuId === GridDurum.Gelmedi) {
-      if (tip !== 'Projeden Karşılandı' && tip !== 'Stoktan Karşılandı' && tip !== 'Tedarikçiden Geldi') {
+      if (!this.isKaynakKarsilamaTip(tip)) {
         return 'Grid "Gelmedi" durumunda yalnızca Projeden, Stoktan veya Tedarikçiden karşılama yapılabilir.';
       }
     }
@@ -568,9 +599,9 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       return 'Grid tarafından sevk edilmeden "Hatalı Ürün" işaretlenemez.';
     }
 
-    if (tip === 'Tedarikçiden Geldi' || tip === 'Stoktan Karşılandı' || tip === 'Projeden Karşılandı') {
-      if (u.gridDurumuMetni !== 'Eksik Geldi' && u.gridDurumuMetni !== 'Gelmedi' && u.gridDurumuMetni !== 'Trafo Sevk') {
-        return 'Bu işlem yalnızca ürün Grid tarafında eksik geldiğinde, hiç gelmediğinde veya kısmi trafo sevk olduğunda yapılabilir.';
+    if (this.isKaynakKarsilamaTip(tip)) {
+      if (!this.isGridKaynakKarsilamaAcik(u) && !this.isGeriGonderimSonrasiKaynakAcik(u)) {
+        return 'Bu işlem yalnızca ürün Grid tarafında eksik/gelmedi olduğunda, kısmi trafo sevk olduğunda veya 3K geri gönderim sonrası kalan açık olduğunda yapılabilir.';
       }
     }
 

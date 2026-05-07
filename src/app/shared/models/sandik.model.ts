@@ -11,6 +11,7 @@ export interface SandikDto {
   urunSayisi: number;
   isManuelSandik: boolean;
   silinebilirMi: boolean;
+  depodaSayilacakMi: boolean;
   en?: number;
   boy?: number;
   yukseklik?: number;

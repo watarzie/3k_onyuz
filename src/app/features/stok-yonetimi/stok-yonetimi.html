@@ -153,9 +153,9 @@
           </div>
 
           <div class="col-md-5">
-            <label class="form-label fw-semibold">Kaynak Proje / İade Projesi <span class="text-danger">*</span></label>
+            <label class="form-label fw-semibold">Kaynak Proje / İade Projesi <small class="text-muted">(Opsiyonel)</small></label>
             <select class="form-select" [(ngModel)]="yeniStok.kaynakProje">
-              <option value="" disabled selected>Proje Seçiniz...</option>
+              <option value="" selected>Proje Seçiniz (Opsiyonel)...</option>
               @for (p of projeler(); track p.id) {
                  <option [value]="p.projeNo">{{ p.projeNo }} — {{ p.musteri }}</option>
               }
@@ -172,7 +172,7 @@
         </div>
 
         <div class="alert alert-info border-0 mt-4 mb-0">
-          <i class="ri-information-line me-2"></i><strong>Bilgi:</strong> Malzeme Adı, Miktar, Birim ve Kaynak Proje alanları zorunludur. Barkodu (Malzeme Kodu) olmayan ürünleri boş bırakabilirsiniz.
+          <i class="ri-information-line me-2"></i><strong>Bilgi:</strong> Malzeme Adı, Miktar, Birim ve Stok Giriş Nedeni alanları zorunludur. Kaynak Proje ve Barkod (Malzeme Kodu) opsiyoneldir.
         </div>
       </div>
       <div class="modal-footer border-top-0 pt-0">

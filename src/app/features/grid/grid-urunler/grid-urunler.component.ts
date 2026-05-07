@@ -44,6 +44,7 @@ const SEVK_DURUMLARI: DurumSecenegi[] = [
   { id: GridSevkDurum.SevkEdildi, value: 'Sevk Edildi', label: 'SEVK EDİLDİ', color: '#25B003', bgClass: '' },
   { id: GridSevkDurum.Bekliyor, value: 'Bekliyor', label: 'BEKLİYOR', color: '#FD5812', bgClass: '' },
   { id: GridSevkDurum.SevkEdilmedi, value: 'Sevk Edilmedi', label: 'SEVK EDİLMEDİ', color: '#FF4023', bgClass: '' },
+  { id: GridSevkDurum.YenidenSevkGerekli, value: 'Yeniden Sevk Gerekli', label: 'YENİDEN SEVK GEREKLİ', color: '#D97706', bgClass: '' },
 ];
 
 @Component({
@@ -145,7 +146,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   });
 
   gridDurumlari = GRID_DURUMLARI;
-  sevkDurumlari = SEVK_DURUMLARI;
+  sevkDurumlari = SEVK_DURUMLARI.filter(d => d.id !== GridSevkDurum.YenidenSevkGerekli);
 
   breadcrumb: { label: string; link?: string }[] = [];
 
@@ -288,8 +289,13 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     this.panelDurum.set(urun.gridDurumuMetni);
     this.panelGelenAdet.set(urun.gridGelenAdet);
     this.panelTrafoSevkAdet.set(urun.trafoSevkAdet);
-    this.panelSevkDurumu.set(urun.gridSevkDurumuMetni);
-    this.panelSevkAdet.set(urun.gridSevkMiktari ?? 0);
+    if (this.isYenidenSevkGerekliUrun(urun)) {
+      this.panelSevkDurumu.set('Sevk Edildi');
+      this.panelSevkAdet.set(urun.yenidenSevkGerekliAdet ?? 0);
+    } else {
+      this.panelSevkDurumu.set(urun.gridSevkDurumuMetni);
+      this.panelSevkAdet.set(urun.gridSevkMiktari ?? 0);
+    }
     this.panelAciklama.set(urun.gridAciklama ?? '');
     this.panelError.set('');
     this.recalcPanel();
@@ -341,6 +347,12 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     const durum = this.panelDurum();
     let uyari = '';
 
+    if (this.isYenidenSevkGerekli) {
+      this.panelUyari.set(`YENİDEN SEVK GEREKLİ: ${this.maxSevkAdet} ${u.birim}`);
+      this.panelError.set('');
+      return;
+    }
+
     switch (durum) {
       case 'Tam Geldi': uyari = 'TAM GELDİ'; break;
       case 'Eksik Geldi': uyari = 'EKSİK GELDİ'; break;
@@ -370,11 +382,15 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
 
   get isSevkAktif(): boolean {
+    if (this.isYenidenSevkGerekli) return true;
     const d = this.panelDurum();
     return d === 'Tam Geldi' || d === 'Eksik Geldi' || (d === 'Trafo Sevk' && this.panelGelenAdet() > 0);
   }
 
   get maxSevkAdet(): number {
+    if (this.isYenidenSevkGerekli) {
+      return Math.max(this.panelUrun()?.yenidenSevkGerekliAdet ?? 0, 0);
+    }
     return Math.max(this.panelGelenAdet(), 0);
   }
 
@@ -412,7 +428,11 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     if (this.panelSevkDurumu() === 'Sevk Edildi') {
       if (d !== 'Tam Geldi' && d !== 'Eksik Geldi' && !(d === 'Trafo Sevk' && this.panelGelenAdet() > 0)) return 'Sevk için durum Tam Geldi, Eksik Geldi veya Grid gelen adedi olan Trafo Sevk olmalıdır.';
       if (this.panelSevkAdet() <= 0) return 'Sevk edilen miktar girilmelidir.';
-      if (this.panelSevkAdet() > this.maxSevkAdet) return 'Sevk edilen miktar Grid gelen adetten büyük olamaz.';
+      if (this.panelSevkAdet() > this.maxSevkAdet) {
+        return this.isYenidenSevkGerekli
+          ? 'Sevk edilen miktar yeniden sevk gerekli adetten büyük olamaz.'
+          : 'Sevk edilen miktar Grid gelen adetten büyük olamaz.';
+      }
     }
 
     return null;
@@ -607,7 +627,16 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   // ===== 3K İşlem Blokajı =====
   /** 3K tarafında işlem yapılmışsa Grid düzenleme yapamaz */
   isUcKIslemYapilmis(u: GridUrunDto): boolean {
+    if (this.isYenidenSevkGerekliUrun(u)) return false;
     return u.ucKDurumuId !== UcKDurum.Bekliyor || u.gelenMiktar > 0;
+  }
+
+  isYenidenSevkGerekliUrun(u: GridUrunDto | null | undefined): boolean {
+    return !!u && u.gridSevkDurumuId === GridSevkDurum.YenidenSevkGerekli && (u.yenidenSevkGerekliAdet ?? 0) > 0;
+  }
+
+  get isYenidenSevkGerekli(): boolean {
+    return this.isYenidenSevkGerekliUrun(this.panelUrun());
   }
 
   getUcKBlokajMesaji(u: GridUrunDto): string {

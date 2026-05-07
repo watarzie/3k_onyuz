@@ -124,7 +124,7 @@ export class DepoDurumuComponent implements OnInit {
   }
 
   private isDepodaSayilacakSandik(sandik: SandikDto): boolean {
-    return sandik.durumId !== 4;
+    return sandik.durumId !== 4 && sandik.depodaSayilacakMi === true;
   }
 
   onSearch(event: Event) {

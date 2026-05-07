@@ -13,6 +13,10 @@ export interface ProjeDto {
   sorumluKisi: string;
   sandikSayisi: number;
   hazirSandikSayisi: number;
+  depoSandikSayisi: number;
+  depoUcKSandikSayisi: number;
+  depoSeymenSandikSayisi: number;
+  depoGridSandikSayisi: number;
   toplamUrunSayisi: number;
   tamamlananUrunSayisi: number;
   fbNo?: string;

@@ -182,23 +182,23 @@
         <div class="depo-chart">
           <div class="depo-donut">
             <svg viewBox="0 0 36 36" class="donut-svg">
-              @if (toplamSandik() > 0) {
+              @if (toplamDepoSandik() > 0) {
                 <!-- 3K -->
                 <circle class="donut-segment" cx="18" cy="18" r="15.9"
-                  [attr.stroke-dasharray]="(depo3K() / toplamSandik()) * 100 + ' ' + (100 - (depo3K() / toplamSandik()) * 100)"
+                  [attr.stroke-dasharray]="(depo3K() / toplamDepoSandik()) * 100 + ' ' + (100 - (depo3K() / toplamDepoSandik()) * 100)"
                   stroke-dashoffset="25" stroke="#3b82f6" />
                 <!-- Seymen -->
                 <circle class="donut-segment" cx="18" cy="18" r="15.9"
-                  [attr.stroke-dasharray]="(depoSeymen() / toplamSandik()) * 100 + ' ' + (100 - (depoSeymen() / toplamSandik()) * 100)"
-                  [attr.stroke-dashoffset]="25 - (depo3K() / toplamSandik()) * 100" stroke="#22c55e" />
+                  [attr.stroke-dasharray]="(depoSeymen() / toplamDepoSandik()) * 100 + ' ' + (100 - (depoSeymen() / toplamDepoSandik()) * 100)"
+                  [attr.stroke-dashoffset]="25 - (depo3K() / toplamDepoSandik()) * 100" stroke="#22c55e" />
                 <!-- Grid -->
                 <circle class="donut-segment" cx="18" cy="18" r="15.9"
-                  [attr.stroke-dasharray]="(depoGrid() / toplamSandik()) * 100 + ' ' + (100 - (depoGrid() / toplamSandik()) * 100)"
-                  [attr.stroke-dashoffset]="25 - (depo3K() / toplamSandik()) * 100 - (depoSeymen() / toplamSandik()) * 100" stroke="#f59e0b" />
+                  [attr.stroke-dasharray]="(depoGrid() / toplamDepoSandik()) * 100 + ' ' + (100 - (depoGrid() / toplamDepoSandik()) * 100)"
+                  [attr.stroke-dashoffset]="25 - (depo3K() / toplamDepoSandik()) * 100 - (depoSeymen() / toplamDepoSandik()) * 100" stroke="#f59e0b" />
               }
             </svg>
             <div class="donut-center">
-              <span class="donut-total">{{ toplamSandik() }}</span>
+              <span class="donut-total">{{ toplamDepoSandik() }}</span>
               <span class="donut-label">Toplam</span>
             </div>
           </div>
