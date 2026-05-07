@@ -276,7 +276,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       'Projeden Karşılandı': '#3584FC',
       'Stoktan Karşılandı': '#9C27B0',
       'Tedarikçiden Geldi': '#1B7D3A',
-      'Gelmedi': '#808080',
+      'Gelmedi': '#FF4023',
       'Geri Gönderildi': '#D32F2F',
       'Hatalı Ürün': '#E65100',
     };
