@@ -88,6 +88,14 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   topluTedarikciAciklama = signal('');
   topluTedarikciSaving = signal(false);
 
+  // Toplu Geri Al
+  showTopluGeriAlModal = signal(false);
+  topluGeriAlAciklama = signal('');
+  topluGeriAlSaving = signal(false);
+
+  // Toplu İşlemler Dropdown Menü
+  showTopluIslemlerMenu = signal(false);
+
   // Proje ve Kaynak Ürün Dropdown State
   projeler = signal<ProjeDropdownDto[]>([]);
   kaynakUrunler = signal<GridUrunDto[]>([]);
@@ -912,5 +920,41 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
         error: () => this.toast.error('Silme sırasında hata oluştu.')
       });
     }
+  }
+
+  // ===== Toplu Geri Al =====
+  openTopluGeriAl() {
+    this.topluGeriAlAciklama.set('');
+    this.showTopluGeriAlModal.set(true);
+  }
+  closeTopluGeriAl() { this.showTopluGeriAlModal.set(false); }
+
+  confirmTopluGeriAl() {
+    const ids = Array.from(this.selectedIds());
+    if (ids.length === 0) return;
+
+    this.topluGeriAlSaving.set(true);
+    this.uckService.topluSifirla({
+      projeId: this.projeId(),
+      cekiSatiriIdler: ids,
+      aciklama: this.topluGeriAlAciklama() || undefined,
+    }).subscribe({
+      next: (res) => {
+        this.topluGeriAlSaving.set(false);
+        if (res.isSuccess) {
+          this.toast.success('Seçili ürünlerin 3K durumları başarıyla sıfırlandı.');
+          this.uckService.notifyUckUpdated();
+          this.closeTopluGeriAl();
+          this.selectedIds.set(new Set());
+          this.loadUrunler();
+        } else {
+          this.toast.error(res.error ?? 'Toplu geri alma başarısız.');
+        }
+      },
+      error: () => {
+        this.topluGeriAlSaving.set(false);
+        this.toast.error('Sunucu ile iletişim kurulamadı.');
+      },
+    });
   }
 }

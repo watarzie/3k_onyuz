@@ -98,6 +98,15 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   surecDurumSecim = signal(0);
   surecSaving = signal(false);
 
+  // Toplu İşlemler Dropdown Menü
+  showTopluIslemlerMenu = signal(false);
+
+  // Toplu İşlem Modal (Tam Geldi / Grid Kapandı / İptal / Geri Al)
+  showTopluIslemModal = signal(false);
+  topluIslemTipi = signal<'tamGeldi' | 'gridKapandi' | 'iptal' | 'geriAl'>('tamGeldi');
+  topluIslemAciklama = signal('');
+  topluIslemSaving = signal(false);
+
   // Ambar Talep Formu
   showAmbarTalepModal = signal(false);
   ambarTalepItems: WritableSignal<AmbarTalepItem[]> = signal([]);
@@ -271,14 +280,15 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   // 3K Karşılama Tipi Renkleri
   getUckDurumColor(value: string): string {
     const KARSILAMA_RENKLERI: Record<string, string> = {
-      'Tam Geldi': '#25B003',
-      'Eksik Geldi': '#FD5812',
+      'Sevk Adeti Tam Geldi': '#25B003',
+      'Sevk Adeti Eksik Geldi': '#FD5812',
       'Projeden Karşılandı': '#3584FC',
       'Stoktan Karşılandı': '#9C27B0',
       'Tedarikçiden Geldi': '#1B7D3A',
       'Gelmedi': '#FF4023',
       'Geri Gönderildi': '#D32F2F',
       'Hatalı Ürün': '#E65100',
+      'Bekliyor': '#64748B',
     };
     return KARSILAMA_RENKLERI[value] || '#64748B';
   }
@@ -942,5 +952,78 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     } finally {
       this.ambarTalepGenerating.set(false);
     }
+  }
+
+  // ===== Toplu İşlem Modal Yönetimi =====
+  private readonly topluIslemConfig: Record<string, { baslik: string; icon: string; renk: string; aciklama: string; onay: string }> = {
+    tamGeldi: { baslik: 'Toplu Tam Geldi', icon: 'ri-checkbox-circle-line', renk: '#25B003', aciklama: 'Seçili ürünler Tam Geldi olarak işaretlenecek.', onay: 'Tam Geldi Yap' },
+    gridKapandi: { baslik: 'Toplu Grid Kapandı', icon: 'ri-lock-line', renk: '#37474F', aciklama: 'Seçili ürünler Grid Kapandı olarak işaretlenecek.', onay: 'Grid Kapandı Yap' },
+    iptal: { baslik: 'Toplu İptal', icon: 'ri-close-circle-line', renk: '#FFB200', aciklama: 'Seçili ürünler İptal olarak işaretlenecek.', onay: 'İptal Et' },
+    geriAl: { baslik: 'Toplu Geri Al', icon: 'ri-arrow-go-back-line', renk: '#D32F2F', aciklama: 'Seçili ürünlerin Grid durumları sıfırlanacak. 3K işlem yapılmış ürünler atlanacaktır.', onay: 'Geri Al' },
+  };
+
+  topluIslemBaslik = computed(() => this.topluIslemConfig[this.topluIslemTipi()]?.baslik ?? '');
+  topluIslemIcon = computed(() => this.topluIslemConfig[this.topluIslemTipi()]?.icon ?? '');
+  topluIslemRenk = computed(() => this.topluIslemConfig[this.topluIslemTipi()]?.renk ?? '#333');
+  topluIslemAciklamaMetni = computed(() => this.topluIslemConfig[this.topluIslemTipi()]?.aciklama ?? '');
+  topluIslemOnayMetni = computed(() => this.topluIslemConfig[this.topluIslemTipi()]?.onay ?? '');
+
+  openTopluIslemModal(tip: 'tamGeldi' | 'gridKapandi' | 'iptal' | 'geriAl') {
+    this.topluIslemTipi.set(tip);
+    this.topluIslemAciklama.set('');
+    this.showTopluIslemModal.set(true);
+  }
+  closeTopluIslemModal() { this.showTopluIslemModal.set(false); }
+
+  confirmTopluIslem() {
+    const tip = this.topluIslemTipi();
+    const ids = Array.from(this.selectedIds());
+    if (ids.length === 0) return;
+
+    this.topluIslemSaving.set(true);
+
+    if (tip === 'geriAl') {
+      this.gridService.topluSifirla({
+        projeId: this.projeId(),
+        cekiSatiriIdler: ids,
+        aciklama: this.topluIslemAciklama() || undefined,
+      }).subscribe({
+        next: (res) => this.handleTopluIslemResult(res),
+        error: () => this.handleTopluIslemError(),
+      });
+    } else {
+      const durumMap: Record<string, number> = {
+        tamGeldi: GridDurum.TamGeldi,
+        gridKapandi: GridDurum.GridKapandi,
+        iptal: GridDurum.Iptal,
+      };
+      this.gridService.topluDurumGuncelle({
+        projeId: this.projeId(),
+        cekiSatiriIdler: ids,
+        hedefDurumId: durumMap[tip],
+        aciklama: this.topluIslemAciklama() || undefined,
+      }).subscribe({
+        next: (res) => this.handleTopluIslemResult(res),
+        error: () => this.handleTopluIslemError(),
+      });
+    }
+  }
+
+  private handleTopluIslemResult(res: any) {
+    this.topluIslemSaving.set(false);
+    if (res.isSuccess) {
+      this.toast.success(`${this.topluIslemBaslik()} işlemi başarıyla tamamlandı.`);
+      this.gridService.notifyGridUpdated();
+      this.closeTopluIslemModal();
+      this.selectedIds.set(new Set());
+      this.loadUrunler(false);
+    } else {
+      this.toast.error(res.error ?? 'Toplu işlem başarısız.');
+    }
+  }
+
+  private handleTopluIslemError() {
+    this.topluIslemSaving.set(false);
+    this.toast.error('Sunucu ile iletişim kurulamadı.');
   }
 }

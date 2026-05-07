@@ -36,14 +36,26 @@
       }
     </div>
     <div class="table-actions d-flex align-items-center gap-2 flex-wrap">
-      <button *appCanWrite class="btn btn-sm btn-success" [disabled]="!isTopluTamGeldiAllowed"
-        (click)="openTopluTamGeldi()" title="Seçili ürünleri Sevk Adeti Tam Geldi olarak işaretle">
-        <i class="ri-check-double-line me-1"></i>Toplu Sevk Adeti Tam Geldi ({{ selectionCount }})
-      </button>
-      <button *appCanWrite class="btn btn-sm" style="background:#1B7D3A;color:#fff" [disabled]="!hasSelection"
-        (click)="openTopluTedarikci()" title="Seçili ürünleri Tedarikçiden Geldi olarak işaretle">
-        <i class="ri-truck-line me-1"></i>Toplu Tedarikçiden Karşıla ({{ selectionCount }})
-      </button>
+      <!-- Toplu İşlemler Dropdown -->
+      <div *appCanWrite class="dropdown" id="uckTopluIslemlerDropdown"
+        [class.show]="showTopluIslemlerMenu()">
+        <button class="btn btn-sm btn-dark dropdown-toggle" [disabled]="!hasSelection" type="button"
+          (click)="showTopluIslemlerMenu.set(!showTopluIslemlerMenu())">
+          <i class="ri-stack-line me-1"></i>Toplu İşlemler ({{ selectionCount }})
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow-lg" [class.show]="showTopluIslemlerMenu()">
+          <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluTamGeldi()">
+            <i class="ri-check-double-line me-2 text-success"></i>Toplu Sevk Adeti Tam Geldi
+          </a></li>
+          <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluTedarikci()">
+            <i class="ri-truck-line me-2" style="color:#1B7D3A"></i>Toplu Tedarikçiden Karşıla
+          </a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item text-danger" (click)="showTopluIslemlerMenu.set(false); openTopluGeriAl()">
+            <i class="ri-arrow-go-back-line me-2"></i>Toplu Geri Al
+          </a></li>
+        </ul>
+      </div>
       <div class="search-box position-relative">
         <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
         <input type="text" class="form-control" placeholder="Ara..." (input)="onSearch($event)" />
@@ -514,6 +526,36 @@
         <i class="ri-truck-line me-1"></i>Onayla
       </button>
     </div>
+  </div>
+</div>
+}
+
+<!-- ===== Toplu Geri Al Onay Modalı ===== -->
+@if (showTopluGeriAlModal()) {
+<div class="modal-overlay" (click)="closeTopluGeriAl()"></div>
+<div class="toplu-sevk-modal">
+  <div class="modal-header d-flex align-items-center justify-content-between">
+    <h5 class="fw-semibold mb-0"><i class="ri-arrow-go-back-line me-2 text-danger"></i>Toplu Geri Al</h5>
+    <button class="btn btn-sm border-0" (click)="closeTopluGeriAl()"><i class="ri-close-line fs-5"></i></button>
+  </div>
+  <div class="modal-body">
+    <div class="alert-info-custom mb-3" style="border-left-color:#D32F2F">
+      <i class="ri-information-line me-2"></i>
+      <strong>{{ selectionCount }}</strong> ürün seçildi. Seçili ürünlerin 3K durumları sıfırlanacak.
+      3K işlem yapılmamış veya Grid İptal durumundaki ürünler atlanacaktır.
+    </div>
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Açıklama</label>
+      <textarea class="form-control" rows="2" placeholder="İşlem açıklaması..."
+        [ngModel]="topluGeriAlAciklama()" (ngModelChange)="topluGeriAlAciklama.set($event)"></textarea>
+    </div>
+  </div>
+  <div class="modal-footer d-flex gap-2">
+    <button class="btn btn-outline flex-grow-1" (click)="closeTopluGeriAl()">Vazgeç</button>
+    <button class="btn btn-danger flex-grow-1" (click)="confirmTopluGeriAl()" [disabled]="topluGeriAlSaving()">
+      @if (topluGeriAlSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+      <i class="ri-arrow-go-back-line me-1"></i>Geri Al
+    </button>
   </div>
 </div>
 }

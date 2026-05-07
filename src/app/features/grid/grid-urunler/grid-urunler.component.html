@@ -9,10 +9,32 @@
       <button *appCanWrite class="btn btn-primary" (click)="openManuelEkleModal()">
         <i class="ri-add-line me-2"></i>Manuel Ürün Ekle
       </button>
-      <button *appCanWrite class="btn btn-sevk" [disabled]="!hasSelection || selectedTadilattaCount() > 0"
-        [title]="topluSevkKilitMesaji()" (click)="openTopluSevk()">
-        <i class="ri-truck-line me-2"></i>Toplu Sevk ({{ selectedIds().size }})
-      </button>
+      <!-- Toplu İşlemler Dropdown -->
+      <div *appCanWrite class="dropdown" id="gridTopluIslemlerDropdown"
+        [class.show]="showTopluIslemlerMenu()">
+        <button class="btn btn-dark dropdown-toggle" [disabled]="!hasSelection" type="button"
+          (click)="showTopluIslemlerMenu.set(!showTopluIslemlerMenu())">
+          <i class="ri-stack-line me-1"></i>Toplu İşlemler ({{ selectedIds().size }})
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow-lg" [class.show]="showTopluIslemlerMenu()">
+          <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('tamGeldi')">
+            <i class="ri-checkbox-circle-line me-2 text-success"></i>Toplu Tam Geldi
+          </a></li>
+          <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluSevk()">
+            <i class="ri-truck-line me-2 text-primary"></i>Toplu Sevk
+          </a></li>
+          <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('gridKapandi')">
+            <i class="ri-lock-line me-2" style="color:#37474F"></i>Toplu Grid Kapandı
+          </a></li>
+          <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('iptal')">
+            <i class="ri-close-circle-line me-2 text-warning"></i>Toplu İptal
+          </a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item text-danger" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('geriAl')">
+            <i class="ri-arrow-go-back-line me-2"></i>Toplu Geri Al
+          </a></li>
+        </ul>
+      </div>
       @if (canKalite) {
       <button class="btn btn-outline-warning" [disabled]="!hasSelection" (click)="openKaliteModal()">
         <i class="ri-shield-check-line me-1"></i>Kalite ({{ selectedIds().size }})
@@ -399,6 +421,39 @@
       [disabled]="topluSevkSaving() || selectedTadilattaCount() > 0">
       @if (topluSevkSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
       <i class="ri-truck-line me-1"></i>Sevk Et
+    </button>
+  </div>
+</div>
+}
+
+<!-- ===== Toplu İşlem Onay Modalı (Tam Geldi / Grid Kapandı / İptal / Geri Al) ===== -->
+@if (showTopluIslemModal()) {
+<div class="modal-overlay" (click)="closeTopluIslemModal()"></div>
+<div class="toplu-sevk-modal">
+  <div class="modal-header d-flex align-items-center justify-content-between">
+    <h5 class="fw-semibold mb-0">
+      <i [class]="topluIslemIcon()" class="me-2"></i>{{ topluIslemBaslik() }}
+    </h5>
+    <button class="btn btn-sm border-0" (click)="closeTopluIslemModal()"><i class="ri-close-line fs-5"></i></button>
+  </div>
+  <div class="modal-body">
+    <div class="alert-info-custom mb-3" [style.border-left-color]="topluIslemRenk()">
+      <i class="ri-information-line me-2"></i>
+      <strong>{{ selectedIds().size }}</strong> ürün seçildi.
+      <span>{{ topluIslemAciklamaMetni() }}</span>
+    </div>
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Açıklama</label>
+      <textarea class="form-control" rows="2" placeholder="İşlem açıklaması..."
+        [ngModel]="topluIslemAciklama()" (ngModelChange)="topluIslemAciklama.set($event)"></textarea>
+    </div>
+  </div>
+  <div class="modal-footer d-flex gap-2">
+    <button class="btn btn-outline flex-grow-1" (click)="closeTopluIslemModal()">Vazgeç</button>
+    <button class="btn flex-grow-1" [style.background]="topluIslemRenk()" style="color:#fff"
+      (click)="confirmTopluIslem()" [disabled]="topluIslemSaving()">
+      @if (topluIslemSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+      <i [class]="topluIslemIcon()" class="me-1"></i>{{ topluIslemOnayMetni() }}
     </button>
   </div>
 </div>

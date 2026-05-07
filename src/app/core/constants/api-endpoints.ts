@@ -63,6 +63,8 @@ export const API = {
     DURUM_GUNCELLE: `${BASE}/grid/durum-guncelle`,
     DURUM_SIFIRLA: `${BASE}/grid/durum-sifirla`,
     TOPLU_SEVK: `${BASE}/grid/toplu-sevk`,
+    TOPLU_DURUM_GUNCELLE: `${BASE}/grid/toplu-durum-guncelle`,
+    TOPLU_SIFIRLA: `${BASE}/grid/toplu-sifirla`,
     MANUEL_EKLE: `${BASE}/grid/manuel-urun-ekle`,
     KALITE_DURUM: `${BASE}/grid/kalite-durum`,
     SUREC_DURUM: `${BASE}/grid/surec-durum`,
@@ -73,6 +75,7 @@ export const API = {
     DURUM_SIFIRLA: `${BASE}/uck/durum-sifirla`,
     TOPLU_TAM_GELDI: `${BASE}/uck/toplu-tam-geldi`,
     TOPLU_TEDARIKCI: `${BASE}/uck/toplu-tedarikci`,
+    TOPLU_SIFIRLA: `${BASE}/uck/toplu-sifirla`,
   },
   STOK: {
     LIST: `${BASE}/stok`,

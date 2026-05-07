@@ -51,4 +51,9 @@ export class UcKService {
   topluTedarikci(dto: TopluTamGeldiDto): Observable<ApiResult<unknown>> {
     return this.api.post<unknown>(API.UCK.TOPLU_TEDARIKCI, dto);
   }
+
+  /** Toplu 3K durumu sıfırlama (geri alma) */
+  topluSifirla(dto: { projeId: number; cekiSatiriIdler: number[]; aciklama?: string }): Observable<ApiResult<unknown>> {
+    return this.api.put<unknown>(API.UCK.TOPLU_SIFIRLA, dto);
+  }
 }

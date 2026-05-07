@@ -68,5 +68,15 @@ export class GridService {
   surecDurumGuncelle(dto: SurecDurumGuncelleDto): Observable<ApiResult<unknown>> {
     return this.api.put<unknown>(API.GRID.SUREC_DURUM, dto);
   }
+
+  /** Toplu Grid durum güncelleme (Tam Geldi / Grid Kapandı / İptal) */
+  topluDurumGuncelle(dto: { projeId: number; cekiSatiriIdler: number[]; hedefDurumId: number; aciklama?: string }): Observable<ApiResult<unknown>> {
+    return this.api.put<unknown>(API.GRID.TOPLU_DURUM_GUNCELLE, dto);
+  }
+
+  /** Toplu Grid durumu sıfırlama (geri alma) */
+  topluSifirla(dto: { projeId: number; cekiSatiriIdler: number[]; aciklama?: string }): Observable<ApiResult<unknown>> {
+    return this.api.put<unknown>(API.GRID.TOPLU_SIFIRLA, dto);
+  }
 }
 
