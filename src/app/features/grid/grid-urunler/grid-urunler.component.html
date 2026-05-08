@@ -63,8 +63,6 @@
   </div>
   <div><app-stat-card [value]="trafoSevk()" label="Trafo Sevk" icon="ri-flashlight-line" color="info" />
   </div>
-  <div><app-stat-card [value]="sipariste()" label="Siparişte" icon="ri-shopping-cart-line"
-      color="secondary" /></div>
 </div>
 
 <!-- Filtre & Tablo -->
@@ -593,6 +591,7 @@
           <option [value]="2">İmalat</option>
           <option [value]="3">Tedarik</option>
           <option [value]="4">Tedarik 3K Teslim</option>
+          <option [value]="5">Siparişte</option>
         </select>
       </div>
       <div class="modal-footer d-flex gap-2">

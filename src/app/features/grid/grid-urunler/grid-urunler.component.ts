@@ -36,7 +36,6 @@ const GRID_DURUMLARI: DurumSecenegi[] = [
   { id: GridDurum.Gelmedi, value: 'Gelmedi', label: 'GELMEDİ', color: '#FF4023', bgClass: 'row-gelmedi' },
   { id: GridDurum.TrafoSevk, value: 'Trafo Sevk', label: 'TRAFO SEVK', color: '#00BCD4', bgClass: 'row-trafo-sevk' },
   { id: GridDurum.Iptal, value: 'İptal', label: 'İPTAL', color: '#FFB200', bgClass: 'row-iptal' },
-  { id: GridDurum.Sipariste, value: 'Siparişte', label: 'SİPARİŞTE', color: '#9C27B0', bgClass: 'row-sipariste' },
   { id: GridDurum.GridKapandi, value: 'Grid Kapandı', label: 'GRİD KAPANDI', color: '#37474F', bgClass: 'row-grid-kapandi' },
 ];
 
@@ -144,7 +143,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   gelmedi = computed(() => this.urunler().filter(u => u.gridDurumuMetni === 'Gelmedi').length);
   trafoSevk = computed(() => this.urunler().filter(u => u.gridDurumuMetni === 'Trafo Sevk').length);
   iptal = computed(() => this.urunler().filter(u => u.gridDurumuMetni === 'İptal').length);
-  sipariste = computed(() => this.urunler().filter(u => u.gridDurumuMetni === 'Siparişte').length);
+
   bekliyor = computed(() => this.urunler().filter(u => u.gridDurumuMetni === 'Bekliyor').length);
 
   selectedUrunler = computed(() => this.urunler().filter(u => this.selectedIds().has(u.cekiSatiriId)));
@@ -341,7 +340,6 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
         this.panelTrafoSevkAdet.set(u.trafoSevkAdet > 0 ? u.trafoSevkAdet : 0);
         break;
       case 'İptal':
-      case 'Siparişte':
         this.panelGelenAdet.set(0);
         this.panelTrafoSevkAdet.set(0);
         this.panelSevkDurumu.set('Sevk Edilmedi');
@@ -375,7 +373,6 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
         else uyari = 'TRAFO SEVK';
         break;
       case 'İptal': uyari = 'İPTAL'; break;
-      case 'Siparişte': uyari = 'SİPARİŞTE'; break;
     }
     this.panelUyari.set(uyari);
     this.panelError.set('');
