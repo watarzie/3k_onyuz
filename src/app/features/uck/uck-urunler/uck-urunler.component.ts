@@ -234,10 +234,14 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadUrunler() {
-    this.loading.set(true);
+  loadUrunler(showLoader = true) {
+    if (showLoader) {
+      this.loading.set(true);
+    }
     this.uckService.getUrunler(this.projeId()).subscribe((res) => {
-      this.loading.set(false);
+      if (showLoader) {
+        this.loading.set(false);
+      }
       if (res.isSuccess && res.value) {
         // Sadece bu sandıktaki ürünleri göster
         const sNo = this.sandikNo();
@@ -704,7 +708,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
           }
           this.uckService.notifyUckUpdated();
           this.closePanel();
-          this.loadUrunler();
+          this.loadUrunler(false);
         } else {
           const msg = res.error ?? 'Kayıt başarısız.';
           this.panelError.set(msg);
@@ -739,7 +743,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
         if (res.isSuccess) {
           this.toast.success('3K durumu başarıyla sıfırlandı.');
           this.closePanel();
-          this.loadUrunler();
+          this.loadUrunler(false);
           this.uckService.notifyUckUpdated();
         } else {
           const msg = res.error ?? 'Sıfırlama başarısız.';
@@ -793,7 +797,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
           this.uckService.notifyUckUpdated();
           this.closeTopluTamGeldi();
           this.selectedIds.set(new Set());
-          this.loadUrunler();
+          this.loadUrunler(false);
         } else {
           this.toast.error(res.error ?? 'Toplu güncelleme başarısız.');
         }
@@ -827,7 +831,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
           this.uckService.notifyUckUpdated();
           this.closeTopluTedarikci();
           this.selectedIds.set(new Set());
-          this.loadUrunler();
+          this.loadUrunler(false);
         } else {
           this.toast.error(res.error ?? 'Toplu güncelleme başarısız.');
         }
@@ -912,7 +916,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
         next: (res) => {
           if (res.isSuccess) {
             this.toast.success('Ürün başarıyla silindi.');
-            this.loadUrunler();
+            this.loadUrunler(false);
           } else {
             this.toast.error(res.error ?? 'Ürün silinemedi.');
           }
@@ -946,7 +950,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
           this.uckService.notifyUckUpdated();
           this.closeTopluGeriAl();
           this.selectedIds.set(new Set());
-          this.loadUrunler();
+          this.loadUrunler(false);
         } else {
           this.toast.error(res.error ?? 'Toplu geri alma başarısız.');
         }
