@@ -56,6 +56,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   private pdfService = inject(PdfService);
 
   private sub: Subscription = new Subscription();
+  private pendingFocusCekiSatiriId: number | null = null;
 
   projeId = signal(0);
   sandikNo = signal('');
@@ -196,12 +197,12 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     // Grid ve 3K çapraz-sekme ürün güncelleme dinleyicileri
     this.sub.add(
       this.gridService.gridGuncellendi$.subscribe(() => {
-        this.loadUrunler();
+        this.loadUrunler(false);
       })
     );
     this.sub.add(
       this.uckService.uckGuncellendi$.subscribe(() => {
-        this.loadUrunler();
+        this.loadUrunler(false, this.consumePendingFocusCekiSatiriId());
       })
     );
 
@@ -234,10 +235,11 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadUrunler(showLoader = true) {
+  loadUrunler(showLoader = true, focusCekiSatiriId: number | null = null) {
     if (showLoader) {
       this.loading.set(true);
     }
+    const scrollSnapshot = showLoader ? null : this.captureTableScroll();
     this.uckService.getUrunler(this.projeId()).subscribe((res) => {
       if (showLoader) {
         this.loading.set(false);
@@ -248,6 +250,44 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
         const all = sNo ? res.value.filter(u => u.sandikNo === sNo) : res.value;
         this.urunler.set(all);
         this.applyFilter();
+        this.restoreRowPosition(focusCekiSatiriId, scrollSnapshot);
+      }
+    });
+  }
+
+  getRowDomId(cekiSatiriId: number): string {
+    return `uck-row-${cekiSatiriId}`;
+  }
+
+  private rememberFocus(cekiSatiriId?: number | null) {
+    this.pendingFocusCekiSatiriId = cekiSatiriId ?? null;
+  }
+
+  private consumePendingFocusCekiSatiriId(): number | null {
+    const id = this.pendingFocusCekiSatiriId;
+    this.pendingFocusCekiSatiriId = null;
+    return id;
+  }
+
+  private captureTableScroll(): { top: number; left: number } | null {
+    const container = document.querySelector<HTMLElement>('.module-table-scroll');
+    return container ? { top: container.scrollTop, left: container.scrollLeft } : null;
+  }
+
+  private restoreRowPosition(focusCekiSatiriId: number | null, scrollSnapshot: { top: number; left: number } | null) {
+    window.requestAnimationFrame(() => {
+      const row = focusCekiSatiriId ? document.getElementById(this.getRowDomId(focusCekiSatiriId)) : null;
+      if (row) {
+        row.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+        row.classList.add('row-focus-flash');
+        window.setTimeout(() => row.classList.remove('row-focus-flash'), 1400);
+        return;
+      }
+
+      const container = document.querySelector<HTMLElement>('.module-table-scroll');
+      if (container && scrollSnapshot) {
+        container.scrollTop = scrollSnapshot.top;
+        container.scrollLeft = scrollSnapshot.left;
       }
     });
   }
@@ -706,9 +746,9 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
           } else {
             this.toast.success('3K durumu başarıyla güncellendi.');
           }
-          this.uckService.notifyUckUpdated();
+          this.rememberFocus(u.cekiSatiriId);
           this.closePanel();
-          this.loadUrunler(false);
+          this.uckService.notifyUckUpdated();
         } else {
           const msg = res.error ?? 'Kayıt başarısız.';
           this.panelError.set(msg);
@@ -742,8 +782,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
         this.panelSaving.set(false);
         if (res.isSuccess) {
           this.toast.success('3K durumu başarıyla sıfırlandı.');
+          this.rememberFocus(u.cekiSatiriId);
           this.closePanel();
-          this.loadUrunler(false);
           this.uckService.notifyUckUpdated();
         } else {
           const msg = res.error ?? 'Sıfırlama başarısız.';
@@ -794,10 +834,10 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
         this.topluSaving.set(false);
         if (res.isSuccess) {
           this.toast.success(`${dto.cekiSatiriIdler.length} ürün Sevk Adeti Tam Geldi olarak işaretlendi.`);
-          this.uckService.notifyUckUpdated();
+          this.rememberFocus(dto.cekiSatiriIdler[0]);
           this.closeTopluTamGeldi();
           this.selectedIds.set(new Set());
-          this.loadUrunler(false);
+          this.uckService.notifyUckUpdated();
         } else {
           this.toast.error(res.error ?? 'Toplu güncelleme başarısız.');
         }
@@ -828,10 +868,10 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
         this.topluTedarikciSaving.set(false);
         if (res.isSuccess) {
           this.toast.success(`${dto.cekiSatiriIdler.length} ürün Tedarikçiden Karşılandı olarak işaretlendi.`);
-          this.uckService.notifyUckUpdated();
+          this.rememberFocus(dto.cekiSatiriIdler[0]);
           this.closeTopluTedarikci();
           this.selectedIds.set(new Set());
-          this.loadUrunler(false);
+          this.uckService.notifyUckUpdated();
         } else {
           this.toast.error(res.error ?? 'Toplu güncelleme başarısız.');
         }
@@ -947,10 +987,10 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
         this.topluGeriAlSaving.set(false);
         if (res.isSuccess) {
           this.toast.success('Seçili ürünlerin 3K durumları başarıyla sıfırlandı.');
-          this.uckService.notifyUckUpdated();
+          this.rememberFocus(ids[0]);
           this.closeTopluGeriAl();
           this.selectedIds.set(new Set());
-          this.loadUrunler(false);
+          this.uckService.notifyUckUpdated();
         } else {
           this.toast.error(res.error ?? 'Toplu geri alma başarısız.');
         }

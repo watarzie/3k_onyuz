@@ -67,6 +67,26 @@
   }
 }
 
+tr.row-focus-flash {
+  outline: 2px solid rgba(37, 176, 3, .35);
+  outline-offset: -2px;
+
+  > td {
+    animation: uck-row-focus 1.4s ease-out;
+  }
+}
+
+@keyframes uck-row-focus {
+  0%,
+  45% {
+    background-color: rgba(37, 176, 3, .12);
+  }
+
+  100% {
+    background-color: transparent;
+  }
+}
+
 @media (max-height: 760px) {
   .module-table-scroll {
     max-height: clamp(260px, calc(100dvh - 320px), 58dvh);
