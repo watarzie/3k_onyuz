@@ -135,8 +135,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
     // KURAL 1: İsim eşleşme — sadece hedef ürünle aynı isme sahip olanlar
     if (hedefUrun) {
-      const hedefIsim = this.normalizeAciklama(hedefUrun.aciklama);
-      list = list.filter(u => this.normalizeAciklama(u.aciklama) === hedefIsim);
+      list = list.filter(u => this.aciklamaKelimeEslesiyor(hedefUrun.aciklama, u.aciklama));
     }
 
     // KURAL 2: 3K'ya gelmiş olma — gelenMiktar > 0
@@ -500,6 +499,19 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   private normalizeAciklama(str: string): string {
     if (!str) return '';
     return str.replace(/\\/g, '').replace(/\s+/g, ' ').trim().toLocaleLowerCase('tr-TR');
+  }
+
+  private aciklamaKelimeEslesiyor(hedefAciklama: string, kaynakAciklama: string): boolean {
+    const hedef = this.normalizeAciklama(hedefAciklama);
+    const kaynak = this.normalizeAciklama(kaynakAciklama);
+    if (!hedef || !kaynak) return false;
+    if (kaynak.includes(hedef)) return true;
+
+    const kelimeler = hedef.match(/[a-zçğıöşü0-9]+/g) ?? [];
+    const anlamliKelimeler = kelimeler.filter(k => k.length >= 3);
+    const aranacakKelimeler = anlamliKelimeler.length > 0 ? anlamliKelimeler : kelimeler;
+
+    return aranacakKelimeler.some(kelime => kaynak.includes(kelime));
   }
 
   getProjeIdByNo(projeNo: string): string {
