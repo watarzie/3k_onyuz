@@ -31,6 +31,9 @@ export interface UcKUrunDto {
   stokKarsilanan: number;
   projeKarsilanan: number;
   projeGonderilen: number;
+  netKullanilabilir: number;
+  transferZinciriVar: boolean;
+  transferZinciri: ProjeTransferZincirDto[];
   tedarikciKarsilanan: number;
   eksikMiktar: number;
   kalan: number;
@@ -43,6 +46,23 @@ export interface UcKUrunDto {
   surecDurumId?: number;
   surecDurumMetni?: string;
   isManuelEklenen: boolean;
+}
+
+export interface ProjeTransferZincirDto {
+  id: number;
+  yon: string;
+  kaynakProjeNo: string;
+  hedefProjeNo: string;
+  barkodNo: string;
+  urunAdi: string;
+  miktar: number;
+  transferTipi: string;
+  durum: string;
+  parentTransferId?: number;
+  rootTransferId?: number;
+  zincirSeviyesi: number;
+  aciklama?: string;
+  tarih: string;
 }
 
 export interface UcKDurumGuncelleDto {

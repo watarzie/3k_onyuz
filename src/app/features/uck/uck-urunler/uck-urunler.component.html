@@ -186,6 +186,14 @@
                 <span class="badge bg-warning-subtle text-warning" style="font-size:10px">{{ u.projeGonderilen }}</span>
               </div>
               }
+              @if (u.transferZinciriVar) {
+              <button type="button" class="transfer-chain-link mt-1" (click)="openTransferModal(u)">
+                <i class="ri-node-tree"></i> Zincir
+              </button>
+              }
+              @if (u.transferZinciriVar || u.projeKarsilanan > 0 || u.projeGonderilen > 0) {
+              <div class="transfer-net mt-1">Net: {{ u.netKullanilabilir }} {{ u.birim }}</div>
+              }
               @if (!u.projeKarsilanan && !u.projeGonderilen) {
               <span class="text-muted">{{ u.kaynakHedefProjeNo ?? '-' }}</span>
               }
@@ -243,6 +251,54 @@
 </div>
 
 <!-- ===== Side Panel: 3K Durum Güncelle ===== -->
+@if (showTransferModal() && transferModalUrun()) {
+<div class="modal-overlay" (click)="closeTransferModal()">
+  <div class="modal-box transfer-chain-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <h5 class="fw-semibold mb-1"><i class="ri-node-tree me-2 text-primary"></i>Proje Transfer Zinciri</h5>
+        <div class="text-muted small">{{ transferModalUrun()!.barkodNo }} - {{ transferModalUrun()!.aciklama }}</div>
+      </div>
+      <button class="btn btn-sm border-0" (click)="closeTransferModal()"><i class="ri-close-line fs-5"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="transfer-chain-summary mb-3">
+        <span>Projeden alınan: <strong>{{ transferModalUrun()!.projeKarsilanan }}</strong></span>
+        <span>Projeye verilen: <strong>{{ transferModalUrun()!.projeGonderilen }}</strong></span>
+        <span>Net kullanılabilir: <strong>{{ transferModalUrun()!.netKullanilabilir }}</strong></span>
+      </div>
+      <div class="transfer-chain-explainer mb-3">
+        <div class="transfer-chain-explainer-title">
+          <i class="ri-information-line"></i>
+          <span>Transfer özeti</span>
+        </div>
+        @for (ozet of getTransferZincirOzetleri(transferModalUrun()!); track ozet) {
+        <p>{{ ozet }}</p>
+        }
+      </div>
+      <div class="transfer-chain-list">
+        @for (t of transferModalUrun()!.transferZinciri; track t.id) {
+        <div class="transfer-chain-item" [ngClass]="getTransferYonClass(t.yon)">
+          <div class="transfer-chain-head">
+            <span class="transfer-route">{{ t.kaynakProjeNo }} <i class="ri-arrow-right-line"></i> {{ t.hedefProjeNo }}</span>
+            <span class="transfer-amount">{{ t.miktar }} {{ transferModalUrun()!.birim }}</span>
+          </div>
+          <div class="transfer-chain-meta">
+            <span>{{ getTransferTipLabel(t.transferTipi) }}</span>
+            <span>Seviye {{ t.zincirSeviyesi }}</span>
+            <span>{{ t.tarih | date:'dd.MM.yyyy HH:mm' }}</span>
+          </div>
+          @if (t.aciklama) {
+          <div class="transfer-chain-note">{{ t.aciklama }}</div>
+          }
+        </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+}
+
 @if (showPanel() && panelUrun()) {
 <div class="detail-overlay" (click)="closePanel()"></div>
 <div class="detail-panel">
@@ -388,7 +444,10 @@
               (click)="selectUrunItem(cu.cekiSatiriId)">
               <div class="fw-bold text-dark">{{ cu.siraNo }} - {{ cu.barkodNo }}</div>
               <div class="text-muted small lh-sm">{{ cu.aciklama }}</div>
-              <div class="badge bg-primary mt-2">3K Gelen: {{ cu.gelenMiktar }}</div>
+              <div class="d-flex gap-1 flex-wrap mt-2">
+                <span class="badge bg-primary">Kullanılabilir: {{ getKaynakNetKullanilabilir(cu) }}</span>
+                <span class="badge bg-light text-muted">3K Gelen: {{ cu.gelenMiktar }}</span>
+              </div>
             </a>
           </li>
           }

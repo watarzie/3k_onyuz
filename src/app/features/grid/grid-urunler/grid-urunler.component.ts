@@ -298,9 +298,9 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     this.panelDurum.set(urun.gridDurumuMetni);
     this.panelGelenAdet.set(urun.gridGelenAdet);
     this.panelTrafoSevkAdet.set(urun.trafoSevkAdet);
-    if (this.isYenidenSevkGerekliUrun(urun)) {
+    if (this.isGridYenidenSevkAcikUrun(urun)) {
       this.panelSevkDurumu.set('Sevk Edildi');
-      this.panelSevkAdet.set(urun.yenidenSevkGerekliAdet ?? 0);
+      this.panelSevkAdet.set(this.getYenidenSevkLimit(urun));
     } else {
       this.panelSevkDurumu.set(urun.gridSevkDurumuMetni);
       this.panelSevkAdet.set(urun.gridSevkMiktari ?? 0);
@@ -355,7 +355,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     const durum = this.panelDurum();
     let uyari = '';
 
-    if (this.isYenidenSevkGerekli) {
+    if (this.isGridYenidenSevkAcik) {
       this.panelUyari.set(`YENİDEN SEVK GEREKLİ: ${this.maxSevkAdet} ${u.birim}`);
       this.panelError.set('');
       return;
@@ -389,14 +389,15 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
 
   get isSevkAktif(): boolean {
-    if (this.isYenidenSevkGerekli) return true;
+    if (this.isGridYenidenSevkAcik) return true;
     const d = this.panelDurum();
     return d === 'Tam Geldi' || d === 'Eksik Geldi' || (d === 'Trafo Sevk' && this.panelGelenAdet() > 0);
   }
 
   get maxSevkAdet(): number {
-    if (this.isYenidenSevkGerekli) {
-      return Math.max(this.panelUrun()?.yenidenSevkGerekliAdet ?? 0, 0);
+    const u = this.panelUrun();
+    if (this.isGridYenidenSevkAcik && u) {
+      return this.getYenidenSevkLimit(u);
     }
     return Math.max(this.panelGelenAdet(), 0);
   }
@@ -436,7 +437,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       if (d !== 'Tam Geldi' && d !== 'Eksik Geldi' && !(d === 'Trafo Sevk' && this.panelGelenAdet() > 0)) return 'Sevk için durum Tam Geldi, Eksik Geldi veya Grid gelen adedi olan Trafo Sevk olmalıdır.';
       if (this.panelSevkAdet() <= 0) return 'Sevk edilen miktar girilmelidir.';
       if (this.panelSevkAdet() > this.maxSevkAdet) {
-        return this.isYenidenSevkGerekli
+        return this.isGridYenidenSevkAcik
           ? 'Sevk edilen miktar yeniden sevk gerekli adetten büyük olamaz.'
           : 'Sevk edilen miktar Grid gelen adetten büyük olamaz.';
       }
@@ -634,7 +635,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   // ===== 3K İşlem Blokajı =====
   /** 3K tarafında işlem yapılmışsa Grid düzenleme yapamaz */
   isUcKIslemYapilmis(u: GridUrunDto): boolean {
-    if (this.isYenidenSevkGerekliUrun(u)) return false;
+    if (this.isGridYenidenSevkAcikUrun(u)) return false;
     return u.ucKDurumuId !== UcKDurum.Bekliyor || u.gelenMiktar > 0;
   }
 
@@ -642,8 +643,34 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     return !!u && u.gridSevkDurumuId === GridSevkDurum.YenidenSevkGerekli && (u.yenidenSevkGerekliAdet ?? 0) > 0;
   }
 
+  isProjeGonderilenYenidenSevkUrun(u: GridUrunDto | null | undefined): boolean {
+    return !!u &&
+      u.gridSevkDurumuId === GridSevkDurum.SevkEdildi &&
+      (u.gridSevkMiktari ?? 0) > 0 &&
+      (u.projeGonderilen ?? 0) > 0 &&
+      (u.kalanMiktar ?? 0) > 0;
+  }
+
+  isGridYenidenSevkAcikUrun(u: GridUrunDto | null | undefined): boolean {
+    return this.isYenidenSevkGerekliUrun(u) || this.isProjeGonderilenYenidenSevkUrun(u);
+  }
+
+  getYenidenSevkLimit(u: GridUrunDto): number {
+    if (this.isYenidenSevkGerekliUrun(u)) {
+      return Math.max(u.yenidenSevkGerekliAdet ?? 0, 0);
+    }
+    if (this.isProjeGonderilenYenidenSevkUrun(u)) {
+      return Math.max(Math.min(u.projeGonderilen ?? 0, u.kalanMiktar ?? 0), 0);
+    }
+    return 0;
+  }
+
   get isYenidenSevkGerekli(): boolean {
     return this.isYenidenSevkGerekliUrun(this.panelUrun());
+  }
+
+  get isGridYenidenSevkAcik(): boolean {
+    return this.isGridYenidenSevkAcikUrun(this.panelUrun());
   }
 
   getUcKBlokajMesaji(u: GridUrunDto): string {

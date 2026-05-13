@@ -23,6 +23,7 @@ export interface GridUrunDto {
   stokKarsilanan: number;
   projeKarsilanan: number;
   projeGonderilen: number;
+  netKullanilabilir: number;
   tedarikciKarsilanan: number;
   eksikMiktar: number;
   kalanMiktar: number;

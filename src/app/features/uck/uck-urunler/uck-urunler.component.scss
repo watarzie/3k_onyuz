@@ -127,6 +127,10 @@ tr.row-focus-flash {
       flex: 1 1 100%;
     }
   }
+
+  .transfer-chain-summary {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 380px) {
@@ -182,6 +186,146 @@ table {
 .btn-action {
   color: var(--bodyColor); border: 1px solid var(--borderColor); border-radius: 6px; padding: 4px 8px;
   &:hover { border-color: var(--primaryColor); color: var(--primaryColor); }
+}
+
+.transfer-chain-link {
+  border: 0;
+  background: rgba(53,132,252,.08);
+  color: var(--primaryColor);
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  &:hover {
+    background: rgba(53,132,252,.14);
+  }
+}
+
+.transfer-net {
+  color: #475569;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.transfer-chain-modal {
+  width: 620px;
+}
+
+.transfer-chain-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+
+  span {
+    background: #F8FAFC;
+    border: 1px solid var(--borderColor);
+    border-radius: 8px;
+    padding: 9px 10px;
+    font-size: 12px;
+    color: #64748B;
+  }
+
+  strong {
+    color: #0F172A;
+  }
+}
+
+.transfer-chain-list {
+  display: grid;
+  gap: 10px;
+  max-height: 52vh;
+  overflow-y: auto;
+}
+
+.transfer-chain-explainer {
+  border: 1px solid #D7E6FF;
+  background: linear-gradient(180deg, #F8FBFF 0%, #F2F7FF 100%);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.transfer-chain-explainer-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--primaryColor);
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 7px;
+}
+
+.transfer-chain-explainer p {
+  margin: 0;
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.45;
+
+  & + p {
+    margin-top: 5px;
+  }
+}
+
+.transfer-chain-item {
+  border: 1px solid var(--borderColor);
+  border-left: 4px solid #94A3B8;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff;
+
+  &.transfer-in {
+    border-left-color: #3584FC;
+  }
+
+  &.transfer-out {
+    border-left-color: #FFB200;
+  }
+}
+
+.transfer-chain-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 800;
+  color: #1E293B;
+}
+
+.transfer-route {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.transfer-amount {
+  color: var(--primaryColor);
+  white-space: nowrap;
+}
+
+.transfer-chain-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+
+  span {
+    background: #F1F5F9;
+    color: #64748B;
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+}
+
+.transfer-chain-note {
+  margin-top: 8px;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 // Side Panel

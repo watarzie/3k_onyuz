@@ -1,6 +1,6 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { NgClass } from '@angular/common';
+import { DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { TranslationService } from '../../../core/services/translation.service';
@@ -37,7 +37,7 @@ import { OnayService } from '../../../core/services/onay.service';
 @Component({
   selector: 'app-uck-urunler',
   standalone: true,
-  imports: [RouterLink, NgClass, FormsModule, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent],
+  imports: [RouterLink, NgClass, DatePipe, FormsModule, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent],
   templateUrl: './uck-urunler.component.html',
   styleUrl: './uck-urunler.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -77,6 +77,9 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   panelSaving = signal(false);
   panelError = signal('');
   panelUyari = signal('');
+
+  showTransferModal = signal(false);
+  transferModalUrun = signal<UcKUrunDto | null>(null);
 
   // Checkbox + Toplu TamGeldi
   selectedIds = signal<Set<number>>(new Set());
@@ -139,7 +142,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     }
 
     // KURAL 2: 3K'ya gelmiş olma — gelenMiktar > 0
-    list = list.filter(u => u.gelenMiktar > 0);
+    list = list.filter(u => this.getKaynakNetKullanilabilir(u) > 0);
 
     // Arama filtresi
     if (term) {
@@ -404,7 +407,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
         this.panelKaynakHedef.set('');
         break;
       case 'Projeden Karşılandı':
-        this.panelGelenAdet.set(u.gelenMiktar > 0 ? u.gelenMiktar : u.kalan);
+        this.panelGelenAdet.set(u.kalan > 0 ? u.kalan : 0);
         break;
       case 'Stoktan Karşılandı':
       case 'Tedarikçiden Geldi':
@@ -451,7 +454,73 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     if (!uId) return 'Ürün Seçiniz...';
     const u = this.kaynakUrunler().find(x => x.cekiSatiriId === uId);
     if (!u) return 'Ürün Seçiniz...';
-    return `${u.siraNo} - ${u.barkodNo} (${u.aciklama}) | 3K Gelen: ${u.gelenMiktar}`;
+    return `${u.siraNo} - ${u.barkodNo} (${u.aciklama}) | Kullanilabilir: ${this.getKaynakNetKullanilabilir(u)}`;
+  }
+
+  getKaynakNetKullanilabilir(u: GridUrunDto): number {
+    if (u.netKullanilabilir !== undefined && u.netKullanilabilir !== null) {
+      return Math.max(u.netKullanilabilir, 0);
+    }
+
+    const net = (u.gelenMiktar ?? 0)
+      + (u.stokKarsilanan ?? 0)
+      + (u.projeKarsilanan ?? 0)
+      + (u.tedarikciKarsilanan ?? 0)
+      - (u.projeGonderilen ?? 0);
+    return Math.max(net, 0);
+  }
+
+  openTransferModal(urun: UcKUrunDto) {
+    this.transferModalUrun.set(urun);
+    this.showTransferModal.set(true);
+  }
+
+  closeTransferModal() {
+    this.showTransferModal.set(false);
+    this.transferModalUrun.set(null);
+  }
+
+  getTransferYonClass(yon: string): string {
+    return yon === 'Gelen' ? 'transfer-in' : 'transfer-out';
+  }
+
+  getTransferTipLabel(tip: string): string {
+    return tip === 'Telafi' ? 'Telafi' : 'Karşılama';
+  }
+
+  getTransferZincirOzetleri(urun: UcKUrunDto): string[] {
+    const transferler = urun.transferZinciri ?? [];
+    const gelenler = transferler.filter(t => t.yon === 'Gelen');
+    const gidenler = transferler.filter(t => t.yon !== 'Gelen');
+    const ozetler: string[] = [];
+
+    if (gelenler.length > 0) {
+      const projeler = this.formatProjeListesi(gelenler.map(t => t.kaynakProjeNo));
+      ozetler.push(`${projeler} projesinden bu ürün için toplam ${urun.projeKarsilanan} ${urun.birim} alındı.`);
+    }
+
+    if (gidenler.length > 0) {
+      const projeler = this.formatProjeListesi(gidenler.map(t => t.hedefProjeNo));
+      ozetler.push(`Bu üründen ${projeler} projesine toplam ${urun.projeGonderilen} ${urun.birim} verildi.`);
+    }
+
+    if (urun.netKullanilabilir > 0) {
+      ozetler.push(`Şu an bu satırda kullanılabilir net miktar ${urun.netKullanilabilir} ${urun.birim}.`);
+    } else if (urun.projeGonderilen > 0 && urun.kalan > 0) {
+      ozetler.push(`Bu satırda kullanılabilir net miktar kalmadı; kalan ${urun.kalan} ${urun.birim} için Grid tarafı yeniden sevk etmelidir.`);
+    } else if (urun.kalan <= 0) {
+      ozetler.push(`Bu satırın ihtiyacı karşılanmış durumda; ek sevk gerekmiyor.`);
+    } else {
+      ozetler.push(`Bu satırda kullanılabilir net miktar bulunmuyor.`);
+    }
+
+    return ozetler;
+  }
+
+  private formatProjeListesi(projeler: string[]): string {
+    const tekilProjeler = Array.from(new Set(projeler.filter(Boolean)));
+    if (tekilProjeler.length <= 2) return tekilProjeler.join(' ve ');
+    return `${tekilProjeler.slice(0, -1).join(', ')} ve ${tekilProjeler[tekilProjeler.length - 1]}`;
   }
 
   toggleProjeDropdown() {
@@ -571,6 +640,12 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
         u.gridSevkDurumuId === GridSevkDurum.YenidenSevkGerekli);
   }
 
+  private isProjeTransferTelafiAcik(u: UcKUrunDto, tip: string): boolean {
+    return this.getTipId(tip) === UcKDurum.ProjedenKarsilandi &&
+      u.kalan > 0 &&
+      (u.projeGonderilen ?? 0) > 0;
+  }
+
   isKarsilamaTipiDisabled(tip: string): boolean {
     const u = this.panelUrun();
     if (!u) return false;
@@ -601,7 +676,9 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
     // Projeden/Stoktan/Tedarikçi → Grid eksik/gelmedi/trafo veya 3K geri gönderim sonrası kalan açık olmalı
     if (this.isKaynakKarsilamaTip(tip)) {
-      return !this.isGridKaynakKarsilamaAcik(u) && !this.isGeriGonderimSonrasiKaynakAcik(u);
+      return !this.isGridKaynakKarsilamaAcik(u) &&
+        !this.isGeriGonderimSonrasiKaynakAcik(u) &&
+        !this.isProjeTransferTelafiAcik(u, tip);
     }
 
     return false;
@@ -664,8 +741,10 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     }
 
     if (this.isKaynakKarsilamaTip(tip)) {
-      if (!this.isGridKaynakKarsilamaAcik(u) && !this.isGeriGonderimSonrasiKaynakAcik(u)) {
-        return 'Bu işlem yalnızca ürün Grid tarafında eksik/gelmedi olduğunda, kısmi trafo sevk olduğunda veya 3K geri gönderim sonrası kalan açık olduğunda yapılabilir.';
+      if (!this.isGridKaynakKarsilamaAcik(u) &&
+        !this.isGeriGonderimSonrasiKaynakAcik(u) &&
+        !this.isProjeTransferTelafiAcik(u, tip)) {
+        return 'Bu işlem yalnızca ürün Grid tarafında eksik/gelmedi olduğunda, kısmi trafo sevk olduğunda veya 3K geri gönderim sonrası kalan açık olduğunda yapılabilir. Proje transfer telafisi yalnızca Projeden Karşılandı için geçerlidir.';
       }
     }
 
@@ -679,8 +758,9 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       if (!this.panelKaynakCekiSatiriId()) return 'Kaynak ürün girilmelidir.';
       // KURAL 3: Stok yeterliliği — karşılama adedi ≤ kaynak ürünün gelenMiktar'ı
       const kaynakUrun = this.kaynakUrunler().find(x => x.cekiSatiriId === this.panelKaynakCekiSatiriId());
-      if (kaynakUrun && this.panelGelenAdet() > kaynakUrun.gelenMiktar) {
-        return `Kaynak üründe yeterli miktar yok. (3K Gelen: ${kaynakUrun.gelenMiktar})`;
+      const kullanilabilir = kaynakUrun ? this.getKaynakNetKullanilabilir(kaynakUrun) : 0;
+      if (kaynakUrun && this.panelGelenAdet() > kullanilabilir) {
+        return `Kaynak üründe yeterli miktar yok. (Kullanılabilir: ${kullanilabilir})`;
       }
     }
     if (tip === 'Stoktan Karşılandı') {
