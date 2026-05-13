@@ -102,6 +102,11 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   // Proje ve Kaynak Ürün Dropdown State
   projeler = signal<ProjeDropdownDto[]>([]);
+  mevcutProje = computed(() => this.projeler().find(p => p.id === this.projeId()) ?? null);
+  projeBaslik = computed(() => {
+    const proje = this.mevcutProje();
+    return proje ? `${proje.projeNo} - ${proje.musteri}` : `Proje #${this.projeId()}`;
+  });
   kaynakUrunler = signal<GridUrunDto[]>([]);
 
   isProjeDropdownOpen = signal(false);

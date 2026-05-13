@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import { TranslationService } from '../../../core/services/translation.service';
 import { GridService } from '../../../core/services/grid.service';
 import { SandikService } from '../../../core/services/sandik.service';
+import { ProjeService } from '../../../core/services/proje.service';
 import { ToastService } from '../../../core/services/toast.service';
 
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
@@ -13,7 +14,7 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
-import { GridUrunDto, GridDurumGuncelleDto } from '../../../shared/models/index';
+import { GridUrunDto, GridDurumGuncelleDto, ProjeDropdownDto } from '../../../shared/models/index';
 import { GridDurum, GridSevkDurum, UcKDurum } from '../../../core/constants/enums';
 import { PermissionService } from '../../../core/services/permission.service';
 
@@ -59,10 +60,12 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private gridService = inject(GridService);
   private sandikService = inject(SandikService);
+  private projeService = inject(ProjeService);
   private toast = inject(ToastService);
   permissions = inject(PermissionService);
 
   projeId = signal(0);
+  mevcutProje = signal<ProjeDropdownDto | null>(null);
   urunler = signal<GridUrunDto[]>([]);
   filtered = signal<GridUrunDto[]>([]);
   mevcutSandikNolari = signal<string[]>([]);
@@ -145,6 +148,10 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   iptal = computed(() => this.urunler().filter(u => u.gridDurumuMetni === 'İptal').length);
 
   bekliyor = computed(() => this.urunler().filter(u => u.gridDurumuMetni === 'Bekliyor').length);
+  projeBaslik = computed(() => {
+    const proje = this.mevcutProje();
+    return proje ? `${proje.projeNo} - ${proje.musteri}` : `Proje #${this.projeId()}`;
+  });
 
   selectedUrunler = computed(() => this.urunler().filter(u => this.selectedIds().has(u.cekiSatiriId)));
   selectedTadilattaCount = computed(() => this.selectedUrunler().filter(u => this.isTadilatta(u)).length);
@@ -168,6 +175,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       { label: 'Projeler', link: '/projeler' },
       { label: 'Grid Modülü' },
     ];
+    this.loadProjeBilgisi();
     this.loadUrunler();
     this.loadSandiklar();
 
@@ -220,6 +228,14 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     this.sandikService.getSandiklar(this.projeId()).subscribe((res) => {
       if (res.isSuccess && res.value) {
         this.mevcutSandikNolari.set(res.value.map(s => s.sandikNo));
+      }
+    });
+  }
+
+  loadProjeBilgisi() {
+    this.projeService.getProjeDropdownListesi().subscribe((res) => {
+      if (res.isSuccess && res.value) {
+        this.mevcutProje.set(res.value.find(p => p.id === this.projeId()) ?? null);
       }
     });
   }

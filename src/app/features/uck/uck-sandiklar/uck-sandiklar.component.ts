@@ -13,7 +13,7 @@ import { LookupService } from '../../../core/services/lookup.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
-import { SandikDto, LookupResponse } from '../../../shared/models/index';
+import { SandikDto, LookupResponse, ProjeDropdownDto } from '../../../shared/models/index';
 
 @Component({
   selector: 'app-uck-sandiklar',
@@ -38,6 +38,7 @@ export class UcKSandiklarComponent implements OnInit {
   canWriteSandik = computed(() => this.permissionService.canWrite('sandik-yonetimi') || this.auth.hasRole('Admin'));
 
   projeId = signal(0);
+  mevcutProje = signal<ProjeDropdownDto | null>(null);
   sandiklar = signal<SandikDto[]>([]);
   filtered = signal<SandikDto[]>([]);
   loading = signal(true);
@@ -79,6 +80,10 @@ export class UcKSandiklarComponent implements OnInit {
   get hazirCount(): number { return this.sandiklar().filter(s => s.durumMetni === 'Kapandı').length; }
   get hazirlaniyorCount(): number { return this.sandiklar().filter(s => s.durumMetni === 'Hazırlanıyor').length; }
   get sevkedildiCount(): number { return this.sandiklar().filter(s => s.durumMetni === 'Sevk Edildi').length; }
+  projeBaslik = computed(() => {
+    const proje = this.mevcutProje();
+    return proje ? `${proje.projeNo} - ${proje.musteri}` : `Proje #${this.projeId()}`;
+  });
 
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('projeId'));
@@ -88,8 +93,17 @@ export class UcKSandiklarComponent implements OnInit {
       { label: 'Projeler', link: '/projeler' },
       { label: '3K Modülü' },
     ];
+    this.loadProjeBilgisi();
     this.loadLookups();
     this.loadSandiklar();
+  }
+
+  loadProjeBilgisi() {
+    this.projeService.getProjeDropdownListesi().subscribe((res) => {
+      if (res.isSuccess && res.value) {
+        this.mevcutProje.set(res.value.find(p => p.id === this.projeId()) ?? null);
+      }
+    });
   }
 
   loadLookups() {
