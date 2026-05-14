@@ -7,6 +7,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { TranslationService } from '../../core/services/translation.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { OnayService } from '../../core/services/onay.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-header',
@@ -29,6 +30,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   // Bildirim zili için
   bekleyenIslemSayisi = signal<number>(0);
+  private approvalUpdateSubscription?: Subscription;
+
   get canSeeApprovalQueue() {
     return this.permissions.hasAccess('islem-onay-merkezi');
   }
@@ -47,12 +50,13 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     // Anlık işlemler için olay dinleyicisi (SSE'den de tetikleniyor)
-    this.onayService.onayIstendi$.subscribe(() => {
+    this.approvalUpdateSubscription = this.onayService.onayIstendi$.subscribe(() => {
       this.fetchApprovalCount();
     });
   }
 
   ngOnDestroy() {
+    this.approvalUpdateSubscription?.unsubscribe();
     this.onayService.disconnectStream();
   }
 

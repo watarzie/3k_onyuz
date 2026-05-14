@@ -18,32 +18,54 @@ export class OnayService {
 
   private _auth = inject(AuthService); // Assuming AuthService is provided in root
   private sseCtrl: AbortController | null = null;
+  private sseConnecting = false;
+  private sseConnectionId = 0;
   private sseRetryCount = 0;
   private readonly MAX_SSE_RETRIES = 10;
 
   connectToApprovalStream() {
-    if (this.sseCtrl) return; // Already connected
+    if (this.sseCtrl || this.sseConnecting) return; // Already connected or connecting
     const token = this._auth.getToken();
     if (!token) return;
 
     this.sseRetryCount = 0;
+    this.sseConnecting = true;
     this.sseCtrl = new AbortController();
+    const connectionId = ++this.sseConnectionId;
     const url = API.ONAY.SSE_STREAM || 'http://localhost:5000/api/onay/sse-stream';
 
     import('@microsoft/fetch-event-source').then(({ fetchEventSource }) => {
+      if (connectionId !== this.sseConnectionId || !this.sseCtrl) {
+        this.sseConnecting = false;
+        return;
+      }
+
       fetchEventSource(url, {
         method: 'GET',
+        openWhenHidden: true,
         headers: {
           Authorization: `Bearer ${token}`
         },
         signal: this.sseCtrl!.signal,
+        onopen: async (response) => {
+          this.sseConnecting = false;
+          if (!response.ok) {
+            throw new Error(`SSE connection failed: ${response.status}`);
+          }
+        },
         onmessage: (ev) => {
           this.sseRetryCount = 0; // Başarılı mesaj → sayacı sıfırla
           if (ev.event === 'approval_update') {
             this.notifyHeaderForNewApproval();
           }
         },
+        onclose: () => {
+          if (connectionId === this.sseConnectionId && this.sseCtrl) {
+            throw new Error('SSE connection closed unexpectedly');
+          }
+        },
         onerror: (err) => {
+          this.sseConnecting = false;
           this.sseRetryCount++;
           console.error(`SSE Error (${this.sseRetryCount}/${this.MAX_SSE_RETRIES}):`, err);
           if (this.sseRetryCount >= this.MAX_SSE_RETRIES) {
@@ -51,12 +73,28 @@ export class OnayService {
             this.disconnectStream();
             throw err; // fetchEventSource reconnect'i durdurur
           }
+
+          return Math.min(this.sseRetryCount * 1000, 10000);
         }
-      }).catch(err => console.error("Could not connect to SSE", err));
+      }).catch(err => {
+        this.sseConnecting = false;
+        if (connectionId === this.sseConnectionId && this.sseCtrl) {
+          console.error('Could not connect to SSE', err);
+          this.sseCtrl = null;
+        }
+      });
+    }).catch(err => {
+      this.sseConnecting = false;
+      if (connectionId === this.sseConnectionId) {
+        this.sseCtrl = null;
+      }
+      console.error('Could not load SSE client', err);
     });
   }
 
   disconnectStream() {
+    this.sseConnectionId++;
+    this.sseConnecting = false;
     if (this.sseCtrl) {
       this.sseCtrl.abort();
       this.sseCtrl = null;
