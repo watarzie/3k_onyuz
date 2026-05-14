@@ -71,6 +71,14 @@
             <label class="form-label fw-semibold">Sandık İsmi</label>
             <input type="text" class="form-control" [ngModel]="ozellikSandikIsmi()" (ngModelChange)="ozellikSandikIsmi.set($event)" placeholder="Ör: Elektrik, Mekanik vb." />
           </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Depo Lokasyonu</label>
+            <select class="form-select" [ngModel]="ozellikLokasyonId()" (ngModelChange)="ozellikLokasyonId.set(+$event)">
+              @for (l of lokasyonlar(); track l.id) {
+                <option [value]="l.id">{{ l.deger }}</option>
+              }
+            </select>
+          </div>
           <div class="row g-3">
             <div class="col-4">
               <label class="form-label fw-semibold">Boy (cm)</label>

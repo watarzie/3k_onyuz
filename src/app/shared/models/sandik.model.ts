@@ -115,6 +115,7 @@ export interface SandikOzellikGuncelleDto {
   yukseklik?: number;
   netKg?: number;
   grossKg?: number;
+  depoLokasyonId?: number;
 }
 
 export interface TeslimAlDto {

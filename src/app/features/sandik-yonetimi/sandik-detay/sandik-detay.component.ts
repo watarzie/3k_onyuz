@@ -9,6 +9,7 @@ import { ProjeService } from '../../../core/services/proje.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { PermissionService } from '../../../core/services/permission.service';
+import { LookupService } from '../../../core/services/lookup.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { SandikDetayDto, SandikIcerikDto, SandikDto } from '../../../shared/models/index';
@@ -32,6 +33,7 @@ export class SandikDetayComponent implements OnInit {
   private auth = inject(AuthService);
   private permissionService = inject(PermissionService);
   private confirmService = inject(ConfirmService);
+  private lookupService = inject(LookupService);
 
   projeId = signal(0);
   sandikId = signal(0);
@@ -70,6 +72,8 @@ export class SandikDetayComponent implements OnInit {
   ozellikYukseklik = signal<number | null>(null);
   ozellikNetKg = signal<number | null>(null);
   ozellikGrossKg = signal<number | null>(null);
+  ozellikLokasyonId = signal<number>(0);
+  lokasyonlar = signal<{id: number, deger: string}[]>([]);
 
   // Ürün taşıma modal
   showTasiModal = signal(false);
@@ -98,6 +102,13 @@ export class SandikDetayComponent implements OnInit {
     this.sandikId.set(sId);
     this.loadSandik();
     this.loadProjeSandiklari();
+    this.loadLokasyonlar();
+  }
+
+  loadLokasyonlar() {
+    this.lookupService.getLookups(['LookupDepoLokasyon']).subscribe(data => {
+      if (data['LookupDepoLokasyon']) this.lokasyonlar.set(data['LookupDepoLokasyon']);
+    });
   }
 
   async sandikHazirla() {
@@ -322,6 +333,7 @@ export class SandikDetayComponent implements OnInit {
     this.ozellikYukseklik.set(s.yukseklik ?? null);
     this.ozellikNetKg.set(s.netKg ?? null);
     this.ozellikGrossKg.set(s.grossKg ?? null);
+    this.ozellikLokasyonId.set(s.depoLokasyonId ?? 0);
     this.showOzellikModal.set(true);
   }
 
@@ -338,7 +350,8 @@ export class SandikDetayComponent implements OnInit {
       boy: this.ozellikBoy() ?? undefined,
       yukseklik: this.ozellikYukseklik() ?? undefined,
       netKg: this.ozellikNetKg() ?? undefined,
-      grossKg: this.ozellikGrossKg() ?? undefined
+      grossKg: this.ozellikGrossKg() ?? undefined,
+      depoLokasyonId: this.ozellikLokasyonId() > 0 ? this.ozellikLokasyonId() : undefined
     }).subscribe({
       next: (res) => {
         this.ozellikSaving.set(false);
