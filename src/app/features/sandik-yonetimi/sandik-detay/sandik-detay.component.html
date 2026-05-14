@@ -48,8 +48,8 @@
           <div><small class="text-muted">Durum</small> <app-status-badge [status]="sandik()!.durumMetni" [label]="getDurumLabel(sandik()!.durumMetni)" /></div>
           <div><small class="text-muted">{{ 'LABELS.LOKASYON' | translate }}</small> <span class="ms-2 fw-semibold">{{ sandik()!.depoLokasyonMetni }}</span></div>
           <div class="vr"></div>
-          <div><small class="text-muted">En:</small> <span class="ms-1 fw-semibold">{{ sandik()!.en ? sandik()!.en + ' cm' : '-' }}</span></div>
           <div><small class="text-muted">Boy:</small> <span class="ms-1 fw-semibold">{{ sandik()!.boy ? sandik()!.boy + ' cm' : '-' }}</span></div>
+          <div><small class="text-muted">En:</small> <span class="ms-1 fw-semibold">{{ sandik()!.en ? sandik()!.en + ' cm' : '-' }}</span></div>
           <div><small class="text-muted">Yük.:</small> <span class="ms-1 fw-semibold">{{ sandik()!.yukseklik ? sandik()!.yukseklik + ' cm' : '-' }}</span></div>
           <div><small class="text-muted">Net:</small> <span class="ms-1 fw-semibold">{{ sandik()!.netKg ? sandik()!.netKg + ' kg' : '-' }}</span></div>
           <div><small class="text-muted">Gross:</small> <span class="ms-1 fw-semibold">{{ sandik()!.grossKg ? sandik()!.grossKg + ' kg' : '-' }}</span></div>
@@ -73,12 +73,12 @@
           </div>
           <div class="row g-3">
             <div class="col-4">
-              <label class="form-label fw-semibold">En (cm)</label>
-              <input type="number" step="0.01" class="form-control" [ngModel]="ozellikEn()" (ngModelChange)="ozellikEn.set($event)" />
-            </div>
-            <div class="col-4">
               <label class="form-label fw-semibold">Boy (cm)</label>
               <input type="number" step="0.01" class="form-control" [ngModel]="ozellikBoy()" (ngModelChange)="ozellikBoy.set($event)" />
+            </div>
+            <div class="col-4">
+              <label class="form-label fw-semibold">En (cm)</label>
+              <input type="number" step="0.01" class="form-control" [ngModel]="ozellikEn()" (ngModelChange)="ozellikEn.set($event)" />
             </div>
             <div class="col-4">
               <label class="form-label fw-semibold">Yükseklik (cm)</label>
