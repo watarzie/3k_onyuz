@@ -127,3 +127,125 @@ table {
   background: rgba(255,64,35,.08); border: 1px solid rgba(255,64,35,.2);
   color: #FF4023; border-radius: 8px; padding: 12px 16px; font-size: 13px;
 }
+
+// ===== Manuel Çeki Modal =====
+.manual-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(1180px, 95vw);
+  max-height: 92vh;
+  background: var(--whiteColor);
+  border-radius: 16px;
+  z-index: 1001;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, .22);
+  animation: fadeIn .2s ease;
+}
+.manual-modal-body {
+  padding: 20px 24px;
+  overflow: auto;
+  background: #f8fafc;
+}
+.manual-info {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid rgba(59, 130, 246, .24);
+  background: rgba(59, 130, 246, .07);
+  color: #2563eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.manual-section {
+  background: #fff;
+  border: 1px solid var(--borderColor);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.section-title,
+.section-title-row {
+  display: flex;
+  align-items: center;
+}
+.section-title {
+  gap: 8px;
+  color: var(--blackColor);
+  font-weight: 700;
+  margin-bottom: 14px;
+
+  i {
+    color: var(--primaryColor);
+    font-size: 18px;
+  }
+}
+.section-title-row {
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+
+  .section-title { margin-bottom: 0; }
+}
+.manual-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+
+  .form-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--bodyColor);
+    margin-bottom: 6px;
+  }
+}
+.manual-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--borderColor);
+  border-radius: 10px;
+}
+.manual-table {
+  min-width: 960px;
+
+  th {
+    padding: 10px 12px;
+    font-size: 11px;
+    background: #f1f5f9;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 8px 10px;
+    vertical-align: middle;
+  }
+
+  .form-control,
+  .form-select {
+    border-color: #dbe3ee;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 992px) {
+  .manual-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 576px) {
+  .manual-modal {
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .manual-grid {
+    grid-template-columns: 1fr;
+  }
+}

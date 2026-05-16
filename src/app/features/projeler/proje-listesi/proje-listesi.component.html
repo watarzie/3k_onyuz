@@ -18,6 +18,9 @@
           <i class="ri-add-line me-2"></i>Proje Oluştur
         </button>
       } @else if (!isSevkEdilen()) {
+        <button class="btn btn-outline-primary" (click)="openManuelCekiModal()">
+          <i class="ri-edit-box-line me-2"></i>Manuel Çeki
+        </button>
         <button class="btn btn-primary-gradient" (click)="openUploadModal()">
           <i class="ri-upload-2-line me-2"></i>Çeki Yükle
         </button>
@@ -303,6 +306,188 @@
           <span class="spinner-border spinner-border-sm me-2"></span>Yükleniyor...
         } @else {
           Yükle ve İşle
+        }
+      </button>
+    </div>
+  </div>
+}
+
+<!-- ===== Manuel Çeki Oluştur Modal ===== -->
+@if (showManuelCekiModal()) {
+  <div class="modal-overlay" (click)="closeManuelCekiModal()"></div>
+  <div class="manual-modal">
+    <div class="modal-header d-flex align-items-center justify-content-between">
+      <div>
+        <h5 class="fw-semibold mb-1"><i class="ri-edit-box-line me-2"></i>Manuel Çeki Oluştur</h5>
+        <small class="text-muted">Excel yüklemeden proje, sandık ve ürün satırlarını oluşturur.</small>
+      </div>
+      <button class="btn btn-sm border-0" (click)="closeManuelCekiModal()" [disabled]="creatingManuelCeki()">
+        <i class="ri-close-line fs-5"></i>
+      </button>
+    </div>
+
+    <div class="manual-modal-body">
+      <div class="manual-info mb-3">
+        <i class="ri-information-line"></i>
+        <span>Kaydettiğinizde proje, çeki satırları, sandıklar ve sandık içerikleri Excel yükleme akışıyla aynı şekilde oluşur.</span>
+      </div>
+
+      <section class="manual-section">
+        <div class="section-title">
+          <i class="ri-folder-line"></i>
+          <span>Proje Bilgileri</span>
+        </div>
+        <div class="manual-grid">
+          <div>
+            <label class="form-label">Proje No <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [(ngModel)]="manuelCekiForm().projeNo" placeholder="PA714-01" />
+          </div>
+          <div>
+            <label class="form-label">FB No</label>
+            <input type="text" class="form-control" [(ngModel)]="manuelCekiForm().fbNo" placeholder="Boşsa proje no kullanılır" />
+          </div>
+          <div>
+            <label class="form-label">Müşteri</label>
+            <input type="text" class="form-control" [(ngModel)]="manuelCekiForm().musteri" />
+          </div>
+          <div>
+            <label class="form-label">Lokasyon</label>
+            <input type="text" class="form-control" [(ngModel)]="manuelCekiForm().lokasyon" />
+          </div>
+          <div>
+            <label class="form-label">Güç</label>
+            <input type="text" class="form-control" [(ngModel)]="manuelCekiForm().guc" />
+          </div>
+          <div>
+            <label class="form-label">Gerilim</label>
+            <input type="text" class="form-control" [(ngModel)]="manuelCekiForm().gerilim" />
+          </div>
+          <div>
+            <label class="form-label">Proje Müdürü</label>
+            <input type="text" class="form-control" [(ngModel)]="manuelCekiForm().projeMuduru" />
+          </div>
+          <div>
+            <label class="form-label">Planlanan Sevk Tarihi</label>
+            <input type="date" class="form-control" [(ngModel)]="manuelCekiForm().planlananSevkTarihi" />
+          </div>
+        </div>
+      </section>
+
+      <section class="manual-section">
+        <div class="section-title-row">
+          <div class="section-title">
+            <i class="ri-archive-line"></i>
+            <span>Sandıklar</span>
+          </div>
+          <button class="btn btn-sm btn-outline-primary" (click)="addManuelSandik()">
+            <i class="ri-add-line me-1"></i>Sandık Ekle
+          </button>
+        </div>
+        <div class="manual-table-wrap">
+          <table class="table manual-table mb-0">
+            <thead>
+              <tr>
+                <th>Sandık No *</th>
+                <th>Sandık İsmi</th>
+                <th>En (cm)</th>
+                <th>Boy (cm)</th>
+                <th>Yük. (cm)</th>
+                <th>Net Kg</th>
+                <th>Gross Kg</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (sandik of manuelCekiForm().sandiklar; track $index) {
+                <tr>
+                  <td><input type="text" class="form-control form-control-sm" [(ngModel)]="sandik.sandikNo" placeholder="1" /></td>
+                  <td><input type="text" class="form-control form-control-sm" [(ngModel)]="sandik.ad" placeholder="Radyatör" /></td>
+                  <td><input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="sandik.en" /></td>
+                  <td><input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="sandik.boy" /></td>
+                  <td><input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="sandik.yukseklik" /></td>
+                  <td><input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="sandik.netKg" /></td>
+                  <td><input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="sandik.grossKg" /></td>
+                  <td class="text-end">
+                    <button class="btn btn-sm btn-light text-danger" (click)="removeManuelSandik($index)" title="Sandığı sil">
+                      <i class="ri-delete-bin-line"></i>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="manual-section mb-0">
+        <div class="section-title-row">
+          <div class="section-title">
+            <i class="ri-list-check-2"></i>
+            <span>Ürün Satırları</span>
+          </div>
+          <button class="btn btn-sm btn-outline-primary" (click)="addManuelSatir()">
+            <i class="ri-add-line me-1"></i>Ürün Ekle
+          </button>
+        </div>
+        <div class="manual-table-wrap">
+          <table class="table manual-table mb-0">
+            <thead>
+              <tr>
+                <th style="width: 70px;">Sıra</th>
+                <th style="width: 140px;">Barkod</th>
+                <th>Ürün Açıklaması *</th>
+                <th style="width: 130px;">Sandık *</th>
+                <th style="width: 120px;">Miktar *</th>
+                <th style="width: 120px;">Birim</th>
+                <th>Açıklama</th>
+                <th style="width: 50px;"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (satir of manuelCekiForm().satirlar; track $index) {
+                <tr>
+                  <td><input type="number" min="1" class="form-control form-control-sm" [(ngModel)]="satir.siraNo" /></td>
+                  <td><input type="text" class="form-control form-control-sm" [(ngModel)]="satir.barkodNo" placeholder="Opsiyonel" /></td>
+                  <td><input type="text" class="form-control form-control-sm" [(ngModel)]="satir.aciklama" placeholder="Ürün adı / açıklaması" /></td>
+                  <td>
+                    <select class="form-select form-select-sm" [(ngModel)]="satir.sandikNo">
+                      <option value="">Seçin</option>
+                      @for (sandik of manuelCekiForm().sandiklar; track $index) {
+                        @if (sandik.sandikNo) {
+                          <option [value]="sandik.sandikNo">{{ sandik.sandikNo }}</option>
+                        }
+                      }
+                    </select>
+                  </td>
+                  <td><input type="number" min="0.01" step="0.01" class="form-control form-control-sm" [(ngModel)]="satir.istenenAdet" /></td>
+                  <td>
+                    <select class="form-select form-select-sm" [ngModel]="satir.birimId" (ngModelChange)="onManuelSatirBirimChange(satir, $event)">
+                      @for (birim of birimSecenekleri; track birim.id) {
+                        <option [value]="birim.id">{{ birim.label }}</option>
+                      }
+                    </select>
+                  </td>
+                  <td><input type="text" class="form-control form-control-sm" [(ngModel)]="satir.remarks" placeholder="Opsiyonel" /></td>
+                  <td class="text-end">
+                    <button class="btn btn-sm btn-light text-danger" (click)="removeManuelSatir($index)" title="Ürünü sil">
+                      <i class="ri-delete-bin-line"></i>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-footer d-flex gap-2">
+      <button class="btn btn-outline flex-grow-1" (click)="closeManuelCekiModal()" [disabled]="creatingManuelCeki()">İptal</button>
+      <button class="btn btn-primary-gradient flex-grow-1" (click)="submitManuelCeki()" [disabled]="creatingManuelCeki()">
+        @if (creatingManuelCeki()) {
+          <span class="spinner-border spinner-border-sm me-2"></span>Oluşturuluyor...
+        } @else {
+          <i class="ri-save-line me-1"></i>Kaydet ve Oluştur
         }
       </button>
     </div>

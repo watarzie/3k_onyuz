@@ -32,6 +32,7 @@ export const API = {
   },
   CEKI: {
     YUKLE: `${BASE}/ceki/yukle`,
+    MANUEL: `${BASE}/ceki/manuel`,
     SATIRLAR: (cekiId: number) => `${BASE}/ceki/${cekiId}/satirlar`,
   },
   SANDIK: {

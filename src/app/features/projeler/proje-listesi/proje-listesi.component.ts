@@ -9,7 +9,7 @@ import { PermissionService } from '../../../core/services/permission.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
-import { ProjeDto } from '../../../shared/models/index';
+import { ManuelCekiOlusturDto, ManuelCekiSandikDto, ManuelCekiSatiriDto, ProjeDto } from '../../../shared/models/index';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmService } from '../../../core/services/confirm.service';
 import { PdfService } from '../../../core/services/pdf.service';
@@ -60,6 +60,23 @@ export class ProjeListesiComponent implements OnInit {
   uploading = signal(false);
   uploadResult = signal<{ success: boolean; message: string } | null>(null);
   dragOver = signal(false);
+
+  // Manuel çeki oluşturma
+  showManuelCekiModal = signal(false);
+  creatingManuelCeki = signal(false);
+  manuelCekiForm = signal<ManuelCekiOlusturDto>(this.createEmptyManuelCekiForm());
+  birimSecenekleri = [
+    { id: 1, label: 'Adet' },
+    { id: 2, label: 'Set' },
+    { id: 3, label: 'Metre' },
+    { id: 4, label: 'Kg' },
+    { id: 5, label: 'Litre' },
+    { id: 6, label: 'Takım' },
+    { id: 7, label: 'Paket' },
+    { id: 8, label: 'Ton' },
+    { id: 9, label: 'm²' },
+    { id: 10, label: 'm³' },
+  ];
 
   // Proje Oluştur (Saha/Yedek)
   showProjeOlusturModal = signal(false);
@@ -328,6 +345,219 @@ export class ProjeListesiComponent implements OnInit {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+
+  // ===== Manuel Çeki Oluştur =====
+
+  private createEmptyManuelCekiForm(): ManuelCekiOlusturDto {
+    return {
+      projeNo: '',
+      fbNo: '',
+      musteri: '',
+      lokasyon: '',
+      guc: '',
+      gerilim: '',
+      projeMuduru: '',
+      sorumluKisi: '',
+      olcuResmiNo: '',
+      nakilOlcuResmiNo: '',
+      sonMontajResmiNo: '',
+      planlananSevkTarihi: null,
+      projeTipiId: 1,
+      sandiklar: [this.createEmptyManuelSandik()],
+      satirlar: [this.createEmptyManuelSatir(1, '')],
+    };
+  }
+
+  private createEmptyManuelSandik(): ManuelCekiSandikDto {
+    return {
+      sandikNo: '',
+      ad: '',
+      en: null,
+      boy: null,
+      yukseklik: null,
+      netKg: null,
+      grossKg: null,
+    };
+  }
+
+  private createEmptyManuelSatir(siraNo: number, sandikNo: string): ManuelCekiSatiriDto {
+    return {
+      siraNo,
+      barkodNo: '',
+      aciklama: '',
+      sandikNo,
+      istenenAdet: 1,
+      birimId: 1,
+      birim: 'Adet',
+      remarks: '',
+    };
+  }
+
+  openManuelCekiModal() {
+    this.manuelCekiForm.set(this.createEmptyManuelCekiForm());
+    this.showManuelCekiModal.set(true);
+  }
+
+  closeManuelCekiModal() {
+    if (this.creatingManuelCeki()) return;
+    this.showManuelCekiModal.set(false);
+  }
+
+  addManuelSandik() {
+    this.manuelCekiForm.update(form => ({
+      ...form,
+      sandiklar: [...form.sandiklar, this.createEmptyManuelSandik()],
+    }));
+  }
+
+  removeManuelSandik(index: number) {
+    const form = this.manuelCekiForm();
+    if (form.sandiklar.length <= 1) {
+      this.toastService.error('En az bir sandık kalmalıdır.');
+      return;
+    }
+
+    const silinecekNo = form.sandiklar[index]?.sandikNo?.trim();
+    if (silinecekNo && form.satirlar.some(s => s.sandikNo === silinecekNo)) {
+      this.toastService.error('Bu sandığa bağlı ürün var. Önce ürün satırındaki sandığı değiştirin.');
+      return;
+    }
+
+    this.manuelCekiForm.update(current => ({
+      ...current,
+      sandiklar: current.sandiklar.filter((_, i) => i !== index),
+    }));
+  }
+
+  addManuelSatir() {
+    const form = this.manuelCekiForm();
+    const ilkSandikNo = form.sandiklar.find(s => s.sandikNo?.trim())?.sandikNo?.trim() ?? '';
+    this.manuelCekiForm.update(current => ({
+      ...current,
+      satirlar: [...current.satirlar, this.createEmptyManuelSatir(current.satirlar.length + 1, ilkSandikNo)],
+    }));
+  }
+
+  removeManuelSatir(index: number) {
+    const form = this.manuelCekiForm();
+    if (form.satirlar.length <= 1) {
+      this.toastService.error('En az bir ürün satırı kalmalıdır.');
+      return;
+    }
+
+    this.manuelCekiForm.update(current => ({
+      ...current,
+      satirlar: current.satirlar
+        .filter((_, i) => i !== index)
+        .map((satir, i) => ({ ...satir, siraNo: i + 1 })),
+    }));
+  }
+
+  onManuelSatirBirimChange(satir: ManuelCekiSatiriDto, birimId: number | string) {
+    const id = Number(birimId);
+    satir.birimId = id;
+    satir.birim = this.birimSecenekleri.find(b => b.id === id)?.label ?? 'Adet';
+  }
+
+  submitManuelCeki() {
+    const form = this.manuelCekiForm();
+    const projeNo = form.projeNo.trim();
+    if (!projeNo) {
+      this.toastService.error('Proje No zorunludur.');
+      return;
+    }
+
+    const sandiklar = form.sandiklar
+      .map(s => ({
+        ...s,
+        sandikNo: s.sandikNo?.trim() ?? '',
+        ad: s.ad?.trim() || undefined,
+        en: this.toNullableNumber(s.en),
+        boy: this.toNullableNumber(s.boy),
+        yukseklik: this.toNullableNumber(s.yukseklik),
+        netKg: this.toNullableNumber(s.netKg),
+        grossKg: this.toNullableNumber(s.grossKg),
+      }))
+      .filter(s => !!s.sandikNo);
+
+    if (sandiklar.length === 0) {
+      this.toastService.error('En az bir sandık girilmelidir.');
+      return;
+    }
+
+    const sandikNoSet = new Set(sandiklar.map(s => s.sandikNo));
+    if (sandikNoSet.size !== sandiklar.length) {
+      this.toastService.error('Aynı sandık numarası birden fazla girilemez.');
+      return;
+    }
+
+    const satirlar = form.satirlar.map((satir, index) => ({
+      ...satir,
+      siraNo: satir.siraNo ?? index + 1,
+      barkodNo: satir.barkodNo?.trim() || undefined,
+      aciklama: satir.aciklama?.trim() ?? '',
+      sandikNo: satir.sandikNo?.trim() ?? '',
+      istenenAdet: Number(satir.istenenAdet),
+      birimId: Number(satir.birimId || 1),
+      birim: this.birimSecenekleri.find(b => b.id === Number(satir.birimId || 1))?.label ?? 'Adet',
+      remarks: satir.remarks?.trim() || undefined,
+    }));
+
+    const hataliSatir = satirlar.find(s => !s.aciklama || !s.sandikNo || !s.istenenAdet || s.istenenAdet <= 0);
+    if (hataliSatir) {
+      this.toastService.error('Ürün satırlarında açıklama, sandık ve pozitif miktar zorunludur.');
+      return;
+    }
+
+    const bilinmeyenSandik = satirlar.find(s => !sandikNoSet.has(s.sandikNo));
+    if (bilinmeyenSandik) {
+      this.toastService.error(`"${bilinmeyenSandik.sandikNo}" numaralı sandık, sandık listesinde yok.`);
+      return;
+    }
+
+    const payload: ManuelCekiOlusturDto = {
+      ...form,
+      projeNo,
+      fbNo: form.fbNo?.trim() || projeNo,
+      musteri: form.musteri?.trim() || undefined,
+      lokasyon: form.lokasyon?.trim() || undefined,
+      guc: form.guc?.trim() || undefined,
+      gerilim: form.gerilim?.trim() || undefined,
+      projeMuduru: form.projeMuduru?.trim() || undefined,
+      sorumluKisi: form.sorumluKisi?.trim() || undefined,
+      olcuResmiNo: form.olcuResmiNo?.trim() || undefined,
+      nakilOlcuResmiNo: form.nakilOlcuResmiNo?.trim() || undefined,
+      sonMontajResmiNo: form.sonMontajResmiNo?.trim() || undefined,
+      planlananSevkTarihi: form.planlananSevkTarihi ? new Date(form.planlananSevkTarihi).toISOString() : null,
+      projeTipiId: 1,
+      sandiklar,
+      satirlar,
+    };
+
+    this.creatingManuelCeki.set(true);
+    this.projeService.cekiManuelOlustur(payload).subscribe({
+      next: (res) => {
+        this.creatingManuelCeki.set(false);
+        if (res.isSuccess && res.value) {
+          this.toastService.success(`Manuel çeki oluşturuldu: ${res.value.satirSayisi} satır, ${res.value.sandikSayisi} sandık.`);
+          this.showManuelCekiModal.set(false);
+          this.loadProjeler();
+        } else {
+          this.toastService.error(res.error || 'Manuel çeki oluşturulamadı.');
+        }
+      },
+      error: () => {
+        this.creatingManuelCeki.set(false);
+        this.toastService.error('Sunucu hatası oluştu.');
+      }
+    });
+  }
+
+  private toNullableNumber(value: number | string | null | undefined): number | null {
+    if (value === null || value === undefined || value === '') return null;
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
   }
 
   // ===== Sevk Tarihi Güncelle =====

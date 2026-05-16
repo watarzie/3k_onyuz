@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiSatiriDto, ProjeDropdownDto } from '../../shared/models/index';
+import { ApiResult, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiSatiriDto, ProjeDropdownDto, ManuelCekiOlusturDto } from '../../shared/models/index';
 
 /**
  * ProjeController (2 endpoint) + CekiController (2 endpoint):
@@ -72,6 +72,10 @@ export class ProjeService {
     const formData = new FormData();
     formData.append('dosya', dosya);
     return this.api.postFormData<CekiYuklemeResultDto>(API.CEKI.YUKLE, formData);
+  }
+
+  cekiManuelOlustur(payload: ManuelCekiOlusturDto): Observable<ApiResult<CekiYuklemeResultDto>> {
+    return this.api.post<CekiYuklemeResultDto>(API.CEKI.MANUEL, payload);
   }
 
   getCekiSatirlari(cekiId: number): Observable<ApiResult<CekiSatiriDto[]>> {
