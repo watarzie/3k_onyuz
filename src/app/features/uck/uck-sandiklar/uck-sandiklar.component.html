@@ -175,7 +175,7 @@
 <div class="modal-overlay" (click)="closeLokasyonModal()"></div>
 <div class="toplu-sevk-modal"
   style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1055; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-  <div class="modal-header d-flex align-items-center justify-content-between p-3 border-bottom">
+  <div class="modal-header d-flex align-items-center justify-content-between p-3 border-bottom bg-white" style="border-radius: 12px 12px 0 0;">
     <h5 class="fw-semibold mb-0 text-primary"><i class="ri-map-pin-add-line me-2"></i>Lokasyon Atama</h5>
     <button class="btn btn-sm border-0 bg-transparent shadow-none p-0" (click)="closeLokasyonModal()">
       <i class="ri-close-line fs-3 text-muted"></i>
@@ -216,7 +216,7 @@
 <div class="modal-overlay" (click)="closeSandikEkleModal()"></div>
 <div class="toplu-sevk-modal"
   style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1055; width: 100%; max-width: 440px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-  <div class="modal-header d-flex align-items-center justify-content-between p-3 border-bottom">
+  <div class="modal-header d-flex align-items-center justify-content-between p-3 border-bottom bg-white" style="border-radius: 12px 12px 0 0;">
     <h5 class="fw-semibold mb-0 text-primary"><i class="ri-archive-line me-2"></i>Yeni Sandık Ekle</h5>
     <button class="btn btn-sm border-0 bg-transparent shadow-none p-0" (click)="closeSandikEkleModal()">
       <i class="ri-close-line fs-3 text-muted"></i>
@@ -242,6 +242,33 @@
         <option [value]="l.id">{{ l.deger }}</option>
         }
       </select>
+    </div>
+
+    <!-- Fiziksel Özellikler (Opsiyonel) -->
+    <h6 class="fw-semibold mt-4 mb-2">Fiziksel Özellikler (Opsiyonel)</h6>
+    <div class="row g-2 mb-3">
+      <div class="col-4">
+        <label class="form-label small fw-semibold">Boy (mm)</label>
+        <input type="number" step="0.01" class="form-control form-control-sm" [ngModel]="ekBoy()" (ngModelChange)="ekBoy.set($event)" />
+      </div>
+      <div class="col-4">
+        <label class="form-label small fw-semibold">En (mm)</label>
+        <input type="number" step="0.01" class="form-control form-control-sm" [ngModel]="ekEn()" (ngModelChange)="ekEn.set($event)" />
+      </div>
+      <div class="col-4">
+        <label class="form-label small fw-semibold">Yükseklik (mm)</label>
+        <input type="number" step="0.01" class="form-control form-control-sm" [ngModel]="ekYukseklik()" (ngModelChange)="ekYukseklik.set($event)" />
+      </div>
+    </div>
+    <div class="row g-2">
+      <div class="col-6">
+        <label class="form-label small fw-semibold">Net Kg</label>
+        <input type="number" step="0.01" class="form-control form-control-sm" [ngModel]="ekNetKg()" (ngModelChange)="ekNetKg.set($event)" />
+      </div>
+      <div class="col-6">
+        <label class="form-label small fw-semibold">Gross Kg</label>
+        <input type="number" step="0.01" class="form-control form-control-sm" [ngModel]="ekGrossKg()" (ngModelChange)="ekGrossKg.set($event)" />
+      </div>
     </div>
   </div>
   <div class="modal-footer d-flex gap-2 p-3 bg-white border-top">

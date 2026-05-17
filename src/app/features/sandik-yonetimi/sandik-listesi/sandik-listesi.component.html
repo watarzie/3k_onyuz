@@ -114,15 +114,15 @@
       <h6 class="fw-semibold mt-4 mb-2">Fiziksel Özellikler (Opsiyonel)</h6>
       <div class="row g-2 mb-3">
         <div class="col-4">
-          <label class="form-label small fw-semibold">Boy (cm)</label>
+          <label class="form-label small fw-semibold">Boy (mm)</label>
           <input type="number" step="0.01" class="form-control form-control-sm" [ngModel]="yeniBoy()" (ngModelChange)="yeniBoy.set($event)" />
         </div>
         <div class="col-4">
-          <label class="form-label small fw-semibold">En (cm)</label>
+          <label class="form-label small fw-semibold">En (mm)</label>
           <input type="number" step="0.01" class="form-control form-control-sm" [ngModel]="yeniEn()" (ngModelChange)="yeniEn.set($event)" />
         </div>
         <div class="col-4">
-          <label class="form-label small fw-semibold">Yükseklik</label>
+          <label class="form-label small fw-semibold">Yükseklik (mm)</label>
           <input type="number" step="0.01" class="form-control form-control-sm" [ngModel]="yeniYukseklik()" (ngModelChange)="yeniYukseklik.set($event)" />
         </div>
       </div>

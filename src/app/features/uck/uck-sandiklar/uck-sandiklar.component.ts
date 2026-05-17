@@ -72,6 +72,11 @@ export class UcKSandiklarComponent implements OnInit {
   ekTipId = signal(1);
   ekLokasyonId = signal(2);
   ekSaving = signal(false);
+  ekBoy = signal<number | null>(null);
+  ekEn = signal<number | null>(null);
+  ekYukseklik = signal<number | null>(null);
+  ekNetKg = signal<number | null>(null);
+  ekGrossKg = signal<number | null>(null);
   sandikTipleri = signal<{ id: number, deger: string }[]>([]);
 
   breadcrumb: { label: string; link?: string }[] = [];
@@ -446,6 +451,11 @@ export class UcKSandiklarComponent implements OnInit {
     this.ekSandikIsmi.set('');
     this.ekTipId.set(1);
     this.ekLokasyonId.set(2);
+    this.ekBoy.set(null);
+    this.ekEn.set(null);
+    this.ekYukseklik.set(null);
+    this.ekNetKg.set(null);
+    this.ekGrossKg.set(null);
     this.showSandikEkleModal.set(true);
   }
 
@@ -466,6 +476,11 @@ export class UcKSandiklarComponent implements OnInit {
       sandikIsmi: this.ekSandikIsmi().trim() || undefined,
       tipId: this.ekTipId(),
       depoLokasyonId: this.ekLokasyonId(),
+      boy: this.ekBoy() || undefined,
+      en: this.ekEn() || undefined,
+      yukseklik: this.ekYukseklik() || undefined,
+      netKg: this.ekNetKg() || undefined,
+      grossKg: this.ekGrossKg() || undefined,
     }).subscribe({
       next: (res) => {
         this.ekSaving.set(false);
