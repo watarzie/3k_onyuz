@@ -54,6 +54,27 @@ export class ProjeListesiComponent implements OnInit {
   filtered = signal<ProjeDto[]>([]);
   loading = signal(true);
 
+  // Pagination
+  currentPage = signal(1);
+  pageSize = signal(15);
+  totalPages = computed(() => Math.max(1, Math.ceil(this.filtered().length / this.pageSize())));
+  paginatedData = computed(() => {
+    const start = (this.currentPage() - 1) * this.pageSize();
+    return this.filtered().slice(start, start + this.pageSize());
+  });
+  /** Sayfa numarası dizisi: akıllı truncation ile */
+  visiblePages = computed(() => {
+    const total = this.totalPages();
+    const current = this.currentPage();
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: (number | null)[] = [1];
+    if (current > 3) pages.push(null); // ellipsis
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
+    if (current < total - 2) pages.push(null);
+    pages.push(total);
+    return pages;
+  });
+
   // Çeki yükleme
   showUploadModal = signal(false);
   selectedFile = signal<File | null>(null);
@@ -153,8 +174,12 @@ export class ProjeListesiComponent implements OnInit {
           data = data.filter(p => p.durumMetni !== 'SevkEdildi' && p.durumMetni !== 'Sevk Edildi');
         }
 
+        // En son yüklenen proje ilk başta — Id desc sıralaması
+        data = data.sort((a, b) => b.id - a.id);
+
         this.projeler.set(data);
         this.filtered.set(data);
+        this.currentPage.set(1);
       }
     });
   }
@@ -170,7 +195,16 @@ export class ProjeListesiComponent implements OnInit {
         )
       );
     }
+    this.currentPage.set(1); // Arama yapıldığında ilk sayfaya dön
   }
+
+  // ===== Pagination Navigation =====
+  goToPage(page: number | null) {
+    if (page === null || page < 1 || page > this.totalPages()) return;
+    this.currentPage.set(page);
+  }
+  prevPage() { this.goToPage(this.currentPage() - 1); }
+  nextPage() { this.goToPage(this.currentPage() + 1); }
 
   getTamamlanmaYuzdesi(p: ProjeDto): number {
     if (p.sandikSayisi === 0) return 0;

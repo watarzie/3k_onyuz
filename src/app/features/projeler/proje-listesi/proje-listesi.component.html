@@ -86,7 +86,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (p of filtered(); track p.id) {
+            @for (p of paginatedData(); track p.id) {
               <tr>
                 <td class="fw-semibold">
                   @if (isSandikMode()) {
@@ -214,6 +214,34 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Pagination Bar -->
+      @if (filtered().length > 0) {
+        <div class="d-flex align-items-center justify-content-between p-3 border-top">
+          <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small">Sayfa başına kayıt:</span>
+            <select class="form-select form-select-sm" style="width: auto;" [ngModel]="pageSize()" (ngModelChange)="pageSize.set(+$event); currentPage.set(1)">
+              <option [value]="10">10</option>
+              <option [value]="25">25</option>
+              <option [value]="50">50</option>
+            </select>
+            <span class="text-muted small ms-2">Toplam: {{ filtered().length }} proje</span>
+          </div>
+          <nav aria-label="Sayfalama">
+            <ul class="pagination pagination-sm mb-0">
+              <li class="page-item" [class.disabled]="currentPage() === 1">
+                <button class="page-link" (click)="prevPage()">Önceki</button>
+              </li>
+              <li class="page-item active">
+                <span class="page-link">{{ currentPage() }} / {{ totalPages() }}</span>
+              </li>
+              <li class="page-item" [class.disabled]="currentPage() === totalPages()">
+                <button class="page-link" (click)="nextPage()">Sonraki</button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      }
     }
   </div>
 </div>
