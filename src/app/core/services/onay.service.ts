@@ -32,7 +32,7 @@ export class OnayService {
     this.sseConnecting = true;
     this.sseCtrl = new AbortController();
     const connectionId = ++this.sseConnectionId;
-    const url = API.ONAY.SSE_STREAM || 'http://localhost:5000/api/onay/sse-stream';
+    const url = API.ONAY.SSE_STREAM;
 
     import('@microsoft/fetch-event-source').then(({ fetchEventSource }) => {
       if (connectionId !== this.sseConnectionId || !this.sseCtrl) {
