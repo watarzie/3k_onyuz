@@ -109,10 +109,11 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   topluIslemAciklama = signal('');
   topluIslemSaving = signal(false);
 
-  // Ambar Talep Formu
+  // Talep Formu
   showAmbarTalepModal = signal(false);
   ambarTalepItems: WritableSignal<AmbarTalepItem[]> = signal([]);
   ambarTalepGenerating = signal(false);
+  talepKaynakSecim = signal(1);
 
   // Manuel Ürün Ekle
   showManuelEkleModal = signal(false);
@@ -811,7 +812,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ===== Ambar Talep Formu =====
+  // ===== Talep Formu =====
   openAmbarTalepModal() {
     const selected = this.selectedUrunler();
     if (selected.length === 0) {
@@ -826,6 +827,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       birim: u.birim,
     }));
     this.ambarTalepItems.set(items);
+    this.talepKaynakSecim.set(1);
     this.showAmbarTalepModal.set(true);
   }
 
@@ -855,6 +857,8 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       const now = new Date();
       const dateStr = now.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
       const timeStr = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+      const talepKaynak = this.getTalepKaynakLabel(this.talepKaynakSecim());
+      const projeText = this.projeBaslik();
 
       const tableBody: any[][] = items.map((item, i) => [
         { text: (i + 1).toString(), alignment: 'center' },
@@ -875,7 +879,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
               ],
             },
             {
-              text: 'AMBAR TALEP FORMU',
+              text: 'TALEP FORMU',
               fontSize: 22,
               bold: true,
               color: '#ffffff',
@@ -899,7 +903,33 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
           ],
         }),
         content: [
-          // Table
+          {
+            table: {
+              widths: ['*', '*'],
+              body: [
+                [
+                  { text: 'Talep Kaynağı', style: 'infoLabel' },
+                  { text: talepKaynak, style: 'infoValue' },
+                ],
+                [
+                  { text: 'Proje', style: 'infoLabel' },
+                  { text: projeText, style: 'infoValue' },
+                ],
+              ],
+            },
+            layout: {
+              hLineWidth: () => 0.5,
+              vLineWidth: () => 0.5,
+              hLineColor: () => '#dbeafe',
+              vLineColor: () => '#dbeafe',
+              fillColor: () => '#f8fafc',
+              paddingLeft: () => 8,
+              paddingRight: () => 8,
+              paddingTop: () => 6,
+              paddingBottom: () => 6,
+            },
+            margin: [0, 0, 0, 14],
+          },
           {
             table: {
               headerRows: 1,
@@ -929,30 +959,6 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
               paddingBottom: () => 6,
             },
           },
-          // Signature area
-          { text: '', margin: [0, 40, 0, 0] },
-          {
-            columns: [
-              {
-                width: '50%',
-                stack: [
-                  { text: 'Talep Eden:', bold: true, fontSize: 10, color: '#374151' },
-                  { text: '', margin: [0, 30, 0, 0] },
-                  { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 150, y2: 0, lineWidth: 0.5, lineColor: '#9ca3af' }] },
-                  { text: 'Ad Soyad / \u0130mza', fontSize: 8, color: '#6b7280', margin: [0, 4, 0, 0] },
-                ],
-              },
-              {
-                width: '50%',
-                stack: [
-                  { text: 'Onaylayan:', bold: true, fontSize: 10, color: '#374151' },
-                  { text: '', margin: [0, 30, 0, 0] },
-                  { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 150, y2: 0, lineWidth: 0.5, lineColor: '#9ca3af' }] },
-                  { text: 'Ad Soyad / \u0130mza', fontSize: 8, color: '#6b7280', margin: [0, 4, 0, 0] },
-                ],
-              },
-            ],
-          },
         ],
         footer: (currentPage: number, pageCount: number) => ({
           columns: [
@@ -966,6 +972,16 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
             fontSize: 9,
             color: '#ffffff',
           },
+          infoLabel: {
+            bold: true,
+            fontSize: 9,
+            color: '#64748b',
+          },
+          infoValue: {
+            bold: true,
+            fontSize: 9,
+            color: '#111827',
+          },
         },
         defaultStyle: {
           fontSize: 9,
@@ -973,20 +989,20 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
         },
       };
 
-      const fileName = `Ambar_Talep_Formu_${dateStr.replace(/\./g, '-')}_${timeStr.replace(':', '')}`;
+      const fileName = `Talep_Formu_${dateStr.replace(/\./g, '-')}_${timeStr.replace(':', '')}`;
       pdfMake.createPdf(docDefinition).download(`${fileName}.pdf`);
-      this.toast.success('Ambar Talep Formu PDF olarak indirildi.');
+      this.toast.success('Talep Formu PDF olarak indirildi.');
 
-      // Se\u00e7ili \u00fcr\u00fcnlerin S\u00fcre\u00e7 durumunu "Ambar" (ID: 1) olarak g\u00fcncelle
+      // Seçili ürünlerin süreç durumunu talep kaynağına göre güncelle
       const cekiIdler = items.map(i => i.cekiSatiriId);
       this.gridService.surecDurumGuncelle({
         projeId: this.projeId(),
         cekiSatiriIdler: cekiIdler,
-        surecDurumId: 1,
+        surecDurumId: this.talepKaynakSecim(),
       }).subscribe({
         next: (res) => {
           if (res.isSuccess) {
-            this.toast.success('Se\u00e7ili \u00fcr\u00fcnlerin s\u00fcre\u00e7 durumu "Ambar" olarak g\u00fcncellendi.');
+            this.toast.success(`Seçili ürünlerin süreç durumu "${talepKaynak}" olarak güncellendi.`);
             this.gridService.notifyGridUpdated();
             this.selectedIds.set(new Set());
             this.loadUrunler(false);
@@ -1003,6 +1019,18 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       this.toast.error('PDF olu\u015fturulurken bir hata olu\u015ftu.');
     } finally {
       this.ambarTalepGenerating.set(false);
+    }
+  }
+
+  // ===== Toplu İşlem Modal Yönetimi =====
+  getTalepKaynakLabel(value: number): string {
+    switch (Number(value)) {
+      case 2:
+        return 'Üretim';
+      case 3:
+        return 'Tedarikçi';
+      default:
+        return 'Ambar';
     }
   }
 

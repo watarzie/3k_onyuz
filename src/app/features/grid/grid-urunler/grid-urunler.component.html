@@ -50,7 +50,7 @@
         <i class="ri-settings-3-line me-1"></i>Süreç ({{ selectedIds().size }})
       </button>
       <button class="btn btn-ambar-talep" [disabled]="!hasSelection" (click)="openAmbarTalepModal()">
-        <i class="ri-file-list-3-line me-1"></i>Ambar Talep Formu
+        <i class="ri-file-list-3-line me-1"></i>Talep Formu
       </button>
       }
     </div>
@@ -617,7 +617,7 @@
 </div>
 }
 
-<!-- ===== Ambar Talep Formu Modal ===== -->
+<!-- ===== Talep Formu Modal ===== -->
 @if (showAmbarTalepModal()) {
 <div class="modal-backdrop show" (click)="closeAmbarTalepModal()"></div>
 <div class="modal d-block" tabindex="-1">
@@ -629,7 +629,7 @@
             <i class="ri-file-list-3-line"></i>
           </div>
           <div>
-            <h5 class="modal-title fw-bold mb-0">Ambar Talep Formu</h5>
+            <h5 class="modal-title fw-bold mb-0">Talep Formu</h5>
             <small class="text-white-50">Seçili ürünler için talep formu oluşturun</small>
           </div>
         </div>
@@ -639,6 +639,15 @@
         <div class="ambar-info-bar">
           <i class="ri-information-line me-2"></i>
           <span><strong>{{ ambarTalepItems().length }}</strong> ürün listelendi. Miktarları düzenleyip PDF olarak indirebilirsiniz.</span>
+        </div>
+        <div class="talep-source-box">
+          <label class="form-label mb-1">Talep Kaynağı</label>
+          <select class="form-select" [ngModel]="talepKaynakSecim()" (ngModelChange)="talepKaynakSecim.set(+$event)">
+            <option [value]="1">Ambar</option>
+            <option [value]="2">Üretim</option>
+            <option [value]="3">Tedarikçi</option>
+          </select>
+          <small>PDF ve süreç durumu seçilen kaynağa göre oluşturulur.</small>
         </div>
         <div class="table-responsive" style="max-height: 400px">
           <table class="table table-hover align-middle mb-0">

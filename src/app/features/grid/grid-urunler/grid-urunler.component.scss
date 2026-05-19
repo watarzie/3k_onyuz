@@ -290,7 +290,7 @@ table {
 }
 @keyframes popFade { from { opacity: 0; transform: translateX(-50%) translateY(4px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 
-// ===== Ambar Talep Formu =====
+// ===== Talep Formu =====
 .btn-ambar-talep {
   background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
   color: #fff;
@@ -347,6 +347,39 @@ table {
   display: flex;
   align-items: center;
   i { font-size: 16px; color: #3b82f6; }
+}
+
+.talep-source-box {
+  margin: 14px 24px 12px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+
+  .form-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #475569;
+  }
+
+  .form-select {
+    max-width: 260px;
+    border-color: #cbd5e1;
+    font-weight: 600;
+    color: #1e293b;
+
+    &:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+  }
+
+  small {
+    display: block;
+    margin-top: 6px;
+    color: #64748b;
+    font-size: 11px;
+  }
 }
 
 .talep-miktar-input {
