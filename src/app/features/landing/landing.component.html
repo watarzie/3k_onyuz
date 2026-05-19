@@ -1,0 +1,134 @@
+<section class="landing-page">
+  <div class="scene-layer" aria-hidden="true">
+    <div class="grid-field"></div>
+    <div class="flow-line line-a"></div>
+    <div class="flow-line line-b"></div>
+    <div class="flow-line line-c"></div>
+
+    <div class="terminal terminal-left">
+      <div class="terminal-top">
+        <span></span><span></span><span></span>
+      </div>
+      <div class="terminal-row strong"></div>
+      <div class="terminal-row"></div>
+      <div class="terminal-row short"></div>
+      <div class="terminal-status">
+        <i class="ri-checkbox-circle-line"></i>
+        <span>Akış Hazır</span>
+      </div>
+    </div>
+
+    <div class="dock-map">
+      <div class="dock-node node-1"><i class="ri-file-list-3-line"></i></div>
+      <div class="dock-node node-2"><i class="ri-grid-line"></i></div>
+      <div class="dock-node node-3"><i class="ri-archive-line"></i></div>
+      <div class="dock-node node-4"><i class="ri-truck-line"></i></div>
+      <div class="dock-rail rail-1"></div>
+      <div class="dock-rail rail-2"></div>
+    </div>
+
+    <div class="terminal terminal-right">
+      <div class="mini-chart">
+        <span style="height: 54%"></span>
+        <span style="height: 78%"></span>
+        <span style="height: 42%"></span>
+        <span style="height: 88%"></span>
+      </div>
+      <div class="terminal-row strong"></div>
+      <div class="terminal-row short"></div>
+    </div>
+  </div>
+
+  <header class="landing-nav">
+    <a class="brand" routerLink="/">
+      <img src="/images/3k-emblem.svg" alt="3K amblem" />
+      <span>3K</span>
+    </a>
+
+    <nav class="nav-links" aria-label="Sayfa bağlantıları">
+      <a href="#akis">Akış</a>
+      <a href="#moduller">Modüller</a>
+      <a href="#guvence">Güvence</a>
+    </nav>
+
+    <a class="nav-login" [routerLink]="auth.isLoggedIn() ? '/dashboard' : '/auth/login'">
+      <i [class]="auth.isLoggedIn() ? 'ri-dashboard-line' : 'ri-login-circle-line'"></i>
+      <span>{{ auth.isLoggedIn() ? 'Panele Git' : 'Giriş Yap' }}</span>
+    </a>
+  </header>
+
+  <main class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow">All Processes. <span>One Flow.</span></p>
+      <h1>3K Sevkiyat Yönetim Sistemi</h1>
+      <p class="hero-text">
+        Çeki listesinden sandık yönetimine, grid takibinden 3K karşılamaya kadar sevkiyat operasyonunu tek ve izlenebilir bir akışta toplayın.
+      </p>
+      <div class="hero-actions">
+        <a class="primary-action" [routerLink]="auth.isLoggedIn() ? '/dashboard' : '/auth/login'">
+          <i [class]="auth.isLoggedIn() ? 'ri-dashboard-line' : 'ri-login-circle-line'"></i>
+          <span>{{ auth.isLoggedIn() ? 'Kontrol Paneline Git' : 'Sisteme Giriş Yap' }}</span>
+        </a>
+        <a class="secondary-action" href="#akis">
+          <i class="ri-arrow-down-line"></i>
+          <span>Akışı Gör</span>
+        </a>
+      </div>
+    </div>
+  </main>
+</section>
+
+<section id="akis" class="process-band">
+  <div class="section-heading">
+    <span>Operasyon Akışı</span>
+    <h2>Çeki, sandık ve sevkiyat aynı ritimde ilerler.</h2>
+  </div>
+
+  <div class="process-steps">
+    <article>
+      <i class="ri-file-excel-2-line"></i>
+      <h3>Çeki Yükleme</h3>
+      <p>Excel veya manuel veriyle proje omurgası oluşur.</p>
+    </article>
+    <article>
+      <i class="ri-layout-grid-line"></i>
+      <h3>Grid Takibi</h3>
+      <p>Gelen, eksik, trafo sevk ve talep süreçleri netleşir.</p>
+    </article>
+    <article>
+      <i class="ri-archive-stack-line"></i>
+      <h3>3K Karşılama</h3>
+      <p>Projeden, stoktan ve tedarikçiden karşılamalar izlenir.</p>
+    </article>
+    <article>
+      <i class="ri-truck-line"></i>
+      <h3>Sevkiyat</h3>
+      <p>Raporlar, depo hareketleri ve kilitli proje akışı tamamlanır.</p>
+    </article>
+  </div>
+</section>
+
+<section id="moduller" class="module-band">
+  <div class="module-copy">
+    <span>Kontrol Merkezi</span>
+    <h2>Her modül, aynı proje gerçeğine bağlı çalışır.</h2>
+    <p>Grid, 3K, depo, stok, saha, yedek ve onay merkezi birbirinden kopmadan ilerler; kullanıcı yalnızca kendi yetkisine düşen aksiyonu görür.</p>
+  </div>
+  <div class="module-list">
+    <div><i class="ri-database-2-line"></i><span>Depo Durumu</span></div>
+    <div><i class="ri-stack-line"></i><span>Stok Modülü</span></div>
+    <div><i class="ri-map-pin-line"></i><span>Saha Yönetimi</span></div>
+    <div><i class="ri-shield-check-line"></i><span>İşlem Onayı</span></div>
+  </div>
+</section>
+
+<section id="guvence" class="assurance-band">
+  <div>
+    <span>3K</span>
+    <strong>All Processes. One Flow.</strong>
+  </div>
+  <a [routerLink]="auth.isLoggedIn() ? '/dashboard' : '/auth/login'">
+    {{ auth.isLoggedIn() ? 'Panele Devam Et' : 'Giriş Ekranına Geç' }}
+    <i class="ri-arrow-right-line"></i>
+  </a>
+</section>

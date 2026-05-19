@@ -3,6 +3,19 @@ import { authGuard } from './core/auth/auth.guard';
 import { menuGuard } from './core/guards/menu.guard';
 
 export const routes: Routes = [
+  // ======= Landing Page (public) =======
+  {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () =>
+      import('./features/landing/landing.component').then(m => m.LandingComponent),
+  },
+  {
+    path: 'welcome',
+    loadComponent: () =>
+      import('./features/landing/landing.component').then(m => m.LandingComponent),
+  },
+
   // ======= Auth Layout (sidebar/header yok) =======
   {
     path: 'auth',
