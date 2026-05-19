@@ -256,11 +256,15 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   // ===== Checkbox =====
   toggleSelect(id: number) {
+    if (!this.canSelectRows) return;
+
     const s = new Set(this.selectedIds());
     s.has(id) ? s.delete(id) : s.add(id);
     this.selectedIds.set(s);
   }
   toggleSelectAll() {
+    if (!this.canSelectRows) return;
+
     if (this.selectedIds().size === this.filtered().length) {
       this.selectedIds.set(new Set());
     } else {
@@ -712,6 +716,14 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   /** Menü bazlı kontrol - Süreç butonlarını görme yetkisi */
   get canSurec(): boolean {
     return this.permissions.canWrite('surec-modulu');
+  }
+
+  get canGridWrite(): boolean {
+    return this.permissions.canWrite('grid-modulu');
+  }
+
+  get canSelectRows(): boolean {
+    return this.canGridWrite || this.canKalite || this.canSurec;
   }
 
   /** Kalite durumu rengi */

@@ -101,8 +101,10 @@
       <table class="table table-hover align-middle mb-0">
         <thead>
           <tr>
-            <th *appCanWrite style="width:40px"><input type="checkbox" class="form-check-input" [checked]="allSelected"
+            @if (canSelectRows) {
+            <th style="width:40px"><input type="checkbox" class="form-check-input" [checked]="allSelected"
                 (change)="toggleSelectAll()" /></th>
+            }
             <th style="width:45px">#</th>
             <th>Barkod</th>
             <th>Açıklama</th>
@@ -132,8 +134,10 @@
         <tbody>
           @for (u of filtered(); track u.cekiSatiriId) {
           <tr [ngClass]="[getRowClass(u), isSelected(u.cekiSatiriId) ? 'row-selected' : '']">
-            <td *appCanWrite><input type="checkbox" class="form-check-input" [checked]="isSelected(u.cekiSatiriId)"
+            @if (canSelectRows) {
+            <td><input type="checkbox" class="form-check-input" [checked]="isSelected(u.cekiSatiriId)"
                 (change)="toggleSelect(u.cekiSatiriId)" /></td>
+            }
             <td class="text-muted">{{ u.siraNo }}</td>
             <td><code class="barkod">{{ u.barkodNo }}</code></td>
             <td class="fw-medium text-truncate" style="max-width:200px" [title]="u.aciklama">{{ u.aciklama }}</td>
@@ -268,8 +272,10 @@
   </div>
   <div class="card-footer d-flex align-items-center justify-content-between">
     <small class="text-muted">{{ filtered().length }} / {{ urunler().length }} ürün</small>
-    <span *appCanWrite class="fw-semibold text-primary" [hidden]="!hasSelection">{{ selectedIds().size }} ürün
+    @if (canSelectRows) {
+    <span class="fw-semibold text-primary" [hidden]="!hasSelection">{{ selectedIds().size }} ürün
       seçildi</span>
+    }
   </div>
 </div>
 
