@@ -52,6 +52,21 @@ table {
   border-radius: 50%;
   margin-right: 6px;
 }
+.baslama-cell {
+  min-width: 156px;
+}
+.baslama-date {
+  font-weight: 700;
+  color: var(--blackColor);
+  line-height: 1.2;
+}
+.baslama-duration {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.25;
+  white-space: normal;
+}
 
 // ===== Kritik Eksikler =====
 .kritik-list { padding: 0; }

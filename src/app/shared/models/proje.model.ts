@@ -8,6 +8,8 @@ export interface ProjeDto {
   durumMetni: string;
   projeTipiId: number;
   projeTipiMetni: string;
+  baslamaTarihi?: string;
+  calismaGunSayisi?: number;
   planlananSevkTarihi?: string;
   gerceklesenSevkTarihi?: string;
   sorumluKisi: string;

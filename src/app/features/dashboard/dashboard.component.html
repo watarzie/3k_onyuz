@@ -51,6 +51,7 @@
                   <th>Proje No</th>
                   <th>Toplam Sandık</th>
                   <th>Lokasyon</th>
+                  <th>Başlama</th>
                   <th>Durum</th>
                   <th>Tamamlanma</th>
                 </tr>
@@ -64,6 +65,10 @@
                     </td>
                     <td>{{ p.sandikSayisi }}</td>
                     <td><span class="badge bg-soft-secondary text-secondary rounded-pill">{{ p.lokasyon ?? '-' }}</span></td>
+                    <td class="baslama-cell">
+                      <div class="baslama-date">{{ formatBaslamaTarihi(p.baslamaTarihi) }}</div>
+                      <div class="baslama-duration">{{ getCalismaMetni(p) }}</div>
+                    </td>
                     <td><app-status-badge [status]="p.durumMetni" [label]="p.durumMetni" /></td>
                     <td style="min-width: 140px;">
                       <div class="d-flex align-items-center gap-2">

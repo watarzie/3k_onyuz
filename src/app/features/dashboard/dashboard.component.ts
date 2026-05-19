@@ -141,6 +141,29 @@ export class DashboardComponent implements OnInit {
     return Math.floor((p.tamamlananUrunSayisi / p.toplamUrunSayisi) * 100);
   }
 
+  formatBaslamaTarihi(value?: string): string {
+    if (!value) return '-';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+
+    return date.toLocaleDateString('tr-TR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  }
+
+  getCalismaMetni(p: ProjeDto): string {
+    const gunSayisi = p.calismaGunSayisi ?? this.hesaplaCalismaGunu(p.baslamaTarihi, p.gerceklesenSevkTarihi);
+    const sevkEdildi = !!p.gerceklesenSevkTarihi || p.durumMetni === 'Sevk Edildi' || p.durumMetni === 'Eksik Sevk Edildi';
+
+    if (sevkEdildi) return `${gunSayisi} günde sevk edildi`;
+    if (gunSayisi === 0) return 'Bugün başladı';
+
+    return `${gunSayisi} gündür çalışma devam ediyor`;
+  }
+
   getProgressColor(yuzde: number): string {
     if (yuzde >= 80) return '#22c55e';
     if (yuzde >= 50) return '#3b82f6';
@@ -153,5 +176,19 @@ export class DashboardComponent implements OnInit {
   }
   projelerNext() {
     if (this.projelerPage() < this.projelerSayfaSayisi()) this.projelerPage.set(this.projelerPage() + 1);
+  }
+
+  private hesaplaCalismaGunu(baslamaTarihi?: string, bitisTarihi?: string): number {
+    if (!baslamaTarihi) return 0;
+
+    const baslama = new Date(baslamaTarihi);
+    const bitis = bitisTarihi ? new Date(bitisTarihi) : new Date();
+
+    if (Number.isNaN(baslama.getTime()) || Number.isNaN(bitis.getTime())) return 0;
+
+    baslama.setHours(0, 0, 0, 0);
+    bitis.setHours(0, 0, 0, 0);
+
+    return Math.max(0, Math.floor((bitis.getTime() - baslama.getTime()) / 86400000));
   }
 }
