@@ -19,29 +19,29 @@ export class BaseApiService {
     );
   }
 
-  post<T>(url: string, body: unknown): Observable<ApiResult<T>> {
-    return this.http.post<T>(url, body).pipe(
+  post<T>(url: string, body: unknown, options?: any): Observable<ApiResult<T>> {
+    return (this.http.post<T>(url, body, options) as Observable<T>).pipe(
       map((data) => this.wrapSuccess(data)),
       catchError((err) => this.handleError<T>(err))
     );
   }
 
-  put<T>(url: string, body: unknown): Observable<ApiResult<T>> {
-    return this.http.put<T>(url, body).pipe(
+  put<T>(url: string, body: unknown, options?: any): Observable<ApiResult<T>> {
+    return (this.http.put<T>(url, body, options) as Observable<T>).pipe(
       map((data) => this.wrapSuccess(data)),
       catchError((err) => this.handleError<T>(err))
     );
   }
 
-  delete<T>(url: string): Observable<ApiResult<T>> {
-    return this.http.delete<T>(url).pipe(
+  delete<T>(url: string, options?: any): Observable<ApiResult<T>> {
+    return (this.http.delete<T>(url, options) as Observable<T>).pipe(
       map((data) => this.wrapSuccess(data)),
       catchError((err) => this.handleError<T>(err))
     );
   }
 
-  postFormData<T>(url: string, formData: FormData): Observable<ApiResult<T>> {
-    return this.http.post<T>(url, formData).pipe(
+  postFormData<T>(url: string, formData: FormData, options?: any): Observable<ApiResult<T>> {
+    return (this.http.post<T>(url, formData, options) as Observable<T>).pipe(
       map((data) => this.wrapSuccess(data)),
       catchError((err) => this.handleError<T>(err))
     );

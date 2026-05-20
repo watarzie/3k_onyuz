@@ -3,7 +3,7 @@ import { DatePipe, NgClass } from '@angular/common';
 import { OnayService } from '../../core/services/onay.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmService } from '../../core/services/confirm.service';
-import { AuthService } from '../../core/auth/auth.service';
+import { PermissionService } from '../../core/services/permission.service';
 import { OnayBekleyenIslemDto } from '../../shared/models/onay-bekleyen-islem.model';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
 
@@ -18,9 +18,9 @@ export class OnayListesiComponent implements OnInit {
   private onayService = inject(OnayService);
   private toast = inject(ToastService);
   private confirm = inject(ConfirmService);
-  private authService = inject(AuthService);
+  private permissions = inject(PermissionService);
 
-  public isAdmin = computed(() => this.authService.hasRole('Admin'));
+  public canWrite = computed(() => this.permissions.canWrite('islem-onay-merkezi'));
 
   bekleyenler = signal<OnayBekleyenIslemDto[]>([]);
   kurallar = signal<any[]>([]);
@@ -34,7 +34,7 @@ export class OnayListesiComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadData();
-    if (this.isAdmin()) {
+    if (this.canWrite()) {
       this.loadKurallar();
     }
   }

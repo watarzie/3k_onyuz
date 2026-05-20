@@ -13,11 +13,11 @@
       <app-breadcrumb [items]="breadcrumb" />
     </div>
     <div class="d-flex gap-2">
-      @if (isSahaYonetimi() || isYedekYonetimi()) {
+      @if ((isSahaYonetimi() || isYedekYonetimi()) && canWriteCurrentMenu()) {
         <button class="btn btn-primary-gradient" (click)="openProjeOlusturModal()">
           <i class="ri-add-line me-2"></i>Proje Oluştur
         </button>
-      } @else if (!isSevkEdilen()) {
+      } @else if (!isSevkEdilen() && canWriteCurrentMenu()) {
         <button class="btn btn-primary-gradient" (click)="openUploadModal()">
           <i class="ri-upload-2-line me-2"></i>Çeki Yükle
         </button>
@@ -47,16 +47,20 @@
           <div class="empty-icon mb-3" style="font-size: 3rem;"><i class="ri-archive-drawer-line"></i></div>
           <h5 class="fw-semibold mb-2">Henüz {{ isSahaYonetimi() ? 'saha' : 'yedek' }} projesi bulunmuyor</h5>
           <p class="text-muted mb-3">Başlamak için yeni bir proje oluşturun</p>
-          <button class="btn btn-primary-gradient" (click)="openProjeOlusturModal()">
-            <i class="ri-add-line me-2"></i>Proje Oluştur
-          </button>
+          @if (canWriteCurrentMenu()) {
+            <button class="btn btn-primary-gradient" (click)="openProjeOlusturModal()">
+              <i class="ri-add-line me-2"></i>Proje Oluştur
+            </button>
+          }
         } @else {
           <div class="empty-icon mb-3"><i class="ri-folder-add-line"></i></div>
           <h5 class="fw-semibold mb-2">Henüz proje bulunmuyor</h5>
           <p class="text-muted mb-3">Başlamak için bir çeki dosyası yükleyin</p>
-          <button class="btn btn-primary-gradient" (click)="openUploadModal()">
-            <i class="ri-upload-2-line me-2"></i>Çeki Yükle
-          </button>
+          @if (canWriteCurrentMenu()) {
+            <button class="btn btn-primary-gradient" (click)="openUploadModal()">
+              <i class="ri-upload-2-line me-2"></i>Çeki Yükle
+            </button>
+          }
         }
       </div>
     } @else {
@@ -80,7 +84,7 @@
               <th>{{ 'LABELS.durumMetni' | translate }}</th>
               <th>Sevk Tarihi</th>
               <th>{{ 'LABELS.TAMAMLANMA' | translate }}</th>
-                  @if (isSandikMode() || isSevkEdilen() || (!isSandikMode() && canSevkEt()) || isAdmin()) {
+                  @if (isSandikMode() || isSevkEdilen() || (!isSandikMode() && canSevkEt()) || canWriteCurrentMenu()) {
                 <th>İşlemler</th>
               }
             </tr>
@@ -140,7 +144,7 @@
                     <small class="fw-semibold">{{ getTamamlanmaYuzdesi(p) }}%</small>
                   </div>
                 </td>
-                @if (isSandikMode() || isSevkEdilen() || (!isSandikMode() && canSevkEt()) || isAdmin()) {
+                @if (isSandikMode() || isSevkEdilen() || (!isSandikMode() && canSevkEt()) || canWriteCurrentMenu()) {
                   <td>
                     <div class="d-flex gap-1 flex-wrap">
                       @if (isSevkEdilen() && p.projeTipiId === 1) {
@@ -201,7 +205,7 @@
                         }
                       }
 
-                      @if (isAdmin()) {
+                      @if (canWriteCurrentMenu()) {
                         <button class="btn btn-sm btn-outline-danger" (click)="projeSil(p)" title="Projeyi Sil">
                           <i class="ri-delete-bin-line"></i>
                         </button>
@@ -406,3 +410,4 @@
     </div>
   </div>
 }
+

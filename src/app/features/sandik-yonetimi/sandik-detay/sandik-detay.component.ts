@@ -90,7 +90,10 @@ export class SandikDetayComponent implements OnInit {
   breadcrumb: { label: string; link?: string }[] = [];
 
   isSahaYedek = signal(false);
-  canWriteSandik = computed(() => this.permissionService.canWrite('sandik-yonetimi') || this.auth.hasRole('Admin'));
+  canWriteSandik = computed(() => {
+    const menuKod = this.route.snapshot.data['menuKod'] || 'sandik-yonetimi';
+    return this.permissionService.canWrite(menuKod);
+  });
 
   ngOnInit() {
     const pId = Number(this.route.snapshot.paramMap.get('projeId'));
@@ -155,6 +158,9 @@ export class SandikDetayComponent implements OnInit {
         } else if (menuKod === 'yedek-yonetimi') {
           parentLabel = 'Yedek Yönetimi';
           parentLink = `/yedek-yonetimi/${this.projeId()}`;
+        } else if (menuKod === '3k-modulu') {
+          parentLabel = '3K Modülü';
+          parentLink = `/uck/${this.projeId()}`;
         }
 
         this.breadcrumb = [

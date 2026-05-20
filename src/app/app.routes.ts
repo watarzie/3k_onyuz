@@ -103,6 +103,13 @@ export const routes: Routes = [
         data: { menuKod: '3k-modulu' },
       },
       {
+        path: 'uck/sandik/:projeId/:sandikId',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/sandik-yonetimi/sandik-detay/sandik-detay.component').then(m => m.SandikDetayComponent),
+        data: { menuKod: '3k-modulu' },
+      },
+      {
         path: 'uck/:projeId/:sandikNo',
         canActivate: [menuGuard],
         loadComponent: () =>

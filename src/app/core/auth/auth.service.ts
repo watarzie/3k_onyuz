@@ -18,7 +18,6 @@ export class AuthService {
    */
   currentUser = signal(this.session.getUser());
   isLoggedIn = computed(() => !!this.currentUser() && !this.session.isTokenExpired());
-  userRole = computed(() => this.currentUser()?.rol ?? '');
 
   login(dto: LoginDto): Observable<ApiResult<LoginResultDto>> {
     return this.api.post<LoginResultDto>(API.AUTH.LOGIN, dto).pipe(
@@ -42,8 +41,4 @@ export class AuthService {
     return this.session.token;
   }
 
-  hasRole(...roles: string[]): boolean {
-    const role = this.userRole();
-    return roles.includes(role);
-  }
 }

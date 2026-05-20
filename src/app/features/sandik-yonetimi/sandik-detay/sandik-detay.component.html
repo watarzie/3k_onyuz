@@ -5,14 +5,16 @@
       <app-breadcrumb [items]="breadcrumb" />
     </div>
     <div class="d-flex gap-2">
-      @if (isSahaYedek() && canWriteSandik() && sandik()?.durumMetni !== 'Kapandı' && sandik()?.durumMetni !== 'Sevkedildi') {
+      @if (canWriteSandik() && sandik()?.durumMetni !== 'Kapandı' && sandik()?.durumMetni !== 'Sevkedildi') {
         <button class="btn btn-success d-flex align-items-center gap-2" (click)="sandikHazirla()">
           <i class="ri-lock-line"></i> Sandığı Kapat
         </button>
       }
+      @if (canWriteSandik()) {
       <button class="btn btn-save d-flex align-items-center gap-2" (click)="openUrunEkleModal()" [disabled]="sandik()?.durumMetni === 'Sevkedildi'">
         <i class="ri-add-line"></i> {{ isSahaYedek() ? 'Malzeme Ekle' : 'Manuel Ürün Ekle' }}
       </button>
+      }
     </div>
   </div>
 </div>

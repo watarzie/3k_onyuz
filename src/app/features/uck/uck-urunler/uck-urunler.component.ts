@@ -330,6 +330,20 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     return GRID_RENKLERI[value] || '#64748B';
   }
 
+  getSevkDurumLabel(value?: string): string {
+    return value ? value.toLocaleUpperCase('tr-TR') : '-';
+  }
+
+  getSevkDurumColor(value?: string): string {
+    const SEVK_RENKLERI: Record<string, string> = {
+      'Sevk Edildi': '#25B003',
+      'Bekliyor': '#FD5812',
+      'Sevk Edilmedi': '#FF4023',
+      'Yeniden Sevk Gerekli': '#D97706',
+    };
+    return value ? (SEVK_RENKLERI[value] || '#64748B') : '#64748B';
+  }
+
   // Kalite Durumu Renkleri
   getKaliteDurumColor(value?: string): string {
     if (!value) return '#94a3b8';

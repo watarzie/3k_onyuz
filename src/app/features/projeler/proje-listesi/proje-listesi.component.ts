@@ -6,7 +6,6 @@ import { NgClass, DatePipe } from '@angular/common';
 import { TranslationService } from '../../../core/services/translation.service';
 import { ProjeService } from '../../../core/services/proje.service';
 import { PermissionService } from '../../../core/services/permission.service';
-import { AuthService } from '../../../core/auth/auth.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { ProjeDto } from '../../../shared/models/index';
@@ -30,7 +29,6 @@ export class ProjeListesiComponent implements OnInit {
   confirmService = inject(ConfirmService);
   private route = inject(ActivatedRoute);
   private pdfService = inject(PdfService);
-  private authService = inject(AuthService);
 
   isSandikYonetimi = signal(false);
   isSevkEdilen = signal(false);
@@ -48,7 +46,10 @@ export class ProjeListesiComponent implements OnInit {
    */
   canSeeGrid = computed(() => this.permissions.hasAccess('grid-modulu'));
   canSee3K = computed(() => this.permissions.hasAccess('3k-modulu'));
-  isAdmin = computed(() => this.authService.hasRole('Admin'));
+  canWriteCurrentMenu = computed(() => {
+    const menuKod = this.route.snapshot.data['menuKod'];
+    return typeof menuKod === 'string' && this.permissions.canWrite(menuKod);
+  });
 
   projeler = signal<ProjeDto[]>([]);
   filtered = signal<ProjeDto[]>([]);
@@ -516,7 +517,7 @@ export class ProjeListesiComponent implements OnInit {
     }
   }
 
-  // ===== Proje Sil (Admin) =====
+  // ===== Proje Sil =====
 
   async projeSil(proje: ProjeDto) {
     const onay = await this.confirmService.ask({
@@ -543,3 +544,4 @@ export class ProjeListesiComponent implements OnInit {
     }
   }
 }
+

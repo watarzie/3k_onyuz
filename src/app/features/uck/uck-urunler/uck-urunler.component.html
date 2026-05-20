@@ -144,10 +144,8 @@
               </span>
             </td>
             <td>
-              <span class="durum-badge" [style.background]="getGridDurumColor(u.gridSevkDurumuMetni) + '15'"
-                [style.color]="getGridDurumColor(u.gridSevkDurumuMetni)"
-                [style.border-color]="getGridDurumColor(u.gridSevkDurumuMetni) + '30'">
-                {{ u.gridSevkDurumuMetni ? u.gridSevkDurumuMetni.toUpperCase() : '-' }}
+              <span class="durum-badge-sm" [style.color]="getSevkDurumColor(u.gridSevkDurumuMetni)">
+                {{ getSevkDurumLabel(u.gridSevkDurumuMetni) }}
               </span>
             </td>
             <td class="text-center">{{ u.gridGelenAdet }}</td>

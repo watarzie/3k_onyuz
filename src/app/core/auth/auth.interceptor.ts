@@ -1,5 +1,6 @@
 import { HttpInterceptorFn, HttpErrorResponse, HttpRequest, HttpHandlerFn } from '@angular/common/http';
 import { inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, filter, switchMap, take } from 'rxjs/operators';
 import { SessionManager } from '../managers/session.manager';
@@ -26,9 +27,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const session = inject(SessionManager);
   const authService = inject(AuthService);
   const api = inject(BaseApiService);
+  const router = inject(Router);
 
-  // Token varsa header'a ekle
-  const cloned = addToken(req, session.token);
+  // Token ve aktif menü bağlamı varsa header'a ekle.
+  const cloned = addAuthContext(req, session.token, getActiveMenuKod(router));
 
   return next(cloned).pipe(
     catchError((error) => {
@@ -38,16 +40,39 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           authService.logout();
           return throwError(() => error);
         }
-        return handle401(req, next, session, authService, api);
+        return handle401(req, next, session, authService, api, router);
       }
       return throwError(() => error);
     })
   );
 };
 
-function addToken(req: HttpRequest<unknown>, token: string | null): HttpRequest<unknown> {
-  if (!token) return req;
-  return req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
+function addAuthContext(req: HttpRequest<unknown>, token: string | null, menuKod: string | null): HttpRequest<unknown> {
+  const headers: Record<string, string> = {};
+
+  if (token && !req.headers.has('Authorization')) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  if (token && menuKod && !req.headers.has('X-Menu-Kod')) {
+    headers['X-Menu-Kod'] = menuKod;
+  }
+
+  return Object.keys(headers).length > 0 ? req.clone({ setHeaders: headers }) : req;
+}
+
+function getActiveMenuKod(router: Router): string | null {
+  let snapshot = router.routerState.snapshot.root;
+  let menuKod = snapshot.data?.['menuKod'];
+
+  while (snapshot.firstChild) {
+    snapshot = snapshot.firstChild;
+    if (snapshot.data?.['menuKod']) {
+      menuKod = snapshot.data['menuKod'];
+    }
+  }
+
+  return typeof menuKod === 'string' && menuKod.trim() ? menuKod : null;
 }
 
 function handle401(
@@ -55,7 +80,8 @@ function handle401(
   next: HttpHandlerFn,
   session: SessionManager,
   authService: AuthService,
-  api: BaseApiService
+  api: BaseApiService,
+  router: Router
 ): Observable<any> {
   if (!isRefreshing) {
     // İlk 401 — refresh başlat
@@ -75,7 +101,7 @@ function handle401(
           refreshTokenSubject.next(result.value.token);
 
           // Orijinal isteği yeni token ile tekrar gönder
-          return next(addToken(req, result.value.token));
+          return next(addAuthContext(req, result.value.token, getActiveMenuKod(router)));
         } else {
           // Refresh başarısız — logout
           authService.logout();
@@ -93,7 +119,7 @@ function handle401(
     return refreshTokenSubject.pipe(
       filter((token) => token !== null),
       take(1),
-      switchMap((token) => next(addToken(req, token)))
+      switchMap((token) => next(addAuthContext(req, token, getActiveMenuKod(router))))
     );
   }
 }

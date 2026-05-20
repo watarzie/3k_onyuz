@@ -8,7 +8,6 @@ import { ProjeService } from '../../../core/services/proje.service';
 import { ConfirmService } from '../../../core/services/confirm.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PermissionService } from '../../../core/services/permission.service';
-import { AuthService } from '../../../core/auth/auth.service';
 import { LookupService } from '../../../core/services/lookup.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
@@ -31,11 +30,12 @@ export class UcKSandiklarComponent implements OnInit {
   private confirmService = inject(ConfirmService);
   private toast = inject(ToastService);
   private permissionService = inject(PermissionService);
-  private auth = inject(AuthService);
   private lookupService = inject(LookupService);
 
-  // Instead of isAdmin, we check sandik-yonetimi write permission
-  canWriteSandik = computed(() => this.permissionService.canWrite('sandik-yonetimi') || this.auth.hasRole('Admin'));
+  canWriteSandik = computed(() => {
+    const menuKod = this.route.snapshot.data?.['menuKod'] || '3k-modulu';
+    return this.permissionService.canWrite(menuKod);
+  });
 
   projeId = signal(0);
   mevcutProje = signal<ProjeDropdownDto | null>(null);

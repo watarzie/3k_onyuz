@@ -93,8 +93,8 @@
         </div>
         }
 
-        <a [routerLink]="['/uck', projeId(), s.sandikNo]" class="sandik-card h-100"
-          [ngClass]="'s-' + s.durumMetni.toLowerCase()" style="padding-top: 1.5rem;">
+        <div [routerLink]="['/uck', projeId(), s.sandikNo]" class="sandik-card h-100"
+          [ngClass]="'s-' + s.durumMetni.toLowerCase()" style="padding-top: 1.5rem;" role="link" tabindex="0">
           <!-- Üst — Numara + Ok -->
           <div class="card-top">
             <div class="d-flex align-items-center">
@@ -152,7 +152,7 @@
                 title="Lokasyon Ekle/Değiştir">
                 <i class="ri-map-pin-add-line"></i>
               </button>
-              <a [routerLink]="['/sandik-yonetimi', projeId(), s.id]"
+              <a [routerLink]="['/uck/sandik', projeId(), s.id]"
                 class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center flex-shrink-0"
                 (click)="$event.stopPropagation()"
                 style="width: 26px; height: 26px; padding: 0; font-size: 0.85rem; z-index: 2; position: relative;"
@@ -162,7 +162,7 @@
             </div>
             }
           </div>
-        </a>
+        </div>
       </div>
       }
     </div>

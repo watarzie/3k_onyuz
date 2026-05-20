@@ -3,7 +3,7 @@
   <div class="header-actions">
     <app-breadcrumb [items]="breadcrumb"></app-breadcrumb>
     <div class="actions">
-      @if (isAdmin()) {
+      @if (canWrite()) {
         <button class="btn btn-primary me-2" (click)="openSettingsModal()">
           <i class="ri-settings-3-line"></i>
           <span>Sistem Kuralları</span>
@@ -72,14 +72,16 @@
                 </td>
                 <td class="text-right">
                   <div class="action-buttons horizontal">
-                    <!-- Onayla -->
-                    <button class="btn-icon text-success" title="İşlemi Onayla ve Çalıştır" (click)="openOnayModal(islem.id)">
-                      <i class="ri-check-line"></i>
-                    </button>
-                    <!-- Reddet -->
-                    <button class="btn-icon text-danger" title="Talebi Reddet" (click)="openRetModal(islem.id)">
-                      <i class="ri-close-line"></i>
-                    </button>
+                    @if (canWrite()) {
+                      <button class="btn-icon text-success" title="İşlemi Onayla ve Çalıştır" (click)="openOnayModal(islem.id)">
+                        <i class="ri-check-line"></i>
+                      </button>
+                      <button class="btn-icon text-danger" title="Talebi Reddet" (click)="openRetModal(islem.id)">
+                        <i class="ri-close-line"></i>
+                      </button>
+                    } @else {
+                      <span class="text-muted">-</span>
+                    }
                   </div>
                 </td>
               </tr>
@@ -91,7 +93,7 @@
   </div>
 </div>
 
-<!-- Admin Rules Modal -->
+<!-- Rules Modal -->
 @if (showKurallarModal()) {
   <div class="modal-backdrop fade show"></div>
   <div class="modal fade show" style="display: block;" tabindex="-1">
