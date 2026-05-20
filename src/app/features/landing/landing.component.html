@@ -48,7 +48,6 @@
     <nav class="nav-links" aria-label="Sayfa bağlantıları">
       <a href="#akis">Akış</a>
       <a href="#moduller">Modüller</a>
-      <a href="#guvence">Güvence</a>
     </nav>
 
     <a class="nav-login" [routerLink]="auth.isLoggedIn() ? '/dashboard' : '/auth/login'">
@@ -62,7 +61,7 @@
       <p class="eyebrow">All Processes. <span>One Flow.</span></p>
       <h1>3K Sevkiyat Yönetim Sistemi</h1>
       <p class="hero-text">
-        Çeki listesinden sandık yönetimine, grid takibinden 3K karşılamaya kadar sevkiyat operasyonunu tek ve izlenebilir bir akışta toplayın.
+        Ürün girişinden ölçülendirme ve ambalaj planına; sandıklama, depo ve sevkiyata kadar tüm süreci tek merkezden yönetin.
       </p>
       <div class="hero-actions">
         <a class="primary-action" [routerLink]="auth.isLoggedIn() ? '/dashboard' : '/auth/login'">
@@ -81,24 +80,24 @@
 <section id="akis" class="process-band">
   <div class="section-heading">
     <span>Operasyon Akışı</span>
-    <h2>Çeki, sandık ve sevkiyat aynı ritimde ilerler.</h2>
+    <h2>Ürün, sandık ve sevkiyat aynı ritimde ilerler.</h2>
   </div>
 
   <div class="process-steps">
     <article>
       <i class="ri-file-excel-2-line"></i>
-      <h3>Çeki Yükleme</h3>
+      <h3>Ürün Girişi</h3>
       <p>Excel veya manuel veriyle proje omurgası oluşur.</p>
     </article>
     <article>
       <i class="ri-layout-grid-line"></i>
-      <h3>Grid Takibi</h3>
-      <p>Gelen, eksik, trafo sevk ve talep süreçleri netleşir.</p>
+      <h3>Ölçülendirme</h3>
+      <p>Ürüne ve sevk şekline göre ölçü, ağırlık ve ambalaj planı hazırlanır.</p>
     </article>
     <article>
       <i class="ri-archive-stack-line"></i>
-      <h3>3K Karşılama</h3>
-      <p>Projeden, stoktan ve tedarikçiden karşılamalar izlenir.</p>
+      <h3>Ambalajlama</h3>
+      <p>Ürünler uygun koruma yöntemiyle sandık içerisine alınır.</p>
     </article>
     <article>
       <i class="ri-truck-line"></i>
@@ -112,7 +111,7 @@
   <div class="module-copy">
     <span>Kontrol Merkezi</span>
     <h2>Her modül, aynı proje gerçeğine bağlı çalışır.</h2>
-    <p>Grid, 3K, depo, stok, saha, yedek ve onay merkezi birbirinden kopmadan ilerler; kullanıcı yalnızca kendi yetkisine düşen aksiyonu görür.</p>
+    <p>Ürün kabul, ölçülendirme, ambalajlama, sandıklama, stok, depo, saha ve sevkiyat süreçleri birbirine bağlı ilerler; kullanıcı yalnızca kendi yetkisine düşen aksiyonu görür.</p>
   </div>
   <div class="module-list">
     <div><i class="ri-database-2-line"></i><span>Depo Durumu</span></div>
