@@ -4,6 +4,7 @@ export interface UcKUrunDto {
   cekiSatiriId: number;
   siraNo: number;
   barkodNo: string;
+  olcuResmiPozNo?: string;
   aciklama: string;
   sandikNo: string;
   istenenAdet: number;

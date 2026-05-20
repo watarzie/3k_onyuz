@@ -107,6 +107,7 @@
             }
             <th style="width:45px">#</th>
             <th>Barkod</th>
+            <th>POZ NO:</th>
             <th>Açıklama</th>
             <th class="text-center">Miktar</th>
             <th>Sandık</th>
@@ -140,8 +141,9 @@
             }
             <td class="text-muted">{{ u.siraNo }}</td>
             <td><code class="barkod">{{ u.barkodNo }}</code></td>
+            <td>{{ u.olcuResmiPozNo || '-' }}</td>
             <td class="fw-medium text-truncate" style="max-width:200px" [title]="u.aciklama">{{ u.aciklama }}</td>
-            <td class="text-center fw-semibold">{{ u.istenenAdet }} <small class="text-muted fw-normal">{{ u.birim }}</small></td>
+            <td class="text-center fw-semibold miktar-cell">{{ u.istenenAdet }} <small class="text-muted fw-normal">{{ u.birim }}</small></td>
             <td><span class="badge-sandik">{{ u.sandikNo }}</span></td>
             <!-- Kalite -->
             <td>

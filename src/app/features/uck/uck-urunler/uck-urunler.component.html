@@ -83,6 +83,7 @@
             </th>
             <th style="width:45px">#</th>
             <th>Barkod</th>
+            <th>POZ NO:</th>
             <th>Tanım</th>
             <th>Koli</th>
             <th class="text-center">Miktar</th>
@@ -117,9 +118,10 @@
             </td>
             <td class="text-muted">{{ u.siraNo }}</td>
             <td><code class="barkod">{{ u.barkodNo }}</code></td>
+            <td>{{ u.olcuResmiPozNo || '-' }}</td>
             <td class="fw-medium text-truncate" style="max-width:180px" [title]="u.aciklama">{{ u.aciklama }}</td>
             <td><span class="badge-sandik">{{ u.sandikNo }}</span></td>
-            <td class="text-center fw-semibold">{{ u.istenenAdet }} <small class="text-muted fw-normal">{{ u.birim }}</small></td>
+            <td class="text-center fw-semibold miktar-cell">{{ u.istenenAdet }} <small class="text-muted fw-normal">{{ u.birim }}</small></td>
             <!-- Kalite (read-only) -->
             <td>
               <span class="durum-badge" [style.background]="getKaliteDurumColor(u.kaliteDurumMetni) + '15'"

@@ -4,6 +4,7 @@ export interface GridUrunDto {
   cekiSatiriId: number;
   siraNo: number;
   barkodNo: string;
+  olcuResmiPozNo?: string;
   aciklama: string;
   istenenAdet: number;
   birim: string;

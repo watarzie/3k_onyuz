@@ -177,6 +177,10 @@ table {
   background: rgba(96,93,255,.08); color: var(--primaryColor); padding: 2px 7px;
   border-radius: 4px; font-size: 10px; font-weight: 600;
 }
+.miktar-cell {
+  min-width: 86px;
+  white-space: nowrap;
+}
 .durum-badge {
   display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px;
   font-weight: 700; letter-spacing: .2px; border: 1px solid; white-space: nowrap;

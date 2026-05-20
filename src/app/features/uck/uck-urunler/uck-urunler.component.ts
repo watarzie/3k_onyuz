@@ -153,6 +153,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     if (term) {
       list = list.filter(u =>
         u.barkodNo.toLowerCase().includes(term) ||
+        (u.olcuResmiPozNo ?? '').toLowerCase().includes(term) ||
         u.aciklama.toLowerCase().includes(term)
       );
     }
@@ -307,6 +308,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     if (term) list = list.filter(u =>
       u.aciklama.toLowerCase().includes(term) ||
       u.barkodNo.toLowerCase().includes(term) ||
+      (u.olcuResmiPozNo ?? '').toLowerCase().includes(term) ||
       u.sandikNo.toLowerCase().includes(term)
     );
     this.filtered.set(list);

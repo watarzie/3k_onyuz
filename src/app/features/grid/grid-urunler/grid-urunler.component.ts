@@ -220,6 +220,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     if (term) list = list.filter(u =>
       u.aciklama.toLowerCase().includes(term) ||
       u.barkodNo.toLowerCase().includes(term) ||
+      (u.olcuResmiPozNo ?? '').toLowerCase().includes(term) ||
       u.sandikNo.toLowerCase().includes(term)
     );
     this.filtered.set(list);
