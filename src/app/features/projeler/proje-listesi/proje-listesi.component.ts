@@ -208,8 +208,8 @@ export class ProjeListesiComponent implements OnInit {
   nextPage() { this.goToPage(this.currentPage() + 1); }
 
   getTamamlanmaYuzdesi(p: ProjeDto): number {
-    if (p.sandikSayisi === 0) return 0;
-    return Math.round((p.hazirSandikSayisi / p.sandikSayisi) * 100);
+    if (p.toplamUrunSayisi === 0) return 0;
+    return Math.floor((p.tamamlananUrunSayisi / p.toplamUrunSayisi) * 100);
   }
 
   getDurumLabel(durum: string): string {
