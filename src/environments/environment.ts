@@ -1,4 +1,4 @@
 export const environment = {
-  production: false,
-  apiBaseUrl: 'http://localhost:50447/api'
+  production: true,
+  apiBaseUrl: 'https://www.3klojistikdepolama.com/api'
 };
