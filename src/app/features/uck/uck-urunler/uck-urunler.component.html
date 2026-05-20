@@ -149,8 +149,8 @@
               </span>
             </td>
             <td class="text-center">{{ u.gridGelenAdet }}</td>
-            <td class="text-center" [ngClass]="{'text-info fw-semibold': u.gridSevkMiktari && u.gridSevkMiktari > 0}">{{
-              u.gridSevkMiktari && u.gridSevkMiktari > 0 ? u.gridSevkMiktari : '-' }}</td>
+            <td class="text-center" [ngClass]="{'text-info fw-semibold': getGridSevkGorunum(u) > 0}">{{
+              getGridSevkGorunum(u) > 0 ? getGridSevkGorunum(u) : '-' }}</td>
             <td class="text-center">{{ u.trafoSevkAdet > 0 ? u.trafoSevkAdet : '-' }}</td>
             <td>
               <span class="durum-badge" [style.background]="getTipColor(u.ucKKarsilamaTipiMetni) + '15'"

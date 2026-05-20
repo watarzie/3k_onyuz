@@ -316,9 +316,15 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   // ===== Side Panel — Durum Güncelle =====
   openPanel(urun: GridUrunDto) {
     this.panelUrun.set(urun);
-    this.panelDurum.set(urun.gridDurumuMetni);
-    this.panelGelenAdet.set(urun.gridGelenAdet);
-    this.panelTrafoSevkAdet.set(urun.trafoSevkAdet);
+    if (this.isParcaliEksikYenidenSevkUrun(urun)) {
+      this.panelDurum.set('Tam Geldi');
+      this.panelGelenAdet.set(urun.istenenAdet);
+      this.panelTrafoSevkAdet.set(0);
+    } else {
+      this.panelDurum.set(urun.gridDurumuMetni);
+      this.panelGelenAdet.set(urun.gridGelenAdet);
+      this.panelTrafoSevkAdet.set(urun.trafoSevkAdet);
+    }
     if (this.isGridYenidenSevkAcikUrun(urun)) {
       this.panelSevkDurumu.set('Sevk Edildi');
       this.panelSevkAdet.set(this.getYenidenSevkLimit(urun));
@@ -377,7 +383,10 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     let uyari = '';
 
     if (this.isGridYenidenSevkAcik) {
-      this.panelUyari.set(`YENİDEN SEVK GEREKLİ: ${this.maxSevkAdet} ${u.birim}`);
+      const mesaj = this.isParcaliEksikYenidenSevk
+        ? `KALAN SEVK EDİLEBİLİR: ${this.maxSevkAdet} ${u.birim}`
+        : `YENİDEN SEVK GEREKLİ: ${this.maxSevkAdet} ${u.birim}`;
+      this.panelUyari.set(mesaj);
       this.panelError.set('');
       return;
     }
@@ -656,6 +665,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   // ===== 3K İşlem Blokajı =====
   /** 3K tarafında işlem yapılmışsa Grid düzenleme yapamaz */
   isUcKIslemYapilmis(u: GridUrunDto): boolean {
+    if (this.isTamamlanmisParcaliEksikSevkUrun(u)) return false;
     if (this.isGridYenidenSevkAcikUrun(u)) return false;
     return u.ucKDurumuId !== UcKDurum.Bekliyor || u.gelenMiktar > 0;
   }
@@ -672,8 +682,27 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       (u.kalanMiktar ?? 0) > 0;
   }
 
+  isParcaliEksikYenidenSevkUrun(u: GridUrunDto | null | undefined): boolean {
+    return !!u &&
+      u.gridDurumuId === GridDurum.EksikGeldi &&
+      u.gridSevkDurumuId === GridSevkDurum.SevkEdildi &&
+      (u.gridSevkMiktari ?? 0) > 0 &&
+      (u.kalanMiktar ?? 0) > 0;
+  }
+
+  isTamamlanmisParcaliEksikSevkUrun(u: GridUrunDto | null | undefined): boolean {
+    return !!u &&
+      u.gridDurumuId === GridDurum.TamGeldi &&
+      u.gridSevkDurumuId === GridSevkDurum.SevkEdildi &&
+      (u.gridSevkMiktari ?? 0) > 0 &&
+      (u.gelenMiktar ?? 0) > (u.gridSevkMiktari ?? 0) &&
+      (u.kalanMiktar ?? 0) === 0;
+  }
+
   isGridYenidenSevkAcikUrun(u: GridUrunDto | null | undefined): boolean {
-    return this.isYenidenSevkGerekliUrun(u) || this.isProjeGonderilenYenidenSevkUrun(u);
+    return this.isYenidenSevkGerekliUrun(u) ||
+      this.isProjeGonderilenYenidenSevkUrun(u) ||
+      this.isParcaliEksikYenidenSevkUrun(u);
   }
 
   getYenidenSevkLimit(u: GridUrunDto): number {
@@ -683,11 +712,31 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     if (this.isProjeGonderilenYenidenSevkUrun(u)) {
       return Math.max(Math.min(u.projeGonderilen ?? 0, u.kalanMiktar ?? 0), 0);
     }
+    if (this.isParcaliEksikYenidenSevkUrun(u)) {
+      return Math.max(u.kalanMiktar ?? 0, 0);
+    }
     return 0;
+  }
+
+  getGridSevkGorunum(u: GridUrunDto): number {
+    const aktifSevk = Math.max(u.gridSevkMiktari ?? 0, 0);
+    const gelen = Math.max(u.gelenMiktar ?? 0, 0);
+
+    if (aktifSevk <= 0) return 0;
+
+    if (u.ucKDurumuId === UcKDurum.Bekliyor && u.gridSevkDurumuId === GridSevkDurum.SevkEdildi) {
+      return gelen + aktifSevk;
+    }
+
+    return Math.max(gelen, aktifSevk);
   }
 
   get isYenidenSevkGerekli(): boolean {
     return this.isYenidenSevkGerekliUrun(this.panelUrun());
+  }
+
+  get isParcaliEksikYenidenSevk(): boolean {
+    return this.isParcaliEksikYenidenSevkUrun(this.panelUrun());
   }
 
   get isGridYenidenSevkAcik(): boolean {

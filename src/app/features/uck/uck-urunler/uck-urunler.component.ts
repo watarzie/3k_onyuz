@@ -721,6 +721,19 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     return u.kalan;
   }
 
+  getGridSevkGorunum(u: UcKUrunDto): number {
+    const aktifSevk = Math.max(u.gridSevkMiktari ?? 0, 0);
+    const gelen = Math.max(u.gelenMiktar ?? 0, 0);
+
+    if (aktifSevk <= 0) return 0;
+
+    if (u.ucKKarsilamaTipiId === UcKDurum.Bekliyor && u.gridSevkDurumuId === GridSevkDurum.SevkEdildi) {
+      return gelen + aktifSevk;
+    }
+
+    return Math.max(gelen, aktifSevk);
+  }
+
   validatePanel(): string | null {
     const u = this.panelUrun()!;
     const tip = this.panelTip();

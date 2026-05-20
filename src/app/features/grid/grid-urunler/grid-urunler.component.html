@@ -167,8 +167,8 @@
               </span>
             </td>
             <td class="text-center">{{ u.gridGelenAdet }} <small class="text-muted">{{ u.birim }}</small></td>
-            <td class="text-center" [ngClass]="{'text-info fw-semibold': u.gridSevkMiktari && u.gridSevkMiktari > 0}">{{
-              u.gridSevkMiktari && u.gridSevkMiktari > 0 ? u.gridSevkMiktari : '-' }}</td>
+            <td class="text-center" [ngClass]="{'text-info fw-semibold': getGridSevkGorunum(u) > 0}">{{
+              getGridSevkGorunum(u) > 0 ? getGridSevkGorunum(u) : '-' }}</td>
             <td class="text-center">{{ u.trafoSevkAdet > 0 ? u.trafoSevkAdet : '-' }}</td>
             <td class="text-center fw-semibold"
               [ngClass]="{'text-danger': u.gridEksikMiktar > 0, 'text-success': u.gridEksikMiktar === 0}">
@@ -415,7 +415,8 @@
     <div class="alert-info-custom mb-3">
       <i class="ri-information-line me-2"></i>
       <strong>{{ selectedIds().size }}</strong> ürün seçildi. Yeniden sevk gerekli satırlarda yalnızca
-      <strong>yeniden sevk adedi</strong>, kısmi trafo sevk satırlarında yalnızca <strong>Grid gelen adet</strong>
+      <strong>yeniden sevk adedi</strong>, parçalı eksik sevk satırlarında yalnızca <strong>kalan adet</strong>,
+      kısmi trafo sevk satırlarında yalnızca <strong>Grid gelen adet</strong>
       3K'ya sevk edilecek.
     </div>
     <div class="mb-3">
