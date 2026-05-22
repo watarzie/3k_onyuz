@@ -33,7 +33,7 @@ export class StokService {
     this.channel.postMessage('STOK_UPDATED');
   }
 
-  getStokListesi(searchTerm?: string, pageNumber: number = 1, pageSize: number = 10): Observable<ApiResult<PaginatedList<StokKaydiDto>>> {
+  getStokListesi(searchTerm?: string, pageNumber: number = 1, pageSize: number = 15): Observable<ApiResult<PaginatedList<StokKaydiDto>>> {
     let params = new HttpParams()
       .set('pageNumber', pageNumber.toString())
       .set('pageSize', pageSize.toString());

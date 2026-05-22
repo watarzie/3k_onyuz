@@ -32,6 +32,7 @@ export class HareketGecmisiComponent implements OnInit {
   // Pagination
   currentPage = signal(1);
   pageSize = signal(15);
+  pageSizeOptions = [15, 25, 50];
 
   islemTipleri = computed(() => {
     const tipler = this.hareketler().map(h => h.islemTipiMetni || h.islem);
@@ -72,6 +73,13 @@ export class HareketGecmisiComponent implements OnInit {
   changePage(page: number) {
     if (page >= 1 && page <= this.totalPages()) {
       this.currentPage.set(page);
+    }
+  }
+
+  onPageSizeChange(size: number) {
+    if (this.pageSizeOptions.includes(size)) {
+      this.pageSize.set(size);
+      this.currentPage.set(1);
     }
   }
 

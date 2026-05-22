@@ -137,10 +137,18 @@
       @if (!loading() && totalPages() >= 1) {
         <div class="card-footer bg-white border-top border-light px-4 py-3 rounded-bottom-3">
           <div class="d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3">
-            <div class="text-muted" style="font-size: 13px;">
-              Toplam <strong class="text-dark">{{ filteredHareketler().length }}</strong> kayıttan 
-              <strong class="text-dark">{{ (currentPage() - 1) * pageSize() + (filteredHareketler().length > 0 ? 1 : 0) }}</strong> - 
-              <strong class="text-dark">{{ mathMin(currentPage() * pageSize(), filteredHareketler().length) }}</strong> arası gösteriliyor.
+            <div class="d-flex align-items-center gap-2">
+              <span class="text-muted small">Sayfa başına kayıt:</span>
+              <select class="form-select form-select-sm" style="width: auto;" [ngModel]="pageSize()" (ngModelChange)="onPageSizeChange(+$event)">
+                @for (size of pageSizeOptions; track size) {
+                  <option [value]="size">{{ size }}</option>
+                }
+              </select>
+              <span class="text-muted small ms-2">
+                Toplam <strong class="text-dark">{{ filteredHareketler().length }}</strong> kayıttan 
+                <strong class="text-dark">{{ (currentPage() - 1) * pageSize() + (filteredHareketler().length > 0 ? 1 : 0) }}</strong> - 
+                <strong class="text-dark">{{ mathMin(currentPage() * pageSize(), filteredHareketler().length) }}</strong> arası gösteriliyor.
+              </span>
             </div>
             @if (totalPages() > 1) {
               <nav aria-label="Page navigation">

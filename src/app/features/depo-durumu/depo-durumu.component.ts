@@ -58,8 +58,8 @@ export class DepoDurumuComponent implements OnInit {
   depoModalOpen = signal(false);
   yeniDepoAdi = signal('');
   savingDepo = signal(false);
-  pageSizeOptions = [10, 25, 50];
-  pageSize = signal(10);
+  pageSizeOptions = [15, 25, 50];
+  pageSize = signal(15);
   currentPage = signal(1);
 
   globalStats = signal<DepoStats>({ toplam: 0, lokasyonCounts: {} });
@@ -143,7 +143,7 @@ export class DepoDurumuComponent implements OnInit {
       })
     ).subscribe({
       next: (projectStats) => {
-        projectStats.sort((a, b) => a.projeNo.localeCompare(b.projeNo));
+        projectStats.sort((a, b) => b.id - a.id);
         this.projectsList.set(projectStats);
         this.applyFilter(true);
         this.calculateAllStats(projectStats);

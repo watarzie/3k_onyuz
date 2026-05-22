@@ -31,7 +31,7 @@ export class StokYonetimi implements OnInit {
 
   // Pagination State
   currentPage = signal<number>(1);
-  pageSize = signal<number>(10);
+  pageSize = signal<number>(15);
   totalCount = signal<number>(0);
   totalPages = signal<number>(0);
 
