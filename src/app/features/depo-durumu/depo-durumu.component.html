@@ -187,7 +187,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (p of filteredProjectsList(); track p.id) {
+          @for (p of paginatedProjectsList(); track p.id) {
           <tr [class.bg-light]="p.expanded" (click)="toggleRow(p)" class="project-row">
             <td class="text-center py-3">
               <i [class]="p.expanded ? 'ri-arrow-down-s-line' : 'ri-arrow-right-s-line'" class="fs-5 text-primary"></i>
@@ -264,6 +264,32 @@
           }
         </tbody>
       </table>
+    </div>
+    <div class="project-pagination d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div class="pagination-summary d-flex align-items-center flex-wrap gap-2">
+        <span>{{ paginationStart() }}-{{ paginationEnd() }} / {{ filteredProjectsList().length }} proje</span>
+        <span class="pagination-divider"></span>
+        <label class="mb-0" for="depoProjectPageSize">Sayfa başına</label>
+        <select id="depoProjectPageSize" class="form-select form-select-sm page-size-select" [ngModel]="pageSize()" (ngModelChange)="onPageSizeChange($event)">
+          @for (size of pageSizeOptions; track size) {
+          <option [ngValue]="size">{{ size }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="pagination-controls d-flex align-items-center gap-1">
+        <button type="button" class="btn btn-sm pagination-btn" (click)="previousPage()" [disabled]="currentPage() === 1" aria-label="Önceki sayfa">
+          <i class="ri-arrow-left-s-line"></i>
+        </button>
+        @for (page of visiblePageNumbers(); track page) {
+        <button type="button" class="btn btn-sm pagination-btn page-number" [ngClass]="{ 'active': currentPage() === page }" (click)="goToPage(page)">
+          {{ page }}
+        </button>
+        }
+        <button type="button" class="btn btn-sm pagination-btn" (click)="nextPage()" [disabled]="currentPage() === totalPages()" aria-label="Sonraki sayfa">
+          <i class="ri-arrow-right-s-line"></i>
+        </button>
+      </div>
     </div>
     }
   </div>

@@ -58,11 +58,25 @@ export class DepoDurumuComponent implements OnInit {
   depoModalOpen = signal(false);
   yeniDepoAdi = signal('');
   savingDepo = signal(false);
+  pageSizeOptions = [10, 25, 50];
+  pageSize = signal(10);
+  currentPage = signal(1);
 
   globalStats = signal<DepoStats>({ toplam: 0, lokasyonCounts: {} });
   normalStats = signal<DepoStats>({ toplam: 0, lokasyonCounts: {} });
   sahaStats = signal<DepoStats>({ toplam: 0, lokasyonCounts: {} });
   yedekStats = signal<DepoStats>({ toplam: 0, lokasyonCounts: {} });
+
+  totalPages = computed(() => Math.max(1, Math.ceil(this.filteredProjectsList().length / this.pageSize())));
+  paginatedProjectsList = computed(() => {
+    const start = (this.currentPage() - 1) * this.pageSize();
+    return this.filteredProjectsList().slice(start, start + this.pageSize());
+  });
+  paginationStart = computed(() => {
+    const total = this.filteredProjectsList().length;
+    return total === 0 ? 0 : (this.currentPage() - 1) * this.pageSize() + 1;
+  });
+  paginationEnd = computed(() => Math.min(this.currentPage() * this.pageSize(), this.filteredProjectsList().length));
 
   canWriteCurrentMenu = computed(() => {
     const menuKod = this.route.snapshot.data?.['menuKod'] || 'depo-durumu';
@@ -131,7 +145,7 @@ export class DepoDurumuComponent implements OnInit {
       next: (projectStats) => {
         projectStats.sort((a, b) => a.projeNo.localeCompare(b.projeNo));
         this.projectsList.set(projectStats);
-        this.applyFilter();
+        this.applyFilter(true);
         this.calculateAllStats(projectStats);
         this.loading.set(false);
       },
@@ -178,13 +192,14 @@ export class DepoDurumuComponent implements OnInit {
 
   onSearch(event: Event) {
     this.searchTerm.set((event.target as HTMLInputElement).value.toLowerCase());
-    this.applyFilter();
+    this.applyFilter(true);
   }
 
-  applyFilter() {
+  applyFilter(resetPage = false) {
     const term = this.searchTerm();
     if (!term) {
       this.filteredProjectsList.set(this.projectsList());
+      this.syncPagination(resetPage);
       return;
     }
 
@@ -197,6 +212,47 @@ export class DepoDurumuComponent implements OnInit {
       return projeMatch || sandikMatch;
     });
     this.filteredProjectsList.set(filtered);
+    this.syncPagination(resetPage);
+  }
+
+  private syncPagination(resetPage: boolean) {
+    if (resetPage) {
+      this.currentPage.set(1);
+      return;
+    }
+
+    if (this.currentPage() > this.totalPages()) {
+      this.currentPage.set(this.totalPages());
+    }
+  }
+
+  onPageSizeChange(size: number | string) {
+    const parsedSize = Number(size);
+    if (!this.pageSizeOptions.includes(parsedSize)) return;
+
+    this.pageSize.set(parsedSize);
+    this.currentPage.set(1);
+  }
+
+  previousPage() {
+    this.goToPage(this.currentPage() - 1);
+  }
+
+  nextPage() {
+    this.goToPage(this.currentPage() + 1);
+  }
+
+  goToPage(page: number) {
+    const safePage = Math.min(Math.max(page, 1), this.totalPages());
+    this.currentPage.set(safePage);
+  }
+
+  visiblePageNumbers(): number[] {
+    const total = this.totalPages();
+    const current = this.currentPage();
+    const visibleCount = Math.min(5, total);
+    const start = Math.max(1, Math.min(current - 2, total - visibleCount + 1));
+    return Array.from({ length: visibleCount }, (_, index) => start + index);
   }
 
   calculateAllStats(projects: ProjectWarehouseStat[]) {
