@@ -112,6 +112,8 @@ export const API = {
   },
   LOOKUP: {
     GET: `${BASE}/lookup`,
+    DEPO_LOKASYON: `${BASE}/lookup/depo-lokasyon`,
+    DEPO_LOKASYON_DELETE: (id: number) => `${BASE}/lookup/depo-lokasyon/${id}`,
   },
   ROL: {
     LIST: `${BASE}/rol/liste`,

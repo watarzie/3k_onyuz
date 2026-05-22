@@ -3,8 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { API } from '../constants/api-endpoints';
-import { LookupResponse } from '../../shared/models/lookup.model';
-import { ApiResult } from '../../shared/models/common.model';
+import { LookupItem, LookupResponse } from '../../shared/models/lookup.model';
 
 /**
  * Dinamik Lookup/Parametre servisi.
@@ -39,5 +38,13 @@ export class LookupService {
         return result || {} as LookupResponse;
       })
     );
+  }
+
+  depoLokasyonOlustur(deger: string): Observable<LookupItem> {
+    return this.http.post<LookupItem>(API.LOOKUP.DEPO_LOKASYON, { deger });
+  }
+
+  depoLokasyonSil(id: number): Observable<void> {
+    return this.http.delete(API.LOOKUP.DEPO_LOKASYON_DELETE(id)).pipe(map(() => undefined));
   }
 }
