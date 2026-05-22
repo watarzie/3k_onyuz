@@ -1,5 +1,5 @@
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
-import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { TranslationService } from '../../core/services/translation.service';
@@ -8,22 +8,64 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
 import { BaseApiService } from '../../core/services/base-api.service';
 import { API } from '../../core/constants/api-endpoints';
-import { ProjeDto, ApiResult } from '../../shared/models/index';
 
-interface EksikUrun {
-  barkodNo: string;
-  aciklama: string;
-  kalanMiktar: number;
-  sandikNo: string;
-  projeNo?: string;
+interface DashboardOzetDto {
+  toplamProje: number;
+  hazirlananProje: number;
+  beklemedeProje: number;
+  tamamlananProje: number;
+  sevkEdilenProje: number;
+  toplamSandik: number;
+  eksikUrunSayisi: number;
+  toplamDepoSandik: number;
+  depoUcKSandik: number;
+  depoSeymenSandik: number;
+  depoGridSandik: number;
+  depoDigerSandik: number;
+  normalSandik: number;
+  sahaSandik: number;
+  yedekSandik: number;
+  sahaYuzde: number;
+  yedekYuzde: number;
 }
 
-interface SonIslem {
-  islemMetni: string;
-  kullaniciAdi: string;
-  tarih: string;
-  icon: string;
-  color: string;
+interface DashboardPagedResultDto<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
+interface DashboardProjeItemDto {
+  id: number;
+  projeNo: string;
+  musteri: string;
+  durumId: number;
+  durumMetni: string;
+  projeTipiId: number;
+  projeTipiMetni: string;
+  baslamaTarihi?: string;
+  calismaGunSayisi?: number;
+  gerceklesenSevkTarihi?: string;
+  lokasyon?: string;
+  sandikSayisi: number;
+  toplamUrunSayisi: number;
+  tamamlananUrunSayisi: number;
+}
+
+interface DashboardKritikProjeDto {
+  projeNo: string;
+  eksik: number;
+  toplam: number;
+  sandik: number;
+}
+
+interface DashboardEksikSiralamaDto {
+  projeNo: string;
+  lokasyon?: string;
+  eksikYuzde: number;
+  eksikAdet: number;
 }
 
 @Component({
@@ -37,106 +79,159 @@ export class DashboardComponent implements OnInit {
   ts = inject(TranslationService);
   private api = inject(BaseApiService);
 
-  projeler = signal<ProjeDto[]>([]);
-  loading = signal(true);
+  private readonly projelerPageSize = 20;
+  private readonly kritikPageSize = 12;
+  private readonly eksikPageSize = 12;
+
+  ozet = signal<DashboardOzetDto | null>(null);
+  projeler = signal<DashboardProjeItemDto[]>([]);
+  kritikProjeler = signal<DashboardKritikProjeDto[]>([]);
+  topEksikProje = signal<DashboardEksikSiralamaDto[]>([]);
+
+  loadingOzet = signal(true);
+  loadingProjeler = signal(false);
+  loadingKritik = signal(false);
+  loadingEksik = signal(false);
+
+  projelerPage = signal(0);
+  kritikPage = signal(0);
+  eksikPage = signal(0);
+
+  projelerTotal = signal(0);
+  kritikTotal = signal(0);
+  eksikTotal = signal(0);
+
+  projelerHasMore = signal(true);
+  kritikHasMore = signal(true);
+  eksikHasMore = signal(true);
+
+  loading = computed(() => this.loadingOzet() || this.loadingProjeler());
 
   breadcrumb = [
     { label: 'Ana Kontrol Paneli' },
   ];
 
-  // Stats
-  toplamProje = signal(0);
-  aktifProje = signal(0);
-  toplamSandik = signal(0);
-  eksikUrun = signal(0);
-  sevkEdilen = signal(0);
+  toplamProje = computed(() => this.ozet()?.toplamProje ?? 0);
+  aktifProje = computed(() => this.ozet()?.hazirlananProje ?? 0);
+  toplamSandik = computed(() => this.ozet()?.toplamSandik ?? 0);
+  eksikUrun = computed(() => this.ozet()?.eksikUrunSayisi ?? 0);
+  sevkEdilen = computed(() => this.ozet()?.sevkEdilenProje ?? 0);
 
-  // Proje tablosu — ilk 6 kayıt
-  projelerDisplay = computed(() => this.projeler().slice(0, 6));
-  projelerPage = signal(1);
-  projelerPageSize = 6;
-  projelerToplam = computed(() => this.projeler().length);
-  projelerSayfaSayisi = computed(() => Math.ceil(this.projeler().length / this.projelerPageSize) || 1);
-  pagedProjeler = computed(() => {
-    const start = (this.projelerPage() - 1) * this.projelerPageSize;
-    return this.projeler().slice(start, start + this.projelerPageSize);
-  });
+  toplamDepoSandik = computed(() => this.ozet()?.toplamDepoSandik ?? 0);
+  depo3K = computed(() => this.ozet()?.depoUcKSandik ?? 0);
+  depoSeymen = computed(() => this.ozet()?.depoSeymenSandik ?? 0);
+  depoGrid = computed(() => this.ozet()?.depoGridSandik ?? 0);
+  depoDiger = computed(() => this.ozet()?.depoDigerSandik ?? 0);
 
-  // Depo Dağılım (computed)
-  toplamDepoSandik = computed(() => this.projeler().reduce((s, p) => s + (p.depoSandikSayisi ?? 0), 0));
-  depo3K = computed(() => this.projeler().reduce((s, p) => s + (p.depoUcKSandikSayisi ?? 0), 0));
-  depoSeymen = computed(() => this.projeler().reduce((s, p) => s + (p.depoSeymenSandikSayisi ?? 0), 0));
-  depoGrid = computed(() => this.projeler().reduce((s, p) => s + (p.depoGridSandikSayisi ?? 0), 0));
-  depoDiger = computed(() => this.toplamDepoSandik() - this.depo3K() - this.depoSeymen() - this.depoGrid());
+  devamEden = computed(() => this.ozet()?.hazirlananProje ?? 0);
+  tamamlanan = computed(() => this.ozet()?.tamamlananProje ?? 0);
+  durumOzetToplam = computed(() => this.aktifProje() + this.sevkEdilen() + this.tamamlanan());
 
-  // Proje Özeti — lookup değerleri: "Hazırlanıyor", "Tamamlandı", "Beklemede", "Sevk Edildi", "Eksik Sevk Edildi"
-  devamEden = computed(() => this.projeler().filter(p => p.durumMetni === 'Hazırlanıyor').length);
-  tamamlanan = computed(() => this.projeler().filter(p => p.durumMetni === 'Tamamlandı').length);
-  beklemede = computed(() => this.projeler().filter(p => p.durumMetni === 'Beklemede').length);
-
-  // Yedek/Saha sandık sayıları
-  yedekSandik = computed(() => this.projeler().filter(p => p.projeTipiId === 3).reduce((s, p) => s + p.sandikSayisi, 0));
-  sahaSandik = computed(() => this.projeler().filter(p => p.projeTipiId === 2).reduce((s, p) => s + p.sandikSayisi, 0));
-  normalSandik = computed(() => this.projeler().filter(p => p.projeTipiId === 1).reduce((s, p) => s + p.sandikSayisi, 0));
-
-  // Tamamlanma yüzdesi - yedek ve saha
-  yedekYuzde = computed(() => {
-    const projs = this.projeler().filter(p => p.projeTipiId === 3);
-    const total = projs.reduce((s, p) => s + p.toplamUrunSayisi, 0);
-    const done = projs.reduce((s, p) => s + p.tamamlananUrunSayisi, 0);
-    return total > 0 ? Math.floor((done / total) * 100) : 0;
-  });
-  sahaYuzde = computed(() => {
-    const projs = this.projeler().filter(p => p.projeTipiId === 2);
-    const total = projs.reduce((s, p) => s + p.toplamUrunSayisi, 0);
-    const done = projs.reduce((s, p) => s + p.tamamlananUrunSayisi, 0);
-    return total > 0 ? Math.floor((done / total) * 100) : 0;
-  });
-
-  // Kritik eksikler (en çok eksik olan projeler)
-  kritikProjeler = computed(() => {
-    return this.projeler()
-      .map(p => ({
-        projeNo: p.projeNo,
-        eksik: p.toplamUrunSayisi - p.tamamlananUrunSayisi,
-        toplam: p.toplamUrunSayisi,
-        sandik: p.sandikSayisi,
-      }))
-      .filter(p => p.eksik > 0)
-      .sort((a, b) => b.eksik - a.eksik)
-      .slice(0, 5);
-  });
-
-  // Top eksik proje
-  topEksikProje = computed(() => {
-    return this.projeler()
-      .map(p => ({
-        projeNo: p.projeNo,
-        lokasyon: p.lokasyon,
-        eksikYuzde: p.toplamUrunSayisi > 0 ? Math.round(((p.toplamUrunSayisi - p.tamamlananUrunSayisi) / p.toplamUrunSayisi) * 100) : 0,
-        eksikAdet: p.toplamUrunSayisi - p.tamamlananUrunSayisi,
-      }))
-      .filter(p => p.eksikAdet > 0)
-      .sort((a, b) => b.eksikAdet - a.eksikAdet)
-      .slice(0, 6);
-  });
+  yedekSandik = computed(() => this.ozet()?.yedekSandik ?? 0);
+  sahaSandik = computed(() => this.ozet()?.sahaSandik ?? 0);
+  normalSandik = computed(() => this.ozet()?.normalSandik ?? 0);
+  yedekYuzde = computed(() => this.ozet()?.yedekYuzde ?? 0);
+  sahaYuzde = computed(() => this.ozet()?.sahaYuzde ?? 0);
 
   ngOnInit() {
-    this.api.get<ProjeDto[]>(API.PROJE.LIST).subscribe((res) => {
-      this.loading.set(false);
+    this.loadOzet();
+    this.loadProjeler(true);
+    this.loadKritikEksikler(true);
+    this.loadEksikSiralama(true);
+  }
+
+  loadOzet() {
+    this.loadingOzet.set(true);
+    this.api.get<DashboardOzetDto>(API.DASHBOARD.OZET).subscribe((res) => {
+      this.loadingOzet.set(false);
       if (res.isSuccess && res.value) {
-        this.projeler.set(res.value);
-        this.toplamProje.set(res.value.length);
-        // Lookup: "Hazırlanıyor" = aktif proje
-        this.aktifProje.set(res.value.filter(p => p.durumMetni === 'Hazırlanıyor').length);
-        this.toplamSandik.set(res.value.reduce((sum, p) => sum + p.sandikSayisi, 0));
-        this.eksikUrun.set(res.value.reduce((sum, p) => sum + (p.toplamUrunSayisi - p.tamamlananUrunSayisi), 0));
-        this.sevkEdilen.set(res.value.filter(p => p.durumMetni === 'Sevk Edildi' || p.durumMetni === 'Eksik Sevk Edildi').length);
+        this.ozet.set(res.value);
       }
     });
   }
 
-  getTamamlanmaYuzdesi(p: ProjeDto): number {
+  loadProjeler(reset = false) {
+    if (this.loadingProjeler()) return;
+    if (!reset && !this.projelerHasMore()) return;
+
+    if (reset) {
+      this.projeler.set([]);
+      this.projelerPage.set(0);
+      this.projelerHasMore.set(true);
+    }
+
+    const nextPage = this.projelerPage() + 1;
+    this.loadingProjeler.set(true);
+    this.api.get<DashboardPagedResultDto<DashboardProjeItemDto>>(API.DASHBOARD.PROJELER(nextPage, this.projelerPageSize)).subscribe((res) => {
+      this.loadingProjeler.set(false);
+      if (res.isSuccess && res.value) {
+        this.projeler.update(items => reset ? res.value!.items : [...items, ...res.value!.items]);
+        this.projelerPage.set(res.value.page);
+        this.projelerTotal.set(res.value.totalCount);
+        this.projelerHasMore.set(res.value.hasMore);
+      }
+    });
+  }
+
+  loadKritikEksikler(reset = false) {
+    if (this.loadingKritik()) return;
+    if (!reset && !this.kritikHasMore()) return;
+
+    if (reset) {
+      this.kritikProjeler.set([]);
+      this.kritikPage.set(0);
+      this.kritikHasMore.set(true);
+    }
+
+    const nextPage = this.kritikPage() + 1;
+    this.loadingKritik.set(true);
+    this.api.get<DashboardPagedResultDto<DashboardKritikProjeDto>>(API.DASHBOARD.KRITIK_EKSIKLER(nextPage, this.kritikPageSize)).subscribe((res) => {
+      this.loadingKritik.set(false);
+      if (res.isSuccess && res.value) {
+        this.kritikProjeler.update(items => reset ? res.value!.items : [...items, ...res.value!.items]);
+        this.kritikPage.set(res.value.page);
+        this.kritikTotal.set(res.value.totalCount);
+        this.kritikHasMore.set(res.value.hasMore);
+      }
+    });
+  }
+
+  loadEksikSiralama(reset = false) {
+    if (this.loadingEksik()) return;
+    if (!reset && !this.eksikHasMore()) return;
+
+    if (reset) {
+      this.topEksikProje.set([]);
+      this.eksikPage.set(0);
+      this.eksikHasMore.set(true);
+    }
+
+    const nextPage = this.eksikPage() + 1;
+    this.loadingEksik.set(true);
+    this.api.get<DashboardPagedResultDto<DashboardEksikSiralamaDto>>(API.DASHBOARD.EKSIK_SIRALAMA(nextPage, this.eksikPageSize)).subscribe((res) => {
+      this.loadingEksik.set(false);
+      if (res.isSuccess && res.value) {
+        this.topEksikProje.update(items => reset ? res.value!.items : [...items, ...res.value!.items]);
+        this.eksikPage.set(res.value.page);
+        this.eksikTotal.set(res.value.totalCount);
+        this.eksikHasMore.set(res.value.hasMore);
+      }
+    });
+  }
+
+  onProjelerScroll(event: Event) {
+    this.loadWhenNearBottom(event, () => this.loadProjeler());
+  }
+
+  onKritikScroll(event: Event) {
+    this.loadWhenNearBottom(event, () => this.loadKritikEksikler());
+  }
+
+  onEksikScroll(event: Event) {
+    this.loadWhenNearBottom(event, () => this.loadEksikSiralama());
+  }
+
+  getTamamlanmaYuzdesi(p: DashboardProjeItemDto): number {
     if (p.toplamUrunSayisi === 0) return 0;
     return Math.floor((p.tamamlananUrunSayisi / p.toplamUrunSayisi) * 100);
   }
@@ -154,7 +249,7 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  getCalismaMetni(p: ProjeDto): string {
+  getCalismaMetni(p: DashboardProjeItemDto): string {
     const gunSayisi = p.calismaGunSayisi ?? this.hesaplaCalismaGunu(p.baslamaTarihi, p.gerceklesenSevkTarihi);
     const sevkEdildi = !!p.gerceklesenSevkTarihi || p.durumMetni === 'Sevk Edildi' || p.durumMetni === 'Eksik Sevk Edildi';
 
@@ -171,11 +266,12 @@ export class DashboardComponent implements OnInit {
     return '#ef4444';
   }
 
-  projelerPrev() {
-    if (this.projelerPage() > 1) this.projelerPage.set(this.projelerPage() - 1);
-  }
-  projelerNext() {
-    if (this.projelerPage() < this.projelerSayfaSayisi()) this.projelerPage.set(this.projelerPage() + 1);
+  private loadWhenNearBottom(event: Event, loadMore: () => void) {
+    const target = event.target as HTMLElement;
+    const threshold = 72;
+    if (target.scrollTop + target.clientHeight >= target.scrollHeight - threshold) {
+      loadMore();
+    }
   }
 
   private hesaplaCalismaGunu(baslamaTarihi?: string, bitisTarihi?: string): number {

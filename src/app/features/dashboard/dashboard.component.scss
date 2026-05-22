@@ -25,6 +25,35 @@
   align-items: center;
 }
 
+.dashboard-scroll-table {
+  max-height: 318px;
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.dashboard-scroll-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.virtual-list {
+  max-height: 214px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.load-more-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 12px;
+  color: #64748b;
+  border-top: 1px solid #f1f5f9;
+}
+
 // ===== Projeler Table =====
 table {
   th {
@@ -92,7 +121,7 @@ table {
 // ===== Proje Özeti =====
 .ozet-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
 .ozet-item { text-align: center; }
@@ -212,6 +241,7 @@ table {
 
 // ===== Eksik Sıralaması =====
 .eksik-ranking { display: flex; flex-direction: column; gap: 10px; }
+.eksik-ranking.virtual-list { padding-right: 4px; }
 .eksik-rank-item {
   display: flex;
   align-items: center;

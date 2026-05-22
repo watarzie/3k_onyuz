@@ -30,6 +30,12 @@ export const API = {
     SEVK_TARIHI_GUNCELLE: `${BASE}/proje/sevk-tarihi-guncelle`,
     DELETE: (id: number) => `${BASE}/proje/${id}`,
   },
+  DASHBOARD: {
+    OZET: `${BASE}/dashboard/ozet`,
+    PROJELER: (page: number, pageSize: number) => `${BASE}/dashboard/projeler?page=${page}&pageSize=${pageSize}`,
+    KRITIK_EKSIKLER: (page: number, pageSize: number) => `${BASE}/dashboard/kritik-eksikler?page=${page}&pageSize=${pageSize}`,
+    EKSIK_SIRALAMA: (page: number, pageSize: number) => `${BASE}/dashboard/eksik-siralama?page=${page}&pageSize=${pageSize}`,
+  },
   CEKI: {
     YUKLE: `${BASE}/ceki/yukle`,
     SATIRLAR: (cekiId: number) => `${BASE}/ceki/${cekiId}/satirlar`,
