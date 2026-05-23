@@ -7,7 +7,9 @@ import { StatCardComponent } from '../../shared/components/stat-card/stat-card.c
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
 import { BaseApiService } from '../../core/services/base-api.service';
+import { LookupService } from '../../core/services/lookup.service';
 import { API } from '../../core/constants/api-endpoints';
+import { LookupItem } from '../../shared/models/lookup.model';
 
 interface DashboardOzetDto {
   toplamProje: number;
@@ -22,11 +24,25 @@ interface DashboardOzetDto {
   depoSeymenSandik: number;
   depoGridSandik: number;
   depoDigerSandik: number;
+  depoDagilimlari?: DashboardDepoDagilimDto[];
   normalSandik: number;
   sahaSandik: number;
   yedekSandik: number;
   sahaYuzde: number;
   yedekYuzde: number;
+}
+
+interface DashboardDepoDagilimDto {
+  depoLokasyonId: number;
+  depoLokasyonMetni: string;
+  sandikSayisi: number;
+}
+
+interface DashboardDepoSegment {
+  id: number;
+  label: string;
+  count: number;
+  color: string;
 }
 
 interface DashboardPagedResultDto<T> {
@@ -79,6 +95,7 @@ interface DashboardEksikSiralamaDto {
 export class DashboardComponent implements OnInit {
   ts = inject(TranslationService);
   private api = inject(BaseApiService);
+  private lookupService = inject(LookupService);
 
   private readonly projelerPageSize = 20;
   private readonly kritikPageSize = 12;
@@ -88,6 +105,7 @@ export class DashboardComponent implements OnInit {
   projeler = signal<DashboardProjeItemDto[]>([]);
   kritikProjeler = signal<DashboardKritikProjeDto[]>([]);
   topEksikProje = signal<DashboardEksikSiralamaDto[]>([]);
+  depoLokasyonlari = signal<LookupItem[]>([]);
 
   loadingOzet = signal(true);
   loadingProjeler = signal(false);
@@ -118,11 +136,43 @@ export class DashboardComponent implements OnInit {
   eksikUrun = computed(() => this.ozet()?.eksikUrunSayisi ?? 0);
   sevkEdilen = computed(() => this.ozet()?.sevkEdilenProje ?? 0);
 
-  toplamDepoSandik = computed(() => this.ozet()?.toplamDepoSandik ?? 0);
-  depo3K = computed(() => this.ozet()?.depoUcKSandik ?? 0);
-  depoSeymen = computed(() => this.ozet()?.depoSeymenSandik ?? 0);
-  depoGrid = computed(() => this.ozet()?.depoGridSandik ?? 0);
-  depoDiger = computed(() => this.ozet()?.depoDigerSandik ?? 0);
+  depoSegments = computed(() => {
+    const ozet = this.ozet();
+    const byId = new Map<number, LookupItem>();
+    const counts = new Map<number, number>();
+
+    (ozet?.depoDagilimlari ?? []).forEach(item => {
+      byId.set(item.depoLokasyonId, {
+        id: item.depoLokasyonId,
+        anahtar: item.depoLokasyonId,
+        deger: item.depoLokasyonMetni || `Depo ${item.depoLokasyonId}`,
+      });
+      counts.set(item.depoLokasyonId, (counts.get(item.depoLokasyonId) ?? 0) + item.sandikSayisi);
+    });
+
+    if (ozet && (ozet.depoDagilimlari?.length ?? 0) === 0) {
+      [
+        { id: 2, label: '3K', count: ozet.depoUcKSandik ?? 0 },
+        { id: 4, label: 'Seymen', count: ozet.depoSeymenSandik ?? 0 },
+        { id: 5, label: 'Grid', count: ozet.depoGridSandik ?? 0 },
+      ].forEach(item => {
+        byId.set(item.id, { id: item.id, anahtar: item.id, deger: item.label });
+        counts.set(item.id, item.count);
+      });
+    }
+
+    this.depoLokasyonlari().forEach(lokasyon => byId.set(lokasyon.id, lokasyon));
+
+    return this.sortLokasyonlar(Array.from(byId.values()).filter(lokasyon => !this.isBelirsiz(lokasyon)))
+      .map((lokasyon, index) => ({
+        id: lokasyon.id,
+        label: lokasyon.deger,
+        count: counts.get(lokasyon.id) ?? 0,
+        color: this.getLokasyonColor(lokasyon, index),
+      }));
+  });
+  positiveDepoSegments = computed(() => this.depoSegments().filter(segment => segment.count > 0));
+  toplamDepoSandik = computed(() => this.depoSegments().reduce((sum, segment) => sum + segment.count, 0));
 
   devamEden = computed(() => this.ozet()?.hazirlananProje ?? 0);
   tamamlanan = computed(() => this.ozet()?.tamamlananProje ?? 0);
@@ -135,6 +185,7 @@ export class DashboardComponent implements OnInit {
   sahaYuzde = computed(() => this.ozet()?.sahaYuzde ?? 0);
 
   ngOnInit() {
+    this.loadDepoLokasyonlari();
     this.loadOzet();
     this.loadProjeler(true);
     this.loadKritikEksikler(true);
@@ -147,6 +198,12 @@ export class DashboardComponent implements OnInit {
       if (res.isSuccess && res.value) {
         this.ozet.set(res.value);
       }
+    });
+  }
+
+  loadDepoLokasyonlari() {
+    this.lookupService.getLookups(['LookupDepoLokasyon']).subscribe((lookupRes) => {
+      this.depoLokasyonlari.set(this.sortLokasyonlar(lookupRes['LookupDepoLokasyon'] ?? []));
     });
   }
 
@@ -274,6 +331,37 @@ export class DashboardComponent implements OnInit {
     if (yuzde >= 50) return '#3b82f6';
     if (yuzde >= 25) return '#f59e0b';
     return '#ef4444';
+  }
+
+  getDonutPercentage(count: number, total: number): number {
+    return total > 0 ? (count / total) * 100 : 0;
+  }
+
+  getDonutOffset(index: number): number {
+    const total = this.toplamDepoSandik();
+    const previousTotal = this.positiveDepoSegments()
+      .slice(0, index)
+      .reduce((sum, segment) => sum + this.getDonutPercentage(segment.count, total), 0);
+    return 25 - previousTotal;
+  }
+
+  private sortLokasyonlar(lokasyonlar: LookupItem[]): LookupItem[] {
+    return lokasyonlar
+      .slice()
+      .sort((a, b) => a.anahtar - b.anahtar || a.deger.localeCompare(b.deger, 'tr-TR'));
+  }
+
+  private isBelirsiz(lokasyon: LookupItem): boolean {
+    return lokasyon.id === 1 || lokasyon.deger.toLocaleLowerCase('tr-TR') === 'belirsiz';
+  }
+
+  private getLokasyonColor(lokasyon: LookupItem, index = 0): string {
+    const key = lokasyon.deger.trim().toLocaleUpperCase('tr-TR');
+    if (key === '3K') return '#0EA5E9';
+    if (key === 'SEYMEN') return '#078A55';
+    if (key === 'GRID') return '#F59E0B';
+    const palette = ['#8B5CF6', '#EF4444', '#06B6D4', '#64748B', '#14B8A6', '#F97316'];
+    return palette[index % palette.length];
   }
 
   private loadWhenNearBottom(event: Event, loadMore: () => void) {

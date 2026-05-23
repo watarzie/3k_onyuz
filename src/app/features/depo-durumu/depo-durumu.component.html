@@ -54,17 +54,13 @@
     <div class="trezo-card border-0 bg-white h-100 depo-summary-card is-primary">
       <div class="p-4 text-center">
         <h6 class="fw-semibold mb-2 text-uppercase">Genel Toplam Sandık</h6>
-        <h2 class="fw-bold mb-3 text-dark">{{ globalDepoToplam() }}</h2>
+        <h2 class="fw-bold mb-3 text-dark">{{ getSummaryTotal('global') }}</h2>
         <div class="d-flex justify-content-center gap-2 flex-wrap">
-          <span class="depo-badge" style="color: #0EA5E9; background-color: #0EA5E922;">
-            <i class="ri-home-4-line"></i>3K: <strong>{{ globalDepoUcK() }}</strong>
+          @for (depo of getSummaryDepoSegments('global'); track depo.id) {
+          <span class="depo-badge" [style.color]="depo.color" [style.background-color]="depo.softColor">
+            <i [class]="depo.icon"></i>{{ depo.label }}: <strong>{{ depo.count }}</strong>
           </span>
-          <span class="depo-badge" style="color: #078A55; background-color: #078A5522;">
-            <i class="ri-home-4-line"></i>Seymen: <strong>{{ globalDepoSeymen() }}</strong>
-          </span>
-          <span class="depo-badge" style="color: #F59E0B; background-color: #F59E0B22;">
-            <i class="ri-building-line"></i>Grid: <strong>{{ globalDepoGrid() }}</strong>
-          </span>
+          }
         </div>
       </div>
     </div>
@@ -74,17 +70,13 @@
     <div class="trezo-card border-0 bg-white h-100 depo-summary-card">
       <div class="p-4 text-center">
         <h6 class="fw-semibold mb-2 text-uppercase">Normal Projeler</h6>
-        <h2 class="fw-bold mb-3 text-dark">{{ normalDepoToplam() }}</h2>
+        <h2 class="fw-bold mb-3 text-dark">{{ getSummaryTotal('normal') }}</h2>
         <div class="d-flex justify-content-center gap-2 flex-wrap">
-          <span class="depo-badge" style="color: #0EA5E9; background-color: #0EA5E922;">
-            3K: <strong>{{ normalDepoUcK() }}</strong>
+          @for (depo of getSummaryDepoSegments('normal'); track depo.id) {
+          <span class="depo-badge" [style.color]="depo.color" [style.background-color]="depo.softColor">
+            <i [class]="depo.icon"></i>{{ depo.label }}: <strong>{{ depo.count }}</strong>
           </span>
-          <span class="depo-badge" style="color: #078A55; background-color: #078A5522;">
-            Seymen: <strong>{{ normalDepoSeymen() }}</strong>
-          </span>
-          <span class="depo-badge" style="color: #F59E0B; background-color: #F59E0B22;">
-            Grid: <strong>{{ normalDepoGrid() }}</strong>
-          </span>
+          }
         </div>
       </div>
     </div>
@@ -94,17 +86,13 @@
     <div class="trezo-card border-0 bg-white h-100 depo-summary-card">
       <div class="p-4 text-center">
         <h6 class="fw-semibold mb-2 text-uppercase">Saha Projeleri</h6>
-        <h2 class="fw-bold mb-3 text-dark">{{ sahaDepoToplam() }}</h2>
+        <h2 class="fw-bold mb-3 text-dark">{{ getSummaryTotal('saha') }}</h2>
         <div class="d-flex justify-content-center gap-2 flex-wrap">
-          <span class="depo-badge" style="color: #0EA5E9; background-color: #0EA5E922;">
-            3K: <strong>{{ sahaDepoUcK() }}</strong>
+          @for (depo of getSummaryDepoSegments('saha'); track depo.id) {
+          <span class="depo-badge" [style.color]="depo.color" [style.background-color]="depo.softColor">
+            <i [class]="depo.icon"></i>{{ depo.label }}: <strong>{{ depo.count }}</strong>
           </span>
-          <span class="depo-badge" style="color: #078A55; background-color: #078A5522;">
-            Seymen: <strong>{{ sahaDepoSeymen() }}</strong>
-          </span>
-          <span class="depo-badge" style="color: #F59E0B; background-color: #F59E0B22;">
-            Grid: <strong>{{ sahaDepoGrid() }}</strong>
-          </span>
+          }
         </div>
       </div>
     </div>
@@ -114,17 +102,13 @@
     <div class="trezo-card border-0 bg-white h-100 depo-summary-card">
       <div class="p-4 text-center">
         <h6 class="fw-semibold mb-2 text-uppercase">Yedek Projeleri</h6>
-        <h2 class="fw-bold mb-3 text-dark">{{ yedekDepoToplam() }}</h2>
+        <h2 class="fw-bold mb-3 text-dark">{{ getSummaryTotal('yedek') }}</h2>
         <div class="d-flex justify-content-center gap-2 flex-wrap">
-          <span class="depo-badge" style="color: #0EA5E9; background-color: #0EA5E922;">
-            3K: <strong>{{ yedekDepoUcK() }}</strong>
+          @for (depo of getSummaryDepoSegments('yedek'); track depo.id) {
+          <span class="depo-badge" [style.color]="depo.color" [style.background-color]="depo.softColor">
+            <i [class]="depo.icon"></i>{{ depo.label }}: <strong>{{ depo.count }}</strong>
           </span>
-          <span class="depo-badge" style="color: #078A55; background-color: #078A5522;">
-            Seymen: <strong>{{ yedekDepoSeymen() }}</strong>
-          </span>
-          <span class="depo-badge" style="color: #F59E0B; background-color: #F59E0B22;">
-            Grid: <strong>{{ yedekDepoGrid() }}</strong>
-          </span>
+          }
         </div>
       </div>
     </div>
@@ -142,17 +126,17 @@
         <div class="depo-donut">
           <svg viewBox="0 0 42 42" class="donut-chart w-100 h-100">
             <circle class="donut-ring" cx="21" cy="21" r="15.9" fill="transparent" stroke="#f1f5f9" stroke-width="5" />
-            @for (seg of getDonutSegments(); track seg.label; let i = $index) {
+            @for (seg of getDonutSegments(); track seg.id; let i = $index) {
               @if (seg.count > 0) {
               <circle class="donut-segment" cx="21" cy="21" r="15.9" fill="transparent"
                 [attr.stroke]="seg.color"
                 stroke-width="5"
-                [attr.stroke-dasharray]="getDonutPercentage(seg.count, globalDepoToplam()) + ' ' + (100 - getDonutPercentage(seg.count, globalDepoToplam()))"
+                [attr.stroke-dasharray]="getDonutPercentage(seg.count, getSummaryTotal('global')) + ' ' + (100 - getDonutPercentage(seg.count, getSummaryTotal('global')))"
                 [attr.stroke-dashoffset]="getDonutOffset(i)" />
               }
             }
             <text x="21" y="19" text-anchor="middle" dominant-baseline="central" class="donut-text">
-              <tspan class="donut-number" font-size="8" font-weight="800" fill="#1e293b">{{ globalDepoToplam() }}</tspan>
+              <tspan class="donut-number" font-size="8" font-weight="800" fill="#1e293b">{{ getSummaryTotal('global') }}</tspan>
             </text>
             <text x="21" y="25" text-anchor="middle" dominant-baseline="central">
               <tspan font-size="3.5" fill="#64748b" font-weight="500">Toplam</tspan>
@@ -160,21 +144,13 @@
           </svg>
         </div>
         <div class="depo-legend-list">
+          @for (seg of getDonutSegments(); track seg.id) {
           <div class="depo-legend-row">
-            <span class="legend-dot" style="background-color: #0EA5E9;"></span>
-            <span class="text-secondary fw-medium">3K</span>
-            <strong class="ms-auto text-dark fs-5">{{ globalDepoUcK() }}</strong>
+            <span class="legend-dot" [style.background-color]="seg.color"></span>
+            <span class="text-secondary fw-medium">{{ seg.label }}</span>
+            <strong class="ms-auto text-dark fs-5">{{ seg.count }}</strong>
           </div>
-          <div class="depo-legend-row">
-            <span class="legend-dot" style="background-color: #078A55;"></span>
-            <span class="text-secondary fw-medium">Seymen</span>
-            <strong class="ms-auto text-dark fs-5">{{ globalDepoSeymen() }}</strong>
-          </div>
-          <div class="depo-legend-row">
-            <span class="legend-dot" style="background-color: #F59E0B;"></span>
-            <span class="text-secondary fw-medium">Grid</span>
-            <strong class="ms-auto text-dark fs-5">{{ globalDepoGrid() }}</strong>
-          </div>
+          }
         </div>
       </div>
     </div>
@@ -206,10 +182,10 @@
             <th style="width: 50px;" class="border-bottom-0"></th>
             <th class="text-uppercase text-secondary fw-semibold border-bottom-0">PROJE NO</th>
             <th class="text-uppercase text-secondary fw-semibold border-bottom-0">PROJE TİPİ</th>
-            <th class="text-uppercase text-secondary fw-semibold text-center border-bottom-0">3K</th>
-            <th class="text-uppercase text-secondary fw-semibold text-center border-bottom-0">SEYMEN</th>
-            <th class="text-uppercase text-secondary fw-semibold text-center border-bottom-0">GRID</th>
-            <th class="text-uppercase text-secondary fw-semibold text-center border-bottom-0">TOPLAM DEPODA</th>
+            <th class="text-uppercase text-secondary fw-semibold text-center border-bottom-0">TOPLAM SANDIK</th>
+            @for (loc of visibleDepoLokasyonlari(); track loc.id) {
+            <th class="text-uppercase text-secondary fw-semibold text-center border-bottom-0">{{ loc.deger }} DEPO</th>
+            }
           </tr>
         </thead>
         <tbody>
@@ -226,33 +202,21 @@
                   'bg-warning-subtle text-warning': p.projeTipiId === 3
                 }">{{ projeTipiMetni(p.projeTipiId) }}</span>
             </td>
-            <td class="text-center py-3">
-              @if (p.depoUcKSandikSayisi > 0) {
-              <span class="depo-count-pill" style="color: #0EA5E9; background-color: #0EA5E922;">{{ p.depoUcKSandikSayisi }}</span>
-              } @else {
-              <span class="text-muted" style="opacity: 0.5;">-</span>
-              }
-            </td>
-            <td class="text-center py-3">
-              @if (p.depoSeymenSandikSayisi > 0) {
-              <span class="depo-count-pill" style="color: #078A55; background-color: #078A5522;">{{ p.depoSeymenSandikSayisi }}</span>
-              } @else {
-              <span class="text-muted" style="opacity: 0.5;">-</span>
-              }
-            </td>
-            <td class="text-center py-3">
-              @if (p.depoGridSandikSayisi > 0) {
-              <span class="depo-count-pill" style="color: #F59E0B; background-color: #F59E0B22;">{{ p.depoGridSandikSayisi }}</span>
-              } @else {
-              <span class="text-muted" style="opacity: 0.5;">-</span>
-              }
-            </td>
             <td class="text-center fw-semibold text-dark py-3">{{ p.depoSandikSayisi }}</td>
+            @for (loc of visibleDepoLokasyonlari(); track loc.id; let i = $index) {
+            <td class="text-center py-3">
+              @if (getProjectDepoCount(p, loc) > 0) {
+              <span class="depo-count-pill" [style.color]="getLokasyonColor(loc, i)" [style.background-color]="getLokasyonSoftColor(loc, i)">{{ getProjectDepoCount(p, loc) }}</span>
+              } @else {
+              <span class="text-muted" style="opacity: 0.5;">-</span>
+              }
+            </td>
+            }
           </tr>
 
           @if (expandedProjeId() === p.id) {
           <tr>
-            <td colspan="7" class="p-0 border-0">
+            <td [attr.colspan]="getProjectTableColspan()" class="p-0 border-0">
               <div class="bg-light p-4 expanded-detail">
                 @if (expandedLoading()) {
                 <div class="text-center py-3"><span class="spinner-border spinner-border-sm text-primary"></span> <span class="text-muted ms-2">Sandıklar yükleniyor...</span></div>

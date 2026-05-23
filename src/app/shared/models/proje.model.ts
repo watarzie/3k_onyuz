@@ -1,5 +1,11 @@
 // ===== Proje =====
 
+export interface ProjeDepoDagilimDto {
+  depoLokasyonId: number;
+  depoLokasyonMetni: string;
+  sandikSayisi: number;
+}
+
 export interface ProjeDto {
   id: number;
   projeNo: string;
@@ -19,6 +25,7 @@ export interface ProjeDto {
   depoUcKSandikSayisi: number;
   depoSeymenSandikSayisi: number;
   depoGridSandikSayisi: number;
+  depoDagilimlari?: ProjeDepoDagilimDto[];
   toplamUrunSayisi: number;
   tamamlananUrunSayisi: number;
   fbNo?: string;

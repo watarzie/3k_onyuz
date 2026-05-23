@@ -14,7 +14,18 @@ import { LookupService } from '../../core/services/lookup.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
-import { ProjeDto, SandikDto, LookupItem } from '../../shared/models/index';
+import { ProjeDepoDagilimDto, ProjeDto, SandikDto, LookupItem } from '../../shared/models/index';
+
+type DepoSummaryScope = 'global' | 'normal' | 'saha' | 'yedek';
+
+interface DepoSegment {
+  id: number;
+  label: string;
+  count: number;
+  color: string;
+  softColor: string;
+  icon: string;
+}
 
 @Component({
   selector: 'app-depo-durumu',
@@ -74,9 +85,36 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
   yedekDepoSeymen = signal(0);
   yedekDepoGrid = signal(0);
   yedekDepoToplam = signal(0);
+  globalDepoDagilim = signal<Record<number, number>>({});
+  normalDepoDagilim = signal<Record<number, number>>({});
+  sahaDepoDagilim = signal<Record<number, number>>({});
+  yedekDepoDagilim = signal<Record<number, number>>({});
 
   // --- Depo management modal ---
   depoLokasyonlari = signal<LookupItem[]>([]);
+  visibleDepoLokasyonlari = computed(() => {
+    const lokasyonlar = this.depoLokasyonlari();
+    const knownIds = new Set<number>();
+    const allMaps = [
+      this.globalDepoDagilim(),
+      this.normalDepoDagilim(),
+      this.sahaDepoDagilim(),
+      this.yedekDepoDagilim(),
+      ...this.projeler().map(p => this.projectDepoCountMap(p)),
+    ];
+
+    allMaps.forEach(map => Object.keys(map).forEach(key => knownIds.add(Number(key))));
+
+    const byId = new Map<number, LookupItem>();
+    lokasyonlar.forEach(l => byId.set(l.id, l));
+    knownIds.forEach(id => {
+      if (!byId.has(id)) {
+        byId.set(id, { id, anahtar: id, deger: `Depo ${id}` });
+      }
+    });
+
+    return this.sortLokasyonlar(Array.from(byId.values()).filter(l => !this.isBelirsiz(l)));
+  });
   downloadingPdf = signal(false);
   reportMenuOpen = signal(false);
   depoModalOpen = signal(false);
@@ -131,28 +169,35 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
         const saha = all.filter(p => p.projeTipiId === 2);
         const yedek = all.filter(p => p.projeTipiId === 3);
 
-        const sum = (list: ProjeDto[], field: keyof ProjeDto) =>
-          list.reduce((s, p) => s + ((p[field] as number) || 0), 0);
+        const globalDagilim = this.calculateDepoDagilim(all);
+        const normalDagilim = this.calculateDepoDagilim(normal);
+        const sahaDagilim = this.calculateDepoDagilim(saha);
+        const yedekDagilim = this.calculateDepoDagilim(yedek);
 
-        this.globalDepoUcK.set(sum(all, 'depoUcKSandikSayisi'));
-        this.globalDepoSeymen.set(sum(all, 'depoSeymenSandikSayisi'));
-        this.globalDepoGrid.set(sum(all, 'depoGridSandikSayisi'));
-        this.globalDepoToplam.set(sum(all, 'depoSandikSayisi'));
+        this.globalDepoDagilim.set(globalDagilim);
+        this.normalDepoDagilim.set(normalDagilim);
+        this.sahaDepoDagilim.set(sahaDagilim);
+        this.yedekDepoDagilim.set(yedekDagilim);
 
-        this.normalDepoUcK.set(sum(normal, 'depoUcKSandikSayisi'));
-        this.normalDepoSeymen.set(sum(normal, 'depoSeymenSandikSayisi'));
-        this.normalDepoGrid.set(sum(normal, 'depoGridSandikSayisi'));
-        this.normalDepoToplam.set(sum(normal, 'depoSandikSayisi'));
+        this.globalDepoUcK.set(globalDagilim[2] ?? 0);
+        this.globalDepoSeymen.set(globalDagilim[4] ?? 0);
+        this.globalDepoGrid.set(globalDagilim[5] ?? 0);
+        this.globalDepoToplam.set(this.sumDagilim(globalDagilim));
 
-        this.sahaDepoUcK.set(sum(saha, 'depoUcKSandikSayisi'));
-        this.sahaDepoSeymen.set(sum(saha, 'depoSeymenSandikSayisi'));
-        this.sahaDepoGrid.set(sum(saha, 'depoGridSandikSayisi'));
-        this.sahaDepoToplam.set(sum(saha, 'depoSandikSayisi'));
+        this.normalDepoUcK.set(normalDagilim[2] ?? 0);
+        this.normalDepoSeymen.set(normalDagilim[4] ?? 0);
+        this.normalDepoGrid.set(normalDagilim[5] ?? 0);
+        this.normalDepoToplam.set(this.sumDagilim(normalDagilim));
 
-        this.yedekDepoUcK.set(sum(yedek, 'depoUcKSandikSayisi'));
-        this.yedekDepoSeymen.set(sum(yedek, 'depoSeymenSandikSayisi'));
-        this.yedekDepoGrid.set(sum(yedek, 'depoGridSandikSayisi'));
-        this.yedekDepoToplam.set(sum(yedek, 'depoSandikSayisi'));
+        this.sahaDepoUcK.set(sahaDagilim[2] ?? 0);
+        this.sahaDepoSeymen.set(sahaDagilim[4] ?? 0);
+        this.sahaDepoGrid.set(sahaDagilim[5] ?? 0);
+        this.sahaDepoToplam.set(this.sumDagilim(sahaDagilim));
+
+        this.yedekDepoUcK.set(yedekDagilim[2] ?? 0);
+        this.yedekDepoSeymen.set(yedekDagilim[4] ?? 0);
+        this.yedekDepoGrid.set(yedekDagilim[5] ?? 0);
+        this.yedekDepoToplam.set(this.sumDagilim(yedekDagilim));
       }
     });
   }
@@ -267,6 +312,85 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
   }
 
   // --- Utilities ---
+  private projectDepoDagilimlari(proje: ProjeDto): ProjeDepoDagilimDto[] {
+    if (proje.depoDagilimlari?.length) {
+      return proje.depoDagilimlari.filter(d => d.sandikSayisi > 0);
+    }
+
+    const fallback: ProjeDepoDagilimDto[] = [
+      { depoLokasyonId: 2, depoLokasyonMetni: '3K', sandikSayisi: proje.depoUcKSandikSayisi ?? 0 },
+      { depoLokasyonId: 4, depoLokasyonMetni: 'Seymen', sandikSayisi: proje.depoSeymenSandikSayisi ?? 0 },
+      { depoLokasyonId: 5, depoLokasyonMetni: 'Grid', sandikSayisi: proje.depoGridSandikSayisi ?? 0 },
+    ];
+
+    return fallback.filter(d => d.sandikSayisi > 0);
+  }
+
+  private projectDepoCountMap(proje: ProjeDto): Record<number, number> {
+    return this.projectDepoDagilimlari(proje).reduce<Record<number, number>>((acc, item) => {
+      acc[item.depoLokasyonId] = (acc[item.depoLokasyonId] ?? 0) + item.sandikSayisi;
+      return acc;
+    }, {});
+  }
+
+  private calculateDepoDagilim(projeler: ProjeDto[]): Record<number, number> {
+    return projeler.reduce<Record<number, number>>((acc, proje) => {
+      const map = this.projectDepoCountMap(proje);
+      Object.entries(map).forEach(([id, count]) => {
+        acc[Number(id)] = (acc[Number(id)] ?? 0) + count;
+      });
+      return acc;
+    }, {});
+  }
+
+  private sumDagilim(map: Record<number, number>): number {
+    return Object.values(map).reduce((sum, count) => sum + count, 0);
+  }
+
+  private getSummaryMap(scope: DepoSummaryScope): Record<number, number> {
+    switch (scope) {
+      case 'normal':
+        return this.normalDepoDagilim();
+      case 'saha':
+        return this.sahaDepoDagilim();
+      case 'yedek':
+        return this.yedekDepoDagilim();
+      default:
+        return this.globalDepoDagilim();
+    }
+  }
+
+  getSummaryTotal(scope: DepoSummaryScope): number {
+    return this.visibleDepoLokasyonlari()
+      .reduce((sum, lokasyon) => sum + this.getSummaryDepoCount(scope, lokasyon), 0);
+  }
+
+  getSummaryDepoCount(scope: DepoSummaryScope, lokasyon: LookupItem): number {
+    return this.getSummaryMap(scope)[lokasyon.id] ?? 0;
+  }
+
+  getProjectDepoCount(proje: ProjeDto, lokasyon: LookupItem): number {
+    return this.projectDepoCountMap(proje)[lokasyon.id] ?? 0;
+  }
+
+  getSummaryDepoSegments(scope: DepoSummaryScope): DepoSegment[] {
+    return this.visibleDepoLokasyonlari().map((lokasyon, index) => {
+      const color = this.getLokasyonColor(lokasyon, index);
+      return {
+        id: lokasyon.id,
+        label: lokasyon.deger,
+        count: this.getSummaryDepoCount(scope, lokasyon),
+        color,
+        softColor: this.getLokasyonSoftColor(lokasyon, index),
+        icon: this.getLokasyonIcon(lokasyon),
+      };
+    });
+  }
+
+  getProjectTableColspan(): number {
+    return 4 + this.visibleDepoLokasyonlari().length;
+  }
+
   private sortLokasyonlar(lokasyonlar: LookupItem[]): LookupItem[] {
     return lokasyonlar
       .slice()
@@ -282,17 +406,13 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
     return total > 0 ? Math.round((count / total) * 100) : 0;
   }
 
-  getDonutSegments(): { label: string; count: number; color: string }[] {
-    return [
-      { label: '3K', count: this.globalDepoUcK(), color: '#0EA5E9' },
-      { label: 'Seymen', count: this.globalDepoSeymen(), color: '#078A55' },
-      { label: 'Grid', count: this.globalDepoGrid(), color: '#F59E0B' },
-    ];
+  getDonutSegments(): DepoSegment[] {
+    return this.getSummaryDepoSegments('global');
   }
 
   getDonutOffset(index: number): number {
     const segments = this.getDonutSegments();
-    const total = this.globalDepoToplam();
+    const total = this.getSummaryTotal('global');
     const previousTotal = segments
       .slice(0, index)
       .reduce((sum, s) => sum + this.getDonutPercentage(s.count, total), 0);
@@ -329,6 +449,17 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
     return this.palette[index % this.palette.length];
   }
 
+  getLokasyonSoftColor(lokasyon: LookupItem, index = 0): string {
+    return `${this.getLokasyonColor(lokasyon, index)}22`;
+  }
+
+  getLokasyonIcon(lokasyon: LookupItem): string {
+    const key = lokasyon.deger.trim().toLocaleUpperCase('tr-TR');
+    if (this.isBelirsiz(lokasyon)) return 'ri-map-pin-line';
+    if (key === 'GRID') return 'ri-building-line';
+    return 'ri-home-4-line';
+  }
+
   openDepoModal() {
     this.depoModalOpen.set(true);
   }
@@ -361,6 +492,8 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
         this.toastService.success('Depo başarıyla eklendi.');
         this.yeniDepoAdi.set('');
         this.depoLokasyonlari.set(this.sortLokasyonlar([...this.depoLokasyonlari(), lokasyon]));
+        this.loadSummaryStats();
+        this.loadProjeler();
       },
       error: (err) => {
         this.savingDepo.set(false);
@@ -381,6 +514,8 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
         this.savingDepo.set(false);
         this.toastService.success('Depo silindi.');
         this.depoLokasyonlari.set(this.depoLokasyonlari().filter(l => l.id !== lokasyon.id));
+        this.loadSummaryStats();
+        this.loadProjeler();
       },
       error: (err) => {
         this.savingDepo.set(false);

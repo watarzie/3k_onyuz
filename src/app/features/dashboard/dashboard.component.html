@@ -176,16 +176,14 @@
         <div class="depo-chart">
           <div class="depo-donut">
             <svg viewBox="0 0 36 36" class="donut-svg">
+              <circle class="donut-track" cx="18" cy="18" r="15.9" />
               @if (toplamDepoSandik() > 0) {
-                <circle class="donut-segment" cx="18" cy="18" r="15.9"
-                  [attr.stroke-dasharray]="(depo3K() / toplamDepoSandik()) * 100 + ' ' + (100 - (depo3K() / toplamDepoSandik()) * 100)"
-                  stroke-dashoffset="25" stroke="#3b82f6" />
-                <circle class="donut-segment" cx="18" cy="18" r="15.9"
-                  [attr.stroke-dasharray]="(depoSeymen() / toplamDepoSandik()) * 100 + ' ' + (100 - (depoSeymen() / toplamDepoSandik()) * 100)"
-                  [attr.stroke-dashoffset]="25 - (depo3K() / toplamDepoSandik()) * 100" stroke="#22c55e" />
-                <circle class="donut-segment" cx="18" cy="18" r="15.9"
-                  [attr.stroke-dasharray]="(depoGrid() / toplamDepoSandik()) * 100 + ' ' + (100 - (depoGrid() / toplamDepoSandik()) * 100)"
-                  [attr.stroke-dashoffset]="25 - (depo3K() / toplamDepoSandik()) * 100 - (depoSeymen() / toplamDepoSandik()) * 100" stroke="#f59e0b" />
+                @for (segment of positiveDepoSegments(); track segment.id; let i = $index) {
+                  <circle class="donut-segment" cx="18" cy="18" r="15.9"
+                    [attr.stroke-dasharray]="getDonutPercentage(segment.count, toplamDepoSandik()) + ' ' + (100 - getDonutPercentage(segment.count, toplamDepoSandik()))"
+                    [attr.stroke-dashoffset]="getDonutOffset(i)"
+                    [attr.stroke]="segment.color" />
+                }
               }
             </svg>
             <div class="donut-center">
@@ -194,10 +192,12 @@
             </div>
           </div>
           <div class="depo-legend">
-            <div class="depo-legend-item"><span class="legend-dot" style="background: #3b82f6;"></span> 3K <strong>{{ depo3K() }}</strong></div>
-            <div class="depo-legend-item"><span class="legend-dot" style="background: #22c55e;"></span> Seymen <strong>{{ depoSeymen() }}</strong></div>
-            <div class="depo-legend-item"><span class="legend-dot" style="background: #f59e0b;"></span> GRID <strong>{{ depoGrid() }}</strong></div>
-            <div class="depo-legend-item"><span class="legend-dot" style="background: #94a3b8;"></span> Diğer <strong>{{ depoDiger() }}</strong></div>
+            @for (segment of depoSegments(); track segment.id) {
+              <div class="depo-legend-item">
+                <span class="legend-dot" [style.background]="segment.color"></span>
+                {{ segment.label }} <strong>{{ segment.count }}</strong>
+              </div>
+            }
           </div>
         </div>
       </div>
