@@ -360,7 +360,7 @@ export class DashboardComponent implements OnInit {
     if (key === '3K') return '#0EA5E9';
     if (key === 'SEYMEN') return '#078A55';
     if (key === 'GRID') return '#F59E0B';
-    const palette = ['#8B5CF6', '#EF4444', '#06B6D4', '#64748B', '#14B8A6', '#F97316'];
+    const palette = ['#3584FC', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#06B6D4', '#64748B', '#14B8A6'];
     return palette[index % palette.length];
   }
 
