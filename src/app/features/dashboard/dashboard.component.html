@@ -56,7 +56,7 @@
                 @for (p of projeler(); track p.id) {
                   <tr>
                     <td class="fw-semibold">
-                      <span class="proje-dot" [style.background]="getProgressColor(getTamamlanmaYuzdesi(p))"></span>
+                      <span class="proje-dot" [style.background]="getProgressColor(p.tamamlanmaYuzdesi)"></span>
                       {{ p.projeNo }}
                     </td>
                     <td>{{ p.sandikSayisi }}</td>
@@ -69,9 +69,9 @@
                     <td style="min-width: 140px;">
                       <div class="d-flex align-items-center gap-2">
                         <div class="progress flex-grow-1" style="height: 6px;">
-                          <div class="progress-bar" [style.width.%]="getTamamlanmaYuzdesi(p)" [style.background]="getProgressColor(getTamamlanmaYuzdesi(p))"></div>
+                          <div class="progress-bar" [style.width.%]="p.tamamlanmaYuzdesi" [style.background]="getProgressColor(p.tamamlanmaYuzdesi)"></div>
                         </div>
-                        <small class="fw-bold" [style.color]="getProgressColor(getTamamlanmaYuzdesi(p))">{{ getTamamlanmaYuzdesi(p) }}%</small>
+                        <small class="fw-bold" [style.color]="getProgressColor(p.tamamlanmaYuzdesi)">{{ p.tamamlanmaYuzdesi }}%</small>
                       </div>
                     </td>
                   </tr>

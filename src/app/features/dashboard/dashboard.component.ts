@@ -52,6 +52,7 @@ interface DashboardProjeItemDto {
   sandikSayisi: number;
   toplamUrunSayisi: number;
   tamamlananUrunSayisi: number;
+  tamamlanmaYuzdesi: number;
 }
 
 interface DashboardKritikProjeDto {
@@ -137,7 +138,6 @@ export class DashboardComponent implements OnInit {
     this.loadOzet();
     this.loadProjeler(true);
     this.loadKritikEksikler(true);
-    this.loadEksikSiralama(true);
   }
 
   loadOzet() {
@@ -192,6 +192,19 @@ export class DashboardComponent implements OnInit {
         this.kritikPage.set(res.value.page);
         this.kritikTotal.set(res.value.totalCount);
         this.kritikHasMore.set(res.value.hasMore);
+
+        // On initial load, also populate eksik sıralaması from the same data
+        if (reset) {
+          const eksikItems: DashboardEksikSiralamaDto[] = res.value!.items.map(k => ({
+            projeNo: k.projeNo,
+            eksikYuzde: k.toplam > 0 ? Math.round((k.eksik / k.toplam) * 100) : 0,
+            eksikAdet: k.eksik,
+          }));
+          this.topEksikProje.set(eksikItems);
+          this.eksikPage.set(res.value.page);
+          this.eksikTotal.set(res.value.totalCount);
+          this.eksikHasMore.set(res.value.hasMore);
+        }
       }
     });
   }
@@ -231,10 +244,7 @@ export class DashboardComponent implements OnInit {
     this.loadWhenNearBottom(event, () => this.loadEksikSiralama());
   }
 
-  getTamamlanmaYuzdesi(p: DashboardProjeItemDto): number {
-    if (p.toplamUrunSayisi === 0) return 0;
-    return Math.floor((p.tamamlananUrunSayisi / p.toplamUrunSayisi) * 100);
-  }
+
 
   formatBaslamaTarihi(value?: string): string {
     if (!value) return '-';

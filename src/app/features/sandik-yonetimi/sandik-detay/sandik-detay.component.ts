@@ -232,9 +232,9 @@ export class SandikDetayComponent implements OnInit {
 
     // Saha/Yedek modundaysa normal projeleri yükle
     if (this.isSahaYedek()) {
-      this.projeService.getProjeListesiByTip(1).subscribe(res => {
+      this.projeService.getProjeListesi(1, 1000, 1).subscribe(res => {
         if (res.isSuccess && res.value) {
-          this.normalProjeler.set(res.value);
+          this.normalProjeler.set(res.value.items);
         }
       });
     }

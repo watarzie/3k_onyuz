@@ -1,8 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { HttpParams } from '@angular/common/http';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiSatiriDto, ProjeDropdownDto } from '../../shared/models/index';
+import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiSatiriDto, ProjeDropdownDto } from '../../shared/models/index';
 
 /**
  * ProjeController (2 endpoint) + CekiController (2 endpoint):
@@ -17,12 +18,20 @@ export class ProjeService {
 
   // ===== Proje =====
 
-  getProjeListesi(): Observable<ApiResult<ProjeDto[]>> {
-    return this.api.get<ProjeDto[]>(API.PROJE.LIST);
-  }
-
-  getProjeListesiByTip(projeTipiId: number): Observable<ApiResult<ProjeDto[]>> {
-    return this.api.get<ProjeDto[]>(API.PROJE.LIST_BY_TIP(projeTipiId));
+  getProjeListesi(
+    pageNumber: number = 1,
+    pageSize: number = 15,
+    projeTipiId?: number,
+    searchTerm?: string,
+    isSevkEdilen?: boolean
+  ): Observable<ApiResult<PaginatedList<ProjeDto>>> {
+    let params = new HttpParams()
+      .set('pageNumber', pageNumber.toString())
+      .set('pageSize', pageSize.toString());
+    if (projeTipiId !== undefined) params = params.set('projeTipiId', projeTipiId.toString());
+    if (searchTerm) params = params.set('searchTerm', searchTerm);
+    if (isSevkEdilen !== undefined) params = params.set('isSevkEdilen', isSevkEdilen.toString());
+    return this.api.get<PaginatedList<ProjeDto>>(API.PROJE.LIST, { params });
   }
 
   /** Dropdown'lar için hafif proje listesi — Include yok, sadece Id/ProjeNo/Musteri */

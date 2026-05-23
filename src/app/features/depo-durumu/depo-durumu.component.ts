@@ -1,9 +1,9 @@
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
-import { Component, HostListener, computed, inject, signal, OnInit } from '@angular/core';
+import { Component, HostListener, computed, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin, of } from 'rxjs';
-import { map, switchMap } from 'rxjs/operators';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { ActivatedRoute } from '@angular/router';
 import { TranslationService } from '../../core/services/translation.service';
 import { ProjeService } from '../../core/services/proje.service';
@@ -14,22 +14,7 @@ import { LookupService } from '../../core/services/lookup.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
-import { LookupItem, SandikDto } from '../../shared/models/index';
-
-export interface DepoStats {
-  toplam: number;
-  lokasyonCounts: Record<number, number>;
-}
-
-export interface ProjectWarehouseStat {
-  id: number;
-  projeNo: string;
-  projeTipiId: number;
-  toplamSandik: number;
-  lokasyonCounts: Record<number, number>;
-  sandiklar: SandikDto[];
-  expanded: boolean;
-}
+import { ProjeDto, SandikDto, LookupItem } from '../../shared/models/index';
 
 @Component({
   selector: 'app-depo-durumu',
@@ -38,7 +23,7 @@ export interface ProjectWarehouseStat {
   templateUrl: './depo-durumu.component.html',
   styleUrl: './depo-durumu.component.scss',
 })
-export class DepoDurumuComponent implements OnInit {
+export class DepoDurumuComponent implements OnInit, OnDestroy {
   ts = inject(TranslationService);
   private route = inject(ActivatedRoute);
   private projeService = inject(ProjeService);
@@ -48,35 +33,55 @@ export class DepoDurumuComponent implements OnInit {
   private lookupService = inject(LookupService);
   private permissionService = inject(PermissionService);
 
-  projectsList = signal<ProjectWarehouseStat[]>([]);
-  filteredProjectsList = signal<ProjectWarehouseStat[]>([]);
-  depoLokasyonlari = signal<LookupItem[]>([]);
+  // --- Project list (from server-side paginated ProjeDto) ---
+  projeler = signal<ProjeDto[]>([]);
   loading = signal(true);
-  downloadingPdf = signal(false);
   searchTerm = signal('');
+
+  // --- Server-side pagination ---
+  pageSizeOptions = [15, 25, 50];
+  pageSize = signal(15);
+  currentPage = signal(1);
+  totalCount = signal(0);
+  totalPages = signal(1);
+
+  paginationStart = computed(() => {
+    const total = this.totalCount();
+    return total === 0 ? 0 : (this.currentPage() - 1) * this.pageSize() + 1;
+  });
+  paginationEnd = computed(() => Math.min(this.currentPage() * this.pageSize(), this.totalCount()));
+
+  // --- Expanded sandık detail (lazy-loaded) ---
+  expandedProjeId = signal<number | null>(null);
+  expandedSandiklar = signal<SandikDto[]>([]);
+  expandedLoading = signal(false);
+
+  // --- Summary stats (computed from current page's ProjeDto list) ---
+  // We compute global stats from ALL projects — for that we do a separate unpaginated call
+  globalDepoUcK = signal(0);
+  globalDepoSeymen = signal(0);
+  globalDepoGrid = signal(0);
+  globalDepoToplam = signal(0);
+  normalDepoUcK = signal(0);
+  normalDepoSeymen = signal(0);
+  normalDepoGrid = signal(0);
+  normalDepoToplam = signal(0);
+  sahaDepoUcK = signal(0);
+  sahaDepoSeymen = signal(0);
+  sahaDepoGrid = signal(0);
+  sahaDepoToplam = signal(0);
+  yedekDepoUcK = signal(0);
+  yedekDepoSeymen = signal(0);
+  yedekDepoGrid = signal(0);
+  yedekDepoToplam = signal(0);
+
+  // --- Depo management modal ---
+  depoLokasyonlari = signal<LookupItem[]>([]);
+  downloadingPdf = signal(false);
   reportMenuOpen = signal(false);
   depoModalOpen = signal(false);
   yeniDepoAdi = signal('');
   savingDepo = signal(false);
-  pageSizeOptions = [15, 25, 50];
-  pageSize = signal(15);
-  currentPage = signal(1);
-
-  globalStats = signal<DepoStats>({ toplam: 0, lokasyonCounts: {} });
-  normalStats = signal<DepoStats>({ toplam: 0, lokasyonCounts: {} });
-  sahaStats = signal<DepoStats>({ toplam: 0, lokasyonCounts: {} });
-  yedekStats = signal<DepoStats>({ toplam: 0, lokasyonCounts: {} });
-
-  totalPages = computed(() => Math.max(1, Math.ceil(this.filteredProjectsList().length / this.pageSize())));
-  paginatedProjectsList = computed(() => {
-    const start = (this.currentPage() - 1) * this.pageSize();
-    return this.filteredProjectsList().slice(start, start + this.pageSize());
-  });
-  paginationStart = computed(() => {
-    const total = this.filteredProjectsList().length;
-    return total === 0 ? 0 : (this.currentPage() - 1) * this.pageSize() + 1;
-  });
-  paginationEnd = computed(() => Math.min(this.currentPage() * this.pageSize(), this.filteredProjectsList().length));
 
   canWriteCurrentMenu = computed(() => {
     const menuKod = this.route.snapshot.data?.['menuKod'] || 'depo-durumu';
@@ -91,62 +96,95 @@ export class DepoDurumuComponent implements OnInit {
   private readonly systemLokasyonIds = new Set([1, 2, 4, 5]);
   private readonly palette = ['#3584FC', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#06B6D4', '#64748B', '#14B8A6'];
 
+  // --- Debounced search ---
+  private searchSubject = new Subject<string>();
+  private destroy$ = new Subject<void>();
+
   ngOnInit() {
-    this.loadData();
+    this.searchSubject.pipe(
+      debounceTime(400),
+      distinctUntilChanged(),
+    ).subscribe(term => {
+      this.searchTerm.set(term);
+      this.currentPage.set(1);
+      this.loadProjeler();
+    });
+
+    this.loadSummaryStats();
+    this.loadLokasyonlar();
+    this.loadProjeler();
   }
 
-  loadData() {
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+    this.searchSubject.complete();
+  }
+
+  // --- Load summary stats (unpaginated, all projects) ---
+  private loadSummaryStats() {
+    // Get a large page to compute summary stats across ALL projects
+    this.projeService.getProjeListesi(1, 10000).subscribe(res => {
+      if (res.isSuccess && res.value) {
+        const all = res.value.items;
+        const normal = all.filter(p => p.projeTipiId === 1);
+        const saha = all.filter(p => p.projeTipiId === 2);
+        const yedek = all.filter(p => p.projeTipiId === 3);
+
+        const sum = (list: ProjeDto[], field: keyof ProjeDto) =>
+          list.reduce((s, p) => s + ((p[field] as number) || 0), 0);
+
+        this.globalDepoUcK.set(sum(all, 'depoUcKSandikSayisi'));
+        this.globalDepoSeymen.set(sum(all, 'depoSeymenSandikSayisi'));
+        this.globalDepoGrid.set(sum(all, 'depoGridSandikSayisi'));
+        this.globalDepoToplam.set(sum(all, 'depoSandikSayisi'));
+
+        this.normalDepoUcK.set(sum(normal, 'depoUcKSandikSayisi'));
+        this.normalDepoSeymen.set(sum(normal, 'depoSeymenSandikSayisi'));
+        this.normalDepoGrid.set(sum(normal, 'depoGridSandikSayisi'));
+        this.normalDepoToplam.set(sum(normal, 'depoSandikSayisi'));
+
+        this.sahaDepoUcK.set(sum(saha, 'depoUcKSandikSayisi'));
+        this.sahaDepoSeymen.set(sum(saha, 'depoSeymenSandikSayisi'));
+        this.sahaDepoGrid.set(sum(saha, 'depoGridSandikSayisi'));
+        this.sahaDepoToplam.set(sum(saha, 'depoSandikSayisi'));
+
+        this.yedekDepoUcK.set(sum(yedek, 'depoUcKSandikSayisi'));
+        this.yedekDepoSeymen.set(sum(yedek, 'depoSeymenSandikSayisi'));
+        this.yedekDepoGrid.set(sum(yedek, 'depoGridSandikSayisi'));
+        this.yedekDepoToplam.set(sum(yedek, 'depoSandikSayisi'));
+      }
+    });
+  }
+
+  // --- Load lokasyonlar for depo management modal ---
+  private loadLokasyonlar() {
+    this.lookupService.getLookups(['LookupDepoLokasyon']).subscribe(lookupRes => {
+      const lokasyonlar = this.sortLokasyonlar(lookupRes['LookupDepoLokasyon'] ?? []);
+      this.depoLokasyonlari.set(lokasyonlar);
+    });
+  }
+
+  // --- Load paginated project list ---
+  loadProjeler() {
     this.loading.set(true);
-
-    this.lookupService.getLookups(['LookupDepoLokasyon']).pipe(
-      switchMap((lookupRes) => {
-        const lokasyonlar = this.sortLokasyonlar(lookupRes['LookupDepoLokasyon'] ?? []);
-        this.depoLokasyonlari.set(lokasyonlar);
-
-        return this.projeService.getProjeListesi();
-      }),
-      switchMap((res) => {
-        if (!res.isSuccess || !res.value || res.value.length === 0) {
-          return of([] as ProjectWarehouseStat[]);
-        }
-
-        const requests = res.value.map((p) =>
-          this.sandikService.getSandiklar(p.id).pipe(
-            map((sRes) => {
-              let sandiklar: SandikDto[] = [];
-              if (sRes.isSuccess && sRes.value) {
-                sandiklar = sRes.value
-                  .filter(s => this.isDepodaSayilacakSandik(s))
-                  .sort((a, b) => this.extractNumber(a.sandikNo) - this.extractNumber(b.sandikNo));
-              }
-
-              if (sandiklar.length === 0) {
-                return null;
-              }
-
-              return {
-                id: p.id,
-                projeNo: p.projeNo,
-                projeTipiId: p.projeTipiId,
-                toplamSandik: sandiklar.length,
-                lokasyonCounts: this.countLokasyonlar(sandiklar),
-                sandiklar,
-                expanded: false
-              } as ProjectWarehouseStat;
-            })
-          )
-        );
-
-        return forkJoin(requests).pipe(
-          map(items => items.filter((item): item is ProjectWarehouseStat => item !== null))
-        );
-      })
+    this.projeService.getProjeListesi(
+      this.currentPage(),
+      this.pageSize(),
+      undefined,
+      this.searchTerm() || undefined,
+      false
     ).subscribe({
-      next: (projectStats) => {
-        projectStats.sort((a, b) => b.id - a.id);
-        this.projectsList.set(projectStats);
-        this.applyFilter(true);
-        this.calculateAllStats(projectStats);
+      next: (res) => {
+        if (res.isSuccess && res.value) {
+          this.projeler.set(res.value.items);
+          this.totalCount.set(res.value.totalCount);
+          this.totalPages.set(res.value.totalPages);
+        } else {
+          this.projeler.set([]);
+          this.totalCount.set(0);
+          this.totalPages.set(1);
+        }
         this.loading.set(false);
       },
       error: () => {
@@ -156,82 +194,19 @@ export class DepoDurumuComponent implements OnInit {
     });
   }
 
-  private extractNumber(sandikNo: string): number {
-    if (!sandikNo) return 0;
-    const match = sandikNo.match(/(\d+)/);
-    return match ? parseInt(match[1], 10) : 0;
-  }
-
-  private sortLokasyonlar(lokasyonlar: LookupItem[]): LookupItem[] {
-    return lokasyonlar
-      .slice()
-      .sort((a, b) => a.anahtar - b.anahtar || a.deger.localeCompare(b.deger, 'tr-TR'));
-  }
-
-  private isDepodaSayilacakSandik(sandik: SandikDto): boolean {
-    const lokasyonId = sandik.depoLokasyonId || this.belirsizLokasyonId();
-    return sandik.durumId !== 4 && sandik.depodaSayilacakMi === true && lokasyonId !== this.belirsizLokasyonId();
-  }
-
-  private countLokasyonlar(sandiklar: SandikDto[]): Record<number, number> {
-    const counts: Record<number, number> = {};
-    for (const sandik of sandiklar) {
-      const lokasyonId = sandik.depoLokasyonId || this.belirsizLokasyonId();
-      counts[lokasyonId] = (counts[lokasyonId] ?? 0) + 1;
-    }
-    return counts;
-  }
-
-  private belirsizLokasyonId(): number {
-    return this.depoLokasyonlari().find(l => this.isBelirsiz(l))?.id ?? 1;
-  }
-
-  private isBelirsiz(lokasyon: LookupItem): boolean {
-    return lokasyon.id === 1 || lokasyon.deger.toLocaleLowerCase('tr-TR') === 'belirsiz';
-  }
-
+  // --- Search ---
   onSearch(event: Event) {
-    this.searchTerm.set((event.target as HTMLInputElement).value.toLowerCase());
-    this.applyFilter(true);
+    const value = (event.target as HTMLInputElement).value.trim();
+    this.searchSubject.next(value);
   }
 
-  applyFilter(resetPage = false) {
-    const term = this.searchTerm();
-    if (!term) {
-      this.filteredProjectsList.set(this.projectsList());
-      this.syncPagination(resetPage);
-      return;
-    }
-
-    const filtered = this.projectsList().filter(p => {
-      const projeMatch = p.projeNo.toLowerCase().includes(term);
-      const sandikMatch = p.sandiklar.some(s =>
-        s.sandikNo.toLowerCase().includes(term) ||
-        (s.depoLokasyonMetni && s.depoLokasyonMetni.toLowerCase().includes(term))
-      );
-      return projeMatch || sandikMatch;
-    });
-    this.filteredProjectsList.set(filtered);
-    this.syncPagination(resetPage);
-  }
-
-  private syncPagination(resetPage: boolean) {
-    if (resetPage) {
-      this.currentPage.set(1);
-      return;
-    }
-
-    if (this.currentPage() > this.totalPages()) {
-      this.currentPage.set(this.totalPages());
-    }
-  }
-
+  // --- Pagination ---
   onPageSizeChange(size: number | string) {
     const parsedSize = Number(size);
     if (!this.pageSizeOptions.includes(parsedSize)) return;
-
     this.pageSize.set(parsedSize);
     this.currentPage.set(1);
+    this.loadProjeler();
   }
 
   previousPage() {
@@ -244,7 +219,9 @@ export class DepoDurumuComponent implements OnInit {
 
   goToPage(page: number) {
     const safePage = Math.min(Math.max(page, 1), this.totalPages());
+    if (safePage === this.currentPage()) return;
     this.currentPage.set(safePage);
+    this.loadProjeler();
   }
 
   visiblePageNumbers(): number[] {
@@ -255,85 +232,74 @@ export class DepoDurumuComponent implements OnInit {
     return Array.from({ length: visibleCount }, (_, index) => start + index);
   }
 
-  calculateAllStats(projects: ProjectWarehouseStat[]) {
-    const calcStats = (projs: ProjectWarehouseStat[]): DepoStats => {
-      const lokasyonCounts: Record<number, number> = {};
-      for (const proje of projs) {
-        for (const [lokasyonId, count] of Object.entries(proje.lokasyonCounts)) {
-          const id = Number(lokasyonId);
-          lokasyonCounts[id] = (lokasyonCounts[id] ?? 0) + count;
+  // --- Expand / Collapse row (lazy load sandıklar) ---
+  toggleExpand(projeId: number) {
+    if (this.expandedProjeId() === projeId) {
+      this.expandedProjeId.set(null);
+      this.expandedSandiklar.set([]);
+      return;
+    }
+    this.expandedProjeId.set(projeId);
+    this.expandedLoading.set(true);
+    this.expandedSandiklar.set([]);
+    this.sandikService.getSandiklar(projeId).subscribe({
+      next: (res) => {
+        this.expandedLoading.set(false);
+        if (res.isSuccess && res.value) {
+          this.expandedSandiklar.set(
+            res.value
+              .filter(s => s.depodaSayilacakMi)
+              .sort((a, b) => this.extractNumber(a.sandikNo) - this.extractNumber(b.sandikNo))
+          );
         }
+      },
+      error: () => {
+        this.expandedLoading.set(false);
+        this.toastService.error('Sandık detayları yüklenirken bir hata oluştu.');
       }
-
-      return {
-        toplam: projs.reduce((sum, p) => sum + p.toplamSandik, 0),
-        lokasyonCounts
-      };
-    };
-
-    this.globalStats.set(calcStats(projects));
-    this.normalStats.set(calcStats(projects.filter(p => p.projeTipiId === 1)));
-    this.sahaStats.set(calcStats(projects.filter(p => p.projeTipiId === 2)));
-    this.yedekStats.set(calcStats(projects.filter(p => p.projeTipiId === 3)));
+    });
   }
 
-  toggleRow(project: ProjectWarehouseStat) {
-    project.expanded = !project.expanded;
-    this.filteredProjectsList.set([...this.filteredProjectsList()]);
+  private extractNumber(sandikNo: string): number {
+    if (!sandikNo) return 0;
+    const match = sandikNo.match(/(\d+)/);
+    return match ? parseInt(match[1], 10) : 0;
   }
 
-  getVisibleLokasyonlar(stats?: DepoStats | ProjectWarehouseStat): LookupItem[] {
-    return this.depoLokasyonlari().filter(l => !this.isBelirsiz(l));
-  }
-
-  getYonetilebilirDepoLokasyonlari(): LookupItem[] {
-    return this.depoLokasyonlari().filter(l => !this.isBelirsiz(l));
-  }
-
-  getLokasyonCount(stats: DepoStats | ProjectWarehouseStat, lokasyonId: number): number {
-    return stats.lokasyonCounts[lokasyonId] ?? 0;
-  }
-
-  getLokasyonColor(lokasyon: LookupItem, index = 0): string {
-    const key = lokasyon.deger.trim().toLocaleUpperCase('tr-TR');
-    if (key === '3K') return '#0EA5E9';
-    if (key === 'SEYMEN') return '#078A55';
-    if (key === 'GRID') return '#F59E0B';
-    if (this.isBelirsiz(lokasyon)) return '#64748B';
-    return this.palette[index % this.palette.length];
-  }
-
-  getLokasyonBadgeBg(lokasyon: LookupItem, index = 0): string {
-    return `${this.getLokasyonColor(lokasyon, index)}22`;
-  }
-
-  getLokasyonIcon(lokasyon: LookupItem): string {
-    const key = lokasyon.deger.trim().toLocaleUpperCase('tr-TR');
-    if (key === 'GRID') return 'ri-building-line';
-    if (this.isBelirsiz(lokasyon)) return 'ri-map-pin-line';
-    return 'ri-home-4-line';
-  }
-
-  getDonutPercentage(count: number, total: number): number {
-    return total > 0 ? Math.round((count / total) * 100) : 0;
-  }
-
-  getDonutOffset(index: number, stats: DepoStats): number {
-    const lokasyonlar = this.getVisibleLokasyonlar(stats);
-    const previousTotal = lokasyonlar
-      .slice(0, index)
-      .reduce((sum, l) => sum + this.getDonutPercentage(this.getLokasyonCount(stats, l.id), stats.toplam), 0);
-    return 25 - previousTotal;
-  }
-
-  projectTableColspan(): number {
-    return 4 + this.getVisibleLokasyonlar(this.globalStats()).length;
+  // --- Utilities ---
+  private sortLokasyonlar(lokasyonlar: LookupItem[]): LookupItem[] {
+    return lokasyonlar
+      .slice()
+      .sort((a, b) => a.anahtar - b.anahtar || a.deger.localeCompare(b.deger, 'tr-TR'));
   }
 
   projeTipiMetni(projeTipiId: number): string {
     return projeTipiId === 2 ? 'Saha' : projeTipiId === 3 ? 'Yedek' : 'Normal';
   }
 
+  // --- Donut chart helpers ---
+  getDonutPercentage(count: number, total: number): number {
+    return total > 0 ? Math.round((count / total) * 100) : 0;
+  }
+
+  getDonutSegments(): { label: string; count: number; color: string }[] {
+    return [
+      { label: '3K', count: this.globalDepoUcK(), color: '#0EA5E9' },
+      { label: 'Seymen', count: this.globalDepoSeymen(), color: '#078A55' },
+      { label: 'Grid', count: this.globalDepoGrid(), color: '#F59E0B' },
+    ];
+  }
+
+  getDonutOffset(index: number): number {
+    const segments = this.getDonutSegments();
+    const total = this.globalDepoToplam();
+    const previousTotal = segments
+      .slice(0, index)
+      .reduce((sum, s) => sum + this.getDonutPercentage(s.count, total), 0);
+    return 25 - previousTotal;
+  }
+
+  // --- Report menu ---
   @HostListener('document:click')
   closeReportMenu() {
     this.reportMenuOpen.set(false);
@@ -343,6 +309,24 @@ export class DepoDurumuComponent implements OnInit {
     event.stopPropagation();
     if (this.downloadingPdf()) return;
     this.reportMenuOpen.update(open => !open);
+  }
+
+  // --- Depo modal management ---
+  getYonetilebilirDepoLokasyonlari(): LookupItem[] {
+    return this.depoLokasyonlari().filter(l => !this.isBelirsiz(l));
+  }
+
+  private isBelirsiz(lokasyon: LookupItem): boolean {
+    return lokasyon.id === 1 || lokasyon.deger.toLocaleLowerCase('tr-TR') === 'belirsiz';
+  }
+
+  getLokasyonColor(lokasyon: LookupItem, index = 0): string {
+    const key = lokasyon.deger.trim().toLocaleUpperCase('tr-TR');
+    if (key === '3K') return '#0EA5E9';
+    if (key === 'SEYMEN') return '#078A55';
+    if (key === 'GRID') return '#F59E0B';
+    if (this.isBelirsiz(lokasyon)) return '#64748B';
+    return this.palette[index % this.palette.length];
   }
 
   openDepoModal() {
@@ -360,7 +344,7 @@ export class DepoDurumuComponent implements OnInit {
   }
 
   depoSilinebilirMi(lokasyon: LookupItem): boolean {
-    return !this.depoSistemKaydiMi(lokasyon) && this.getLokasyonCount(this.globalStats(), lokasyon.id) === 0;
+    return !this.depoSistemKaydiMi(lokasyon);
   }
 
   depoEkle() {
@@ -377,8 +361,6 @@ export class DepoDurumuComponent implements OnInit {
         this.toastService.success('Depo başarıyla eklendi.');
         this.yeniDepoAdi.set('');
         this.depoLokasyonlari.set(this.sortLokasyonlar([...this.depoLokasyonlari(), lokasyon]));
-        this.calculateAllStats(this.projectsList());
-        this.applyFilter();
       },
       error: (err) => {
         this.savingDepo.set(false);
@@ -389,7 +371,7 @@ export class DepoDurumuComponent implements OnInit {
 
   depoSil(lokasyon: LookupItem) {
     if (!this.depoSilinebilirMi(lokasyon)) {
-      this.toastService.error('Bu depo silinemez. Önce bağlı sandıkların lokasyonunu değiştirin.');
+      this.toastService.error('Bu depo silinemez.');
       return;
     }
 
@@ -399,8 +381,6 @@ export class DepoDurumuComponent implements OnInit {
         this.savingDepo.set(false);
         this.toastService.success('Depo silindi.');
         this.depoLokasyonlari.set(this.depoLokasyonlari().filter(l => l.id !== lokasyon.id));
-        this.calculateAllStats(this.projectsList());
-        this.applyFilter();
       },
       error: (err) => {
         this.savingDepo.set(false);
@@ -417,16 +397,13 @@ export class DepoDurumuComponent implements OnInit {
     return obj.error?.message || obj.message || '';
   }
 
+  // --- PDF report ---
   private getReportTypeLabel(projeTipiId: number | null): string {
     switch (projeTipiId) {
-      case 1:
-        return 'Normal';
-      case 2:
-        return 'Saha';
-      case 3:
-        return 'Yedek';
-      default:
-        return 'TumProjeler';
+      case 1: return 'Normal';
+      case 2: return 'Saha';
+      case 3: return 'Yedek';
+      default: return 'TumProjeler';
     }
   }
 

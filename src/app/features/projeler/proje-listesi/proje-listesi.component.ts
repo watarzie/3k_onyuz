@@ -1,5 +1,7 @@
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, ActivatedRoute } from '@angular/router';
 import { NgClass, DatePipe } from '@angular/common';
@@ -52,29 +54,17 @@ export class ProjeListesiComponent implements OnInit {
   });
 
   projeler = signal<ProjeDto[]>([]);
-  filtered = signal<ProjeDto[]>([]);
   loading = signal(true);
 
-  // Pagination
+  // Server-side pagination
+  searchTerm = signal('');
   currentPage = signal(1);
   pageSize = signal(15);
-  totalPages = computed(() => Math.max(1, Math.ceil(this.filtered().length / this.pageSize())));
-  paginatedData = computed(() => {
-    const start = (this.currentPage() - 1) * this.pageSize();
-    return this.filtered().slice(start, start + this.pageSize());
-  });
-  /** Sayfa numarası dizisi: akıllı truncation ile */
-  visiblePages = computed(() => {
-    const total = this.totalPages();
-    const current = this.currentPage();
-    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-    const pages: (number | null)[] = [1];
-    if (current > 3) pages.push(null); // ellipsis
-    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
-    if (current < total - 2) pages.push(null);
-    pages.push(total);
-    return pages;
-  });
+  pageSizeOptions = [15, 25, 50];
+  totalCount = signal(0);
+  totalPages = signal(0);
+
+  private searchSubject = new Subject<string>();
 
   // Çeki yükleme
   showUploadModal = signal(false);
@@ -143,6 +133,15 @@ export class ProjeListesiComponent implements OnInit {
     }
     
     this.loadProjeler();
+
+    this.searchSubject.pipe(
+      debounceTime(400),
+      distinctUntilChanged()
+    ).subscribe(term => {
+      this.searchTerm.set(term);
+      this.currentPage.set(1);
+      this.loadProjeler();
+    });
   }
 
   /** Sandık yönetimi moduna giren tüm modlar için ortak kontrol */
@@ -151,61 +150,61 @@ export class ProjeListesiComponent implements OnInit {
   loadProjeler() {
     this.loading.set(true);
 
-    // Saha/Yedek modüllerinde sadece o tipteki projeleri çek
-    let obs;
+    // Mode'a gore parametreleri belirle
+    let projeTipiId: number | undefined;
+    let isSevkEdilen: boolean | undefined;
+
     if (this.isSahaYonetimi()) {
-      obs = this.projeService.getProjeListesiByTip(2); // Saha
+      projeTipiId = 2;
     } else if (this.isYedekYonetimi()) {
-      obs = this.projeService.getProjeListesiByTip(3); // Yedek
+      projeTipiId = 3;
     } else if (this.isSevkEdilen()) {
-      obs = this.projeService.getProjeListesi(); // Tüm projeler
+      isSevkEdilen = true; // Tum tipler, sadece sevk edilmis
     } else {
-      obs = this.projeService.getProjeListesiByTip(1); // Sadece Normal projeler
+      // Aktif Projeler veya Sandik Yonetimi — Normal projeler, sevk edilmemis
+      projeTipiId = 1;
+      isSevkEdilen = false;
     }
 
-    obs.subscribe((res) => {
+    this.projeService.getProjeListesi(
+      this.currentPage(),
+      this.pageSize(),
+      projeTipiId,
+      this.searchTerm() || undefined,
+      isSevkEdilen
+    ).subscribe(res => {
       this.loading.set(false);
       if (res.isSuccess && res.value) {
-        let data = res.value;
-
-        // Sekmeye göre filtrele (normal projeler için)
-        if (this.isSevkEdilen()) {
-          data = data.filter(p => p.durumMetni === 'SevkEdildi' || p.durumMetni === 'Sevk Edildi');
-        } else if (this.isAktifProjeler() || this.isSandikYonetimi()) {
-          data = data.filter(p => p.durumMetni !== 'SevkEdildi' && p.durumMetni !== 'Sevk Edildi');
-        }
-
-        // En son yüklenen proje ilk başta — Id desc sıralaması
-        data = data.sort((a, b) => b.id - a.id);
-
-        this.projeler.set(data);
-        this.filtered.set(data);
-        this.currentPage.set(1);
+        this.projeler.set(res.value.items);
+        this.totalCount.set(res.value.totalCount);
+        this.totalPages.set(res.value.totalPages);
       }
     });
   }
 
   onSearch(event: Event) {
-    const term = (event.target as HTMLInputElement).value.toLowerCase();
-    if (!term) {
-      this.filtered.set(this.projeler());
-    } else {
-      this.filtered.set(
-        this.projeler().filter(
-          (p) => p.projeNo.toLowerCase().includes(term) || p.musteri?.toLowerCase().includes(term)
-        )
-      );
-    }
-    this.currentPage.set(1); // Arama yapıldığında ilk sayfaya dön
+    const term = (event.target as HTMLInputElement).value;
+    this.searchSubject.next(term);
   }
 
   // ===== Pagination Navigation =====
   goToPage(page: number | null) {
     if (page === null || page < 1 || page > this.totalPages()) return;
     this.currentPage.set(page);
+    this.loadProjeler();
   }
   prevPage() { this.goToPage(this.currentPage() - 1); }
   nextPage() { this.goToPage(this.currentPage() + 1); }
+
+  onPageSizeChange(size: number) {
+    this.pageSize.set(size);
+    this.currentPage.set(1);
+    this.loadProjeler();
+  }
+
+  mathMin(a: number, b: number): number {
+    return Math.min(a, b);
+  }
 
   getTamamlanmaYuzdesi(p: ProjeDto): number {
     if (p.toplamUrunSayisi === 0) return 0;

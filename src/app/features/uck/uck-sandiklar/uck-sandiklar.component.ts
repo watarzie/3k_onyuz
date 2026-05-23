@@ -134,6 +134,23 @@ export class UcKSandiklarComponent implements OnInit {
     });
   }
 
+  /**
+   * Listeyi yerinde günceller — scroll pozisyonu korunur.
+   * Mevcut sandıkların verilerini API'den taze veriyle değiştirir
+   * ama dizi referansını ve sıralamayı korur.
+   */
+  refreshSandiklar() {
+    this.sandikService.getSandiklar(this.projeId()).subscribe((res) => {
+      if (res.isSuccess && res.value) {
+        const freshMap = new Map(res.value.map(s => [s.id, s]));
+        // Mevcut listeyi yerinde güncelle
+        const updated = this.sandiklar().map(s => freshMap.get(s.id) ?? s);
+        this.sandiklar.set(updated);
+        this.applyFilters();
+      }
+    });
+  }
+
   /** SandıkNo'dan numerik değer çıkar — "Sandik-3" → 3, "5" → 5 */
   private extractNumber(sandikNo: string): number {
     const match = sandikNo.match(/(\d+)/);
@@ -228,8 +245,8 @@ export class UcKSandiklarComponent implements OnInit {
         if (res.isSuccess) {
           this.toast.success('Lokasyon başarıyla güncellendi.');
           this.closeLokasyonModal();
-          this.selectedSandikIds.set(new Set()); // Eğer toplu geldiyse checkboxları temizle
-          this.loadSandiklar();
+          this.selectedSandikIds.set(new Set());
+          this.refreshSandiklar();
         } else {
           this.toast.error(res.error || 'İşlem başarısız oldu.');
         }
@@ -307,7 +324,7 @@ export class UcKSandiklarComponent implements OnInit {
         if (res.isSuccess) {
           this.toast.success(res.message || 'Sandıklar başarıyla kapatıldı.');
           this.selectedSandikIds.set(new Set());
-          this.loadSandiklar();
+          this.refreshSandiklar();
         } else if (res.hasMissingOrDefectiveItems) {
           const warningList = res.uyariDetaylari?.map((u: any) => `
              <div class="text-dark fw-bold mb-2">Sandık ${u.sandikNo}</div>
@@ -379,7 +396,7 @@ export class UcKSandiklarComponent implements OnInit {
           next: (res) => {
             if (res.isSuccess) {
               this.toast.success('Sandık tekrar hazırlanıyor konumuna alındı.');
-              this.loadSandiklar();
+              this.refreshSandiklar();
             } else {
               this.toast.error(res.error || 'İşlem başarısız oldu.');
             }
@@ -400,7 +417,7 @@ export class UcKSandiklarComponent implements OnInit {
 
         if (res.isSuccess) {
           this.toast.success('Sandık başarıyla kapatıldı.');
-          this.loadSandiklar();
+          this.refreshSandiklar();
         } else if (res.hasMissingOrDefectiveItems) {
           const warningList = res.missingItemDetails?.map((item: any) => this.generateMissingItemHtml(item)).join('') || '';
           const warningConfirm = await this.confirmService.ask({

@@ -28,7 +28,7 @@
 
 <div class="trezo-card border-0 shadow-none mb-4">
   <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-    <h5 class="fw-semibold mb-0">{{ isSahaYonetimi() ? 'Saha Projeleri' : isYedekYonetimi() ? 'Yedek Projeleri' : 'Projeler' }} ({{ filtered().length }})</h5>
+    <h5 class="fw-semibold mb-0">{{ isSahaYonetimi() ? 'Saha Projeleri' : isYedekYonetimi() ? 'Yedek Projeleri' : 'Projeler' }} ({{ totalCount() }})</h5>
     <div class="search-box position-relative" style="width: 250px;">
       <i class="ri-search-line position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
       <input type="text" class="form-control ps-5" placeholder="Ara..." (input)="onSearch($event)" />
@@ -38,7 +38,7 @@
   <div class="card-body p-0">
     @if (loading()) {
       <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
-    } @else if (filtered().length === 0) {
+    } @else if (projeler().length === 0 && !loading()) {
       <div class="text-center py-5">
         @if (isSevkEdilen()) {
           <div class="empty-icon mb-3 text-muted" style="font-size: 3rem;"><i class="ri-truck-line"></i></div>
@@ -90,7 +90,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (p of paginatedData(); track p.id) {
+            @for (p of projeler(); track p.id) {
               <tr>
                 <td class="fw-semibold">
                   @if (isSandikMode()) {
@@ -219,33 +219,40 @@
         </table>
       </div>
 
-      <!-- Pagination Bar -->
-      @if (filtered().length > 0) {
-        <div class="d-flex align-items-center justify-content-between p-3 border-top">
-          <div class="d-flex align-items-center gap-2">
-            <span class="text-muted small">Sayfa başına kayıt:</span>
-            <select class="form-select form-select-sm" style="width: auto;" [ngModel]="pageSize()" (ngModelChange)="pageSize.set(+$event); currentPage.set(1)">
-              <option [value]="15">15</option>
-              <option [value]="25">25</option>
-              <option [value]="50">50</option>
-            </select>
-            <span class="text-muted small ms-2">Toplam: {{ filtered().length }} proje</span>
-          </div>
-          <nav aria-label="Sayfalama">
-            <ul class="pagination pagination-sm mb-0">
-              <li class="page-item" [class.disabled]="currentPage() === 1">
-                <button class="page-link" (click)="prevPage()">Önceki</button>
-              </li>
-              <li class="page-item active">
-                <span class="page-link">{{ currentPage() }} / {{ totalPages() }}</span>
-              </li>
-              <li class="page-item" [class.disabled]="currentPage() === totalPages()">
-                <button class="page-link" (click)="nextPage()">Sonraki</button>
-              </li>
-            </ul>
-          </nav>
+      <!-- Pagination -->
+    @if (totalCount() > 0) {
+      <div class="d-flex align-items-center justify-content-between p-3 border-top flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <span class="text-muted">Sayfa başına:</span>
+          <select class="form-select form-select-sm" style="width: auto;"
+            [ngModel]="pageSize()"
+            (ngModelChange)="onPageSizeChange(+$event)">
+            @for (opt of pageSizeOptions; track opt) {
+              <option [value]="opt">{{ opt }}</option>
+            }
+          </select>
+          <span class="text-muted ms-2">
+            Toplam {{ totalCount() }} projeden
+            {{ (currentPage() - 1) * pageSize() + 1 }} -
+            {{ mathMin(currentPage() * pageSize(), totalCount()) }}
+            arası gösteriliyor
+          </span>
         </div>
-      }
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="currentPage() === 1">
+              <a class="page-link" (click)="prevPage()" role="button">Önceki</a>
+            </li>
+            <li class="page-item active">
+              <span class="page-link">{{ currentPage() }} / {{ totalPages() }}</span>
+            </li>
+            <li class="page-item" [class.disabled]="currentPage() >= totalPages()">
+              <a class="page-link" (click)="nextPage()" role="button">Sonraki</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    }
     }
   </div>
 </div>

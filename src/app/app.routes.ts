@@ -199,6 +199,7 @@ export const routes: Routes = [
         data: { menuKod: 'hareket-gecmisi', title: 'Hareket Geçmişi (Log)' },
       },
 
+
       // --- Kullanıcı Yönetimi ---
       {
         path: 'kullanicilar',

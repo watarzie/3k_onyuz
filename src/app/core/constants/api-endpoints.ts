@@ -21,7 +21,6 @@ export const API = {
   },
   PROJE: {
     LIST: `${BASE}/proje`,
-    LIST_BY_TIP: (tipId: number) => `${BASE}/proje?projeTipiId=${tipId}`,
     DROPDOWN: `${BASE}/proje/dropdown`,
     CREATE: `${BASE}/proje`,
     SANDIK_KAPAT: `${BASE}/proje/sandik-kapat`,

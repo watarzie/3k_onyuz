@@ -1,10 +1,13 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { HareketGecmisiService } from '../../core/services/hareket-gecmisi.service';
 import { ProjeService } from '../../core/services/proje.service';
-import { HareketGecmisiDto, ProjeDto } from '../../shared/models/index';
+import { LookupService } from '../../core/services/lookup.service';
+import { HareketGecmisiDto, ProjeDto, LookupItem } from '../../shared/models/index';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmService } from '../../core/services/confirm.service';
 
@@ -20,68 +23,29 @@ export class HareketGecmisiComponent implements OnInit {
   private projeService = inject(ProjeService);
   private toast = inject(ToastService);
   private confirmService = inject(ConfirmService);
+  private lookupService = inject(LookupService);
 
   projeler = signal<ProjeDto[]>([]);
   selectedProjeId = signal<number | null>(null);
 
+  // Data
   hareketler = signal<HareketGecmisiDto[]>([]);
   loading = signal(false);
+
+  // Filters
   searchTerm = signal('');
-  selectedIslemTipi = signal('');
-  
-  // Pagination
+  selectedIslemTipiId = signal<number | null>(null);
+  islemTipleri = signal<LookupItem[]>([]);
+
+  // Pagination (server-side)
   currentPage = signal(1);
   pageSize = signal(15);
   pageSizeOptions = [15, 25, 50];
+  totalCount = signal(0);
+  totalPages = signal(0);
 
-  islemTipleri = computed(() => {
-    const tipler = this.hareketler().map(h => h.islemTipiMetni || h.islem);
-    return [...new Set(tipler)].sort();
-  });
-
-  filteredHareketler = computed(() => {
-    let result = this.hareketler();
-    
-    const tip = this.selectedIslemTipi();
-    if (tip) {
-      result = result.filter(h => (h.islemTipiMetni || h.islem) === tip);
-    }
-
-    const term = this.searchTerm().toLowerCase();
-    if (term) {
-      result = result.filter(h => 
-        h.islem.toLowerCase().includes(term) ||
-        h.islemTipiMetni.toLowerCase().includes(term) ||
-        (h.referansId && h.referansId.toLowerCase().includes(term)) ||
-        (h.kullaniciAdi && h.kullaniciAdi.toLowerCase().includes(term)) ||
-        (h.aciklama && h.aciklama.toLowerCase().includes(term)) ||
-        (h.eskiDeger && h.eskiDeger.toLowerCase().includes(term)) ||
-        (h.yeniDeger && h.yeniDeger.toLowerCase().includes(term))
-      );
-    }
-    return result;
-  });
-
-  paginatedHareketler = computed(() => {
-    const list = this.filteredHareketler();
-    const startIndex = (this.currentPage() - 1) * this.pageSize();
-    return list.slice(startIndex, startIndex + this.pageSize());
-  });
-  
-  totalPages = computed(() => Math.ceil(this.filteredHareketler().length / this.pageSize()) || 1);
-
-  changePage(page: number) {
-    if (page >= 1 && page <= this.totalPages()) {
-      this.currentPage.set(page);
-    }
-  }
-
-  onPageSizeChange(size: number) {
-    if (this.pageSizeOptions.includes(size)) {
-      this.pageSize.set(size);
-      this.currentPage.set(1);
-    }
-  }
+  // Search debounce
+  private searchSubject = new Subject<string>();
 
   mathMin(a: number, b: number): number {
     return Math.min(a, b);
@@ -89,12 +53,30 @@ export class HareketGecmisiComponent implements OnInit {
 
   ngOnInit() {
     this.loadProjeler();
+    this.loadIslemTipleri();
+
+    // Debounce search input — wait 400ms after user stops typing
+    this.searchSubject.pipe(
+      debounceTime(400),
+      distinctUntilChanged()
+    ).subscribe(term => {
+      this.searchTerm.set(term);
+      this.currentPage.set(1);
+      this.loadHareketler();
+    });
+  }
+
+  loadIslemTipleri() {
+    this.lookupService.getLookups(['LookupIslemTipi']).subscribe(res => {
+      const items = res['LookupIslemTipi'] ?? [];
+      this.islemTipleri.set(items);
+    });
   }
 
   loadProjeler() {
-    this.projeService.getProjeListesi().subscribe(res => {
+    this.projeService.getProjeListesi(1, 1000).subscribe(res => {
       if (res.isSuccess && res.value) {
-        this.projeler.set(res.value);
+        this.projeler.set(res.value.items);
         if (this.projeler().length > 0) {
           this.selectedProjeId.set(this.projeler()[0].id);
           this.loadHareketler();
@@ -104,6 +86,18 @@ export class HareketGecmisiComponent implements OnInit {
   }
 
   onProjeChange() {
+    this.currentPage.set(1);
+    this.loadHareketler();
+  }
+
+  onSearchInput(event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    this.searchSubject.next(value);
+  }
+
+  onIslemTipiChange(value: any) {
+    this.selectedIslemTipiId.set(value ? +value : null);
+    this.currentPage.set(1);
     this.loadHareketler();
   }
 
@@ -112,22 +106,46 @@ export class HareketGecmisiComponent implements OnInit {
     if (!pId) return;
 
     this.loading.set(true);
-    this.hareketService.getByProje(pId).subscribe({
+    this.hareketService.getByProje(
+      pId,
+      this.currentPage(),
+      this.pageSize(),
+      this.searchTerm() || undefined,
+      this.selectedIslemTipiId() ?? undefined
+    ).subscribe({
       next: (res) => {
         this.loading.set(false);
         if (res.isSuccess && res.value) {
-          this.hareketler.set(res.value);
+          const paginated = res.value;
+          this.hareketler.set(paginated.items);
+          this.totalCount.set(paginated.totalCount);
+          this.totalPages.set(paginated.totalPages);
         } else {
           this.toast.error(res.error || 'Geçmiş yüklenemedi.');
           this.hareketler.set([]);
         }
       },
-      error: (err) => {
+      error: () => {
         this.loading.set(false);
         this.toast.error('Bağlantı hatası.');
         this.hareketler.set([]);
       }
     });
+  }
+
+  changePage(page: number) {
+    if (page >= 1 && page <= this.totalPages()) {
+      this.currentPage.set(page);
+      this.loadHareketler();
+    }
+  }
+
+  onPageSizeChange(size: number) {
+    if (this.pageSizeOptions.includes(size)) {
+      this.pageSize.set(size);
+      this.currentPage.set(1);
+      this.loadHareketler();
+    }
   }
 
   // Renkli badge'ler için yardımcı metot
@@ -147,7 +165,7 @@ export class HareketGecmisiComponent implements OnInit {
       title: title,
       message: `<div class="text-start text-dark" style="max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;">${text}</div>`,
       confirmText: 'Kapat',
-      cancelText: '', // Hide cancel button
+      cancelText: '',
       type: 'info'
     });
   }

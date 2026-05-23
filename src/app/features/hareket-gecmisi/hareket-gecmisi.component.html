@@ -15,16 +15,16 @@
   <div class="col-sm-8 text-sm-end mt-3 mt-sm-0">
     <div class="d-flex justify-content-sm-end gap-2">
       <div class="filter-box">
-        <select class="form-select form-select-sm" [ngModel]="selectedIslemTipi()" (ngModelChange)="selectedIslemTipi.set($event); currentPage.set(1)" style="min-width: 160px;">
-          <option value="">Tüm İşlemler</option>
-          @for (tip of islemTipleri(); track tip) {
-            <option [value]="tip">{{ tip }}</option>
+        <select class="form-select form-select-sm" [ngModel]="selectedIslemTipiId()" (ngModelChange)="onIslemTipiChange($event)" style="min-width: 160px;">
+          <option [ngValue]="null">Tüm İşlemler</option>
+          @for (tip of islemTipleri(); track tip.id) {
+            <option [ngValue]="tip.anahtar">{{ tip.deger }}</option>
           }
         </select>
       </div>
       <div class="search-box">
         <i class="ri-search-line"></i>
-        <input type="text" class="form-control form-control-sm" placeholder="İşlem, kullanıcı veya referans ara..." [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event); currentPage.set(1)">
+        <input type="text" class="form-control form-control-sm" placeholder="İşlem, kullanıcı veya referans ara..." (input)="onSearchInput($event)">
       </div>
     </div>
   </div>
@@ -54,7 +54,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (h of paginatedHareketler(); track h.id) {
+            @for (h of hareketler(); track h.id) {
               <tr>
                 <td class="text-muted">
                   <div class="d-flex flex-column">
@@ -123,7 +123,7 @@
                 </td>
               </tr>
             }
-            @if (filteredHareketler().length === 0 && !loading()) {
+            @if (hareketler().length === 0 && !loading()) {
               <tr>
                 <td colspan="6" class="text-center py-4 text-muted">
                   Bu proje için henüz bir hareket bulunmuyor veya arama kriterine uyan kayıt yok.
@@ -134,7 +134,7 @@
         </table>
       </div>
 
-      @if (!loading() && totalPages() >= 1) {
+      @if (!loading() && totalCount() > 0) {
         <div class="card-footer bg-white border-top border-light px-4 py-3 rounded-bottom-3">
           <div class="d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3">
             <div class="d-flex align-items-center gap-2">
@@ -145,9 +145,9 @@
                 }
               </select>
               <span class="text-muted small ms-2">
-                Toplam <strong class="text-dark">{{ filteredHareketler().length }}</strong> kayıttan 
-                <strong class="text-dark">{{ (currentPage() - 1) * pageSize() + (filteredHareketler().length > 0 ? 1 : 0) }}</strong> - 
-                <strong class="text-dark">{{ mathMin(currentPage() * pageSize(), filteredHareketler().length) }}</strong> arası gösteriliyor.
+                Toplam <strong class="text-dark">{{ totalCount() }}</strong> kayıttan
+                <strong class="text-dark">{{ (currentPage() - 1) * pageSize() + (hareketler().length > 0 ? 1 : 0) }}</strong> -
+                <strong class="text-dark">{{ mathMin(currentPage() * pageSize(), totalCount()) }}</strong> arası gösteriliyor.
               </span>
             </div>
             @if (totalPages() > 1) {

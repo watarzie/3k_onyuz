@@ -48,21 +48,23 @@
   </div>
 </div>
 
-@if (loading()) {
-<div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
-} @else {
+<!-- ===== Summary Cards ===== -->
 <div class="row g-4 mb-4">
   <div class="col-12 col-md-3">
     <div class="trezo-card border-0 bg-white h-100 depo-summary-card is-primary">
       <div class="p-4 text-center">
         <h6 class="fw-semibold mb-2 text-uppercase">Genel Toplam Sandık</h6>
-        <h2 class="fw-bold mb-3 text-dark">{{ globalStats().toplam }}</h2>
+        <h2 class="fw-bold mb-3 text-dark">{{ globalDepoToplam() }}</h2>
         <div class="d-flex justify-content-center gap-2 flex-wrap">
-          @for (loc of getVisibleLokasyonlar(globalStats()); track loc.id; let i = $index) {
-          <span class="depo-badge" [style.color]="getLokasyonColor(loc, i)" [style.background-color]="getLokasyonBadgeBg(loc, i)">
-            <i [class]="getLokasyonIcon(loc)"></i>{{ loc.deger }}: <strong>{{ getLokasyonCount(globalStats(), loc.id) }}</strong>
+          <span class="depo-badge" style="color: #0EA5E9; background-color: #0EA5E922;">
+            <i class="ri-home-4-line"></i>3K: <strong>{{ globalDepoUcK() }}</strong>
           </span>
-          }
+          <span class="depo-badge" style="color: #078A55; background-color: #078A5522;">
+            <i class="ri-home-4-line"></i>Seymen: <strong>{{ globalDepoSeymen() }}</strong>
+          </span>
+          <span class="depo-badge" style="color: #F59E0B; background-color: #F59E0B22;">
+            <i class="ri-building-line"></i>Grid: <strong>{{ globalDepoGrid() }}</strong>
+          </span>
         </div>
       </div>
     </div>
@@ -72,13 +74,17 @@
     <div class="trezo-card border-0 bg-white h-100 depo-summary-card">
       <div class="p-4 text-center">
         <h6 class="fw-semibold mb-2 text-uppercase">Normal Projeler</h6>
-        <h2 class="fw-bold mb-3 text-dark">{{ normalStats().toplam }}</h2>
+        <h2 class="fw-bold mb-3 text-dark">{{ normalDepoToplam() }}</h2>
         <div class="d-flex justify-content-center gap-2 flex-wrap">
-          @for (loc of getVisibleLokasyonlar(normalStats()); track loc.id; let i = $index) {
-          <span class="depo-badge" [style.color]="getLokasyonColor(loc, i)" [style.background-color]="getLokasyonBadgeBg(loc, i)">
-            {{ loc.deger }}: <strong>{{ getLokasyonCount(normalStats(), loc.id) }}</strong>
+          <span class="depo-badge" style="color: #0EA5E9; background-color: #0EA5E922;">
+            3K: <strong>{{ normalDepoUcK() }}</strong>
           </span>
-          }
+          <span class="depo-badge" style="color: #078A55; background-color: #078A5522;">
+            Seymen: <strong>{{ normalDepoSeymen() }}</strong>
+          </span>
+          <span class="depo-badge" style="color: #F59E0B; background-color: #F59E0B22;">
+            Grid: <strong>{{ normalDepoGrid() }}</strong>
+          </span>
         </div>
       </div>
     </div>
@@ -88,13 +94,17 @@
     <div class="trezo-card border-0 bg-white h-100 depo-summary-card">
       <div class="p-4 text-center">
         <h6 class="fw-semibold mb-2 text-uppercase">Saha Projeleri</h6>
-        <h2 class="fw-bold mb-3 text-dark">{{ sahaStats().toplam }}</h2>
+        <h2 class="fw-bold mb-3 text-dark">{{ sahaDepoToplam() }}</h2>
         <div class="d-flex justify-content-center gap-2 flex-wrap">
-          @for (loc of getVisibleLokasyonlar(sahaStats()); track loc.id; let i = $index) {
-          <span class="depo-badge" [style.color]="getLokasyonColor(loc, i)" [style.background-color]="getLokasyonBadgeBg(loc, i)">
-            {{ loc.deger }}: <strong>{{ getLokasyonCount(sahaStats(), loc.id) }}</strong>
+          <span class="depo-badge" style="color: #0EA5E9; background-color: #0EA5E922;">
+            3K: <strong>{{ sahaDepoUcK() }}</strong>
           </span>
-          }
+          <span class="depo-badge" style="color: #078A55; background-color: #078A5522;">
+            Seymen: <strong>{{ sahaDepoSeymen() }}</strong>
+          </span>
+          <span class="depo-badge" style="color: #F59E0B; background-color: #F59E0B22;">
+            Grid: <strong>{{ sahaDepoGrid() }}</strong>
+          </span>
         </div>
       </div>
     </div>
@@ -104,19 +114,24 @@
     <div class="trezo-card border-0 bg-white h-100 depo-summary-card">
       <div class="p-4 text-center">
         <h6 class="fw-semibold mb-2 text-uppercase">Yedek Projeleri</h6>
-        <h2 class="fw-bold mb-3 text-dark">{{ yedekStats().toplam }}</h2>
+        <h2 class="fw-bold mb-3 text-dark">{{ yedekDepoToplam() }}</h2>
         <div class="d-flex justify-content-center gap-2 flex-wrap">
-          @for (loc of getVisibleLokasyonlar(yedekStats()); track loc.id; let i = $index) {
-          <span class="depo-badge" [style.color]="getLokasyonColor(loc, i)" [style.background-color]="getLokasyonBadgeBg(loc, i)">
-            {{ loc.deger }}: <strong>{{ getLokasyonCount(yedekStats(), loc.id) }}</strong>
+          <span class="depo-badge" style="color: #0EA5E9; background-color: #0EA5E922;">
+            3K: <strong>{{ yedekDepoUcK() }}</strong>
           </span>
-          }
+          <span class="depo-badge" style="color: #078A55; background-color: #078A5522;">
+            Seymen: <strong>{{ yedekDepoSeymen() }}</strong>
+          </span>
+          <span class="depo-badge" style="color: #F59E0B; background-color: #F59E0B22;">
+            Grid: <strong>{{ yedekDepoGrid() }}</strong>
+          </span>
         </div>
       </div>
     </div>
   </div>
 </div>
 
+<!-- ===== Donut Chart ===== -->
 <div class="row mb-4 justify-content-center">
   <div class="col-12 col-md-8 col-lg-6">
     <div class="trezo-card border-0 bg-white h-100 depo-chart-card">
@@ -127,17 +142,17 @@
         <div class="depo-donut">
           <svg viewBox="0 0 42 42" class="donut-chart w-100 h-100">
             <circle class="donut-ring" cx="21" cy="21" r="15.9" fill="transparent" stroke="#f1f5f9" stroke-width="5" />
-            @for (loc of getVisibleLokasyonlar(globalStats()); track loc.id; let i = $index) {
-              @if (getLokasyonCount(globalStats(), loc.id) > 0) {
+            @for (seg of getDonutSegments(); track seg.label; let i = $index) {
+              @if (seg.count > 0) {
               <circle class="donut-segment" cx="21" cy="21" r="15.9" fill="transparent"
-                [attr.stroke]="getLokasyonColor(loc, i)"
+                [attr.stroke]="seg.color"
                 stroke-width="5"
-                [attr.stroke-dasharray]="getDonutPercentage(getLokasyonCount(globalStats(), loc.id), globalStats().toplam) + ' ' + (100 - getDonutPercentage(getLokasyonCount(globalStats(), loc.id), globalStats().toplam))"
-                [attr.stroke-dashoffset]="getDonutOffset(i, globalStats())" />
+                [attr.stroke-dasharray]="getDonutPercentage(seg.count, globalDepoToplam()) + ' ' + (100 - getDonutPercentage(seg.count, globalDepoToplam()))"
+                [attr.stroke-dashoffset]="getDonutOffset(i)" />
               }
             }
             <text x="21" y="19" text-anchor="middle" dominant-baseline="central" class="donut-text">
-              <tspan class="donut-number" font-size="8" font-weight="800" fill="#1e293b">{{ globalStats().toplam }}</tspan>
+              <tspan class="donut-number" font-size="8" font-weight="800" fill="#1e293b">{{ globalDepoToplam() }}</tspan>
             </text>
             <text x="21" y="25" text-anchor="middle" dominant-baseline="central">
               <tspan font-size="3.5" fill="#64748b" font-weight="500">Toplam</tspan>
@@ -145,29 +160,40 @@
           </svg>
         </div>
         <div class="depo-legend-list">
-          @for (loc of getVisibleLokasyonlar(globalStats()); track loc.id; let i = $index) {
           <div class="depo-legend-row">
-            <span class="legend-dot" [style.background-color]="getLokasyonColor(loc, i)"></span>
-            <span class="text-secondary fw-medium">{{ loc.deger }}</span>
-            <strong class="ms-auto text-dark fs-5">{{ getLokasyonCount(globalStats(), loc.id) }}</strong>
+            <span class="legend-dot" style="background-color: #0EA5E9;"></span>
+            <span class="text-secondary fw-medium">3K</span>
+            <strong class="ms-auto text-dark fs-5">{{ globalDepoUcK() }}</strong>
           </div>
-          }
+          <div class="depo-legend-row">
+            <span class="legend-dot" style="background-color: #078A55;"></span>
+            <span class="text-secondary fw-medium">Seymen</span>
+            <strong class="ms-auto text-dark fs-5">{{ globalDepoSeymen() }}</strong>
+          </div>
+          <div class="depo-legend-row">
+            <span class="legend-dot" style="background-color: #F59E0B;"></span>
+            <span class="text-secondary fw-medium">Grid</span>
+            <strong class="ms-auto text-dark fs-5">{{ globalDepoGrid() }}</strong>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
+<!-- ===== Project Distribution Table ===== -->
 <div class="trezo-card border-0 bg-white project-distribution-card">
   <div class="card-header border-0 pb-0 pt-4 px-4 d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
-    <h4 class="fw-bold mb-0 text-dark">Proje Bazlı Depo Dağılımı <span class="badge bg-secondary-subtle text-secondary ms-2 rounded-pill fs-6">{{ filteredProjectsList().length }}</span></h4>
+    <h4 class="fw-bold mb-0 text-dark">Proje Bazlı Depo Dağılımı <span class="badge bg-secondary-subtle text-secondary ms-2 rounded-pill fs-6">{{ totalCount() }}</span></h4>
     <div class="search-box position-relative">
       <i class="ri-search-2-line position-absolute top-50 translate-middle-y text-muted"></i>
-      <input type="text" class="form-control bg-light border-0" placeholder="Proje veya Sandık No ara..." (input)="onSearch($event)" />
+      <input type="text" class="form-control bg-light border-0" placeholder="Proje ara..." (input)="onSearch($event)" />
     </div>
   </div>
   <div class="card-body p-0">
-    @if (filteredProjectsList().length === 0) {
+    @if (loading()) {
+    <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
+    } @else if (projeler().length === 0) {
     <div class="text-center py-5 text-muted">
       <i class="ri-inbox-line fs-1 mb-3 d-block"></i>
       Kritere uygun proje bulunamadı.
@@ -180,17 +206,17 @@
             <th style="width: 50px;" class="border-bottom-0"></th>
             <th class="text-uppercase text-secondary fw-semibold border-bottom-0">PROJE NO</th>
             <th class="text-uppercase text-secondary fw-semibold border-bottom-0">PROJE TİPİ</th>
-            <th class="text-uppercase text-secondary fw-semibold border-bottom-0">TOPLAM SANDIK</th>
-            @for (loc of getVisibleLokasyonlar(globalStats()); track loc.id) {
-            <th class="text-uppercase text-secondary fw-semibold text-center border-bottom-0">{{ loc.deger }} DEPO</th>
-            }
+            <th class="text-uppercase text-secondary fw-semibold text-center border-bottom-0">3K</th>
+            <th class="text-uppercase text-secondary fw-semibold text-center border-bottom-0">SEYMEN</th>
+            <th class="text-uppercase text-secondary fw-semibold text-center border-bottom-0">GRID</th>
+            <th class="text-uppercase text-secondary fw-semibold text-center border-bottom-0">TOPLAM DEPODA</th>
           </tr>
         </thead>
         <tbody>
-          @for (p of paginatedProjectsList(); track p.id) {
-          <tr [class.bg-light]="p.expanded" (click)="toggleRow(p)" class="project-row">
+          @for (p of projeler(); track p.id) {
+          <tr [class.bg-light]="expandedProjeId() === p.id" (click)="toggleExpand(p.id)" class="project-row">
             <td class="text-center py-3">
-              <i [class]="p.expanded ? 'ri-arrow-down-s-line' : 'ri-arrow-right-s-line'" class="fs-5 text-primary"></i>
+              <i [class]="expandedProjeId() === p.id ? 'ri-arrow-down-s-line' : 'ri-arrow-right-s-line'" class="fs-5 text-primary"></i>
             </td>
             <td class="fw-bold text-dark py-3">{{ p.projeNo }}</td>
             <td class="py-3">
@@ -200,26 +226,38 @@
                   'bg-warning-subtle text-warning': p.projeTipiId === 3
                 }">{{ projeTipiMetni(p.projeTipiId) }}</span>
             </td>
-            <td class="fw-semibold text-dark py-3">{{ p.toplamSandik }}</td>
-            @for (loc of getVisibleLokasyonlar(globalStats()); track loc.id; let i = $index) {
             <td class="text-center py-3">
-              @if (getLokasyonCount(p, loc.id) > 0) {
-              <span class="depo-count-pill" [style.color]="getLokasyonColor(loc, i)" [style.background-color]="getLokasyonBadgeBg(loc, i)">
-                {{ getLokasyonCount(p, loc.id) }}
-              </span>
+              @if (p.depoUcKSandikSayisi > 0) {
+              <span class="depo-count-pill" style="color: #0EA5E9; background-color: #0EA5E922;">{{ p.depoUcKSandikSayisi }}</span>
               } @else {
               <span class="text-muted" style="opacity: 0.5;">-</span>
               }
             </td>
-            }
+            <td class="text-center py-3">
+              @if (p.depoSeymenSandikSayisi > 0) {
+              <span class="depo-count-pill" style="color: #078A55; background-color: #078A5522;">{{ p.depoSeymenSandikSayisi }}</span>
+              } @else {
+              <span class="text-muted" style="opacity: 0.5;">-</span>
+              }
+            </td>
+            <td class="text-center py-3">
+              @if (p.depoGridSandikSayisi > 0) {
+              <span class="depo-count-pill" style="color: #F59E0B; background-color: #F59E0B22;">{{ p.depoGridSandikSayisi }}</span>
+              } @else {
+              <span class="text-muted" style="opacity: 0.5;">-</span>
+              }
+            </td>
+            <td class="text-center fw-semibold text-dark py-3">{{ p.depoSandikSayisi }}</td>
           </tr>
 
-          @if (p.expanded) {
+          @if (expandedProjeId() === p.id) {
           <tr>
-            <td [attr.colspan]="projectTableColspan()" class="p-0 border-0">
+            <td colspan="7" class="p-0 border-0">
               <div class="bg-light p-4 expanded-detail">
-                @if (p.sandiklar.length === 0) {
-                <div class="text-center py-3 text-muted small"><i class="ri-information-line me-1"></i>Bu projeye ait sandık bulunmuyor.</div>
+                @if (expandedLoading()) {
+                <div class="text-center py-3"><span class="spinner-border spinner-border-sm text-primary"></span> <span class="text-muted ms-2">Sandıklar yükleniyor...</span></div>
+                } @else if (expandedSandiklar().length === 0) {
+                <div class="text-center py-3 text-muted small"><i class="ri-information-line me-1"></i>Bu projeye ait depoda sandık bulunmuyor.</div>
                 } @else {
                 <table class="table table-sm bg-white mb-0 border rounded overflow-hidden">
                   <thead class="bg-light text-secondary text-uppercase fw-semibold">
@@ -232,7 +270,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    @for (s of p.sandiklar; track s.id) {
+                    @for (s of expandedSandiklar(); track s.id) {
                     <tr>
                       <td class="fw-bold text-dark py-2 px-3">{{ s.sandikNo }}</td>
                       <td class="py-2 px-3"><span class="badge bg-light text-secondary">Standart</span></td>
@@ -267,7 +305,7 @@
     </div>
     <div class="project-pagination d-flex align-items-center justify-content-between flex-wrap gap-3">
       <div class="pagination-summary d-flex align-items-center flex-wrap gap-2">
-        <span>{{ paginationStart() }}-{{ paginationEnd() }} / {{ filteredProjectsList().length }} proje</span>
+        <span>{{ paginationStart() }}-{{ paginationEnd() }} / {{ totalCount() }} proje</span>
         <span class="pagination-divider"></span>
         <label class="mb-0" for="depoProjectPageSize">Sayfa başına</label>
         <select id="depoProjectPageSize" class="form-select form-select-sm page-size-select" [ngModel]="pageSize()" (ngModelChange)="onPageSizeChange($event)">
@@ -294,8 +332,8 @@
     }
   </div>
 </div>
-}
 
+<!-- ===== Depo Management Modal ===== -->
 @if (depoModalOpen()) {
 <div class="modal-overlay" (click)="closeDepoModal()"></div>
 <div class="depo-modal">
@@ -327,7 +365,6 @@
           <span class="depo-color-dot" [style.background-color]="getLokasyonColor(loc, i)"></span>
           <div>
             <div class="fw-semibold text-dark">{{ loc.deger }}</div>
-            <div class="text-muted small">{{ getLokasyonCount(globalStats(), loc.id) }} sandık</div>
           </div>
         </div>
         <div class="d-flex align-items-center gap-2">
