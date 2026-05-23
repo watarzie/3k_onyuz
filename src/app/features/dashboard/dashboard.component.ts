@@ -356,7 +356,7 @@ export class DashboardComponent implements OnInit {
   }
 
   private getLokasyonColor(lokasyon: LookupItem, index = 0): string {
-    const key = lokasyon.deger.trim().toLocaleUpperCase('tr-TR');
+    const key = lokasyon.deger.trim().toUpperCase();
     if (key === '3K') return '#0EA5E9';
     if (key === 'SEYMEN') return '#078A55';
     if (key === 'GRID') return '#F59E0B';

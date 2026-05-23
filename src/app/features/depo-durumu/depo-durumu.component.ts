@@ -441,7 +441,7 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
   }
 
   getLokasyonColor(lokasyon: LookupItem, index = 0): string {
-    const key = lokasyon.deger.trim().toLocaleUpperCase('tr-TR');
+    const key = lokasyon.deger.trim().toUpperCase();
     if (key === '3K') return '#0EA5E9';
     if (key === 'SEYMEN') return '#078A55';
     if (key === 'GRID') return '#F59E0B';
@@ -454,7 +454,7 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
   }
 
   getLokasyonIcon(lokasyon: LookupItem): string {
-    const key = lokasyon.deger.trim().toLocaleUpperCase('tr-TR');
+    const key = lokasyon.deger.trim().toUpperCase();
     if (this.isBelirsiz(lokasyon)) return 'ri-map-pin-line';
     if (key === 'GRID') return 'ri-building-line';
     return 'ri-home-4-line';

@@ -178,9 +178,17 @@
 }
 
 .depo-legend-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 12px minmax(100px, 1fr) 48px;
   align-items: center;
   gap: 12px;
+}
+
+.depo-legend-value {
+  justify-self: end;
+  min-width: 48px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .depo-count-pill {
