@@ -111,7 +111,8 @@
         </thead>
         <tbody>
           @for (u of filtered(); track u.cekiSatiriId) {
-          <tr [attr.id]="getRowDomId(u.cekiSatiriId)" [ngClass]="getRowClass(u)">
+          <tr [attr.id]="getRowDomId(u.cekiSatiriId)" [ngClass]="getRowClass(u)"
+              class="cursor-pointer" (click)="onRowClick(u, $event)">
             <td *appCanWrite>
               <input type="checkbox" class="form-check-input" [checked]="isSelected(u.cekiSatiriId)"
                 (change)="toggleSelect(u.cekiSatiriId)" [disabled]="isCheckboxDisabled(u)" />

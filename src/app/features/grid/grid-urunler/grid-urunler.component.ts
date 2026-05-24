@@ -315,6 +315,18 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
 
   // ===== Side Panel — Durum Güncelle =====
+  /** Satır tıklaması: checkbox/buton/input hariç tüm alanlarda düzenle panelini açar */
+  onRowClick(urun: GridUrunDto, event: MouseEvent) {
+    const el = event.target as HTMLElement;
+    // Checkbox, buton veya input elemanlarına tıklanmışsa yoksay
+    if (el.closest('button, input, a, .form-check-input')) return;
+    // Yazma yetkisi yoksa açma
+    if (!this.canGridWrite) return;
+    // Kilitli satır kontrolü
+    if (this.isUcKIslemYapilmis(urun) || this.isTadilatta(urun)) return;
+    this.openPanel(urun);
+  }
+
   openPanel(urun: GridUrunDto) {
     this.panelUrun.set(urun);
     if (this.isParcaliEksikYenidenSevkUrun(urun)) {

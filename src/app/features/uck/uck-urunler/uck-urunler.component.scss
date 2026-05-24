@@ -163,6 +163,9 @@ table {
   tr:hover { background: #FAFBFC; }
 }
 
+// Satır tıklanabilir
+.cursor-pointer { cursor: pointer; }
+
 // Row renkleri
 .row-tam-geldi { border-left: 3px solid #25B003; }
 .row-eksik-geldi { border-left: 3px solid #FD5812; }

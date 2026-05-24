@@ -134,7 +134,8 @@
         </thead>
         <tbody>
           @for (u of filtered(); track u.cekiSatiriId) {
-          <tr [ngClass]="[getRowClass(u), isSelected(u.cekiSatiriId) ? 'row-selected' : '']">
+          <tr [ngClass]="[getRowClass(u), isSelected(u.cekiSatiriId) ? 'row-selected' : '']"
+              class="cursor-pointer" (click)="onRowClick(u, $event)">
             @if (canSelectRows) {
             <td><input type="checkbox" class="form-check-input" [checked]="isSelected(u.cekiSatiriId)"
                 (change)="toggleSelect(u.cekiSatiriId)" /></td>

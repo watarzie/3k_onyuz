@@ -12,6 +12,7 @@ import { StokService } from '../../../core/services/stok.service';
 import { SandikService } from '../../../core/services/sandik.service';
 import { ConfirmService } from '../../../core/services/confirm.service';
 import { PdfService } from '../../../core/services/pdf.service';
+import { PermissionService } from '../../../core/services/permission.service';
 
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
@@ -54,6 +55,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   private sandikService = inject(SandikService);
   private confirmService = inject(ConfirmService);
   private pdfService = inject(PdfService);
+  private permissions = inject(PermissionService);
 
   private sub: Subscription = new Subscription();
   private pendingFocusCekiSatiriId: number | null = null;
@@ -381,6 +383,18 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   }
 
   // ===== Side Panel =====
+  /** Satır tıklaması: checkbox/buton/input hariç tüm alanlarda düzenle panelini açar */
+  onRowClick(urun: UcKUrunDto, event: MouseEvent) {
+    const el = event.target as HTMLElement;
+    // Checkbox, buton veya input elemanlarına tıklanmışsa yoksay
+    if (el.closest('button, input, a, .form-check-input, .transfer-chain-link')) return;
+    // Yazma yetkisi yoksa açma
+    if (!this.permissions.canWrite('3k-modulu')) return;
+    // Disabled satır kontrolü
+    if (this.isEditDisabled(urun)) return;
+    this.openPanel(urun);
+  }
+
   openPanel(urun: UcKUrunDto) {
     this.panelUrun.set(urun);
     this.panelTip.set(urun.ucKKarsilamaTipiMetni === 'Bekliyor' ? '' : urun.ucKKarsilamaTipiMetni);
