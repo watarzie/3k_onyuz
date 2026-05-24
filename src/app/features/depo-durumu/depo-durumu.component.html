@@ -53,6 +53,15 @@
   <div class="col-12 col-md-3">
     <div class="trezo-card border-0 bg-white h-100 depo-summary-card is-primary">
       <div class="p-4 text-center">
+        @if (depoSummaryLoading()) {
+        <div class="summary-skeleton">
+          <span class="skeleton-line skeleton-title"></span>
+          <span class="skeleton-number"></span>
+          <div class="skeleton-badges">
+            <span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+        } @else {
         <h6 class="fw-semibold mb-2 text-uppercase">Genel Toplam Sandık</h6>
         <h2 class="fw-bold mb-3 text-dark">{{ getSummaryTotal('global') }}</h2>
         <div class="d-flex justify-content-center gap-2 flex-wrap">
@@ -62,6 +71,7 @@
           </span>
           }
         </div>
+        }
       </div>
     </div>
   </div>
@@ -69,6 +79,15 @@
   <div class="col-12 col-md-3">
     <div class="trezo-card border-0 bg-white h-100 depo-summary-card">
       <div class="p-4 text-center">
+        @if (depoSummaryLoading()) {
+        <div class="summary-skeleton">
+          <span class="skeleton-line skeleton-title"></span>
+          <span class="skeleton-number"></span>
+          <div class="skeleton-badges">
+            <span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+        } @else {
         <h6 class="fw-semibold mb-2 text-uppercase">Normal Projeler</h6>
         <h2 class="fw-bold mb-3 text-dark">{{ getSummaryTotal('normal') }}</h2>
         <div class="d-flex justify-content-center gap-2 flex-wrap">
@@ -78,6 +97,7 @@
           </span>
           }
         </div>
+        }
       </div>
     </div>
   </div>
@@ -85,6 +105,15 @@
   <div class="col-12 col-md-3">
     <div class="trezo-card border-0 bg-white h-100 depo-summary-card">
       <div class="p-4 text-center">
+        @if (depoSummaryLoading()) {
+        <div class="summary-skeleton">
+          <span class="skeleton-line skeleton-title"></span>
+          <span class="skeleton-number"></span>
+          <div class="skeleton-badges">
+            <span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+        } @else {
         <h6 class="fw-semibold mb-2 text-uppercase">Saha Projeleri</h6>
         <h2 class="fw-bold mb-3 text-dark">{{ getSummaryTotal('saha') }}</h2>
         <div class="d-flex justify-content-center gap-2 flex-wrap">
@@ -94,6 +123,7 @@
           </span>
           }
         </div>
+        }
       </div>
     </div>
   </div>
@@ -101,6 +131,15 @@
   <div class="col-12 col-md-3">
     <div class="trezo-card border-0 bg-white h-100 depo-summary-card">
       <div class="p-4 text-center">
+        @if (depoSummaryLoading()) {
+        <div class="summary-skeleton">
+          <span class="skeleton-line skeleton-title"></span>
+          <span class="skeleton-number"></span>
+          <div class="skeleton-badges">
+            <span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+        } @else {
         <h6 class="fw-semibold mb-2 text-uppercase">Yedek Projeleri</h6>
         <h2 class="fw-bold mb-3 text-dark">{{ getSummaryTotal('yedek') }}</h2>
         <div class="d-flex justify-content-center gap-2 flex-wrap">
@@ -110,6 +149,7 @@
           </span>
           }
         </div>
+        }
       </div>
     </div>
   </div>
@@ -123,6 +163,14 @@
         <h5 class="fw-bold mb-0 text-dark">{{ 'LABELS.DEPO_DAGILIM' | translate }}</h5>
       </div>
       <div class="card-body p-4 d-flex flex-column flex-sm-row align-items-center justify-content-center gap-5">
+        @if (depoSummaryLoading()) {
+        <div class="depo-chart-skeleton">
+          <span class="skeleton-donut"></span>
+          <div class="skeleton-legend">
+            <span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+        } @else {
         <div class="depo-donut">
           <svg viewBox="0 0 42 42" class="donut-chart w-100 h-100">
             <circle class="donut-ring" cx="21" cy="21" r="15.9" fill="transparent" stroke="#f1f5f9" stroke-width="5" />
@@ -152,6 +200,7 @@
           </div>
           }
         </div>
+        }
       </div>
     </div>
   </div>

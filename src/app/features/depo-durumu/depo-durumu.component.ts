@@ -47,6 +47,8 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
   // --- Project list (from server-side paginated ProjeDto) ---
   projeler = signal<ProjeDto[]>([]);
   loading = signal(true);
+  summaryLoading = signal(true);
+  lokasyonLoading = signal(true);
   searchTerm = signal('');
 
   // --- Server-side pagination ---
@@ -115,6 +117,7 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
 
     return this.sortLokasyonlar(Array.from(byId.values()).filter(l => !this.isBelirsiz(l)));
   });
+  depoSummaryLoading = computed(() => this.summaryLoading() || this.lokasyonLoading());
   downloadingPdf = signal(false);
   reportMenuOpen = signal(false);
   depoModalOpen = signal(false);
@@ -162,51 +165,63 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
   // --- Load summary stats (unpaginated, all projects) ---
   private loadSummaryStats() {
     // Get a large page to compute summary stats across ALL projects
-    this.projeService.getProjeListesi(1, 10000).subscribe(res => {
-      if (res.isSuccess && res.value) {
-        const all = res.value.items;
-        const normal = all.filter(p => p.projeTipiId === 1);
-        const saha = all.filter(p => p.projeTipiId === 2);
-        const yedek = all.filter(p => p.projeTipiId === 3);
+    this.summaryLoading.set(true);
+    this.projeService.getProjeListesi(1, 10000).subscribe({
+      next: res => {
+        if (res.isSuccess && res.value) {
+          const all = res.value.items;
+          const normal = all.filter(p => p.projeTipiId === 1);
+          const saha = all.filter(p => p.projeTipiId === 2);
+          const yedek = all.filter(p => p.projeTipiId === 3);
 
-        const globalDagilim = this.calculateDepoDagilim(all);
-        const normalDagilim = this.calculateDepoDagilim(normal);
-        const sahaDagilim = this.calculateDepoDagilim(saha);
-        const yedekDagilim = this.calculateDepoDagilim(yedek);
+          const globalDagilim = this.calculateDepoDagilim(all);
+          const normalDagilim = this.calculateDepoDagilim(normal);
+          const sahaDagilim = this.calculateDepoDagilim(saha);
+          const yedekDagilim = this.calculateDepoDagilim(yedek);
 
-        this.globalDepoDagilim.set(globalDagilim);
-        this.normalDepoDagilim.set(normalDagilim);
-        this.sahaDepoDagilim.set(sahaDagilim);
-        this.yedekDepoDagilim.set(yedekDagilim);
+          this.globalDepoDagilim.set(globalDagilim);
+          this.normalDepoDagilim.set(normalDagilim);
+          this.sahaDepoDagilim.set(sahaDagilim);
+          this.yedekDepoDagilim.set(yedekDagilim);
 
-        this.globalDepoUcK.set(globalDagilim[2] ?? 0);
-        this.globalDepoSeymen.set(globalDagilim[4] ?? 0);
-        this.globalDepoGrid.set(globalDagilim[5] ?? 0);
-        this.globalDepoToplam.set(this.sumDagilim(globalDagilim));
+          this.globalDepoUcK.set(globalDagilim[2] ?? 0);
+          this.globalDepoSeymen.set(globalDagilim[4] ?? 0);
+          this.globalDepoGrid.set(globalDagilim[5] ?? 0);
+          this.globalDepoToplam.set(this.sumDagilim(globalDagilim));
 
-        this.normalDepoUcK.set(normalDagilim[2] ?? 0);
-        this.normalDepoSeymen.set(normalDagilim[4] ?? 0);
-        this.normalDepoGrid.set(normalDagilim[5] ?? 0);
-        this.normalDepoToplam.set(this.sumDagilim(normalDagilim));
+          this.normalDepoUcK.set(normalDagilim[2] ?? 0);
+          this.normalDepoSeymen.set(normalDagilim[4] ?? 0);
+          this.normalDepoGrid.set(normalDagilim[5] ?? 0);
+          this.normalDepoToplam.set(this.sumDagilim(normalDagilim));
 
-        this.sahaDepoUcK.set(sahaDagilim[2] ?? 0);
-        this.sahaDepoSeymen.set(sahaDagilim[4] ?? 0);
-        this.sahaDepoGrid.set(sahaDagilim[5] ?? 0);
-        this.sahaDepoToplam.set(this.sumDagilim(sahaDagilim));
+          this.sahaDepoUcK.set(sahaDagilim[2] ?? 0);
+          this.sahaDepoSeymen.set(sahaDagilim[4] ?? 0);
+          this.sahaDepoGrid.set(sahaDagilim[5] ?? 0);
+          this.sahaDepoToplam.set(this.sumDagilim(sahaDagilim));
 
-        this.yedekDepoUcK.set(yedekDagilim[2] ?? 0);
-        this.yedekDepoSeymen.set(yedekDagilim[4] ?? 0);
-        this.yedekDepoGrid.set(yedekDagilim[5] ?? 0);
-        this.yedekDepoToplam.set(this.sumDagilim(yedekDagilim));
-      }
+          this.yedekDepoUcK.set(yedekDagilim[2] ?? 0);
+          this.yedekDepoSeymen.set(yedekDagilim[4] ?? 0);
+          this.yedekDepoGrid.set(yedekDagilim[5] ?? 0);
+          this.yedekDepoToplam.set(this.sumDagilim(yedekDagilim));
+        }
+        this.summaryLoading.set(false);
+      },
+      error: () => this.summaryLoading.set(false),
     });
   }
 
   // --- Load lokasyonlar for depo management modal ---
   private loadLokasyonlar() {
-    this.lookupService.getLookups(['LookupDepoLokasyon']).subscribe(lookupRes => {
-      const lokasyonlar = this.sortLokasyonlar(lookupRes['LookupDepoLokasyon'] ?? []);
-      this.depoLokasyonlari.set(lokasyonlar);
+    this.lokasyonLoading.set(true);
+    this.lookupService.getLookups(['LookupDepoLokasyon']).subscribe({
+      next: lookupRes => {
+        const lokasyonlar = this.sortLokasyonlar(lookupRes['LookupDepoLokasyon'] ?? []);
+        this.depoLokasyonlari.set(lokasyonlar);
+        this.lokasyonLoading.set(false);
+      },
+      error: () => {
+        this.lokasyonLoading.set(false);
+      }
     });
   }
 

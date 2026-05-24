@@ -11,10 +11,17 @@ import { NgClass } from '@angular/common';
         <div class="stat-icon">
           <i [class]="icon()"></i>
         </div>
-        <div>
-          <h3 class="mb-0 fw-bold">{{ value() }}</h3>
-          <span class="stat-label">{{ label() }}</span>
-        </div>
+        @if (loading()) {
+          <div class="stat-skeleton" aria-hidden="true">
+            <span class="stat-skeleton-number"></span>
+            <span class="stat-skeleton-label"></span>
+          </div>
+        } @else {
+          <div>
+            <h3 class="mb-0 fw-bold">{{ value() }}</h3>
+            <span class="stat-label">{{ label() }}</span>
+          </div>
+        }
       </div>
     </div>
   `,
@@ -48,6 +55,32 @@ import { NgClass } from '@angular/common';
       overflow-wrap: anywhere;
     }
     h3 { font-size: clamp(22px, 2.4vw, 28px); line-height: 1.1; overflow-wrap: anywhere; }
+    .stat-skeleton {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 120px;
+    }
+    .stat-skeleton-number,
+    .stat-skeleton-label {
+      display: block;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(255,255,255,.22), rgba(255,255,255,.48), rgba(255,255,255,.22));
+      background-size: 220% 100%;
+      animation: stat-skeleton-shimmer 1.15s ease-in-out infinite;
+    }
+    .stat-skeleton-number {
+      width: 58px;
+      height: 26px;
+    }
+    .stat-skeleton-label {
+      width: 112px;
+      height: 12px;
+    }
+    @keyframes stat-skeleton-shimmer {
+      0% { background-position: 120% 0; }
+      100% { background-position: -120% 0; }
+    }
     .card-primary { background: linear-gradient(135deg, #605DFF 0%, #8B5CF6 100%); color: #fff; .stat-icon { background: rgba(255,255,255,.2); } }
     .card-success { background: linear-gradient(135deg, #25B003 0%, #34D399 100%); color: #fff; .stat-icon { background: rgba(255,255,255,.2); } }
     .card-info { background: linear-gradient(135deg, #3584FC 0%, #60A5FA 100%); color: #fff; .stat-icon { background: rgba(255,255,255,.2); } }
@@ -74,6 +107,7 @@ export class StatCardComponent {
   label = input.required<string>();
   icon = input<string>('ri-folder-line');
   color = input<'primary' | 'success' | 'info' | 'danger' | 'warning' | 'secondary'>('primary');
+  loading = input(false);
 
   colorClass = () => `card-${this.color()}`;
 }

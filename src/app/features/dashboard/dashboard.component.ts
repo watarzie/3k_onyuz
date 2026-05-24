@@ -111,6 +111,7 @@ export class DashboardComponent implements OnInit {
   loadingProjeler = signal(false);
   loadingKritik = signal(false);
   loadingEksik = signal(false);
+  loadingDepoLokasyonlari = signal(true);
 
   projelerPage = signal(0);
   kritikPage = signal(0);
@@ -125,6 +126,8 @@ export class DashboardComponent implements OnInit {
   eksikHasMore = signal(true);
 
   loading = computed(() => this.loadingOzet() || this.loadingProjeler());
+  dashboardSummaryLoading = computed(() => this.loadingOzet());
+  dashboardDepoChartLoading = computed(() => this.loadingOzet() || this.loadingDepoLokasyonlari());
 
   breadcrumb = [
     { label: 'Ana Kontrol Paneli' },
@@ -193,17 +196,29 @@ export class DashboardComponent implements OnInit {
 
   loadOzet() {
     this.loadingOzet.set(true);
-    this.api.get<DashboardOzetDto>(API.DASHBOARD.OZET).subscribe((res) => {
-      this.loadingOzet.set(false);
-      if (res.isSuccess && res.value) {
-        this.ozet.set(res.value);
+    this.api.get<DashboardOzetDto>(API.DASHBOARD.OZET).subscribe({
+      next: (res) => {
+        this.loadingOzet.set(false);
+        if (res.isSuccess && res.value) {
+          this.ozet.set(res.value);
+        }
+      },
+      error: () => {
+        this.loadingOzet.set(false);
       }
     });
   }
 
   loadDepoLokasyonlari() {
-    this.lookupService.getLookups(['LookupDepoLokasyon']).subscribe((lookupRes) => {
-      this.depoLokasyonlari.set(this.sortLokasyonlar(lookupRes['LookupDepoLokasyon'] ?? []));
+    this.loadingDepoLokasyonlari.set(true);
+    this.lookupService.getLookups(['LookupDepoLokasyon']).subscribe({
+      next: (lookupRes) => {
+        this.depoLokasyonlari.set(this.sortLokasyonlar(lookupRes['LookupDepoLokasyon'] ?? []));
+        this.loadingDepoLokasyonlari.set(false);
+      },
+      error: () => {
+        this.loadingDepoLokasyonlari.set(false);
+      }
     });
   }
 

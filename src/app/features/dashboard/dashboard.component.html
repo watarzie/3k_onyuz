@@ -9,19 +9,19 @@
 
 <div class="row g-3 mb-4">
   <div class="col-xl col-sm-6">
-    <app-stat-card [value]="toplamProje()" [label]="'LABELS.TOPLAM_PROJE' | translate" icon="ri-folder-line" color="primary" />
+    <app-stat-card [value]="toplamProje()" [label]="'LABELS.TOPLAM_PROJE' | translate" icon="ri-folder-line" color="primary" [loading]="dashboardSummaryLoading()" />
   </div>
   <div class="col-xl col-sm-6">
-    <app-stat-card [value]="aktifProje()" label="Hazırlanan Projeler" icon="ri-folder-open-line" color="info" />
+    <app-stat-card [value]="aktifProje()" label="Hazırlanan Projeler" icon="ri-folder-open-line" color="info" [loading]="dashboardSummaryLoading()" />
   </div>
   <div class="col-xl col-sm-6">
-    <app-stat-card [value]="toplamSandik()" [label]="'LABELS.TOPLAM_SANDIK_SAYISI' | translate" icon="ri-archive-line" color="success" />
+    <app-stat-card [value]="toplamSandik()" [label]="'LABELS.TOPLAM_SANDIK_SAYISI' | translate" icon="ri-archive-line" color="success" [loading]="dashboardSummaryLoading()" />
   </div>
   <div class="col-xl col-sm-6">
-    <app-stat-card [value]="eksikUrun()" [label]="'LABELS.EKSIK_URUN_SAYISI' | translate" icon="ri-error-warning-line" color="danger" />
+    <app-stat-card [value]="eksikUrun()" [label]="'LABELS.EKSIK_URUN_SAYISI' | translate" icon="ri-error-warning-line" color="danger" [loading]="dashboardSummaryLoading()" />
   </div>
   <div class="col-xl col-sm-6">
-    <app-stat-card [value]="sevkEdilen()" [label]="'LABELS.SEVK_EDILEN_PROJE' | translate" icon="ri-truck-line" color="warning" />
+    <app-stat-card [value]="sevkEdilen()" [label]="'LABELS.SEVK_EDILEN_PROJE' | translate" icon="ri-truck-line" color="warning" [loading]="dashboardSummaryLoading()" />
   </div>
 </div>
 
@@ -130,37 +130,53 @@
         <h6 class="fw-semibold mb-0"><i class="ri-pie-chart-line me-2 text-primary"></i>Proje Özeti</h6>
       </div>
       <div class="dash-card-body">
-        <div class="ozet-row">
-          <div class="ozet-item">
-            <div class="ozet-number text-primary">{{ aktifProje() }}</div>
-            <div class="ozet-label">Hazırlanıyor</div>
-          </div>
-          <div class="ozet-item">
-            <div class="ozet-number text-success">{{ sevkEdilen() }}</div>
-            <div class="ozet-label">Sevk Edilen</div>
-          </div>
-          <div class="ozet-item">
-            <div class="ozet-number text-info">{{ tamamlanan() }}</div>
-            <div class="ozet-label">Tamamlanan</div>
-          </div>
-        </div>
-        <div class="mt-3">
-          <div class="mini-progress-row">
-            <span class="small text-muted">Durum Dağılımı</span>
-            <div class="progress" style="height: 8px;">
-              @if (durumOzetToplam() > 0) {
-                <div class="progress-bar bg-primary" [style.width.%]="(aktifProje() / durumOzetToplam()) * 100"></div>
-                <div class="progress-bar bg-success" [style.width.%]="(sevkEdilen() / durumOzetToplam()) * 100"></div>
-                <div class="progress-bar bg-info" [style.width.%]="(tamamlanan() / durumOzetToplam()) * 100"></div>
-              }
+        @if (dashboardSummaryLoading()) {
+          <div class="dashboard-summary-skeleton" aria-hidden="true">
+            <div class="summary-skeleton-row">
+              <span></span>
+              <span></span>
+              <span></span>
             </div>
-            <div class="d-flex gap-3 mt-2 flex-wrap">
-              <span class="mini-legend"><span class="legend-dot bg-primary"></span> Hazırlanıyor</span>
-              <span class="mini-legend"><span class="legend-dot bg-success"></span> Sevk</span>
-              <span class="mini-legend"><span class="legend-dot bg-info"></span> Tamamlanan</span>
+            <div class="summary-skeleton-progress"></div>
+            <div class="summary-skeleton-legend">
+              <span></span>
+              <span></span>
+              <span></span>
             </div>
           </div>
-        </div>
+        } @else {
+          <div class="ozet-row">
+            <div class="ozet-item">
+              <div class="ozet-number text-primary">{{ aktifProje() }}</div>
+              <div class="ozet-label">Hazırlanıyor</div>
+            </div>
+            <div class="ozet-item">
+              <div class="ozet-number text-success">{{ sevkEdilen() }}</div>
+              <div class="ozet-label">Sevk Edilen</div>
+            </div>
+            <div class="ozet-item">
+              <div class="ozet-number text-info">{{ tamamlanan() }}</div>
+              <div class="ozet-label">Tamamlanan</div>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="mini-progress-row">
+              <span class="small text-muted">Durum Dağılımı</span>
+              <div class="progress" style="height: 8px;">
+                @if (durumOzetToplam() > 0) {
+                  <div class="progress-bar bg-primary" [style.width.%]="(aktifProje() / durumOzetToplam()) * 100"></div>
+                  <div class="progress-bar bg-success" [style.width.%]="(sevkEdilen() / durumOzetToplam()) * 100"></div>
+                  <div class="progress-bar bg-info" [style.width.%]="(tamamlanan() / durumOzetToplam()) * 100"></div>
+                }
+              </div>
+              <div class="d-flex gap-3 mt-2 flex-wrap">
+                <span class="mini-legend"><span class="legend-dot bg-primary"></span> Hazırlanıyor</span>
+                <span class="mini-legend"><span class="legend-dot bg-success"></span> Sevk</span>
+                <span class="mini-legend"><span class="legend-dot bg-info"></span> Tamamlanan</span>
+              </div>
+            </div>
+          </div>
+        }
       </div>
     </div>
   </div>
@@ -173,33 +189,45 @@
         <h6 class="fw-semibold mb-0"><i class="ri-map-pin-line me-2 text-success"></i>Depo Dağılım Grafiği</h6>
       </div>
       <div class="dash-card-body">
-        <div class="depo-chart">
-          <div class="depo-donut">
-            <svg viewBox="0 0 36 36" class="donut-svg">
-              <circle class="donut-track" cx="18" cy="18" r="15.9" />
-              @if (toplamDepoSandik() > 0) {
-                @for (segment of positiveDepoSegments(); track segment.id; let i = $index) {
-                  <circle class="donut-segment" cx="18" cy="18" r="15.9"
-                    [attr.stroke-dasharray]="getDonutPercentage(segment.count, toplamDepoSandik()) + ' ' + (100 - getDonutPercentage(segment.count, toplamDepoSandik()))"
-                    [attr.stroke-dashoffset]="getDonutOffset(i)"
-                    [attr.stroke]="segment.color" />
-                }
-              }
-            </svg>
-            <div class="donut-center">
-              <span class="donut-total">{{ toplamDepoSandik() }}</span>
-              <span class="donut-label">Toplam</span>
+        @if (dashboardDepoChartLoading()) {
+          <div class="dashboard-chart-skeleton" aria-hidden="true">
+            <div class="dashboard-donut-skeleton"></div>
+            <div class="dashboard-legend-skeleton">
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
             </div>
           </div>
-          <div class="depo-legend">
-            @for (segment of depoSegments(); track segment.id) {
-              <div class="depo-legend-item">
-                <span class="legend-dot" [style.background]="segment.color"></span>
-                {{ segment.label }} <strong>{{ segment.count }}</strong>
+        } @else {
+          <div class="depo-chart">
+            <div class="depo-donut">
+              <svg viewBox="0 0 36 36" class="donut-svg">
+                <circle class="donut-track" cx="18" cy="18" r="15.9" />
+                @if (toplamDepoSandik() > 0) {
+                  @for (segment of positiveDepoSegments(); track segment.id; let i = $index) {
+                    <circle class="donut-segment" cx="18" cy="18" r="15.9"
+                      [attr.stroke-dasharray]="getDonutPercentage(segment.count, toplamDepoSandik()) + ' ' + (100 - getDonutPercentage(segment.count, toplamDepoSandik()))"
+                      [attr.stroke-dashoffset]="getDonutOffset(i)"
+                      [attr.stroke]="segment.color" />
+                  }
+                }
+              </svg>
+              <div class="donut-center">
+                <span class="donut-total">{{ toplamDepoSandik() }}</span>
+                <span class="donut-label">Toplam</span>
               </div>
-            }
+            </div>
+            <div class="depo-legend">
+              @for (segment of depoSegments(); track segment.id) {
+                <div class="depo-legend-item">
+                  <span class="legend-dot" [style.background]="segment.color"></span>
+                  {{ segment.label }} <strong>{{ segment.count }}</strong>
+                </div>
+              }
+            </div>
           </div>
-        </div>
+        }
       </div>
     </div>
   </div>
@@ -210,44 +238,56 @@
         <h6 class="fw-semibold mb-0"><i class="ri-bar-chart-box-line me-2 text-info"></i>Sandık Tip Dağılımı</h6>
       </div>
       <div class="dash-card-body">
-        <div class="tip-bars">
-          <div class="tip-bar-row">
-            <div class="tip-bar-label"><i class="ri-folder-line text-primary me-1"></i> Normal</div>
-            <div class="tip-bar-track">
-              <div class="tip-bar-fill bg-primary" [style.width.%]="toplamSandik() > 0 ? (normalSandik() / toplamSandik()) * 100 : 0"></div>
+        @if (dashboardSummaryLoading()) {
+          <div class="dashboard-tip-skeleton" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+            <div class="dashboard-circle-skeletons">
+              <i></i>
+              <i></i>
             </div>
-            <div class="tip-bar-val">{{ normalSandik() }}</div>
           </div>
-          <div class="tip-bar-row">
-            <div class="tip-bar-label"><i class="ri-map-pin-line text-success me-1"></i> Saha</div>
-            <div class="tip-bar-track">
-              <div class="tip-bar-fill bg-success" [style.width.%]="toplamSandik() > 0 ? (sahaSandik() / toplamSandik()) * 100 : 0"></div>
+        } @else {
+          <div class="tip-bars">
+            <div class="tip-bar-row">
+              <div class="tip-bar-label"><i class="ri-folder-line text-primary me-1"></i> Normal</div>
+              <div class="tip-bar-track">
+                <div class="tip-bar-fill bg-primary" [style.width.%]="toplamSandik() > 0 ? (normalSandik() / toplamSandik()) * 100 : 0"></div>
+              </div>
+              <div class="tip-bar-val">{{ normalSandik() }}</div>
             </div>
-            <div class="tip-bar-val">{{ sahaSandik() }}</div>
-          </div>
-          <div class="tip-bar-row">
-            <div class="tip-bar-label"><i class="ri-shield-star-line text-warning me-1"></i> Yedek</div>
-            <div class="tip-bar-track">
-              <div class="tip-bar-fill bg-warning" [style.width.%]="toplamSandik() > 0 ? (yedekSandik() / toplamSandik()) * 100 : 0"></div>
+            <div class="tip-bar-row">
+              <div class="tip-bar-label"><i class="ri-map-pin-line text-success me-1"></i> Saha</div>
+              <div class="tip-bar-track">
+                <div class="tip-bar-fill bg-success" [style.width.%]="toplamSandik() > 0 ? (sahaSandik() / toplamSandik()) * 100 : 0"></div>
+              </div>
+              <div class="tip-bar-val">{{ sahaSandik() }}</div>
             </div>
-            <div class="tip-bar-val">{{ yedekSandik() }}</div>
+            <div class="tip-bar-row">
+              <div class="tip-bar-label"><i class="ri-shield-star-line text-warning me-1"></i> Yedek</div>
+              <div class="tip-bar-track">
+                <div class="tip-bar-fill bg-warning" [style.width.%]="toplamSandik() > 0 ? (yedekSandik() / toplamSandik()) * 100 : 0"></div>
+              </div>
+              <div class="tip-bar-val">{{ yedekSandik() }}</div>
+            </div>
           </div>
-        </div>
 
-        <div class="yuzde-circles mt-4">
-          <div class="yuzde-item">
-            <div class="yuzde-circle" [style.background]="'conic-gradient(#22c55e ' + sahaYuzde() * 3.6 + 'deg, #e2e8f0 0deg)'">
-              <span>{{ sahaYuzde() }}%</span>
+          <div class="yuzde-circles mt-4">
+            <div class="yuzde-item">
+              <div class="yuzde-circle" [style.background]="'conic-gradient(#22c55e ' + sahaYuzde() * 3.6 + 'deg, #e2e8f0 0deg)'">
+                <span>{{ sahaYuzde() }}%</span>
+              </div>
+              <div class="yuzde-label">Saha Tamamlanma</div>
             </div>
-            <div class="yuzde-label">Saha Tamamlanma</div>
-          </div>
-          <div class="yuzde-item">
-            <div class="yuzde-circle" [style.background]="'conic-gradient(#f59e0b ' + yedekYuzde() * 3.6 + 'deg, #e2e8f0 0deg)'">
-              <span>{{ yedekYuzde() }}%</span>
+            <div class="yuzde-item">
+              <div class="yuzde-circle" [style.background]="'conic-gradient(#f59e0b ' + yedekYuzde() * 3.6 + 'deg, #e2e8f0 0deg)'">
+                <span>{{ yedekYuzde() }}%</span>
+              </div>
+              <div class="yuzde-label">Yedek Tamamlanma</div>
             </div>
-            <div class="yuzde-label">Yedek Tamamlanma</div>
           </div>
-        </div>
+        }
       </div>
     </div>
   </div>
