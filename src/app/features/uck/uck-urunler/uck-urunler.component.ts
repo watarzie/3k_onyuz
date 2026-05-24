@@ -361,6 +361,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       'İmalat': '#3584FC',
       'Tedarik': '#9C27B0',
       'Tedarik 3K Teslim': '#1B7D3A',
+      'Siparişte': '#D97706',
+      'Tamamlandı': '#25B003',
     };
     return value ? (renkler[value] || '#94a3b8') : '#94a3b8';
   }

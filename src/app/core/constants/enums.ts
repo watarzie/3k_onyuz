@@ -256,4 +256,5 @@ export const STATUS_BADGE_MAP: Record<string, string> = {
   'Grid Kapandı': 'badge-dark',
   'GridKapandi': 'badge-dark',
   'Siparişte': 'badge-purple',
+  'Tamamlandı': 'badge-success',
 };

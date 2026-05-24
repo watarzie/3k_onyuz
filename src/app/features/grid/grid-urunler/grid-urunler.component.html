@@ -156,10 +156,10 @@
             </td>
             <!-- Süreç -->
             <td>
-              <span class="durum-badge" [style.background]="getSurecDurumColor(u.surecDurumMetni) + '15'"
-                [style.color]="getSurecDurumColor(u.surecDurumMetni)"
-                [style.border-color]="getSurecDurumColor(u.surecDurumMetni) + '30'">
-                {{ u.surecDurumMetni ?? '-' }}
+              <span class="durum-badge" [style.background]="getSurecDurumColor(getEffectiveSurecDurum(u)) + '15'"
+                [style.color]="getSurecDurumColor(getEffectiveSurecDurum(u))"
+                [style.border-color]="getSurecDurumColor(getEffectiveSurecDurum(u)) + '30'">
+                {{ getEffectiveSurecDurum(u) ?? '-' }}
               </span>
             </td>
             <td>
@@ -607,6 +607,7 @@
           <option [value]="3">Tedarik</option>
           <option [value]="4">Tedarik 3K Teslim</option>
           <option [value]="5">Siparişte</option>
+          <option [value]="6">Tamamlandı</option>
         </select>
       </div>
       <div class="modal-footer d-flex gap-2">

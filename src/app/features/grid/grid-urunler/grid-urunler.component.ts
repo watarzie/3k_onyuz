@@ -802,8 +802,21 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       'İmalat': '#3584FC',
       'Tedarik': '#9C27B0',
       'Tedarik 3K Teslim': '#1B7D3A',
+      'Siparişte': '#D97706',
+      'Tamamlandı': '#25B003',
     };
     return value ? (renkler[value] || '#94a3b8') : '#94a3b8';
+  }
+
+  /**
+   * Süreç durumu gösterimi — Grid eksik miktarı 0 ise (ürünler tam geldiyse)
+   * otomatik olarak "Tamamlandı" gösterilir, durumu ne olursa olsun.
+   */
+  getEffectiveSurecDurum(u: GridUrunDto): string | undefined {
+    if (u.gridDurumuMetni !== 'Iptal' && u.gridEksikMiktar === 0) {
+      return 'Tamamlandı';
+    }
+    return u.surecDurumMetni ?? undefined;
   }
 
   // ===== Toplu Kalite Atama =====
