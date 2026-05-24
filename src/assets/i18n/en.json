@@ -23,6 +23,9 @@
     "ROL_YONETIMI": "Role Management",
     "GRID_MODULU": "Grid Module",
     "3K_MODULU": "3K Module",
+    "PROJE_SEVK_ET": "Ship Project",
+    "KALITE_MODULU": "Quality Module",
+    "SUREC_MODULU": "Process Module",
     "ISLEM_ONAY": "Approval Center"
   },
   "ACTIONS": {
