@@ -174,8 +174,8 @@
               getGridSevkGorunum(u) > 0 ? getGridSevkGorunum(u) : '-' }}</td>
             <td class="text-center">{{ u.trafoSevkAdet > 0 ? u.trafoSevkAdet : '-' }}</td>
             <td class="text-center fw-semibold"
-              [ngClass]="{'text-danger': u.gridEksikMiktar > 0, 'text-success': u.gridEksikMiktar === 0}">
-              {{ u.gridDurumuMetni === 'Iptal' ? '-' : u.gridEksikMiktar }}
+              [ngClass]="{'text-danger': u.gridDurumuId !== GridDurum.Iptal && u.gridEksikMiktar > 0, 'text-success': u.gridDurumuId !== GridDurum.Iptal && u.gridEksikMiktar === 0}">
+              {{ u.gridDurumuId === GridDurum.Iptal ? '-' : u.gridEksikMiktar }}
             </td>
             <td>
               <span class="durum-badge-sm" [style.color]="getSevkDurumColor(u.gridSevkDurumuMetni)">

@@ -110,7 +110,9 @@ export const API = {
     SAHA_SANDIK: (sandikId: number) => `${BASE}/pdf/saha-sandik/${sandikId}`,
     SAHA_PROJE: (projeId: number) => `${BASE}/pdf/saha-proje/${projeId}`,
     EKSIK_URUNLER: (projeId: number) => `${BASE}/pdf/eksik-urunler/${projeId}`,
+    EKSIK_URUNLER_EXCEL: (projeId: number) => `${BASE}/pdf/eksik-urunler/${projeId}/excel`,
     GERCEKLESEN_CEKI_LISTESI: (projeId: number) => `${BASE}/pdf/gerceklesen-ceki-listesi/${projeId}`,
+    GERCEKLESEN_CEKI_LISTESI_EXCEL: (projeId: number) => `${BASE}/pdf/gerceklesen-ceki-listesi/${projeId}/excel`,
     STOK: `${BASE}/pdf/stok`,
     DEPO_SANDIK: (projeTipiId?: number | null) =>
       projeTipiId ? `${BASE}/pdf/depo-sandik?projeTipiId=${projeTipiId}` : `${BASE}/pdf/depo-sandik`,

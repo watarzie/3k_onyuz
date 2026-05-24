@@ -56,6 +56,8 @@ const SEVK_DURUMLARI: DurumSecenegi[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GridUrunlerComponent implements OnInit, OnDestroy {
+  readonly GridDurum = GridDurum;
+
   ts = inject(TranslationService);
   private route = inject(ActivatedRoute);
   private gridService = inject(GridService);
@@ -810,10 +812,10 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   /**
    * Süreç durumu gösterimi — Grid eksik miktarı 0 ise (ürünler tam geldiyse)
-   * otomatik olarak "Tamamlandı" gösterilir, durumu ne olursa olsun.
+   * otomatik olarak "Tamamlandı" gösterilir; iptal satırlarında süreç atanmaz.
    */
   getEffectiveSurecDurum(u: GridUrunDto): string | undefined {
-    if (u.gridDurumuMetni !== 'Iptal' && u.gridEksikMiktar === 0) {
+    if (u.gridDurumuId !== GridDurum.Iptal && u.gridEksikMiktar === 0) {
       return 'Tamamlandı';
     }
     return u.surecDurumMetni ?? undefined;

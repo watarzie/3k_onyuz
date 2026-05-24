@@ -1,5 +1,5 @@
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
-import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy, HostListener } from '@angular/core';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { FormsModule } from '@angular/forms';
@@ -40,7 +40,11 @@ export class ProjeListesiComponent implements OnInit {
 
   downloadingPdf = signal<number | null>(null);
   downloadingEksikPdf = signal<number | null>(null);
+  downloadingEksikExcel = signal<number | null>(null);
   downloadingGerceklesenPdf = signal<number | null>(null);
+  downloadingGerceklesenExcel = signal<number | null>(null);
+  reportMenuKey = signal<string | null>(null);
+  reportMenuPosition = signal<{ top: number; left: number } | null>(null);
 
   /**
    * Grid/3K buton gösterimi — Rol Yetki ekranından yönetilir.
@@ -220,6 +224,44 @@ export class ProjeListesiComponent implements OnInit {
     return map[durum] ?? durum;
   }
 
+  @HostListener('document:click')
+  closeReportMenu() {
+    this.reportMenuKey.set(null);
+    this.reportMenuPosition.set(null);
+  }
+
+  toggleReportMenu(event: MouseEvent, key: string) {
+    event.stopPropagation();
+    if (this.reportMenuKey() === key) {
+      this.closeReportMenu();
+      return;
+    }
+
+    const button = event.currentTarget as HTMLElement;
+    const rect = button.getBoundingClientRect();
+    const menuWidth = 190;
+    const gap = 8;
+    const left = Math.min(Math.max(8, rect.right - menuWidth), window.innerWidth - menuWidth - 8);
+
+    this.reportMenuPosition.set({
+      top: rect.bottom + gap,
+      left,
+    });
+    this.reportMenuKey.set(key);
+  }
+
+  isReportMenuOpen(key: string): boolean {
+    return this.reportMenuKey() === key;
+  }
+
+  isEksikDownloading(projeId: number): boolean {
+    return this.downloadingEksikPdf() === projeId || this.downloadingEksikExcel() === projeId;
+  }
+
+  isGerceklesenDownloading(projeId: number): boolean {
+    return this.downloadingGerceklesenPdf() === projeId || this.downloadingGerceklesenExcel() === projeId;
+  }
+
   indirSahaProjePdf(proje: ProjeDto) {
     this.downloadingPdf.set(proje.id);
     const tipStr = this.isYedekYonetimi() ? 'YedekRaporu' : 'SahaRaporu';
@@ -242,6 +284,7 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   indirEksikUrunlerPdf(proje: ProjeDto) {
+    this.reportMenuKey.set(null);
     this.downloadingEksikPdf.set(proje.id);
     this.pdfService.eksikUrunlerPdf(proje.id).subscribe({
       next: (blob) => {
@@ -261,9 +304,31 @@ export class ProjeListesiComponent implements OnInit {
     });
   }
 
+  indirEksikUrunlerExcel(proje: ProjeDto) {
+    this.reportMenuKey.set(null);
+    this.downloadingEksikExcel.set(proje.id);
+    this.pdfService.eksikUrunlerExcel(proje.id).subscribe({
+      next: (blob) => {
+        this.downloadingEksikExcel.set(null);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${proje.projeNo}_EksikRaporu.xlsx`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.toastService.success('Eksik ürünler Excel raporu indirildi.');
+      },
+      error: () => {
+        this.downloadingEksikExcel.set(null);
+        this.toastService.error('Excel raporu indirilirken bir hata oluştu.');
+      }
+    });
+  }
+
   // ===== Çeki Yükleme Modal =====
 
   indirGerceklesenCekiListesiPdf(proje: ProjeDto) {
+    this.reportMenuKey.set(null);
     this.downloadingGerceklesenPdf.set(proje.id);
     this.pdfService.gerceklesenCekiListesiPdf(proje.id).subscribe({
       next: (blob) => {
@@ -279,6 +344,27 @@ export class ProjeListesiComponent implements OnInit {
       error: () => {
         this.downloadingGerceklesenPdf.set(null);
         this.toastService.error('Rapor indirilirken bir hata oluştu.');
+      }
+    });
+  }
+
+  indirGerceklesenCekiListesiExcel(proje: ProjeDto) {
+    this.reportMenuKey.set(null);
+    this.downloadingGerceklesenExcel.set(proje.id);
+    this.pdfService.gerceklesenCekiListesiExcel(proje.id).subscribe({
+      next: (blob) => {
+        this.downloadingGerceklesenExcel.set(null);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${proje.projeNo}_GerceklesenCekiListesi.xlsx`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.toastService.success('Gerçekleşen çeki listesi Excel raporu indirildi.');
+      },
+      error: () => {
+        this.downloadingGerceklesenExcel.set(null);
+        this.toastService.error('Excel raporu indirilirken bir hata oluştu.');
       }
     });
   }

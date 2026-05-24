@@ -32,8 +32,16 @@ export class PdfService {
     return this.api.downloadFile(API.PDF.EKSIK_URUNLER(projeId));
   }
 
+  eksikUrunlerExcel(projeId: number): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.EKSIK_URUNLER_EXCEL(projeId));
+  }
+
   gerceklesenCekiListesiPdf(projeId: number): Observable<Blob> {
     return this.api.downloadFile(API.PDF.GERCEKLESEN_CEKI_LISTESI(projeId));
+  }
+
+  gerceklesenCekiListesiExcel(projeId: number): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.GERCEKLESEN_CEKI_LISTESI_EXCEL(projeId));
   }
 
   stokPdf(): Observable<Blob> {
