@@ -239,12 +239,15 @@ export class ProjeListesiComponent implements OnInit {
 
     const button = event.currentTarget as HTMLElement;
     const rect = button.getBoundingClientRect();
-    const menuWidth = 190;
+    const menuWidth = 210;
+    const menuHeight = 118;
     const gap = 8;
     const left = Math.min(Math.max(8, rect.right - menuWidth), window.innerWidth - menuWidth - 8);
+    const opensBelow = rect.bottom + gap + menuHeight <= window.innerHeight - 8;
+    const top = opensBelow ? rect.bottom + gap : Math.max(8, rect.top - menuHeight - gap);
 
     this.reportMenuPosition.set({
-      top: rect.bottom + gap,
+      top,
       left,
     });
     this.reportMenuKey.set(key);

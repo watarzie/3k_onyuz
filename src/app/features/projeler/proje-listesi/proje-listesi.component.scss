@@ -71,6 +71,7 @@ table {
   gap: 6px;
   border-radius: 6px;
   font-weight: 600;
+  white-space: nowrap;
 
   i {
     line-height: 1;
@@ -247,6 +248,35 @@ table {
   .search-box { width: 100% !important; }
   .d-flex.justify-content-between.p-3.border-top {
     flex-direction: column; gap: 10px; align-items: center !important;
+  }
+}
+@media (max-width: 1024px) {
+  .report-download-menu {
+    top: auto !important;
+    left: 14px !important;
+    right: 14px;
+    bottom: max(14px, env(safe-area-inset-bottom));
+    width: auto !important;
+    padding: 10px;
+    border-radius: 14px;
+    box-shadow: 0 -10px 36px rgba(15, 23, 42, .22);
+    z-index: 3050;
+
+    &::before {
+      display: none;
+    }
+  }
+
+  .report-download-item {
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  .report-download-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    font-size: 18px;
   }
 }
 @media (max-width: 480px) {
