@@ -19,12 +19,13 @@ export class AuthService {
   currentUser = signal(this.session.getUser());
   isLoggedIn = computed(() => !!this.currentUser() && !this.session.isTokenExpired());
 
-  login(dto: LoginDto): Observable<ApiResult<LoginResultDto>> {
+  login(dto: LoginDto, rememberMe: boolean = false): Observable<ApiResult<LoginResultDto>> {
     return this.api.post<LoginResultDto>(API.AUTH.LOGIN, dto).pipe(
       tap((result) => {
         if (result.isSuccess && result.value) {
           // Sadece token'ı sakla — kullanıcı bilgileri JWT'den okunur
-          this.session.setToken(result.value.token);
+          // rememberMe: true → localStorage (kalıcı), false → sessionStorage (tarayıcı kapatılınca silinir)
+          this.session.setToken(result.value.token, rememberMe);
           this.currentUser.set(this.session.getUser());
         }
       })

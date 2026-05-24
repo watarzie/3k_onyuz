@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 
 const TOKEN_KEY = '3k_token';
 const LANG_KEY = '3k_lang';
+const REMEMBER_KEY = '3k_remember';
 
 // Eski key'ler — temizlenmesi gereken
 const LEGACY_KEYS = ['3k_user', '3k_role', '3k_rolId'];
@@ -10,9 +11,13 @@ const LEGACY_KEYS = ['3k_user', '3k_role', '3k_rolId'];
  * Oturum bilgilerini merkezi olarak yöneten servis.
  *
  * GÜVENLİK:
- * - Sadece JWT token ve dil tercihi localStorage'da tutulur.
+ * - Sadece JWT token ve dil tercihi saklanır.
  * - Kullanıcı bilgileri (rol, ad, email) JWT'den decode edilir.
  * - Hassas bilgiler localStorage'da SAKLANMAZ.
+ *
+ * BENI HATIRLA:
+ * - rememberMe=true  → token localStorage'da saklanır (kalıcı)
+ * - rememberMe=false → token sessionStorage'da saklanır (tarayıcı kapatılınca silinir)
  */
 @Injectable({ providedIn: 'root' })
 export class SessionManager {
@@ -23,12 +28,35 @@ export class SessionManager {
   }
 
   // ===== Token =====
-  setToken(token: string): void {
-    localStorage.setItem(TOKEN_KEY, token);
+
+  /**
+   * Token'ı saklar.
+   * @param rememberMe true ise localStorage (kalıcı), false ise sessionStorage (oturum bazlı)
+   */
+  setToken(token: string, rememberMe: boolean = false): void {
+    if (rememberMe) {
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(REMEMBER_KEY, 'true');
+      // sessionStorage'dan temizle (eski oturum varsa)
+      sessionStorage.removeItem(TOKEN_KEY);
+    } else {
+      sessionStorage.setItem(TOKEN_KEY, token);
+      // localStorage'dan temizle (eski kalıcı oturum varsa)
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(REMEMBER_KEY);
+    }
   }
 
+  /**
+   * Token'ı okur — önce localStorage, sonra sessionStorage kontrol eder.
+   */
   get token(): string | null {
-    return localStorage.getItem(TOKEN_KEY);
+    return localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY);
+  }
+
+  /** Kullanıcı "Beni Hatırla" seçmiş mi? */
+  get isRemembered(): boolean {
+    return localStorage.getItem(REMEMBER_KEY) === 'true';
   }
 
   // ===== Dil (güvenlik dışı) =====
@@ -119,6 +147,8 @@ export class SessionManager {
   /** Oturum bilgilerini temizle — eski key'ler dahil */
   clearAll(): void {
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REMEMBER_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
     this.cleanLegacyKeys();
     // 3k_lang bilerek temizlenmez — dil tercihi korunur
   }

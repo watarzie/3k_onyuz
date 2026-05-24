@@ -60,9 +60,9 @@ export class LoginComponent {
     this.loading.set(true);
     this.error.set('');
 
-    const { email, sifre } = this.form.value;
+    const { email, sifre, rememberMe } = this.form.value;
 
-    this.auth.login({ email, sifre }).subscribe({
+    this.auth.login({ email, sifre }, rememberMe).subscribe({
       next: (result) => {
         this.loading.set(false);
         if (result.isSuccess) {
