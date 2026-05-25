@@ -12,6 +12,8 @@ import { PdfService } from '../../core/services/pdf.service';
 import { ToastService } from '../../core/services/toast.service';
 import { LookupService } from '../../core/services/lookup.service';
 import { PermissionService } from '../../core/services/permission.service';
+import { BaseApiService } from '../../core/services/base-api.service';
+import { API } from '../../core/constants/api-endpoints';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
 import { ProjeDepoDagilimDto, ProjeDto, SandikDto, LookupItem } from '../../shared/models/index';
@@ -25,6 +27,19 @@ interface DepoSegment {
   color: string;
   softColor: string;
   icon: string;
+}
+
+interface DashboardDepoDagilimDto {
+  depoLokasyonId: number;
+  depoLokasyonMetni: string;
+  sandikSayisi: number;
+}
+
+interface DashboardOzetDto {
+  depoDagilimlari?: DashboardDepoDagilimDto[];
+  normalDepoDagilimlari?: DashboardDepoDagilimDto[];
+  sahaDepoDagilimlari?: DashboardDepoDagilimDto[];
+  yedekDepoDagilimlari?: DashboardDepoDagilimDto[];
 }
 
 @Component({
@@ -43,6 +58,7 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
   private toastService = inject(ToastService);
   private lookupService = inject(LookupService);
   private permissionService = inject(PermissionService);
+  private api = inject(BaseApiService);
 
   // --- Project list (from server-side paginated ProjeDto) ---
   projeler = signal<ProjeDto[]>([]);
@@ -164,20 +180,14 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
 
   // --- Load summary stats (unpaginated, all projects) ---
   private loadSummaryStats() {
-    // Get a large page to compute summary stats across ALL projects
     this.summaryLoading.set(true);
-    this.projeService.getProjeListesi(1, 10000).subscribe({
+    this.api.get<DashboardOzetDto>(API.DASHBOARD.OZET).subscribe({
       next: res => {
         if (res.isSuccess && res.value) {
-          const all = res.value.items;
-          const normal = all.filter(p => p.projeTipiId === 1);
-          const saha = all.filter(p => p.projeTipiId === 2);
-          const yedek = all.filter(p => p.projeTipiId === 3);
-
-          const globalDagilim = this.calculateDepoDagilim(all);
-          const normalDagilim = this.calculateDepoDagilim(normal);
-          const sahaDagilim = this.calculateDepoDagilim(saha);
-          const yedekDagilim = this.calculateDepoDagilim(yedek);
+          const globalDagilim = this.dashboardDagilimToMap(res.value.depoDagilimlari);
+          const normalDagilim = this.dashboardDagilimToMap(res.value.normalDepoDagilimlari);
+          const sahaDagilim = this.dashboardDagilimToMap(res.value.sahaDepoDagilimlari);
+          const yedekDagilim = this.dashboardDagilimToMap(res.value.yedekDepoDagilimlari);
 
           this.globalDepoDagilim.set(globalDagilim);
           this.normalDepoDagilim.set(normalDagilim);
@@ -354,6 +364,13 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
       Object.entries(map).forEach(([id, count]) => {
         acc[Number(id)] = (acc[Number(id)] ?? 0) + count;
       });
+      return acc;
+    }, {});
+  }
+
+  private dashboardDagilimToMap(items?: DashboardDepoDagilimDto[]): Record<number, number> {
+    return (items ?? []).reduce<Record<number, number>>((acc, item) => {
+      acc[item.depoLokasyonId] = (acc[item.depoLokasyonId] ?? 0) + item.sandikSayisi;
       return acc;
     }, {});
   }
