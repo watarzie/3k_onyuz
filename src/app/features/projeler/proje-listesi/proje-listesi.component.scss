@@ -64,6 +64,13 @@ table {
   display: inline-flex;
 }
 
+.report-download-backdrop {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  z-index: 2040;
+}
+
 .report-download-trigger {
   display: inline-flex;
   align-items: center;
@@ -88,7 +95,7 @@ table {
 
 .report-download-menu {
   position: fixed;
-  width: 190px;
+  width: 210px;
   padding: 7px;
   border: 1px solid var(--borderColor);
   border-radius: 10px;
@@ -250,16 +257,29 @@ table {
   }
 }
 @media (max-width: 1024px) {
+  .report-download-backdrop {
+    background: rgba(15, 23, 42, .38);
+    backdrop-filter: blur(1px);
+    z-index: 9990;
+  }
+
   .report-download-menu {
     top: auto !important;
-    left: 14px !important;
-    right: 14px;
-    bottom: max(14px, env(safe-area-inset-bottom));
-    width: auto !important;
-    padding: 10px;
-    border-radius: 14px;
-    box-shadow: 0 -10px 36px rgba(15, 23, 42, .22);
-    z-index: 3050;
+    left: 50% !important;
+    right: auto;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    width: min(560px, calc(100vw - 28px)) !important;
+    max-width: calc(100vw - 28px);
+    max-height: min(320px, calc(100vh - 48px));
+    padding: 12px;
+    border-radius: 18px;
+    transform: translateX(-50%);
+    box-shadow:
+      0 24px 70px rgba(15, 23, 42, .28),
+      0 1px 0 rgba(255, 255, 255, .8) inset;
+    z-index: 10000;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 
     &::before {
       display: none;
@@ -280,4 +300,16 @@ table {
 }
 @media (max-width: 480px) {
   .d-flex.align-items-center.gap-2 .text-muted.small.ms-2 { display: none; }
+
+  .report-download-menu {
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    width: calc(100vw - 24px) !important;
+    padding: 12px;
+  }
+
+  .report-download-item {
+    gap: 12px;
+    padding: 14px 12px;
+    font-size: 16px;
+  }
 }
