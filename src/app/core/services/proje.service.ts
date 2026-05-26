@@ -15,6 +15,7 @@ import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultD
 @Injectable({ providedIn: 'root' })
 export class ProjeService {
   private api = inject(BaseApiService);
+  private readonly projeSilOptions = { headers: { 'X-Menu-Kod': 'proje-sil' } };
 
   // ===== Proje =====
 
@@ -60,7 +61,7 @@ export class ProjeService {
   }
 
   projeSil(projeId: number): Observable<ApiResult<boolean>> {
-    return this.api.delete<boolean>(API.PROJE.DELETE(projeId));
+    return this.api.delete<boolean>(API.PROJE.DELETE(projeId), this.projeSilOptions);
   }
 
   // ===== Sandık Sevk =====

@@ -233,7 +233,7 @@
             </td>
             <td>
               <div class="d-flex gap-1">
-                @if (isAdmin()) {
+                @if (canEditCekiVerisi()) {
                 <button class="btn btn-sm btn-action btn-admin-edit"
                   (click)="openAnaVeriPanel(u); $event.stopPropagation()" title="Ceki verisini duzenle">
                   <i class="ri-file-edit-line"></i>

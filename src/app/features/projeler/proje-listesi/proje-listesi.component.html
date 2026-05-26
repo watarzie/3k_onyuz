@@ -88,7 +88,7 @@
               <th>{{ 'LABELS.durumMetni' | translate }}</th>
               <th>Sevk Tarihi</th>
               <th>{{ 'LABELS.TAMAMLANMA' | translate }}</th>
-                  @if (isSandikMode() || isSevkEdilen() || (!isSandikMode() && canSevkEt()) || canWriteCurrentMenu()) {
+                  @if (isSandikMode() || (isSevkEdilen() && canSeeGerceklesenRapor()) || (!isSandikMode() && canSevkEt()) || canDeleteProject()) {
                 <th>İşlemler</th>
               }
             </tr>
@@ -148,10 +148,10 @@
                     <small class="fw-semibold">{{ getTamamlanmaYuzdesi(p) }}%</small>
                   </div>
                 </td>
-                @if (isSandikMode() || isSevkEdilen() || (!isSandikMode() && canSevkEt()) || canWriteCurrentMenu()) {
+                @if (isSandikMode() || (isSevkEdilen() && canSeeGerceklesenRapor()) || (!isSandikMode() && canSevkEt()) || canDeleteProject()) {
                   <td>
                     <div class="d-flex gap-1 flex-wrap">
-                      @if (isSevkEdilen() && p.projeTipiId === 1) {
+                      @if (isSevkEdilen() && p.projeTipiId === 1 && canSeeGerceklesenRapor()) {
                         <div class="report-download" (click)="$event.stopPropagation()">
                           <button type="button" class="btn btn-sm btn-danger report-download-trigger" (click)="toggleReportMenu($event, 'gerceklesen-' + p.id)" [disabled]="isGerceklesenDownloading(p.id)" title="Gerçekleşen Çeki Listesi Raporu">
                             @if (isGerceklesenDownloading(p.id)) {
@@ -187,7 +187,7 @@
                             <i class="ri-archive-stack-line me-1"></i>3K
                           </a>
                         }
-                        @if (!isSahaYonetimi() && !isYedekYonetimi()) {
+                        @if (!isSahaYonetimi() && !isYedekYonetimi() && canSeeEksikRapor()) {
                           <div class="report-download" (click)="$event.stopPropagation()">
                             <button type="button" class="btn btn-sm btn-danger report-download-trigger" (click)="toggleReportMenu($event, 'eksik-' + p.id)" [disabled]="isEksikDownloading(p.id)" title="Eksik Ürünler Raporu">
                               @if (isEksikDownloading(p.id)) {
@@ -241,7 +241,7 @@
                         }
                       }
 
-                      @if (canWriteCurrentMenu()) {
+                      @if (canDeleteProject()) {
                         <button class="btn btn-sm btn-outline-danger" (click)="projeSil(p)" title="Projeyi Sil">
                           <i class="ri-delete-bin-line"></i>
                         </button>

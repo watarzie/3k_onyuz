@@ -24,6 +24,10 @@
     "GRID_MODULU": "Grid Module",
     "3K_MODULU": "3K Module",
     "PROJE_SEVK_ET": "Ship Project",
+    "PROJE_SIL": "Project Delete",
+    "EKSIK_RAPORU": "Missing Report",
+    "GERCEKLESEN_CEKI_RAPORU": "Actual Packing List Report",
+    "CEKI_VERISI_DUZENLE": "Packing List Data Edit",
     "KALITE_MODULU": "Quality Module",
     "SUREC_MODULU": "Process Module",
     "ISLEM_ONAY": "Approval Center"

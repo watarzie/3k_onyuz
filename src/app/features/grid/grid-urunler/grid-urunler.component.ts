@@ -17,7 +17,6 @@ import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-ban
 import { GridUrunDto, GridDurumGuncelleDto, ProjeDropdownDto, CekiSatiriAnaVeriGuncelleDto } from '../../../shared/models/index';
 import { GridDurum, GridSevkDurum, UcKDurum } from '../../../core/constants/enums';
 import { PermissionService } from '../../../core/services/permission.service';
-import { AuthService } from '../../../core/auth/auth.service';
 
 declare const pdfMake: any;
 
@@ -66,7 +65,6 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   private projeService = inject(ProjeService);
   private toast = inject(ToastService);
   permissions = inject(PermissionService);
-  private authService = inject(AuthService);
 
   projeId = signal(0);
   mevcutProje = signal<ProjeDropdownDto | null>(null);
@@ -91,10 +89,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   panelError = signal('');
   panelUyari = signal('');
 
-  isAdmin = computed(() => {
-    const user = this.authService.currentUser();
-    return user?.rolId === 1 || (user?.rol ?? '').toLowerCase() === 'admin';
-  });
+  canEditCekiVerisi = computed(() => this.permissions.canWrite('ceki-verisi-duzenle'));
 
   readonly birimSecenekleri = [
     { id: 1, label: 'Adet' },
@@ -824,7 +819,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
 
   openAnaVeriPanel(urun: GridUrunDto) {
-    if (!this.isAdmin()) return;
+    if (!this.canEditCekiVerisi()) return;
     this.anaVeriUrun.set(urun);
     this.anaSiraNo.set(urun.siraNo);
     this.anaBarkodNo.set(urun.barkodNo ?? '');

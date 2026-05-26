@@ -47,8 +47,8 @@ export class BaseApiService {
     );
   }
 
-  downloadFile(url: string): Observable<Blob> {
-    return this.http.get(url, { responseType: 'blob' });
+  downloadFile(url: string, options?: any): Observable<Blob> {
+    return this.http.get(url, { ...(options ?? {}), responseType: 'blob' as const }) as unknown as Observable<Blob>;
   }
 
   private wrapSuccess<T>(data: T): ApiResult<T> {

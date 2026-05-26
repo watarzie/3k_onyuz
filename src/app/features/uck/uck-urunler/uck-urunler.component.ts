@@ -13,7 +13,6 @@ import { SandikService } from '../../../core/services/sandik.service';
 import { ConfirmService } from '../../../core/services/confirm.service';
 import { PdfService } from '../../../core/services/pdf.service';
 import { PermissionService } from '../../../core/services/permission.service';
-import { AuthService } from '../../../core/auth/auth.service';
 
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
@@ -57,7 +56,6 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   private confirmService = inject(ConfirmService);
   private pdfService = inject(PdfService);
   private permissions = inject(PermissionService);
-  private authService = inject(AuthService);
 
   private sub: Subscription = new Subscription();
   private pendingFocusCekiSatiriId: number | null = null;
@@ -82,10 +80,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   panelError = signal('');
   panelUyari = signal('');
 
-  isAdmin = computed(() => {
-    const user = this.authService.currentUser();
-    return user?.rolId === 1 || (user?.rol ?? '').toLowerCase() === 'admin';
-  });
+  canEditCekiVerisi = computed(() => this.permissions.canWrite('ceki-verisi-duzenle'));
 
   readonly birimSecenekleri = [
     { id: 1, label: 'Adet' },
@@ -1063,7 +1058,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   }
 
   openAnaVeriPanel(urun: UcKUrunDto) {
-    if (!this.isAdmin()) return;
+    if (!this.canEditCekiVerisi()) return;
     this.anaVeriUrun.set(urun);
     this.anaSiraNo.set(urun.siraNo);
     this.anaBarkodNo.set(urun.barkodNo ?? '');

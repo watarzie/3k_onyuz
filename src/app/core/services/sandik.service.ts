@@ -27,6 +27,7 @@ import {
 @Injectable({ providedIn: 'root' })
 export class SandikService {
   private api = inject(BaseApiService);
+  private readonly cekiVerisiDuzenleOptions = { headers: { 'X-Menu-Kod': 'ceki-verisi-duzenle' } };
 
   // ===== Sorgular =====
 
@@ -59,7 +60,7 @@ export class SandikService {
   }
 
   cekiSatiriAnaVeriGuncelle(dto: CekiSatiriAnaVeriGuncelleDto): Observable<ApiResult<unknown>> {
-    return this.api.put<unknown>(API.SANDIK.CEKI_SATIRI_GUNCELLE, dto);
+    return this.api.put<unknown>(API.SANDIK.CEKI_SATIRI_GUNCELLE, dto, this.cekiVerisiDuzenleOptions);
   }
 
   ozellikGuncelle(dto: SandikOzellikGuncelleDto): Observable<ApiResult<unknown>> {
