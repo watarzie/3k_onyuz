@@ -171,3 +171,14 @@ export interface EksikUrunForSandikDto {
   birim: string;
   projeNo: string;
 }
+
+export interface CekiSatiriAnaVeriGuncelleDto {
+  cekiSatiriId: number;
+  siraNo: number;
+  olcuResmiPozNo?: string | null;
+  barkodNo: string;
+  aciklama: string;
+  istenenAdet: number;
+  birimId: number;
+  sandikNo: string;
+}

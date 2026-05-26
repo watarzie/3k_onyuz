@@ -7,6 +7,7 @@ export interface GridUrunDto {
   olcuResmiPozNo?: string;
   aciklama: string;
   istenenAdet: number;
+  birimId: number;
   birim: string;
   sandikNo: string;
   gridDurumuId: number;

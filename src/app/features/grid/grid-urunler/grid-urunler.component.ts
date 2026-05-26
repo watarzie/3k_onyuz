@@ -14,9 +14,10 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
-import { GridUrunDto, GridDurumGuncelleDto, ProjeDropdownDto } from '../../../shared/models/index';
+import { GridUrunDto, GridDurumGuncelleDto, ProjeDropdownDto, CekiSatiriAnaVeriGuncelleDto } from '../../../shared/models/index';
 import { GridDurum, GridSevkDurum, UcKDurum } from '../../../core/constants/enums';
 import { PermissionService } from '../../../core/services/permission.service';
+import { AuthService } from '../../../core/auth/auth.service';
 
 declare const pdfMake: any;
 
@@ -65,6 +66,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   private projeService = inject(ProjeService);
   private toast = inject(ToastService);
   permissions = inject(PermissionService);
+  private authService = inject(AuthService);
 
   projeId = signal(0);
   mevcutProje = signal<ProjeDropdownDto | null>(null);
@@ -88,6 +90,36 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   panelSaving = signal(false);
   panelError = signal('');
   panelUyari = signal('');
+
+  isAdmin = computed(() => {
+    const user = this.authService.currentUser();
+    return user?.rolId === 1 || (user?.rol ?? '').toLowerCase() === 'admin';
+  });
+
+  readonly birimSecenekleri = [
+    { id: 1, label: 'Adet' },
+    { id: 2, label: 'Set' },
+    { id: 3, label: 'Metre' },
+    { id: 4, label: 'Kg' },
+    { id: 5, label: 'Litre' },
+    { id: 6, label: 'Takim' },
+    { id: 7, label: 'Paket' },
+    { id: 8, label: 'Ton' },
+    { id: 9, label: 'Metrekare' },
+    { id: 10, label: 'Metrekup' },
+  ];
+
+  showAnaVeriPanel = signal(false);
+  anaVeriUrun = signal<GridUrunDto | null>(null);
+  anaSiraNo = signal(0);
+  anaBarkodNo = signal('');
+  anaOlcuResmiPozNo = signal('');
+  anaAciklama = signal('');
+  anaIstenenAdet = signal(0);
+  anaBirimId = signal(1);
+  anaSandikNo = signal('');
+  anaSaving = signal(false);
+  anaError = signal('');
 
   // Toplu Sevk Modal
   showTopluSevkModal = signal(false);
@@ -789,6 +821,93 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   get canSelectRows(): boolean {
     return this.canGridWrite || this.canKalite || this.canSurec;
+  }
+
+  openAnaVeriPanel(urun: GridUrunDto) {
+    if (!this.isAdmin()) return;
+    this.anaVeriUrun.set(urun);
+    this.anaSiraNo.set(urun.siraNo);
+    this.anaBarkodNo.set(urun.barkodNo ?? '');
+    this.anaOlcuResmiPozNo.set(urun.olcuResmiPozNo ?? '');
+    this.anaAciklama.set(urun.aciklama ?? '');
+    this.anaIstenenAdet.set(this.toNumber(urun.istenenAdet));
+    this.anaBirimId.set(urun.birimId ?? this.mapBirimId(urun.birim));
+    this.anaSandikNo.set(urun.sandikNo ?? '');
+    this.anaError.set('');
+    this.showAnaVeriPanel.set(true);
+  }
+
+  closeAnaVeriPanel() {
+    this.showAnaVeriPanel.set(false);
+    this.anaVeriUrun.set(null);
+    this.anaError.set('');
+    this.anaSaving.set(false);
+  }
+
+  saveAnaVeriPanel() {
+    const urun = this.anaVeriUrun();
+    if (!urun || this.anaSaving()) return;
+
+    const dto: CekiSatiriAnaVeriGuncelleDto = {
+      cekiSatiriId: urun.cekiSatiriId,
+      siraNo: this.toNumber(this.anaSiraNo()),
+      olcuResmiPozNo: this.anaOlcuResmiPozNo().trim() || null,
+      barkodNo: this.anaBarkodNo().trim(),
+      aciklama: this.anaAciklama().trim(),
+      istenenAdet: this.toNumber(this.anaIstenenAdet()),
+      birimId: this.toNumber(this.anaBirimId()),
+      sandikNo: this.anaSandikNo().trim(),
+    };
+
+    const validation = this.validateAnaVeri(dto);
+    if (validation) {
+      this.anaError.set(validation);
+      return;
+    }
+
+    this.anaSaving.set(true);
+    this.sandikService.cekiSatiriAnaVeriGuncelle(dto).subscribe({
+      next: (res) => {
+        this.anaSaving.set(false);
+        if (res.isSuccess) {
+          this.toast.success('Ceki verisi guncellendi.');
+          this.closeAnaVeriPanel();
+          this.gridService.notifyGridUpdated();
+          this.loadUrunler(false);
+          this.loadSandiklar();
+        } else {
+          const message = res.error ?? 'Ceki verisi guncellenemedi.';
+          this.anaError.set(message);
+          this.toast.error(message);
+        }
+      },
+      error: () => {
+        this.anaSaving.set(false);
+        const message = 'Sunucu ile iletisim kurulamadi.';
+        this.anaError.set(message);
+        this.toast.error(message);
+      },
+    });
+  }
+
+  private validateAnaVeri(dto: CekiSatiriAnaVeriGuncelleDto): string | null {
+    if (dto.siraNo <= 0) return 'Sira no sifirdan buyuk olmalidir.';
+    if (!dto.barkodNo) return 'Barkod zorunludur.';
+    if (!dto.aciklama) return 'Tanim zorunludur.';
+    if (dto.istenenAdet <= 0) return 'Miktar sifirdan buyuk olmalidir.';
+    if (!dto.sandikNo) return 'Sandik no zorunludur.';
+    return null;
+  }
+
+  private toNumber(value: unknown): number {
+    const parsed = typeof value === 'number' ? value : Number(String(value ?? '').replace(',', '.'));
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  private mapBirimId(birim?: string | null): number {
+    const value = (birim ?? '').trim().toLocaleLowerCase('tr-TR');
+    const item = this.birimSecenekleri.find(x => x.label.toLocaleLowerCase('tr-TR') === value);
+    return item?.id ?? 1;
   }
 
   /** Kalite durumu rengi */

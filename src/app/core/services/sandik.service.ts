@@ -5,7 +5,8 @@ import { API } from '../constants/api-endpoints';
 import {
   ApiResult, SandikDto, SandikDetayDto, SandikEkleDto, ManuelUrunEkleDto,
   UrunGuncelleDto, SandikDegistirDto, TeslimAlDto, TopluTeslimAlDto,
-  UrunIptalDto, StokKarsilamaDto, EksikUrunDto, UrunTasiDto, SandikOzellikGuncelleDto
+  UrunIptalDto, StokKarsilamaDto, EksikUrunDto, UrunTasiDto, SandikOzellikGuncelleDto,
+  CekiSatiriAnaVeriGuncelleDto
 } from '../../shared/models/index';
 
 /**
@@ -55,6 +56,10 @@ export class SandikService {
 
   urunGuncelle(dto: UrunGuncelleDto): Observable<ApiResult<unknown>> {
     return this.api.put<unknown>(API.SANDIK.URUN_GUNCELLE, dto);
+  }
+
+  cekiSatiriAnaVeriGuncelle(dto: CekiSatiriAnaVeriGuncelleDto): Observable<ApiResult<unknown>> {
+    return this.api.put<unknown>(API.SANDIK.CEKI_SATIRI_GUNCELLE, dto);
   }
 
   ozellikGuncelle(dto: SandikOzellikGuncelleDto): Observable<ApiResult<unknown>> {

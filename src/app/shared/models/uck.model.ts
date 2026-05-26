@@ -8,6 +8,7 @@ export interface UcKUrunDto {
   aciklama: string;
   sandikNo: string;
   istenenAdet: number;
+  birimId: number;
   birim: string;
   gridDurumuId: number;
   gridDurumuMetni: string;

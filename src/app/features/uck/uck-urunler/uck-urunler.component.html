@@ -106,7 +106,7 @@
             <th>Grid Açıklama</th>
             <th>3K Açıklama</th>
             <th class="text-center">Kalan</th>
-            <th *appCanWrite style="width:80px"></th>
+            <th style="width:112px"></th>
           </tr>
         </thead>
         <tbody>
@@ -231,16 +231,24 @@
             <td class="text-center fw-bold" [ngClass]="{'text-danger': u.kalan > 0, 'text-success': u.kalan === 0}">
               {{ u.kalan }} <small class="text-muted fw-normal">{{ u.birim }}</small>
             </td>
-            <td *appCanWrite>
+            <td>
               <div class="d-flex gap-1">
-                <button class="btn btn-sm btn-action" (click)="openPanel(u)" title="Düzenle"
+                @if (isAdmin()) {
+                <button class="btn btn-sm btn-action btn-admin-edit"
+                  (click)="openAnaVeriPanel(u); $event.stopPropagation()" title="Ceki verisini duzenle">
+                  <i class="ri-file-edit-line"></i>
+                </button>
+                }
+                @if (canUcKWrite) {
+                <button class="btn btn-sm btn-action" (click)="openPanel(u); $event.stopPropagation()" title="Duzenle"
                   [disabled]="isEditDisabled(u)">
                   <i class="ri-edit-line"></i>
                 </button>
                 @if (u.isManuelEklenen) {
-                <button class="btn btn-sm btn-outline-danger" (click)="manuelUrunSil(u)" title="Manuel ürünü sil">
+                <button class="btn btn-sm btn-outline-danger" (click)="manuelUrunSil(u); $event.stopPropagation()" title="Manuel urunu sil">
                   <i class="ri-delete-bin-line"></i>
                 </button>
+                }
                 }
               </div>
             </td>
@@ -300,6 +308,88 @@
         </div>
         }
       </div>
+    </div>
+  </div>
+</div>
+}
+
+<!-- ===== Side Panel: Ceki Verisi Guncelle ===== -->
+@if (showAnaVeriPanel() && anaVeriUrun()) {
+<div class="detail-overlay" (click)="closeAnaVeriPanel()"></div>
+<div class="detail-panel">
+  <div class="panel-header">
+    <h5 class="fw-semibold mb-0"><i class="ri-file-edit-line me-2"></i>Ceki Verisi Guncelle</h5>
+    <button class="btn btn-sm border-0" (click)="closeAnaVeriPanel()"><i class="ri-close-line fs-5"></i></button>
+  </div>
+  <div class="panel-body">
+    <div class="urun-ozet mb-4">
+      <h6 class="fw-semibold mb-2">{{ anaVeriUrun()!.aciklama }}</h6>
+      <div class="d-flex gap-3 flex-wrap">
+        <span class="ozet-chip"><i class="ri-barcode-line"></i> {{ anaVeriUrun()!.barkodNo }}</span>
+        <span class="ozet-chip"><i class="ri-archive-line"></i> {{ anaVeriUrun()!.sandikNo }}</span>
+        <span class="ozet-chip"><i class="ri-stack-line"></i> {{ anaVeriUrun()!.istenenAdet }} {{ anaVeriUrun()!.birim }}</span>
+      </div>
+    </div>
+
+    @if (anaError()) {
+    <div class="alert-danger-panel mb-3">
+      <i class="ri-error-warning-line me-2"></i>{{ anaError() }}
+    </div>
+    }
+
+    <div class="row g-3 mb-3">
+      <div class="col-6">
+        <label class="form-label fw-semibold">Sira No</label>
+        <input type="number" class="form-control" min="1" step="1" [ngModel]="anaSiraNo()"
+          (ngModelChange)="anaSiraNo.set(+$event)" />
+      </div>
+      <div class="col-6">
+        <label class="form-label fw-semibold">Sandik No</label>
+        <input type="text" class="form-control" [ngModel]="anaSandikNo()"
+          (ngModelChange)="anaSandikNo.set($event)" />
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Barkod</label>
+      <input type="text" class="form-control" [ngModel]="anaBarkodNo()"
+        (ngModelChange)="anaBarkodNo.set($event)" />
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">POZ NO</label>
+      <input type="text" class="form-control" [ngModel]="anaOlcuResmiPozNo()"
+        (ngModelChange)="anaOlcuResmiPozNo.set($event)" placeholder="-" />
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Tanim</label>
+      <textarea class="form-control" rows="3" [ngModel]="anaAciklama()"
+        (ngModelChange)="anaAciklama.set($event)"></textarea>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-6">
+        <label class="form-label fw-semibold">Miktar</label>
+        <input type="number" class="form-control" min="0.01" step="any" [ngModel]="anaIstenenAdet()"
+          (ngModelChange)="anaIstenenAdet.set(+$event)" />
+      </div>
+      <div class="col-6">
+        <label class="form-label fw-semibold">Birim</label>
+        <select class="form-select" [ngModel]="anaBirimId()" (ngModelChange)="anaBirimId.set(+$event)">
+          @for (b of birimSecenekleri; track b.id) {
+          <option [value]="b.id">{{ b.label }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline flex-grow-1" (click)="closeAnaVeriPanel()">Iptal</button>
+      <button class="btn btn-save flex-grow-1" (click)="saveAnaVeriPanel()" [disabled]="anaSaving()">
+        @if (anaSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        <i class="ri-save-line me-1"></i>Kaydet
+      </button>
     </div>
   </div>
 </div>
