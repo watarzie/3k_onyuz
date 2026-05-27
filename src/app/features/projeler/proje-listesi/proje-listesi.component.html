@@ -29,6 +29,33 @@
 @if (reportMenuKey()) {
   <div class="report-download-backdrop" (click)="closeReportMenu()"></div>
 }
+@if (reportMenuContext(); as menu) {
+  <div
+    class="report-download-menu report-download-menu-global"
+    [style.top.px]="reportMenuPosition()?.top"
+    [style.left.px]="reportMenuPosition()?.left"
+    (click)="$event.stopPropagation()">
+    @if (menu.type === 'gerceklesen') {
+      <button type="button" class="report-download-item is-pdf" (click)="indirGerceklesenCekiListesiPdf(menu.proje)" [disabled]="downloadingGerceklesenPdf() === menu.proje.id">
+        <span class="report-download-icon"><i class="ri-file-pdf-2-line"></i></span>
+        <span>PDF olarak indir</span>
+      </button>
+      <button type="button" class="report-download-item is-excel" (click)="indirGerceklesenCekiListesiExcel(menu.proje)" [disabled]="downloadingGerceklesenExcel() === menu.proje.id">
+        <span class="report-download-icon"><i class="ri-file-excel-2-line"></i></span>
+        <span>Excel olarak indir</span>
+      </button>
+    } @else {
+      <button type="button" class="report-download-item is-pdf" (click)="indirEksikUrunlerPdf(menu.proje)" [disabled]="downloadingEksikPdf() === menu.proje.id">
+        <span class="report-download-icon"><i class="ri-file-pdf-2-line"></i></span>
+        <span>PDF olarak indir</span>
+      </button>
+      <button type="button" class="report-download-item is-excel" (click)="indirEksikUrunlerExcel(menu.proje)" [disabled]="downloadingEksikExcel() === menu.proje.id">
+        <span class="report-download-icon"><i class="ri-file-excel-2-line"></i></span>
+        <span>Excel olarak indir</span>
+      </button>
+    }
+  </div>
+}
 
 <div class="trezo-card border-0 shadow-none mb-4">
   <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
@@ -153,7 +180,7 @@
                     <div class="d-flex gap-1 flex-wrap">
                       @if (isSevkEdilen() && p.projeTipiId === 1 && canSeeGerceklesenRapor()) {
                         <div class="report-download" (click)="$event.stopPropagation()">
-                          <button type="button" class="btn btn-sm btn-danger report-download-trigger" (click)="toggleReportMenu($event, 'gerceklesen-' + p.id)" [disabled]="isGerceklesenDownloading(p.id)" title="Gerçekleşen Çeki Listesi Raporu">
+                          <button type="button" class="btn btn-sm btn-danger report-download-trigger" (click)="toggleReportMenu($event, 'gerceklesen-' + p.id, p, 'gerceklesen')" [disabled]="isGerceklesenDownloading(p.id)" title="Gerçekleşen Çeki Listesi Raporu">
                             @if (isGerceklesenDownloading(p.id)) {
                               <span class="spinner-border spinner-border-sm"></span>
                             } @else {
@@ -162,18 +189,6 @@
                             <span>Gerçekleşen Çeki</span>
                             <i class="ri-arrow-down-s-line report-download-chevron" [class.open]="isReportMenuOpen('gerceklesen-' + p.id)"></i>
                           </button>
-                          @if (isReportMenuOpen('gerceklesen-' + p.id)) {
-                            <div class="report-download-menu" [style.top.px]="reportMenuPosition()?.top" [style.left.px]="reportMenuPosition()?.left">
-                              <button type="button" class="report-download-item is-pdf" (click)="indirGerceklesenCekiListesiPdf(p)" [disabled]="downloadingGerceklesenPdf() === p.id">
-                                <span class="report-download-icon"><i class="ri-file-pdf-2-line"></i></span>
-                                <span>PDF olarak indir</span>
-                              </button>
-                              <button type="button" class="report-download-item is-excel" (click)="indirGerceklesenCekiListesiExcel(p)" [disabled]="downloadingGerceklesenExcel() === p.id">
-                                <span class="report-download-icon"><i class="ri-file-excel-2-line"></i></span>
-                                <span>Excel olarak indir</span>
-                              </button>
-                            </div>
-                          }
                         </div>
                       }
                       @if (!isSandikMode() && hasSevkiyatGecmisi(p)) {
@@ -194,7 +209,7 @@
                         }
                         @if (!isSahaYonetimi() && !isYedekYonetimi() && canSeeEksikRapor()) {
                           <div class="report-download" (click)="$event.stopPropagation()">
-                            <button type="button" class="btn btn-sm btn-danger report-download-trigger" (click)="toggleReportMenu($event, 'eksik-' + p.id)" [disabled]="isEksikDownloading(p.id)" title="Eksik Ürünler Raporu">
+                            <button type="button" class="btn btn-sm btn-danger report-download-trigger" (click)="toggleReportMenu($event, 'eksik-' + p.id, p, 'eksik')" [disabled]="isEksikDownloading(p.id)" title="Eksik Ürünler Raporu">
                               @if (isEksikDownloading(p.id)) {
                                 <span class="spinner-border spinner-border-sm"></span>
                               } @else {
@@ -203,18 +218,6 @@
                               <span>Eksik Raporu</span>
                               <i class="ri-arrow-down-s-line report-download-chevron" [class.open]="isReportMenuOpen('eksik-' + p.id)"></i>
                             </button>
-                            @if (isReportMenuOpen('eksik-' + p.id)) {
-                              <div class="report-download-menu" [style.top.px]="reportMenuPosition()?.top" [style.left.px]="reportMenuPosition()?.left">
-                                <button type="button" class="report-download-item is-pdf" (click)="indirEksikUrunlerPdf(p)" [disabled]="downloadingEksikPdf() === p.id">
-                                  <span class="report-download-icon"><i class="ri-file-pdf-2-line"></i></span>
-                                  <span>PDF olarak indir</span>
-                                </button>
-                                <button type="button" class="report-download-item is-excel" (click)="indirEksikUrunlerExcel(p)" [disabled]="downloadingEksikExcel() === p.id">
-                                  <span class="report-download-icon"><i class="ri-file-excel-2-line"></i></span>
-                                  <span>Excel olarak indir</span>
-                                </button>
-                              </div>
-                            }
                           </div>
                         }
                         @if (isSahaYonetimi() || isYedekYonetimi()) {

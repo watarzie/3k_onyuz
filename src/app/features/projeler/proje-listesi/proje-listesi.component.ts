@@ -48,6 +48,7 @@ export class ProjeListesiComponent implements OnInit {
   downloadingGerceklesenExcel = signal<number | null>(null);
   reportMenuKey = signal<string | null>(null);
   reportMenuPosition = signal<{ top: number; left: number } | null>(null);
+  reportMenuContext = signal<{ key: string; proje: ProjeDto; type: 'eksik' | 'gerceklesen' } | null>(null);
 
   /**
    * Grid/3K buton gösterimi — Rol Yetki ekranından yönetilir.
@@ -287,9 +288,10 @@ export class ProjeListesiComponent implements OnInit {
   closeReportMenu() {
     this.reportMenuKey.set(null);
     this.reportMenuPosition.set(null);
+    this.reportMenuContext.set(null);
   }
 
-  toggleReportMenu(event: MouseEvent, key: string) {
+  toggleReportMenu(event: MouseEvent, key: string, proje: ProjeDto, type: 'eksik' | 'gerceklesen') {
     event.stopPropagation();
     if (this.reportMenuKey() === key) {
       this.closeReportMenu();
@@ -309,6 +311,7 @@ export class ProjeListesiComponent implements OnInit {
       top,
       left,
     });
+    this.reportMenuContext.set({ key, proje, type });
     this.reportMenuKey.set(key);
   }
 
@@ -346,7 +349,7 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   indirEksikUrunlerPdf(proje: ProjeDto) {
-    this.reportMenuKey.set(null);
+    this.closeReportMenu();
     this.downloadingEksikPdf.set(proje.id);
     this.pdfService.eksikUrunlerPdf(proje.id).subscribe({
       next: (blob) => {
@@ -367,7 +370,7 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   indirEksikUrunlerExcel(proje: ProjeDto) {
-    this.reportMenuKey.set(null);
+    this.closeReportMenu();
     this.downloadingEksikExcel.set(proje.id);
     this.pdfService.eksikUrunlerExcel(proje.id).subscribe({
       next: (blob) => {
@@ -390,7 +393,7 @@ export class ProjeListesiComponent implements OnInit {
   // ===== Çeki Yükleme Modal =====
 
   indirGerceklesenCekiListesiPdf(proje: ProjeDto) {
-    this.reportMenuKey.set(null);
+    this.closeReportMenu();
     this.downloadingGerceklesenPdf.set(proje.id);
     this.pdfService.gerceklesenCekiListesiPdf(proje.id).subscribe({
       next: (blob) => {
@@ -411,7 +414,7 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   indirGerceklesenCekiListesiExcel(proje: ProjeDto) {
-    this.reportMenuKey.set(null);
+    this.closeReportMenu();
     this.downloadingGerceklesenExcel.set(proje.id);
     this.pdfService.gerceklesenCekiListesiExcel(proje.id).subscribe({
       next: (blob) => {
