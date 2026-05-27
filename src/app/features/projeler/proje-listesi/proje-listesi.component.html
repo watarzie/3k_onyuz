@@ -88,7 +88,7 @@
               <th>{{ 'LABELS.durumMetni' | translate }}</th>
               <th>Sevk Tarihi</th>
               <th>{{ 'LABELS.TAMAMLANMA' | translate }}</th>
-                  @if (isSandikMode() || (isSevkEdilen() && canSeeGerceklesenRapor()) || (!isSandikMode() && canSevkEt()) || canDeleteProject()) {
+                  @if (isSandikMode() || (isSevkEdilen() && canSeeGerceklesenRapor()) || (!isSandikMode() && canSevkEt()) || (!isSandikMode() && hasAnySevkiyatGecmisi()) || isSevkEdilen() || canDeleteProject()) {
                 <th>İşlemler</th>
               }
             </tr>
@@ -129,9 +129,9 @@
                 <td><app-status-badge [status]="p.durumMetni" [label]="getDurumLabel(p.durumMetni)" /></td>
                 <td>
                   @if (p.gerceklesenSevkTarihi) {
-                    <span class="fw-semibold text-success">{{ p.gerceklesenSevkTarihi | date:'dd.MM.yyyy' }}</span>
+                    <span class="fw-semibold text-success">{{ p.gerceklesenSevkTarihi | date:'dd.MM.yyyy HH:mm' }}</span>
                   } @else if (p.planlananSevkTarihi) {
-                    {{ p.planlananSevkTarihi | date:'dd.MM.yyyy' }}
+                    {{ p.planlananSevkTarihi | date:'dd.MM.yyyy HH:mm' }}
                   } @else {
                     <span class="text-muted">-</span>
                   }
@@ -148,7 +148,7 @@
                     <small class="fw-semibold">{{ getTamamlanmaYuzdesi(p) }}%</small>
                   </div>
                 </td>
-                @if (isSandikMode() || (isSevkEdilen() && canSeeGerceklesenRapor()) || (!isSandikMode() && canSevkEt()) || canDeleteProject()) {
+                @if (isSandikMode() || (isSevkEdilen() && canSeeGerceklesenRapor()) || (!isSandikMode() && canSevkEt()) || (!isSandikMode() && hasSevkiyatGecmisi(p)) || canDeleteProject()) {
                   <td>
                     <div class="d-flex gap-1 flex-wrap">
                       @if (isSevkEdilen() && p.projeTipiId === 1 && canSeeGerceklesenRapor()) {
@@ -175,6 +175,11 @@
                             </div>
                           }
                         </div>
+                      }
+                      @if (!isSandikMode() && hasSevkiyatGecmisi(p)) {
+                        <button type="button" class="btn btn-sm btn-outline-primary" (click)="openSevkGecmisiModal(p)" title="Sevkiyat Geçmişi">
+                          <i class="ri-route-line me-1"></i>Sevkiyatlar
+                        </button>
                       }
                       @if (isSandikMode()) {
                         @if (canSeeGrid() && !isSahaYonetimi() && !isYedekYonetimi()) {
@@ -236,7 +241,8 @@
                             <i class="ri-calendar-event-line me-1"></i>Planlanan Sevk Tarihi
                           </button>
                           <button class="btn btn-sm btn-warning" (click)="openSevkEtModal(p)" title="Projeyi Sevk Et">
-                            <i class="ri-truck-line me-1"></i> Sevk Et
+                            <i class="ri-truck-line me-1"></i>
+                            {{ p.durumMetni === 'EksikSevkEdildi' || p.durumMetni === 'Eksik Sevk Edildi' ? 'Kalanı Sevk Et' : 'Sevk Et' }}
                           </button>
                         }
                       }
@@ -297,7 +303,7 @@
 @if (showSevkTarihiModal()) {
   <div class="modal-backdrop fade show" (click)="closeSevkTarihiModal()"></div>
   <div class="modal d-block fade show" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content border-0 shadow-lg">
         <div class="modal-header bg-warning text-dark border-0">
           <h5 class="modal-title"><i class="ri-calendar-event-line me-2"></i> Planlanan Sevk Tarihi</h5>
@@ -309,7 +315,7 @@
           </p>
           <div class="mb-0">
             <label class="form-label fw-semibold">Planlanan Sevk Tarihi</label>
-            <input type="date" class="form-control"
+            <input type="datetime-local" class="form-control" step="60"
                    [ngModel]="guncelSevkTarihi()" (ngModelChange)="guncelSevkTarihi.set($event)" />
             <small class="text-muted d-block mt-1">Bu alan opsiyoneldir. Proje fiilen sevk edildiğinde tarih otomatik olarak güncellenir.</small>
           </div>
@@ -388,7 +394,7 @@
 @if (showProjeOlusturModal()) {
   <div class="modal-backdrop fade show"></div>
   <div class="modal fade show d-block" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Yeni {{ isSahaYonetimi() ? 'Saha' : 'Yedek' }} Projesi Oluştur</h5>
@@ -423,30 +429,142 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow-lg">
         <div class="modal-header bg-warning text-dark border-0">
-          <h5 class="modal-title"><i class="ri-truck-line me-2"></i> Projeyi Sevk Et</h5>
+          <h5 class="modal-title"><i class="ri-truck-line me-2"></i> Sandıkları Sevk Et</h5>
           <button type="button" class="btn-close" (click)="closeSevkEtModal()"></button>
         </div>
         <div class="modal-body">
           <div class="alert alert-warning py-2 mb-3">
-            <i class="ri-alert-line me-1"></i> Bu işlem projeyi kilitler. Proje üzerinde hiçbir modülde değişiklik yapılamaz.
+            <i class="ri-alert-line me-1"></i>
+            Seçilen sandıklar sevk edildi olarak işaretlenir. Tüm sandıklar sevk edildiğinde proje kilitlenir; seçilmeyen sandıklar daha sonra sevk edilebilir.
           </div>
+          @if (sevkGecmisiSevkiyatSayisi() > 0) {
+            <div class="sevk-revision-warning mb-3">
+              <i class="ri-history-line"></i>
+              <div>
+                <strong>Bu proje daha önce {{ sevkGecmisiSevkiyatSayisi() }} sevkiyat kaydı aldı.</strong>
+                <span>Devam ederseniz seçili sandıklar yeni bir sevkiyat kaydı olarak eklenecek.</span>
+              </div>
+            </div>
+          }
           <p class="mb-3">
-            <strong>{{ sevkEtProje()?.projeNo }}</strong> numaralı projeyi sevk etmek istediğinize emin misiniz?
+            <strong>{{ sevkEtProje()?.projeNo }}</strong> numaralı proje için sevk edilecek sandıkları seçiniz.
           </p>
-          <div class="mb-0">
+          <div class="mb-3">
             <label class="form-label fw-semibold">Sevk Tarihi <span class="text-danger">*</span></label>
-            <input type="date" class="form-control"
+            <input type="datetime-local" class="form-control" step="60"
                    [value]="sevkEtTarihi()"
                    (input)="sevkEtTarihi.set($any($event.target).value)" />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Açıklama</label>
+            <textarea class="form-control"
+                      rows="2"
+                      maxlength="500"
+                      placeholder="Opsiyonel sevkiyat açıklaması"
+                      [value]="sevkEtAciklama()"
+                      (input)="sevkEtAciklama.set($any($event.target).value)"></textarea>
+          </div>
+
+          <div class="sevk-sandik-picker">
+            <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+              <label class="form-label fw-semibold mb-0">Sevk Edilecek Sandıklar</label>
+              <small class="text-muted">{{ selectedSevkSandikIds().length }} / {{ sevkEtSelectableSandiklar().length }} seçili</small>
+            </div>
+
+            @if (sevkEtSandikLoading()) {
+              <div class="text-center py-4">
+                <span class="spinner-border spinner-border-sm text-warning me-2"></span>
+                <span class="text-muted">Sandıklar yükleniyor...</span>
+              </div>
+            } @else {
+              <label class="sevk-sandik-select-all">
+                <input type="checkbox"
+                       [checked]="allSevkSandikSelected()"
+                       [disabled]="sevkEtSelectableSandiklar().length === 0"
+                       (change)="toggleAllSevkSandiklar($any($event.target).checked)" />
+                <span>Tüm sevk edilmemiş sandıkları seç</span>
+              </label>
+
+              @if (sevkEtSelectableSandiklar().length === 0) {
+                <div class="alert alert-light border mb-0 py-2">
+                  <i class="ri-information-line me-1"></i> Sevk edilecek sandık kalmamış.
+                </div>
+              }
+
+              <div class="sevk-sandik-list">
+                @for (sandik of sevkEtSandiklar(); track sandik.id) {
+                  <label class="sevk-sandik-item" [class.is-shipped]="isSandikSevkEdildi(sandik)">
+                    <input type="checkbox"
+                           [checked]="selectedSevkSandikIds().includes(sandik.id)"
+                           [disabled]="isSandikSevkEdildi(sandik)"
+                           (change)="toggleSevkSandik(sandik.id, $any($event.target).checked)" />
+                    <span class="sevk-sandik-no">{{ sandik.sandikNo }}</span>
+                    <span class="sevk-sandik-name" [title]="sandik.ad || ''">{{ sandik.ad || 'İsimsiz sandık' }}</span>
+                    <span class="sevk-sandik-meta">{{ sandik.urunSayisi }} ürün</span>
+                    <span class="sevk-sandik-status">{{ isSandikSevkEdildi(sandik) ? 'Sevk edildi' : sandik.durumMetni }}</span>
+                  </label>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="sevk-history mt-3">
+            <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+              <label class="form-label fw-semibold mb-0">Sevkiyat Geçmişi</label>
+              <small class="text-muted">{{ sevkGecmisi().length }} kayıt</small>
+            </div>
+
+            @if (sevkGecmisiLoading()) {
+              <div class="text-muted small py-2">Sevkiyat geçmişi yükleniyor...</div>
+            } @else if (sevkGecmisi().length === 0) {
+              <div class="sevk-history-empty">Bu proje için kayıtlı sevkiyat yok.</div>
+            } @else {
+              <div class="sevk-history-list">
+                @for (sevkiyat of sevkGecmisi(); track sevkiyat.kayitTipi + '-' + sevkiyat.id) {
+                  <div class="sevk-history-item" [class.is-unlock]="sevkiyat.isKilitAcma">
+                    <div class="sevk-history-head">
+                      <div>
+                        <div class="sevk-history-title">
+                          {{ sevkiyat.isKilitAcma ? 'Kilit Açıldı' : (sevkiyat.sevkiyatNo + '. Sevkiyat') }}
+                        </div>
+                        <div class="sevk-history-date">{{ sevkiyat.sevkTarihi | date:'dd.MM.yyyy HH:mm' }}</div>
+                        @if (sevkiyat.kullaniciAdSoyad) {
+                          <div class="sevk-history-user">{{ sevkiyat.kullaniciAdSoyad }}</div>
+                        }
+                      </div>
+                      <span class="sevk-history-count" [class.is-unlock]="sevkiyat.isKilitAcma">
+                        {{ sevkiyat.isKilitAcma ? 'Revizyon' : (sevkiyat.sandikSayisi + ' sandık') }}
+                      </span>
+                    </div>
+                    @if (sevkiyat.aciklama) {
+                      <div class="sevk-history-note">{{ sevkiyat.aciklama }}</div>
+                    }
+                    @if (!sevkiyat.isKilitAcma) {
+                      <div class="sevk-history-sandiklar">
+                        @for (sandik of sevkiyat.sandiklar; track sandik.sandikId) {
+                          <span class="sevk-history-sandik">
+                            {{ sandik.sandikNo }}
+                            @if (sandik.sandikAdi) {
+                              <span>- {{ sandik.sandikAdi }}</span>
+                            }
+                          </span>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
           </div>
         </div>
         <div class="modal-footer border-0 d-flex gap-2">
           <button class="btn btn-light flex-grow-1" (click)="closeSevkEtModal()">Vazgeç</button>
-          <button class="btn btn-warning flex-grow-1" (click)="sevkEtOnayla()" [disabled]="sevkEtSaving()">
+          <button class="btn btn-warning flex-grow-1" (click)="sevkEtOnayla()" [disabled]="sevkEtSaving() || sevkEtSandikLoading() || selectedSevkSandikIds().length === 0">
             @if (sevkEtSaving()) {
               <span class="spinner-border spinner-border-sm me-2"></span>
             }
-            <i class="ri-truck-line me-1"></i> Evet, Sevk Et
+            <i class="ri-truck-line me-1"></i> Seçili Sandıkları Sevk Et
           </button>
         </div>
       </div>
@@ -454,3 +572,64 @@
   </div>
 }
 
+@if (showSevkGecmisiModal()) {
+  <div class="modal-backdrop fade show" (click)="closeSevkGecmisiModal()"></div>
+  <div class="modal d-block fade show" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header border-0">
+          <div>
+            <h5 class="modal-title"><i class="ri-route-line me-2 text-primary"></i> Sevkiyat Geçmişi</h5>
+            <small class="text-muted">{{ sevkGecmisiProje()?.projeNo }} - {{ sevkGecmisiProje()?.musteri }}</small>
+          </div>
+          <button type="button" class="btn-close" (click)="closeSevkGecmisiModal()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="sevk-history">
+            @if (sevkGecmisiLoading()) {
+              <div class="text-muted small py-2">Sevkiyat geçmişi yükleniyor...</div>
+            } @else if (sevkGecmisi().length === 0) {
+              <div class="sevk-history-empty">Bu proje için kayıtlı sevkiyat yok.</div>
+            } @else {
+              <div class="sevk-history-list">
+                @for (sevkiyat of sevkGecmisi(); track sevkiyat.kayitTipi + '-' + sevkiyat.id) {
+                  <div class="sevk-history-item" [class.is-unlock]="sevkiyat.isKilitAcma">
+                    <div class="sevk-history-head">
+                      <div>
+                        <div class="sevk-history-title">
+                          {{ sevkiyat.isKilitAcma ? 'Kilit Açıldı' : (sevkiyat.sevkiyatNo + '. Sevkiyat') }}
+                        </div>
+                        <div class="sevk-history-date">{{ sevkiyat.sevkTarihi | date:'dd.MM.yyyy HH:mm' }}</div>
+                        @if (sevkiyat.kullaniciAdSoyad) {
+                          <div class="sevk-history-user">{{ sevkiyat.kullaniciAdSoyad }}</div>
+                        }
+                      </div>
+                      <span class="sevk-history-count" [class.is-unlock]="sevkiyat.isKilitAcma">
+                        {{ sevkiyat.isKilitAcma ? 'Revizyon' : (sevkiyat.sandikSayisi + ' sandık') }}
+                      </span>
+                    </div>
+                    @if (sevkiyat.aciklama) {
+                      <div class="sevk-history-note">{{ sevkiyat.aciklama }}</div>
+                    }
+                    @if (!sevkiyat.isKilitAcma) {
+                      <div class="sevk-history-sandiklar">
+                        @for (sandik of sevkiyat.sandiklar; track sandik.sandikId) {
+                          <span class="sevk-history-sandik">
+                            {{ sandik.sandikNo }}
+                            @if (sandik.sandikAdi) {
+                              <span>- {{ sandik.sandikAdi }}</span>
+                            }
+                          </span>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}

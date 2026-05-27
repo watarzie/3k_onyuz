@@ -59,6 +59,24 @@ export interface ProjeTransferDto {
 }
 
 /** Dropdown'lar için hafif proje DTO — sadece Id/ProjeNo/Musteri */
+export interface SevkiyatSandikDto {
+  sandikId: number;
+  sandikNo: string;
+  sandikAdi?: string;
+}
+
+export interface SevkiyatDto {
+  id: number;
+  sevkiyatNo: number;
+  sevkTarihi: string;
+  aciklama?: string;
+  kullaniciAdSoyad?: string;
+  sandikSayisi: number;
+  kayitTipi: string;
+  isKilitAcma: boolean;
+  sandiklar: SevkiyatSandikDto[];
+}
+
 export interface ProjeDropdownDto {
   id: number;
   projeNo: string;

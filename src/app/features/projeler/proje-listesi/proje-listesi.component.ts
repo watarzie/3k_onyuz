@@ -7,10 +7,11 @@ import { RouterLink, ActivatedRoute } from '@angular/router';
 import { NgClass, DatePipe } from '@angular/common';
 import { TranslationService } from '../../../core/services/translation.service';
 import { ProjeService } from '../../../core/services/proje.service';
+import { SandikService } from '../../../core/services/sandik.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
-import { ProjeDto } from '../../../shared/models/index';
+import { ProjeDto, SandikDto, SevkiyatDto } from '../../../shared/models/index';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmService } from '../../../core/services/confirm.service';
 import { PdfService } from '../../../core/services/pdf.service';
@@ -26,11 +27,13 @@ import { PdfService } from '../../../core/services/pdf.service';
 export class ProjeListesiComponent implements OnInit {
   ts = inject(TranslationService);
   private projeService = inject(ProjeService);
+  private sandikService = inject(SandikService);
   permissions = inject(PermissionService);
   toastService = inject(ToastService);
   confirmService = inject(ConfirmService);
   private route = inject(ActivatedRoute);
   private pdfService = inject(PdfService);
+  private readonly sandikNoCollator = new Intl.Collator('tr', { numeric: true, sensitivity: 'base' });
 
   isSandikYonetimi = signal(false);
   isSevkEdilen = signal(false);
@@ -96,7 +99,23 @@ export class ProjeListesiComponent implements OnInit {
   showSevkEtModal = signal(false);
   sevkEtProje = signal<ProjeDto | null>(null);
   sevkEtTarihi = signal('');
+  sevkEtAciklama = signal('');
   sevkEtSaving = signal(false);
+  sevkEtSandiklar = signal<SandikDto[]>([]);
+  sevkEtSandikLoading = signal(false);
+  selectedSevkSandikIds = signal<number[]>([]);
+  sevkGecmisi = signal<SevkiyatDto[]>([]);
+  sevkGecmisiLoading = signal(false);
+  showSevkGecmisiModal = signal(false);
+  sevkGecmisiProje = signal<ProjeDto | null>(null);
+  sevkGecmisiSevkiyatSayisi = computed(() => this.sevkGecmisi().filter(kayit => !kayit.isKilitAcma).length);
+  sevkEtSelectableSandiklar = computed(() => this.sevkEtSandiklar().filter(s => !this.isSandikSevkEdildi(s)));
+  allSevkSandikSelected = computed(() => {
+    const selectable = this.sevkEtSelectableSandiklar();
+    const selected = this.selectedSevkSandikIds();
+    return selectable.length > 0 && selectable.every(s => selected.includes(s.id));
+  });
+  hasAnySevkiyatGecmisi = computed(() => this.projeler().some(p => this.hasSevkiyatGecmisi(p)));
 
   breadcrumb: { label: string; link?: string }[] = [
     { label: 'Ana Kontrol Paneli', link: '/dashboard' },
@@ -211,6 +230,43 @@ export class ProjeListesiComponent implements OnInit {
 
   mathMin(a: number, b: number): number {
     return Math.min(a, b);
+  }
+
+  private formatDateTimeLocal(date: Date): string {
+    const pad = (value: number) => value.toString().padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  private toDateTimeLocalInputValue(value?: string | Date | null): string {
+    if (!value) {
+      return this.formatDateTimeLocal(new Date());
+    }
+
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(date.getTime()) ? this.formatDateTimeLocal(new Date()) : this.formatDateTimeLocal(date);
+  }
+
+  private toApiDateTime(value: string): string | null {
+    if (!value) return null;
+    return value.length === 16 ? `${value}:00` : value;
+  }
+
+  private compareSandikNo(a?: string | null, b?: string | null): number {
+    const left = (a ?? '').trim();
+    const right = (b ?? '').trim();
+    const result = this.sandikNoCollator.compare(left, right);
+    return result !== 0 ? result : left.localeCompare(right, 'tr');
+  }
+
+  private sortBySandikNo<T extends { sandikNo: string }>(items: T[]): T[] {
+    return [...items].sort((a, b) => this.compareSandikNo(a.sandikNo, b.sandikNo));
+  }
+
+  private sortSevkiyatSandiklari(sevkiyatlar: SevkiyatDto[]): SevkiyatDto[] {
+    return sevkiyatlar.map(sevkiyat => ({
+      ...sevkiyat,
+      sandiklar: this.sortBySandikNo(sevkiyat.sandiklar ?? [])
+    }));
   }
 
   getTamamlanmaYuzdesi(p: ProjeDto): number {
@@ -461,7 +517,7 @@ export class ProjeListesiComponent implements OnInit {
   openSevkTarihiModal(proje: ProjeDto) {
     this.selectedProjeId.set(proje.id);
     this.sevkTarihiProje.set(proje);
-    this.guncelSevkTarihi.set(proje.planlananSevkTarihi ? proje.planlananSevkTarihi.substring(0, 10) : '');
+    this.guncelSevkTarihi.set(proje.planlananSevkTarihi ? this.toDateTimeLocalInputValue(proje.planlananSevkTarihi) : '');
     this.showSevkTarihiModal.set(true);
   }
 
@@ -474,8 +530,7 @@ export class ProjeListesiComponent implements OnInit {
 
   kaydetSevkTarihi() {
     this.sevkTarihiSaving.set(true);
-    // string to YYYY-MM-DD
-    const tarih = this.guncelSevkTarihi() ? new Date(this.guncelSevkTarihi()).toISOString() : null;
+    const tarih = this.toApiDateTime(this.guncelSevkTarihi());
     
     this.projeService.sevkTarihiGuncelle(this.selectedProjeId(), tarih).subscribe({
       next: (res) => {
@@ -546,14 +601,112 @@ export class ProjeListesiComponent implements OnInit {
 
   openSevkEtModal(proje: ProjeDto) {
     this.sevkEtProje.set(proje);
-    this.sevkEtTarihi.set(new Date().toISOString().substring(0, 10));
+    this.sevkEtTarihi.set(this.toDateTimeLocalInputValue());
+    this.sevkEtAciklama.set('');
+    this.sevkEtSandiklar.set([]);
+    this.selectedSevkSandikIds.set([]);
+    this.sevkGecmisi.set([]);
+    this.sevkGecmisiLoading.set(false);
     this.showSevkEtModal.set(true);
+    this.loadSevkEtSandiklar(proje.id);
+    this.loadSevkiyatGecmisi(proje.id);
   }
 
   closeSevkEtModal() {
     this.showSevkEtModal.set(false);
     this.sevkEtProje.set(null);
     this.sevkEtTarihi.set('');
+    this.sevkEtAciklama.set('');
+    this.sevkEtSandiklar.set([]);
+    this.selectedSevkSandikIds.set([]);
+    this.sevkEtSandikLoading.set(false);
+    this.sevkGecmisi.set([]);
+    this.sevkGecmisiLoading.set(false);
+  }
+
+  hasSevkiyatGecmisi(proje: ProjeDto): boolean {
+    const durum = proje.durumMetni;
+    return !!proje.gerceklesenSevkTarihi ||
+      durum === 'SevkEdildi' ||
+      durum === 'Sevk Edildi' ||
+      durum === 'EksikSevkEdildi' ||
+      durum === 'Eksik Sevk Edildi';
+  }
+
+  openSevkGecmisiModal(proje: ProjeDto) {
+    this.sevkGecmisiProje.set(proje);
+    this.sevkGecmisi.set([]);
+    this.sevkGecmisiLoading.set(false);
+    this.showSevkGecmisiModal.set(true);
+    this.loadSevkiyatGecmisi(proje.id);
+  }
+
+  closeSevkGecmisiModal() {
+    this.showSevkGecmisiModal.set(false);
+    this.sevkGecmisiProje.set(null);
+    this.sevkGecmisi.set([]);
+    this.sevkGecmisiLoading.set(false);
+  }
+
+  private loadSevkiyatGecmisi(projeId: number) {
+    this.sevkGecmisiLoading.set(true);
+    this.projeService.getSevkiyatlar(projeId).subscribe({
+      next: (res) => {
+        this.sevkGecmisiLoading.set(false);
+        if (res.isSuccess && res.value) {
+          this.sevkGecmisi.set(this.sortSevkiyatSandiklari(res.value));
+        }
+      },
+      error: () => {
+        this.sevkGecmisiLoading.set(false);
+        this.toastService.error('Sevkiyat geçmişi yüklenemedi.');
+      }
+    });
+  }
+
+  isSandikSevkEdildi(sandik: SandikDto): boolean {
+    return sandik.durumId === 4 || sandik.durumMetni === 'SevkEdildi' || sandik.durumMetni === 'Sevk Edildi';
+  }
+
+  private loadSevkEtSandiklar(projeId: number) {
+    this.sevkEtSandikLoading.set(true);
+    this.sandikService.getSandiklar(projeId).subscribe({
+      next: (res) => {
+        this.sevkEtSandikLoading.set(false);
+        if (res.isSuccess && res.value) {
+          const sandiklar = this.sortBySandikNo(res.value);
+          this.sevkEtSandiklar.set(sandiklar);
+          this.selectedSevkSandikIds.set(sandiklar.filter(s => !this.isSandikSevkEdildi(s)).map(s => s.id));
+        } else {
+          this.toastService.error(res.error || 'Sandıklar yüklenemedi.');
+        }
+      },
+      error: () => {
+        this.sevkEtSandikLoading.set(false);
+        this.toastService.error('Sandıklar yüklenirken sunucu hatası oluştu.');
+      }
+    });
+  }
+
+  toggleSevkSandik(sandikId: number, checked: boolean) {
+    const selected = this.selectedSevkSandikIds();
+    if (checked) {
+      if (!selected.includes(sandikId)) {
+        this.selectedSevkSandikIds.set([...selected, sandikId]);
+      }
+      return;
+    }
+
+    this.selectedSevkSandikIds.set(selected.filter(id => id !== sandikId));
+  }
+
+  toggleAllSevkSandiklar(checked: boolean) {
+    if (!checked) {
+      this.selectedSevkSandikIds.set([]);
+      return;
+    }
+
+    this.selectedSevkSandikIds.set(this.sevkEtSelectableSandiklar().map(s => s.id));
   }
 
   sevkEtOnayla() {
@@ -563,13 +716,18 @@ export class ProjeListesiComponent implements OnInit {
       this.toastService.error('Sevk tarihi girilmelidir.');
       return;
     }
+    if (this.selectedSevkSandikIds().length === 0) {
+      this.toastService.error('Sevk edilecek en az bir sandık seçilmelidir.');
+      return;
+    }
     this.sevkEtSaving.set(true);
-    const tarih = new Date(this.sevkEtTarihi()).toISOString();
-    this.projeService.sevkEt(proje.id, tarih).subscribe({
+    const tarih = this.toApiDateTime(this.sevkEtTarihi())!;
+    const aciklama = this.sevkEtAciklama().trim() || undefined;
+    this.projeService.sevkEt(proje.id, tarih, this.selectedSevkSandikIds(), aciklama).subscribe({
       next: (res) => {
         this.sevkEtSaving.set(false);
         if (res.isSuccess) {
-          this.toastService.success('Proje başarıyla sevk edildi ve kilitlendi.');
+          this.toastService.success('Seçili sandıklar başarıyla sevk edildi.');
           this.closeSevkEtModal();
           this.loadProjeler();
         } else {

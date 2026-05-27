@@ -25,6 +25,7 @@ export const API = {
     CREATE: `${BASE}/proje`,
     SANDIK_KAPAT: `${BASE}/proje/sandik-kapat`,
     SEVK_ET: (id: number) => `${BASE}/proje/${id}/sevk-et`,
+    SEVKIYATLAR: (id: number) => `${BASE}/proje/${id}/sevkiyatlar`,
     KILIDI_AC: (id: number) => `${BASE}/proje/${id}/kilidi-ac`,
     SEVK_TARIHI_GUNCELLE: `${BASE}/proje/sevk-tarihi-guncelle`,
     DELETE: (id: number) => `${BASE}/proje/${id}`,

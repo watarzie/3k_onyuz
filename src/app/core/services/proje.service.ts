@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiSatiriDto, ProjeDropdownDto } from '../../shared/models/index';
+import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiSatiriDto, ProjeDropdownDto, SevkiyatDto } from '../../shared/models/index';
 
 /**
  * ProjeController (2 endpoint) + CekiController (2 endpoint):
@@ -48,8 +48,16 @@ export class ProjeService {
     return this.api.put<boolean>(API.PROJE.SANDIK_KAPAT, { sandikId, kapali });
   }
 
-  sevkEt(projeId: number, sevkTarihi?: string): Observable<ApiResult<boolean>> {
-    return this.api.post<boolean>(API.PROJE.SEVK_ET(projeId), { sevkTarihi: sevkTarihi || null });
+  sevkEt(projeId: number, sevkTarihi?: string, sandikIds?: number[], aciklama?: string): Observable<ApiResult<boolean>> {
+    return this.api.post<boolean>(API.PROJE.SEVK_ET(projeId), {
+      sevkTarihi: sevkTarihi || null,
+      sandikIds: sandikIds ?? null,
+      aciklama: aciklama?.trim() || null,
+    });
+  }
+
+  getSevkiyatlar(projeId: number): Observable<ApiResult<SevkiyatDto[]>> {
+    return this.api.get<SevkiyatDto[]>(API.PROJE.SEVKIYATLAR(projeId));
   }
 
   kilidiAc(projeId: number): Observable<ApiResult<boolean>> {
