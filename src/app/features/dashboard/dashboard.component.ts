@@ -25,6 +25,10 @@ interface DashboardOzetDto {
   depoGridSandik: number;
   depoDigerSandik: number;
   depoDagilimlari?: DashboardDepoDagilimDto[];
+  normalDepoDagilimlari?: DashboardDepoDagilimDto[];
+  sahaDepoDagilimlari?: DashboardDepoDagilimDto[];
+  yedekDepoDagilimlari?: DashboardDepoDagilimDto[];
+  projeTipiOzetleri?: DashboardProjeTipiOzetDto[];
   normalSandik: number;
   sahaSandik: number;
   yedekSandik: number;
@@ -36,6 +40,20 @@ interface DashboardDepoDagilimDto {
   depoLokasyonId: number;
   depoLokasyonMetni: string;
   sandikSayisi: number;
+}
+
+interface DashboardProjeTipiOzetDto {
+  projeTipiId: number;
+  projeTipiMetni: string;
+  toplamProje: number;
+  hazirlananProje: number;
+  sevkEdilenProje: number;
+  tamamlananProje: number;
+  toplamSandik: number;
+  eksikUrunSayisi: number;
+  toplamDepoSandik: number;
+  tamamlanmaYuzdesi: number;
+  depoDagilimlari?: DashboardDepoDagilimDto[];
 }
 
 interface DashboardDepoSegment {
@@ -100,12 +118,14 @@ export class DashboardComponent implements OnInit {
   private readonly projelerPageSize = 20;
   private readonly kritikPageSize = 12;
   private readonly eksikPageSize = 12;
+  private projelerRequestSeq = 0;
 
   ozet = signal<DashboardOzetDto | null>(null);
   projeler = signal<DashboardProjeItemDto[]>([]);
   kritikProjeler = signal<DashboardKritikProjeDto[]>([]);
   topEksikProje = signal<DashboardEksikSiralamaDto[]>([]);
   depoLokasyonlari = signal<LookupItem[]>([]);
+  selectedProjeTipiId = signal<number | null>(null);
 
   loadingOzet = signal(true);
   loadingProjeler = signal(false);
@@ -139,12 +159,98 @@ export class DashboardComponent implements OnInit {
   eksikUrun = computed(() => this.ozet()?.eksikUrunSayisi ?? 0);
   sevkEdilen = computed(() => this.ozet()?.sevkEdilenProje ?? 0);
 
+  projeTipiOzetleri = computed(() => {
+    const ozet = this.ozet();
+    const items = ozet?.projeTipiOzetleri ?? [];
+
+    if (items.length > 0) {
+      return items.slice().sort((a, b) => a.projeTipiId - b.projeTipiId);
+    }
+
+    return [
+      {
+        projeTipiId: 1,
+        projeTipiMetni: 'Normal',
+        toplamProje: 0,
+        hazirlananProje: 0,
+        sevkEdilenProje: 0,
+        tamamlananProje: 0,
+        toplamSandik: ozet?.normalSandik ?? 0,
+        eksikUrunSayisi: 0,
+        toplamDepoSandik: this.sumDagilim(ozet?.normalDepoDagilimlari),
+        tamamlanmaYuzdesi: 0,
+        depoDagilimlari: ozet?.normalDepoDagilimlari ?? [],
+      },
+      {
+        projeTipiId: 2,
+        projeTipiMetni: 'Saha',
+        toplamProje: 0,
+        hazirlananProje: 0,
+        sevkEdilenProje: 0,
+        tamamlananProje: 0,
+        toplamSandik: ozet?.sahaSandik ?? 0,
+        eksikUrunSayisi: 0,
+        toplamDepoSandik: this.sumDagilim(ozet?.sahaDepoDagilimlari),
+        tamamlanmaYuzdesi: ozet?.sahaYuzde ?? 0,
+        depoDagilimlari: ozet?.sahaDepoDagilimlari ?? [],
+      },
+      {
+        projeTipiId: 3,
+        projeTipiMetni: 'Yedek',
+        toplamProje: 0,
+        hazirlananProje: 0,
+        sevkEdilenProje: 0,
+        tamamlananProje: 0,
+        toplamSandik: ozet?.yedekSandik ?? 0,
+        eksikUrunSayisi: 0,
+        toplamDepoSandik: this.sumDagilim(ozet?.yedekDepoDagilimlari),
+        tamamlanmaYuzdesi: ozet?.yedekYuzde ?? 0,
+        depoDagilimlari: ozet?.yedekDepoDagilimlari ?? [],
+      },
+    ];
+  });
+
+  selectedProjeTipiOzet = computed(() => {
+    const selectedId = this.selectedProjeTipiId();
+    if (!selectedId) return null;
+    return this.projeTipiOzetleri().find(item => item.projeTipiId === selectedId) ?? null;
+  });
+
+  selectedDepoDagilimlari = computed(() => {
+    const selected = this.selectedProjeTipiOzet();
+    if (selected) return selected.depoDagilimlari ?? [];
+    return this.ozet()?.depoDagilimlari ?? [];
+  });
+
+  depoGrafikBaslik = computed(() => {
+    const selected = this.selectedProjeTipiOzet();
+    return selected ? `${selected.projeTipiMetni} Depo Dağılımı` : 'Depo Dağılım Grafiği';
+  });
+
+  projelerBaslik = computed(() => {
+    const selected = this.selectedProjeTipiOzet();
+    return selected ? `${selected.projeTipiMetni} Projeler` : 'Projeler';
+  });
+
+  projeOzetiBaslik = computed(() => {
+    const selected = this.selectedProjeTipiOzet();
+    return selected ? `${selected.projeTipiMetni} Proje Özeti` : 'Proje Özeti';
+  });
+
+  projeOzetiHazirlanan = computed(() => this.selectedProjeTipiOzet()?.hazirlananProje ?? this.aktifProje());
+  projeOzetiSevkEdilen = computed(() => this.selectedProjeTipiOzet()?.sevkEdilenProje ?? this.sevkEdilen());
+  projeOzetiTamamlanan = computed(() => this.selectedProjeTipiOzet()?.tamamlananProje ?? this.tamamlanan());
+  projeOzetiToplam = computed(() =>
+    this.projeOzetiHazirlanan() + this.projeOzetiSevkEdilen() + this.projeOzetiTamamlanan()
+  );
+
   depoSegments = computed(() => {
     const ozet = this.ozet();
+    const selectedDagilimlari = this.selectedDepoDagilimlari();
     const byId = new Map<number, LookupItem>();
     const counts = new Map<number, number>();
 
-    (ozet?.depoDagilimlari ?? []).forEach(item => {
+    selectedDagilimlari.forEach(item => {
       byId.set(item.depoLokasyonId, {
         id: item.depoLokasyonId,
         anahtar: item.depoLokasyonId,
@@ -153,7 +259,7 @@ export class DashboardComponent implements OnInit {
       counts.set(item.depoLokasyonId, (counts.get(item.depoLokasyonId) ?? 0) + item.sandikSayisi);
     });
 
-    if (ozet && (ozet.depoDagilimlari?.length ?? 0) === 0) {
+    if (!this.selectedProjeTipiId() && ozet && selectedDagilimlari.length === 0) {
       [
         { id: 2, label: '3K', count: ozet.depoUcKSandik ?? 0 },
         { id: 4, label: 'Seymen', count: ozet.depoSeymenSandik ?? 0 },
@@ -186,6 +292,13 @@ export class DashboardComponent implements OnInit {
   normalSandik = computed(() => this.ozet()?.normalSandik ?? 0);
   yedekYuzde = computed(() => this.ozet()?.yedekYuzde ?? 0);
   sahaYuzde = computed(() => this.ozet()?.sahaYuzde ?? 0);
+
+  selectProjeTipi(tipId: number | null) {
+    if (this.selectedProjeTipiId() === tipId) return;
+
+    this.selectedProjeTipiId.set(tipId);
+    this.loadProjeler(true);
+  }
 
   ngOnInit() {
     this.loadDepoLokasyonlari();
@@ -223,24 +336,40 @@ export class DashboardComponent implements OnInit {
   }
 
   loadProjeler(reset = false) {
-    if (this.loadingProjeler()) return;
+    if (!reset && this.loadingProjeler()) return;
     if (!reset && !this.projelerHasMore()) return;
 
     if (reset) {
       this.projeler.set([]);
       this.projelerPage.set(0);
+      this.projelerTotal.set(0);
       this.projelerHasMore.set(true);
     }
 
     const nextPage = this.projelerPage() + 1;
+    const requestSeq = ++this.projelerRequestSeq;
+    const projeTipiId = this.selectedProjeTipiId();
     this.loadingProjeler.set(true);
-    this.api.get<DashboardPagedResultDto<DashboardProjeItemDto>>(API.DASHBOARD.PROJELER(nextPage, this.projelerPageSize)).subscribe((res) => {
-      this.loadingProjeler.set(false);
-      if (res.isSuccess && res.value) {
-        this.projeler.update(items => reset ? res.value!.items : [...items, ...res.value!.items]);
-        this.projelerPage.set(res.value.page);
-        this.projelerTotal.set(res.value.totalCount);
-        this.projelerHasMore.set(res.value.hasMore);
+    this.api.get<DashboardPagedResultDto<DashboardProjeItemDto>>(
+      API.DASHBOARD.PROJELER(nextPage, this.projelerPageSize, projeTipiId)
+    ).subscribe({
+      next: (res) => {
+        if (requestSeq !== this.projelerRequestSeq) return;
+
+        this.loadingProjeler.set(false);
+        if (res.isSuccess && res.value) {
+          const pageItems = res.value.items ?? [];
+
+          this.projeler.update(items => reset ? pageItems : [...items, ...pageItems]);
+          this.projelerPage.set(res.value.page);
+          this.projelerTotal.set(res.value.totalCount);
+          this.projelerHasMore.set(res.value.hasMore);
+        }
+      },
+      error: () => {
+        if (requestSeq === this.projelerRequestSeq) {
+          this.loadingProjeler.set(false);
+        }
       }
     });
   }
@@ -360,6 +489,18 @@ export class DashboardComponent implements OnInit {
     return 25 - previousTotal;
   }
 
+  getProjeTipiIcon(tipId: number): string {
+    if (tipId === 2) return 'ri-map-pin-line';
+    if (tipId === 3) return 'ri-shield-star-line';
+    return 'ri-folder-line';
+  }
+
+  getProjeTipiClass(tipId: number): string {
+    if (tipId === 2) return 'type-saha';
+    if (tipId === 3) return 'type-yedek';
+    return 'type-normal';
+  }
+
   private sortLokasyonlar(lokasyonlar: LookupItem[]): LookupItem[] {
     return lokasyonlar
       .slice()
@@ -368,6 +509,10 @@ export class DashboardComponent implements OnInit {
 
   private isBelirsiz(lokasyon: LookupItem): boolean {
     return lokasyon.id === 1 || lokasyon.deger.toLocaleLowerCase('tr-TR') === 'belirsiz';
+  }
+
+  private sumDagilim(dagilimlar?: DashboardDepoDagilimDto[]): number {
+    return (dagilimlar ?? []).reduce((sum, item) => sum + item.sandikSayisi, 0);
   }
 
   private getLokasyonColor(lokasyon: LookupItem, index = 0): string {

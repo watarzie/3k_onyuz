@@ -32,7 +32,8 @@ export const API = {
   },
   DASHBOARD: {
     OZET: `${BASE}/dashboard/ozet`,
-    PROJELER: (page: number, pageSize: number) => `${BASE}/dashboard/projeler?page=${page}&pageSize=${pageSize}`,
+    PROJELER: (page: number, pageSize: number, projeTipiId?: number | null) =>
+      `${BASE}/dashboard/projeler?page=${page}&pageSize=${pageSize}${projeTipiId != null ? `&projeTipiId=${projeTipiId}` : ''}`,
     KRITIK_EKSIKLER: (page: number, pageSize: number) => `${BASE}/dashboard/kritik-eksikler?page=${page}&pageSize=${pageSize}`,
     EKSIK_SIRALAMA: (page: number, pageSize: number) => `${BASE}/dashboard/eksik-siralama?page=${page}&pageSize=${pageSize}`,
   },

@@ -25,20 +25,88 @@
   </div>
 </div>
 
+<div class="dash-card proje-tipi-panel mb-4">
+  <div class="dash-card-header">
+    <h5 class="fw-semibold mb-0"><i class="ri-layout-grid-line me-2 text-primary"></i>Proje Tipi Özeti</h5>
+    <button type="button"
+            class="btn btn-sm type-filter-all"
+            [class.active]="selectedProjeTipiId() === null"
+            (click)="selectProjeTipi(null)">
+      Tüm Projeler
+    </button>
+  </div>
+  <div class="dash-card-body">
+    @if (dashboardSummaryLoading()) {
+      <div class="proje-type-skeleton" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    } @else {
+      <div class="proje-type-grid">
+        @for (tip of projeTipiOzetleri(); track tip.projeTipiId) {
+          <button type="button"
+                  class="proje-type-card"
+                  [ngClass]="[getProjeTipiClass(tip.projeTipiId), selectedProjeTipiId() === tip.projeTipiId ? 'active' : '']"
+                  (click)="selectProjeTipi(tip.projeTipiId)">
+            <div class="type-card-top">
+              <span class="type-icon"><i [class]="getProjeTipiIcon(tip.projeTipiId)"></i></span>
+              <span class="type-title">{{ tip.projeTipiMetni }}</span>
+              <span class="type-total">{{ tip.toplamProje }} proje</span>
+            </div>
+
+            <div class="type-metrics">
+              <span><strong>{{ tip.hazirlananProje }}</strong> Hazırlanan</span>
+              <span><strong>{{ tip.sevkEdilenProje }}</strong> Sevk</span>
+              <span><strong>{{ tip.tamamlananProje }}</strong> Tamamlanan</span>
+              <span><strong>{{ tip.toplamSandik }}</strong> Sandık</span>
+              <span><strong>{{ tip.toplamDepoSandik }}</strong> Depoda</span>
+              <span><strong>{{ tip.eksikUrunSayisi }}</strong> Eksik</span>
+            </div>
+
+            <div class="type-progress">
+              <div class="type-progress-track">
+                <span [style.width.%]="tip.tamamlanmaYuzdesi"></span>
+              </div>
+              <strong>{{ tip.tamamlanmaYuzdesi }}%</strong>
+            </div>
+          </button>
+        }
+      </div>
+    }
+  </div>
+</div>
+
 <div class="row g-3 mb-4">
   <div class="col-xl-8">
     <div class="dash-card h-100">
       <div class="dash-card-header">
-        <h5 class="fw-semibold mb-0"><i class="ri-folder-chart-line me-2 text-primary"></i>Projeler</h5>
+        <div class="dashboard-title-with-filters">
+          <h5 class="fw-semibold mb-0"><i class="ri-folder-chart-line me-2 text-primary"></i>{{ projelerBaslik() }}</h5>
+          <div class="section-type-tabs">
+            <button type="button"
+                    [class.active]="selectedProjeTipiId() === null"
+                    (click)="selectProjeTipi(null)">
+              Tümü
+            </button>
+            @for (tip of projeTipiOzetleri(); track tip.projeTipiId) {
+              <button type="button"
+                      [class.active]="selectedProjeTipiId() === tip.projeTipiId"
+                      (click)="selectProjeTipi(tip.projeTipiId)">
+                {{ tip.projeTipiMetni }}
+              </button>
+            }
+          </div>
+        </div>
         <button class="btn btn-sm btn-outline-primary rounded-pill px-3" routerLink="/projeler">
           <i class="ri-add-line me-1"></i> Yeni Proje Ekle
         </button>
       </div>
       <div class="dash-card-body p-0">
-        @if (loading() && projeler().length === 0) {
+        @if ((loading() || loadingProjeler()) && projeler().length === 0) {
           <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
         } @else if (projeler().length === 0) {
-          <div class="text-center py-5 text-muted">Henüz proje bulunmuyor.</div>
+          <div class="text-center py-5 text-muted">Bu kriterde proje bulunmuyor.</div>
         } @else {
           <div class="dashboard-scroll-table" (scroll)="onProjelerScroll($event)">
             <table class="table table-hover align-middle mb-0">
@@ -127,7 +195,8 @@
 
     <div class="dash-card">
       <div class="dash-card-header">
-        <h6 class="fw-semibold mb-0"><i class="ri-pie-chart-line me-2 text-primary"></i>Proje Özeti</h6>
+        <h6 class="fw-semibold mb-0"><i class="ri-pie-chart-line me-2 text-primary"></i>{{ projeOzetiBaslik() }}</h6>
+        <span class="summary-filter-chip">{{ selectedProjeTipiOzet()?.projeTipiMetni ?? 'Tüm Projeler' }}</span>
       </div>
       <div class="dash-card-body">
         @if (dashboardSummaryLoading()) {
@@ -147,15 +216,15 @@
         } @else {
           <div class="ozet-row">
             <div class="ozet-item">
-              <div class="ozet-number text-primary">{{ aktifProje() }}</div>
+              <div class="ozet-number text-primary">{{ projeOzetiHazirlanan() }}</div>
               <div class="ozet-label">Hazırlanıyor</div>
             </div>
             <div class="ozet-item">
-              <div class="ozet-number text-success">{{ sevkEdilen() }}</div>
+              <div class="ozet-number text-success">{{ projeOzetiSevkEdilen() }}</div>
               <div class="ozet-label">Sevk Edilen</div>
             </div>
             <div class="ozet-item">
-              <div class="ozet-number text-info">{{ tamamlanan() }}</div>
+              <div class="ozet-number text-info">{{ projeOzetiTamamlanan() }}</div>
               <div class="ozet-label">Tamamlanan</div>
             </div>
           </div>
@@ -163,10 +232,10 @@
             <div class="mini-progress-row">
               <span class="small text-muted">Durum Dağılımı</span>
               <div class="progress" style="height: 8px;">
-                @if (durumOzetToplam() > 0) {
-                  <div class="progress-bar bg-primary" [style.width.%]="(aktifProje() / durumOzetToplam()) * 100"></div>
-                  <div class="progress-bar bg-success" [style.width.%]="(sevkEdilen() / durumOzetToplam()) * 100"></div>
-                  <div class="progress-bar bg-info" [style.width.%]="(tamamlanan() / durumOzetToplam()) * 100"></div>
+                @if (projeOzetiToplam() > 0) {
+                  <div class="progress-bar bg-primary" [style.width.%]="(projeOzetiHazirlanan() / projeOzetiToplam()) * 100"></div>
+                  <div class="progress-bar bg-success" [style.width.%]="(projeOzetiSevkEdilen() / projeOzetiToplam()) * 100"></div>
+                  <div class="progress-bar bg-info" [style.width.%]="(projeOzetiTamamlanan() / projeOzetiToplam()) * 100"></div>
                 }
               </div>
               <div class="d-flex gap-3 mt-2 flex-wrap">
@@ -186,7 +255,15 @@
   <div class="col-xl-4">
     <div class="dash-card h-100">
       <div class="dash-card-header">
-        <h6 class="fw-semibold mb-0"><i class="ri-map-pin-line me-2 text-success"></i>Depo Dağılım Grafiği</h6>
+        <h6 class="fw-semibold mb-0"><i class="ri-map-pin-line me-2 text-success"></i>{{ depoGrafikBaslik() }}</h6>
+        <div class="depo-chart-filters">
+          <button type="button" [class.active]="selectedProjeTipiId() === null" (click)="selectProjeTipi(null)">Tümü</button>
+          @for (tip of projeTipiOzetleri(); track tip.projeTipiId) {
+            <button type="button" [class.active]="selectedProjeTipiId() === tip.projeTipiId" (click)="selectProjeTipi(tip.projeTipiId)">
+              {{ tip.projeTipiMetni }}
+            </button>
+          }
+        </div>
       </div>
       <div class="dash-card-body">
         @if (dashboardDepoChartLoading()) {
