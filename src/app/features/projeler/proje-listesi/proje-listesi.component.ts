@@ -101,6 +101,7 @@ export class ProjeListesiComponent implements OnInit {
   sevkEtProje = signal<ProjeDto | null>(null);
   sevkEtTarihi = signal('');
   sevkEtAciklama = signal('');
+  sevkEtAracPlaka = signal('');
   sevkEtSaving = signal(false);
   sevkEtSandiklar = signal<SandikDto[]>([]);
   sevkEtSandikLoading = signal(false);
@@ -606,6 +607,7 @@ export class ProjeListesiComponent implements OnInit {
     this.sevkEtProje.set(proje);
     this.sevkEtTarihi.set(this.toDateTimeLocalInputValue());
     this.sevkEtAciklama.set('');
+    this.sevkEtAracPlaka.set('');
     this.sevkEtSandiklar.set([]);
     this.selectedSevkSandikIds.set([]);
     this.sevkGecmisi.set([]);
@@ -620,6 +622,7 @@ export class ProjeListesiComponent implements OnInit {
     this.sevkEtProje.set(null);
     this.sevkEtTarihi.set('');
     this.sevkEtAciklama.set('');
+    this.sevkEtAracPlaka.set('');
     this.sevkEtSandiklar.set([]);
     this.selectedSevkSandikIds.set([]);
     this.sevkEtSandikLoading.set(false);
@@ -726,7 +729,8 @@ export class ProjeListesiComponent implements OnInit {
     this.sevkEtSaving.set(true);
     const tarih = this.toApiDateTime(this.sevkEtTarihi())!;
     const aciklama = this.sevkEtAciklama().trim() || undefined;
-    this.projeService.sevkEt(proje.id, tarih, this.selectedSevkSandikIds(), aciklama).subscribe({
+    const aracPlaka = this.sevkEtAracPlaka().trim() || undefined;
+    this.projeService.sevkEt(proje.id, tarih, this.selectedSevkSandikIds(), aciklama, aracPlaka).subscribe({
       next: (res) => {
         this.sevkEtSaving.set(false);
         if (res.isSuccess) {

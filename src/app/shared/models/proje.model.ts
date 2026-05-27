@@ -70,6 +70,7 @@ export interface SevkiyatDto {
   sevkiyatNo: number;
   sevkTarihi: string;
   aciklama?: string;
+  aracPlaka?: string;
   kullaniciAdSoyad?: string;
   sandikSayisi: number;
   kayitTipi: string;

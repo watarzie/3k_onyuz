@@ -48,11 +48,12 @@ export class ProjeService {
     return this.api.put<boolean>(API.PROJE.SANDIK_KAPAT, { sandikId, kapali });
   }
 
-  sevkEt(projeId: number, sevkTarihi?: string, sandikIds?: number[], aciklama?: string): Observable<ApiResult<boolean>> {
+  sevkEt(projeId: number, sevkTarihi?: string, sandikIds?: number[], aciklama?: string, aracPlaka?: string): Observable<ApiResult<boolean>> {
     return this.api.post<boolean>(API.PROJE.SEVK_ET(projeId), {
       sevkTarihi: sevkTarihi || null,
       sandikIds: sandikIds ?? null,
       aciklama: aciklama?.trim() || null,
+      aracPlaka: aracPlaka?.trim() || null,
     });
   }
 
@@ -74,8 +75,13 @@ export class ProjeService {
 
   // ===== Sandık Sevk =====
 
-  sandikSevkEt(projeId: number, sandikId: number): Observable<ApiResult<boolean>> {
-    return this.api.post<boolean>(API.SANDIK.SEVK_ET, { projeId, sandikId });
+  sandikSevkEt(projeId: number, sandikId: number, aciklama?: string, aracPlaka?: string): Observable<ApiResult<boolean>> {
+    return this.api.post<boolean>(API.SANDIK.SEVK_ET, {
+      projeId,
+      sandikId,
+      aciklama: aciklama?.trim() || null,
+      aracPlaka: aracPlaka?.trim() || null,
+    });
   }
 
   // ===== Saha/Yedek Malzeme =====
