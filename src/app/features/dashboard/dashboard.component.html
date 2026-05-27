@@ -23,6 +23,9 @@
   <div class="col-xl col-sm-6">
     <app-stat-card [value]="sevkEdilen()" [label]="'LABELS.SEVK_EDILEN_PROJE' | translate" icon="ri-truck-line" color="warning" [loading]="dashboardSummaryLoading()" />
   </div>
+  <div class="col-xl col-sm-6">
+    <app-stat-card [value]="eksikSevkEdilen()" label="Eksik Sevk Edilen Proje" icon="ri-route-line" color="secondary" [loading]="dashboardSummaryLoading()" />
+  </div>
 </div>
 
 <div class="dash-card proje-tipi-panel mb-4">
@@ -58,6 +61,7 @@
             <div class="type-metrics">
               <span><strong>{{ tip.hazirlananProje }}</strong> Hazırlanan</span>
               <span><strong>{{ tip.sevkEdilenProje }}</strong> Sevk</span>
+              <span><strong>{{ tip.eksikSevkEdilenProje }}</strong> Eksik Sevk</span>
               <span><strong>{{ tip.tamamlananProje }}</strong> Tamamlanan</span>
               <span><strong>{{ tip.toplamSandik }}</strong> Sandık</span>
               <span><strong>{{ tip.toplamDepoSandik }}</strong> Depoda</span>
@@ -205,9 +209,11 @@
               <span></span>
               <span></span>
               <span></span>
+              <span></span>
             </div>
             <div class="summary-skeleton-progress"></div>
             <div class="summary-skeleton-legend">
+              <span></span>
               <span></span>
               <span></span>
               <span></span>
@@ -224,6 +230,10 @@
               <div class="ozet-label">Sevk Edilen</div>
             </div>
             <div class="ozet-item">
+              <div class="ozet-number text-warning">{{ projeOzetiEksikSevk() }}</div>
+              <div class="ozet-label">Eksik Sevk Edilen</div>
+            </div>
+            <div class="ozet-item">
               <div class="ozet-number text-info">{{ projeOzetiTamamlanan() }}</div>
               <div class="ozet-label">Tamamlanan</div>
             </div>
@@ -235,12 +245,14 @@
                 @if (projeOzetiToplam() > 0) {
                   <div class="progress-bar bg-primary" [style.width.%]="(projeOzetiHazirlanan() / projeOzetiToplam()) * 100"></div>
                   <div class="progress-bar bg-success" [style.width.%]="(projeOzetiSevkEdilen() / projeOzetiToplam()) * 100"></div>
+                  <div class="progress-bar bg-warning" [style.width.%]="(projeOzetiEksikSevk() / projeOzetiToplam()) * 100"></div>
                   <div class="progress-bar bg-info" [style.width.%]="(projeOzetiTamamlanan() / projeOzetiToplam()) * 100"></div>
                 }
               </div>
               <div class="d-flex gap-3 mt-2 flex-wrap">
                 <span class="mini-legend"><span class="legend-dot bg-primary"></span> Hazırlanıyor</span>
                 <span class="mini-legend"><span class="legend-dot bg-success"></span> Sevk</span>
+                <span class="mini-legend"><span class="legend-dot bg-warning"></span> Eksik Sevk</span>
                 <span class="mini-legend"><span class="legend-dot bg-info"></span> Tamamlanan</span>
               </div>
             </div>

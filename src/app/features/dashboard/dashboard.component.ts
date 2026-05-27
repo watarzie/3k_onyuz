@@ -17,6 +17,7 @@ interface DashboardOzetDto {
   beklemedeProje: number;
   tamamlananProje: number;
   sevkEdilenProje: number;
+  eksikSevkEdilenProje: number;
   toplamSandik: number;
   eksikUrunSayisi: number;
   toplamDepoSandik: number;
@@ -48,6 +49,7 @@ interface DashboardProjeTipiOzetDto {
   toplamProje: number;
   hazirlananProje: number;
   sevkEdilenProje: number;
+  eksikSevkEdilenProje: number;
   tamamlananProje: number;
   toplamSandik: number;
   eksikUrunSayisi: number;
@@ -158,6 +160,7 @@ export class DashboardComponent implements OnInit {
   toplamSandik = computed(() => this.ozet()?.toplamSandik ?? 0);
   eksikUrun = computed(() => this.ozet()?.eksikUrunSayisi ?? 0);
   sevkEdilen = computed(() => this.ozet()?.sevkEdilenProje ?? 0);
+  eksikSevkEdilen = computed(() => this.ozet()?.eksikSevkEdilenProje ?? 0);
 
   projeTipiOzetleri = computed(() => {
     const ozet = this.ozet();
@@ -174,6 +177,7 @@ export class DashboardComponent implements OnInit {
         toplamProje: 0,
         hazirlananProje: 0,
         sevkEdilenProje: 0,
+        eksikSevkEdilenProje: 0,
         tamamlananProje: 0,
         toplamSandik: ozet?.normalSandik ?? 0,
         eksikUrunSayisi: 0,
@@ -187,6 +191,7 @@ export class DashboardComponent implements OnInit {
         toplamProje: 0,
         hazirlananProje: 0,
         sevkEdilenProje: 0,
+        eksikSevkEdilenProje: 0,
         tamamlananProje: 0,
         toplamSandik: ozet?.sahaSandik ?? 0,
         eksikUrunSayisi: 0,
@@ -200,6 +205,7 @@ export class DashboardComponent implements OnInit {
         toplamProje: 0,
         hazirlananProje: 0,
         sevkEdilenProje: 0,
+        eksikSevkEdilenProje: 0,
         tamamlananProje: 0,
         toplamSandik: ozet?.yedekSandik ?? 0,
         eksikUrunSayisi: 0,
@@ -239,9 +245,10 @@ export class DashboardComponent implements OnInit {
 
   projeOzetiHazirlanan = computed(() => this.selectedProjeTipiOzet()?.hazirlananProje ?? this.aktifProje());
   projeOzetiSevkEdilen = computed(() => this.selectedProjeTipiOzet()?.sevkEdilenProje ?? this.sevkEdilen());
+  projeOzetiEksikSevk = computed(() => this.selectedProjeTipiOzet()?.eksikSevkEdilenProje ?? this.eksikSevkEdilen());
   projeOzetiTamamlanan = computed(() => this.selectedProjeTipiOzet()?.tamamlananProje ?? this.tamamlanan());
   projeOzetiToplam = computed(() =>
-    this.projeOzetiHazirlanan() + this.projeOzetiSevkEdilen() + this.projeOzetiTamamlanan()
+    this.projeOzetiHazirlanan() + this.projeOzetiSevkEdilen() + this.projeOzetiEksikSevk() + this.projeOzetiTamamlanan()
   );
 
   depoSegments = computed(() => {
@@ -285,7 +292,7 @@ export class DashboardComponent implements OnInit {
 
   devamEden = computed(() => this.ozet()?.hazirlananProje ?? 0);
   tamamlanan = computed(() => this.ozet()?.tamamlananProje ?? 0);
-  durumOzetToplam = computed(() => this.aktifProje() + this.sevkEdilen() + this.tamamlanan());
+  durumOzetToplam = computed(() => this.aktifProje() + this.sevkEdilen() + this.eksikSevkEdilen() + this.tamamlanan());
 
   yedekSandik = computed(() => this.ozet()?.yedekSandik ?? 0);
   sahaSandik = computed(() => this.ozet()?.sahaSandik ?? 0);
