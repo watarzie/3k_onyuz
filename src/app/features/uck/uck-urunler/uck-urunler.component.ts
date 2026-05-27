@@ -1166,8 +1166,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   }
 
   isCheckboxDisabled(u: UcKUrunDto): boolean {
-    // Grid İptal veya GridKapandı → hiçbir toplu işlem yapılamaz
-    if (u.gridDurumuId === GridDurum.Iptal || u.gridDurumuId === GridDurum.GridKapandi) return true;
+    // Toplu seçimde satır kilitlemeyiz; uygunluk validasyonu backend tarafında yapılır.
+    // Kullanıcı geçersiz satırı seçtiyse manuel olarak listeden çıkarabilir.
     return false;
   }
 
