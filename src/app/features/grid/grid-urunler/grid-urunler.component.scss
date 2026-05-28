@@ -22,6 +22,37 @@
   i { left: 12px; color: var(--bodyColor); }
 }
 
+.table-toolbar {
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.sandik-filter {
+  select {
+    padding-left: 36px;
+    background-color: #F6F7F9;
+    border: 1px solid var(--borderColor);
+    border-radius: 8px;
+    height: 38px;
+    width: 170px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--blackColor);
+
+    &:focus {
+      border-color: var(--primaryColor);
+      box-shadow: none;
+    }
+  }
+
+  i {
+    left: 12px;
+    color: var(--bodyColor);
+    pointer-events: none;
+    z-index: 1;
+  }
+}
+
 .page-actions {
   justify-content: flex-end;
   min-width: 0;
@@ -84,12 +115,19 @@
   }
 
   .card-header > .d-flex,
-  .card-header > .search-box {
+  .card-header > .table-toolbar {
     width: 100%;
+    justify-content: flex-start;
   }
 
-  .card-header > .search-box {
+  .table-toolbar .search-box,
+  .table-toolbar .sandik-filter {
     flex: 1 1 100%;
+  }
+
+  .table-toolbar .search-box input,
+  .table-toolbar .sandik-filter select {
+    width: 100%;
   }
 
   .module-table-scroll {

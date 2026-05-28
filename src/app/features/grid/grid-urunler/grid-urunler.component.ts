@@ -75,6 +75,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   selectedIds = signal<Set<number>>(new Set());
   filterDurum = signal('');
   searchTerm = signal('');
+  selectedSandikNo = signal('');
 
   // Side panel state
   showPanel = signal(false);
@@ -178,6 +179,21 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   iptal = computed(() => this.urunler().filter(u => u.gridDurumuMetni === 'İptal').length);
 
   bekliyor = computed(() => this.urunler().filter(u => u.gridDurumuMetni === 'Bekliyor').length);
+  sandikFilterOptions = computed(() => {
+    const byKey = new Map<string, string>();
+
+    for (const urun of this.urunler()) {
+      const sandikNo = (urun.sandikNo ?? '').trim();
+      if (!sandikNo) continue;
+
+      const key = this.normalizeSandikNo(sandikNo);
+      if (!byKey.has(key)) {
+        byKey.set(key, sandikNo);
+      }
+    }
+
+    return Array.from(byKey.values()).sort((a, b) => this.compareSandikNo(a, b));
+  });
   projeBaslik = computed(() => {
     const proje = this.mevcutProje();
     return proje ? `${proje.projeNo} - ${proje.musteri}` : `Proje #${this.projeId()}`;
@@ -245,7 +261,9 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     let list = this.urunler();
     const durum = this.filterDurum();
     const term = this.searchTerm().toLowerCase();
+    const sandikNo = this.selectedSandikNo();
     if (durum) list = list.filter(u => u.gridDurumuMetni === durum);
+    if (sandikNo) list = list.filter(u => this.normalizeSandikNo(u.sandikNo) === this.normalizeSandikNo(sandikNo));
     if (term) list = list.filter(u =>
       u.aciklama.toLowerCase().includes(term) ||
       u.barkodNo.toLowerCase().includes(term) ||
@@ -275,8 +293,29 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     return (value ?? '').trim().toLocaleLowerCase('tr-TR');
   }
 
+  private compareSandikNo(a: string, b: string): number {
+    const numberA = this.extractSandikNumber(a);
+    const numberB = this.extractSandikNumber(b);
+
+    if (numberA !== numberB) {
+      return numberA - numberB;
+    }
+
+    return a.localeCompare(b, 'tr-TR', { numeric: true, sensitivity: 'base' });
+  }
+
+  private extractSandikNumber(value: string): number {
+    const match = value.match(/\d+/);
+    return match ? Number(match[0]) : Number.MAX_SAFE_INTEGER;
+  }
+
   onSearch(event: Event) {
     this.searchTerm.set((event.target as HTMLInputElement).value);
+    this.applyFilter();
+  }
+
+  onSandikFilterChange(sandikNo: string) {
+    this.selectedSandikNo.set(sandikNo);
     this.applyFilter();
   }
 

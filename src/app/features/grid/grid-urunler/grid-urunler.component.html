@@ -85,9 +85,21 @@
       <button class="btn btn-sm btn-filter-clear" (click)="onFilterDurum('')">✕</button>
       }
     </div>
-    <div class="search-box position-relative">
-      <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
-      <input type="text" class="form-control" placeholder="Ara..." (input)="onSearch($event)" />
+    <div class="table-toolbar d-flex align-items-center gap-2 flex-wrap">
+      <div class="sandik-filter position-relative">
+        <i class="ri-archive-line position-absolute top-50 translate-middle-y"></i>
+        <select class="form-select" [ngModel]="selectedSandikNo()" (ngModelChange)="onSandikFilterChange($event)"
+          aria-label="Sandık filtrele">
+          <option value="">Tüm Sandıklar</option>
+          @for (sandikNo of sandikFilterOptions(); track sandikNo) {
+          <option [value]="sandikNo">Sandık {{ sandikNo }}</option>
+          }
+        </select>
+      </div>
+      <div class="search-box position-relative">
+        <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
+        <input type="text" class="form-control" placeholder="Ara..." (input)="onSearch($event)" />
+      </div>
     </div>
   </div>
 
