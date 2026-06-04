@@ -58,9 +58,39 @@ $sidebar-hover-bg: rgba(255,255,255,.06);
     font-weight: 600;
   }
 }
+.nav-parent-row {
+  display: flex;
+  align-items: stretch;
+
+  .parent-link {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-right: 8px;
+  }
+}
+.nav-toggle {
+  width: 44px;
+  flex: 0 0 44px;
+  border: 0;
+  background: transparent;
+  color: $sidebar-text;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: .2s;
+
+  i { font-size: 18px; transition: transform .2s; }
+
+  &:hover {
+    background: $sidebar-hover-bg;
+    color: #fff;
+  }
+}
 .has-children {
   &.open {
-    .arrow { transform: rotate(180deg); }
+    > .nav-link .arrow,
+    > .nav-parent-row .nav-toggle .arrow { transform: rotate(180deg); }
     .sub-menu { display: block; }
   }
 }

@@ -14,11 +14,23 @@
     @for (item of menu(); track $index) {
       @if (item.children && item.children.length > 0) {
         <div class="nav-item has-children" [ngClass]="{'open': openIndex() === $index}">
-          <a class="nav-link" (click)="toggleSection($index)">
-            <i [class]="item.icon"></i>
-            <span>{{ item.label }}</span>
-            <i class="ri-arrow-down-s-line arrow"></i>
-          </a>
+          @if (item.route) {
+            <div class="nav-parent-row">
+              <a class="nav-link parent-link" [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="closeSidebar()">
+                <i [class]="item.icon"></i>
+                <span>{{ item.label }}</span>
+              </a>
+              <button type="button" class="nav-toggle" [attr.aria-label]="item.label + ' alt menüsünü aç/kapat'" (click)="toggleSection($index)">
+                <i class="ri-arrow-down-s-line arrow"></i>
+              </button>
+            </div>
+          } @else {
+            <a class="nav-link" (click)="toggleSection($index)">
+              <i [class]="item.icon"></i>
+              <span>{{ item.label }}</span>
+              <i class="ri-arrow-down-s-line arrow"></i>
+            </a>
+          }
           <div class="sub-menu">
             @for (child of item.children; track child.route) {
               <a class="sub-link" [routerLink]="child.route" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="closeSidebar()">

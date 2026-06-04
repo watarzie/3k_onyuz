@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, UcKDurumSifirlaDto } from '../../shared/models/index';
+import { ApiResult, UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, UcKDurumSifirlaDto, UcKIsListesiDto } from '../../shared/models/index';
 
 /**
  * UcKController:
@@ -34,6 +34,22 @@ export class UcKService {
 
   getUrunler(projeId: number): Observable<ApiResult<UcKUrunDto[]>> {
     return this.api.get<UcKUrunDto[]>(API.UCK.URUNLER(projeId));
+  }
+
+  getIsListesi(params: { page?: number; pageSize?: number; isTipi?: string; projeId?: number | null } = {}): Observable<ApiResult<UcKIsListesiDto>> {
+    const query = new URLSearchParams();
+    query.set('page', String(params.page ?? 1));
+    query.set('pageSize', String(params.pageSize ?? 25));
+
+    if (params.isTipi && params.isTipi !== 'all') {
+      query.set('isTipi', params.isTipi);
+    }
+
+    if (params.projeId) {
+      query.set('projeId', String(params.projeId));
+    }
+
+    return this.api.get<UcKIsListesiDto>(`${API.UCK.IS_LISTESI}?${query.toString()}`);
   }
 
   durumGuncelle(dto: UcKDurumGuncelleDto): Observable<ApiResult<unknown>> {

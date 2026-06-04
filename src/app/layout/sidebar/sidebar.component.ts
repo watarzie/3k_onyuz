@@ -7,6 +7,7 @@ import { PermissionService } from '../../core/services/permission.service';
 
 interface MenuItem {
   label: string;
+  kod: string;
   icon: string;
   route?: string | null;
   yetkiTipiId: number;
@@ -41,14 +42,16 @@ export class SidebarComponent {
       .filter(node => node.route || (node.children && node.children.some(c => c.route)))
       .map(node => ({
         label: this.ts.translate(node.labelKey),
+        kod: node.kod,
         icon: node.icon || '',
         route: node.route,
         yetkiTipiId: node.yetkiTipiId,
         // Route=null olanları sidebar'da GİZLE (grid-modulu, 3k-modulu gibi)
         children: node.children
-          ?.filter(child => !!child.route)
+          ?.filter(child => !!child.route && child.kod !== '3k-is-listesi')
           .map(child => ({
             label: this.ts.translate(child.labelKey),
+            kod: child.kod,
             icon: child.icon || '',
             route: child.route,
             yetkiTipiId: child.yetkiTipiId,

@@ -60,9 +60,17 @@
 <div class="trezo-card border-0 shadow-none mb-4">
   <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
     <h5 class="fw-semibold mb-0">{{ isSahaYonetimi() ? 'Saha Projeleri' : isYedekYonetimi() ? 'Yedek Projeleri' : 'Projeler' }} ({{ totalCount() }})</h5>
-    <div class="search-box position-relative" style="width: 250px;">
-      <i class="ri-search-line position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-      <input type="text" class="form-control ps-5" placeholder="Ara..." (input)="onSearch($event)" />
+    <div class="project-list-header-actions">
+      @if (canSee3KIsListesi()) {
+        <a routerLink="/uck-is-listesi" class="btn btn-sm btn-3k-work-list">
+          <i class="ri-list-check-3-line"></i>
+          <span>3K İş Listesi</span>
+        </a>
+      }
+      <div class="search-box position-relative" style="width: 250px;">
+        <i class="ri-search-line position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+        <input type="text" class="form-control ps-5" placeholder="Ara..." (input)="onSearch($event)" />
+      </div>
     </div>
   </div>
 
