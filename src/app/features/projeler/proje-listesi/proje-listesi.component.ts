@@ -58,6 +58,7 @@ export class ProjeListesiComponent implements OnInit {
   canSee3K = computed(() => this.permissions.hasAccess('3k-modulu'));
   canSeeEksikRapor = computed(() => this.permissions.hasAccess('eksik-raporu'));
   canSeeGerceklesenRapor = computed(() => this.permissions.hasAccess('gerceklesen-ceki-raporu'));
+  canSee3KIsListesi = computed(() => this.isSandikYonetimi() && this.permissions.hasAccess('3k-is-listesi'));
   canDeleteProject = computed(() => this.permissions.canWrite('proje-sil'));
   canWriteCurrentMenu = computed(() => {
     const menuKod = this.route.snapshot.data['menuKod'];

@@ -67,6 +67,57 @@ export interface ProjeTransferZincirDto {
   tarih: string;
 }
 
+export interface UcKIsListesiDto {
+  toplam: number;
+  teslimBekleyen: number;
+  eksikGelen: number;
+  trafoSevk: number;
+  yenidenSevkGerekli: number;
+  gridKapandi: number;
+  bugunGridIslemi: number;
+  liste: UcKPagedResultDto<UcKIsListesiItemDto>;
+}
+
+export interface UcKPagedResultDto<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
+export interface UcKIsListesiItemDto {
+  cekiSatiriId: number;
+  projeId: number;
+  projeNo: string;
+  musteri: string;
+  sandikNo?: string;
+  siraNo: number;
+  barkodNo: string;
+  olcuResmiPozNo?: string;
+  aciklama: string;
+  birim: string;
+  istenenAdet: number;
+  gridGelenAdet: number;
+  gridSevkMiktari: number;
+  trafoSevkAdet: number;
+  yenidenSevkGerekliAdet: number;
+  ucKGelenMiktar: number;
+  kalanMiktar: number;
+  gridDurumuId: number;
+  gridDurumuMetni: string;
+  gridSevkDurumuId: number;
+  gridSevkDurumuMetni: string;
+  ucKDurumuId: number;
+  ucKDurumuMetni: string;
+  gridAciklama?: string;
+  gridSevkTarihi?: string;
+  sonIslemTarihi?: string;
+  isTipi: string;
+  isTipiMetni: string;
+  oncelik: number;
+}
+
 export interface UcKDurumGuncelleDto {
   cekiSatiriId: number;
   projeId: number;

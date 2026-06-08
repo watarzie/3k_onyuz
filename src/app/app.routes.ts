@@ -89,6 +89,13 @@ export const routes: Routes = [
 
       // --- Grid & ÜçK ---
       {
+        path: 'uck-is-listesi',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/uck/uck-is-listesi/uck-is-listesi.component').then(m => m.UcKIsListesiComponent),
+        data: { menuKod: '3k-is-listesi' },
+      },
+      {
         path: 'grid/:projeId',
         canActivate: [menuGuard],
         loadComponent: () =>

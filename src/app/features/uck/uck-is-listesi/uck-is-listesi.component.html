@@ -1,0 +1,255 @@
+<div class="page-container uck-worklist-page">
+  <div class="page-head">
+    <div>
+      <div class="title-row">
+        <i class="ri-list-check-3-line"></i>
+        <h2>3K İş Listesi</h2>
+      </div>
+      <app-breadcrumb [items]="breadcrumb"></app-breadcrumb>
+    </div>
+
+    <div class="head-actions">
+      <app-readonly-banner menuKod="3k-is-listesi"></app-readonly-banner>
+      <button type="button" class="btn btn-outline-primary" (click)="load()">
+        <i class="ri-refresh-line"></i>
+        Yenile
+      </button>
+    </div>
+  </div>
+
+  <div class="info-strip">
+    <div>
+      <strong>Grid hareketleri burada toplanır.</strong>
+      <span>3K tarafının teslim alması, kontrol etmesi veya yeniden sevk beklemesi gereken satırlar proje bazında görünür.</span>
+    </div>
+    <button type="button" class="today-chip" [class.active]="todayOnly()" [disabled]="loading()" (click)="toggleTodayFilter()">
+      <i class="ri-time-line"></i>
+      <span>Bugünkü Grid işlemi:</span>
+      <b>{{ data()?.bugunGridIslemi ?? 0 }}</b>
+      @if (todayOnly()) {
+        <i class="ri-close-line"></i>
+      }
+    </button>
+  </div>
+
+  <div class="summary-grid">
+    <button type="button" class="summary-card total" [class.active]="activeTip() === 'all'" (click)="setTip('all')">
+      <span class="icon"><i class="ri-list-check-3-line"></i></span>
+      <span class="value">{{ data()?.toplam ?? 0 }}</span>
+      <span class="label">Toplam İş</span>
+    </button>
+
+    <button type="button" class="summary-card waiting" [class.active]="activeTip() === 'teslim'" (click)="setTip('teslim')">
+      <span class="icon"><i class="ri-inbox-archive-line"></i></span>
+      <span class="value">{{ data()?.teslimBekleyen ?? 0 }}</span>
+      <span class="label">3K Teslim Bekleyen</span>
+    </button>
+
+    <button type="button" class="summary-card resend" [class.active]="activeTip() === 'yeniden'" (click)="setTip('yeniden')">
+      <span class="icon"><i class="ri-loop-right-line"></i></span>
+      <span class="value">{{ data()?.yenidenSevkGerekli ?? 0 }}</span>
+      <span class="label">Yeniden Sevk Gerekli</span>
+    </button>
+
+    <button type="button" class="summary-card missing" [class.active]="activeTip() === 'eksik'" (click)="setTip('eksik')">
+      <span class="icon"><i class="ri-error-warning-line"></i></span>
+      <span class="value">{{ data()?.eksikGelen ?? 0 }}</span>
+      <span class="label">Eksik Gelen</span>
+    </button>
+
+    <button type="button" class="summary-card transformer" [class.active]="activeTip() === 'trafo'" (click)="setTip('trafo')">
+      <span class="icon"><i class="ri-flashlight-line"></i></span>
+      <span class="value">{{ data()?.trafoSevk ?? 0 }}</span>
+      <span class="label">Trafo Sevk</span>
+    </button>
+
+    <button type="button" class="summary-card closed" [class.active]="activeTip() === 'kapandi'" (click)="setTip('kapandi')">
+      <span class="icon"><i class="ri-archive-line"></i></span>
+      <span class="value">{{ data()?.gridKapandi ?? 0 }}</span>
+      <span class="label">Grid Kapandı</span>
+    </button>
+  </div>
+
+  <div class="worklist-card">
+    <div class="worklist-toolbar">
+      <div class="toolbar-title">
+        <h3>İşler</h3>
+        <span>{{ data()?.toplam ?? 0 }} iş</span><span>{{ totalCount() }} proje</span>
+      </div>
+
+      <div class="toolbar-actions">
+        <div class="filter-tabs">
+          @for (tip of tipler; track tip.key) {
+            <button type="button" [class.active]="activeTip() === tip.key" (click)="setTip(tip.key)">
+              <i [class]="tip.icon"></i>
+              {{ tip.label }}
+              <span>{{ tip.count() }}</span>
+            </button>
+          }
+        </div>
+
+        <div class="search-box">
+          <i class="ri-search-line"></i>
+          <input
+            type="text"
+            placeholder="Proje, barkod, sandık veya ürün ara..."
+            [ngModel]="searchTerm()"
+            (ngModelChange)="searchTerm.set($event)"
+          />
+        </div>
+      </div>
+    </div>
+
+    @if (todayOnly()) {
+      <div class="active-filter-strip">
+        <i class="ri-filter-3-line"></i>
+        Bugünkü Grid işlemleri filtreleniyor.
+        <button type="button" (click)="toggleTodayFilter()">Filtreyi kaldır</button>
+      </div>
+    }
+
+    @if (loading()) {
+      <div class="skeleton-list">
+        @for (_ of [1, 2, 3, 4, 5]; track _) {
+          <div class="skeleton-row"></div>
+        }
+      </div>
+    } @else if (errorMessage()) {
+      <div class="empty-state error">
+        <i class="ri-error-warning-line"></i>
+        <h4>Liste yüklenemedi</h4>
+        <p>{{ errorMessage() }}</p>
+        <button type="button" class="btn btn-outline-primary" (click)="load()">Tekrar Dene</button>
+      </div>
+    } @else if (items().length === 0) {
+      <div class="empty-state">
+        <i class="ri-checkbox-circle-line"></i>
+        <h4>Bu filtrede bekleyen iş yok</h4>
+        <p>Grid tarafında 3K'nın aksiyon almasını gerektiren yeni bir satır bulunmuyor.</p>
+      </div>
+    } @else {
+      <div class="project-groups">
+        @for (group of projectGroups(); track group.key) {
+          <section class="project-group" [class.expanded]="isProjectExpanded(group)">
+            <button type="button" class="project-group-head" (click)="toggleProject(group)">
+              <div class="project-main">
+                <span class="project-icon"><i class="ri-folder-3-line"></i></span>
+                <span>
+                  <strong>{{ group.projeNo }}</strong>
+                  @if (group.musteri) {
+                    <small>{{ group.musteri }}</small>
+                  }
+                </span>
+              </div>
+
+              <div class="project-metrics">
+                <span class="metric-pill">{{ group.items.length }} iş</span>
+                <span class="metric-pill">{{ group.sandikCount }} sandık</span>
+                <span class="metric-pill danger" [class.ok]="group.totalKalan === 0">Kalan {{ formatQuantity(group.totalKalan) }}</span>
+                <span class="metric-pill muted">Son işlem {{ group.latestTimestamp ? (group.latestTimestamp | date:'dd.MM.yyyy HH:mm') : '-' }}</span>
+                <i class="ri-arrow-down-s-line chevron"></i>
+              </div>
+            </button>
+
+            @if (isProjectExpanded(group)) {
+              <div class="table-responsive worklist-table grouped-table">
+                <table class="table align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th>Öncelik</th>
+                      <th>Sandık</th>
+                      <th>Barkod</th>
+                      <th>POZ NO</th>
+                      <th>Ürün</th>
+                      <th>Grid Durumu</th>
+                      <th>Sevk</th>
+                      <th>Grid Sevk</th>
+                      <th>3K Gelen</th>
+                      <th>Kalan</th>
+                      <th>Son İşlem</th>
+                      <th class="text-end">Aksiyon</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (item of group.items; track item.cekiSatiriId) {
+                      <tr>
+                        <td>
+                          <span class="priority-pill" [ngClass]="priorityClass(item)">
+                            {{ item.isTipiMetni }}
+                          </span>
+                        </td>
+                        <td>
+                          <span class="box-pill">{{ item.sandikNo || '-' }}</span>
+                        </td>
+                        <td>
+                          <span class="barcode">{{ item.barkodNo || '-' }}</span>
+                        </td>
+                        <td>{{ item.olcuResmiPozNo || '-' }}</td>
+                        <td>
+                          <div class="product-cell">
+                            <strong>{{ item.aciklama }}</strong>
+                            <span>#{{ item.siraNo }} · {{ formatQuantity(item.istenenAdet) }} {{ item.birim }}</span>
+                            @if (item.gridAciklama) {
+                              <small>{{ item.gridAciklama }}</small>
+                            }
+                          </div>
+                        </td>
+                        <td>
+                          <span class="status-badge status-grid">{{ item.gridDurumuMetni }}</span>
+                        </td>
+                        <td>
+                          <span class="status-badge" [class.status-shipped]="item.gridSevkDurumuId === 2">
+                            {{ item.gridSevkDurumuMetni }}
+                          </span>
+                        </td>
+                        <td>{{ formatQuantity(item.gridSevkMiktari) }} {{ item.birim }}</td>
+                        <td>{{ formatQuantity(item.ucKGelenMiktar) }} {{ item.birim }}</td>
+                        <td>
+                          <span [class.remaining-danger]="item.kalanMiktar > 0">
+                            {{ formatQuantity(item.kalanMiktar) }} {{ item.birim }}
+                          </span>
+                        </td>
+                        <td>{{ item.sonIslemTarihi ? (item.sonIslemTarihi | date:'dd.MM.yyyy HH:mm') : '-' }}</td>
+                        <td class="text-end">
+                          <a class="btn btn-sm btn-primary" [routerLink]="goToLink(item)" [queryParams]="goToQueryParams(item)">
+                            <i class="ri-arrow-right-line"></i>
+                            3K'ya Git
+                          </a>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </section>
+        }
+      </div>
+
+      <div class="pagination-bar">
+        <div class="page-size">
+          <span>Sayfa başına proje</span>
+          <select [ngModel]="pageSize()" (ngModelChange)="onPageSizeChange($event)">
+            <option value="15">15</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+
+        <div class="page-status">
+          Sayfa {{ page() }} / {{ totalPages() }}
+        </div>
+
+        <div class="page-buttons">
+          <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="page() <= 1" (click)="previousPage()">
+            Önceki
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="!data()?.liste?.hasMore" (click)="nextPage()">
+            Sonraki
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>
