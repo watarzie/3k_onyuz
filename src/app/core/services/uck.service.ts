@@ -36,7 +36,7 @@ export class UcKService {
     return this.api.get<UcKUrunDto[]>(API.UCK.URUNLER(projeId));
   }
 
-  getIsListesi(params: { page?: number; pageSize?: number; isTipi?: string; projeId?: number | null } = {}): Observable<ApiResult<UcKIsListesiDto>> {
+  getIsListesi(params: { page?: number; pageSize?: number; isTipi?: string; projeId?: number | null; sadeceBugun?: boolean } = {}): Observable<ApiResult<UcKIsListesiDto>> {
     const query = new URLSearchParams();
     query.set('page', String(params.page ?? 1));
     query.set('pageSize', String(params.pageSize ?? 25));
@@ -47,6 +47,10 @@ export class UcKService {
 
     if (params.projeId) {
       query.set('projeId', String(params.projeId));
+    }
+
+    if (params.sadeceBugun) {
+      query.set('sadeceBugun', 'true');
     }
 
     return this.api.get<UcKIsListesiDto>(`${API.UCK.IS_LISTESI}?${query.toString()}`);

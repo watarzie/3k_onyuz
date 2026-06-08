@@ -9,6 +9,18 @@ import { UcKIsListesiDto, UcKIsListesiItemDto } from '../../../shared/models';
 
 type IsTipi = 'all' | 'teslim' | 'yeniden' | 'eksik' | 'trafo' | 'kapandi';
 
+interface UcKIsProjectGroup {
+  key: number;
+  projeId: number;
+  projeNo: string;
+  musteri: string;
+  items: UcKIsListesiItemDto[];
+  latestTimestamp: number;
+  totalKalan: number;
+  sandikCount: number;
+  priority: number;
+}
+
 @Component({
   selector: 'app-uck-is-listesi',
   standalone: true,
@@ -26,6 +38,8 @@ export class UcKIsListesiComponent implements OnInit {
   searchTerm = signal('');
   page = signal(1);
   pageSize = signal(25);
+  todayOnly = signal(false);
+  expandedProjects = signal<Set<number>>(new Set());
 
   breadcrumb = [
     { label: 'Ana Kontrol Paneli', link: '/dashboard' },
@@ -67,6 +81,57 @@ export class UcKIsListesiComponent implements OnInit {
     );
   });
 
+  projectGroups = computed(() => {
+    const groups = new Map<number, UcKIsProjectGroup>();
+
+    for (const item of this.items()) {
+      const key = item.projeId;
+      const operationDate = item.sonIslemTarihi ?? item.gridSevkTarihi ?? null;
+      const timestamp = operationDate ? new Date(operationDate).getTime() : 0;
+      const existing = groups.get(key);
+
+      if (!existing) {
+        groups.set(key, {
+          key,
+          projeId: item.projeId,
+          projeNo: item.projeNo,
+          musteri: item.musteri,
+          items: [item],
+          latestTimestamp: timestamp,
+          totalKalan: Number(item.kalanMiktar ?? 0),
+          sandikCount: item.sandikNo ? 1 : 0,
+          priority: item.oncelik ?? 99,
+        });
+        continue;
+      }
+
+      existing.items.push(item);
+      existing.totalKalan += Number(item.kalanMiktar ?? 0);
+      existing.priority = Math.min(existing.priority, item.oncelik ?? 99);
+
+      if (timestamp > existing.latestTimestamp) {
+        existing.latestTimestamp = timestamp;
+      }
+    }
+
+    return Array.from(groups.values())
+      .map(group => ({
+        ...group,
+        sandikCount: new Set(group.items.map(item => item.sandikNo).filter(Boolean)).size,
+        items: [...group.items].sort((a, b) => {
+          const aTime = new Date(a.sonIslemTarihi ?? a.gridSevkTarihi ?? 0).getTime();
+          const bTime = new Date(b.sonIslemTarihi ?? b.gridSevkTarihi ?? 0).getTime();
+
+          return bTime - aTime || (a.oncelik ?? 99) - (b.oncelik ?? 99) || a.siraNo - b.siraNo;
+        }),
+      }))
+      .sort((a, b) =>
+        b.latestTimestamp - a.latestTimestamp ||
+        a.priority - b.priority ||
+        a.projeNo.localeCompare(b.projeNo, 'tr-TR')
+      );
+  });
+
   totalCount = computed(() => this.data()?.liste.totalCount ?? 0);
   totalPages = computed(() => Math.max(1, Math.ceil(this.totalCount() / this.pageSize())));
 
@@ -82,17 +147,26 @@ export class UcKIsListesiComponent implements OnInit {
       page: this.page(),
       pageSize: this.pageSize(),
       isTipi: this.activeTip(),
+      sadeceBugun: this.todayOnly(),
     }).subscribe(res => {
       this.loading.set(false);
 
       if (res.isSuccess && res.value) {
         this.data.set(res.value);
+        this.syncExpandedProjects();
         return;
       }
 
       this.errorMessage.set(res.error || '3K iş listesi yüklenemedi.');
       this.data.set(null);
+      this.expandedProjects.set(new Set());
     });
+  }
+
+  toggleTodayFilter(): void {
+    this.todayOnly.update(value => !value);
+    this.page.set(1);
+    this.load();
   }
 
   setTip(tip: IsTipi): void {
@@ -129,10 +203,24 @@ export class UcKIsListesiComponent implements OnInit {
     this.load();
   }
 
+  toggleProject(group: UcKIsProjectGroup): void {
+    const next = new Set(this.expandedProjects());
+    next.has(group.key) ? next.delete(group.key) : next.add(group.key);
+    this.expandedProjects.set(next);
+  }
+
+  isProjectExpanded(group: UcKIsProjectGroup): boolean {
+    return this.expandedProjects().has(group.key);
+  }
+
   goToLink(item: UcKIsListesiItemDto): any[] {
     return item.sandikNo
       ? ['/uck', item.projeId, item.sandikNo]
       : ['/uck', item.projeId];
+  }
+
+  goToQueryParams(item: UcKIsListesiItemDto): { focusCekiSatiriId: number } {
+    return { focusCekiSatiriId: item.cekiSatiriId };
   }
 
   formatQuantity(value: number | null | undefined): string {
@@ -151,5 +239,17 @@ export class UcKIsListesiComponent implements OnInit {
 
   trackById(_index: number, item: UcKIsListesiItemDto): number {
     return item.cekiSatiriId;
+  }
+
+  trackByProject(_index: number, group: UcKIsProjectGroup): number {
+    return group.key;
+  }
+
+  private syncExpandedProjects(): void {
+    const groups = this.projectGroups();
+    const validKeys = new Set(groups.map(group => group.key));
+    const next = new Set(Array.from(this.expandedProjects()).filter(key => validKeys.has(key)));
+
+    this.expandedProjects.set(next);
   }
 }

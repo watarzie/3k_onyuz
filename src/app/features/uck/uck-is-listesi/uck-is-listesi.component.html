@@ -20,12 +20,16 @@
   <div class="info-strip">
     <div>
       <strong>Grid hareketleri burada toplanır.</strong>
-      <span>3K tarafının teslim alması, kontrol etmesi veya yeniden sevk beklemesi gereken satırlar tek listede görünür.</span>
+      <span>3K tarafının teslim alması, kontrol etmesi veya yeniden sevk beklemesi gereken satırlar proje bazında görünür.</span>
     </div>
-    <div class="today-chip">
+    <button type="button" class="today-chip" [class.active]="todayOnly()" [disabled]="loading()" (click)="toggleTodayFilter()">
       <i class="ri-time-line"></i>
-      Bugünkü Grid işlemi: <b>{{ data()?.bugunGridIslemi ?? 0 }}</b>
-    </div>
+      <span>Bugünkü Grid işlemi:</span>
+      <b>{{ data()?.bugunGridIslemi ?? 0 }}</b>
+      @if (todayOnly()) {
+        <i class="ri-close-line"></i>
+      }
+    </button>
   </div>
 
   <div class="summary-grid">
@@ -70,7 +74,7 @@
     <div class="worklist-toolbar">
       <div class="toolbar-title">
         <h3>İşler</h3>
-        <span>{{ totalCount() }} kayıt</span>
+        <span>{{ data()?.toplam ?? 0 }} iş</span><span>{{ totalCount() }} proje</span>
       </div>
 
       <div class="toolbar-actions">
@@ -96,6 +100,14 @@
       </div>
     </div>
 
+    @if (todayOnly()) {
+      <div class="active-filter-strip">
+        <i class="ri-filter-3-line"></i>
+        Bugünkü Grid işlemleri filtreleniyor.
+        <button type="button" (click)="toggleTodayFilter()">Filtreyi kaldır</button>
+      </div>
+    }
+
     @if (loading()) {
       <div class="skeleton-list">
         @for (_ of [1, 2, 3, 4, 5]; track _) {
@@ -116,88 +128,107 @@
         <p>Grid tarafında 3K'nın aksiyon almasını gerektiren yeni bir satır bulunmuyor.</p>
       </div>
     } @else {
-      <div class="table-responsive worklist-table">
-        <table class="table align-middle mb-0">
-          <thead>
-            <tr>
-              <th>Öncelik</th>
-              <th>Proje</th>
-              <th>Sandık</th>
-              <th>Barkod</th>
-              <th>POZ NO</th>
-              <th>Ürün</th>
-              <th>Grid Durumu</th>
-              <th>Sevk</th>
-              <th>Grid Sevk</th>
-              <th>3K Gelen</th>
-              <th>Kalan</th>
-              <th>Son İşlem</th>
-              <th class="text-end">Aksiyon</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (item of items(); track item.cekiSatiriId) {
-              <tr>
-                <td>
-                  <span class="priority-pill" [ngClass]="priorityClass(item)">
-                    {{ item.isTipiMetni }}
-                  </span>
-                </td>
-                <td>
-                  <div class="project-cell">
-                    <strong>{{ item.projeNo }}</strong>
-                    @if (item.musteri) {
-                      <span>{{ item.musteri }}</span>
+      <div class="project-groups">
+        @for (group of projectGroups(); track group.key) {
+          <section class="project-group" [class.expanded]="isProjectExpanded(group)">
+            <button type="button" class="project-group-head" (click)="toggleProject(group)">
+              <div class="project-main">
+                <span class="project-icon"><i class="ri-folder-3-line"></i></span>
+                <span>
+                  <strong>{{ group.projeNo }}</strong>
+                  @if (group.musteri) {
+                    <small>{{ group.musteri }}</small>
+                  }
+                </span>
+              </div>
+
+              <div class="project-metrics">
+                <span class="metric-pill">{{ group.items.length }} iş</span>
+                <span class="metric-pill">{{ group.sandikCount }} sandık</span>
+                <span class="metric-pill danger" [class.ok]="group.totalKalan === 0">Kalan {{ formatQuantity(group.totalKalan) }}</span>
+                <span class="metric-pill muted">Son işlem {{ group.latestTimestamp ? (group.latestTimestamp | date:'dd.MM.yyyy HH:mm') : '-' }}</span>
+                <i class="ri-arrow-down-s-line chevron"></i>
+              </div>
+            </button>
+
+            @if (isProjectExpanded(group)) {
+              <div class="table-responsive worklist-table grouped-table">
+                <table class="table align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th>Öncelik</th>
+                      <th>Sandık</th>
+                      <th>Barkod</th>
+                      <th>POZ NO</th>
+                      <th>Ürün</th>
+                      <th>Grid Durumu</th>
+                      <th>Sevk</th>
+                      <th>Grid Sevk</th>
+                      <th>3K Gelen</th>
+                      <th>Kalan</th>
+                      <th>Son İşlem</th>
+                      <th class="text-end">Aksiyon</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (item of group.items; track item.cekiSatiriId) {
+                      <tr>
+                        <td>
+                          <span class="priority-pill" [ngClass]="priorityClass(item)">
+                            {{ item.isTipiMetni }}
+                          </span>
+                        </td>
+                        <td>
+                          <span class="box-pill">{{ item.sandikNo || '-' }}</span>
+                        </td>
+                        <td>
+                          <span class="barcode">{{ item.barkodNo || '-' }}</span>
+                        </td>
+                        <td>{{ item.olcuResmiPozNo || '-' }}</td>
+                        <td>
+                          <div class="product-cell">
+                            <strong>{{ item.aciklama }}</strong>
+                            <span>#{{ item.siraNo }} · {{ formatQuantity(item.istenenAdet) }} {{ item.birim }}</span>
+                            @if (item.gridAciklama) {
+                              <small>{{ item.gridAciklama }}</small>
+                            }
+                          </div>
+                        </td>
+                        <td>
+                          <span class="status-badge status-grid">{{ item.gridDurumuMetni }}</span>
+                        </td>
+                        <td>
+                          <span class="status-badge" [class.status-shipped]="item.gridSevkDurumuId === 2">
+                            {{ item.gridSevkDurumuMetni }}
+                          </span>
+                        </td>
+                        <td>{{ formatQuantity(item.gridSevkMiktari) }} {{ item.birim }}</td>
+                        <td>{{ formatQuantity(item.ucKGelenMiktar) }} {{ item.birim }}</td>
+                        <td>
+                          <span [class.remaining-danger]="item.kalanMiktar > 0">
+                            {{ formatQuantity(item.kalanMiktar) }} {{ item.birim }}
+                          </span>
+                        </td>
+                        <td>{{ item.sonIslemTarihi ? (item.sonIslemTarihi | date:'dd.MM.yyyy HH:mm') : '-' }}</td>
+                        <td class="text-end">
+                          <a class="btn btn-sm btn-primary" [routerLink]="goToLink(item)" [queryParams]="goToQueryParams(item)">
+                            <i class="ri-arrow-right-line"></i>
+                            3K'ya Git
+                          </a>
+                        </td>
+                      </tr>
                     }
-                  </div>
-                </td>
-                <td>
-                  <span class="box-pill">{{ item.sandikNo || '-' }}</span>
-                </td>
-                <td>
-                  <span class="barcode">{{ item.barkodNo || '-' }}</span>
-                </td>
-                <td>{{ item.olcuResmiPozNo || '-' }}</td>
-                <td>
-                  <div class="product-cell">
-                    <strong>{{ item.aciklama }}</strong>
-                    <span>#{{ item.siraNo }} · {{ formatQuantity(item.istenenAdet) }} {{ item.birim }}</span>
-                    @if (item.gridAciklama) {
-                      <small>{{ item.gridAciklama }}</small>
-                    }
-                  </div>
-                </td>
-                <td>
-                  <span class="status-badge status-grid">{{ item.gridDurumuMetni }}</span>
-                </td>
-                <td>
-                  <span class="status-badge" [class.status-shipped]="item.gridSevkDurumuId === 2">
-                    {{ item.gridSevkDurumuMetni }}
-                  </span>
-                </td>
-                <td>{{ formatQuantity(item.gridSevkMiktari) }} {{ item.birim }}</td>
-                <td>{{ formatQuantity(item.ucKGelenMiktar) }} {{ item.birim }}</td>
-                <td>
-                  <span [class.remaining-danger]="item.kalanMiktar > 0">
-                    {{ formatQuantity(item.kalanMiktar) }} {{ item.birim }}
-                  </span>
-                </td>
-                <td>{{ item.sonIslemTarihi ? (item.sonIslemTarihi | date:'dd.MM.yyyy HH:mm') : '-' }}</td>
-                <td class="text-end">
-                  <a class="btn btn-sm btn-primary" [routerLink]="goToLink(item)">
-                    <i class="ri-arrow-right-line"></i>
-                    3K'ya Git
-                  </a>
-                </td>
-              </tr>
+                  </tbody>
+                </table>
+              </div>
             }
-          </tbody>
-        </table>
+          </section>
+        }
       </div>
 
       <div class="pagination-bar">
         <div class="page-size">
-          <span>Sayfa başına</span>
+          <span>Sayfa başına proje</span>
           <select [ngModel]="pageSize()" (ngModelChange)="onPageSizeChange($event)">
             <option value="15">15</option>
             <option value="25">25</option>

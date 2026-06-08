@@ -215,6 +215,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('projeId'));
     const sNo = this.route.snapshot.paramMap.get('sandikNo') ?? '';
+    const focusParam = Number(this.route.snapshot.queryParamMap.get('focusCekiSatiriId'));
+    const initialFocusCekiSatiriId = Number.isFinite(focusParam) && focusParam > 0 ? focusParam : null;
     this.projeId.set(id);
     this.sandikNo.set(sNo);
     this.breadcrumb = [
@@ -254,7 +256,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     // Stok dropdown'u için stokları çek
     this.loadStokDropdownList();
 
-    this.loadUrunler();
+    this.loadUrunler(true, initialFocusCekiSatiriId);
   }
 
   ngOnDestroy() {
