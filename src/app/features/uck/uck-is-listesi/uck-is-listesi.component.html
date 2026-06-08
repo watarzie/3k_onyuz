@@ -172,7 +172,13 @@
                   </thead>
                   <tbody>
                     @for (item of group.items; track item.cekiSatiriId) {
-                      <tr>
+                      <tr
+                        class="worklist-click-row"
+                        tabindex="0"
+                        (click)="goToItem(item)"
+                        (keydown.enter)="goToItem(item)"
+                        (keydown.space)="goToItem(item); $event.preventDefault()"
+                      >
                         <td>
                           <span class="priority-pill" [ngClass]="priorityClass(item)">
                             {{ item.isTipiMetni }}
@@ -211,7 +217,7 @@
                         </td>
                         <td>{{ item.sonIslemTarihi ? (item.sonIslemTarihi | date:'dd.MM.yyyy HH:mm') : '-' }}</td>
                         <td class="text-end">
-                          <a class="btn btn-sm btn-primary" [routerLink]="goToLink(item)" [queryParams]="goToQueryParams(item)">
+                          <a class="btn btn-sm btn-primary" [routerLink]="goToLink(item)" [queryParams]="goToQueryParams(item)" (click)="$event.stopPropagation()">
                             <i class="ri-arrow-right-line"></i>
                             3K'ya Git
                           </a>

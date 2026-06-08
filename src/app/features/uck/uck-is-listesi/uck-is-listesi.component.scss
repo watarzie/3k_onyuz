@@ -463,6 +463,23 @@
   tbody tr:hover {
     background: #f9fbff;
   }
+
+  tbody tr.worklist-click-row {
+    cursor: pointer;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+
+    &:focus-visible {
+      position: relative;
+      z-index: 1;
+      outline: 2px solid #1f6fff;
+      outline-offset: -2px;
+      background: #f5f9ff;
+    }
+
+    &:active {
+      background: #eef6ff;
+    }
+  }
 }
 
 .grouped-table {

@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe, NgClass } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
@@ -30,6 +30,7 @@ interface UcKIsProjectGroup {
 })
 export class UcKIsListesiComponent implements OnInit {
   private uckService = inject(UcKService);
+  private router = inject(Router);
 
   loading = signal(true);
   errorMessage = signal('');
@@ -221,6 +222,10 @@ export class UcKIsListesiComponent implements OnInit {
 
   goToQueryParams(item: UcKIsListesiItemDto): { focusCekiSatiriId: number } {
     return { focusCekiSatiriId: item.cekiSatiriId };
+  }
+
+  goToItem(item: UcKIsListesiItemDto): void {
+    this.router.navigate(this.goToLink(item), { queryParams: this.goToQueryParams(item) });
   }
 
   formatQuantity(value: number | null | undefined): string {
