@@ -41,6 +41,11 @@
       }
     </div>
     <div class="table-actions d-flex align-items-center gap-2 flex-wrap">
+      @if (canDeleteCekiVerisi()) {
+      <button class="btn btn-sm btn-outline-danger" [disabled]="!hasSelection" (click)="deleteSelectedCekiSatirlari()">
+        <i class="ri-delete-bin-line me-1"></i>Çeki Sil ({{ selectionCount }})
+      </button>
+      }
       <!-- Toplu İşlemler Dropdown -->
       <div *appCanWrite class="dropdown" id="uckTopluIslemlerDropdown"
         [class.show]="showTopluIslemlerMenu()">
@@ -78,9 +83,11 @@
       <table class="table table-hover align-middle mb-0">
         <thead>
           <tr>
-            <th *appCanWrite style="width:36px">
+            @if (canSelectRows) {
+            <th style="width:36px">
               <input type="checkbox" class="form-check-input" [checked]="allSelected" (change)="toggleSelectAll()" />
             </th>
+            }
             <th style="width:45px">#</th>
             <th>Barkod</th>
             <th>POZ NO:</th>
@@ -111,12 +118,14 @@
         </thead>
         <tbody>
           @for (u of filtered(); track u.cekiSatiriId) {
-          <tr [attr.id]="getRowDomId(u.cekiSatiriId)" [ngClass]="getRowClass(u)"
+          <tr [attr.id]="getRowDomId(u.cekiSatiriId)" [ngClass]="[getRowClass(u), isSelected(u.cekiSatiriId) ? 'row-selected' : '']"
               class="cursor-pointer" (click)="onRowClick(u, $event)">
-            <td *appCanWrite>
+            @if (canSelectRows) {
+            <td>
               <input type="checkbox" class="form-check-input" [checked]="isSelected(u.cekiSatiriId)"
                 (change)="toggleSelect(u.cekiSatiriId)" [disabled]="isCheckboxDisabled(u)" />
             </td>
+            }
             <td class="text-muted">{{ u.siraNo }}</td>
             <td><code class="barkod">{{ u.barkodNo }}</code></td>
             <td>{{ u.olcuResmiPozNo || '-' }}</td>

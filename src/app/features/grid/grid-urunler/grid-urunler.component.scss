@@ -189,14 +189,23 @@ table {
 .cursor-pointer { cursor: pointer; }
 
 // Row renk kuralları
-.row-tam-geldi { border-left: 3px solid #25B003; }
-.row-eksik-geldi { border-left: 3px solid #FD5812; }
-.row-gelmedi { border-left: 3px solid #FF4023; }
-.row-trafo-sevk { border-left: 3px solid #00BCD4; }
-.row-iptal { border-left: 3px solid #FFB200; }
-.row-sipariste { border-left: 3px solid #9C27B0; }
-.row-grid-kapandi { border-left: 3px solid #37474F; }
-.row-selected { background: rgba(96,93,255,.04) !important; }
+@mixin kalan-row($class, $accent, $bg, $hover) {
+  tbody tr.#{$class} {
+    border-left: 4px solid $accent;
+  }
+
+  tbody tr.#{$class} > td {
+    background-color: $bg;
+  }
+
+  tbody tr.#{$class}:hover > td {
+    background-color: $hover;
+  }
+}
+
+@include kalan-row(row-kalan-yok, #25B003, #ECF8EF, #DFF3E7);
+@include kalan-row(row-kalan-var, #EF4444, #FFE7E5, #FFD6D3);
+tbody tr.row-selected > td { background-color: rgba(96,93,255,.08) !important; }
 
 .barkod { font-size: 10.5px; background: #F0F0F5; padding: 2px 6px; border-radius: 4px; color: var(--bodyColor); font-family: monospace; }
 .badge-sandik {

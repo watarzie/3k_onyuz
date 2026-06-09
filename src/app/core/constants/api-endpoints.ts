@@ -48,6 +48,7 @@ export const API = {
     MANUEL_EKLE: `${BASE}/sandik/manuel-ekle`,
     URUN_GUNCELLE: `${BASE}/sandik/urun-guncelle`,
     CEKI_SATIRI_GUNCELLE: `${BASE}/sandik/ceki-satiri-guncelle`,
+    CEKI_SATIRLARI_SIL: `${BASE}/sandik/ceki-satirlari-sil`,
     OZELLIK_GUNCELLE: `${BASE}/sandik/ozellik-guncelle`,
     DEGISTIR: `${BASE}/sandik/degistir`,
     IPTAL: `${BASE}/sandik/iptal`,

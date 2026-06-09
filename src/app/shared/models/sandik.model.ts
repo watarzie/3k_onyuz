@@ -182,3 +182,15 @@ export interface CekiSatiriAnaVeriGuncelleDto {
   birimId: number;
   sandikNo: string;
 }
+
+export interface CekiSatirlariSilDto {
+  cekiSatiriIds: number[];
+}
+
+export interface CekiSatirlariSilResultDto {
+  silinenSatirSayisi: number;
+  silinenSandikSayisi: number;
+  silinenCekiSayisi: number;
+  iadeEdilenStokHareketiSayisi: number;
+  pasifeAlinanTransferSayisi: number;
+}

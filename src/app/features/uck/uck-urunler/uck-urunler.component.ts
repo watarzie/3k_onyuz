@@ -81,6 +81,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   panelUyari = signal('');
 
   canEditCekiVerisi = computed(() => this.permissions.canWrite('ceki-verisi-duzenle'));
+  canDeleteCekiVerisi = computed(() => this.permissions.canWrite('ceki-verisi-sil'));
 
   readonly birimSecenekleri = [
     { id: 1, label: 'Adet' },
@@ -402,7 +403,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   }
 
   getRowClass(u: UcKUrunDto): string {
-    return KARSILAMA_TIPLERI.find(t => t.value === u.ucKKarsilamaTipiMetni)?.bgClass ?? '';
+    return (u.kalan ?? 0) > 0 ? 'row-kalan-var' : 'row-kalan-yok';
   }
 
   getTipLabel(value: string): string {
@@ -972,11 +973,15 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   // ===== Checkbox Selection =====
   toggleSelect(id: number) {
+    if (!this.canSelectRows) return;
+
     const s = new Set(this.selectedIds());
     s.has(id) ? s.delete(id) : s.add(id);
     this.selectedIds.set(s);
   }
   toggleSelectAll() {
+    if (!this.canSelectRows) return;
+
     if (this.selectedIds().size === this.filtered().length) {
       this.selectedIds.set(new Set());
     } else {
@@ -1059,6 +1064,10 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     return this.permissions.canWrite('3k-modulu');
   }
 
+  get canSelectRows(): boolean {
+    return this.canUcKWrite || this.canDeleteCekiVerisi();
+  }
+
   openAnaVeriPanel(urun: UcKUrunDto) {
     if (!this.canEditCekiVerisi()) return;
     this.anaVeriUrun.set(urun);
@@ -1122,6 +1131,37 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
         this.anaError.set(message);
         this.toast.error(message);
       },
+    });
+  }
+
+  async deleteSelectedCekiSatirlari() {
+    const ids = Array.from(this.selectedIds());
+    if (!this.canDeleteCekiVerisi() || ids.length === 0) return;
+
+    const onay = await this.confirmService.ask({
+      title: 'Çeki Satırlarını Sil',
+      message: `<strong>${ids.length}</strong> seçili çeki satırı silinecek.<br><br><small class="text-muted">İlgili sandık içeriği, stok hareketi ve uygun transfer bağlantıları da temizlenir. Bu işlem geri alınamaz.</small>`,
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      type: 'danger'
+    });
+
+    if (!onay) return;
+
+    this.sandikService.cekiSatirlariSil(ids).subscribe({
+      next: (res) => {
+        if (res.isSuccess) {
+          const silinen = res.value?.silinenSatirSayisi ?? ids.length;
+          this.toast.success(`${silinen} çeki satırı silindi.`);
+          this.selectedIds.set(new Set());
+          this.uckService.notifyUckUpdated();
+          this.gridService.notifyGridUpdated();
+          this.loadUrunler(false);
+        } else {
+          this.toast.error(res.error ?? 'Çeki satırları silinemedi.');
+        }
+      },
+      error: () => this.toast.error('Silme sırasında sunucu ile iletişim kurulamadı.'),
     });
   }
 

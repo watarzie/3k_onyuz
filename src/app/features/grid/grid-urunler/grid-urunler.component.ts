@@ -8,6 +8,7 @@ import { GridService } from '../../../core/services/grid.service';
 import { SandikService } from '../../../core/services/sandik.service';
 import { ProjeService } from '../../../core/services/proje.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { ConfirmService } from '../../../core/services/confirm.service';
 
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
@@ -64,6 +65,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   private sandikService = inject(SandikService);
   private projeService = inject(ProjeService);
   private toast = inject(ToastService);
+  private confirmService = inject(ConfirmService);
   permissions = inject(PermissionService);
 
   projeId = signal(0);
@@ -91,6 +93,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   panelUyari = signal('');
 
   canEditCekiVerisi = computed(() => this.permissions.canWrite('ceki-verisi-duzenle'));
+  canDeleteCekiVerisi = computed(() => this.permissions.canWrite('ceki-verisi-sil'));
 
   readonly birimSecenekleri = [
     { id: 1, label: 'Adet' },
@@ -347,7 +350,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   // ===== Satır rengi =====
   getRowClass(u: GridUrunDto): string {
-    return GRID_DURUMLARI.find(d => d.value === u.gridDurumuMetni)?.bgClass ?? '';
+    return (u.kalanMiktar ?? 0) > 0 ? 'row-kalan-var' : 'row-kalan-yok';
   }
 
   getDurumLabel(value: string): string {
@@ -854,7 +857,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
 
   get canSelectRows(): boolean {
-    return this.canGridWrite || this.canKalite || this.canSurec;
+    return this.canGridWrite || this.canKalite || this.canSurec || this.canDeleteCekiVerisi();
   }
 
   openAnaVeriPanel(urun: GridUrunDto) {
@@ -921,6 +924,37 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
         this.anaError.set(message);
         this.toast.error(message);
       },
+    });
+  }
+
+  async deleteSelectedCekiSatirlari() {
+    const ids = Array.from(this.selectedIds());
+    if (!this.canDeleteCekiVerisi() || ids.length === 0) return;
+
+    const onay = await this.confirmService.ask({
+      title: 'Çeki Satırlarını Sil',
+      message: `<strong>${ids.length}</strong> seçili çeki satırı silinecek.<br><br><small class="text-muted">İlgili sandık içeriği, stok hareketi ve uygun transfer bağlantıları da temizlenir. Bu işlem geri alınamaz.</small>`,
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      type: 'danger'
+    });
+
+    if (!onay) return;
+
+    this.sandikService.cekiSatirlariSil(ids).subscribe({
+      next: (res) => {
+        if (res.isSuccess) {
+          const silinen = res.value?.silinenSatirSayisi ?? ids.length;
+          this.toast.success(`${silinen} çeki satırı silindi.`);
+          this.selectedIds.set(new Set());
+          this.gridService.notifyGridUpdated();
+          this.loadUrunler(false);
+          this.loadSandiklar();
+        } else {
+          this.toast.error(res.error ?? 'Çeki satırları silinemedi.');
+        }
+      },
+      error: () => this.toast.error('Silme sırasında sunucu ile iletişim kurulamadı.'),
     });
   }
 

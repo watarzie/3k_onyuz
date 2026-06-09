@@ -11,6 +11,11 @@
     </div>
     <div class="page-actions d-flex align-items-center gap-2 flex-wrap">
       <app-readonly-banner />
+      @if (canDeleteCekiVerisi()) {
+      <button class="btn btn-outline-danger" [disabled]="!hasSelection" (click)="deleteSelectedCekiSatirlari()">
+        <i class="ri-delete-bin-line me-1"></i>Çeki Sil ({{ selectedIds().size }})
+      </button>
+      }
       <button *appCanWrite class="btn btn-primary" (click)="openManuelEkleModal()">
         <i class="ri-add-line me-2"></i>Manuel Ürün Ekle
       </button>
