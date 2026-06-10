@@ -109,6 +109,10 @@ export class SandikService {
     return this.api.post<any>(API.SANDIK.TOPLU_KAPAT, { sandikIds, forceClose });
   }
 
+  sandikKilidiAc(projeId: number, sandikId: number, aciklama?: string): Observable<ApiResult<unknown>> {
+    return this.api.post<unknown>(API.SANDIK.KILIDI_AC, { projeId, sandikId, aciklama });
+  }
+
   lokasyonGuncelle(sandikIds: number[], depoLokasyonId: number): Observable<ApiResult<unknown>> {
     return this.api.put<unknown>(API.SANDIK.LOKASYON_GUNCELLE, { sandikIds, depoLokasyonId });
   }

@@ -31,6 +31,7 @@ export class UcKSandiklarComponent implements OnInit {
   private toast = inject(ToastService);
   private permissionService = inject(PermissionService);
   private lookupService = inject(LookupService);
+  private readonly sevkEdilmisSandikMesaji = 'Bu sandık sevk edildiği için üzerinde işlem yapılamaz.';
 
   canWriteSandik = computed(() => {
     const menuKod = this.route.snapshot.data?.['menuKod'] || '3k-modulu';
@@ -193,6 +194,7 @@ export class UcKSandiklarComponent implements OnInit {
       list = list.filter(s => locs.includes(s.depoLokasyonMetni ?? 'Belirsiz'));
     }
     this.filtered.set(list);
+    this.temizleSevkEdilmisSecimler();
   }
 
   // --- Lokasyon Güncelleme ---
@@ -202,6 +204,10 @@ export class UcKSandiklarComponent implements OnInit {
     event.preventDefault();
     event.stopPropagation();
     if (!this.canWriteSandik()) return;
+    if (this.isSandikSevkEdildi(sandik)) {
+      this.toast.error(this.sevkEdilmisSandikMesaji);
+      return;
+    }
     this.selectedSandikForLocIds.set([sandik.id]);
     this.yeniLokasyonId.set(sandik.depoLokasyonId ?? 0);
     this.showLokasyonModal.set(true);
@@ -210,7 +216,12 @@ export class UcKSandiklarComponent implements OnInit {
   topluLokasyonAtaModal() {
     if (this.selectedSandikIds().size === 0) return;
     if (!this.canWriteSandik()) return;
-    this.selectedSandikForLocIds.set(Array.from(this.selectedSandikIds()));
+    const ids = this.secilenSevkEdilmemisSandikIdleri();
+    if (ids.length === 0) {
+      this.toast.error(this.sevkEdilmisSandikMesaji);
+      return;
+    }
+    this.selectedSandikForLocIds.set(ids);
     this.yeniLokasyonId.set(0);
     this.showLokasyonModal.set(true);
   }
@@ -237,6 +248,10 @@ export class UcKSandiklarComponent implements OnInit {
     }
     const ids = this.selectedSandikForLocIds();
     if (ids.length === 0) return;
+    if (this.sandiklar().some(s => ids.includes(s.id) && this.isSandikSevkEdildi(s))) {
+      this.toast.error(this.sevkEdilmisSandikMesaji);
+      return;
+    }
 
     this.isSavingLokasyon.set(true);
     this.sandikService.lokasyonGuncelle(ids, this.yeniLokasyonId()).subscribe({
@@ -279,7 +294,83 @@ export class UcKSandiklarComponent implements OnInit {
     return map[durum] ?? 'ri-inbox-line';
   }
 
+  isSandikSevkEdildi(sandik: SandikDto): boolean {
+    const durumMetni = (sandik.durumMetni ?? '').trim();
+    return sandik.durumId === 4 ||
+      durumMetni === 'SevkEdildi' ||
+      durumMetni === 'Sevk Edildi' ||
+      durumMetni === 'Sevkedildi';
+  }
+
+  onSandikCardClick(event: Event, sandik: SandikDto) {
+    if (!this.isSandikSevkEdildi(sandik)) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    this.toast.info('Bu sandık sevk edildiği için 3K işlemine kapalıdır.');
+  }
+
+  async sandikKilidiAc(event: Event, sandik: SandikDto) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!this.canWriteSandik()) return;
+    if (!this.isSandikSevkEdildi(sandik)) return;
+
+    const confirm = await this.confirmService.ask({
+      title: 'Sandık Kilidini Aç',
+      message: `<strong>${sandik.sandikNo}</strong> numaralı sandığın sevk kilidi kaldırılacak.<br><br>
+                <small class="text-muted">Sandık tekrar 3K işlemine açılır ve sevkiyat listesinden çıkarılır.</small>`,
+      confirmText: 'Kilidi Aç',
+      cancelText: 'Vazgeç',
+      type: 'warning'
+    });
+
+    if (!confirm) return;
+
+    this.sandikService.sandikKilidiAc(
+      this.projeId(),
+      sandik.id,
+      '3K modülünden sandık sevk kilidi açıldı.'
+    ).subscribe({
+      next: (res) => {
+        if (res.isSuccess) {
+          this.toast.success(`Sandık "${sandik.sandikNo}" kilidi açıldı.`);
+          this.selectedSandikIds.set(new Set());
+          this.refreshSandiklar();
+        } else {
+          this.toast.error(res.error ?? 'Sandık kilidi açılamadı.');
+        }
+      },
+      error: () => this.toast.error('Sandık kilidi açılırken sunucu ile iletişim kurulamadı.')
+    });
+  }
+
+  private getSecilebilirSandiklar(): SandikDto[] {
+    return this.filtered().filter(s => !this.isSandikSevkEdildi(s));
+  }
+
+  private secilenSevkEdilmemisSandikIdleri(): number[] {
+    const selected = this.selectedSandikIds();
+    return this.sandiklar()
+      .filter(s => selected.has(s.id) && !this.isSandikSevkEdildi(s))
+      .map(s => s.id);
+  }
+
+  private temizleSevkEdilmisSecimler() {
+    const kilitliIds = new Set(this.sandiklar().filter(s => this.isSandikSevkEdildi(s)).map(s => s.id));
+    if (kilitliIds.size === 0) return;
+
+    const temizSecim = Array.from(this.selectedSandikIds()).filter(id => !kilitliIds.has(id));
+    if (temizSecim.length !== this.selectedSandikIds().size) {
+      this.selectedSandikIds.set(new Set(temizSecim));
+    }
+  }
+
   toggleSelection(sandikId: number) {
+    const sandik = this.sandiklar().find(s => s.id === sandikId);
+    if (sandik && this.isSandikSevkEdildi(sandik)) return;
+
     const set = this.selectedSandikIds();
     if (set.has(sandikId)) set.delete(sandikId);
     else set.add(sandikId);
@@ -287,21 +378,30 @@ export class UcKSandiklarComponent implements OnInit {
   }
 
   isAllSelected(): boolean {
-    const allIds = this.filtered().map(s => s.id);
+    const allIds = this.getSecilebilirSandiklar().map(s => s.id);
     return allIds.length > 0 && allIds.every(id => this.selectedSandikIds().has(id));
   }
 
   toggleAll() {
     if (this.isAllSelected()) {
-      this.selectedSandikIds.set(new Set());
+      const set = new Set(this.selectedSandikIds());
+      this.getSecilebilirSandiklar().forEach(s => set.delete(s.id));
+      this.selectedSandikIds.set(set);
     } else {
-      this.selectedSandikIds.set(new Set(this.filtered().map(s => s.id)));
+      const set = new Set(this.selectedSandikIds());
+      this.getSecilebilirSandiklar().forEach(s => set.add(s.id));
+      this.selectedSandikIds.set(set);
     }
   }
 
   topluHazirYap() {
     if (this.selectedSandikIds().size === 0) return;
-    this.topluKapatConfirm(Array.from(this.selectedSandikIds()), false);
+    const ids = this.secilenSevkEdilmemisSandikIdleri();
+    if (ids.length === 0) {
+      this.toast.error(this.sevkEdilmisSandikMesaji);
+      return;
+    }
+    this.topluKapatConfirm(ids, false);
   }
 
   private generateMissingItemHtml(item: any): string {
@@ -377,6 +477,10 @@ export class UcKSandiklarComponent implements OnInit {
     event.stopPropagation();
 
     if (!this.canWriteSandik()) return;
+    if (this.isSandikSevkEdildi(sandik)) {
+      this.toast.error(this.sevkEdilmisSandikMesaji);
+      return;
+    }
 
     const isKapandi = sandik.durumMetni === 'Kapandı';
     const actionText = isKapandi ? 'Sandığı tekrar "Hazırlanıyor" durumuna almak' : 'Sandığı kapatmak';
@@ -521,6 +625,10 @@ export class UcKSandiklarComponent implements OnInit {
     event.preventDefault();
     event.stopPropagation();
     if (!this.canWriteSandik()) return;
+    if (this.isSandikSevkEdildi(sandik)) {
+      this.toast.error(this.sevkEdilmisSandikMesaji);
+      return;
+    }
 
     const silmeDetayi = sandik.isManuelSandik && sandik.urunSayisi > 0
       ? `<br><br><small class="text-muted">Bu manuel sandığın içindeki ${sandik.urunSayisi} manuel ürün de silinecek.</small>`

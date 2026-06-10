@@ -7,6 +7,9 @@ export interface UcKUrunDto {
   olcuResmiPozNo?: string;
   aciklama: string;
   sandikNo: string;
+  sandikDurumId?: number;
+  sandikDurumMetni?: string;
+  sandikSevkEdildiMi: boolean;
   istenenAdet: number;
   birimId: number;
   birim: string;

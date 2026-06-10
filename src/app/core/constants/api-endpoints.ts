@@ -63,6 +63,7 @@ export const API = {
     URUN_TASI: `${BASE}/sandik/urun-tasi`,
     SAHA_YEDEK_MALZEME_EKLE: `${BASE}/sandik/saha-yedek-malzeme-ekle`,
     SEVK_ET: `${BASE}/sandik/sevk-et`,
+    KILIDI_AC: `${BASE}/sandik/kilidi-ac`,
     MANUEL_URUN_SIL: `${BASE}/sandik/manuel-urun-sil`,
     SIL: `${BASE}/sandik/sil`,
     EKSIK_URUNLER_BY_PROJE: (projeId: number) => `${BASE}/sandik/eksik-urunler-by-proje/${projeId}`,

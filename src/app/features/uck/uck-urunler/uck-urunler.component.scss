@@ -185,6 +185,19 @@ table {
 @include kalan-row(row-kalan-var, #EF4444, #FFE7E5, #FFD6D3);
 tbody tr.row-selected > td { background-color: rgba(96,93,255,.08) !important; }
 
+tbody tr.row-sevk-kilitli {
+  cursor: not-allowed;
+}
+
+tbody tr.row-sevk-kilitli > td {
+  background-color: #F1F5F9 !important;
+  color: #64748B;
+}
+
+tbody tr.row-sevk-kilitli:hover > td {
+  background-color: #E2E8F0 !important;
+}
+
 .barkod { font-size: 10px; background: #F0F0F5; padding: 2px 5px; border-radius: 3px; color: var(--bodyColor); font-family: monospace; }
 .badge-sandik {
   background: rgba(96,93,255,.08); color: var(--primaryColor); padding: 2px 7px;

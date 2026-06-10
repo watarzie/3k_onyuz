@@ -282,6 +282,8 @@ export class ProjeListesiComponent implements OnInit {
       Hazirlaniyor: 'Hazırlanıyor',
       DevamEdiyor: 'Devam Ediyor',
       Tamamlandi: 'Tamamlandı',
+      EksikSevkEdildi: 'Kısmi Sevk',
+      'Eksik Sevk Edildi': 'Kısmi Sevk',
     };
     return map[durum] ?? durum;
   }

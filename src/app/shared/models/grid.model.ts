@@ -10,6 +10,9 @@ export interface GridUrunDto {
   birimId: number;
   birim: string;
   sandikNo: string;
+  sandikDurumId?: number;
+  sandikDurumMetni?: string;
+  sandikSevkEdildiMi: boolean;
   gridDurumuId: number;
   gridDurumuMetni: string;
   gridGelenAdet: number;

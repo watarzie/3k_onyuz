@@ -67,6 +67,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   private toast = inject(ToastService);
   private confirmService = inject(ConfirmService);
   permissions = inject(PermissionService);
+  private readonly sevkEdilmisSandikMesaji = 'Bu ürün sevk edilmiş sandıkta olduğu için Grid işlemi yapılamaz.';
 
   projeId = signal(0);
   mevcutProje = signal<ProjeDropdownDto | null>(null);
@@ -255,6 +256,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
           return na - nb || a.siraNo - b.siraNo;
         });
         this.urunler.set(sorted);
+        this.temizleSevkKilitliSecimler();
         this.applyFilter();
       }
     });
@@ -330,6 +332,11 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   // ===== Checkbox =====
   toggleSelect(id: number) {
     if (!this.canSelectRows) return;
+    const urun = this.urunler().find(u => u.cekiSatiriId === id);
+    if (urun && this.isSatirSevkKilidi(urun)) {
+      this.toast.error(this.sevkEdilmisSandikMesaji);
+      return;
+    }
 
     const s = new Set(this.selectedIds());
     s.has(id) ? s.delete(id) : s.add(id);
@@ -338,19 +345,34 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   toggleSelectAll() {
     if (!this.canSelectRows) return;
 
-    if (this.selectedIds().size === this.filtered().length) {
+    const selectable = this.filtered().filter(u => !this.isSatirSevkKilidi(u));
+    const current = new Set(this.selectedIds());
+
+    if (selectable.length === 0) {
       this.selectedIds.set(new Set());
-    } else {
-      this.selectedIds.set(new Set(this.filtered().map(u => u.cekiSatiriId)));
+      return;
     }
+
+    if (selectable.every(u => current.has(u.cekiSatiriId))) {
+      selectable.forEach(u => current.delete(u.cekiSatiriId));
+    } else {
+      selectable.forEach(u => current.add(u.cekiSatiriId));
+    }
+
+    this.selectedIds.set(current);
   }
   isSelected(id: number): boolean { return this.selectedIds().has(id); }
-  get allSelected(): boolean { return this.filtered().length > 0 && this.selectedIds().size === this.filtered().length; }
+  get allSelected(): boolean {
+    const selectable = this.filtered().filter(u => !this.isSatirSevkKilidi(u));
+    return selectable.length > 0 && selectable.every(u => this.selectedIds().has(u.cekiSatiriId));
+  }
   get hasSelection(): boolean { return this.selectedIds().size > 0; }
+  get hasSelectableRows(): boolean { return this.filtered().some(u => !this.isSatirSevkKilidi(u)); }
 
   // ===== Satır rengi =====
   getRowClass(u: GridUrunDto): string {
-    return (u.kalanMiktar ?? 0) > 0 ? 'row-kalan-var' : 'row-kalan-yok';
+    const kalanClass = (u.kalanMiktar ?? 0) > 0 ? 'row-kalan-var' : 'row-kalan-yok';
+    return this.isSatirSevkKilidi(u) ? `${kalanClass} row-sevk-kilitli` : kalanClass;
   }
 
   getDurumLabel(value: string): string {
@@ -394,11 +416,16 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     // Yazma yetkisi yoksa açma
     if (!this.canGridWrite) return;
     // Kilitli satır kontrolü
-    if (this.isUcKIslemYapilmis(urun) || this.isTadilatta(urun)) return;
+    if (this.isSatirSevkKilidi(urun) || this.isUcKIslemYapilmis(urun) || this.isTadilatta(urun)) return;
     this.openPanel(urun);
   }
 
   openPanel(urun: GridUrunDto) {
+    if (this.isSatirSevkKilidi(urun)) {
+      this.toast.error(this.sevkEdilmisSandikMesaji);
+      return;
+    }
+
     this.panelUrun.set(urun);
     if (this.isParcaliEksikYenidenSevkUrun(urun)) {
       this.panelDurum.set('Tam Geldi');
@@ -561,10 +588,17 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
 
   savePanel() {
+    const u = this.panelUrun();
+    if (!u) return;
+    if (this.isSatirSevkKilidi(u)) {
+      this.panelError.set(this.sevkEdilmisSandikMesaji);
+      this.toast.error(this.sevkEdilmisSandikMesaji);
+      return;
+    }
+
     const err = this.validatePanel();
     if (err) { this.panelError.set(err); return; }
 
-    const u = this.panelUrun()!;
     this.panelSaving.set(true);
     this.panelError.set('');
 
@@ -605,6 +639,11 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   durumSifirla() {
     const u = this.panelUrun();
     if (!u) return;
+    if (this.isSatirSevkKilidi(u)) {
+      this.panelError.set(this.sevkEdilmisSandikMesaji);
+      this.toast.error(this.sevkEdilmisSandikMesaji);
+      return;
+    }
 
     if (!confirm(`"${u.aciklama}" ürününün Grid durumunu sıfırlamak istediğinize emin misiniz?\n\nGridDurum, GelenAdet, TrafoSevkAdet, SevkDurumu vb. tüm Grid alanları sıfırlanacak ve ürün çeki yüklendiğindeki ham durumuna dönecektir.\n\nBu işlem geri alınamaz.`))
       return;
@@ -639,6 +678,8 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   // ===== Toplu Sevk =====
   openTopluSevk() {
+    if (this.hasSevkKilitliSecim()) return;
+
     if (this.selectedTadilattaCount() > 0) {
       this.toast.error(this.topluSevkKilitMesaji());
       return;
@@ -650,6 +691,8 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   closeTopluSevk() { this.showTopluSevkModal.set(false); }
 
   confirmTopluSevk() {
+    if (this.hasSevkKilitliSecim()) return;
+
     if (this.selectedTadilattaCount() > 0) {
       this.toast.error(this.topluSevkKilitMesaji());
       return;
@@ -747,6 +790,40 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
 
   // ===== 3K İşlem Blokajı =====
+  isSatirSevkKilidi(u: GridUrunDto): boolean {
+    const sandikDurumu = (u.sandikDurumMetni ?? '').trim();
+    return u.sandikSevkEdildiMi === true ||
+      u.sandikDurumId === 4 ||
+      sandikDurumu === 'SevkEdildi' ||
+      sandikDurumu === 'Sevk Edildi' ||
+      sandikDurumu === 'Sevkedildi';
+  }
+
+  isCheckboxDisabled(u: GridUrunDto): boolean {
+    return this.isSatirSevkKilidi(u);
+  }
+
+  private temizleSevkKilitliSecimler() {
+    const kilitliIdler = new Set(this.urunler()
+      .filter(u => this.isSatirSevkKilidi(u))
+      .map(u => u.cekiSatiriId));
+
+    if (kilitliIdler.size === 0) return;
+
+    const temizSecim = Array.from(this.selectedIds()).filter(id => !kilitliIdler.has(id));
+    if (temizSecim.length !== this.selectedIds().size) {
+      this.selectedIds.set(new Set(temizSecim));
+    }
+  }
+
+  private hasSevkKilitliSecim(): boolean {
+    const kilitliSayisi = this.selectedUrunler().filter(u => this.isSatirSevkKilidi(u)).length;
+    if (kilitliSayisi === 0) return false;
+
+    this.toast.error(`${kilitliSayisi} seçili ürün sevk edilmiş sandıkta olduğu için Grid işlemi yapılamaz.`);
+    return true;
+  }
+
   /** 3K tarafında işlem yapılmışsa Grid düzenleme yapamaz */
   isUcKIslemYapilmis(u: GridUrunDto): boolean {
     if (this.isTamamlanmisParcaliEksikSevkUrun(u)) return false;
@@ -828,6 +905,9 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
 
   getUcKBlokajMesaji(u: GridUrunDto): string {
+    if (this.isSatirSevkKilidi(u)) {
+      return this.sevkEdilmisSandikMesaji;
+    }
     if (this.isTadilatta(u)) {
       return 'Kalite: Tadilatta — düzenleme kilitli';
     }
@@ -862,6 +942,11 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   openAnaVeriPanel(urun: GridUrunDto) {
     if (!this.canEditCekiVerisi()) return;
+    if (this.isSatirSevkKilidi(urun)) {
+      this.toast.error(this.sevkEdilmisSandikMesaji);
+      return;
+    }
+
     this.anaVeriUrun.set(urun);
     this.anaSiraNo.set(urun.siraNo);
     this.anaBarkodNo.set(urun.barkodNo ?? '');
@@ -884,6 +969,11 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   saveAnaVeriPanel() {
     const urun = this.anaVeriUrun();
     if (!urun || this.anaSaving()) return;
+    if (this.isSatirSevkKilidi(urun)) {
+      this.anaError.set(this.sevkEdilmisSandikMesaji);
+      this.toast.error(this.sevkEdilmisSandikMesaji);
+      return;
+    }
 
     const dto: CekiSatiriAnaVeriGuncelleDto = {
       cekiSatiriId: urun.cekiSatiriId,
@@ -930,6 +1020,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   async deleteSelectedCekiSatirlari() {
     const ids = Array.from(this.selectedIds());
     if (!this.canDeleteCekiVerisi() || ids.length === 0) return;
+    if (this.hasSevkKilitliSecim()) return;
 
     const onay = await this.confirmService.ask({
       title: 'Çeki Satırlarını Sil',
@@ -1010,12 +1101,16 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   // ===== Toplu Kalite Atama =====
   openKaliteModal() {
+    if (this.hasSevkKilitliSecim()) return;
+
     this.kaliteDurumSecim.set(0);
     this.showKaliteModal.set(true);
   }
   closeKaliteModal() { this.showKaliteModal.set(false); }
 
   confirmKalite() {
+    if (this.hasSevkKilitliSecim()) return;
+
     if (!this.kaliteDurumSecim()) { this.toast.error('Kalite durumu seçiniz.'); return; }
     this.kaliteSaving.set(true);
     this.gridService.kaliteDurumGuncelle({
@@ -1044,12 +1139,16 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   // ===== Toplu Süreç Atama =====
   openSurecModal() {
+    if (this.hasSevkKilitliSecim()) return;
+
     this.surecDurumSecim.set(0);
     this.showSurecModal.set(true);
   }
   closeSurecModal() { this.showSurecModal.set(false); }
 
   confirmSurec() {
+    if (this.hasSevkKilitliSecim()) return;
+
     if (!this.surecDurumSecim()) { this.toast.error('Süreç durumu seçiniz.'); return; }
     this.surecSaving.set(true);
     this.gridService.surecDurumGuncelle({
@@ -1078,6 +1177,8 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   // ===== Talep Formu =====
   openAmbarTalepModal() {
+    if (this.hasSevkKilitliSecim()) return;
+
     const selected = this.selectedUrunler();
     if (selected.length === 0) {
       this.toast.error('Lütfen en az bir ürün seçiniz.');
@@ -1313,6 +1414,8 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   topluIslemOnayMetni = computed(() => this.topluIslemConfig[this.topluIslemTipi()]?.onay ?? '');
 
   openTopluIslemModal(tip: 'tamGeldi' | 'gridKapandi' | 'iptal' | 'geriAl') {
+    if (this.hasSevkKilitliSecim()) return;
+
     this.topluIslemTipi.set(tip);
     this.topluIslemAciklama.set('');
     this.showTopluIslemModal.set(true);
@@ -1320,6 +1423,8 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   closeTopluIslemModal() { this.showTopluIslemModal.set(false); }
 
   confirmTopluIslem() {
+    if (this.hasSevkKilitliSecim()) return;
+
     const tip = this.topluIslemTipi();
     const ids = Array.from(this.selectedIds());
     if (ids.length === 0) return;

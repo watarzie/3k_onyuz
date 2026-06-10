@@ -120,7 +120,7 @@
           <tr>
             @if (canSelectRows) {
             <th style="width:40px"><input type="checkbox" class="form-check-input" [checked]="allSelected"
-                (change)="toggleSelectAll()" /></th>
+                (change)="toggleSelectAll()" [disabled]="!hasSelectableRows" /></th>
             }
             <th style="width:45px">#</th>
             <th>Barkod</th>
@@ -155,7 +155,7 @@
               class="cursor-pointer" (click)="onRowClick(u, $event)">
             @if (canSelectRows) {
             <td><input type="checkbox" class="form-check-input" [checked]="isSelected(u.cekiSatiriId)"
-                (change)="toggleSelect(u.cekiSatiriId)" /></td>
+                (change)="toggleSelect(u.cekiSatiriId)" [disabled]="isCheckboxDisabled(u)" /></td>
             }
             <td class="text-muted">{{ u.siraNo }}</td>
             <td><code class="barkod">{{ u.barkodNo }}</code></td>
@@ -276,12 +276,14 @@
               <div class="d-flex gap-1 justify-content-end">
                 @if (canEditCekiVerisi()) {
                 <button class="btn btn-sm btn-action btn-admin-edit"
-                  (click)="openAnaVeriPanel(u); $event.stopPropagation()" title="Ceki verisini duzenle">
+                  (click)="openAnaVeriPanel(u); $event.stopPropagation()"
+                  [disabled]="isSatirSevkKilidi(u)"
+                  [title]="isSatirSevkKilidi(u) ? getUcKBlokajMesaji(u) : 'Ceki verisini duzenle'">
                   <i class="ri-file-edit-line"></i>
                 </button>
                 }
                 @if (canGridWrite) {
-                  @if (isUcKIslemYapilmis(u) || isTadilatta(u)) {
+                  @if (isSatirSevkKilidi(u) || isUcKIslemYapilmis(u) || isTadilatta(u)) {
                   <button class="btn btn-sm btn-action btn-locked" disabled [title]="getUcKBlokajMesaji(u)">
                     <i class="ri-lock-line"></i>
                   </button>

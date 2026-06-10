@@ -59,6 +59,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   private sub: Subscription = new Subscription();
   private pendingFocusCekiSatiriId: number | null = null;
+  private readonly sevkEdilmisSandikMesaji = 'Bu ürün sevk edilmiş sandıkta olduğu için işlem yapılamaz.';
 
   projeId = signal(0);
   sandikNo = signal('');
@@ -403,7 +404,17 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   }
 
   getRowClass(u: UcKUrunDto): string {
-    return (u.kalan ?? 0) > 0 ? 'row-kalan-var' : 'row-kalan-yok';
+    const kalanClass = (u.kalan ?? 0) > 0 ? 'row-kalan-var' : 'row-kalan-yok';
+    return this.isSatirSevkKilidi(u) ? `${kalanClass} row-sevk-kilitli` : kalanClass;
+  }
+
+  private isSatirSevkKilidi(u: UcKUrunDto): boolean {
+    const sandikDurumu = (u.sandikDurumMetni ?? '').trim();
+    return u.sandikSevkEdildiMi === true ||
+      u.sandikDurumId === 4 ||
+      sandikDurumu === 'SevkEdildi' ||
+      sandikDurumu === 'Sevk Edildi' ||
+      sandikDurumu === 'Sevkedildi';
   }
 
   getTipLabel(value: string): string {
@@ -975,6 +986,9 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   toggleSelect(id: number) {
     if (!this.canSelectRows) return;
 
+    const urun = this.filtered().find(u => u.cekiSatiriId === id);
+    if (urun && this.isCheckboxDisabled(urun)) return;
+
     const s = new Set(this.selectedIds());
     s.has(id) ? s.delete(id) : s.add(id);
     this.selectedIds.set(s);
@@ -982,23 +996,49 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   toggleSelectAll() {
     if (!this.canSelectRows) return;
 
-    if (this.selectedIds().size === this.filtered().length) {
+    const selectable = this.filtered().filter(u => !this.isCheckboxDisabled(u));
+    if (selectable.length === 0) {
       this.selectedIds.set(new Set());
-    } else {
-      this.selectedIds.set(new Set(this.filtered().map(u => u.cekiSatiriId)));
+      return;
     }
+
+    const s = new Set(this.selectedIds());
+    if (selectable.every(u => s.has(u.cekiSatiriId))) {
+      selectable.forEach(u => s.delete(u.cekiSatiriId));
+    } else {
+      selectable.forEach(u => s.add(u.cekiSatiriId));
+    }
+    this.selectedIds.set(s);
   }
   isSelected(id: number): boolean { return this.selectedIds().has(id); }
-  get allSelected(): boolean { return this.filtered().length > 0 && this.selectedIds().size === this.filtered().length; }
+  get allSelected(): boolean {
+    const selectable = this.filtered().filter(u => !this.isCheckboxDisabled(u));
+    return selectable.length > 0 && selectable.every(u => this.selectedIds().has(u.cekiSatiriId));
+  }
+
+  private getSelectedUrunler(): UcKUrunDto[] {
+    const ids = this.selectedIds();
+    return this.urunler().filter(u => ids.has(u.cekiSatiriId));
+  }
+
+  private hasSevkKilitliSecim(): boolean {
+    const kilitliSayisi = this.getSelectedUrunler().filter(u => this.isSatirSevkKilidi(u)).length;
+    if (kilitliSayisi === 0) return false;
+
+    this.toast.error(`${kilitliSayisi} seçili ürün sevk edilmiş sandıkta olduğu için işlem yapılamaz.`);
+    return true;
+  }
 
   // ===== Toplu Tam Geldi Modal =====
   openTopluTamGeldi() {
+    if (this.hasSevkKilitliSecim()) return;
     this.topluAciklama.set('');
     this.showTopluModal.set(true);
   }
   closeTopluTamGeldi() { this.showTopluModal.set(false); }
 
   confirmTopluTamGeldi() {
+    if (this.hasSevkKilitliSecim()) return;
     this.topluSaving.set(true);
     const dto: TopluTamGeldiDto = {
       projeId: this.projeId(),
@@ -1027,12 +1067,21 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   // ===== Toplu Tedarikçiden Karşıla Modal =====
   openTopluTedarikci() {
+    const selected = this.getSelectedUrunler();
+    const uygunsuzlar = selected.filter(u => !this.isTopluTedarikciyeUygun(u));
+
+    if (uygunsuzlar.length > 0) {
+      this.toast.error(`${uygunsuzlar.length} ürün Tedarikçiden Karşıla için uygun değil. Tekil işlemde kapalı olan satırlar toplu işlemle de karşılanamaz.`);
+      return;
+    }
+
     this.topluTedarikciAciklama.set('');
     this.showTopluTedarikciModal.set(true);
   }
   closeTopluTedarikci() { this.showTopluTedarikciModal.set(false); }
 
   confirmTopluTedarikci() {
+    if (this.hasSevkKilitliSecim()) return;
     this.topluTedarikciSaving.set(true);
     const dto: TopluTamGeldiDto = {
       projeId: this.projeId(),
@@ -1059,6 +1108,15 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     });
   }
 
+  private isTopluTedarikciyeUygun(u: UcKUrunDto): boolean {
+    if (this.isSatirSevkKilidi(u)) return false;
+    if (u.kalan <= 0) return false;
+    if (u.gridDurumuId === GridDurum.Iptal || u.gridDurumuId === GridDurum.GridKapandi) return false;
+
+    return this.isGridKaynakKarsilamaAcik(u) ||
+      this.isGeriGonderimSonrasiKaynakAcik(u);
+  }
+
   // ===== Checkbox [disabled] — sadece kesin blokaj durumları =====
   get canUcKWrite(): boolean {
     return this.permissions.canWrite('3k-modulu');
@@ -1070,6 +1128,10 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   openAnaVeriPanel(urun: UcKUrunDto) {
     if (!this.canEditCekiVerisi()) return;
+    if (this.isSatirSevkKilidi(urun)) {
+      this.toast.error(this.sevkEdilmisSandikMesaji);
+      return;
+    }
     this.anaVeriUrun.set(urun);
     this.anaSiraNo.set(urun.siraNo);
     this.anaBarkodNo.set(urun.barkodNo ?? '');
@@ -1137,6 +1199,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   async deleteSelectedCekiSatirlari() {
     const ids = Array.from(this.selectedIds());
     if (!this.canDeleteCekiVerisi() || ids.length === 0) return;
+    if (this.hasSevkKilitliSecim()) return;
 
     const onay = await this.confirmService.ask({
       title: 'Çeki Satırlarını Sil',
@@ -1186,6 +1249,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   }
 
   isEditDisabled(u: UcKUrunDto): boolean {
+    if (this.isSatirSevkKilidi(u)) return true;
     if (u.gridDurumuId === GridDurum.Iptal || u.gridDurumuId === GridDurum.GridKapandi) return true;
     if (u.kaliteDurumMetni === 'Tadilatta') return true;
 
@@ -1200,6 +1264,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   getEditDisabledReason(u: UcKUrunDto): string {
     if (!this.isEditDisabled(u)) return '';
+    if (this.isSatirSevkKilidi(u)) return this.sevkEdilmisSandikMesaji;
     if (u.kaliteDurumMetni === 'Tadilatta') return 'Kalite Tadilatta olduğu için işlem yapılamaz.';
     if (u.gridDurumuId === GridDurum.Iptal) return 'Grid iptal ettiği için işlem yapılamaz.';
     if (u.gridDurumuId === GridDurum.GridKapandi) return 'Grid kapandığı için işlem yapılamaz.';
@@ -1208,9 +1273,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   }
 
   isCheckboxDisabled(u: UcKUrunDto): boolean {
-    // Toplu seçimde satır kilitlemeyiz; uygunluk validasyonu backend tarafında yapılır.
-    // Kullanıcı geçersiz satırı seçtiyse manuel olarak listeden çıkarabilir.
-    return false;
+    return this.isSatirSevkKilidi(u);
   }
 
   // ===== Toplu Tam Geldi butonu aktif mi? =====
@@ -1218,7 +1281,9 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   get isTopluTamGeldiAllowed(): boolean {
     if (this.selectedIds().size === 0) return false;
     const ids = this.selectedIds();
-    return this.filtered().filter(u => ids.has(u.cekiSatiriId)).every(u =>
+    const selected = this.urunler().filter(u => ids.has(u.cekiSatiriId));
+    return selected.length > 0 && selected.every(u =>
+      !this.isSatirSevkKilidi(u) &&
       u.gridSevkDurumuId === GridSevkDurum.SevkEdildi &&
       u.ucKKarsilamaTipiId !== UcKDurum.TamGeldi &&
       (u.gridDurumuId !== GridDurum.TrafoSevk || (u.gridSevkMiktari ?? 0) > 0)
@@ -1244,6 +1309,11 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   // ===== Manuel Ürün Silme =====
   async manuelUrunSil(u: UcKUrunDto) {
+    if (this.isSatirSevkKilidi(u)) {
+      this.toast.error(this.sevkEdilmisSandikMesaji);
+      return;
+    }
+
     const onay = await this.confirmService.ask({
       title: 'Manuel Ürün Sil',
       message: `<strong>${u.aciklama}</strong> ürününü silmek istediğinize emin misiniz?<br><br><small class="text-muted">Bu işlem geri alınamaz.</small>`,
@@ -1269,6 +1339,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   // ===== Toplu Geri Al =====
   openTopluGeriAl() {
+    if (this.hasSevkKilitliSecim()) return;
     this.topluGeriAlAciklama.set('');
     this.showTopluGeriAlModal.set(true);
   }
@@ -1277,6 +1348,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   confirmTopluGeriAl() {
     const ids = Array.from(this.selectedIds());
     if (ids.length === 0) return;
+    if (this.hasSevkKilitliSecim()) return;
 
     this.topluGeriAlSaving.set(true);
     this.uckService.topluSifirla({
