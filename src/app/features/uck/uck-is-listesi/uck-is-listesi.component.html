@@ -57,17 +57,6 @@
       <span class="label">Eksik Gelen</span>
     </button>
 
-    <button type="button" class="summary-card transformer" [class.active]="activeTip() === 'trafo'" (click)="setTip('trafo')">
-      <span class="icon"><i class="ri-flashlight-line"></i></span>
-      <span class="value">{{ data()?.trafoSevk ?? 0 }}</span>
-      <span class="label">Trafo Sevk</span>
-    </button>
-
-    <button type="button" class="summary-card closed" [class.active]="activeTip() === 'kapandi'" (click)="setTip('kapandi')">
-      <span class="icon"><i class="ri-archive-line"></i></span>
-      <span class="value">{{ data()?.gridKapandi ?? 0 }}</span>
-      <span class="label">Grid Kapandı</span>
-    </button>
   </div>
 
   <div class="worklist-card">

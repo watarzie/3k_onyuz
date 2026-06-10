@@ -7,7 +7,7 @@ import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-ban
 import { UcKService } from '../../../core/services/uck.service';
 import { UcKIsListesiDto, UcKIsListesiItemDto } from '../../../shared/models';
 
-type IsTipi = 'all' | 'teslim' | 'yeniden' | 'eksik' | 'trafo' | 'kapandi';
+type IsTipi = 'all' | 'teslim' | 'yeniden' | 'eksik';
 
 interface UcKIsProjectGroup {
   key: number;
@@ -53,8 +53,6 @@ export class UcKIsListesiComponent implements OnInit {
     { key: 'teslim', label: '3K Teslim Bekleyen', count: () => this.data()?.teslimBekleyen ?? 0, icon: 'ri-inbox-archive-line' },
     { key: 'yeniden', label: 'Yeniden Sevk Gerekli', count: () => this.data()?.yenidenSevkGerekli ?? 0, icon: 'ri-loop-right-line' },
     { key: 'eksik', label: 'Eksik Gelen', count: () => this.data()?.eksikGelen ?? 0, icon: 'ri-error-warning-line' },
-    { key: 'trafo', label: 'Trafo Sevk', count: () => this.data()?.trafoSevk ?? 0, icon: 'ri-flashlight-line' },
-    { key: 'kapandi', label: 'Grid Kapandı', count: () => this.data()?.gridKapandi ?? 0, icon: 'ri-archive-line' },
   ];
 
   items = computed(() => {
