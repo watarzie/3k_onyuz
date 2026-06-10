@@ -279,6 +279,33 @@
   font-weight: 800;
 }
 
+.project-report-btn {
+  min-width: 68px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #FECACA;
+  border-radius: 8px;
+  color: #DC2626;
+  background: #FEF2F2;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+
+  &:hover:not(:disabled) {
+    color: #fff;
+    border-color: #DC2626;
+    background: #DC2626;
+  }
+
+  &:disabled {
+    opacity: .58;
+    cursor: not-allowed;
+  }
+}
+
 .project-row {
   cursor: pointer;
   transition: background-color .16s ease;

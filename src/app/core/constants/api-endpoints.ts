@@ -122,6 +122,7 @@ export const API = {
     STOK: `${BASE}/pdf/stok`,
     DEPO_SANDIK: (projeTipiId?: number | null) =>
       projeTipiId ? `${BASE}/pdf/depo-sandik?projeTipiId=${projeTipiId}` : `${BASE}/pdf/depo-sandik`,
+    DEPO_SANDIK_PROJE: (projeId: number) => `${BASE}/pdf/depo-sandik/proje/${projeId}`,
   },
   LOOKUP: {
     GET: `${BASE}/lookup`,

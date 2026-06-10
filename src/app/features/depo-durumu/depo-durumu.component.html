@@ -235,6 +235,7 @@
             @for (loc of visibleDepoLokasyonlari(); track loc.id) {
             <th class="text-uppercase text-secondary fw-semibold text-center border-bottom-0">{{ loc.deger }} DEPO</th>
             }
+            <th class="text-uppercase text-secondary fw-semibold text-center border-bottom-0">RAPOR</th>
           </tr>
         </thead>
         <tbody>
@@ -261,6 +262,22 @@
               }
             </td>
             }
+            <td class="text-center py-3">
+              <button
+                type="button"
+                class="btn btn-sm project-report-btn"
+                (click)="indirProjeDepoSandikPdf(p, $event)"
+                [disabled]="downloadingProjectPdf() !== null"
+                title="Proje depo sandık raporu"
+                aria-label="Proje depo sandık raporu indir">
+                @if (downloadingProjectPdf() === p.id) {
+                  <span class="spinner-border spinner-border-sm"></span>
+                } @else {
+                  <i class="ri-file-pdf-2-line"></i>
+                }
+                <span>PDF</span>
+              </button>
+            </td>
           </tr>
 
           @if (expandedProjeId() === p.id) {

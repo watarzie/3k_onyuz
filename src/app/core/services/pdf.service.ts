@@ -53,4 +53,8 @@ export class PdfService {
   depoSandikPdf(projeTipiId?: number | null): Observable<Blob> {
     return this.api.downloadFile(API.PDF.DEPO_SANDIK(projeTipiId));
   }
+
+  projeDepoSandikPdf(projeId: number): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.DEPO_SANDIK_PROJE(projeId));
+  }
 }

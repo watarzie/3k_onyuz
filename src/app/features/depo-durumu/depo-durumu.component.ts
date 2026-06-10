@@ -135,6 +135,7 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
   });
   depoSummaryLoading = computed(() => this.summaryLoading() || this.lokasyonLoading());
   downloadingPdf = signal(false);
+  downloadingProjectPdf = signal<number | null>(null);
   reportMenuOpen = signal(false);
   depoModalOpen = signal(false);
   yeniDepoAdi = signal('');
@@ -420,7 +421,7 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
   }
 
   getProjectTableColspan(): number {
-    return 4 + this.visibleDepoLokasyonlari().length;
+    return 5 + this.visibleDepoLokasyonlari().length;
   }
 
   private sortLokasyonlar(lokasyonlar: LookupItem[]): LookupItem[] {
@@ -593,5 +594,34 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
         this.toastService.error('Depo sandık raporu indirilirken bir hata oluştu.');
       }
     });
+  }
+
+  indirProjeDepoSandikPdf(proje: ProjeDto, event?: MouseEvent) {
+    event?.preventDefault();
+    event?.stopPropagation();
+
+    if (this.downloadingProjectPdf() !== null) return;
+
+    this.downloadingProjectPdf.set(proje.id);
+    this.pdfService.projeDepoSandikPdf(proje.id).subscribe({
+      next: (blob) => {
+        this.downloadingProjectPdf.set(null);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const tarih = new Date().toISOString().split('T')[0].replace(/-/g, '');
+        a.download = `${this.sanitizeFilePart(proje.projeNo)}_DepoSandikRaporu_${tarih}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.downloadingProjectPdf.set(null);
+        this.toastService.error('Proje depo sandık raporu indirilirken bir hata oluştu.');
+      }
+    });
+  }
+
+  private sanitizeFilePart(value: string): string {
+    return (value || 'Proje').replace(/[\\/:*?"<>|]+/g, '_').trim() || 'Proje';
   }
 }
