@@ -52,11 +52,13 @@ export class EksikSahaOlusturComponent implements OnInit {
   loadingProjeler = signal(false);
   saving = signal(false);
   selectedUrunId = signal<number | null>(null);
+  selectedUrunMiktar = signal(0);
   projeSecimiId = signal<number | null>(null);
   projeDropdownOpen = signal(false);
 
   kaynakProjeler = signal<ProjeDto[]>([]);
   selectedProjeIds = signal<number[]>([]);
+  aktifKaynakProjeId = signal<number | null>(null);
   eksikUrunler = signal<EksikUrunForSandikDto[]>([]);
   sandiklar = signal<SepetSandik[]>([]);
   private lastDefaultProjeNo = '';
@@ -69,8 +71,10 @@ export class EksikSahaOlusturComponent implements OnInit {
 
   filteredUrunler = computed(() => {
     const term = this.searchTerm().trim().toLocaleLowerCase('tr-TR');
+    const aktifProjeId = this.aktifKaynakProjeId();
     return this.eksikUrunler()
       .filter(u => this.getKalanAdet(u.cekiSatiriId) > 0)
+      .filter(u => !aktifProjeId || u.projeId === aktifProjeId)
       .filter(u => {
         if (!term) return true;
         return [
@@ -160,13 +164,19 @@ export class EksikSahaOlusturComponent implements OnInit {
 
   loadEksikler(): void {
     const projeIds = this.selectedProjeIds();
+    const aktifProjeId = this.aktifKaynakProjeId();
     this.refreshKaynakProjeNo();
     this.updateDefaultProjeNo();
 
     if (projeIds.length === 0) {
       this.loading.set(false);
+      this.aktifKaynakProjeId.set(null);
       this.eksikUrunler.set([]);
       return;
+    }
+
+    if (aktifProjeId && !projeIds.includes(aktifProjeId)) {
+      this.aktifKaynakProjeId.set(null);
     }
 
     this.loading.set(true);
@@ -228,6 +238,10 @@ export class EksikSahaOlusturComponent implements OnInit {
     return proje ? `${proje.projeNo} - ${proje.musteri || '-'}` : 'Proje seçin';
   }
 
+  filterByKaynakProje(projeId: number): void {
+    this.aktifKaynakProjeId.update(aktifId => aktifId === projeId ? null : projeId);
+  }
+
   removeKaynakProje(projeId: number): void {
     const kullanilanUrunVar = this.sandiklar()
       .flatMap(s => s.urunler)
@@ -238,7 +252,11 @@ export class EksikSahaOlusturComponent implements OnInit {
       return;
     }
 
-    this.selectedProjeIds.update(ids => ids.filter(id => id !== projeId));
+    const kalanProjeIds = this.selectedProjeIds().filter(id => id !== projeId);
+    this.selectedProjeIds.set(kalanProjeIds);
+    if (this.aktifKaynakProjeId() === projeId) {
+      this.aktifKaynakProjeId.set(null);
+    }
     this.loadEksikler();
   }
 
@@ -285,25 +303,57 @@ export class EksikSahaOlusturComponent implements OnInit {
   }
 
   openSandikSecimi(urun: EksikUrunForSandikDto): void {
-    if (this.getKalanAdet(urun.cekiSatiriId) <= 0) {
+    const kalan = this.getKalanAdet(urun.cekiSatiriId);
+    if (kalan <= 0) {
       this.toast.warning('Bu ürünün tüm kalan adedi sepete alındı.');
       return;
     }
 
     this.selectedUrunId.set(urun.cekiSatiriId);
+    this.selectedUrunMiktar.set(kalan);
   }
 
   closeSandikSecimi(): void {
     this.selectedUrunId.set(null);
+    this.selectedUrunMiktar.set(0);
   }
 
-  addUrunToSandik(cekiSatiriId: number, sandikId: string): void {
+  setSelectedUrunMiktar(value: number | string): void {
+    const urun = this.selectedUrun();
+    if (!urun) {
+      this.selectedUrunMiktar.set(0);
+      return;
+    }
+
+    const numericValue = typeof value === 'string'
+      ? Number(value.replace(',', '.'))
+      : Number(value);
+
+    if (!Number.isFinite(numericValue)) {
+      return;
+    }
+
+    const kalan = this.getKalanAdet(urun.cekiSatiriId);
+    this.selectedUrunMiktar.set(Math.min(Math.max(numericValue, 0), kalan));
+  }
+
+  addUrunToSandik(cekiSatiriId: number, sandikId: string, miktar: number): void {
     const urun = this.eksikUrunler().find(u => u.cekiSatiriId === cekiSatiriId);
     if (!urun) return;
 
     const kalan = this.getKalanAdet(cekiSatiriId);
+    const numericMiktar = Number(miktar);
+    const eklenecekMiktar = Number.isFinite(numericMiktar)
+      ? Math.min(Math.max(numericMiktar, 0), kalan)
+      : 0;
+
     if (kalan <= 0) {
       this.toast.warning('Bu ürünün tüm kalan adedi sepete alındı.');
+      return;
+    }
+
+    if (eklenecekMiktar <= 0) {
+      this.toast.warning('Eklenecek adet 0\'dan büyük olmalı.');
       return;
     }
 
@@ -315,7 +365,7 @@ export class EksikSahaOlusturComponent implements OnInit {
         return {
           ...sandik,
           urunler: sandik.urunler.map(u =>
-            u.draftId === mevcut.draftId ? { ...u, miktar: u.miktar + kalan } : u
+            u.draftId === mevcut.draftId ? { ...u, miktar: u.miktar + eklenecekMiktar } : u
           )
         };
       }
@@ -327,7 +377,7 @@ export class EksikSahaOlusturComponent implements OnInit {
           {
             ...urun,
             draftId: this.createDraftId(),
-            miktar: kalan,
+            miktar: eklenecekMiktar,
             not: null,
           }
         ]
@@ -339,25 +389,8 @@ export class EksikSahaOlusturComponent implements OnInit {
     const cekiSatiriId = this.selectedUrunId();
     if (!cekiSatiriId) return;
 
-    this.addUrunToSandik(cekiSatiriId, sandikId);
+    this.addUrunToSandik(cekiSatiriId, sandikId, this.selectedUrunMiktar());
     this.closeSandikSecimi();
-  }
-
-  setUrunMiktar(sandikId: string, draftId: string, value: number | string): void {
-    const numericValue = Number(value);
-    this.sandiklar.update(list => list.map(sandik => {
-      if (sandik.id !== sandikId) return sandik;
-
-      return {
-        ...sandik,
-        urunler: sandik.urunler.map(urun => {
-          if (urun.draftId !== draftId) return urun;
-          const max = urun.miktar + this.getKalanAdet(urun.cekiSatiriId);
-          const miktar = Number.isFinite(numericValue) ? Math.min(Math.max(numericValue, 0), max) : urun.miktar;
-          return { ...urun, miktar };
-        }).filter(urun => urun.miktar > 0)
-      };
-    }));
   }
 
   setUrunNot(sandikId: string, draftId: string, value: string): void {

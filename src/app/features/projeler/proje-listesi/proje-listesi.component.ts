@@ -11,7 +11,7 @@ import { SandikService } from '../../../core/services/sandik.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
-import { ProjeDto, SandikDto, SevkiyatDto } from '../../../shared/models/index';
+import { CekiRevizyonOnizlemeSonuc, ProjeDto, SandikDto, SevkiyatDto } from '../../../shared/models/index';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmService } from '../../../core/services/confirm.service';
 import { PdfService } from '../../../core/services/pdf.service';
@@ -99,6 +99,12 @@ export class ProjeListesiComponent implements OnInit {
     const menuKod = this.route.snapshot.data['menuKod'];
     return typeof menuKod === 'string' && this.permissions.canWrite(menuKod);
   });
+  canUploadRevision = computed(() =>
+    !this.isSevkEdilen() &&
+    !this.isSahaYonetimi() &&
+    !this.isYedekYonetimi() &&
+    this.permissions.canWrite('ceki-revizyon-yukle')
+  );
 
   projeler = signal<ProjeDto[]>([]);
   loading = signal(true);
@@ -115,8 +121,23 @@ export class ProjeListesiComponent implements OnInit {
 
   // Çeki yükleme
   showUploadModal = signal(false);
+  uploadMode = signal<'normal' | 'revizyon'>('normal');
   selectedFile = signal<File | null>(null);
   uploading = signal(false);
+  previewingRevision = signal(false);
+  revisionPreview = signal<CekiRevizyonOnizlemeSonuc | null>(null);
+  revisionFilter = signal<'all' | 'A' | 'U' | 'D'>('all');
+  filteredRevisionRows = computed(() => {
+    const preview = this.revisionPreview();
+    if (!preview) return [];
+
+    const filter = this.revisionFilter();
+    if (filter === 'all') {
+      return preview.satirlar;
+    }
+
+    return preview.satirlar.filter(row => row.checkKodu === filter);
+  });
   uploadResult = signal<{ success: boolean; message: string } | null>(null);
   dragOver = signal(false);
 
@@ -494,15 +515,20 @@ export class ProjeListesiComponent implements OnInit {
     });
   }
 
-  openUploadModal() {
+  openUploadModal(mode: 'normal' | 'revizyon' = 'normal') {
+    this.uploadMode.set(mode);
     this.showUploadModal.set(true);
     this.selectedFile.set(null);
+    this.revisionPreview.set(null);
+    this.revisionFilter.set('all');
     this.uploadResult.set(null);
   }
 
   closeUploadModal() {
     this.showUploadModal.set(false);
     this.selectedFile.set(null);
+    this.revisionPreview.set(null);
+    this.revisionFilter.set('all');
     this.uploadResult.set(null);
   }
 
@@ -510,6 +536,8 @@ export class ProjeListesiComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       this.selectedFile.set(input.files[0]);
+      this.revisionPreview.set(null);
+      this.revisionFilter.set('all');
       this.uploadResult.set(null);
     }
   }
@@ -530,6 +558,8 @@ export class ProjeListesiComponent implements OnInit {
       const file = event.dataTransfer.files[0];
       if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
         this.selectedFile.set(file);
+        this.revisionPreview.set(null);
+        this.revisionFilter.set('all');
         this.uploadResult.set(null);
       } else {
         this.uploadResult.set({ success: false, message: 'Sadece .xlsx veya .xls dosyaları kabul edilir.' });
@@ -537,18 +567,73 @@ export class ProjeListesiComponent implements OnInit {
     }
   }
 
+  previewRevision() {
+    const file = this.selectedFile();
+    if (!file) return;
+
+    this.previewingRevision.set(true);
+    this.uploadResult.set(null);
+    this.revisionPreview.set(null);
+    this.revisionFilter.set('all');
+
+    this.projeService.cekiRevizyonOnizle(file).subscribe({
+      next: (res) => {
+        this.previewingRevision.set(false);
+        if (res.isSuccess && res.value) {
+          this.revisionPreview.set(res.value);
+          this.revisionFilter.set('all');
+          if (res.value.uygulanabilirMi) {
+            this.toastService.success(res.value.mesaj);
+          } else {
+            this.uploadResult.set({ success: false, message: res.value.mesaj });
+            this.toastService.error(res.value.mesaj);
+          }
+        } else {
+          this.uploadResult.set({ success: false, message: res.error ?? 'Revizyon ön izleme başarısız.' });
+          this.toastService.error(res.error ?? 'Revizyon ön izleme başarısız. Lütfen dosyayı kontrol edin.');
+        }
+      },
+      error: () => {
+        this.previewingRevision.set(false);
+        this.uploadResult.set({ success: false, message: 'Revizyon ön izleme sırasında hata oluştu.' });
+        this.toastService.error('Sunucuyla bağlantı kurulurken hata oluştu.');
+      },
+    });
+  }
+
   uploadCeki() {
     const file = this.selectedFile();
     if (!file) return;
 
+    if (this.uploadMode() === 'revizyon' && !this.revisionPreview()) {
+      this.previewRevision();
+      return;
+    }
+
+    if (this.uploadMode() === 'revizyon' && this.revisionPreview() && !this.revisionPreview()!.uygulanabilirMi) {
+      this.uploadResult.set({ success: false, message: 'Ön izlemede engelli satırlar var. Revizyon uygulanamaz.' });
+      return;
+    }
+
     this.uploading.set(true);
     this.uploadResult.set(null);
 
-    this.projeService.cekiYukle(file).subscribe({
-      next: (res) => {
+    const request$: any = this.uploadMode() === 'revizyon'
+      ? this.projeService.cekiRevizyonYukle(file)
+      : this.projeService.cekiYukle(file);
+
+    request$.subscribe({
+      next: (res: any) => {
         this.uploading.set(false);
         if (res.isSuccess && res.value) {
-          this.toastService.success(`Çeki başarıyla yüklendi! ${res.value.satirSayisi} satır, ${res.value.sandikSayisi} sandık oluşturuldu.`);
+          const value = res.value as any;
+          if (this.uploadMode() === 'revizyon') {
+            this.toastService.success(
+              value.mesaj ?? `Revizyon uygulandı. Eklenen: ${value.eklenenSatirSayisi}, Güncellenen: ${value.guncellenenSatirSayisi}, Silinen: ${value.silinenSatirSayisi}.`
+            );
+          } else {
+            this.toastService.success(`Çeki başarıyla yüklendi! ${value.satirSayisi} satır, ${value.sandikSayisi} sandık oluşturuldu.`);
+          }
           this.closeUploadModal();
           this.loadProjeler(); // Listeyi yenile
         } else {
@@ -566,7 +651,62 @@ export class ProjeListesiComponent implements OnInit {
 
   removeFile() {
     this.selectedFile.set(null);
+    this.revisionPreview.set(null);
+    this.revisionFilter.set('all');
     this.uploadResult.set(null);
+  }
+
+  setRevisionFilter(filter: 'all' | 'A' | 'U' | 'D') {
+    this.revisionFilter.set(filter);
+  }
+
+  revisionOperationClass(checkKodu: string): string {
+    if (checkKodu === 'A') return 'is-add';
+    if (checkKodu === 'U') return 'is-update';
+    if (checkKodu === 'D') return 'is-delete';
+    return '';
+  }
+
+  revisionOperationLabel(checkKodu: string): string {
+    if (checkKodu === 'A') return 'Eklenecek';
+    if (checkKodu === 'U') return 'Güncellenecek';
+    if (checkKodu === 'D') return 'Silinecek';
+    return checkKodu;
+  }
+
+  formatRevisionChange(change: string): string {
+    if (!change) return '';
+
+    const separatorIndex = change.indexOf(':');
+    if (separatorIndex < 0) return change;
+
+    const fieldName = change.slice(0, separatorIndex).trim();
+    const rawValue = change.slice(separatorIndex + 1).trim();
+    const arrow = rawValue.includes('→') ? '→' : rawValue.includes('->') ? '->' : '';
+
+    if (!arrow) {
+      return `${fieldName}: ${this.formatRevisionValue(fieldName, rawValue)}`;
+    }
+
+    const [oldValue, newValue] = rawValue.split(arrow).map(value => value.trim());
+    return `${fieldName}: ${this.formatRevisionValue(fieldName, oldValue)} → ${this.formatRevisionValue(fieldName, newValue)}`;
+  }
+
+  private formatRevisionValue(fieldName: string, value: string): string {
+    const normalized = (value ?? '').trim();
+    if (!normalized || normalized === '-') return '-';
+
+    const numericFields = ['miktar', 'sıra no', 'birim'];
+    const isNumericField = numericFields.includes(fieldName.toLocaleLowerCase('tr-TR'));
+    const numericValue = normalized.replace(',', '.');
+
+    if (!isNumericField || !/^-?\d+(\.\d+)?$/.test(numericValue)) {
+      return normalized;
+    }
+
+    const [integerPart, decimalPart] = numericValue.split('.');
+    const cleanDecimal = (decimalPart ?? '').replace(/0+$/, '');
+    return cleanDecimal ? `${integerPart}.${cleanDecimal}` : integerPart;
   }
 
   formatFileSize(bytes: number): string {

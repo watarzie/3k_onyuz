@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiSatiriDto, ProjeDropdownDto, SevkiyatDto, EksiklerdenSahaProjesiOlusturDto } from '../../shared/models/index';
+import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiRevizyonOnizlemeSonuc, CekiRevizyonSonuc, CekiSatiriDto, ProjeDropdownDto, SevkiyatDto, EksiklerdenSahaProjesiOlusturDto } from '../../shared/models/index';
 
 /**
  * ProjeController (2 endpoint) + CekiController (2 endpoint):
@@ -111,6 +111,26 @@ export class ProjeService {
     const formData = new FormData();
     formData.append('dosya', dosya);
     return this.api.postFormData<CekiYuklemeResultDto>(API.CEKI.YUKLE, formData);
+  }
+
+  cekiRevizyonOnizle(dosya: File): Observable<ApiResult<CekiRevizyonOnizlemeSonuc>> {
+    const formData = new FormData();
+    formData.append('dosya', dosya);
+    return this.api.postFormData<CekiRevizyonOnizlemeSonuc>(
+      API.CEKI.REVIZYON_ONIZLE,
+      formData,
+      this.menuOptions('ceki-revizyon-yukle')
+    );
+  }
+
+  cekiRevizyonYukle(dosya: File): Observable<ApiResult<CekiRevizyonSonuc>> {
+    const formData = new FormData();
+    formData.append('dosya', dosya);
+    return this.api.postFormData<CekiRevizyonSonuc>(
+      API.CEKI.REVIZYON_YUKLE,
+      formData,
+      this.menuOptions('ceki-revizyon-yukle')
+    );
   }
 
   getCekiSatirlari(cekiId: number): Observable<ApiResult<CekiSatiriDto[]>> {

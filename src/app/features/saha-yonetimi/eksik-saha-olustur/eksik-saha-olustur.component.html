@@ -100,11 +100,26 @@
   @if (seciliKaynakProjeler().length > 0) {
     <div class="source-project-chips">
       @for (proje of seciliKaynakProjeler(); track proje.id) {
-        <button type="button" class="source-project-chip" (click)="removeKaynakProje(proje.id)">
+        <div
+          class="source-project-chip"
+          role="button"
+          tabindex="0"
+          [class.active]="aktifKaynakProjeId() === proje.id"
+          (click)="filterByKaynakProje(proje.id)"
+          (keydown.enter)="filterByKaynakProje(proje.id)"
+          (keydown.space)="$event.preventDefault(); filterByKaynakProje(proje.id)">
           <span>{{ proje.projeNo }}</span>
           <small>{{ proje.musteri || '-' }}</small>
-          <i class="ri-close-line"></i>
-        </button>
+          <button
+            type="button"
+            class="source-project-chip-remove"
+            aria-label="Projeyi kaldır"
+            (click)="$event.stopPropagation(); removeKaynakProje(proje.id)"
+            (keydown.enter)="$event.stopPropagation()"
+            (keydown.space)="$event.stopPropagation()">
+            <i class="ri-close-line"></i>
+          </button>
+        </div>
       }
     </div>
   } @else {
@@ -308,13 +323,10 @@
                     </div>
                   </div>
                   <div class="basket-item-controls">
-                    <input
-                      type="number"
-                      class="form-control"
-                      min="0"
-                      step="0.0001"
-                      [ngModel]="urun.miktar"
-                      (ngModelChange)="setUrunMiktar(sandik.id, urun.draftId, $event)" />
+                    <div class="basket-item-qty">
+                      <strong>{{ formatAdet(urun.miktar) }}</strong>
+                      <small>{{ urun.birim }}</small>
+                    </div>
                     <button type="button" class="btn btn-sm btn-light text-danger" (click)="removeUrun(sandik.id, urun.draftId)">
                       <i class="ri-close-line"></i>
                     </button>
@@ -354,9 +366,38 @@
         </button>
       </div>
 
+      <div class="sandik-picker-quantity">
+        <div class="quantity-card-head">
+          <div>
+            <span>Eklenecek adet</span>
+            <strong>{{ formatAdet(selectedUrunMiktar()) }} {{ seciliUrun.birim }}</strong>
+          </div>
+          <small>Kalan {{ formatAdet(getKalanAdet(seciliUrun.cekiSatiriId)) }} {{ seciliUrun.birim }}</small>
+        </div>
+        <div class="quantity-control">
+          <label class="quantity-input-shell" for="sandikPickerMiktar">
+            <input
+              id="sandikPickerMiktar"
+              type="number"
+              min="0"
+              step="0.0001"
+              [ngModel]="selectedUrunMiktar()"
+              (ngModelChange)="setSelectedUrunMiktar($event)" />
+            <span>{{ seciliUrun.birim }}</span>
+          </label>
+          <button
+            type="button"
+            class="quantity-all-button"
+            (click)="setSelectedUrunMiktar(getKalanAdet(seciliUrun.cekiSatiriId))">
+            <i class="ri-check-double-line"></i>
+            Tümünü ekle
+          </button>
+        </div>
+      </div>
+
       <div class="sandik-picker-list">
         @for (sandik of sandiklar(); track sandik.id) {
-          <button type="button" class="sandik-choice" (click)="addSelectedUrunToSandik(sandik.id)">
+          <button type="button" class="sandik-choice" [disabled]="selectedUrunMiktar() <= 0" (click)="addSelectedUrunToSandik(sandik.id)">
             <span class="choice-no">{{ sandik.sandikNo || '-' }}</span>
             <span class="choice-main">
               <strong>{{ sandik.sandikIsmi || 'İsimsiz sandık' }}</strong>

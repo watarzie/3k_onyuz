@@ -22,10 +22,17 @@
         <button class="btn btn-primary-gradient" (click)="openProjeOlusturModal()">
           <i class="ri-add-line me-2"></i>Proje Oluştur
         </button>
-      } @else if (!isSevkEdilen() && !isSahaYonetimi() && !isYedekYonetimi() && canWriteCurrentMenu()) {
-        <button class="btn btn-primary-gradient" (click)="openUploadModal()">
-          <i class="ri-upload-2-line me-2"></i>Çeki Yükle
-        </button>
+      } @else if (!isSevkEdilen() && !isSahaYonetimi() && !isYedekYonetimi() && (canWriteCurrentMenu() || canUploadRevision())) {
+        @if (canUploadRevision()) {
+          <button class="btn btn-outline-warning" (click)="openUploadModal('revizyon')">
+            <i class="ri-git-branch-line me-2"></i>Revizyon Yükle
+          </button>
+        }
+        @if (canWriteCurrentMenu()) {
+          <button class="btn btn-primary-gradient" (click)="openUploadModal('normal')">
+            <i class="ri-upload-2-line me-2"></i>Çeki Yükle
+          </button>
+        }
       }
     </div>
   </div>
@@ -114,7 +121,7 @@
           <h5 class="fw-semibold mb-2">Henüz proje bulunmuyor</h5>
           <p class="text-muted mb-3">Başlamak için bir çeki dosyası yükleyin</p>
           @if (canWriteCurrentMenu()) {
-            <button class="btn btn-primary-gradient" (click)="openUploadModal()">
+            <button class="btn btn-primary-gradient" (click)="openUploadModal('normal')">
               <i class="ri-upload-2-line me-2"></i>Çeki Yükle
             </button>
           }
@@ -383,9 +390,12 @@
 <!-- ===== Çeki Yükle Modal ===== -->
 @if (showUploadModal()) {
   <div class="modal-overlay" (click)="closeUploadModal()"></div>
-  <div class="upload-modal">
+  <div class="upload-modal" [class.revision-mode]="uploadMode() === 'revizyon'">
     <div class="modal-header d-flex align-items-center justify-content-between">
-      <h5 class="fw-semibold mb-0"><i class="ri-upload-2-line me-2"></i>Çeki Dosyası Yükle</h5>
+      <h5 class="fw-semibold mb-0">
+        <i [class]="uploadMode() === 'revizyon' ? 'ri-git-branch-line me-2' : 'ri-upload-2-line me-2'"></i>
+        {{ uploadMode() === 'revizyon' ? 'Revizyon Çekisi Yükle' : 'Çeki Dosyası Yükle' }}
+      </h5>
       <button class="btn btn-sm border-0" (click)="closeUploadModal()"><i class="ri-close-line fs-5"></i></button>
     </div>
     <div class="modal-body">
@@ -405,7 +415,7 @@
         <div class="upload-zone text-center p-5 border rounded bg-light"
              (dragover)="onDragOver($event)" (drop)="onDrop($event)">
           <i class="ri-file-excel-2-line text-primary mb-3" style="font-size: 3rem;"></i>
-          <h6>Excel dosyasını sürükleyip bırakın</h6>
+          <h6>{{ uploadMode() === 'revizyon' ? 'Revizyon Excel dosyasını sürükleyip bırakın' : 'Excel dosyasını sürükleyip bırakın' }}</h6>
           <p class="text-muted small mb-3">Sadece .xlsx dosyaları kabul edilir</p>
           <input type="file" id="fileInput" class="d-none" accept=".xlsx" (change)="onFileSelected($event)">
           <button class="btn btn-outline-primary btn-sm" onclick="document.getElementById('fileInput').click()">Dosya Seç</button>
@@ -419,21 +429,96 @@
             <h6 class="mb-0">{{ selectedFile()!.name }}</h6>
             <small class="text-muted">{{ (selectedFile()!.size / 1024).toFixed(2) }} KB</small>
           </div>
-          <button class="btn btn-sm btn-light text-danger" (click)="selectedFile.set(null)" [disabled]="uploading()">
+          <button class="btn btn-sm btn-light text-danger" (click)="removeFile()" [disabled]="uploading() || previewingRevision()">
             <i class="ri-delete-bin-line"></i>
           </button>
         </div>
       }
+
+      @if (uploadMode() === 'revizyon' && revisionPreview(); as preview) {
+        <div class="revision-preview mt-3">
+          <div class="revision-preview-header">
+            <div>
+              <div class="revision-preview-title">Revizyon Ön İzleme</div>
+              <div class="revision-preview-subtitle">{{ preview.projeNo }} · {{ preview.toplamIsaretliSatirSayisi }} işaretli satır</div>
+            </div>
+            <span class="revision-status" [class.is-ready]="preview.uygulanabilirMi" [class.is-blocked]="!preview.uygulanabilirMi">
+              {{ preview.uygulanabilirMi ? 'Uygulanabilir' : 'Engel Var' }}
+            </span>
+          </div>
+
+          <div class="revision-summary">
+            <button type="button" class="revision-summary-item is-all" [class.is-active]="revisionFilter() === 'all'" (click)="setRevisionFilter('all')">
+              <span>{{ preview.toplamIsaretliSatirSayisi }}</span>
+              <small>Tümü</small>
+            </button>
+            <button type="button" class="revision-summary-item is-add" [class.is-active]="revisionFilter() === 'A'" (click)="setRevisionFilter('A')">
+              <span>{{ preview.eklenenSatirSayisi }}</span>
+              <small>Eklenecek</small>
+            </button>
+            <button type="button" class="revision-summary-item is-update" [class.is-active]="revisionFilter() === 'U'" (click)="setRevisionFilter('U')">
+              <span>{{ preview.guncellenenSatirSayisi }}</span>
+              <small>Güncellenecek</small>
+            </button>
+            <button type="button" class="revision-summary-item is-delete" [class.is-active]="revisionFilter() === 'D'" (click)="setRevisionFilter('D')">
+              <span>{{ preview.silinecekSatirSayisi }}</span>
+              <small>Silinecek</small>
+            </button>
+          </div>
+
+          <div class="revision-row-list">
+            @for (row of filteredRevisionRows(); track row.excelSatirNo) {
+              <div class="revision-row" [ngClass]="revisionOperationClass(row.checkKodu)">
+                <div class="revision-row-main">
+                  <span class="revision-op" [ngClass]="revisionOperationClass(row.checkKodu)">{{ revisionOperationLabel(row.checkKodu) }}</span>
+                  <div class="revision-row-text">
+                    <strong>#{{ row.yeniSiraNo }} · {{ row.tanim || '-' }}</strong>
+                  </div>
+                </div>
+
+                @if (row.degisiklikler.length > 0) {
+                  <div class="revision-changes">
+                    @for (change of row.degisiklikler; track change) {
+                      <span>{{ formatRevisionChange(change) }}</span>
+                    }
+                  </div>
+                }
+              </div>
+            } @empty {
+              <div class="revision-empty">
+                Bu filtrede gösterilecek satır yok.
+              </div>
+            }
+          </div>
+        </div>
+      }
     </div>
     <div class="modal-footer d-flex gap-2">
-      <button class="btn btn-outline flex-grow-1" (click)="closeUploadModal()" [disabled]="uploading()">İptal</button>
-      <button class="btn btn-primary-gradient flex-grow-1" (click)="uploadCeki()" [disabled]="!selectedFile() || uploading()">
-        @if (uploading()) {
-          <span class="spinner-border spinner-border-sm me-2"></span>Yükleniyor...
-        } @else {
-          Yükle ve İşle
-        }
-      </button>
+      <button class="btn btn-outline flex-grow-1" (click)="closeUploadModal()" [disabled]="uploading() || previewingRevision()">İptal</button>
+      @if (uploadMode() === 'revizyon') {
+        <button class="btn btn-outline-primary flex-grow-1" (click)="previewRevision()" [disabled]="!selectedFile() || uploading() || previewingRevision()">
+          @if (previewingRevision()) {
+            <span class="spinner-border spinner-border-sm me-2"></span>Ön İzleniyor...
+          } @else {
+            Ön İzle
+          }
+        </button>
+        <button class="btn btn-primary-gradient flex-grow-1" (click)="uploadCeki()" [disabled]="!selectedFile() || !revisionPreview() || !revisionPreview()!.uygulanabilirMi || uploading() || previewingRevision()">
+          @if (uploading()) {
+            <span class="spinner-border spinner-border-sm me-2"></span>Uygulanıyor...
+          } @else {
+            Revizyonu Uygula
+          }
+        </button>
+      } @else {
+        <button class="btn btn-primary-gradient flex-grow-1" (click)="uploadCeki()" [disabled]="!selectedFile() || uploading()">
+          @if (uploading()) {
+            <span class="spinner-border spinner-border-sm me-2"></span>Yükleniyor...
+          } @else {
+            Yükle ve İşle
+          }
+        </button>
+      }
     </div>
   </div>
 }
