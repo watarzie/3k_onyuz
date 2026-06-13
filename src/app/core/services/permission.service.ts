@@ -36,6 +36,7 @@ export class PermissionService {
   allowedRoutes = computed(() => this._allowedRoutes());
 
   private loadPromise: Promise<boolean> | null = null;
+  private loadVersion = 0;
 
   /**
    * Route Guard'lar tarafından yetki sisteminin yüklendiğinden emin olmak için çağrılır.
@@ -46,9 +47,14 @@ export class PermissionService {
     }
     
     if (!this.loadPromise) {
+      const requestVersion = this.loadVersion;
       this.loadPromise = new Promise<boolean>((resolve) => {
         this.http.get<MenuTreeDto[]>(API.MENU.KULLANICI_MENU).subscribe({
           next: (menuAgaci) => {
+            if (requestVersion !== this.loadVersion) {
+              resolve(false);
+              return;
+            }
             this._menuAgaci.set(menuAgaci);
             const map = new Map<string, number>();
             const routes = new Set<string>();
@@ -59,7 +65,15 @@ export class PermissionService {
             resolve(true);
           },
           error: () => {
-            this.loaded.set(true);
+            if (requestVersion !== this.loadVersion) {
+              resolve(false);
+              return;
+            }
+            this._menuAgaci.set([]);
+            this._yetkiMap.set(new Map());
+            this._allowedRoutes.set(new Set());
+            this.loaded.set(false);
+            this.loadPromise = null;
             resolve(false);
           },
         });
@@ -73,8 +87,13 @@ export class PermissionService {
    * Login sonrası çağrılır.
    * Backend'den sadece yetkili menüleri çeker.
    */
-  loadPermissions(): void {
-    this.ensurePermissionsLoaded();
+  loadPermissions(): Promise<boolean> {
+    return this.ensurePermissionsLoaded();
+  }
+
+  reloadPermissions(): Promise<boolean> {
+    this.clear();
+    return this.ensurePermissionsLoaded();
   }
 
   /** Menüye erişim var mı? (W veya R) */
@@ -102,10 +121,12 @@ export class PermissionService {
 
   /** Oturumu temizle */
   clear(): void {
+    this.loadVersion++;
     this._menuAgaci.set([]);
     this._yetkiMap.set(new Map());
     this._allowedRoutes.set(new Set());
     this.loaded.set(false);
+    this.loadPromise = null;
   }
 
   // ===== Private Helpers =====

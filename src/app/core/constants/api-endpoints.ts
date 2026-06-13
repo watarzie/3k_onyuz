@@ -23,6 +23,7 @@ export const API = {
     LIST: `${BASE}/proje`,
     DROPDOWN: `${BASE}/proje/dropdown`,
     CREATE: `${BASE}/proje`,
+    EKSIKLERDEN_SAHA_OLUSTUR: `${BASE}/proje/eksiklerden-saha-olustur`,
     SANDIK_KAPAT: `${BASE}/proje/sandik-kapat`,
     SEVK_ET: (id: number) => `${BASE}/proje/${id}/sevk-et`,
     SEVKIYATLAR: (id: number) => `${BASE}/proje/${id}/sevkiyatlar`,

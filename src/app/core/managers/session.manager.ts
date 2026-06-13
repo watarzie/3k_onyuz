@@ -16,8 +16,9 @@ const LEGACY_KEYS = ['3k_user', '3k_role', '3k_rolId'];
  * - Hassas bilgiler localStorage'da SAKLANMAZ.
  *
  * BENI HATIRLA:
- * - rememberMe=true  → token localStorage'da saklanır (kalıcı)
- * - rememberMe=false → token sessionStorage'da saklanır (tarayıcı kapatılınca silinir)
+ * - Token sekmeler arası paylaşılır; yeni sekmede modül açınca oturum korunur.
+ * - rememberMe=true kalıcı oturum tercihini işaretler.
+ * - rememberMe=false aktif tarayıcı oturumu gibi davranır; JWT süresi yine ana güvenlik sınırıdır.
  */
 @Injectable({ providedIn: 'root' })
 export class SessionManager {
@@ -25,26 +26,21 @@ export class SessionManager {
   constructor() {
     // Uygulama başladığında eski key'leri temizle
     this.cleanLegacyKeys();
+    this.promoteSessionTokenToSharedStorage();
   }
 
   // ===== Token =====
 
   /**
    * Token'ı saklar.
-   * @param rememberMe true ise localStorage (kalıcı), false ise sessionStorage (oturum bazlı)
+   * @param rememberMe true ise kalıcı, false ise paylaşımlı tarayıcı oturumu olarak işaretlenir.
    */
-  setToken(token: string, rememberMe: boolean = false): void {
-    if (rememberMe) {
-      localStorage.setItem(TOKEN_KEY, token);
-      localStorage.setItem(REMEMBER_KEY, 'true');
-      // sessionStorage'dan temizle (eski oturum varsa)
-      sessionStorage.removeItem(TOKEN_KEY);
-    } else {
-      sessionStorage.setItem(TOKEN_KEY, token);
-      // localStorage'dan temizle (eski kalıcı oturum varsa)
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(REMEMBER_KEY);
-    }
+  setToken(token: string, rememberMe?: boolean): void {
+    const shouldRemember = rememberMe ?? this.isRemembered;
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(REMEMBER_KEY, shouldRemember ? 'true' : 'false');
+    // Eski sekme bazlı oturum davranışından kalan token varsa temizle.
+    sessionStorage.removeItem(TOKEN_KEY);
   }
 
   /**
@@ -158,6 +154,15 @@ export class SessionManager {
     for (const key of LEGACY_KEYS) {
       localStorage.removeItem(key);
     }
+  }
+
+  private promoteSessionTokenToSharedStorage(): void {
+    const sessionToken = sessionStorage.getItem(TOKEN_KEY);
+    if (!localStorage.getItem(TOKEN_KEY) && sessionToken) {
+      localStorage.setItem(TOKEN_KEY, sessionToken);
+      localStorage.setItem(REMEMBER_KEY, 'false');
+    }
+    sessionStorage.removeItem(TOKEN_KEY);
   }
 
   // ===== Eski API uyumluluğu (deprecated — no-op) =====

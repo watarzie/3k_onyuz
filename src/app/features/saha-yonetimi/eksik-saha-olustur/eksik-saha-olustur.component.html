@@ -1,0 +1,371 @@
+<div class="page-title-area mb-4">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-1">
+        <i class="ri-tools-line me-2"></i>Eksik Saha Projesi
+      </h2>
+      <app-breadcrumb [items]="breadcrumb" />
+    </div>
+    <div class="d-flex gap-2">
+      <a routerLink="/projeler" class="btn btn-outline-secondary">
+        <i class="ri-arrow-left-line me-1"></i>Geri
+      </a>
+      <button class="btn btn-success" (click)="createSahaProjesi()" [disabled]="saving() || toplamSepetSatir() === 0">
+        @if (saving()) {
+          <span class="spinner-border spinner-border-sm me-2"></span>
+        } @else {
+          <i class="ri-checkbox-circle-line me-1"></i>
+        }
+        Proje Oluştur
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="summary-strip mb-4">
+  <div>
+    <span>Kaynak Projeler</span>
+    <strong>{{ kaynakProjeNo() || 'Seçilmedi' }}</strong>
+  </div>
+  <div>
+    <span>Eksik Adet</span>
+    <strong>{{ formatAdet(toplamEksikAdet()) }}</strong>
+  </div>
+  <div>
+    <span>Sepette</span>
+    <strong>{{ formatAdet(toplamSepetAdet()) }}</strong>
+  </div>
+  <div>
+    <span>Kalan</span>
+    <strong [class.text-danger]="toplamKalanAdet() > 0">{{ formatAdet(toplamKalanAdet()) }}</strong>
+  </div>
+</div>
+
+<div class="source-project-panel mb-4">
+  <div class="source-project-header">
+    <div>
+      <h5 class="fw-semibold mb-1">Kaynak Projeler</h5>
+      <small>{{ selectedProjeIds().length }} proje seçildi</small>
+    </div>
+    <div class="source-project-picker">
+      <div class="project-combobox" [class.open]="projeDropdownOpen()" (click)="$event.stopPropagation()">
+        <button
+          type="button"
+          class="project-combobox-toggle"
+          (click)="toggleProjeDropdown()"
+          [disabled]="loadingProjeler()">
+          <span>{{ selectedProjeLabel() }}</span>
+          <i class="ri-arrow-down-s-line"></i>
+        </button>
+
+        @if (projeDropdownOpen()) {
+          <div class="project-combobox-menu">
+            <div class="project-combobox-search">
+              <i class="ri-search-line"></i>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Proje adı/no ara..."
+                autocomplete="off"
+                [ngModel]="projeAramaTerm()"
+                (ngModelChange)="projeAramaTerm.set($event)"
+                (keydown.escape)="closeProjeDropdown()" />
+            </div>
+
+            <div class="project-combobox-options">
+              @if (filteredSecilebilirKaynakProjeler().length === 0) {
+                <div class="project-combobox-empty">Proje bulunamadı</div>
+              } @else {
+                @for (proje of filteredSecilebilirKaynakProjeler(); track proje.id) {
+                  <button
+                    type="button"
+                    class="project-combobox-option"
+                    [class.active]="projeSecimiId() === proje.id"
+                    (click)="selectProje(proje.id)">
+                    <span>{{ proje.projeNo }}</span>
+                    <small>{{ proje.musteri || '-' }}</small>
+                  </button>
+                }
+              }
+            </div>
+          </div>
+        }
+      </div>
+      <button type="button" class="btn btn-success" (click)="addSeciliProje()" [disabled]="loadingProjeler()">
+        <i class="ri-add-line me-1"></i>Ekle
+      </button>
+    </div>
+  </div>
+
+  @if (seciliKaynakProjeler().length > 0) {
+    <div class="source-project-chips">
+      @for (proje of seciliKaynakProjeler(); track proje.id) {
+        <button type="button" class="source-project-chip" (click)="removeKaynakProje(proje.id)">
+          <span>{{ proje.projeNo }}</span>
+          <small>{{ proje.musteri || '-' }}</small>
+          <i class="ri-close-line"></i>
+        </button>
+      }
+    </div>
+  } @else {
+    <div class="source-project-empty">
+      <i class="ri-folder-search-line"></i>
+      <span>Eksik ürünleri listelemek için kaynak proje ekleyin.</span>
+    </div>
+  }
+</div>
+
+<div class="builder-layout">
+  <section class="missing-panel">
+    <div class="panel-header">
+      <div>
+        <h5 class="fw-semibold mb-1">Eksik Ürünler</h5>
+        <small>{{ filteredUrunler().length }} satır</small>
+      </div>
+      <div class="search-box position-relative">
+        <i class="ri-search-line"></i>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Ara..."
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)" />
+      </div>
+    </div>
+
+    @if (loading()) {
+      <div class="text-center py-5">
+        <span class="spinner-border text-success"></span>
+      </div>
+    } @else if (eksikUrunler().length === 0) {
+      <div class="empty-state">
+        <i class="ri-checkbox-circle-line"></i>
+        <h5>Eksik ürün bulunmuyor</h5>
+      </div>
+    } @else {
+      <div class="missing-list">
+        @for (urun of filteredUrunler(); track urun.cekiSatiriId) {
+          <article
+            class="missing-item"
+            role="button"
+            tabindex="0"
+            (click)="openSandikSecimi(urun)"
+            (keydown.enter)="openSandikSecimi(urun)"
+            (keydown.space)="$event.preventDefault(); openSandikSecimi(urun)">
+            <div class="missing-item-main">
+              <div class="missing-row-head">
+                <span class="row-no">#{{ urun.siraNo }}</span>
+                <span class="project-no"><i class="ri-folder-2-line"></i>{{ urun.projeNo }}</span>
+                <span class="case-no"><i class="ri-archive-line"></i>{{ urun.sandikNo || '-' }}</span>
+                <span class="barcode">{{ urun.barkodNo || '-' }}</span>
+              </div>
+              <h6 [title]="urun.aciklama">{{ urun.aciklama }}</h6>
+            </div>
+            <div class="missing-item-side">
+              <div>
+                <span class="qty">{{ formatAdet(getKalanAdet(urun.cekiSatiriId)) }}</span>
+                <small>{{ urun.birim }}</small>
+              </div>
+              <button
+                type="button"
+                class="btn btn-sm btn-success add-to-basket">
+                <i class="ri-archive-line"></i>
+                <span>Sandık Seç</span>
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+
+  <aside class="basket-panel">
+    <div class="basket-settings">
+      <div>
+        <label class="form-label">Saha Proje No</label>
+        <input
+          type="text"
+          class="form-control"
+          [ngModel]="yeniProjeNo()"
+          (ngModelChange)="yeniProjeNo.set($event)" />
+      </div>
+      <div>
+        <label class="form-label">Açıklama</label>
+        <textarea
+          class="form-control"
+          rows="2"
+          [ngModel]="aciklama()"
+          (ngModelChange)="aciklama.set($event)"></textarea>
+      </div>
+    </div>
+
+    <div class="basket-header">
+      <div>
+        <h5 class="fw-semibold mb-1">Sandık Sepeti</h5>
+        <small>{{ sandiklar().length }} sandık, {{ toplamSepetSatir() }} satır</small>
+      </div>
+      <button type="button" class="btn btn-sm btn-outline-success" (click)="addSandik()">
+        <i class="ri-add-line me-1"></i>Sandık
+      </button>
+    </div>
+
+    <div class="basket-list">
+      @for (sandik of sandiklar(); track sandik.id) {
+        <section
+          class="basket-case">
+          <div class="basket-case-head">
+            <div class="case-fields">
+              <input
+                type="text"
+                class="form-control case-no-input"
+                [ngModel]="sandik.sandikNo"
+                (ngModelChange)="updateSandikNo(sandik.id, $event)" />
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Sandık ismi"
+                [ngModel]="sandik.sandikIsmi"
+                (ngModelChange)="updateSandikIsmi(sandik.id, $event)" />
+            </div>
+            <button type="button" class="btn btn-sm btn-light text-danger" (click)="removeSandik(sandik.id)">
+              <i class="ri-delete-bin-line"></i>
+            </button>
+          </div>
+
+          <div class="case-measurements">
+            <label>
+              <span>En</span>
+              <input
+                type="number"
+                class="form-control"
+                min="0"
+                step="0.01"
+                placeholder="0"
+                [ngModel]="sandik.en"
+                (ngModelChange)="updateSandikOlcu(sandik.id, 'en', $event)" />
+            </label>
+            <label>
+              <span>Boy</span>
+              <input
+                type="number"
+                class="form-control"
+                min="0"
+                step="0.01"
+                placeholder="0"
+                [ngModel]="sandik.boy"
+                (ngModelChange)="updateSandikOlcu(sandik.id, 'boy', $event)" />
+            </label>
+            <label>
+              <span>Yükseklik</span>
+              <input
+                type="number"
+                class="form-control"
+                min="0"
+                step="0.01"
+                placeholder="0"
+                [ngModel]="sandik.yukseklik"
+                (ngModelChange)="updateSandikOlcu(sandik.id, 'yukseklik', $event)" />
+            </label>
+            <label>
+              <span>Net Kg</span>
+              <input
+                type="number"
+                class="form-control"
+                min="0"
+                step="0.01"
+                placeholder="0"
+                [ngModel]="sandik.netKg"
+                (ngModelChange)="updateSandikOlcu(sandik.id, 'netKg', $event)" />
+            </label>
+            <label>
+              <span>Gross Kg</span>
+              <input
+                type="number"
+                class="form-control"
+                min="0"
+                step="0.01"
+                placeholder="0"
+                [ngModel]="sandik.grossKg"
+                (ngModelChange)="updateSandikOlcu(sandik.id, 'grossKg', $event)" />
+            </label>
+          </div>
+
+          @if (sandik.urunler.length === 0) {
+            <div class="drop-empty">
+              <i class="ri-inbox-archive-line"></i>
+              <span>Boş sandık</span>
+            </div>
+          } @else {
+            <div class="basket-items">
+              @for (urun of sandik.urunler; track urun.draftId) {
+                <div class="basket-item">
+                  <div class="basket-item-info">
+                    <div class="basket-item-title" [title]="urun.aciklama">{{ urun.aciklama }}</div>
+                    <div class="basket-item-meta">
+                      <span>{{ urun.projeNo }}</span>
+                      <span>#{{ urun.siraNo }}</span>
+                      <span>{{ urun.barkodNo || '-' }}</span>
+                    </div>
+                  </div>
+                  <div class="basket-item-controls">
+                    <input
+                      type="number"
+                      class="form-control"
+                      min="0"
+                      step="0.0001"
+                      [ngModel]="urun.miktar"
+                      (ngModelChange)="setUrunMiktar(sandik.id, urun.draftId, $event)" />
+                    <button type="button" class="btn btn-sm btn-light text-danger" (click)="removeUrun(sandik.id, urun.draftId)">
+                      <i class="ri-close-line"></i>
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    class="form-control note-input"
+                    placeholder="Not"
+                    [ngModel]="urun.not"
+                    (ngModelChange)="setUrunNot(sandik.id, urun.draftId, $event)" />
+                </div>
+              }
+            </div>
+          }
+        </section>
+      }
+    </div>
+  </aside>
+</div>
+
+@if (selectedUrun(); as seciliUrun) {
+  <div class="sandik-picker-backdrop" (click)="closeSandikSecimi()">
+    <section class="sandik-picker" (click)="$event.stopPropagation()">
+      <div class="sandik-picker-head">
+        <div>
+          <small>Ürün Seçimi</small>
+          <h5 [title]="seciliUrun.aciklama">{{ seciliUrun.aciklama }}</h5>
+          <div class="sandik-picker-meta">
+            <span>{{ seciliUrun.projeNo }}</span>
+            <span>#{{ seciliUrun.siraNo }}</span>
+            <span>{{ seciliUrun.barkodNo || '-' }}</span>
+            <strong>{{ formatAdet(getKalanAdet(seciliUrun.cekiSatiriId)) }} {{ seciliUrun.birim }}</strong>
+          </div>
+        </div>
+        <button type="button" class="btn btn-sm btn-light" (click)="closeSandikSecimi()">
+          <i class="ri-close-line"></i>
+        </button>
+      </div>
+
+      <div class="sandik-picker-list">
+        @for (sandik of sandiklar(); track sandik.id) {
+          <button type="button" class="sandik-choice" (click)="addSelectedUrunToSandik(sandik.id)">
+            <span class="choice-no">{{ sandik.sandikNo || '-' }}</span>
+            <span class="choice-main">
+              <strong>{{ sandik.sandikIsmi || 'İsimsiz sandık' }}</strong>
+              <small>{{ sandik.urunler.length }} satır, {{ formatAdet(getSandikToplamAdet(sandik)) }} adet</small>
+            </span>
+            <i class="ri-add-circle-line"></i>
+          </button>
+        }
+      </div>
+    </section>
+  </div>
+}

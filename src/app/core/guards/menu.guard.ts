@@ -25,7 +25,8 @@ export const menuGuard: CanActivateFn = async (route, state): Promise<boolean | 
   }
 
   // menuKod tanımlıysa kontrol et
-  if (menuKod && permissionService.hasAccess(menuKod)) {
+  const requiredYetki = route.data?.['requiredYetki'] as string | undefined;
+  if (menuKod && (requiredYetki === 'W' ? permissionService.canWrite(menuKod) : permissionService.hasAccess(menuKod))) {
     return true;
   }
 

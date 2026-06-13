@@ -215,15 +215,20 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   breadcrumb: { label: string; link?: string }[] = [];
 
+  private get activeMenuKod(): string {
+    return this.route.snapshot.data?.['menuKod'] || 'grid-modulu';
+  }
+
   private syncSub?: Subscription;
 
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('projeId'));
     this.projeId.set(id);
+    const isSaha = this.activeMenuKod === 'saha-grid-modulu';
     this.breadcrumb = [
       { label: 'Ana Kontrol Paneli', link: '/dashboard' },
-      { label: 'Projeler', link: '/projeler' },
-      { label: 'Grid Modülü' },
+      { label: isSaha ? 'Saha Yönetimi' : 'Projeler', link: isSaha ? '/saha-yonetimi' : '/projeler' },
+      { label: isSaha ? 'Saha Grid Modülü' : 'Grid Modülü' },
     ];
     this.loadProjeBilgisi();
     this.loadUrunler();
@@ -333,6 +338,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   toggleSelect(id: number) {
     if (!this.canSelectRows) return;
     const urun = this.urunler().find(u => u.cekiSatiriId === id);
+    if (urun && this.isSahaManuelIcerik(urun)) return;
     if (urun && this.isSatirSevkKilidi(urun)) {
       this.toast.error(this.sevkEdilmisSandikMesaji);
       return;
@@ -345,7 +351,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   toggleSelectAll() {
     if (!this.canSelectRows) return;
 
-    const selectable = this.filtered().filter(u => !this.isSatirSevkKilidi(u));
+    const selectable = this.filtered().filter(u => !this.isCheckboxDisabled(u));
     const current = new Set(this.selectedIds());
 
     if (selectable.length === 0) {
@@ -363,16 +369,21 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
   isSelected(id: number): boolean { return this.selectedIds().has(id); }
   get allSelected(): boolean {
-    const selectable = this.filtered().filter(u => !this.isSatirSevkKilidi(u));
+    const selectable = this.filtered().filter(u => !this.isCheckboxDisabled(u));
     return selectable.length > 0 && selectable.every(u => this.selectedIds().has(u.cekiSatiriId));
   }
   get hasSelection(): boolean { return this.selectedIds().size > 0; }
-  get hasSelectableRows(): boolean { return this.filtered().some(u => !this.isSatirSevkKilidi(u)); }
+  get hasSelectableRows(): boolean { return this.filtered().some(u => !this.isCheckboxDisabled(u)); }
 
   // ===== Satır rengi =====
   getRowClass(u: GridUrunDto): string {
     const kalanClass = (u.kalanMiktar ?? 0) > 0 ? 'row-kalan-var' : 'row-kalan-yok';
-    return this.isSatirSevkKilidi(u) ? `${kalanClass} row-sevk-kilitli` : kalanClass;
+    const manuelClass = this.isSahaManuelIcerik(u) ? ' row-saha-manuel' : '';
+    return this.isSatirSevkKilidi(u) ? `${kalanClass} row-sevk-kilitli${manuelClass}` : `${kalanClass}${manuelClass}`;
+  }
+
+  isSahaManuelIcerik(u: GridUrunDto): boolean {
+    return u.isSahaManuelSandikIcerigi === true || (!!u.sandikIcerikId && u.cekiSatiriId <= 0);
   }
 
   getDurumLabel(value: string): string {
@@ -416,11 +427,16 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     // Yazma yetkisi yoksa açma
     if (!this.canGridWrite) return;
     // Kilitli satır kontrolü
-    if (this.isSatirSevkKilidi(urun) || this.isUcKIslemYapilmis(urun) || this.isTadilatta(urun)) return;
+    if (this.isSahaManuelIcerik(urun) || this.isSatirSevkKilidi(urun) || this.isUcKIslemYapilmis(urun) || this.isTadilatta(urun)) return;
     this.openPanel(urun);
   }
 
   openPanel(urun: GridUrunDto) {
+    if (this.isSahaManuelIcerik(urun)) {
+      this.toast.info('Manuel saha urunleri sandik icerigidir; Grid islemi gerektirmez.');
+      return;
+    }
+
     if (this.isSatirSevkKilidi(urun)) {
       this.toast.error(this.sevkEdilmisSandikMesaji);
       return;
@@ -800,12 +816,13 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
 
   isCheckboxDisabled(u: GridUrunDto): boolean {
+    if (this.isSahaManuelIcerik(u)) return true;
     return this.isSatirSevkKilidi(u);
   }
 
   private temizleSevkKilitliSecimler() {
     const kilitliIdler = new Set(this.urunler()
-      .filter(u => this.isSatirSevkKilidi(u))
+      .filter(u => this.isCheckboxDisabled(u))
       .map(u => u.cekiSatiriId));
 
     if (kilitliIdler.size === 0) return;
@@ -905,6 +922,9 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
 
   getUcKBlokajMesaji(u: GridUrunDto): string {
+    if (this.isSahaManuelIcerik(u)) {
+      return 'Manuel saha urunleri sandik icerigidir; Grid islemi gerektirmez.';
+    }
     if (this.isSatirSevkKilidi(u)) {
       return this.sevkEdilmisSandikMesaji;
     }
@@ -933,7 +953,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
 
   get canGridWrite(): boolean {
-    return this.permissions.canWrite('grid-modulu');
+    return this.permissions.canWrite(this.activeMenuKod);
   }
 
   get canSelectRows(): boolean {
@@ -942,6 +962,10 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   openAnaVeriPanel(urun: GridUrunDto) {
     if (!this.canEditCekiVerisi()) return;
+    if (this.isSahaManuelIcerik(urun)) {
+      this.toast.info('Manuel saha urunleri sandik detayi uzerinden yonetilir.');
+      return;
+    }
     if (this.isSatirSevkKilidi(urun)) {
       this.toast.error(this.sevkEdilmisSandikMesaji);
       return;
@@ -969,6 +993,10 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   saveAnaVeriPanel() {
     const urun = this.anaVeriUrun();
     if (!urun || this.anaSaving()) return;
+    if (this.isSahaManuelIcerik(urun)) {
+      this.anaError.set('Manuel saha urunleri sandik detayi uzerinden yonetilir.');
+      return;
+    }
     if (this.isSatirSevkKilidi(urun)) {
       this.anaError.set(this.sevkEdilmisSandikMesaji);
       this.toast.error(this.sevkEdilmisSandikMesaji);

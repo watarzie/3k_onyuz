@@ -12,7 +12,7 @@ import { PermissionService } from '../../../core/services/permission.service';
 import { LookupService } from '../../../core/services/lookup.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
-import { SandikDetayDto, SandikIcerikDto, SandikDto } from '../../../shared/models/index';
+import { EksikUrunForSandikDto, SandikDetayDto, SandikIcerikDto, SandikDto } from '../../../shared/models/index';
 import { Birim } from '../../../core/constants/enums';
 
 import { ConfirmService } from '../../../core/services/confirm.service';
@@ -59,9 +59,10 @@ export class SandikDetayComponent implements OnInit {
   eklemeMode = signal<'manuel' | 'projeden'>('manuel');
   normalProjeler = signal<any[]>([]);
   secilenKaynakProjeId = signal(0);
-  kaynakUrunler = signal<any[]>([]);
+  kaynakUrunler = signal<EksikUrunForSandikDto[]>([]);
   kaynakUrunlerLoading = signal(false);
   secilenKaynakUrunler = signal<Set<number>>(new Set());
+  tamamlamaAdetleri = signal<Record<number, number>>({});
 
   // Özellik Güncelleme Modal State
   showOzellikModal = signal(false);
@@ -90,6 +91,8 @@ export class SandikDetayComponent implements OnInit {
   breadcrumb: { label: string; link?: string }[] = [];
 
   isSahaYedek = signal(false);
+  isSahaYonetimi = signal(false);
+  isYedekYonetimi = signal(false);
   canWriteSandik = computed(() => {
     const menuKod = this.route.snapshot.data['menuKod'] || 'sandik-yonetimi';
     return this.permissionService.canWrite(menuKod);
@@ -99,7 +102,9 @@ export class SandikDetayComponent implements OnInit {
     const pId = Number(this.route.snapshot.paramMap.get('projeId'));
     const sId = Number(this.route.snapshot.paramMap.get('sandikId'));
     const menuKod = this.route.snapshot.data['menuKod'] || 'sandik-yonetimi';
-    this.isSahaYedek.set(menuKod === 'saha-yonetimi' || menuKod === 'yedek-yonetimi');
+    this.isSahaYedek.set(menuKod === 'saha-yonetimi' || menuKod === 'saha-sandiklar' || menuKod === 'yedek-yonetimi');
+    this.isSahaYonetimi.set(menuKod === 'saha-yonetimi' || menuKod === 'saha-sandiklar');
+    this.isYedekYonetimi.set(menuKod === 'yedek-yonetimi');
     
     this.projeId.set(pId);
     this.sandikId.set(sId);
@@ -152,7 +157,7 @@ export class SandikDetayComponent implements OnInit {
         let parentLink = `/sandik-yonetimi/${this.projeId()}`;
         
         const menuKod = this.route.snapshot.data['menuKod'];
-        if (menuKod === 'saha-yonetimi') {
+        if (menuKod === 'saha-yonetimi' || menuKod === 'saha-sandiklar') {
           parentLabel = 'Saha Yönetimi';
           parentLink = `/saha-yonetimi/${this.projeId()}`;
         } else if (menuKod === 'yedek-yonetimi') {
@@ -161,6 +166,10 @@ export class SandikDetayComponent implements OnInit {
         } else if (menuKod === '3k-modulu') {
           parentLabel = '3K Modülü';
           parentLink = `/uck/${this.projeId()}`;
+        }
+        else if (menuKod === 'saha-3k-modulu') {
+          parentLabel = 'Saha 3K Modülü';
+          parentLink = `/saha-yonetimi/uck/${this.projeId()}`;
         }
 
         this.breadcrumb = [
@@ -228,13 +237,19 @@ export class SandikDetayComponent implements OnInit {
     this.secilenKaynakProjeId.set(0);
     this.kaynakUrunler.set([]);
     this.secilenKaynakUrunler.set(new Set());
+    this.tamamlamaAdetleri.set({});
     this.showUrunEkleModal.set(true);
 
-    // Saha/Yedek modundaysa normal projeleri yükle
-    if (this.isSahaYedek()) {
+    // Yedek modunda projeden seçim eski akış olarak korunur.
+    if (this.isYedekYonetimi()) {
       this.projeService.getProjeListesi(1, 1000, 1).subscribe(res => {
         if (res.isSuccess && res.value) {
           this.normalProjeler.set(res.value.items);
+          const mevcutProje = res.value.items.find(p => p.id === this.projeId());
+          if (mevcutProje) {
+            this.secilenKaynakProjeId.set(mevcutProje.id);
+            this.onKaynakProjeChange(mevcutProje.id);
+          }
         }
       });
     }
@@ -249,6 +264,7 @@ export class SandikDetayComponent implements OnInit {
   onKaynakProjeChange(projeId: number) {
     this.secilenKaynakProjeId.set(projeId);
     this.secilenKaynakUrunler.set(new Set());
+    this.tamamlamaAdetleri.set({});
     if (projeId <= 0) {
       this.kaynakUrunler.set([]);
       return;
@@ -258,7 +274,12 @@ export class SandikDetayComponent implements OnInit {
       next: (res) => {
         this.kaynakUrunlerLoading.set(false);
         if (res.isSuccess && res.value) {
-          this.kaynakUrunler.set(res.value);
+          const urunler = res.value as EksikUrunForSandikDto[];
+          this.kaynakUrunler.set(urunler);
+          this.tamamlamaAdetleri.set(urunler.reduce<Record<number, number>>((acc, u) => {
+            acc[u.cekiSatiriId] = u.kalanMiktar;
+            return acc;
+          }, {}));
         } else {
           this.kaynakUrunler.set([]);
           this.toast.error(res.error ?? 'Ürünler yüklenemedi.');
@@ -278,6 +299,22 @@ export class SandikDetayComponent implements OnInit {
     this.secilenKaynakUrunler.set(set);
   }
 
+  getTamamlamaAdet(cekiSatiriId: number): number {
+    return this.tamamlamaAdetleri()[cekiSatiriId] ?? 0;
+  }
+
+  setTamamlamaAdet(cekiSatiriId: number, value: number, max: number) {
+    const numericValue = Number(value);
+    const safeValue = Number.isFinite(numericValue)
+      ? Math.min(Math.max(numericValue, 0), max)
+      : 0;
+
+    this.tamamlamaAdetleri.set({
+      ...this.tamamlamaAdetleri(),
+      [cekiSatiriId]: safeValue
+    });
+  }
+
   projedenUrunEkle() {
     const secilen = this.secilenKaynakUrunler();
     if (secilen.size === 0) {
@@ -286,16 +323,28 @@ export class SandikDetayComponent implements OnInit {
     }
     this.urunEklemeSaving.set(true);
     const urunler = this.kaynakUrunler().filter(u => secilen.has(u.cekiSatiriId));
+    const hataliAdetVar = urunler.some(u => {
+      const adet = this.getTamamlamaAdet(u.cekiSatiriId);
+      return adet <= 0 || adet > u.kalanMiktar;
+    });
+
+    if (hataliAdetVar) {
+      this.urunEklemeSaving.set(false);
+      this.toast.error('SeÃ§ilen Ã¼rÃ¼nlerde tamamlama adedi 0 ile kalan adet arasÄ±nda olmalÄ±dÄ±r.');
+      return;
+    }
+
     let tamamlanan = 0;
     let hata = 0;
 
     for (const u of urunler) {
+      const tamamlanacakAdet = this.getTamamlamaAdet(u.cekiSatiriId);
       const payload = {
         projeId: this.projeId(),
         sandikId: this.sandikId(),
         barkodNo: u.barkodNo || '',
         isim: u.aciklama,
-        miktar: u.kalanMiktar,
+        miktar: tamamlanacakAdet,
         birimId: null,
         cekiSatiriId: u.cekiSatiriId,
         kaynakProjeNo: u.projeNo,

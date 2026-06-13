@@ -1,14 +1,48 @@
 <div class="row align-items-center mb-4">
   <div class="col-sm-4">
-    <div class="d-flex align-items-center gap-3">
+    <div class="d-flex align-items-center gap-3 history-header-left">
       <h5 class="mb-0">Hareket Geçmişi (Log)</h5>
       
-      <div class="proje-select">
-        <select class="form-select form-select-sm" [ngModel]="selectedProjeId()" (ngModelChange)="selectedProjeId.set($event); onProjeChange()">
-          @for (p of projeler(); track p.id) {
-            <option [ngValue]="p.id">{{ p.projeNo }} - {{ p.musteri }}</option>
+      <div class="project-filter">
+        <div class="project-combobox" [class.open]="projeDropdownOpen()" (click)="$event.stopPropagation()">
+          <button type="button" class="project-combobox-toggle" (click)="toggleProjeDropdown()">
+            <span>{{ selectedProjeLabel() }}</span>
+            <i class="ri-arrow-down-s-line"></i>
+          </button>
+
+          @if (projeDropdownOpen()) {
+            <div class="project-combobox-menu">
+              <div class="project-combobox-search">
+                <i class="ri-search-line"></i>
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  placeholder="Proje adı/no ara..."
+                  autocomplete="off"
+                  [ngModel]="projeSearchTerm()"
+                  (ngModelChange)="projeSearchTerm.set($event)"
+                  (keydown.escape)="closeProjeDropdown()" />
+              </div>
+
+              <div class="project-combobox-options">
+                @if (filteredProjeler().length === 0) {
+                  <div class="project-combobox-empty">Proje bulunamadı</div>
+                } @else {
+                  @for (p of filteredProjeler(); track p.id) {
+                    <button
+                      type="button"
+                      class="project-combobox-option"
+                      [class.active]="selectedProjeId() === p.id"
+                      (click)="selectProje(p.id)">
+                      <span>{{ p.projeNo }}</span>
+                      <small>{{ p.musteri || '-' }}</small>
+                    </button>
+                  }
+                }
+              </div>
+            </div>
           }
-        </select>
+        </div>
       </div>
     </div>
   </div>

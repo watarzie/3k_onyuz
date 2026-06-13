@@ -47,6 +47,33 @@ export interface ProjeOlusturDto {
   lokasyon?: string;
 }
 
+export interface EksikSahaUrunDto {
+  cekiSatiriId: number;
+  kaynakProjeId?: number | null;
+  miktar: number;
+  aciklama?: string | null;
+}
+
+export interface EksikSahaSandikDto {
+  sandikNo: string;
+  sandikIsmi?: string | null;
+  en?: number | null;
+  boy?: number | null;
+  yukseklik?: number | null;
+  netKg?: number | null;
+  grossKg?: number | null;
+  urunler: EksikSahaUrunDto[];
+}
+
+export interface EksiklerdenSahaProjesiOlusturDto {
+  kaynakProjeId?: number | null;
+  projeNo?: string | null;
+  musteri?: string | null;
+  lokasyon?: string | null;
+  aciklama?: string | null;
+  sandiklar: EksikSahaSandikDto[];
+}
+
 export interface ProjeTransferDto {
   id: number;
   kaynakProjeNo: string;

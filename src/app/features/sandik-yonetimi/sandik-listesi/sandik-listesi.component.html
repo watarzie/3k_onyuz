@@ -4,9 +4,11 @@
       <h2 class="fw-bold mb-1">{{ breadcrumb[1]?.label || ('MENU.SANDIK_YONETIMI' | translate) }}</h2>
       <app-breadcrumb [items]="breadcrumb" />
     </div>
+    @if (canWriteSandik()) {
     <button class="btn btn-save d-flex align-items-center gap-2" (click)="openEkleModal()">
       <i class="ri-add-circle-line"></i> Yeni Sandık Ekle
     </button>
+    }
   </div>
 </div>
 
@@ -51,7 +53,7 @@
                     <a [routerLink]="[routePrefix(), projeId(), s.id]" class="btn btn-sm btn-action">
                       <i class="ri-eye-line me-1"></i> Detay
                     </a>
-                    @if (s.silinebilirMi) {
+                    @if (canWriteSandik() && s.silinebilirMi) {
                       <button class="btn btn-sm btn-outline-danger" (click)="sandikSil(s)" title="Sandığı sil">
                         <i class="ri-delete-bin-line"></i>
                       </button>

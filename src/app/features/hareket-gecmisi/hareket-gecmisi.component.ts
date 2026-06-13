@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, HostListener, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -27,6 +27,8 @@ export class HareketGecmisiComponent implements OnInit {
 
   projeler = signal<ProjeDto[]>([]);
   selectedProjeId = signal<number | null>(null);
+  projeSearchTerm = signal('');
+  projeDropdownOpen = signal(false);
 
   // Data
   hareketler = signal<HareketGecmisiDto[]>([]);
@@ -47,6 +49,20 @@ export class HareketGecmisiComponent implements OnInit {
   // Search debounce
   private searchSubject = new Subject<string>();
 
+  filteredProjeler = computed(() => {
+    const term = this.projeSearchTerm().trim().toLocaleLowerCase('tr-TR');
+    const selectedId = this.selectedProjeId();
+    return this.projeler().filter(p => {
+      if (p.id === selectedId) return true;
+      if (!term) return true;
+      return [
+        p.projeNo,
+        p.musteri,
+        p.lokasyon,
+      ].some(value => (value ?? '').toLocaleLowerCase('tr-TR').includes(term));
+    });
+  });
+
   mathMin(a: number, b: number): number {
     return Math.min(a, b);
   }
@@ -64,6 +80,11 @@ export class HareketGecmisiComponent implements OnInit {
       this.currentPage.set(1);
       this.loadHareketler();
     });
+  }
+
+  @HostListener('document:click')
+  closeProjectDropdownFromOutside(): void {
+    this.closeProjeDropdown();
   }
 
   loadIslemTipleri() {
@@ -88,6 +109,31 @@ export class HareketGecmisiComponent implements OnInit {
   onProjeChange() {
     this.currentPage.set(1);
     this.loadHareketler();
+  }
+
+  toggleProjeDropdown(): void {
+    this.projeDropdownOpen.update(open => !open);
+  }
+
+  closeProjeDropdown(): void {
+    this.projeDropdownOpen.set(false);
+  }
+
+  selectProje(projeId: number): void {
+    const currentId = this.selectedProjeId();
+    this.selectedProjeId.set(projeId);
+    this.projeSearchTerm.set('');
+    this.closeProjeDropdown();
+
+    if (currentId !== projeId) {
+      this.onProjeChange();
+    }
+  }
+
+  selectedProjeLabel(): string {
+    const selectedId = this.selectedProjeId();
+    const proje = this.projeler().find(p => p.id === selectedId);
+    return proje ? `${proje.projeNo} - ${proje.musteri || '-'}` : 'Proje seçin';
   }
 
   onSearchInput(event: Event) {

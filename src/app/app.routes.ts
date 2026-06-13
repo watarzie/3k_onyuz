@@ -160,18 +160,59 @@ export const routes: Routes = [
         data: { menuKod: 'saha-yonetimi' },
       },
       {
+        path: 'saha-yonetimi/eksik-olustur',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/saha-yonetimi/eksik-saha-olustur/eksik-saha-olustur.component').then(m => m.EksikSahaOlusturComponent),
+        data: { menuKod: 'eksik-saha-projesi', requiredYetki: 'W' },
+      },
+      {
+        path: 'saha-yonetimi/eksik-olustur/:projeId',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/saha-yonetimi/eksik-saha-olustur/eksik-saha-olustur.component').then(m => m.EksikSahaOlusturComponent),
+        data: { menuKod: 'eksik-saha-projesi', requiredYetki: 'W' },
+      },
+      {
+        path: 'saha-yonetimi/grid/:projeId',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/grid/grid-urunler/grid-urunler.component').then(m => m.GridUrunlerComponent),
+        data: { menuKod: 'saha-grid-modulu' },
+      },
+      {
+        path: 'saha-yonetimi/uck/:projeId',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/uck/uck-sandiklar/uck-sandiklar.component').then(m => m.UcKSandiklarComponent),
+        data: { menuKod: 'saha-3k-modulu' },
+      },
+      {
+        path: 'saha-yonetimi/uck/sandik/:projeId/:sandikId',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/sandik-yonetimi/sandik-detay/sandik-detay.component').then(m => m.SandikDetayComponent),
+        data: { menuKod: 'saha-3k-modulu' },
+      },
+      {
+        path: 'saha-yonetimi/uck/:projeId/:sandikNo',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/uck/uck-urunler/uck-urunler.component').then(m => m.UcKUrunlerComponent),
+        data: { menuKod: 'saha-3k-modulu' },
+      },      {
         path: 'saha-yonetimi/:projeId',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/sandik-yonetimi/sandik-listesi/sandik-listesi.component').then(m => m.SandikListesiComponent),
-        data: { menuKod: 'saha-yonetimi' },
+        data: { menuKod: 'saha-sandiklar' },
       },
       {
         path: 'saha-yonetimi/:projeId/:sandikId',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/sandik-yonetimi/sandik-detay/sandik-detay.component').then(m => m.SandikDetayComponent),
-        data: { menuKod: 'saha-yonetimi' },
+        data: { menuKod: 'saha-sandiklar' },
       },
 
       // --- Yedek Yönetimi ---

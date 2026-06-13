@@ -13,11 +13,16 @@
       <app-breadcrumb [items]="breadcrumb" />
     </div>
     <div class="d-flex gap-2">
+      @if (isSahaYonetimi() && canUseEksikTamamlama()) {
+        <a routerLink="/saha-yonetimi/eksik-olustur" class="btn btn-outline-success">
+          <i class="ri-tools-line me-2"></i>Eksiklerden Oluştur
+        </a>
+      }
       @if ((isSahaYonetimi() || isYedekYonetimi()) && canWriteCurrentMenu()) {
         <button class="btn btn-primary-gradient" (click)="openProjeOlusturModal()">
           <i class="ri-add-line me-2"></i>Proje Oluştur
         </button>
-      } @else if (!isSevkEdilen() && canWriteCurrentMenu()) {
+      } @else if (!isSevkEdilen() && !isSahaYonetimi() && !isYedekYonetimi() && canWriteCurrentMenu()) {
         <button class="btn btn-primary-gradient" (click)="openUploadModal()">
           <i class="ri-upload-2-line me-2"></i>Çeki Yükle
         </button>
@@ -67,6 +72,19 @@
           <span>3K İş Listesi</span>
         </a>
       }
+      @if (showProjeTipiFilter()) {
+        <div class="proje-type-filter" role="group" aria-label="Proje tipi filtresi">
+          @for (option of projeTipiFilterOptions; track option.label) {
+            <button
+              type="button"
+              class="proje-type-filter-btn"
+              [class.active]="projeTipiFilter() === option.value"
+              (click)="setProjeTipiFilter(option.value)">
+              {{ option.label }}
+            </button>
+          }
+        </div>
+      }
       <div class="search-box position-relative" style="width: 250px;">
         <i class="ri-search-line position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
         <input type="text" class="form-control ps-5" placeholder="Ara..." (input)="onSearch($event)" />
@@ -86,7 +104,7 @@
           <div class="empty-icon mb-3" style="font-size: 3rem;"><i class="ri-archive-drawer-line"></i></div>
           <h5 class="fw-semibold mb-2">Henüz {{ isSahaYonetimi() ? 'saha' : 'yedek' }} projesi bulunmuyor</h5>
           <p class="text-muted mb-3">Başlamak için yeni bir proje oluşturun</p>
-          @if (canWriteCurrentMenu()) {
+          @if ((isSahaYonetimi() || isYedekYonetimi()) && canWriteCurrentMenu()) {
             <button class="btn btn-primary-gradient" (click)="openProjeOlusturModal()">
               <i class="ri-add-line me-2"></i>Proje Oluştur
             </button>
@@ -108,7 +126,7 @@
           <thead>
             <tr>
               <th>{{ 'LABELS.PROJE_NO' | translate }}</th>
-              @if (isSevkEdilen()) {
+              @if (showProjeTipiFilter()) {
                 <th>Proje Tipi</th>
               }
               @if (isSandikMode()) {
@@ -123,7 +141,7 @@
               <th>{{ 'LABELS.durumMetni' | translate }}</th>
               <th>Sevk Tarihi</th>
               <th>{{ 'LABELS.TAMAMLANMA' | translate }}</th>
-                  @if (isSandikMode() || (isSevkEdilen() && canSeeGerceklesenRapor()) || (!isSandikMode() && canSevkEt()) || (!isSandikMode() && hasAnySevkiyatGecmisi()) || isSevkEdilen() || canDeleteProject()) {
+                  @if (hasActionColumn()) {
                 <th>İşlemler</th>
               }
             </tr>
@@ -141,7 +159,7 @@
                     {{ p.projeNo }}
                   }
                 </td>
-                @if (isSevkEdilen()) {
+                @if (showProjeTipiFilter()) {
                   <td>
                     <span class="badge" [ngClass]="{
                       'bg-primary-subtle text-primary': p.projeTipiId === 1,
@@ -183,7 +201,7 @@
                     <small class="fw-semibold">{{ getTamamlanmaYuzdesi(p) }}%</small>
                   </div>
                 </td>
-                @if (isSandikMode() || (isSevkEdilen() && canSeeGerceklesenRapor()) || (!isSandikMode() && canSevkEt()) || (!isSandikMode() && hasSevkiyatGecmisi(p)) || canDeleteProject()) {
+                @if (shouldShowActions(p)) {
                   <td>
                     <div class="d-flex gap-1 flex-wrap">
                       @if (isSevkEdilen() && p.projeTipiId === 1 && canSeeGerceklesenRapor()) {
@@ -229,20 +247,39 @@
                           </div>
                         }
                         @if (isSahaYonetimi() || isYedekYonetimi()) {
-                          <button class="btn btn-sm btn-danger" (click)="indirSahaProjePdf(p)" [disabled]="downloadingPdf() === p.id" [title]="isSahaYonetimi() ? 'Saha Raporu' : 'Yedek Raporu'">
+                          @if (isSahaYonetimi() && canSeeSahaGrid()) {
+                            <a [routerLink]="['/saha-yonetimi/grid', p.id]" class="btn btn-sm btn-action-grid" title="Grid Modülü">
+                              <i class="ri-database-2-line me-1"></i>Grid
+                            </a>
+                          }
+                          @if (isSahaYonetimi() && canSeeSaha3K()) {
+                            <a [routerLink]="['/saha-yonetimi/uck', p.id]" class="btn btn-sm btn-action-3k" title="3K Modülü">
+                              <i class="ri-archive-stack-line me-1"></i>3K
+                            </a>
+                          }
+                          @if (isYedekYonetimi() || canSeeSahaRapor()) {
+
+                            <button class="btn btn-sm btn-danger" (click)="indirSahaProjePdf(p)" [disabled]="downloadingPdf() === p.id" [title]="isSahaYonetimi() ? 'Saha Raporu' : 'Yedek Raporu'">
                             @if (downloadingPdf() === p.id) {
                               <span class="spinner-border spinner-border-sm"></span>
                             } @else {
                               <i class="ri-file-pdf-2-line me-1"></i>{{ isYedekYonetimi() ? 'Yedek Raporu' : 'Saha Raporu' }}
                             }
                           </button>
-                          <a [routerLink]="[routePrefix, p.id]" class="btn btn-sm btn-outline-primary" title="Sandıklar">
+
+                          }
+
+                          @if (isYedekYonetimi() || canSeeSahaSandiklar()) {
+
+                            <a [routerLink]="[routePrefix, p.id]" class="btn btn-sm btn-outline-primary" title="Sandıklar">
                             <i class="ri-inbox-line me-1"></i>Sandıklar
                           </a>
+
+                          }
                         }
                       }
                       
-                      @if (canSevkEt() && (!isSandikMode() || isSahaYonetimi() || isYedekYonetimi())) {
+                      @if (canSevkEtCurrent() && (!isSandikMode() || isSahaYonetimi() || isYedekYonetimi())) {
                         @if (p.durumMetni === 'SevkEdildi' || p.durumMetni === 'Sevk Edildi') {
                           <button class="btn btn-sm btn-outline-primary" (click)="kilidiAc(p)">
                             <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
@@ -258,7 +295,7 @@
                         }
                       }
 
-                      @if (canDeleteProject()) {
+                      @if (canDeleteProjectCurrent()) {
                         <button class="btn btn-sm btn-outline-danger" (click)="projeSil(p)" title="Projeyi Sil">
                           <i class="ri-delete-bin-line"></i>
                         </button>

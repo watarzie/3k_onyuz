@@ -63,13 +63,22 @@ export class LoginComponent {
     const { email, sifre, rememberMe } = this.form.value;
 
     this.auth.login({ email, sifre }, rememberMe).subscribe({
-      next: (result) => {
-        this.loading.set(false);
+      next: async (result) => {
         if (result.isSuccess) {
+          const permissionsLoaded = await this.permissionService.reloadPermissions();
+          this.loading.set(false);
+
+          if (!permissionsLoaded) {
+            const msg = 'Menüler yüklenemedi. Lütfen tekrar giriş yapın.';
+            this.error.set(msg);
+            this.toast.error(msg);
+            return;
+          }
+
           this.toast.success('Giriş başarılı!');
-          this.permissionService.loadPermissions();
           this.router.navigate(['/dashboard']);
         } else {
+          this.loading.set(false);
           const msg = result.error ?? this.ts.translate('MESSAGES.LOGIN_FAIL');
           this.error.set(msg);
           this.toast.error(msg);

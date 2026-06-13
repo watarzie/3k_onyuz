@@ -288,7 +288,7 @@
         <button class="btn btn-sm border-0" (click)="closeUrunEkleModal()"><i class="ri-close-line fs-5"></i></button>
       </div>
       <div class="modal-body-custom">
-        @if (isSahaYedek()) {
+        @if (isYedekYonetimi()) {
           <div class="d-flex gap-2 mb-3">
             <button class="btn btn-sm" [ngClass]="eklemeMode() === 'manuel' ? 'btn-primary' : 'btn-outline-primary'" (click)="eklemeMode.set('manuel')">
               <i class="ri-edit-line me-1"></i>Manuel Giriş
@@ -370,10 +370,11 @@
                   <tr>
                     <th style="width:30px;"></th>
                     <th>Ürün</th>
-                    <th>Sandık</th>
-                    <th>İstenen</th>
-                    <th>Kalan</th>
-                  </tr>
+                <th>Sandık</th>
+                <th>İstenen</th>
+                <th>Kalan</th>
+                <th style="width: 120px;">Tamamlama</th>
+              </tr>
                 </thead>
                 <tbody>
                   @for (u of kaynakUrunler(); track u.cekiSatiriId) {
@@ -385,10 +386,23 @@
                         <span class="fw-medium">{{ u.aciklama }}</span>
                         <small class="d-block text-muted">{{ u.barkodNo }}</small>
                       </td>
-                      <td><small>{{ u.sandikNo }}</small></td>
-                      <td>{{ u.istenenAdet }}</td>
-                      <td class="fw-bold text-danger">{{ u.kalanMiktar }}</td>
-                    </tr>
+                  <td><small>{{ u.sandikNo }}</small></td>
+                  <td>{{ u.istenenAdet }}</td>
+                  <td>
+                    <span class="fw-bold text-danger">{{ u.kalanMiktar }}</span>
+                    @if ((u.tamamlamaPlanlananAdet ?? 0) > 0) {
+                      <small class="d-block text-muted">{{ u.tamamlamaPlanlananAdet }} planlandı</small>
+                    }
+                  </td>
+                  <td (click)="$event.stopPropagation()">
+                    <input type="number"
+                           class="form-control form-control-sm"
+                           min="0"
+                           [max]="u.kalanMiktar"
+                           [ngModel]="getTamamlamaAdet(u.cekiSatiriId)"
+                           (ngModelChange)="setTamamlamaAdet(u.cekiSatiriId, +$event, u.kalanMiktar)" />
+                  </td>
+                </tr>
                   }
                 </tbody>
               </table>

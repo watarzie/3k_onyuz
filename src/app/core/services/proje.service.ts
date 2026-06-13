@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiSatiriDto, ProjeDropdownDto, SevkiyatDto } from '../../shared/models/index';
+import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiSatiriDto, ProjeDropdownDto, SevkiyatDto, EksiklerdenSahaProjesiOlusturDto } from '../../shared/models/index';
 
 /**
  * ProjeController (2 endpoint) + CekiController (2 endpoint):
@@ -15,7 +15,7 @@ import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultD
 @Injectable({ providedIn: 'root' })
 export class ProjeService {
   private api = inject(BaseApiService);
-  private readonly projeSilOptions = { headers: { 'X-Menu-Kod': 'proje-sil' } };
+  private menuOptions(menuKod: string) { return { headers: { 'X-Menu-Kod': menuKod } }; }
 
   // ===== Proje =====
 
@@ -40,37 +40,41 @@ export class ProjeService {
     return this.api.get<ProjeDropdownDto[]>(API.PROJE.DROPDOWN);
   }
 
-  projeOlustur(dto: ProjeOlusturDto): Observable<ApiResult<unknown>> {
-    return this.api.post<unknown>(API.PROJE.CREATE, dto);
+  projeOlustur(dto: ProjeOlusturDto): Observable<ApiResult<ProjeDto>> {
+    return this.api.post<ProjeDto>(API.PROJE.CREATE, dto);
+  }
+
+  eksiklerdenSahaProjesiOlustur(dto: EksiklerdenSahaProjesiOlusturDto): Observable<ApiResult<ProjeDto>> {
+    return this.api.post<ProjeDto>(API.PROJE.EKSIKLERDEN_SAHA_OLUSTUR, dto);
   }
 
   sandikKapat(sandikId: number, kapali: boolean): Observable<ApiResult<boolean>> {
     return this.api.put<boolean>(API.PROJE.SANDIK_KAPAT, { sandikId, kapali });
   }
 
-  sevkEt(projeId: number, sevkTarihi?: string, sandikIds?: number[], aciklama?: string, aracPlaka?: string): Observable<ApiResult<boolean>> {
+  sevkEt(projeId: number, sevkTarihi?: string, sandikIds?: number[], aciklama?: string, aracPlaka?: string, menuKod?: string): Observable<ApiResult<boolean>> {
     return this.api.post<boolean>(API.PROJE.SEVK_ET(projeId), {
       sevkTarihi: sevkTarihi || null,
       sandikIds: sandikIds ?? null,
       aciklama: aciklama?.trim() || null,
       aracPlaka: aracPlaka?.trim() || null,
-    });
+    }, menuKod ? this.menuOptions(menuKod) : undefined);
   }
 
   getSevkiyatlar(projeId: number): Observable<ApiResult<SevkiyatDto[]>> {
     return this.api.get<SevkiyatDto[]>(API.PROJE.SEVKIYATLAR(projeId));
   }
 
-  kilidiAc(projeId: number): Observable<ApiResult<boolean>> {
-    return this.api.post<boolean>(API.PROJE.KILIDI_AC(projeId), {});
+  kilidiAc(projeId: number, menuKod?: string): Observable<ApiResult<boolean>> {
+    return this.api.post<boolean>(API.PROJE.KILIDI_AC(projeId), {}, menuKod ? this.menuOptions(menuKod) : undefined);
   }
 
-  sevkTarihiGuncelle(projeId: number, planlananSevkTarihi: string | null): Observable<ApiResult<boolean>> {
-    return this.api.put<boolean>(API.PROJE.SEVK_TARIHI_GUNCELLE, { projeId, planlananSevkTarihi });
+  sevkTarihiGuncelle(projeId: number, planlananSevkTarihi: string | null, menuKod?: string): Observable<ApiResult<boolean>> {
+    return this.api.put<boolean>(API.PROJE.SEVK_TARIHI_GUNCELLE, { projeId, planlananSevkTarihi }, menuKod ? this.menuOptions(menuKod) : undefined);
   }
 
-  projeSil(projeId: number): Observable<ApiResult<boolean>> {
-    return this.api.delete<boolean>(API.PROJE.DELETE(projeId), this.projeSilOptions);
+  projeSil(projeId: number, menuKod = 'proje-sil'): Observable<ApiResult<boolean>> {
+    return this.api.delete<boolean>(API.PROJE.DELETE(projeId), this.menuOptions(menuKod));
   }
 
   // ===== Sandık Sevk =====
@@ -86,7 +90,18 @@ export class ProjeService {
 
   // ===== Saha/Yedek Malzeme =====
 
-  sahaYedekMalzemeEkle(payload: { projeId: number; sandikId: number; barkodNo?: string; isim: string; miktar: number; birim?: string }): Observable<ApiResult<boolean>> {
+  sahaYedekMalzemeEkle(payload: {
+    projeId: number;
+    sandikId: number;
+    barkodNo?: string;
+    isim: string;
+    miktar: number;
+    birim?: string;
+    birimId?: number | null;
+    cekiSatiriId?: number | null;
+    kaynakProjeNo?: string;
+    aciklama?: string;
+  }): Observable<ApiResult<boolean>> {
     return this.api.post<boolean>(API.SANDIK.SAHA_YEDEK_MALZEME_EKLE, payload);
   }
 

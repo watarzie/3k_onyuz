@@ -1,5 +1,5 @@
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -13,6 +13,7 @@ import { SandikDto } from '../../../shared/models/index';
 import { SandikTipi, DepoLokasyon } from '../../../core/constants/enums';
 import { PdfService } from '../../../core/services/pdf.service';
 import { ConfirmService } from '../../../core/services/confirm.service';
+import { PermissionService } from '../../../core/services/permission.service';
 
 @Component({
   selector: 'app-sandik-listesi',
@@ -29,6 +30,7 @@ export class SandikListesiComponent implements OnInit {
   private toast = inject(ToastService);
   private pdfService = inject(PdfService);
   private confirmService = inject(ConfirmService);
+  private permissionService = inject(PermissionService);
 
   projeId = signal(0);
   sandiklar = signal<SandikDto[]>([]);
@@ -57,6 +59,11 @@ export class SandikListesiComponent implements OnInit {
   breadcrumb: { label: string; link?: string }[] = [];
   routePrefix = signal('/sandik-yonetimi');
   isSahaYedek = signal(false);
+  isSahaYonetimi = signal(false);
+  canWriteSandik = computed(() => {
+    const menuKod = this.route.snapshot.data['menuKod'] || 'sandik-yonetimi';
+    return this.permissionService.canWrite(menuKod);
+  });
 
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('projeId'));
@@ -64,10 +71,11 @@ export class SandikListesiComponent implements OnInit {
     this.projeId.set(id);
     
     let title = this.ts.translate('MENU.SANDIK_YONETIMI');
-    if (menuKod === 'saha-yonetimi') {
+    if (menuKod === 'saha-yonetimi' || menuKod === 'saha-sandiklar') {
       title = 'Saha Yönetimi';
       this.routePrefix.set('/saha-yonetimi');
       this.isSahaYedek.set(true);
+      this.isSahaYonetimi.set(true);
     } else if (menuKod === 'yedek-yonetimi') {
       title = 'Yedek Yönetimi';
       this.routePrefix.set('/yedek-yonetimi');
@@ -127,7 +135,7 @@ export class SandikListesiComponent implements OnInit {
 
   indirPdf(sandikId: number) {
     this.downloadingPdf.set(sandikId);
-    this.pdfService.sahaSandikPdf(sandikId).subscribe({
+    this.pdfService.sahaSandikPdf(sandikId, this.isSahaYonetimi() ? 'saha-raporu' : undefined).subscribe({
       next: (blob) => {
         this.downloadingPdf.set(null);
         const url = window.URL.createObjectURL(blob);
@@ -207,6 +215,7 @@ export class SandikListesiComponent implements OnInit {
   // ===== Sandık Silme =====
 
   async sandikSil(s: SandikDto) {
+    if (!this.canWriteSandik()) return;
     const silmeDetayi = s.isManuelSandik && s.urunSayisi > 0
       ? `<br><br><small class="text-muted">Bu manuel sandığın içindeki ${s.urunSayisi} manuel ürün de silinecek.</small>`
       : '';

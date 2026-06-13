@@ -6,7 +6,8 @@ import {
   ApiResult, SandikDto, SandikDetayDto, SandikEkleDto, ManuelUrunEkleDto,
   UrunGuncelleDto, SandikDegistirDto, TeslimAlDto, TopluTeslimAlDto,
   UrunIptalDto, StokKarsilamaDto, EksikUrunDto, UrunTasiDto, SandikOzellikGuncelleDto,
-  CekiSatiriAnaVeriGuncelleDto, CekiSatirlariSilDto, CekiSatirlariSilResultDto
+  CekiSatiriAnaVeriGuncelleDto, CekiSatirlariSilDto, CekiSatirlariSilResultDto,
+  EksikUrunForSandikDto
 } from '../../shared/models/index';
 
 /**
@@ -134,7 +135,7 @@ export class SandikService {
     return this.api.delete<unknown>(`${API.SANDIK.SIL}?sandikId=${sandikId}&projeId=${projeId}`);
   }
 
-  getEksikUrunlerByProje(projeId: number): Observable<ApiResult<any[]>> {
-    return this.api.get<any[]>(API.SANDIK.EKSIK_URUNLER_BY_PROJE(projeId));
+  getEksikUrunlerByProje(projeId: number): Observable<ApiResult<EksikUrunForSandikDto[]>> {
+    return this.api.get<EksikUrunForSandikDto[]>(API.SANDIK.EKSIK_URUNLER_BY_PROJE(projeId));
   }
 }

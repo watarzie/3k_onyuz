@@ -59,13 +59,31 @@
 
   &.is-shipped {
     cursor: not-allowed;
-    background: #F8FAFC;
-    border-color: #CBD5E1;
-    opacity: .82;
+    background: linear-gradient(180deg, #EFF6FF 0%, #E0F2FE 100%);
+    border-color: #93C5FD;
+    box-shadow: inset 0 0 0 1px rgba(53, 132, 252, .08);
+    opacity: 1;
+
+    .sandik-no,
+    .sandik-ismi,
+    .status-text {
+      color: #1D4ED8 !important;
+    }
+
+    .sandik-ismi i,
+    .card-meta span,
+    .card-meta i {
+      color: #3B82F6;
+    }
+
+    .status-dot {
+      background: #3584FC !important;
+      box-shadow: 0 0 0 3px rgba(53, 132, 252, .12);
+    }
 
     &:hover {
-      border-color: #CBD5E1;
-      box-shadow: none;
+      border-color: #60A5FA;
+      box-shadow: inset 0 0 0 1px rgba(53, 132, 252, .1);
       transform: none;
     }
   }

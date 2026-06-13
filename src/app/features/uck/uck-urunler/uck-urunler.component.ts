@@ -214,6 +214,10 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   karsilamaTipleri = KARSILAMA_TIPLERI;
   breadcrumb: { label: string; link?: string }[] = [];
 
+  private get activeMenuKod(): string {
+    return this.route.snapshot.data?.['menuKod'] || '3k-modulu';
+  }
+
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('projeId'));
     const sNo = this.route.snapshot.paramMap.get('sandikNo') ?? '';
@@ -221,10 +225,11 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     const initialFocusCekiSatiriId = Number.isFinite(focusParam) && focusParam > 0 ? focusParam : null;
     this.projeId.set(id);
     this.sandikNo.set(sNo);
+    const isSaha = this.activeMenuKod === 'saha-3k-modulu';
     this.breadcrumb = [
       { label: 'Ana Kontrol Paneli', link: '/dashboard' },
-      { label: 'Projeler', link: '/projeler' },
-      { label: '3K Sandıklar', link: `/uck/${id}` },
+      { label: isSaha ? 'Saha Yönetimi' : 'Projeler', link: isSaha ? '/saha-yonetimi' : '/projeler' },
+      { label: '3K Sandıklar', link: isSaha ? `/saha-yonetimi/uck/${id}` : `/uck/${id}` },
       { label: sNo || '3K Ürünler' },
     ];
 
@@ -405,7 +410,12 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   getRowClass(u: UcKUrunDto): string {
     const kalanClass = (u.kalan ?? 0) > 0 ? 'row-kalan-var' : 'row-kalan-yok';
-    return this.isSatirSevkKilidi(u) ? `${kalanClass} row-sevk-kilitli` : kalanClass;
+    const manuelClass = this.isSahaManuelIcerik(u) ? ' row-saha-manuel' : '';
+    return this.isSatirSevkKilidi(u) ? `${kalanClass} row-sevk-kilitli${manuelClass}` : `${kalanClass}${manuelClass}`;
+  }
+
+  isSahaManuelIcerik(u: UcKUrunDto): boolean {
+    return u.isSahaManuelSandikIcerigi === true || (!!u.sandikIcerikId && u.cekiSatiriId <= 0);
   }
 
   private isSatirSevkKilidi(u: UcKUrunDto): boolean {
@@ -432,13 +442,19 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     // Checkbox, buton veya input elemanlarına tıklanmışsa yoksay
     if (el.closest('button, input, a, .form-check-input, .transfer-chain-link')) return;
     // Yazma yetkisi yoksa açma
-    if (!this.permissions.canWrite('3k-modulu')) return;
+    if (!this.canUcKWrite) return;
     // Disabled satır kontrolü
+    if (this.isSahaManuelIcerik(urun)) return;
     if (this.isEditDisabled(urun)) return;
     this.openPanel(urun);
   }
 
   openPanel(urun: UcKUrunDto) {
+    if (this.isSahaManuelIcerik(urun)) {
+      this.toast.info('Manuel saha urunleri sandik icerigidir; 3K islemi gerektirmez.');
+      return;
+    }
+
     this.panelUrun.set(urun);
     this.panelTip.set(urun.ucKKarsilamaTipiMetni === 'Bekliyor' ? '' : urun.ucKKarsilamaTipiMetni);
     this.panelGelenAdet.set(urun.gelenMiktar);
@@ -1119,7 +1135,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   // ===== Checkbox [disabled] — sadece kesin blokaj durumları =====
   get canUcKWrite(): boolean {
-    return this.permissions.canWrite('3k-modulu');
+    return this.permissions.canWrite(this.activeMenuKod);
   }
 
   get canSelectRows(): boolean {
@@ -1128,6 +1144,10 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   openAnaVeriPanel(urun: UcKUrunDto) {
     if (!this.canEditCekiVerisi()) return;
+    if (this.isSahaManuelIcerik(urun)) {
+      this.toast.info('Manuel saha urunleri sandik detayi uzerinden yonetilir.');
+      return;
+    }
     if (this.isSatirSevkKilidi(urun)) {
       this.toast.error(this.sevkEdilmisSandikMesaji);
       return;
@@ -1249,6 +1269,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   }
 
   isEditDisabled(u: UcKUrunDto): boolean {
+    if (this.isSahaManuelIcerik(u)) return true;
     if (this.isSatirSevkKilidi(u)) return true;
     if (u.gridDurumuId === GridDurum.Iptal || u.gridDurumuId === GridDurum.GridKapandi) return true;
     if (u.kaliteDurumMetni === 'Tadilatta') return true;
@@ -1264,6 +1285,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   getEditDisabledReason(u: UcKUrunDto): string {
     if (!this.isEditDisabled(u)) return '';
+    if (this.isSahaManuelIcerik(u)) return 'Manuel saha urunleri sandik icerigidir; 3K islemi gerektirmez.';
     if (this.isSatirSevkKilidi(u)) return this.sevkEdilmisSandikMesaji;
     if (u.kaliteDurumMetni === 'Tadilatta') return 'Kalite Tadilatta olduğu için işlem yapılamaz.';
     if (u.gridDurumuId === GridDurum.Iptal) return 'Grid iptal ettiği için işlem yapılamaz.';
@@ -1273,6 +1295,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   }
 
   isCheckboxDisabled(u: UcKUrunDto): boolean {
+    if (this.isSahaManuelIcerik(u)) return true;
     return this.isSatirSevkKilidi(u);
   }
 
@@ -1309,6 +1332,10 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   // ===== Manuel Ürün Silme =====
   async manuelUrunSil(u: UcKUrunDto) {
+    if (this.isSahaManuelIcerik(u)) {
+      this.toast.info('Manuel saha urunleri sandik detayi uzerinden silinir.');
+      return;
+    }
     if (this.isSatirSevkKilidi(u)) {
       this.toast.error(this.sevkEdilmisSandikMesaji);
       return;

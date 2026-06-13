@@ -33,10 +33,14 @@ export class UcKSandiklarComponent implements OnInit {
   private lookupService = inject(LookupService);
   private readonly sevkEdilmisSandikMesaji = 'Bu sandık sevk edildiği için üzerinde işlem yapılamaz.';
 
-  canWriteSandik = computed(() => {
-    const menuKod = this.route.snapshot.data?.['menuKod'] || '3k-modulu';
-    return this.permissionService.canWrite(menuKod);
-  });
+  private get activeMenuKod(): string {
+    return this.route.snapshot.data?.['menuKod'] || '3k-modulu';
+  }
+
+  isSahaContext = computed(() => this.activeMenuKod === 'saha-3k-modulu');
+  uckRoutePrefix = computed(() => this.isSahaContext() ? '/saha-yonetimi/uck' : '/uck');
+  uckSandikRoutePrefix = computed(() => this.isSahaContext() ? '/saha-yonetimi/uck/sandik' : '/uck/sandik');
+  canWriteSandik = computed(() => this.permissionService.canWrite(this.activeMenuKod));
 
   projeId = signal(0);
   mevcutProje = signal<ProjeDropdownDto | null>(null);
@@ -94,10 +98,11 @@ export class UcKSandiklarComponent implements OnInit {
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('projeId'));
     this.projeId.set(id);
+    const isSaha = this.isSahaContext();
     this.breadcrumb = [
       { label: 'Ana Kontrol Paneli', link: '/dashboard' },
-      { label: 'Projeler', link: '/projeler' },
-      { label: '3K Modülü' },
+      { label: isSaha ? 'Saha Yönetimi' : 'Projeler', link: isSaha ? '/saha-yonetimi' : '/projeler' },
+      { label: isSaha ? 'Saha 3K Modülü' : '3K Modülü' },
     ];
     this.loadProjeBilgisi();
     this.loadLookups();

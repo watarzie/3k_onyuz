@@ -2,6 +2,8 @@
 
 export interface UcKUrunDto {
   cekiSatiriId: number;
+  sandikIcerikId?: number;
+  isSahaManuelSandikIcerigi?: boolean;
   siraNo: number;
   barkodNo: string;
   olcuResmiPozNo?: string;

@@ -160,7 +160,14 @@
             <td class="text-muted">{{ u.siraNo }}</td>
             <td><code class="barkod">{{ u.barkodNo }}</code></td>
             <td>{{ u.olcuResmiPozNo || '-' }}</td>
-            <td class="fw-medium text-truncate" style="max-width:200px" [title]="u.aciklama">{{ u.aciklama }}</td>
+            <td class="fw-medium" style="max-width:200px" [title]="u.aciklama">
+              <div class="d-flex align-items-center gap-1">
+                <span class="text-truncate">{{ u.aciklama }}</span>
+                @if (isSahaManuelIcerik(u)) {
+                <span class="badge bg-secondary-subtle text-secondary" style="font-size:10px">Manuel</span>
+                }
+              </div>
+            </td>
             <td class="text-center fw-semibold miktar-cell">{{ u.istenenAdet }} <small class="text-muted fw-normal">{{ u.birim }}</small></td>
             <td><span class="badge-sandik">{{ u.sandikNo }}</span></td>
             <!-- Kalite -->
@@ -277,13 +284,13 @@
                 @if (canEditCekiVerisi()) {
                 <button class="btn btn-sm btn-action btn-admin-edit"
                   (click)="openAnaVeriPanel(u); $event.stopPropagation()"
-                  [disabled]="isSatirSevkKilidi(u)"
-                  [title]="isSatirSevkKilidi(u) ? getUcKBlokajMesaji(u) : 'Ceki verisini duzenle'">
+                  [disabled]="isSahaManuelIcerik(u) || isSatirSevkKilidi(u)"
+                  [title]="isSahaManuelIcerik(u) ? 'Manuel saha urunu sandik detayindan yonetilir' : (isSatirSevkKilidi(u) ? getUcKBlokajMesaji(u) : 'Ceki verisini duzenle')">
                   <i class="ri-file-edit-line"></i>
                 </button>
                 }
                 @if (canGridWrite) {
-                  @if (isSatirSevkKilidi(u) || isUcKIslemYapilmis(u) || isTadilatta(u)) {
+                  @if (isSahaManuelIcerik(u) || isSatirSevkKilidi(u) || isUcKIslemYapilmis(u) || isTadilatta(u)) {
                   <button class="btn btn-sm btn-action btn-locked" disabled [title]="getUcKBlokajMesaji(u)">
                     <i class="ri-lock-line"></i>
                   </button>

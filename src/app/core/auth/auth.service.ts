@@ -4,6 +4,7 @@ import { Observable, tap } from 'rxjs';
 import { BaseApiService } from '../services/base-api.service';
 import { API } from '../constants/api-endpoints';
 import { SessionManager } from '../managers/session.manager';
+import { PermissionService } from '../services/permission.service';
 import { LoginDto, LoginResultDto, ApiResult } from '../../shared/models/auth.model';
 
 @Injectable({ providedIn: 'root' })
@@ -11,6 +12,7 @@ export class AuthService {
   private api = inject(BaseApiService);
   private router = inject(Router);
   private session = inject(SessionManager);
+  private permissions = inject(PermissionService);
 
   /**
    * Kullanıcı bilgileri — JWT'den decode edilir.
@@ -24,7 +26,8 @@ export class AuthService {
       tap((result) => {
         if (result.isSuccess && result.value) {
           // Sadece token'ı sakla — kullanıcı bilgileri JWT'den okunur
-          // rememberMe: true → localStorage (kalıcı), false → sessionStorage (tarayıcı kapatılınca silinir)
+          // Token sekmeler arası paylaşılır; rememberMe kalıcı oturum tercihini işaretler.
+          this.permissions.clear();
           this.session.setToken(result.value.token, rememberMe);
           this.currentUser.set(this.session.getUser());
         }
@@ -35,6 +38,7 @@ export class AuthService {
   logout(): void {
     this.session.clearAll();
     this.currentUser.set(null);
+    this.permissions.clear();
     this.router.navigate(['/auth/login']);
   }
 

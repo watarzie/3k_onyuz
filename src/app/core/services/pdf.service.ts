@@ -13,6 +13,7 @@ export class PdfService {
   private api = inject(BaseApiService);
   private readonly eksikRaporOptions = { headers: { 'X-Menu-Kod': 'eksik-raporu' } };
   private readonly gerceklesenRaporOptions = { headers: { 'X-Menu-Kod': 'gerceklesen-ceki-raporu' } };
+  private menuOptions(menuKod: string) { return { headers: { 'X-Menu-Kod': menuKod } }; }
 
   indirPdf(projeId: number): Observable<Blob> {
     return this.api.downloadFile(API.PDF.INDIR(projeId));
@@ -22,12 +23,12 @@ export class PdfService {
     return this.api.downloadFile(API.PDF.EXCEL(projeId));
   }
 
-  sahaSandikPdf(sandikId: number): Observable<Blob> {
-    return this.api.downloadFile(API.PDF.SAHA_SANDIK(sandikId));
+  sahaSandikPdf(sandikId: number, menuKod?: string): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.SAHA_SANDIK(sandikId), menuKod ? this.menuOptions(menuKod) : undefined);
   }
 
-  sahaProjePdf(projeId: number): Observable<Blob> {
-    return this.api.downloadFile(API.PDF.SAHA_PROJE(projeId));
+  sahaProjePdf(projeId: number, menuKod?: string): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.SAHA_PROJE(projeId), menuKod ? this.menuOptions(menuKod) : undefined);
   }
 
   eksikUrunlerPdf(projeId: number): Observable<Blob> {

@@ -168,7 +168,9 @@ export interface EksikUrunForSandikDto {
   istenenAdet: number;
   gelenMiktar: number;
   kalanMiktar: number;
+  tamamlamaPlanlananAdet?: number;
   birim: string;
+  projeId: number;
   projeNo: string;
 }
 

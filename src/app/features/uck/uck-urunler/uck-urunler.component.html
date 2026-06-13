@@ -129,7 +129,14 @@
             <td class="text-muted">{{ u.siraNo }}</td>
             <td><code class="barkod">{{ u.barkodNo }}</code></td>
             <td>{{ u.olcuResmiPozNo || '-' }}</td>
-            <td class="fw-medium text-truncate" style="max-width:180px" [title]="u.aciklama">{{ u.aciklama }}</td>
+            <td class="fw-medium" style="max-width:180px" [title]="u.aciklama">
+              <div class="d-flex align-items-center gap-1">
+                <span class="text-truncate">{{ u.aciklama }}</span>
+                @if (isSahaManuelIcerik(u)) {
+                <span class="badge bg-secondary-subtle text-secondary" style="font-size:10px">Manuel</span>
+                }
+              </div>
+            </td>
             <td><span class="badge-sandik">{{ u.sandikNo }}</span></td>
             <td class="text-center fw-semibold miktar-cell">{{ u.istenenAdet }} <small class="text-muted fw-normal">{{ u.birim }}</small></td>
             <!-- Kalite (read-only) -->
@@ -244,16 +251,19 @@
               <div class="d-flex gap-1">
                 @if (canEditCekiVerisi()) {
                 <button class="btn btn-sm btn-action btn-admin-edit"
-                  (click)="openAnaVeriPanel(u); $event.stopPropagation()" title="Ceki verisini duzenle">
+                  (click)="openAnaVeriPanel(u); $event.stopPropagation()"
+                  [disabled]="isSahaManuelIcerik(u)"
+                  [title]="isSahaManuelIcerik(u) ? 'Manuel saha urunu sandik detayindan yonetilir' : 'Ceki verisini duzenle'">
                   <i class="ri-file-edit-line"></i>
                 </button>
                 }
                 @if (canUcKWrite) {
-                <button class="btn btn-sm btn-action" (click)="openPanel(u); $event.stopPropagation()" title="Duzenle"
+                <button class="btn btn-sm btn-action" (click)="openPanel(u); $event.stopPropagation()"
+                  [title]="getEditDisabledReason(u) || 'Duzenle'"
                   [disabled]="isEditDisabled(u)">
                   <i class="ri-edit-line"></i>
                 </button>
-                @if (u.isManuelEklenen) {
+                @if (u.isManuelEklenen && !isSahaManuelIcerik(u)) {
                 <button class="btn btn-sm btn-outline-danger" (click)="manuelUrunSil(u); $event.stopPropagation()" title="Manuel urunu sil">
                   <i class="ri-delete-bin-line"></i>
                 </button>
