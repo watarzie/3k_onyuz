@@ -122,6 +122,7 @@ export const API = {
     EKSIK_URUNLER_EXCEL: (projeId: number) => `${BASE}/pdf/eksik-urunler/${projeId}/excel`,
     GERCEKLESEN_CEKI_LISTESI: (projeId: number) => `${BASE}/pdf/gerceklesen-ceki-listesi/${projeId}`,
     GERCEKLESEN_CEKI_LISTESI_EXCEL: (projeId: number) => `${BASE}/pdf/gerceklesen-ceki-listesi/${projeId}/excel`,
+    UCK_SANDIK_DURUM: (projeId: number) => `${BASE}/pdf/uck-sandik-durum/${projeId}`,
     STOK: `${BASE}/pdf/stok`,
     DEPO_SANDIK: (projeTipiId?: number | null) =>
       projeTipiId ? `${BASE}/pdf/depo-sandik?projeTipiId=${projeTipiId}` : `${BASE}/pdf/depo-sandik`,

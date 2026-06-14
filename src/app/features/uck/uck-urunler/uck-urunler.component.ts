@@ -30,6 +30,7 @@ const KARSILAMA_TIPLERI: KarsilamaTipi[] = [
   { id: UcKDurum.StoktanKarsilandi, value: 'Stoktan Karşılandı', label: 'STOKTAN KARŞILANDI', color: '#9C27B0', bgClass: 'row-stoktan' },
   { id: UcKDurum.TedarikcidenGeldi, value: 'Tedarikçiden Geldi', label: 'TEDARİKÇİDEN GELDİ', color: '#1B7D3A', bgClass: 'row-tedarikci' },
   { id: UcKDurum.Gelmedi, value: 'Gelmedi', label: 'GELMEDİ', color: '#FF4023', bgClass: 'row-gelmedi' },
+  { id: UcKDurum.FazlaGeldi, value: 'Fazla Geldi', label: 'FAZLA GELDİ', color: '#0EA5E9', bgClass: 'row-fazla-geldi' },
   { id: UcKDurum.GeriGonderildi, value: 'Geri Gönderildi', label: 'GERİ GÖNDERİLDİ', color: '#D32F2F', bgClass: 'row-geri-gonderildi' },
 ];
 
@@ -77,6 +78,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   panelKaynakHedef = signal('');
   panelAciklama = signal('');
   panelGeriGonderilmeSebebi = signal('');
+  panelFazlaStogaAktar = signal(true);
   panelSaving = signal(false);
   panelError = signal('');
   panelUyari = signal('');
@@ -460,6 +462,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     this.panelGelenAdet.set(urun.gelenMiktar);
     this.panelKaynakHedef.set(urun.kaynakHedefProjeNo ?? '');
     this.panelKaynakCekiSatiriId.set(null);
+    this.panelStokKaydiId.set(null);
+    this.panelFazlaStogaAktar.set(true);
     this.panelAciklama.set(urun.ucKAciklama ?? '');
     this.panelGeriGonderilmeSebebi.set(urun.geriGonderilmeSebebiId ? urun.geriGonderilmeSebebiId.toString() : '');
     this.panelError.set('');
@@ -507,6 +511,13 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       case 'Tedarikçiden Geldi':
         this.panelGelenAdet.set(0);
         this.panelKaynakHedef.set('');
+        break;
+      case 'Fazla Geldi':
+        this.panelGelenAdet.set(0);
+        this.panelKaynakHedef.set('');
+        this.panelKaynakCekiSatiriId.set(null);
+        this.panelStokKaydiId.set(null);
+        this.panelFazlaStogaAktar.set(true);
         break;
       case 'Geri Gönderildi':
         this.panelGelenAdet.set(u.gelenMiktar > 0 ? u.gelenMiktar : 0);
@@ -692,6 +703,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       case 'Stoktan Karşılandı': uyari = 'DEPO STOĞUNDAN KARŞILANACAKTIR'; break;
       case 'Tedarikçiden Geldi': uyari = 'TEDARİKÇİDEN DİREKT GELDİ'; break;
       case 'Gelmedi': uyari = 'GELMEDİ OLARAK İŞARETLENECEK'; break;
+      case 'Fazla Geldi': uyari = 'FAZLA TESLİM STOKA AKTARILACAK'; break;
       case 'Geri Gönderildi': uyari = 'GERİ GÖNDERİLECEK — SEBEP SEÇİN VE ADET GİRİN'; break;
     };
     this.panelUyari.set(uyari || 'BEKLİYOR');
@@ -718,7 +730,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     const tipId = this.getTipId(tip);
     return tipId === UcKDurum.TamGeldi ||
       tipId === UcKDurum.EksikGeldi ||
-      tipId === UcKDurum.Gelmedi;
+      tipId === UcKDurum.Gelmedi ||
+      tipId === UcKDurum.FazlaGeldi;
   }
 
   private isGridKaynakKarsilamaAcik(u: UcKUrunDto): boolean {
@@ -767,6 +780,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
     // Sevk Adeti Tam Geldi → Grid sevk edilmiş olmalı
     if (tip === 'Sevk Adeti Tam Geldi' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) return true;
+    if (tip === 'Fazla Geldi' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) return true;
 
     // Projeden/Stoktan/Tedarikçi → Grid eksik/gelmedi/trafo veya 3K geri gönderim sonrası kalan açık olmalı
     if (this.isKaynakKarsilamaTip(tip)) {
@@ -841,6 +855,9 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     if (tip === 'Sevk Adeti Tam Geldi' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) {
       return 'Grid tarafından eksiksiz sevk edilmeden "Sevk Adeti Tam Geldi" olarak işaretlenemez.';
     }
+    if (tip === 'Fazla Geldi' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) {
+      return 'Grid tarafından sevk edilmeden "Fazla Geldi" işlemi yapılamaz.';
+    }
 
     // Hatalı Ürün → Grid sevk edilmiş olmalı
     if (tip === 'Hatalı Ürün' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) {
@@ -891,6 +908,10 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     if (tip === 'Tedarikçiden Geldi') {
       if (this.panelGelenAdet() <= 0) return 'Gelen adet girilmelidir.';
     }
+    if (tip === 'Fazla Geldi') {
+      if (this.panelGelenAdet() <= 0) return 'Fazla gelen adet girilmelidir.';
+      if (!this.panelFazlaStogaAktar()) return 'Fazla gelen adet stoka aktarılmalıdır.';
+    }
     if (tip === 'Geri Gönderildi') {
       if (!this.panelGeriGonderilmeSebebi()) return 'Geri gönderilme sebebi seçilmelidir.';
       if (this.panelGelenAdet() <= 0) return 'Geri gönderilen adet girilmelidir.';
@@ -900,7 +921,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
     // KURAL 3 (Dumb UI): Overflow kontrolü backend'de yapılır.
     // Frontend sadece basit validasyonları (boş alan kontrolü) yapar.
-    if (this.panelGelenAdet() > u.kalan && tip !== 'Sevk Adeti Tam Geldi' && tip !== 'Geri Gönderildi') return 'Gelen adet kalandan büyük olamaz.';
+    if (this.panelGelenAdet() > u.kalan && tip !== 'Sevk Adeti Tam Geldi' && tip !== 'Geri Gönderildi' && tip !== 'Fazla Geldi') return 'Gelen adet kalandan büyük olamaz.';
 
     return null;
   }
@@ -925,6 +946,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       stokKaydiId: this.panelStokKaydiId() || undefined,
       aciklama: _aciklama ? _aciklama.trim() : '',
       geriGonderilmeSebebiId: tip === 'Geri Gönderildi' ? +this.panelGeriGonderilmeSebebi() : undefined,
+      stogaAktar: tip === 'Fazla Geldi' ? this.panelFazlaStogaAktar() : undefined,
       urunAdi: u.aciklama || u.barkodNo,
       mevcutProjeNo: this.projeler().find(p => p.id === this.projeId())?.projeNo || this.projeId().toString(),
       mevcutSandikNo: u.sandikNo || this.sandikNo(),

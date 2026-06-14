@@ -288,7 +288,7 @@
         <button class="btn btn-sm border-0" (click)="closeUrunEkleModal()"><i class="ri-close-line fs-5"></i></button>
       </div>
       <div class="modal-body-custom">
-        @if (isYedekYonetimi()) {
+        @if (isSahaYedek()) {
           <div class="d-flex gap-2 mb-3">
             <button class="btn btn-sm" [ngClass]="eklemeMode() === 'manuel' ? 'btn-primary' : 'btn-outline-primary'" (click)="eklemeMode.set('manuel')">
               <i class="ri-edit-line me-1"></i>Manuel Giriş

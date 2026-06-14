@@ -97,6 +97,7 @@ export enum UcKDurum {
   BaskaProyeVerildi = 11,
   GeriGonderildi = 12,
   HataliUrun = 13,
+  FazlaGeldi = 14,
 }
 
 // ===== Stok Durumu =====

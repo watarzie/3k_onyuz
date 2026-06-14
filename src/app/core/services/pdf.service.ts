@@ -11,7 +11,6 @@ import { Observable } from 'rxjs';
 @Injectable({ providedIn: 'root' })
 export class PdfService {
   private api = inject(BaseApiService);
-  private readonly eksikRaporOptions = { headers: { 'X-Menu-Kod': 'eksik-raporu' } };
   private readonly gerceklesenRaporOptions = { headers: { 'X-Menu-Kod': 'gerceklesen-ceki-raporu' } };
   private menuOptions(menuKod: string) { return { headers: { 'X-Menu-Kod': menuKod } }; }
 
@@ -31,12 +30,12 @@ export class PdfService {
     return this.api.downloadFile(API.PDF.SAHA_PROJE(projeId), menuKod ? this.menuOptions(menuKod) : undefined);
   }
 
-  eksikUrunlerPdf(projeId: number): Observable<Blob> {
-    return this.api.downloadFile(API.PDF.EKSIK_URUNLER(projeId), this.eksikRaporOptions);
+  eksikUrunlerPdf(projeId: number, menuKod = 'eksik-raporu'): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.EKSIK_URUNLER(projeId), this.menuOptions(menuKod));
   }
 
-  eksikUrunlerExcel(projeId: number): Observable<Blob> {
-    return this.api.downloadFile(API.PDF.EKSIK_URUNLER_EXCEL(projeId), this.eksikRaporOptions);
+  eksikUrunlerExcel(projeId: number, menuKod = 'eksik-raporu'): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.EKSIK_URUNLER_EXCEL(projeId), this.menuOptions(menuKod));
   }
 
   gerceklesenCekiListesiPdf(projeId: number): Observable<Blob> {
@@ -45,6 +44,10 @@ export class PdfService {
 
   gerceklesenCekiListesiExcel(projeId: number): Observable<Blob> {
     return this.api.downloadFile(API.PDF.GERCEKLESEN_CEKI_LISTESI_EXCEL(projeId), this.gerceklesenRaporOptions);
+  }
+
+  uckSandikDurumPdf(projeId: number, menuKod = '3k-sandik-durum-raporu'): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.UCK_SANDIK_DURUM(projeId), this.menuOptions(menuKod));
   }
 
   stokPdf(): Observable<Blob> {

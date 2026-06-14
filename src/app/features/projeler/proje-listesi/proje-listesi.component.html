@@ -276,6 +276,20 @@
 
                           }
 
+                          @if (isSahaYonetimi() && canSeeSahaSevkSonrasiEksikRapor()) {
+                            <div class="report-download" (click)="$event.stopPropagation()">
+                              <button type="button" class="btn btn-sm btn-outline-danger report-download-trigger" (click)="toggleReportMenu($event, 'saha-eksik-' + p.id, p, 'eksik')" [disabled]="isEksikDownloading(p.id)" title="Sevk Sonrası Eksik Raporu">
+                                @if (isEksikDownloading(p.id)) {
+                                  <span class="spinner-border spinner-border-sm"></span>
+                                } @else {
+                                  <i class="ri-file-warning-line"></i>
+                                }
+                                <span>Sevk Sonrası Eksik</span>
+                                <i class="ri-arrow-down-s-line report-download-chevron" [class.open]="isReportMenuOpen('saha-eksik-' + p.id)"></i>
+                              </button>
+                            </div>
+                          }
+
                           @if (isYedekYonetimi() || canSeeSahaSandiklar()) {
 
                             <a [routerLink]="[routePrefix, p.id]" class="btn btn-sm btn-outline-primary" title="Sandıklar">

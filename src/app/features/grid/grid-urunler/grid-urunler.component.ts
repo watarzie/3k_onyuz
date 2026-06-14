@@ -590,6 +590,10 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       if (toplam > u.istenenAdet) return 'Toplam adet, çeki miktarını aşamaz.';
     }
 
+    if (this.panelSevkAdet() > 0 && this.panelSevkDurumu() !== 'Sevk Edildi') {
+      return 'Sevk adeti girildiyse Grid sevk durumu Sevk Edildi seçilmelidir.';
+    }
+
     if (this.panelSevkDurumu() === 'Sevk Edildi') {
       if (d !== 'Tam Geldi' && d !== 'Eksik Geldi' && !(d === 'Trafo Sevk' && this.panelGelenAdet() > 0)) return 'Sevk için durum Tam Geldi, Eksik Geldi veya Grid gelen adedi olan Trafo Sevk olmalıdır.';
       if (this.panelSevkAdet() <= 0) return 'Sevk edilen miktar girilmelidir.';

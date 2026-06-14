@@ -57,6 +57,34 @@
   &.s-hazir::after { background: #22C55E; }
   &.s-sevkedildi::after { background: #3B82F6; }
 
+  &.is-closed {
+    background: linear-gradient(180deg, #FCFFFD 0%, #F4FBF7 100%);
+    border-color: #BFE8CC;
+    box-shadow: inset 0 0 0 1px rgba(22, 163, 74, .04);
+
+    &::after { background: #22C55E; }
+
+    .sandik-no { color: #1F2937 !important; }
+    .sandik-ismi { color: #334155 !important; }
+    .status-text { color: #15803D !important; }
+
+    .sandik-ismi i,
+    .card-meta span,
+    .card-meta i {
+      color: #64748B;
+    }
+
+    .status-dot {
+      background: #16A34A !important;
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, .11);
+    }
+
+    &:hover {
+      border-color: #86D8A3;
+      box-shadow: 0 4px 14px rgba(22, 163, 74, .08);
+    }
+  }
+
   &.is-shipped {
     cursor: not-allowed;
     background: linear-gradient(180deg, #EFF6FF 0%, #E0F2FE 100%);

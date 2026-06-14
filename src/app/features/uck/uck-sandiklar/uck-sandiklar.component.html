@@ -9,11 +9,23 @@
       </div>
       <app-breadcrumb [items]="breadcrumb" />
     </div>
-    @if (canWriteSandik()) {
-    <button class="btn btn-save d-flex align-items-center gap-2" (click)="openSandikEkleModal()">
-      <i class="ri-add-circle-line"></i> Yeni Sandık Ekle
-    </button>
-    }
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      @if (canSeeSandikDurumRaporu()) {
+      <button class="btn btn-outline-primary d-flex align-items-center gap-2" (click)="indirSandikDurumRaporu()" [disabled]="downloadingSandikDurumRaporu()">
+        @if (downloadingSandikDurumRaporu()) {
+          <span class="spinner-border spinner-border-sm"></span>
+        } @else {
+          <i class="ri-file-list-3-line"></i>
+        }
+        Sandık Durum Raporu
+      </button>
+      }
+      @if (canWriteSandik()) {
+      <button class="btn btn-new-sandik" (click)="openSandikEkleModal()">
+        <i class="ri-add-circle-line"></i> Yeni Sandık Ekle
+      </button>
+      }
+    </div>
   </div>
 </div>
 
@@ -96,7 +108,7 @@
         }
 
         <div [routerLink]="[uckRoutePrefix(), projeId(), s.sandikNo]" class="sandik-card h-100"
-          [ngClass]="'s-' + s.durumMetni.toLowerCase()" [class.is-shipped]="isSandikSevkEdildi(s)"
+          [ngClass]="'s-' + s.durumMetni.toLowerCase()" [class.is-closed]="isSandikKapandi(s)" [class.is-shipped]="isSandikSevkEdildi(s)"
           [attr.aria-disabled]="isSandikSevkEdildi(s)" (click)="onSandikCardClick($event, s)"
           style="padding-top: 1.5rem;" role="link" tabindex="0">
           <!-- Üst — Numara + Ok -->

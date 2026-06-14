@@ -240,8 +240,8 @@ export class SandikDetayComponent implements OnInit {
     this.tamamlamaAdetleri.set({});
     this.showUrunEkleModal.set(true);
 
-    // Yedek modunda projeden seçim eski akış olarak korunur.
-    if (this.isYedekYonetimi()) {
+    // Saha/Yedek modunda projeden seçim eski akış olarak korunur.
+    if (this.isSahaYedek()) {
       this.projeService.getProjeListesi(1, 1000, 1).subscribe(res => {
         if (res.isSuccess && res.value) {
           this.normalProjeler.set(res.value.items);

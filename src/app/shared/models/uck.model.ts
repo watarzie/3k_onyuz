@@ -133,6 +133,7 @@ export interface UcKDurumGuncelleDto {
   stokKaydiId?: number;
   aciklama?: string;
   geriGonderilmeSebebiId?: number;
+  stogaAktar?: boolean;
   urunAdi?: string;
   mevcutProjeNo?: string;
   mevcutSandikNo?: string;

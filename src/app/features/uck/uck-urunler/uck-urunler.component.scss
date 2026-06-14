@@ -402,6 +402,21 @@ tbody tr.row-sevk-kilitli:hover > td {
   &.eksik-yok { background: rgba(37,176,3,.06); color: #25B003; }
   strong { font-size: 20px; }
 }
+.fazla-geldi-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border: 1px solid rgba(14, 165, 233, .24);
+  border-radius: 10px; background: rgba(14, 165, 233, .07);
+  .fazla-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #0284C7; background: #E0F2FE; font-size: 18px; flex-shrink: 0;
+  }
+  .fazla-content {
+    flex: 1; min-width: 0;
+    strong { display: block; color: #075985; font-size: 13px; line-height: 1.2; }
+    small { display: block; color: #64748B; margin-top: 2px; }
+  }
+}
 .btn-outline { background: transparent; color: var(--bodyColor); border: 1px solid var(--borderColor); border-radius: 8px; }
 .btn-save {
   background: linear-gradient(135deg, #25B003, #34D399); color: #fff; border: none; font-weight: 600; border-radius: 8px;

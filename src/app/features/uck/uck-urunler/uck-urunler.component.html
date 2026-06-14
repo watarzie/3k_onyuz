@@ -465,13 +465,16 @@
     <!-- 2. Adet -->
     <div class="mb-3">
       <label class="form-label fw-semibold">
-        Adet
+        {{ panelTip() === 'Fazla Geldi' ? 'Fazla Gelen Adet' : 'Adet' }}
       </label>
       <input type="number" class="form-control" [ngModel]="panelGelenAdet()"
         (ngModelChange)="panelGelenAdet.set($event); recalcPanel()" [disabled]="!isGelenAdetAktif" min="0"
-        [max]="panelUrun()!.kalan" step="any" />
+        [attr.max]="panelTip() === 'Fazla Geldi' ? null : panelUrun()!.kalan" step="any" />
       @if (panelTip() === 'Sevk Adeti Tam Geldi') {
       <small class="text-muted">Otomatik: Grid sevk miktarı kadar teslim alınacak</small>
+      }
+      @if (panelTip() === 'Fazla Geldi') {
+      <small class="text-muted">Buraya yalnızca fazla teslim edilen adet girilir.</small>
       }
     </div>
 
@@ -497,6 +500,22 @@
         <option value="3">Projeye Geri Dönüş</option>
         <option value="4">Hatalı Ürün</option>
       </select>
+    </div>
+    }
+
+    @if (panelTip() === 'Fazla Geldi') {
+    <div class="fazla-geldi-card mb-3">
+      <div class="fazla-icon"><i class="ri-inbox-archive-line"></i></div>
+      <div class="fazla-content">
+        <label class="form-check d-flex align-items-start gap-2 m-0">
+          <input class="form-check-input mt-1" type="checkbox" [ngModel]="panelFazlaStogaAktar()"
+            (ngModelChange)="panelFazlaStogaAktar.set($event)" />
+          <span>
+            <strong>Stoka aktar</strong>
+            <small>Stok giriş nedeni: Fazla teslim</small>
+          </span>
+        </label>
+      </div>
     </div>
     }
 

@@ -73,6 +73,7 @@ export class ProjeListesiComponent implements OnInit {
   canSeeSahaGrid = computed(() => this.permissions.hasAccess('saha-grid-modulu'));
   canSeeSaha3K = computed(() => this.permissions.hasAccess('saha-3k-modulu'));
   canSeeSahaRapor = computed(() => this.permissions.hasAccess('saha-raporu'));
+  canSeeSahaSevkSonrasiEksikRapor = computed(() => this.permissions.hasAccess('saha-sevk-sonrasi-eksik-raporu'));
   canSeeSahaSandiklar = computed(() => this.permissions.hasAccess('saha-sandiklar'));
   canSevkEtCurrent = computed(() => this.isSahaYonetimi() ? this.permissions.hasAccess('saha-sevk-et') : this.canSevkEt());
   canDeleteProjectCurrent = computed(() => this.isSahaYonetimi() ? this.permissions.canWrite('saha-proje-sil') : this.canDeleteProject());
@@ -82,7 +83,7 @@ export class ProjeListesiComponent implements OnInit {
   );
   hasSahaYonetimiActions = computed(() =>
     this.isSahaYonetimi() &&
-    (this.canSeeSahaGrid() || this.canSeeSaha3K() || this.canSeeSahaRapor() || this.canSeeSahaSandiklar() || this.canSevkEtCurrent() || this.canDeleteProjectCurrent())
+    (this.canSeeSahaGrid() || this.canSeeSaha3K() || this.canSeeSahaRapor() || this.canSeeSahaSevkSonrasiEksikRapor() || this.canSeeSahaSandiklar() || this.canSevkEtCurrent() || this.canDeleteProjectCurrent())
   );
   hasYedekYonetimiActions = computed(() => this.isYedekYonetimi());
   hasActionColumn = computed(() =>
@@ -432,16 +433,21 @@ export class ProjeListesiComponent implements OnInit {
   indirEksikUrunlerPdf(proje: ProjeDto) {
     this.closeReportMenu();
     this.downloadingEksikPdf.set(proje.id);
-    this.pdfService.eksikUrunlerPdf(proje.id).subscribe({
+    const raporAdi = this.isSahaYonetimi() ? 'SevkSonrasiEksikRaporu' : 'EksikRaporu';
+    const menuKod = this.isSahaYonetimi() ? 'saha-sevk-sonrasi-eksik-raporu' : 'eksik-raporu';
+    const basariMesaji = this.isSahaYonetimi()
+      ? 'Sevk sonrası eksik raporu indirildi.'
+      : 'Eksik ürünler raporu indirildi.';
+    this.pdfService.eksikUrunlerPdf(proje.id, menuKod).subscribe({
       next: (blob) => {
         this.downloadingEksikPdf.set(null);
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${proje.projeNo}_EksikRaporu.pdf`;
+        a.download = `${proje.projeNo}_${raporAdi}.pdf`;
         a.click();
         window.URL.revokeObjectURL(url);
-        this.toastService.success('Eksik ürünler raporu indirildi.');
+        this.toastService.success(basariMesaji);
       },
       error: () => {
         this.downloadingEksikPdf.set(null);
@@ -453,16 +459,21 @@ export class ProjeListesiComponent implements OnInit {
   indirEksikUrunlerExcel(proje: ProjeDto) {
     this.closeReportMenu();
     this.downloadingEksikExcel.set(proje.id);
-    this.pdfService.eksikUrunlerExcel(proje.id).subscribe({
+    const raporAdi = this.isSahaYonetimi() ? 'SevkSonrasiEksikRaporu' : 'EksikRaporu';
+    const menuKod = this.isSahaYonetimi() ? 'saha-sevk-sonrasi-eksik-raporu' : 'eksik-raporu';
+    const basariMesaji = this.isSahaYonetimi()
+      ? 'Sevk sonrası eksik Excel raporu indirildi.'
+      : 'Eksik ürünler Excel raporu indirildi.';
+    this.pdfService.eksikUrunlerExcel(proje.id, menuKod).subscribe({
       next: (blob) => {
         this.downloadingEksikExcel.set(null);
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${proje.projeNo}_EksikRaporu.xlsx`;
+        a.download = `${proje.projeNo}_${raporAdi}.xlsx`;
         a.click();
         window.URL.revokeObjectURL(url);
-        this.toastService.success('Eksik ürünler Excel raporu indirildi.');
+        this.toastService.success(basariMesaji);
       },
       error: () => {
         this.downloadingEksikExcel.set(null);

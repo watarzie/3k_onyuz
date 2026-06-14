@@ -9,6 +9,7 @@ import { ConfirmService } from '../../../core/services/confirm.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { LookupService } from '../../../core/services/lookup.service';
+import { PdfService } from '../../../core/services/pdf.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
@@ -31,6 +32,7 @@ export class UcKSandiklarComponent implements OnInit {
   private toast = inject(ToastService);
   private permissionService = inject(PermissionService);
   private lookupService = inject(LookupService);
+  private pdfService = inject(PdfService);
   private readonly sevkEdilmisSandikMesaji = 'Bu sandık sevk edildiği için üzerinde işlem yapılamaz.';
 
   private get activeMenuKod(): string {
@@ -41,12 +43,14 @@ export class UcKSandiklarComponent implements OnInit {
   uckRoutePrefix = computed(() => this.isSahaContext() ? '/saha-yonetimi/uck' : '/uck');
   uckSandikRoutePrefix = computed(() => this.isSahaContext() ? '/saha-yonetimi/uck/sandik' : '/uck/sandik');
   canWriteSandik = computed(() => this.permissionService.canWrite(this.activeMenuKod));
+  canSeeSandikDurumRaporu = computed(() => this.permissionService.hasAccess(this.sandikDurumRaporMenuKod()));
 
   projeId = signal(0);
   mevcutProje = signal<ProjeDropdownDto | null>(null);
   sandiklar = signal<SandikDto[]>([]);
   filtered = signal<SandikDto[]>([]);
   loading = signal(true);
+  downloadingSandikDurumRaporu = signal(false);
 
   // Bulk Selection
   selectedSandikIds = signal<Set<number>>(new Set());
@@ -299,12 +303,46 @@ export class UcKSandiklarComponent implements OnInit {
     return map[durum] ?? 'ri-inbox-line';
   }
 
+  isSandikKapandi(sandik: SandikDto): boolean {
+    const durumMetni = (sandik.durumMetni ?? '').trim();
+    return sandik.durumId === 3 ||
+      durumMetni === 'Kapandı' ||
+      durumMetni === 'Kapandi';
+  }
+
   isSandikSevkEdildi(sandik: SandikDto): boolean {
     const durumMetni = (sandik.durumMetni ?? '').trim();
     return sandik.durumId === 4 ||
       durumMetni === 'SevkEdildi' ||
       durumMetni === 'Sevk Edildi' ||
       durumMetni === 'Sevkedildi';
+  }
+
+  indirSandikDurumRaporu() {
+    if (this.downloadingSandikDurumRaporu()) return;
+
+    this.downloadingSandikDurumRaporu.set(true);
+    this.pdfService.uckSandikDurumPdf(this.projeId(), this.sandikDurumRaporMenuKod()).subscribe({
+      next: (blob) => {
+        this.downloadingSandikDurumRaporu.set(false);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const projeNo = this.mevcutProje()?.projeNo ?? `Proje_${this.projeId()}`;
+        a.href = url;
+        a.download = `${projeNo}_SandikDurumRaporu.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.toast.success('Sandık durum raporu indirildi.');
+      },
+      error: () => {
+        this.downloadingSandikDurumRaporu.set(false);
+        this.toast.error('Sandık durum raporu indirilirken hata oluştu.');
+      }
+    });
+  }
+
+  private sandikDurumRaporMenuKod(): string {
+    return this.isSahaContext() ? 'saha-3k-sandik-durum-raporu' : '3k-sandik-durum-raporu';
   }
 
   onSandikCardClick(event: Event, sandik: SandikDto) {
