@@ -54,6 +54,10 @@ export class StokService {
     return this.api.put<unknown>(`${API.STOK.CREATE}/${id}`, dto);
   }
 
+  stokSil(id: number): Observable<ApiResult<unknown>> {
+    return this.api.delete<unknown>(API.STOK.DELETE(id));
+  }
+
   stokKarsila(dto: StokKarsilamaDto): Observable<ApiResult<unknown>> {
     return this.api.post<unknown>(API.STOK.KARSILA, dto);
   }

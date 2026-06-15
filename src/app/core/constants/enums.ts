@@ -137,6 +137,11 @@ export enum GridSevkDurum {
   YenidenSevkGerekli = 4,
 }
 
+export enum SevkiyatKilitAcmaTipi {
+  SevkiyatKaydiKorunarakAc = 1,
+  SevkiyatGeriAlinarakAc = 2,
+}
+
 // ===== Birim =====
 export enum Birim {
   Adet = 1,

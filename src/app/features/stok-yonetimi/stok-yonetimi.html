@@ -13,9 +13,11 @@
         }
         Stok Raporu
       </button>
+      @if (canWriteStock()) {
       <button class="btn btn-primary d-inline-flex align-items-center gap-2" (click)="openAddModal()">
         <i class="ri-add-line"></i> Yeni Stok Ekle
       </button>
+      }
     </div>
   </div>
 
@@ -72,9 +74,18 @@
                          }
                        </td>
                        <td class="text-end">
-                         <button class="btn btn-sm btn-light border-0 text-primary" (click)="openEditModal(s)" title="Düzenle">
-                           <i class="ri-edit-2-line"></i>
-                         </button>
+                         <div class="d-inline-flex align-items-center gap-1">
+                           @if (canWriteStock()) {
+                           <button class="btn btn-sm btn-light border-0 text-primary" (click)="openEditModal(s)" title="Düzenle">
+                             <i class="ri-edit-2-line"></i>
+                           </button>
+                           }
+                           @if (canDeleteStock()) {
+                           <button class="btn btn-sm btn-light border-0 text-danger" (click)="deleteStock(s)" title="Sil">
+                             <i class="ri-delete-bin-line"></i>
+                           </button>
+                           }
+                         </div>
                        </td>
                     </tr>
                  }

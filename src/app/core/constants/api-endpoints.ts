@@ -95,6 +95,7 @@ export const API = {
     LIST: `${BASE}/stok`,
     CREATE: `${BASE}/stok`,
     KARSILA: `${BASE}/stok/karsila`,
+    DELETE: (id: number) => `${BASE}/stok/${id}`,
   },
   ONAY: {
     BEKLEYENLER: `${BASE}/onay`,

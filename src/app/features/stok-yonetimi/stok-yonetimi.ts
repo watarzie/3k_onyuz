@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
@@ -7,6 +7,8 @@ import { PdfService } from '../../core/services/pdf.service';
 import { StokKaydiDto, StokKaydiOlusturDto, ProjeDropdownDto } from '../../shared/models/index';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
 import { ProjeService } from '../../core/services/proje.service';
+import { PermissionService } from '../../core/services/permission.service';
+import { ConfirmService } from '../../core/services/confirm.service';
 
 @Component({
   selector: 'app-stok-yonetimi',
@@ -20,6 +22,8 @@ export class StokYonetimi implements OnInit {
   private toastService = inject(ToastService);
   private pdfService = inject(PdfService);
   private projeService = inject(ProjeService);
+  private permissionService = inject(PermissionService);
+  private confirmService = inject(ConfirmService);
 
   // Veriler
   projeler = signal<ProjeDropdownDto[]>([]);
@@ -34,6 +38,8 @@ export class StokYonetimi implements OnInit {
   pageSize = signal<number>(15);
   totalCount = signal<number>(0);
   totalPages = signal<number>(0);
+  canWriteStock = computed(() => this.permissionService.canWrite('stok'));
+  canDeleteStock = computed(() => this.permissionService.canWrite('stok-sil'));
 
   // Modal State
   isAddModalOpen = signal<boolean>(false);
@@ -113,6 +119,8 @@ export class StokYonetimi implements OnInit {
   }
 
   openAddModal() {
+    if (!this.canWriteStock()) return;
+
     this.isEditMode.set(false);
     this.editId.set(null);
     this.yeniStok = {
@@ -128,6 +136,8 @@ export class StokYonetimi implements OnInit {
   }
 
   openEditModal(stok: StokKaydiDto) {
+    if (!this.canWriteStock()) return;
+
     this.isEditMode.set(true);
     this.editId.set(stok.id);
     this.yeniStok = {
@@ -148,6 +158,11 @@ export class StokYonetimi implements OnInit {
   }
 
   saveStock() {
+    if (!this.canWriteStock()) {
+      this.toastService.error('Stok kaydı için yazma yetkiniz bulunmuyor.');
+      return;
+    }
+
     const payload = { ...this.yeniStok };
 
     // Bütün string girdileri baştan ve sondan trimliyoruz!
@@ -202,6 +217,36 @@ export class StokYonetimi implements OnInit {
          error: () => this.toastService.error('Stok eklenirken bir ağ hatası oluştu.')
        });
     }
+  }
+
+  async deleteStock(stok: StokKaydiDto) {
+    if (!this.canDeleteStock()) {
+      this.toastService.error('Stok silme yetkiniz bulunmuyor.');
+      return;
+    }
+
+    const onay = await this.confirmService.ask({
+      title: 'Stok Kaydını Sil',
+      message: `<strong>${stok.malzemeAdi}</strong> stok kaydı silinecek.<br>Bu işlem geri alınamaz.`,
+      confirmText: 'Sil',
+      cancelText: 'Vazgeç',
+      type: 'danger'
+    });
+
+    if (!onay) return;
+
+    this.stokService.stokSil(stok.id).subscribe({
+      next: (res) => {
+        if (res.isSuccess) {
+          this.toastService.success('Stok kaydı başarıyla silindi.');
+          this.loadStoklar();
+          this.stokService.notifyStokUpdated();
+        } else {
+          this.toastService.error(res.error || 'Stok kaydı silinemedi.');
+        }
+      },
+      error: () => this.toastService.error('Stok kaydı silinirken bir ağ hatası oluştu.')
+    });
   }
 
   // ===== Stok PDF Raporu =====

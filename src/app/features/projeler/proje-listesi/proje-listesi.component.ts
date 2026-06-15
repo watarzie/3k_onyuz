@@ -15,6 +15,7 @@ import { CekiRevizyonOnizlemeSonuc, ProjeDto, SandikDto, SevkiyatDto } from '../
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmService } from '../../../core/services/confirm.service';
 import { PdfService } from '../../../core/services/pdf.service';
+import { SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
 
 @Component({
   selector: 'app-proje-listesi',
@@ -168,6 +169,12 @@ export class ProjeListesiComponent implements OnInit {
   sevkGecmisiLoading = signal(false);
   showSevkGecmisiModal = signal(false);
   sevkGecmisiProje = signal<ProjeDto | null>(null);
+  showKilitAcModal = signal(false);
+  kilitAcProje = signal<ProjeDto | null>(null);
+  kilitAcmaTipiId = signal<SevkiyatKilitAcmaTipi>(SevkiyatKilitAcmaTipi.SevkiyatKaydiKorunarakAc);
+  kilitAcAciklama = signal('');
+  kilitAcSaving = signal(false);
+  readonly kilitAcmaTipleri = SevkiyatKilitAcmaTipi;
   sevkGecmisiSevkiyatSayisi = computed(() => this.sevkGecmisi().filter(kayit => !kayit.isKilitAcma).length);
   sevkEtSelectableSandiklar = computed(() => this.sevkEtSandiklar().filter(s => !this.isSandikSevkEdildi(s)));
   allSevkSandikSelected = computed(() => {
@@ -968,29 +975,56 @@ export class ProjeListesiComponent implements OnInit {
     });
   }
 
-  async kilidiAc(proje: ProjeDto) {
-    const onay = await this.confirmService.ask({
-      title: 'Proje Kilidini Aç',
-      message: `<strong>${proje.projeNo}</strong> numaralı projenin kilidini açmak istediğinize emin misiniz?<br>
-                Proje yeniden "Devam" durumuna geçecek ve işlemlere izin verilecektir.`,
-      confirmText: 'Evet, Kilidi Aç',
-      cancelText: 'Vazgeç',
-      type: 'info'
-    });
+  openKilitAcModal(proje: ProjeDto) {
+    this.kilitAcProje.set(proje);
+    this.kilitAcmaTipiId.set(SevkiyatKilitAcmaTipi.SevkiyatKaydiKorunarakAc);
+    this.kilitAcAciklama.set('');
+    this.showKilitAcModal.set(true);
+  }
 
-    if (onay) {
-      this.projeService.kilidiAc(proje.id, this.getSevkMenuKod()).subscribe({
-        next: (res) => {
-          if (res.isSuccess) {
-            this.toastService.success('Proje kilidi başarıyla açıldı.');
-            this.loadProjeler();
-          } else {
-            this.toastService.error(res.error || 'İşlem başarısız.');
-          }
-        },
-        error: () => this.toastService.error('Sunucu hatası oluştu.')
-      });
+  closeKilitAcModal() {
+    if (this.kilitAcSaving()) return;
+    this.showKilitAcModal.set(false);
+    this.kilitAcProje.set(null);
+    this.kilitAcAciklama.set('');
+  }
+
+  kilidiAcOnayla() {
+    const proje = this.kilitAcProje();
+    if (!proje) return;
+
+    const aciklama = this.kilitAcAciklama().trim();
+    if (!aciklama) {
+      this.toastService.error('Kilit açma gerekçesi girilmelidir.');
+      return;
     }
+
+    this.kilitAcSaving.set(true);
+    this.projeService.kilidiAc(
+      proje.id,
+      {
+        kilitAcmaTipiId: this.kilitAcmaTipiId(),
+        projeNo: proje.projeNo,
+        aciklama
+      },
+      this.getSevkMenuKod()
+    ).subscribe({
+      next: (res) => {
+        this.kilitAcSaving.set(false);
+        if (res.isSuccess) {
+          const queued = (res.value as any)?.statusCode === 202;
+          this.toastService.success(queued ? 'Kilit açma talebi onaya gönderildi.' : 'Proje kilidi başarıyla açıldı.');
+          this.closeKilitAcModal();
+          this.loadProjeler();
+        } else {
+          this.toastService.error(res.error || 'İşlem başarısız.');
+        }
+      },
+      error: () => {
+        this.kilitAcSaving.set(false);
+        this.toastService.error('Sunucu hatası oluştu.');
+      }
+    });
   }
 
   // ===== Proje Sil =====

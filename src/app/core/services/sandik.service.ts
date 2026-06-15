@@ -110,8 +110,22 @@ export class SandikService {
     return this.api.post<any>(API.SANDIK.TOPLU_KAPAT, { sandikIds, forceClose });
   }
 
-  sandikKilidiAc(projeId: number, sandikId: number, aciklama?: string): Observable<ApiResult<unknown>> {
-    return this.api.post<unknown>(API.SANDIK.KILIDI_AC, { projeId, sandikId, aciklama });
+  sandikKilidiAc(
+    projeId: number,
+    sandikId: number,
+    kilitAcmaTipiId: number,
+    aciklama?: string,
+    projeNo?: string,
+    sandikNo?: string
+  ): Observable<ApiResult<unknown>> {
+    return this.api.post<unknown>(API.SANDIK.KILIDI_AC, {
+      projeId,
+      sandikId,
+      kilitAcmaTipiId,
+      projeNo: projeNo?.trim() || null,
+      sandikNo: sandikNo?.trim() || null,
+      aciklama: aciklama?.trim() || null
+    });
   }
 
   lokasyonGuncelle(sandikIds: number[], depoLokasyonId: number): Observable<ApiResult<unknown>> {

@@ -302,10 +302,15 @@
                       
                       @if (canSevkEtCurrent() && (!isSandikMode() || isSahaYonetimi() || isYedekYonetimi())) {
                         @if (p.durumMetni === 'SevkEdildi' || p.durumMetni === 'Sevk Edildi') {
-                          <button class="btn btn-sm btn-outline-primary" (click)="kilidiAc(p)">
+                          <button class="btn btn-sm btn-outline-primary" (click)="openKilitAcModal(p)">
                             <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
                           </button>
                         } @else {
+                          @if (hasSevkiyatGecmisi(p)) {
+                            <button class="btn btn-sm btn-outline-primary" (click)="openKilitAcModal(p)">
+                              <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
+                            </button>
+                          }
                           <button class="btn btn-sm btn-warning" (click)="openSevkTarihiModal(p)" title="Planlanan Sevk Tarihi Gir">
                             <i class="ri-calendar-event-line me-1"></i>Planlanan Sevk Tarihi
                           </button>
@@ -796,6 +801,77 @@
               </div>
             }
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showKilitAcModal()) {
+  <div class="modal-backdrop fade show" (click)="closeKilitAcModal()"></div>
+  <div class="modal d-block fade show" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg kilit-ac-modal">
+        <div class="modal-header border-0">
+          <div>
+            <h5 class="modal-title"><i class="ri-lock-unlock-line me-2 text-primary"></i>Sevkiyat Kilidi Açma Talebi</h5>
+            <small class="text-muted">{{ kilitAcProje()?.projeNo }} - {{ kilitAcProje()?.musteri }}</small>
+          </div>
+          <button type="button" class="btn-close" (click)="closeKilitAcModal()" [disabled]="kilitAcSaving()"></button>
+        </div>
+
+        <div class="modal-body pt-0">
+          <div class="kilit-ac-options">
+            <button
+              type="button"
+              class="kilit-ac-option"
+              [class.active]="kilitAcmaTipiId() === kilitAcmaTipleri.SevkiyatKaydiKorunarakAc"
+              (click)="kilitAcmaTipiId.set(kilitAcmaTipleri.SevkiyatKaydiKorunarakAc)">
+              <span class="option-icon keep"><i class="ri-route-line"></i></span>
+              <span>
+                <strong>Sevkiyat kaydı korunsun</strong>
+                <small>Sandıklar işlem için açılır; sevkiyat geçmişi ve gerçekleşen sevk kaydı korunur.</small>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              class="kilit-ac-option"
+              [class.active]="kilitAcmaTipiId() === kilitAcmaTipleri.SevkiyatGeriAlinarakAc"
+              (click)="kilitAcmaTipiId.set(kilitAcmaTipleri.SevkiyatGeriAlinarakAc)">
+              <span class="option-icon rollback"><i class="ri-arrow-go-back-line"></i></span>
+              <span>
+                <strong>Sevkiyat geri alınsın</strong>
+                <small>Sandıklar sevkiyat kaydından çıkarılır ve aktif operasyona döner.</small>
+              </span>
+            </button>
+          </div>
+
+          <div class="mt-3">
+            <label class="form-label fw-semibold">Gerekçe</label>
+            <textarea
+              class="form-control"
+              rows="3"
+              maxlength="500"
+              placeholder="Örn. Sevk sonrası sandığa eklenmesi gereken ürün unutuldu."
+              [value]="kilitAcAciklama()"
+              (input)="kilitAcAciklama.set($any($event.target).value)"></textarea>
+          </div>
+
+          <div class="kilit-ac-note mt-3">
+            <i class="ri-shield-check-line"></i>
+            <span>Talep İşlem Onay Merkezi'ne düşer. Yetkili onayladıktan sonra kilit açılır.</span>
+          </div>
+        </div>
+
+        <div class="modal-footer border-0 d-flex gap-2">
+          <button class="btn btn-light flex-grow-1" (click)="closeKilitAcModal()" [disabled]="kilitAcSaving()">Vazgeç</button>
+          <button class="btn btn-primary flex-grow-1" (click)="kilidiAcOnayla()" [disabled]="kilitAcSaving()">
+            @if (kilitAcSaving()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>
+            }
+            <i class="ri-send-plane-line me-1"></i> Onaya Gönder
+          </button>
         </div>
       </div>
     </div>

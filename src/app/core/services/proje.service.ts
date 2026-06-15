@@ -65,8 +65,20 @@ export class ProjeService {
     return this.api.get<SevkiyatDto[]>(API.PROJE.SEVKIYATLAR(projeId));
   }
 
-  kilidiAc(projeId: number, menuKod?: string): Observable<ApiResult<boolean>> {
-    return this.api.post<boolean>(API.PROJE.KILIDI_AC(projeId), {}, menuKod ? this.menuOptions(menuKod) : undefined);
+  kilidiAc(
+    projeId: number,
+    payload: { kilitAcmaTipiId: number; projeNo?: string | null; aciklama?: string | null },
+    menuKod?: string
+  ): Observable<ApiResult<boolean>> {
+    return this.api.post<boolean>(
+      API.PROJE.KILIDI_AC(projeId),
+      {
+        kilitAcmaTipiId: payload.kilitAcmaTipiId,
+        projeNo: payload.projeNo?.trim() || null,
+        aciklama: payload.aciklama?.trim() || null
+      },
+      menuKod ? this.menuOptions(menuKod) : undefined
+    );
   }
 
   sevkTarihiGuncelle(projeId: number, planlananSevkTarihi: string | null, menuKod?: string): Observable<ApiResult<boolean>> {

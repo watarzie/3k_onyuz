@@ -10,6 +10,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { LookupService } from '../../../core/services/lookup.service';
 import { PdfService } from '../../../core/services/pdf.service';
+import { SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
@@ -87,6 +88,12 @@ export class UcKSandiklarComponent implements OnInit {
   ekNetKg = signal<number | null>(null);
   ekGrossKg = signal<number | null>(null);
   sandikTipleri = signal<{ id: number, deger: string }[]>([]);
+  showKilitAcModal = signal(false);
+  kilitAcSandik = signal<SandikDto | null>(null);
+  kilitAcmaTipiId = signal<SevkiyatKilitAcmaTipi>(SevkiyatKilitAcmaTipi.SevkiyatKaydiKorunarakAc);
+  kilitAcAciklama = signal('');
+  kilitAcSaving = signal(false);
+  readonly kilitAcmaTipleri = SevkiyatKilitAcmaTipi;
 
   breadcrumb: { label: string; link?: string }[] = [];
 
@@ -360,32 +367,54 @@ export class UcKSandiklarComponent implements OnInit {
     if (!this.canWriteSandik()) return;
     if (!this.isSandikSevkEdildi(sandik)) return;
 
-    const confirm = await this.confirmService.ask({
-      title: 'Sandık Kilidini Aç',
-      message: `<strong>${sandik.sandikNo}</strong> numaralı sandığın sevk kilidi kaldırılacak.<br><br>
-                <small class="text-muted">Sandık tekrar 3K işlemine açılır ve sevkiyat listesinden çıkarılır.</small>`,
-      confirmText: 'Kilidi Aç',
-      cancelText: 'Vazgeç',
-      type: 'warning'
-    });
+    this.kilitAcSandik.set(sandik);
+    this.kilitAcmaTipiId.set(SevkiyatKilitAcmaTipi.SevkiyatKaydiKorunarakAc);
+    this.kilitAcAciklama.set('');
+    this.showKilitAcModal.set(true);
+  }
 
-    if (!confirm) return;
+  closeKilitAcModal() {
+    if (this.kilitAcSaving()) return;
+    this.showKilitAcModal.set(false);
+    this.kilitAcSandik.set(null);
+    this.kilitAcAciklama.set('');
+  }
 
+  sandikKilidiAcOnayla() {
+    const sandik = this.kilitAcSandik();
+    if (!sandik) return;
+
+    const aciklama = this.kilitAcAciklama().trim();
+    if (!aciklama) {
+      this.toast.error('Kilit açma gerekçesi girilmelidir.');
+      return;
+    }
+
+    this.kilitAcSaving.set(true);
     this.sandikService.sandikKilidiAc(
       this.projeId(),
       sandik.id,
-      '3K modülünden sandık sevk kilidi açıldı.'
+      this.kilitAcmaTipiId(),
+      aciklama,
+      this.mevcutProje()?.projeNo,
+      sandik.sandikNo
     ).subscribe({
       next: (res) => {
+        this.kilitAcSaving.set(false);
         if (res.isSuccess) {
-          this.toast.success(`Sandık "${sandik.sandikNo}" kilidi açıldı.`);
+          const queued = (res.value as any)?.statusCode === 202;
+          this.toast.success(queued ? `Sandık "${sandik.sandikNo}" kilit açma talebi onaya gönderildi.` : `Sandık "${sandik.sandikNo}" kilidi açıldı.`);
+          this.closeKilitAcModal();
           this.selectedSandikIds.set(new Set());
           this.refreshSandiklar();
         } else {
           this.toast.error(res.error ?? 'Sandık kilidi açılamadı.');
         }
       },
-      error: () => this.toast.error('Sandık kilidi açılırken sunucu ile iletişim kurulamadı.')
+      error: () => {
+        this.kilitAcSaving.set(false);
+        this.toast.error('Sandık kilidi açılırken sunucu ile iletişim kurulamadı.');
+      }
     });
   }
 
