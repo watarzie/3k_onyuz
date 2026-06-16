@@ -901,6 +901,14 @@ export class ProjeListesiComponent implements OnInit {
     return sandik.durumId === 4 || sandik.durumMetni === 'SevkEdildi' || sandik.durumMetni === 'Sevk Edildi';
   }
 
+  isSandikDuzeltmeyeAcik(sandik: SandikDto): boolean {
+    return sandik.sevkiyatDuzeltmeAcikMi === true;
+  }
+
+  isSandikKilitli(sandik: SandikDto): boolean {
+    return this.isSandikSevkEdildi(sandik) && !this.isSandikDuzeltmeyeAcik(sandik);
+  }
+
   private loadSevkEtSandiklar(projeId: number) {
     this.sevkEtSandikLoading.set(true);
     this.sandikService.getSandiklar(projeId).subscribe({

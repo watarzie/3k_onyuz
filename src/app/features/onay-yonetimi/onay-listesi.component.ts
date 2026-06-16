@@ -2,7 +2,6 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { DatePipe, NgClass } from '@angular/common';
 import { OnayService } from '../../core/services/onay.service';
 import { ToastService } from '../../core/services/toast.service';
-import { ConfirmService } from '../../core/services/confirm.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { OnayBekleyenIslemDto } from '../../shared/models/onay-bekleyen-islem.model';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
@@ -17,7 +16,6 @@ import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcru
 export class OnayListesiComponent implements OnInit {
   private onayService = inject(OnayService);
   private toast = inject(ToastService);
-  private confirm = inject(ConfirmService);
   private permissions = inject(PermissionService);
 
   public canWrite = computed(() => this.permissions.canWrite('islem-onay-merkezi'));
@@ -26,6 +24,11 @@ export class OnayListesiComponent implements OnInit {
   kurallar = signal<any[]>([]);
   loading = signal<boolean>(true);
   showKurallarModal = signal<boolean>(false);
+  onayModalIslem = signal<OnayBekleyenIslemDto | null>(null);
+  onaySubmitting = signal<boolean>(false);
+  retModalIslem = signal<OnayBekleyenIslemDto | null>(null);
+  redAciklamasi = signal<string>('');
+  retSubmitting = signal<boolean>(false);
 
   breadcrumb = [
     { label: 'Ana Kontrol Paneli', link: '/dashboard' },
@@ -85,56 +88,81 @@ export class OnayListesiComponent implements OnInit {
     });
   }
 
-  async openOnayModal(id: number) {
-    const onay = await this.confirm.ask({
-      title: 'Kritik İşlem Onayı',
-      message: 'Bu kullanıcının sistemde dondurulan kritik isteğini onaylamak ve veritabanına işlemek üzeresiniz. Onaylıyor musunuz?',
-      confirmText: 'Evet, İşlemi Çalıştır',
-      cancelText: 'İptal',
-      type: 'success'
-    });
-    
-    if (onay) {
-      this.onayService.onayla({ onayBekleyenIslemId: id }).subscribe((res) => {
+  openOnayModal(islem: OnayBekleyenIslemDto) {
+    this.onayModalIslem.set(islem);
+  }
+
+  closeOnayModal() {
+    if (this.onaySubmitting()) return;
+    this.onayModalIslem.set(null);
+  }
+
+  submitOnayModal() {
+    const islem = this.onayModalIslem();
+
+    if (!islem || this.onaySubmitting()) return;
+
+    this.onaySubmitting.set(true);
+    this.onayService.onayla({ onayBekleyenIslemId: islem.id }).subscribe({
+      next: (res) => {
+        this.onaySubmitting.set(false);
         if (res.isSuccess) {
           this.toast.success('İşlem başarıyla onaylandı ve çalıştırıldı.');
+          this.closeOnayModal();
           this.loadData();
         } else {
           this.toast.error(res.error || 'Onay işlemi başarısız.');
         }
-      });
-    }
+      },
+      error: () => {
+        this.onaySubmitting.set(false);
+        this.toast.error('Onay işlemi başarısız.');
+      }
+    });
   }
 
-  async openRetModal(id: number) {
-    const onay = await this.confirm.ask({
-      title: 'Talebi Reddet',
-      message: 'Bu işlemi iptal etmek istediğinize emin misiniz? Devam ederseniz personel red gerekçesini yazmanız istenecektir.',
-      confirmText: 'Evet, Talebi Sil',
-      cancelText: 'Vazgeç',
-      type: 'danger'
-    });
+  openRetModal(islem: OnayBekleyenIslemDto) {
+    this.retModalIslem.set(islem);
+    this.redAciklamasi.set('');
+  }
 
-    if (onay) {
-      // Use browser native prompt for reason instead of complex modal form
-      const reason = window.prompt("Lütfen reddetme sebebini girin:");
-      if (reason === null) {
-        return; 
-      }
+  closeRetModal() {
+    if (this.retSubmitting()) return;
+    this.retModalIslem.set(null);
+    this.redAciklamasi.set('');
+  }
 
-      if (reason.trim() === '') {
-        this.toast.warning('Reddetme sebebi zorunludur.');
-        return;
-      }
+  updateRedAciklamasi(event: Event) {
+    this.redAciklamasi.set((event.target as HTMLTextAreaElement).value);
+  }
 
-      this.onayService.reddet({ onayBekleyenIslemId: id, redAciklamasi: reason }).subscribe((res) => {
+  submitRetModal() {
+    const islem = this.retModalIslem();
+    const reason = this.redAciklamasi().trim();
+
+    if (!islem || this.retSubmitting()) return;
+
+    if (!reason) {
+      this.toast.warning('Reddetme sebebi zorunludur.');
+      return;
+    }
+
+    this.retSubmitting.set(true);
+    this.onayService.reddet({ onayBekleyenIslemId: islem.id, redAciklamasi: reason }).subscribe({
+      next: (res) => {
+        this.retSubmitting.set(false);
         if (res.isSuccess) {
           this.toast.success('İşlem isteği reddedildi.');
+          this.closeRetModal();
           this.loadData();
         } else {
           this.toast.error(res.error || 'Kayıt başarısız.');
         }
-      });
-    }
+      },
+      error: () => {
+        this.retSubmitting.set(false);
+        this.toast.error('Kayıt başarısız.');
+      }
+    });
   }
 }

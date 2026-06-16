@@ -811,12 +811,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   // ===== 3K İşlem Blokajı =====
   isSatirSevkKilidi(u: GridUrunDto): boolean {
-    const sandikDurumu = (u.sandikDurumMetni ?? '').trim();
-    return u.sandikSevkEdildiMi === true ||
-      u.sandikDurumId === 4 ||
-      sandikDurumu === 'SevkEdildi' ||
-      sandikDurumu === 'Sevk Edildi' ||
-      sandikDurumu === 'Sevkedildi';
+    return u.sandikSevkEdildiMi === true;
   }
 
   isCheckboxDisabled(u: GridUrunDto): boolean {

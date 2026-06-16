@@ -421,12 +421,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   }
 
   private isSatirSevkKilidi(u: UcKUrunDto): boolean {
-    const sandikDurumu = (u.sandikDurumMetni ?? '').trim();
-    return u.sandikSevkEdildiMi === true ||
-      u.sandikDurumId === 4 ||
-      sandikDurumu === 'SevkEdildi' ||
-      sandikDurumu === 'Sevk Edildi' ||
-      sandikDurumu === 'Sevkedildi';
+    return u.sandikSevkEdildiMi === true;
   }
 
   getTipLabel(value: string): string {

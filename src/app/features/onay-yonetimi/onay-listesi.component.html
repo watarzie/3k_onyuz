@@ -73,10 +73,10 @@
                 <td class="text-right">
                   <div class="action-buttons horizontal">
                     @if (canWrite()) {
-                      <button class="btn-icon text-success" title="İşlemi Onayla ve Çalıştır" (click)="openOnayModal(islem.id)">
+                      <button class="btn-icon text-success" title="İşlemi Onayla ve Çalıştır" (click)="openOnayModal(islem)">
                         <i class="ri-check-line"></i>
                       </button>
-                      <button class="btn-icon text-danger" title="Talebi Reddet" (click)="openRetModal(islem.id)">
+                      <button class="btn-icon text-danger" title="Talebi Reddet" (click)="openRetModal(islem)">
                         <i class="ri-close-line"></i>
                       </button>
                     } @else {
@@ -137,3 +137,105 @@
   </div>
 }
 
+<!-- Approve Modal -->
+@if (onayModalIslem(); as islem) {
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal fade show reject-modal-shell" style="display: block;" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content reject-modal approve-modal">
+        <div class="modal-header reject-modal__header">
+          <div class="reject-modal__title">
+            <span class="reject-modal__icon approve-modal__icon">
+              <i class="ri-shield-check-line"></i>
+            </span>
+            <div>
+              <h5 class="modal-title">Talebi Onayla</h5>
+              <p>Bu işlem onaylanıp sistemde çalıştırılacak.</p>
+            </div>
+          </div>
+          <button type="button" class="btn-close" (click)="closeOnayModal()" [disabled]="onaySubmitting()" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body reject-modal__body">
+          <div class="reject-summary approve-summary">
+            <span>İşlem açıklaması</span>
+            <strong>{{ islem.islemAciklamasi }}</strong>
+          </div>
+
+          <div class="approve-info">
+            <i class="ri-information-line"></i>
+            <span>Onay sonrası talep çalıştırılır ve işlem geçmişine kaydedilir.</span>
+          </div>
+        </div>
+
+        <div class="modal-footer reject-modal__footer">
+          <button type="button" class="btn btn-light reject-cancel" (click)="closeOnayModal()" [disabled]="onaySubmitting()">Vazgeç</button>
+          <button type="button" class="btn reject-submit approve-submit" (click)="submitOnayModal()" [disabled]="onaySubmitting()">
+            @if (onaySubmitting()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>
+            } @else {
+              <i class="ri-check-line me-1"></i>
+            }
+            Talebi Onayla
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Reject Modal -->
+@if (retModalIslem(); as islem) {
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal fade show reject-modal-shell" style="display: block;" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content reject-modal">
+        <div class="modal-header reject-modal__header">
+          <div class="reject-modal__title">
+            <span class="reject-modal__icon">
+              <i class="ri-close-circle-line"></i>
+            </span>
+            <div>
+              <h5 class="modal-title">Talebi Reddet</h5>
+              <p>Bu işlem onay kuyruğundan kaldırılacak.</p>
+            </div>
+          </div>
+          <button type="button" class="btn-close" (click)="closeRetModal()" [disabled]="retSubmitting()" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body reject-modal__body">
+          <div class="reject-summary">
+            <span>İşlem açıklaması</span>
+            <strong>{{ islem.islemAciklamasi }}</strong>
+          </div>
+
+          <label class="reject-label" for="redAciklamasi">Reddetme sebebi</label>
+          <textarea id="redAciklamasi"
+                    class="reject-textarea"
+                    rows="4"
+                    maxlength="500"
+                    placeholder="Örn. Eksik bilgi nedeniyle talep geri çevrildi."
+                    [value]="redAciklamasi()"
+                    (input)="updateRedAciklamasi($event)"
+                    [disabled]="retSubmitting()"></textarea>
+          <div class="reject-hint">
+            <span>Bu açıklama işlem geçmişinde görülebilir.</span>
+            <span>{{ redAciklamasi().length }}/500</span>
+          </div>
+        </div>
+
+        <div class="modal-footer reject-modal__footer">
+          <button type="button" class="btn btn-light reject-cancel" (click)="closeRetModal()" [disabled]="retSubmitting()">Vazgeç</button>
+          <button type="button" class="btn reject-submit" (click)="submitRetModal()" [disabled]="retSubmitting()">
+            @if (retSubmitting()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>
+            } @else {
+              <i class="ri-close-line me-1"></i>
+            }
+            Talebi Reddet
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

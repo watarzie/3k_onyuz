@@ -93,6 +93,7 @@ export class UcKSandiklarComponent implements OnInit {
   kilitAcmaTipiId = signal<SevkiyatKilitAcmaTipi>(SevkiyatKilitAcmaTipi.SevkiyatKaydiKorunarakAc);
   kilitAcAciklama = signal('');
   kilitAcSaving = signal(false);
+  duzeltmeTamamlaSavingId = signal<number | null>(null);
   readonly kilitAcmaTipleri = SevkiyatKilitAcmaTipi;
 
   breadcrumb: { label: string; link?: string }[] = [];
@@ -325,6 +326,14 @@ export class UcKSandiklarComponent implements OnInit {
       durumMetni === 'Sevkedildi';
   }
 
+  isSandikDuzeltmeyeAcik(sandik: SandikDto): boolean {
+    return sandik.sevkiyatDuzeltmeAcikMi === true;
+  }
+
+  isSandikKilitli(sandik: SandikDto): boolean {
+    return this.isSandikSevkEdildi(sandik) && !this.isSandikDuzeltmeyeAcik(sandik);
+  }
+
   indirSandikDurumRaporu() {
     if (this.downloadingSandikDurumRaporu()) return;
 
@@ -353,7 +362,7 @@ export class UcKSandiklarComponent implements OnInit {
   }
 
   onSandikCardClick(event: Event, sandik: SandikDto) {
-    if (!this.isSandikSevkEdildi(sandik)) return;
+    if (!this.isSandikKilitli(sandik)) return;
 
     event.preventDefault();
     event.stopPropagation();
@@ -365,7 +374,7 @@ export class UcKSandiklarComponent implements OnInit {
     event.stopPropagation();
 
     if (!this.canWriteSandik()) return;
-    if (!this.isSandikSevkEdildi(sandik)) return;
+    if (!this.isSandikKilitli(sandik)) return;
 
     this.kilitAcSandik.set(sandik);
     this.kilitAcmaTipiId.set(SevkiyatKilitAcmaTipi.SevkiyatKaydiKorunarakAc);
@@ -414,6 +423,47 @@ export class UcKSandiklarComponent implements OnInit {
       error: () => {
         this.kilitAcSaving.set(false);
         this.toast.error('Sandık kilidi açılırken sunucu ile iletişim kurulamadı.');
+      }
+    });
+  }
+
+  isDuzeltmeTamamlaSaving(sandik: SandikDto): boolean {
+    return this.duzeltmeTamamlaSavingId() === sandik.id;
+  }
+
+  async sandikDuzeltmeyiTamamla(event: Event, sandik: SandikDto) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!this.canWriteSandik() || !this.isSandikDuzeltmeyeAcik(sandik) || this.isDuzeltmeTamamlaSaving(sandik)) {
+      return;
+    }
+
+    const onay = await this.confirmService.ask({
+      title: 'Düzeltmeyi Tamamla',
+      message: `<strong>${sandik.sandikNo}</strong> numaralı sandık tekrar kilitlenecek. Sevkiyat kaydı korunmaya devam edecek ve yeni sevkiyat oluşturulmayacak. Onaylıyor musunuz?`,
+      confirmText: 'Evet, Tamamla',
+      cancelText: 'Vazgeç',
+      type: 'success'
+    });
+
+    if (!onay) return;
+
+    this.duzeltmeTamamlaSavingId.set(sandik.id);
+    this.sandikService.sandikSevkiyatDuzeltmeTamamla(this.projeId(), sandik.id).subscribe({
+      next: (res) => {
+        this.duzeltmeTamamlaSavingId.set(null);
+        if (res.isSuccess) {
+          this.toast.success(`Sandık "${sandik.sandikNo}" düzeltmesi tamamlandı ve kilitlendi.`);
+          this.selectedSandikIds.set(new Set());
+          this.refreshSandiklar();
+        } else {
+          this.toast.error(res.error ?? 'Düzeltme tamamlanamadı.');
+        }
+      },
+      error: () => {
+        this.duzeltmeTamamlaSavingId.set(null);
+        this.toast.error('Düzeltme tamamlanırken sunucu ile iletişim kurulamadı.');
       }
     });
   }

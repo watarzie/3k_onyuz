@@ -87,6 +87,7 @@ export class SandikDetayComponent implements OnInit {
   // Konulma güncelleme
   guncelKonulanAdet = signal(0);
   guncelleSaving = signal(false);
+  duzeltmeTamamlaSaving = signal(false);
 
   breadcrumb: { label: string; link?: string }[] = [];
 
@@ -97,6 +98,70 @@ export class SandikDetayComponent implements OnInit {
     const menuKod = this.route.snapshot.data['menuKod'] || 'sandik-yonetimi';
     return this.permissionService.canWrite(menuKod);
   });
+
+  isSandikSevkEdildi(): boolean {
+    const s = this.sandik();
+    if (!s) return false;
+
+    return s.durumId === 4 ||
+      s.durumMetni === 'SevkEdildi' ||
+      s.durumMetni === 'Sevk Edildi' ||
+      s.durumMetni === 'Sevkedildi';
+  }
+
+  isSandikDuzeltmeyeAcik(): boolean {
+    return this.sandik()?.sevkiyatDuzeltmeAcikMi === true;
+  }
+
+  isSandikKilitli(): boolean {
+    return this.isSandikSevkEdildi() && !this.isSandikDuzeltmeyeAcik();
+  }
+
+  async sandikDuzeltmeyiTamamla() {
+    const s = this.sandik();
+    if (!s || !this.canWriteSandik() || !this.isSandikDuzeltmeyeAcik() || this.duzeltmeTamamlaSaving()) {
+      return;
+    }
+
+    const onay = await this.confirmService.ask({
+      title: 'Düzeltmeyi Tamamla',
+      message: `<strong>${s.sandikNo}</strong> numaralı sandık tekrar kilitlenecek. Sevkiyat kaydı korunmaya devam edecek ve yeni sevkiyat oluşturulmayacak. Onaylıyor musunuz?`,
+      confirmText: 'Evet, Tamamla',
+      cancelText: 'Vazgeç',
+      type: 'success'
+    });
+
+    if (!onay) return;
+
+    this.duzeltmeTamamlaSaving.set(true);
+    this.sandikService.sandikSevkiyatDuzeltmeTamamla(this.projeId(), s.id).subscribe({
+      next: (res) => {
+        this.duzeltmeTamamlaSaving.set(false);
+        if (res.isSuccess) {
+          this.toast.success('Sandık düzeltmesi tamamlandı ve kilitlendi.');
+          this.loadSandik();
+          this.loadProjeSandiklari();
+        } else {
+          this.toast.error(res.error ?? 'Düzeltme tamamlanamadı.');
+        }
+      },
+      error: () => {
+        this.duzeltmeTamamlaSaving.set(false);
+        this.toast.error('Düzeltme tamamlanırken sunucu ile iletişim kurulamadı.');
+      }
+    });
+  }
+
+  private isSandikDtoSevkEdildi(sandik: SandikDto): boolean {
+    return sandik.durumId === 4 ||
+      sandik.durumMetni === 'SevkEdildi' ||
+      sandik.durumMetni === 'Sevk Edildi' ||
+      sandik.durumMetni === 'Sevkedildi';
+  }
+
+  private isSandikDtoKilitli(sandik: SandikDto): boolean {
+    return this.isSandikDtoSevkEdildi(sandik) && sandik.sevkiyatDuzeltmeAcikMi !== true;
+  }
 
   ngOnInit() {
     const pId = Number(this.route.snapshot.paramMap.get('projeId'));
@@ -122,6 +187,10 @@ export class SandikDetayComponent implements OnInit {
   async sandikHazirla() {
     const s = this.sandik();
     if (!s) return;
+    if (this.isSandikSevkEdildi()) {
+      this.toast.error('Bu sandık sevk edildiği için durumu değiştirilemez.');
+      return;
+    }
 
     const onay = await this.confirmService.ask({
       title: 'Sandığı Kapat',
@@ -185,7 +254,7 @@ export class SandikDetayComponent implements OnInit {
     this.sandikService.getSandiklar(this.projeId()).subscribe((res) => {
       if (res.isSuccess && res.value) {
         // Mevcut sandığı hariç tut
-        this.projeSandiklari.set(res.value.filter(s => s.id !== this.sandikId()));
+        this.projeSandiklari.set(res.value.filter(s => s.id !== this.sandikId() && !this.isSandikDtoKilitli(s)));
       }
     });
   }
@@ -226,6 +295,11 @@ export class SandikDetayComponent implements OnInit {
   // ===== Manuel Ürün Ekleme =====
 
   openUrunEkleModal() {
+    if (this.isSandikKilitli()) {
+      this.toast.error('Bu sandık sevk edildiği için üzerinde işlem yapılamaz.');
+      return;
+    }
+
     this.yeniBarkod.set('');
     this.yeniAciklama.set('');
     this.yeniAdet.set(1);
@@ -316,6 +390,11 @@ export class SandikDetayComponent implements OnInit {
   }
 
   projedenUrunEkle() {
+    if (this.isSandikKilitli()) {
+      this.toast.error('Bu sandık sevk edildiği için üzerinde işlem yapılamaz.');
+      return;
+    }
+
     const secilen = this.secilenKaynakUrunler();
     if (secilen.size === 0) {
       this.toast.error('En az bir ürün seçiniz.');
@@ -382,6 +461,11 @@ export class SandikDetayComponent implements OnInit {
   openOzellikGuncelleModal() {
     const s = this.sandik();
     if (!s) return;
+    if (this.isSandikKilitli()) {
+      this.toast.error('Bu sandık sevk edildiği için üzerinde işlem yapılamaz.');
+      return;
+    }
+
     this.ozellikSandikIsmi.set(s.ad ?? '');
     this.ozellikEn.set(s.en ?? null);
     this.ozellikBoy.set(s.boy ?? null);
@@ -397,6 +481,11 @@ export class SandikDetayComponent implements OnInit {
   }
 
   kaydetOzellikler() {
+    if (this.isSandikKilitli()) {
+      this.toast.error('Bu sandık sevk edildiği için üzerinde işlem yapılamaz.');
+      return;
+    }
+
     this.ozellikSaving.set(true);
     this.sandikService.ozellikGuncelle({
       sandikId: this.sandikId(),
@@ -426,6 +515,11 @@ export class SandikDetayComponent implements OnInit {
   }
 
   manuelUrunEkle() {
+    if (this.isSandikKilitli()) {
+      this.toast.error('Bu sandık sevk edildiği için üzerinde işlem yapılamaz.');
+      return;
+    }
+
     if (!this.yeniAciklama().trim()) {
       this.toast.error('Açıklama girilmelidir.');
       return;
@@ -481,6 +575,11 @@ export class SandikDetayComponent implements OnInit {
   // ===== Ürün Taşıma =====
 
   openTasiModal(item: SandikIcerikDto) {
+    if (this.isSandikKilitli()) {
+      this.toast.error('Bu sandık sevk edildiği için üzerinde işlem yapılamaz.');
+      return;
+    }
+
     this.tasiUrun.set(item);
     this.tasinanAdet.set(item.konulanAdet);
     this.hedefSandikId.set(0);
@@ -494,6 +593,11 @@ export class SandikDetayComponent implements OnInit {
   }
 
   urunTasi() {
+    if (this.isSandikKilitli()) {
+      this.toast.error('Bu sandık sevk edildiği için üzerinde işlem yapılamaz.');
+      return;
+    }
+
     const urun = this.tasiUrun();
     if (!urun) return;
     if (this.hedefSandikId() <= 0) {
@@ -531,6 +635,11 @@ export class SandikDetayComponent implements OnInit {
   // ===== Konulma Güncelleme =====
 
   konulanGuncelle() {
+    if (this.isSandikKilitli()) {
+      this.toast.error('Bu sandık sevk edildiği için üzerinde işlem yapılamaz.');
+      return;
+    }
+
     const urun = this.selectedUrun();
     if (!urun) return;
     const yeniAdet = this.guncelKonulanAdet();
@@ -568,6 +677,11 @@ export class SandikDetayComponent implements OnInit {
   // ===== Manuel Ürün Silme =====
 
   async manuelUrunSil(item: SandikIcerikDto) {
+    if (this.isSandikKilitli()) {
+      this.toast.error('Bu sandık sevk edildiği için üzerinde işlem yapılamaz.');
+      return;
+    }
+
     const onay = await this.confirmService.ask({
       title: 'Manuel Ürün Sil',
       message: `<strong>${item.aciklama}</strong> ürününü silmek istediğinize emin misiniz?<br><br><small class="text-muted">Bu işlem geri alınamaz.</small>`,

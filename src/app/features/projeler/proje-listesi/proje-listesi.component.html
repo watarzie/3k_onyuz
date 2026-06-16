@@ -646,7 +646,7 @@
                        [checked]="allSevkSandikSelected()"
                        [disabled]="sevkEtSelectableSandiklar().length === 0"
                        (change)="toggleAllSevkSandiklar($any($event.target).checked)" />
-                <span>Tüm sevk edilmemiş sandıkları seç</span>
+                <span>Tüm seçilebilir sandıkları seç</span>
               </label>
 
               @if (sevkEtSelectableSandiklar().length === 0) {
@@ -656,16 +656,15 @@
               }
 
               <div class="sevk-sandik-list">
-                @for (sandik of sevkEtSandiklar(); track sandik.id) {
-                  <label class="sevk-sandik-item" [class.is-shipped]="isSandikSevkEdildi(sandik)">
+                @for (sandik of sevkEtSelectableSandiklar(); track sandik.id) {
+                  <label class="sevk-sandik-item">
                     <input type="checkbox"
                            [checked]="selectedSevkSandikIds().includes(sandik.id)"
-                           [disabled]="isSandikSevkEdildi(sandik)"
                            (change)="toggleSevkSandik(sandik.id, $any($event.target).checked)" />
                     <span class="sevk-sandik-no">{{ sandik.sandikNo }}</span>
                     <span class="sevk-sandik-name" [title]="sandik.ad || ''">{{ sandik.ad || 'İsimsiz sandık' }}</span>
                     <span class="sevk-sandik-meta">{{ sandik.urunSayisi }} ürün</span>
-                    <span class="sevk-sandik-status">{{ isSandikSevkEdildi(sandik) ? 'Sevk edildi' : sandik.durumMetni }}</span>
+                    <span class="sevk-sandik-status">{{ sandik.durumMetni }}</span>
                   </label>
                 }
               </div>

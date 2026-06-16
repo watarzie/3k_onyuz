@@ -128,6 +128,10 @@ export class SandikService {
     });
   }
 
+  sandikSevkiyatDuzeltmeTamamla(projeId: number, sandikId: number): Observable<ApiResult<unknown>> {
+    return this.api.post<unknown>(API.SANDIK.SEVKIYAT_DUZELTME_TAMAMLA, { projeId, sandikId });
+  }
+
   lokasyonGuncelle(sandikIds: number[], depoLokasyonId: number): Observable<ApiResult<unknown>> {
     return this.api.put<unknown>(API.SANDIK.LOKASYON_GUNCELLE, { sandikIds, depoLokasyonId });
   }

@@ -6,6 +6,7 @@ export interface SandikDto {
   ad?: string;
   durumId: number;
   durumMetni: string;
+  sevkiyatDuzeltmeAcikMi?: boolean;
   depoLokasyonId: number;
   depoLokasyonMetni: string;
   urunSayisi: number;
@@ -25,6 +26,7 @@ export interface SandikDetayDto {
   ad?: string;
   durumId: number;
   durumMetni: string;
+  sevkiyatDuzeltmeAcikMi?: boolean;
   depoLokasyonId: number;
   depoLokasyonMetni: string;
   en?: number;

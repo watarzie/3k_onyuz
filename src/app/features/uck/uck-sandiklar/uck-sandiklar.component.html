@@ -107,10 +107,11 @@
         </div>
         }
 
-        <div [routerLink]="[uckRoutePrefix(), projeId(), s.sandikNo]" class="sandik-card h-100"
+        <div [routerLink]="isSandikKilitli(s) ? null : [uckRoutePrefix(), projeId(), s.sandikNo]" class="sandik-card h-100"
           [ngClass]="'s-' + s.durumMetni.toLowerCase()" [class.is-closed]="isSandikKapandi(s)" [class.is-shipped]="isSandikSevkEdildi(s)"
-          [attr.aria-disabled]="isSandikSevkEdildi(s)" (click)="onSandikCardClick($event, s)"
-          style="padding-top: 1.5rem;" role="link" tabindex="0">
+          [class.is-shipment-correction]="isSandikDuzeltmeyeAcik(s)"
+          [attr.aria-disabled]="isSandikKilitli(s)" (click)="onSandikCardClick($event, s)"
+          style="padding-top: 1.5rem;" role="link" [attr.tabindex]="isSandikKilitli(s) ? -1 : 0">
           <!-- Üst — Numara + Ok -->
           <div class="card-top">
             <div class="d-flex align-items-center">
@@ -136,7 +137,7 @@
               </button>
             </div>
             }
-            @if (canWriteSandik() && isSandikSevkEdildi(s)) {
+            @if (canWriteSandik() && isSandikKilitli(s)) {
             <div class="card-top-actions">
               <button
                 class="card-icon-btn card-unlock-btn"
@@ -144,6 +145,22 @@
                 title="Sandık Kilidini Aç"
                 aria-label="Sandık Kilidini Aç">
                 <i class="ri-lock-unlock-line"></i>
+              </button>
+            </div>
+            }
+            @if (canWriteSandik() && isSandikDuzeltmeyeAcik(s)) {
+            <div class="card-top-actions">
+              <button
+                class="card-icon-btn card-complete-correction-btn"
+                (click)="sandikDuzeltmeyiTamamla($event, s)"
+                [disabled]="isDuzeltmeTamamlaSaving(s)"
+                title="Düzeltmeyi Tamamla"
+                aria-label="Düzeltmeyi Tamamla">
+                @if (isDuzeltmeTamamlaSaving(s)) {
+                  <span class="spinner-border spinner-border-sm"></span>
+                } @else {
+                  <i class="ri-lock-line"></i>
+                }
               </button>
             </div>
             }
@@ -171,14 +188,16 @@
               <span style="white-space: nowrap;" class="text-truncate" [title]="s.depoLokasyonMetni"><i
                   class="ri-map-pin-line flex-shrink-0"></i> {{ s.depoLokasyonMetni }}</span>
             </div>
-            @if (canWriteSandik() && !isSandikSevkEdildi(s)) {
+            @if (canWriteSandik() && !isSandikKilitli(s)) {
             <div class="d-flex gap-1 ms-auto mt-1 flex-shrink-0">
+              @if (!isSandikSevkEdildi(s)) {
               <button class="btn btn-sm btn-outline-info d-flex align-items-center justify-content-center flex-shrink-0"
                 (click)="openLokasyonModal($event, s)"
                 style="width: 26px; height: 26px; padding: 0; font-size: 0.85rem; z-index: 2; position: relative;"
                 title="Lokasyon Ekle/Değiştir">
                 <i class="ri-map-pin-add-line"></i>
               </button>
+              }
               <a [routerLink]="[uckSandikRoutePrefix(), projeId(), s.id]"
                 class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center flex-shrink-0"
                 (click)="$event.stopPropagation()"
