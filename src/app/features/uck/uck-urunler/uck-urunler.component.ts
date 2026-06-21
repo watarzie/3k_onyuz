@@ -113,6 +113,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   showTransferModal = signal(false);
   transferModalUrun = signal<UcKUrunDto | null>(null);
+  showSahaIzModal = signal(false);
+  sahaIzModalUrun = signal<UcKUrunDto | null>(null);
 
   // Checkbox + Toplu TamGeldi
   selectedIds = signal<Set<number>>(new Set());
@@ -418,6 +420,46 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   isSahaManuelIcerik(u: UcKUrunDto): boolean {
     return u.isSahaManuelSandikIcerigi === true || (!!u.sandikIcerikId && u.cekiSatiriId <= 0);
+  }
+
+  hasSahaTamamlama(u: UcKUrunDto | null | undefined): boolean {
+    return !!u?.sahaTamamlamalari?.length;
+  }
+
+  hasKaynakSahaIz(u: UcKUrunDto | null | undefined): boolean {
+    return !!u?.kaynakCekiSatiriId && !!u?.kaynakProjeNo;
+  }
+
+  getKaynakSahaLabel(u: UcKUrunDto): string {
+    const parts = [u.kaynakProjeNo ?? 'Kaynak proje'];
+    if (u.kaynakSandikNo) parts.push(`Sandik ${u.kaynakSandikNo}`);
+    if (u.kaynakSiraNo) parts.push(`#${u.kaynakSiraNo}`);
+    return parts.join(' / ');
+  }
+
+  getSahaTamamlamaToplam(u: UcKUrunDto | null | undefined): number {
+    return (u?.sahaTamamlamalari ?? []).reduce((sum, iz) => sum + (Number(iz.miktar) || 0), 0);
+  }
+
+  formatMiktar(value: number | null | undefined): string {
+    const numericValue = Number(value ?? 0);
+    const fractionDigits = Number.isInteger(numericValue) ? 0 : 3;
+    return numericValue.toLocaleString('tr-TR', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: fractionDigits
+    });
+  }
+
+  openSahaIzModal(urun: UcKUrunDto, event?: MouseEvent): void {
+    event?.stopPropagation();
+    if (!this.hasSahaTamamlama(urun)) return;
+    this.sahaIzModalUrun.set(urun);
+    this.showSahaIzModal.set(true);
+  }
+
+  closeSahaIzModal(): void {
+    this.showSahaIzModal.set(false);
+    this.sahaIzModalUrun.set(null);
   }
 
   private isSatirSevkKilidi(u: UcKUrunDto): boolean {

@@ -130,11 +130,26 @@
             <td><code class="barkod">{{ u.barkodNo }}</code></td>
             <td>{{ u.olcuResmiPozNo || '-' }}</td>
             <td class="fw-medium" style="max-width:180px" [title]="u.aciklama">
-              <div class="d-flex align-items-center gap-1">
-                <span class="text-truncate">{{ u.aciklama }}</span>
-                @if (isSahaManuelIcerik(u)) {
-                <span class="badge bg-secondary-subtle text-secondary" style="font-size:10px">Manuel</span>
-                }
+              <div class="product-cell">
+                <div class="d-flex align-items-center gap-1">
+                  <span class="text-truncate">{{ u.aciklama }}</span>
+                  @if (isSahaManuelIcerik(u)) {
+                  <span class="badge bg-secondary-subtle text-secondary" style="font-size:10px">Manuel</span>
+                  }
+                </div>
+                <div class="saha-inline-meta">
+                  @if (hasKaynakSahaIz(u)) {
+                  <span class="saha-source-pill" [title]="getKaynakSahaLabel(u)">
+                    <i class="ri-folder-transfer-line"></i>{{ u.kaynakProjeNo }} / S{{ u.kaynakSandikNo || '-' }}
+                  </span>
+                  }
+                  @if (hasSahaTamamlama(u)) {
+                  <button type="button" class="saha-trace-pill" (click)="openSahaIzModal(u, $event)"
+                    [title]="'Saha tamamlama geçmişi: ' + formatMiktar(getSahaTamamlamaToplam(u)) + ' ' + u.birim">
+                    <i class="ri-route-line"></i>Saha <strong>{{ formatMiktar(getSahaTamamlamaToplam(u)) }}</strong>
+                  </button>
+                  }
+                </div>
               </div>
             </td>
             <td><span class="badge-sandik">{{ u.sandikNo }}</span></td>
@@ -284,6 +299,56 @@
 </div>
 
 <!-- ===== Side Panel: 3K Durum Güncelle ===== -->
+@if (showSahaIzModal() && sahaIzModalUrun()) {
+<div class="saha-trace-overlay" (click)="closeSahaIzModal()">
+  <div class="saha-trace-modal" (click)="$event.stopPropagation()">
+    <div class="saha-trace-header">
+      <div class="saha-trace-title">
+        <span class="saha-trace-icon"><i class="ri-route-line"></i></span>
+        <div>
+          <h5>Saha Tamamlama Geçmişi</h5>
+          <p>#{{ sahaIzModalUrun()!.siraNo }} · {{ sahaIzModalUrun()!.aciklama }}</p>
+        </div>
+      </div>
+      <button type="button" class="saha-trace-close" (click)="closeSahaIzModal()">
+        <i class="ri-close-line"></i>
+      </button>
+    </div>
+
+    <div class="saha-trace-body">
+      <div class="saha-trace-source">
+        <span>Kaynak satır</span>
+        <strong>{{ sahaIzModalUrun()!.sandikNo ? 'Sandık ' + sahaIzModalUrun()!.sandikNo : 'Sandık yok' }} / #{{ sahaIzModalUrun()!.siraNo }}</strong>
+        <b>{{ formatMiktar(getSahaTamamlamaToplam(sahaIzModalUrun())) }} {{ sahaIzModalUrun()!.birim }} saha tamamlamasında</b>
+      </div>
+
+      <div class="saha-trace-list">
+        @for (iz of sahaIzModalUrun()!.sahaTamamlamalari; track iz.sahaCekiSatiriId + '-' + iz.sahaSandikId) {
+        <div class="saha-trace-item" [class.shipped]="iz.sevkEdildiMi">
+          <div class="saha-trace-item-icon">
+            <i class="ri-folder-transfer-line"></i>
+          </div>
+          <div class="saha-trace-item-main">
+            <div class="saha-trace-item-head">
+              <strong>{{ iz.sahaProjeNo }}</strong>
+              <span>{{ formatMiktar(iz.miktar) }} {{ iz.birim }}</span>
+            </div>
+            <div class="saha-trace-item-meta">
+              <span><i class="ri-archive-line"></i>Sandık {{ iz.sahaSandikNo }}</span>
+              <span><i class="ri-checkbox-circle-line"></i>{{ iz.durumMetni || '-' }}</span>
+              @if (iz.sevkTarihi) {
+              <span><i class="ri-calendar-check-line"></i>{{ iz.sevkTarihi | date:'dd.MM.yyyy HH:mm' }}</span>
+              }
+            </div>
+          </div>
+        </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+}
+
 @if (showTransferModal() && transferModalUrun()) {
 <div class="modal-overlay" (click)="closeTransferModal()">
   <div class="modal-box transfer-chain-modal" (click)="$event.stopPropagation()">

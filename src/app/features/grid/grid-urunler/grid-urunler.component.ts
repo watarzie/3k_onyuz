@@ -1,6 +1,6 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy, ChangeDetectionStrategy, WritableSignal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { NgClass } from '@angular/common';
+import { DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { TranslationService } from '../../../core/services/translation.service';
@@ -51,7 +51,7 @@ const SEVK_DURUMLARI: DurumSecenegi[] = [
 @Component({
   selector: 'app-grid-urunler',
   standalone: true,
-  imports: [RouterLink, NgClass, FormsModule, StatusBadgeComponent, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent],
+  imports: [RouterLink, NgClass, DatePipe, FormsModule, StatusBadgeComponent, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent],
   templateUrl: './grid-urunler.component.html',
   styleUrl: './grid-urunler.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -120,6 +120,9 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   anaSandikNo = signal('');
   anaSaving = signal(false);
   anaError = signal('');
+
+  showSahaIzModal = signal(false);
+  sahaIzModalUrun = signal<GridUrunDto | null>(null);
 
   // Toplu Sevk Modal
   showTopluSevkModal = signal(false);
@@ -384,6 +387,46 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   isSahaManuelIcerik(u: GridUrunDto): boolean {
     return u.isSahaManuelSandikIcerigi === true || (!!u.sandikIcerikId && u.cekiSatiriId <= 0);
+  }
+
+  hasSahaTamamlama(u: GridUrunDto | null | undefined): boolean {
+    return !!u?.sahaTamamlamalari?.length;
+  }
+
+  hasKaynakSahaIz(u: GridUrunDto | null | undefined): boolean {
+    return !!u?.kaynakCekiSatiriId && !!u?.kaynakProjeNo;
+  }
+
+  getKaynakSahaLabel(u: GridUrunDto): string {
+    const parts = [u.kaynakProjeNo ?? 'Kaynak proje'];
+    if (u.kaynakSandikNo) parts.push(`Sandik ${u.kaynakSandikNo}`);
+    if (u.kaynakSiraNo) parts.push(`#${u.kaynakSiraNo}`);
+    return parts.join(' / ');
+  }
+
+  getSahaTamamlamaToplam(u: GridUrunDto | null | undefined): number {
+    return (u?.sahaTamamlamalari ?? []).reduce((sum, iz) => sum + (Number(iz.miktar) || 0), 0);
+  }
+
+  formatMiktar(value: number | null | undefined): string {
+    const numericValue = Number(value ?? 0);
+    const fractionDigits = Number.isInteger(numericValue) ? 0 : 3;
+    return numericValue.toLocaleString('tr-TR', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: fractionDigits
+    });
+  }
+
+  openSahaIzModal(urun: GridUrunDto, event?: MouseEvent): void {
+    event?.stopPropagation();
+    if (!this.hasSahaTamamlama(urun)) return;
+    this.sahaIzModalUrun.set(urun);
+    this.showSahaIzModal.set(true);
+  }
+
+  closeSahaIzModal(): void {
+    this.showSahaIzModal.set(false);
+    this.sahaIzModalUrun.set(null);
   }
 
   getDurumLabel(value: string): string {

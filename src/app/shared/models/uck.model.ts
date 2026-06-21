@@ -1,9 +1,15 @@
 // ===== 3K (UcK) =====
+import { SahaTamamlamaIzDto } from './saha-iz.model';
 
 export interface UcKUrunDto {
   cekiSatiriId: number;
   sandikIcerikId?: number;
   isSahaManuelSandikIcerigi?: boolean;
+  kaynakCekiSatiriId?: number;
+  kaynakProjeNo?: string;
+  kaynakSandikNo?: string;
+  kaynakSiraNo?: number;
+  sahaTamamlamalari: SahaTamamlamaIzDto[];
   siraNo: number;
   barkodNo: string;
   olcuResmiPozNo?: string;

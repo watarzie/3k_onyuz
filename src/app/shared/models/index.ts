@@ -8,6 +8,7 @@ export * from './ceki.model';
 export * from './sandik.model';
 export * from './grid.model';
 export * from './uck.model';
+export * from './saha-iz.model';
 export * from './stok.model';
 export * from './hareket-gecmisi.model';
 export * from './lookup.model';
