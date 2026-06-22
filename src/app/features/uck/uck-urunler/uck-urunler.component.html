@@ -340,6 +340,23 @@
               <span><i class="ri-calendar-check-line"></i>{{ iz.sevkTarihi | date:'dd.MM.yyyy HH:mm' }}</span>
               }
             </div>
+            @if (canSahaAktarimGeriAl() && !iz.sevkEdildiMi) {
+            <div class="saha-trace-actions">
+              <button
+                type="button"
+                class="saha-trace-rollback"
+                [disabled]="sahaAktarimGeriAlSaving() === iz.sahaCekiSatiriId"
+                (click)="sahaAktarimGeriAl(iz, $event)">
+                @if (sahaAktarimGeriAlSaving() === iz.sahaCekiSatiriId) {
+                <i class="ri-loader-4-line spin"></i>
+                <span>Geri alınıyor</span>
+                } @else {
+                <i class="ri-arrow-go-back-line"></i>
+                <span>Aktarımı geri al</span>
+                }
+              </button>
+            </div>
+            }
           </div>
         </div>
         }

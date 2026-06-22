@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiRevizyonOnizlemeSonuc, CekiRevizyonSonuc, CekiSatiriDto, ProjeDropdownDto, SevkiyatDto, EksiklerdenSahaProjesiOlusturDto } from '../../shared/models/index';
+import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiRevizyonOnizlemeSonuc, CekiRevizyonSonuc, CekiSatiriDto, ProjeDropdownDto, SevkiyatDto, EksiklerdenSahaProjesiOlusturDto, SandiklardanSahaProjesiOlusturDto, SahaAktarimDto } from '../../shared/models/index';
 
 /**
  * ProjeController (2 endpoint) + CekiController (2 endpoint):
@@ -45,7 +45,30 @@ export class ProjeService {
   }
 
   eksiklerdenSahaProjesiOlustur(dto: EksiklerdenSahaProjesiOlusturDto): Observable<ApiResult<ProjeDto>> {
-    return this.api.post<ProjeDto>(API.PROJE.EKSIKLERDEN_SAHA_OLUSTUR, dto);
+    return this.api.post<ProjeDto>(API.PROJE.EKSIKLERDEN_SAHA_OLUSTUR, dto, this.menuOptions('sahaya-aktar'));
+  }
+
+  sandiklardanSahaProjesiOlustur(dto: SandiklardanSahaProjesiOlusturDto): Observable<ApiResult<ProjeDto>> {
+    return this.api.post<ProjeDto>(
+      API.PROJE.SANDIKLARDAN_SAHA_OLUSTUR,
+      dto,
+      this.menuOptions('sahaya-aktar')
+    );
+  }
+
+  getSahaAktarimlari(projeId: number): Observable<ApiResult<SahaAktarimDto[]>> {
+    return this.api.get<SahaAktarimDto[]>(API.PROJE.SAHA_AKTARIMLARI(projeId), this.menuOptions('saha-aktarim-geri-al'));
+  }
+
+  sahaAktarimGeriAl(sahaCekiSatiriId: number, aciklama?: string): Observable<ApiResult<boolean>> {
+    return this.api.post<boolean>(
+      API.PROJE.SAHA_AKTARIM_GERI_AL,
+      {
+        sahaCekiSatiriId,
+        aciklama: aciklama?.trim() || null
+      },
+      this.menuOptions('saha-aktarim-geri-al')
+    );
   }
 
   sandikKapat(sandikId: number, kapali: boolean): Observable<ApiResult<boolean>> {

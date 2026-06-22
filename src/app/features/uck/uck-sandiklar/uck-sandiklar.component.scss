@@ -13,6 +13,32 @@
   i { left: 12px; color: var(--bodyColor); }
 }
 
+.btn-saha-transfer {
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  color: #047857;
+  font-weight: 700;
+
+  &:hover,
+  &:focus {
+    background: #D1FAE5;
+    border-color: #6EE7B7;
+    color: #065F46;
+    box-shadow: 0 4px 12px rgba(4, 120, 87, .12);
+  }
+
+  &:disabled {
+    opacity: .7;
+    cursor: wait;
+  }
+
+  .spinner-border {
+    width: .75rem;
+    height: .75rem;
+    border-width: .12em;
+  }
+}
+
 // ===== Empty =====
 .empty-state {
   .empty-icon {
@@ -123,6 +149,38 @@
       border-color: #3B82F6;
       box-shadow: 0 4px 16px rgba(53, 132, 252, .12);
       transform: translateY(-2px);
+    }
+  }
+
+  &.is-field-transferred {
+    cursor: not-allowed;
+    background: linear-gradient(180deg, #F0FDFA 0%, #E6FFFB 100%);
+    border-color: #5EEAD4;
+    box-shadow: inset 0 0 0 1px rgba(15, 118, 110, .08);
+
+    &::after { background: #0F766E; }
+
+    .sandik-no,
+    .sandik-ismi,
+    .status-text {
+      color: #0F766E !important;
+    }
+
+    .sandik-ismi i,
+    .card-meta span,
+    .card-meta i {
+      color: #0F766E;
+    }
+
+    .status-dot {
+      background: #0F766E !important;
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, .12);
+    }
+
+    &:hover {
+      border-color: #2DD4BF;
+      box-shadow: inset 0 0 0 1px rgba(15, 118, 110, .12);
+      transform: none;
     }
   }
 }
@@ -384,4 +442,226 @@
 .toplu-sevk-modal {
   border-radius: 12px;
   overflow: hidden;
+}
+
+.sahaya-aktar-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1055;
+  width: min(620px, calc(100vw - 32px));
+  max-height: min(760px, calc(100vh - 32px));
+  box-shadow: 0 18px 48px rgba(15, 23, 42, .22);
+  display: flex;
+  flex-direction: column;
+
+  .modal-header {
+    border-radius: 12px 12px 0 0;
+    flex: 0 0 auto;
+  }
+
+  .modal-body {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .modal-footer {
+    flex: 0 0 auto;
+  }
+}
+
+.sahaya-aktar-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #d7f1e4;
+  border-radius: 12px;
+  background: #f6fffb;
+}
+
+.summary-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 40px;
+  background: #e3f8ec;
+  color: #087443;
+  font-size: 19px;
+}
+
+.summary-label {
+  font-size: .78rem;
+  font-weight: 700;
+  color: #6b7b91;
+  text-transform: uppercase;
+}
+
+.summary-value {
+  margin-top: 2px;
+  color: #172033;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.saha-transfer-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.saha-transfer-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid #e3ebf5;
+  border-radius: 12px;
+  background: #fff;
+  color: #24364f;
+  text-align: left;
+  transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+
+  &:hover,
+  &.active {
+    border-color: #27b875;
+    background: #f6fffb;
+    box-shadow: 0 8px 22px rgba(16, 185, 129, .08);
+  }
+
+  strong {
+    display: block;
+    font-size: .92rem;
+    line-height: 1.2;
+  }
+
+  small {
+    display: block;
+    margin-top: 4px;
+    color: #6c7b91;
+    line-height: 1.35;
+  }
+}
+
+.saha-transfer-option .option-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 34px;
+  font-size: 17px;
+
+  &.new {
+    background: #eaf8f1;
+    color: #118450;
+  }
+
+  &.existing {
+    background: #eef6ff;
+    color: #2563eb;
+  }
+}
+
+.saha-project-picker {
+  .search-box {
+    i {
+      left: 13px;
+      color: #90a1b8;
+    }
+
+    .form-control {
+      padding-left: 38px;
+    }
+  }
+}
+
+.saha-project-list {
+  display: grid;
+  gap: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid #e3ebf5;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.saha-project-item {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #e8eef6;
+  border-radius: 10px;
+  background: #fff;
+  color: #24364f;
+  text-align: left;
+  transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+
+  &:hover,
+  &.active {
+    border-color: #60a5fa;
+    background: #f5faff;
+    box-shadow: 0 6px 18px rgba(37, 99, 235, .08);
+  }
+}
+
+.project-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #eef6ff;
+  color: #2563eb;
+}
+
+.project-text {
+  min-width: 0;
+
+  strong,
+  small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  small {
+    margin-top: 2px;
+    color: #6b7b91;
+  }
+}
+
+.project-check {
+  color: #118450;
+  font-size: 20px;
+}
+
+.saha-project-empty {
+  padding: 14px;
+  color: #6b7b91;
+  font-weight: 600;
+  text-align: center;
+}
+
+@media (max-width: 576px) {
+  .saha-transfer-options {
+    grid-template-columns: 1fr;
+  }
+
+  .sahaya-aktar-modal {
+    width: calc(100vw - 20px);
+    max-height: calc(100vh - 20px);
+  }
 }

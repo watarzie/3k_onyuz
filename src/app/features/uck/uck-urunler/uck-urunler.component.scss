@@ -714,3 +714,41 @@ tbody tr.row-sevk-kilitli:hover > td {
   &:hover .aciklama-popup { display: block; }
 }
 @keyframes popFade { from { opacity: 0; transform: translateX(-50%) translateY(4px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+.saha-trace-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.saha-trace-rollback {
+  border: 1px solid rgba(245, 158, 11, .35);
+  background: #FFFBEB;
+  color: #B45309;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all .15s ease;
+
+  &:hover:not(:disabled) {
+    border-color: rgba(245, 158, 11, .65);
+    background: #FEF3C7;
+  }
+
+  &:disabled {
+    opacity: .65;
+    cursor: wait;
+  }
+}
+
+.spin {
+  animation: sahaTraceSpin .8s linear infinite;
+}
+
+@keyframes sahaTraceSpin {
+  to { transform: rotate(360deg); }
+}

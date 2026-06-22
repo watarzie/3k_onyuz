@@ -33,6 +33,8 @@
     "PROJE_SEVK_ET": "Ship Project",
     "PROJE_SIL": "Project Delete",
     "EKSIK_SAHA_PROJESI": "Missing Field Project",
+    "SAHAYA_AKTAR": "Transfer to Field",
+    "SAHA_AKTARIM_GERI_AL": "Rollback Field Transfer",
     "EKSIK_RAPORU": "Missing Report",
     "GERCEKLESEN_CEKI_RAPORU": "Actual Packing List Report",
     "CEKI_VERISI_DUZENLE": "Packing List Data Edit",

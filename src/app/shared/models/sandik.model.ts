@@ -13,6 +13,8 @@ export interface SandikDto {
   isManuelSandik: boolean;
   silinebilirMi: boolean;
   depodaSayilacakMi: boolean;
+  sahayaAktarildiMi?: boolean;
+  sahayaAktarilanMiktar?: number;
   en?: number;
   boy?: number;
   yukseklik?: number;
@@ -29,6 +31,8 @@ export interface SandikDetayDto {
   sevkiyatDuzeltmeAcikMi?: boolean;
   depoLokasyonId: number;
   depoLokasyonMetni: string;
+  sahayaAktarildiMi?: boolean;
+  sahayaAktarilanMiktar?: number;
   en?: number;
   boy?: number;
   yukseklik?: number;

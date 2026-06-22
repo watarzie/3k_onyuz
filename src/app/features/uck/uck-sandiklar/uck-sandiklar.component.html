@@ -57,7 +57,7 @@
       }
 
       <!-- Toplu İşlem Butonları -->
-      @if (canWriteSandik() && filtered().length > 0) {
+      @if (canUseSandikSelection() && filtered().length > 0) {
       <div class="border-start ms-2 ps-3 d-flex align-items-center gap-2">
         <div class="form-check m-0 d-flex align-items-center gap-1">
           <input class="form-check-input" type="checkbox" id="selectAll" [checked]="isAllSelected()"
@@ -67,6 +67,19 @@
         </div>
 
         @if (selectedSandikIds().size > 0) {
+        @if (canSandiklariSahayaAktar()) {
+        <button class="btn btn-sm btn-saha-transfer d-flex align-items-center gap-1"
+          (click)="seciliSandiklariSahayaAktar()"
+          [disabled]="sahayaAktarSaving()">
+          @if (sahayaAktarSaving()) {
+          <span class="spinner-border spinner-border-sm"></span>
+          } @else {
+          <i class="ri-tools-line"></i>
+          }
+          Sahaya Aktar ({{selectedSandikIds().size}})
+        </button>
+        }
+        @if (canWriteSandik()) {
         <button class="btn btn-sm btn-success d-flex align-items-center gap-1" (click)="topluHazirYap()">
           <i class="ri-lock-line"></i> Seçilenleri ({{selectedSandikIds().size}}) Kapat
         </button>
@@ -74,6 +87,7 @@
           style="background-color: var(--bs-info); border-color: var(--bs-info);" (click)="topluLokasyonAtaModal()">
           <i class="ri-map-pin-add-line"></i> Toplu Lokasyon Belirle
         </button>
+        }
         }
       </div>
       }
@@ -96,12 +110,12 @@
     <div class="sandik-grid position-relative">
       @for (s of filtered(); track s.id) {
       <div class="position-relative">
-        @if (canWriteSandik()) {
+        @if (canUseSandikSelection()) {
         <div class="position-absolute top-0 start-0 m-2" style="z-index: 5;">
           <div class="form-check">
             <input class="form-check-input" type="checkbox" [checked]="selectedSandikIds().has(s.id)"
-              (change)="toggleSelection(s.id)" [disabled]="isSandikSevkEdildi(s)"
-              [style.cursor]="isSandikSevkEdildi(s) ? 'not-allowed' : 'pointer'"
+              (change)="toggleSelection(s.id)" [disabled]="isSandikKilitli(s)"
+              [style.cursor]="isSandikKilitli(s) ? 'not-allowed' : 'pointer'"
               style="transform: scale(1.2);">
           </div>
         </div>
@@ -109,14 +123,14 @@
 
         <div [routerLink]="isSandikKilitli(s) ? null : [uckRoutePrefix(), projeId(), s.sandikNo]" class="sandik-card h-100"
           [ngClass]="'s-' + s.durumMetni.toLowerCase()" [class.is-closed]="isSandikKapandi(s)" [class.is-shipped]="isSandikSevkEdildi(s)"
-          [class.is-shipment-correction]="isSandikDuzeltmeyeAcik(s)"
+          [class.is-shipment-correction]="isSandikDuzeltmeyeAcik(s)" [class.is-field-transferred]="isSandikSahayaAktarildi(s)"
           [attr.aria-disabled]="isSandikKilitli(s)" (click)="onSandikCardClick($event, s)"
           style="padding-top: 1.5rem;" role="link" [attr.tabindex]="isSandikKilitli(s) ? -1 : 0">
           <!-- Üst — Numara + Ok -->
           <div class="card-top">
             <div class="d-flex align-items-center">
               <span class="sandik-no ms-3">{{ getDisplayNo(s.sandikNo) }}</span>
-              @if (canWriteSandik() && !isSandikSevkEdildi(s)) {
+              @if (canWriteSandik() && !isSandikKilitli(s)) {
               <button class="btn btn-sm ms-2"
                 [ngClass]="s.durumMetni === 'Kapandı' ? 'btn-outline-warning' : 'btn-outline-success'"
                 (click)="toggleSandikDurum($event, s)"
@@ -126,7 +140,7 @@
               </button>
               }
             </div>
-            @if (canWriteSandik() && s.silinebilirMi && !isSandikSevkEdildi(s)) {
+            @if (canWriteSandik() && s.silinebilirMi && !isSandikKilitli(s)) {
             <div class="card-top-actions">
               <button
                 class="card-icon-btn card-delete-btn"
@@ -137,7 +151,7 @@
               </button>
             </div>
             }
-            @if (canWriteSandik() && isSandikKilitli(s)) {
+            @if (canWriteSandik() && isSandikKilitli(s) && !isSandikSahayaAktarildi(s)) {
             <div class="card-top-actions">
               <button
                 class="card-icon-btn card-unlock-btn"
@@ -176,9 +190,8 @@
           }
           <!-- Durum -->
           <div class="card-status mt-2">
-            <span class="status-dot" [style.background]="getDurumColor(s.durumMetni)"></span>
-            <span class="status-text" [style.color]="getDurumColor(s.durumMetni)">{{ getDurumLabel(s.durumMetni)
-              }}</span>
+            <span class="status-dot" [style.background]="getCardDurumColor(s)"></span>
+            <span class="status-text" [style.color]="getCardDurumColor(s)">{{ getCardDurumLabel(s) }}</span>
           </div>
           <!-- Meta -->
           <div class="card-meta d-flex justify-content-between align-items-end w-100 mt-auto pt-2"
@@ -215,6 +228,125 @@
     }
   </div>
 </div>
+
+<!-- ===== Sahaya Aktar Modal ===== -->
+@if (showSahayaAktarModal()) {
+<div class="modal-overlay" (click)="closeSahayaAktarModal()"></div>
+<div class="toplu-sevk-modal sahaya-aktar-modal">
+  <div class="modal-header d-flex align-items-center justify-content-between p-3 border-bottom bg-white">
+    <div>
+      <h5 class="fw-semibold mb-0 text-success"><i class="ri-tools-line me-2"></i>Sandıkları Sahaya Aktar</h5>
+      <small class="text-muted">{{ getSahayaAktarilabilirSeciliSandiklar().length }} sandık seçildi</small>
+    </div>
+    <button class="btn btn-sm border-0 bg-transparent shadow-none p-0" (click)="closeSahayaAktarModal()" [disabled]="sahayaAktarSaving()">
+      <i class="ri-close-line fs-3 text-muted"></i>
+    </button>
+  </div>
+
+  <div class="modal-body p-4 bg-white">
+    <div class="sahaya-aktar-summary mb-3">
+      <span class="summary-icon"><i class="ri-archive-stack-line"></i></span>
+      <div>
+        <div class="summary-label">Aktarılacak sandıklar</div>
+        <div class="summary-value">{{ getSahayaAktarilacakSandikOzeti() }}</div>
+      </div>
+    </div>
+
+    <div class="saha-transfer-options mb-3">
+      <button type="button" class="saha-transfer-option" [class.active]="sahayaAktarHedefTipi() === 'new'" (click)="setSahayaAktarHedefTipi('new')">
+        <span class="option-icon new"><i class="ri-add-circle-line"></i></span>
+        <span>
+          <strong>Yeni saha projesi</strong>
+          <small>Seçili sandıklar için yeni bir saha projesi açılır.</small>
+        </span>
+      </button>
+      <button type="button" class="saha-transfer-option" [class.active]="sahayaAktarHedefTipi() === 'existing'" (click)="setSahayaAktarHedefTipi('existing')">
+        <span class="option-icon existing"><i class="ri-folder-transfer-line"></i></span>
+        <span>
+          <strong>Mevcut saha projesi</strong>
+          <small>Seçili sandıklar var olan bir saha projesine eklenir.</small>
+        </span>
+      </button>
+    </div>
+
+    @if (sahayaAktarHedefTipi() === 'new') {
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Saha Proje No <span class="text-danger">*</span></label>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Örn. PA600-18-SAHA"
+          [ngModel]="sahayaAktarProjeNo()"
+          (ngModelChange)="sahayaAktarProjeNo.set($event)" />
+      </div>
+    } @else {
+      <div class="saha-project-picker mb-3">
+        <label class="form-label fw-semibold">Aktarım yapılacak saha projesi <span class="text-danger">*</span></label>
+        <div class="search-box position-relative mb-2">
+          <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Saha proje ara..."
+            [ngModel]="hedefSahaProjeSearchTerm()"
+            (ngModelChange)="hedefSahaProjeSearchTerm.set($event)" />
+        </div>
+
+        <div class="saha-project-list">
+          @if (hedefSahaProjeLoading()) {
+            <div class="saha-project-empty">
+              <span class="spinner-border spinner-border-sm text-success me-2"></span>
+              Saha projeleri yükleniyor...
+            </div>
+          } @else {
+            @for (proje of filteredHedefSahaProjeleri(); track proje.id) {
+              <button
+                type="button"
+                class="saha-project-item"
+                [class.active]="sahayaAktarHedefProjeId() === proje.id"
+                (click)="selectHedefSahaProje(proje)">
+                <span class="project-mark"><i class="ri-folder-line"></i></span>
+                <span class="project-text">
+                  <strong>{{ proje.projeNo }}</strong>
+                  <small>{{ proje.musteri || '-' }}</small>
+                </span>
+                @if (sahayaAktarHedefProjeId() === proje.id) {
+                  <i class="ri-check-line project-check"></i>
+                }
+              </button>
+            } @empty {
+              <div class="saha-project-empty">Aramaya uygun saha projesi bulunamadı.</div>
+            }
+          }
+        </div>
+      </div>
+    }
+
+    <div>
+      <label class="form-label fw-semibold">Açıklama</label>
+      <textarea
+        class="form-control"
+        rows="3"
+        maxlength="500"
+        placeholder="Aktarım notu..."
+        [ngModel]="sahayaAktarAciklama()"
+        (ngModelChange)="sahayaAktarAciklama.set($event)"></textarea>
+    </div>
+  </div>
+
+  <div class="modal-footer d-flex gap-2 p-3 bg-white border-top">
+    <button class="btn btn-outline flex-grow-1" (click)="closeSahayaAktarModal()" [disabled]="sahayaAktarSaving()">Vazgeç</button>
+    <button class="btn btn-success flex-grow-1" (click)="sahayaAktarOnayla()" [disabled]="sahayaAktarSaving()">
+      @if (sahayaAktarSaving()) {
+        <span class="spinner-border spinner-border-sm me-1"></span>
+      } @else {
+        <i class="ri-tools-line me-1"></i>
+      }
+      Sahaya Aktar
+    </button>
+  </div>
+</div>
+}
 
 <!-- ===== Sandık Lokasyon Modal ===== -->
 @if (showLokasyonModal() && selectedSandikForLocIds().length > 0) {

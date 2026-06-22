@@ -11,7 +11,7 @@ import { SandikService } from '../../../core/services/sandik.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
-import { CekiRevizyonOnizlemeSonuc, ProjeDto, SandikDto, SevkiyatDto } from '../../../shared/models/index';
+import { CekiRevizyonOnizlemeSonuc, ProjeDto, SahaAktarimDto, SandikDto, SevkiyatDto } from '../../../shared/models/index';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmService } from '../../../core/services/confirm.service';
 import { PdfService } from '../../../core/services/pdf.service';
@@ -68,7 +68,7 @@ export class ProjeListesiComponent implements OnInit {
   canSeeEksikRapor = computed(() => this.permissions.hasAccess('eksik-raporu'));
   canSeeGerceklesenRapor = computed(() => this.permissions.hasAccess('gerceklesen-ceki-raporu'));
   canSee3KIsListesi = computed(() => this.isSandikYonetimi() && this.permissions.hasAccess('3k-is-listesi'));
-  canUseEksikTamamlama = computed(() => this.permissions.canWrite('eksik-saha-projesi'));
+  canUseEksikTamamlama = computed(() => this.permissions.canWrite('sahaya-aktar'));
   canDeleteProject = computed(() => this.permissions.canWrite('proje-sil'));
   canSevkEt = computed(() => this.permissions.hasAccess('proje-sevk-et'));
   canSeeSahaGrid = computed(() => this.permissions.hasAccess('saha-grid-modulu'));
@@ -76,6 +76,8 @@ export class ProjeListesiComponent implements OnInit {
   canSeeSahaRapor = computed(() => this.permissions.hasAccess('saha-raporu'));
   canSeeSahaSevkSonrasiEksikRapor = computed(() => this.permissions.hasAccess('saha-sevk-sonrasi-eksik-raporu'));
   canSeeSahaSandiklar = computed(() => this.permissions.hasAccess('saha-sandiklar'));
+  canManageSahaAktarimGeriAl = computed(() => this.permissions.hasAccess('saha-aktarim-geri-al'));
+  canWriteSahaAktarimGeriAl = computed(() => this.permissions.canWrite('saha-aktarim-geri-al'));
   canSevkEtCurrent = computed(() => this.isSahaYonetimi() ? this.permissions.hasAccess('saha-sevk-et') : this.canSevkEt());
   canDeleteProjectCurrent = computed(() => this.isSahaYonetimi() ? this.permissions.canWrite('saha-proje-sil') : this.canDeleteProject());
   hasSandikYonetimiActions = computed(() =>
@@ -84,7 +86,7 @@ export class ProjeListesiComponent implements OnInit {
   );
   hasSahaYonetimiActions = computed(() =>
     this.isSahaYonetimi() &&
-    (this.canSeeSahaGrid() || this.canSeeSaha3K() || this.canSeeSahaRapor() || this.canSeeSahaSevkSonrasiEksikRapor() || this.canSeeSahaSandiklar() || this.canSevkEtCurrent() || this.canDeleteProjectCurrent())
+    (this.canSeeSahaGrid() || this.canSeeSaha3K() || this.canSeeSahaRapor() || this.canSeeSahaSevkSonrasiEksikRapor() || this.canSeeSahaSandiklar() || this.canManageSahaAktarimGeriAl() || this.canSevkEtCurrent() || this.canDeleteProjectCurrent())
   );
   hasYedekYonetimiActions = computed(() => this.isYedekYonetimi());
   hasActionColumn = computed(() =>
@@ -174,6 +176,11 @@ export class ProjeListesiComponent implements OnInit {
   kilitAcmaTipiId = signal<SevkiyatKilitAcmaTipi>(SevkiyatKilitAcmaTipi.SevkiyatKaydiKorunarakAc);
   kilitAcAciklama = signal('');
   kilitAcSaving = signal(false);
+  showSahaAktarimModal = signal(false);
+  sahaAktarimProje = signal<ProjeDto | null>(null);
+  sahaAktarimlari = signal<SahaAktarimDto[]>([]);
+  sahaAktarimLoading = signal(false);
+  sahaAktarimGeriAlSaving = signal<number | null>(null);
   readonly kilitAcmaTipleri = SevkiyatKilitAcmaTipi;
   sevkGecmisiSevkiyatSayisi = computed(() => this.sevkGecmisi().filter(kayit => !kayit.isKilitAcma).length);
   sevkEtSelectableSandiklar = computed(() => this.sevkEtSandiklar().filter(s => !this.isSandikSevkEdildi(s)));
@@ -817,6 +824,86 @@ export class ProjeListesiComponent implements OnInit {
       error: () => {
         this.creatingProje.set(false);
         this.toastService.error('Sunucu hatası oluştu.');
+      }
+    });
+  }
+
+  openSahaAktarimModal(proje: ProjeDto) {
+    if (!this.canManageSahaAktarimGeriAl()) return;
+
+    this.sahaAktarimProje.set(proje);
+    this.sahaAktarimlari.set([]);
+    this.sahaAktarimLoading.set(false);
+    this.showSahaAktarimModal.set(true);
+    this.loadSahaAktarimlari(proje.id);
+  }
+
+  closeSahaAktarimModal() {
+    if (this.sahaAktarimGeriAlSaving()) return;
+
+    this.showSahaAktarimModal.set(false);
+    this.sahaAktarimProje.set(null);
+    this.sahaAktarimlari.set([]);
+    this.sahaAktarimLoading.set(false);
+  }
+
+  private loadSahaAktarimlari(projeId: number) {
+    this.sahaAktarimLoading.set(true);
+    this.projeService.getSahaAktarimlari(projeId).subscribe({
+      next: (res) => {
+        this.sahaAktarimLoading.set(false);
+        if (res.isSuccess && res.value) {
+          this.sahaAktarimlari.set(res.value);
+        } else {
+          this.toastService.error(res.error || 'Saha aktarımları yüklenemedi.');
+        }
+      },
+      error: () => {
+        this.sahaAktarimLoading.set(false);
+        this.toastService.error('Saha aktarımları yüklenirken sunucu hatası oluştu.');
+      }
+    });
+  }
+
+  formatAktarimMiktar(value: number): string {
+    if (value == null) return '-';
+    return Number.isInteger(value) ? value.toString() : value.toString().replace(/0+$/, '').replace(/\.$/, '');
+  }
+
+  formatAktarimBirim(value?: string | null): string {
+    const normalized = (value ?? '').trim();
+    return !normalized || normalized === '?' ? 'Adet' : normalized;
+  }
+
+  async sahaAktarimGeriAl(aktarim: SahaAktarimDto): Promise<void> {
+    const proje = this.sahaAktarimProje();
+    if (!proje || !this.canWriteSahaAktarimGeriAl() || !aktarim.geriAlinabilirMi || this.sahaAktarimGeriAlSaving()) return;
+
+    const onay = await this.confirmService.ask({
+      title: 'Saha Aktarımını Geri Al',
+      message: `<strong>${aktarim.kaynakProjeNo}</strong> kaynak projesindeki <strong>#${aktarim.siraNo}</strong> satırının <strong>${this.formatAktarimMiktar(aktarim.miktar)} ${this.formatAktarimBirim(aktarim.birim)}</strong> saha aktarımı geri alınacak.<br>Ürün normal proje eksik takibine geri döner.`,
+      confirmText: 'Geri Al',
+      cancelText: 'Vazgeç',
+      type: 'warning'
+    });
+
+    if (!onay) return;
+
+    this.sahaAktarimGeriAlSaving.set(aktarim.sahaCekiSatiriId);
+    this.projeService.sahaAktarimGeriAl(aktarim.sahaCekiSatiriId, 'Saha Yönetimi üzerinden aktarım geri alındı.').subscribe({
+      next: (res) => {
+        this.sahaAktarimGeriAlSaving.set(null);
+        if (res.isSuccess) {
+          this.toastService.success('Saha aktarımı geri alındı.');
+          this.loadSahaAktarimlari(proje.id);
+          this.loadProjeler();
+        } else {
+          this.toastService.error(res.error || 'Saha aktarımı geri alınamadı.');
+        }
+      },
+      error: () => {
+        this.sahaAktarimGeriAlSaving.set(null);
+        this.toastService.error('Saha aktarımı geri alınırken sunucu hatası oluştu.');
       }
     });
   }

@@ -114,7 +114,8 @@ export class SandikDetayComponent implements OnInit {
   }
 
   isSandikKilitli(): boolean {
-    return this.isSandikSevkEdildi() && !this.isSandikDuzeltmeyeAcik();
+    const s = this.sandik();
+    return s?.sahayaAktarildiMi === true || (this.isSandikSevkEdildi() && !this.isSandikDuzeltmeyeAcik());
   }
 
   async sandikDuzeltmeyiTamamla() {
@@ -160,7 +161,8 @@ export class SandikDetayComponent implements OnInit {
   }
 
   private isSandikDtoKilitli(sandik: SandikDto): boolean {
-    return this.isSandikDtoSevkEdildi(sandik) && sandik.sevkiyatDuzeltmeAcikMi !== true;
+    return sandik.sahayaAktarildiMi === true ||
+      (this.isSandikDtoSevkEdildi(sandik) && sandik.sevkiyatDuzeltmeAcikMi !== true);
   }
 
   ngOnInit() {
@@ -409,7 +411,7 @@ export class SandikDetayComponent implements OnInit {
 
     if (hataliAdetVar) {
       this.urunEklemeSaving.set(false);
-      this.toast.error('SeÃ§ilen Ã¼rÃ¼nlerde tamamlama adedi 0 ile kalan adet arasÄ±nda olmalÄ±dÄ±r.');
+      this.toast.error('Seçilen ürünlerde tamamlama adedi 0 ile kalan adet arasında olmalıdır.');
       return;
     }
 

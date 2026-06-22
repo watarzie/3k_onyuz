@@ -1,5 +1,5 @@
 import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslationService } from '../../../core/services/translation.service';
@@ -27,6 +27,7 @@ import { SandikDto, LookupResponse, ProjeDropdownDto } from '../../../shared/mod
 export class UcKSandiklarComponent implements OnInit {
   ts = inject(TranslationService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private sandikService = inject(SandikService);
   private projeService = inject(ProjeService);
   private confirmService = inject(ConfirmService);
@@ -35,6 +36,7 @@ export class UcKSandiklarComponent implements OnInit {
   private lookupService = inject(LookupService);
   private pdfService = inject(PdfService);
   private readonly sevkEdilmisSandikMesaji = 'Bu sandık sevk edildiği için üzerinde işlem yapılamaz.';
+  private readonly sahayaAktarilmisSandikMesaji = 'Bu sandık sahaya aktarıldığı için normal proje tarafında işlem yapılamaz. Geri almak için saha aktarımını geri alın.';
 
   private get activeMenuKod(): string {
     return this.route.snapshot.data?.['menuKod'] || '3k-modulu';
@@ -44,6 +46,8 @@ export class UcKSandiklarComponent implements OnInit {
   uckRoutePrefix = computed(() => this.isSahaContext() ? '/saha-yonetimi/uck' : '/uck');
   uckSandikRoutePrefix = computed(() => this.isSahaContext() ? '/saha-yonetimi/uck/sandik' : '/uck/sandik');
   canWriteSandik = computed(() => this.permissionService.canWrite(this.activeMenuKod));
+  canSandiklariSahayaAktar = computed(() => !this.isSahaContext() && this.permissionService.canWrite('sahaya-aktar'));
+  canUseSandikSelection = computed(() => this.canWriteSandik() || this.canSandiklariSahayaAktar());
   canSeeSandikDurumRaporu = computed(() => this.permissionService.hasAccess(this.sandikDurumRaporMenuKod()));
 
   projeId = signal(0);
@@ -52,6 +56,22 @@ export class UcKSandiklarComponent implements OnInit {
   filtered = signal<SandikDto[]>([]);
   loading = signal(true);
   downloadingSandikDurumRaporu = signal(false);
+  sahayaAktarSaving = signal(false);
+  showSahayaAktarModal = signal(false);
+  sahayaAktarHedefTipi = signal<'new' | 'existing'>('new');
+  sahayaAktarProjeNo = signal('');
+  sahayaAktarAciklama = signal('');
+  sahayaAktarHedefProjeId = signal<number | null>(null);
+  hedefSahaProjeleri = signal<ProjeDropdownDto[]>([]);
+  hedefSahaProjeLoading = signal(false);
+  hedefSahaProjeSearchTerm = signal('');
+  filteredHedefSahaProjeleri = computed(() => {
+    const term = this.hedefSahaProjeSearchTerm().trim().toLocaleLowerCase('tr-TR');
+    const list = this.hedefSahaProjeleri();
+    if (!term) return list;
+
+    return list.filter(p => `${p.projeNo} ${p.musteri}`.toLocaleLowerCase('tr-TR').includes(term));
+  });
 
   // Bulk Selection
   selectedSandikIds = signal<Set<number>>(new Set());
@@ -221,8 +241,8 @@ export class UcKSandiklarComponent implements OnInit {
     event.preventDefault();
     event.stopPropagation();
     if (!this.canWriteSandik()) return;
-    if (this.isSandikSevkEdildi(sandik)) {
-      this.toast.error(this.sevkEdilmisSandikMesaji);
+    if (this.isSandikKilitli(sandik)) {
+      this.toast.error(this.getSandikKilitMesaji(sandik));
       return;
     }
     this.selectedSandikForLocIds.set([sandik.id]);
@@ -235,7 +255,7 @@ export class UcKSandiklarComponent implements OnInit {
     if (!this.canWriteSandik()) return;
     const ids = this.secilenSevkEdilmemisSandikIdleri();
     if (ids.length === 0) {
-      this.toast.error(this.sevkEdilmisSandikMesaji);
+      this.toast.error('Seçili sandıklar arasında işlem yapılabilir sandık bulunmuyor.');
       return;
     }
     this.selectedSandikForLocIds.set(ids);
@@ -265,8 +285,9 @@ export class UcKSandiklarComponent implements OnInit {
     }
     const ids = this.selectedSandikForLocIds();
     if (ids.length === 0) return;
-    if (this.sandiklar().some(s => ids.includes(s.id) && this.isSandikSevkEdildi(s))) {
-      this.toast.error(this.sevkEdilmisSandikMesaji);
+    const kilitliSandik = this.sandiklar().find(s => ids.includes(s.id) && this.isSandikKilitli(s));
+    if (kilitliSandik) {
+      this.toast.error(this.getSandikKilitMesaji(kilitliSandik));
       return;
     }
 
@@ -330,8 +351,27 @@ export class UcKSandiklarComponent implements OnInit {
     return sandik.sevkiyatDuzeltmeAcikMi === true;
   }
 
+  isSandikSahayaAktarildi(sandik: SandikDto): boolean {
+    return sandik.sahayaAktarildiMi === true;
+  }
+
   isSandikKilitli(sandik: SandikDto): boolean {
-    return this.isSandikSevkEdildi(sandik) && !this.isSandikDuzeltmeyeAcik(sandik);
+    return this.isSandikSahayaAktarildi(sandik) ||
+      (this.isSandikSevkEdildi(sandik) && !this.isSandikDuzeltmeyeAcik(sandik));
+  }
+
+  getSandikKilitMesaji(sandik: SandikDto): string {
+    return this.isSandikSahayaAktarildi(sandik)
+      ? this.sahayaAktarilmisSandikMesaji
+      : this.sevkEdilmisSandikMesaji;
+  }
+
+  getCardDurumLabel(sandik: SandikDto): string {
+    return this.isSandikSahayaAktarildi(sandik) ? 'SAHAYA AKTARILDI' : this.getDurumLabel(sandik.durumMetni);
+  }
+
+  getCardDurumColor(sandik: SandikDto): string {
+    return this.isSandikSahayaAktarildi(sandik) ? '#0F766E' : this.getDurumColor(sandik.durumMetni);
   }
 
   indirSandikDurumRaporu() {
@@ -366,7 +406,7 @@ export class UcKSandiklarComponent implements OnInit {
 
     event.preventDefault();
     event.stopPropagation();
-    this.toast.info('Bu sandık sevk edildiği için 3K işlemine kapalıdır.');
+    this.toast.info(this.getSandikKilitMesaji(sandik));
   }
 
   async sandikKilidiAc(event: Event, sandik: SandikDto) {
@@ -375,6 +415,10 @@ export class UcKSandiklarComponent implements OnInit {
 
     if (!this.canWriteSandik()) return;
     if (!this.isSandikKilitli(sandik)) return;
+    if (this.isSandikSahayaAktarildi(sandik)) {
+      this.toast.error(this.getSandikKilitMesaji(sandik));
+      return;
+    }
 
     this.kilitAcSandik.set(sandik);
     this.kilitAcmaTipiId.set(SevkiyatKilitAcmaTipi.SevkiyatKaydiKorunarakAc);
@@ -469,18 +513,18 @@ export class UcKSandiklarComponent implements OnInit {
   }
 
   private getSecilebilirSandiklar(): SandikDto[] {
-    return this.filtered().filter(s => !this.isSandikSevkEdildi(s));
+    return this.filtered().filter(s => !this.isSandikKilitli(s));
   }
 
   private secilenSevkEdilmemisSandikIdleri(): number[] {
     const selected = this.selectedSandikIds();
     return this.sandiklar()
-      .filter(s => selected.has(s.id) && !this.isSandikSevkEdildi(s))
+      .filter(s => selected.has(s.id) && !this.isSandikKilitli(s))
       .map(s => s.id);
   }
 
   private temizleSevkEdilmisSecimler() {
-    const kilitliIds = new Set(this.sandiklar().filter(s => this.isSandikSevkEdildi(s)).map(s => s.id));
+    const kilitliIds = new Set(this.sandiklar().filter(s => this.isSandikKilitli(s)).map(s => s.id));
     if (kilitliIds.size === 0) return;
 
     const temizSecim = Array.from(this.selectedSandikIds()).filter(id => !kilitliIds.has(id));
@@ -491,7 +535,7 @@ export class UcKSandiklarComponent implements OnInit {
 
   toggleSelection(sandikId: number) {
     const sandik = this.sandiklar().find(s => s.id === sandikId);
-    if (sandik && this.isSandikSevkEdildi(sandik)) return;
+    if (sandik && this.isSandikKilitli(sandik)) return;
 
     const set = this.selectedSandikIds();
     if (set.has(sandikId)) set.delete(sandikId);
@@ -520,12 +564,158 @@ export class UcKSandiklarComponent implements OnInit {
     if (this.selectedSandikIds().size === 0) return;
     const ids = this.secilenSevkEdilmemisSandikIdleri();
     if (ids.length === 0) {
-      this.toast.error(this.sevkEdilmisSandikMesaji);
+      this.toast.error('Seçili sandıklar arasında kapatılabilir sandık bulunmuyor.');
       return;
     }
     this.topluKapatConfirm(ids, false);
   }
 
+  getSahayaAktarilabilirSeciliSandiklar(): SandikDto[] {
+    const selected = this.selectedSandikIds();
+    return this.sandiklar()
+      .filter(s => selected.has(s.id))
+      .filter(s => !this.isSandikKilitli(s))
+      .filter(s => s.urunSayisi > 0);
+  }
+
+  seciliSandiklariSahayaAktar() {
+    if (!this.canSandiklariSahayaAktar() || this.sahayaAktarSaving()) return;
+
+    const sandiklar = this.getSahayaAktarilabilirSeciliSandiklar();
+    if (sandiklar.length === 0) {
+      this.toast.warning('Sahaya aktarılabilecek ürün içeren sandık seçilmelidir.');
+      return;
+    }
+
+    const kaynakProjeNo = this.mevcutProje()?.projeNo ?? `Proje ${this.projeId()}`;
+    this.sahayaAktarHedefTipi.set('new');
+    this.sahayaAktarProjeNo.set(this.buildSahaProjeNo());
+    this.sahayaAktarAciklama.set(`Kaynak proje ${kaynakProjeNo} seçili sandıkları sahaya aktarıldı.`);
+    this.sahayaAktarHedefProjeId.set(null);
+    this.hedefSahaProjeSearchTerm.set('');
+    this.showSahayaAktarModal.set(true);
+    this.loadHedefSahaProjeleri();
+  }
+
+  closeSahayaAktarModal() {
+    if (this.sahayaAktarSaving()) return;
+
+    this.showSahayaAktarModal.set(false);
+    this.sahayaAktarHedefTipi.set('new');
+    this.sahayaAktarHedefProjeId.set(null);
+    this.hedefSahaProjeSearchTerm.set('');
+  }
+
+  setSahayaAktarHedefTipi(tip: 'new' | 'existing') {
+    this.sahayaAktarHedefTipi.set(tip);
+    if (tip === 'new') {
+      this.sahayaAktarHedefProjeId.set(null);
+      return;
+    }
+
+    if (this.hedefSahaProjeleri().length === 0) {
+      this.loadHedefSahaProjeleri();
+    }
+  }
+
+  selectHedefSahaProje(proje: ProjeDropdownDto) {
+    this.sahayaAktarHedefProjeId.set(proje.id);
+  }
+
+  getSelectedHedefSahaProje(): ProjeDropdownDto | null {
+    const id = this.sahayaAktarHedefProjeId();
+    return id ? this.hedefSahaProjeleri().find(p => p.id === id) ?? null : null;
+  }
+
+  getSahayaAktarilacakSandikOzeti(): string {
+    const sandiklar = this.getSahayaAktarilabilirSeciliSandiklar();
+    if (sandiklar.length === 0) return 'Seçili sandık yok';
+
+    const ilkSandiklar = sandiklar.slice(0, 6).map(s => s.sandikNo).join(', ');
+    return sandiklar.length > 6 ? `${ilkSandiklar} +${sandiklar.length - 6}` : ilkSandiklar;
+  }
+
+  sahayaAktarOnayla() {
+    if (!this.canSandiklariSahayaAktar() || this.sahayaAktarSaving()) return;
+
+    const sandiklar = this.getSahayaAktarilabilirSeciliSandiklar();
+    if (sandiklar.length === 0) {
+      this.toast.warning('Sahaya aktarılabilecek ürün içeren sandık seçilmelidir.');
+      return;
+    }
+
+    const hedefTipi = this.sahayaAktarHedefTipi();
+    if (hedefTipi === 'new' && !this.sahayaAktarProjeNo().trim()) {
+      this.toast.error('Saha proje numarası girilmelidir.');
+      return;
+    }
+
+    if (hedefTipi === 'existing' && !this.sahayaAktarHedefProjeId()) {
+      this.toast.error('Aktarım yapılacak saha projesi seçilmelidir.');
+      return;
+    }
+
+    this.sahayaAktarSaving.set(true);
+    this.projeService.sandiklardanSahaProjesiOlustur({
+      kaynakProjeId: this.projeId(),
+      hedefSahaProjeId: hedefTipi === 'existing' ? this.sahayaAktarHedefProjeId() : null,
+      sandikIds: sandiklar.map(s => s.id),
+      projeNo: hedefTipi === 'new' ? this.sahayaAktarProjeNo().trim() : null,
+      aciklama: this.sahayaAktarAciklama().trim() || null
+    }).subscribe({
+      next: (res) => {
+        this.sahayaAktarSaving.set(false);
+        if (res.isSuccess && res.value) {
+          const mesaj = hedefTipi === 'existing'
+            ? `Seçili sandıklar saha projesine eklendi: ${res.value.projeNo}`
+            : `Saha projesi oluşturuldu: ${res.value.projeNo}`;
+          this.toast.success(mesaj);
+          this.closeSahayaAktarModal();
+          this.selectedSandikIds.set(new Set());
+          this.router.navigate(['/saha-yonetimi', res.value.id]);
+        } else {
+          this.toast.error(res.error || 'Sandıklar sahaya aktarılamadı.');
+        }
+      },
+      error: () => {
+        this.sahayaAktarSaving.set(false);
+        this.toast.error('Sandıklar sahaya aktarılırken sunucu ile iletişim kurulamadı.');
+      }
+    });
+  }
+
+  private buildSahaProjeNo(): string {
+    const kaynakProjeNo = this.mevcutProje()?.projeNo?.trim();
+    if (kaynakProjeNo) return `${kaynakProjeNo}-SAHA`;
+
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `SAHA-${yyyy}${mm}${dd}`;
+  }
+
+  private loadHedefSahaProjeleri() {
+    if (this.hedefSahaProjeLoading()) return;
+
+    this.hedefSahaProjeLoading.set(true);
+    this.projeService.getProjeListesi(1, 500, 2, undefined, false).subscribe({
+      next: (res) => {
+        this.hedefSahaProjeLoading.set(false);
+        if (res.isSuccess && res.value) {
+          this.hedefSahaProjeleri.set(res.value.items.map(p => ({
+            id: p.id,
+            projeNo: p.projeNo,
+            musteri: p.musteri
+          })));
+        }
+      },
+      error: () => {
+        this.hedefSahaProjeLoading.set(false);
+        this.toast.error('Saha projeleri yüklenemedi.');
+      }
+    });
+  }
   private generateMissingItemHtml(item: any): string {
     return `
       <div class="mb-3 border-bottom pb-2 ms-2 me-2">
@@ -599,8 +789,8 @@ export class UcKSandiklarComponent implements OnInit {
     event.stopPropagation();
 
     if (!this.canWriteSandik()) return;
-    if (this.isSandikSevkEdildi(sandik)) {
-      this.toast.error(this.sevkEdilmisSandikMesaji);
+    if (this.isSandikKilitli(sandik)) {
+      this.toast.error(this.getSandikKilitMesaji(sandik));
       return;
     }
 
@@ -747,8 +937,8 @@ export class UcKSandiklarComponent implements OnInit {
     event.preventDefault();
     event.stopPropagation();
     if (!this.canWriteSandik()) return;
-    if (this.isSandikSevkEdildi(sandik)) {
-      this.toast.error(this.sevkEdilmisSandikMesaji);
+    if (this.isSandikKilitli(sandik)) {
+      this.toast.error(this.getSandikKilitMesaji(sandik));
       return;
     }
 

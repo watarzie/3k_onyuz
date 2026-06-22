@@ -15,7 +15,7 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
-import { GridUrunDto, GridDurumGuncelleDto, ProjeDropdownDto, CekiSatiriAnaVeriGuncelleDto } from '../../../shared/models/index';
+import { GridUrunDto, GridDurumGuncelleDto, ProjeDropdownDto, CekiSatiriAnaVeriGuncelleDto, SahaTamamlamaIzDto } from '../../../shared/models/index';
 import { GridDurum, GridSevkDurum, UcKDurum } from '../../../core/constants/enums';
 import { PermissionService } from '../../../core/services/permission.service';
 
@@ -95,6 +95,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   canEditCekiVerisi = computed(() => this.permissions.canWrite('ceki-verisi-duzenle'));
   canDeleteCekiVerisi = computed(() => this.permissions.canWrite('ceki-verisi-sil'));
+  canSahaAktarimGeriAl = computed(() => this.permissions.canWrite('saha-aktarim-geri-al'));
 
   readonly birimSecenekleri = [
     { id: 1, label: 'Adet' },
@@ -123,6 +124,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   showSahaIzModal = signal(false);
   sahaIzModalUrun = signal<GridUrunDto | null>(null);
+  sahaAktarimGeriAlSaving = signal<number | null>(null);
 
   // Toplu Sevk Modal
   showTopluSevkModal = signal(false);
@@ -393,6 +395,10 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     return !!u?.sahaTamamlamalari?.length;
   }
 
+  isSahayaAktarilmis(u: GridUrunDto | null | undefined): boolean {
+    return this.hasSahaTamamlama(u);
+  }
+
   hasKaynakSahaIz(u: GridUrunDto | null | undefined): boolean {
     return !!u?.kaynakCekiSatiriId && !!u?.kaynakProjeNo;
   }
@@ -427,6 +433,45 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   closeSahaIzModal(): void {
     this.showSahaIzModal.set(false);
     this.sahaIzModalUrun.set(null);
+  }
+
+  async sahaAktarimGeriAl(iz: SahaTamamlamaIzDto, event?: MouseEvent): Promise<void> {
+    event?.stopPropagation();
+
+    if (iz.sevkEdildiMi) {
+      this.toast.error('Sevk edilmiş saha aktarımı geri alınamaz.');
+      return;
+    }
+
+    const onay = await this.confirmService.ask({
+      title: 'Saha Aktarımını Geri Al',
+      message: `${iz.sahaProjeNo} / Sandık ${iz.sahaSandikNo} içindeki ${this.formatMiktar(iz.miktar)} ${iz.birim} aktarım kaynak projeye geri dönecek. Devam edilsin mi?`,
+      confirmText: 'Geri Al',
+      cancelText: 'Vazgeç',
+      type: 'warning'
+    });
+
+    if (!onay) return;
+
+    this.sahaAktarimGeriAlSaving.set(iz.sahaCekiSatiriId);
+    this.projeService.sahaAktarimGeriAl(iz.sahaCekiSatiriId, 'Saha aktarımı kullanıcı tarafından geri alındı.').subscribe({
+      next: (res) => {
+        this.sahaAktarimGeriAlSaving.set(null);
+        if (res.isSuccess) {
+          this.toast.success('Saha aktarımı geri alındı.');
+          this.closeSahaIzModal();
+          this.gridService.notifyGridUpdated();
+          this.loadUrunler(false);
+          this.loadSandiklar();
+        } else {
+          this.toast.error(res.error ?? 'Saha aktarımı geri alınamadı.');
+        }
+      },
+      error: () => {
+        this.sahaAktarimGeriAlSaving.set(null);
+        this.toast.error('Saha aktarımı geri alınırken sunucu hatası oluştu.');
+      }
+    });
   }
 
   getDurumLabel(value: string): string {
@@ -470,13 +515,18 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     // Yazma yetkisi yoksa açma
     if (!this.canGridWrite) return;
     // Kilitli satır kontrolü
-    if (this.isSahaManuelIcerik(urun) || this.isSatirSevkKilidi(urun) || this.isUcKIslemYapilmis(urun) || this.isTadilatta(urun)) return;
+    if (this.isSahaManuelIcerik(urun) || this.isSahayaAktarilmis(urun) || this.isSatirSevkKilidi(urun) || this.isUcKIslemYapilmis(urun) || this.isTadilatta(urun)) return;
     this.openPanel(urun);
   }
 
   openPanel(urun: GridUrunDto) {
     if (this.isSahaManuelIcerik(urun)) {
       this.toast.info('Manuel saha urunleri sandik icerigidir; Grid islemi gerektirmez.');
+      return;
+    }
+
+    if (this.isSahayaAktarilmis(urun)) {
+      this.toast.info('Bu ürün sahaya aktarıldığı için işlem saha projesinde yürütülmelidir.');
       return;
     }
 
@@ -859,6 +909,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   isCheckboxDisabled(u: GridUrunDto): boolean {
     if (this.isSahaManuelIcerik(u)) return true;
+    if (this.isSahayaAktarilmis(u)) return true;
     return this.isSatirSevkKilidi(u);
   }
 

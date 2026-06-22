@@ -67,6 +67,7 @@ export interface EksikSahaSandikDto {
 
 export interface EksiklerdenSahaProjesiOlusturDto {
   kaynakProjeId?: number | null;
+  hedefSahaProjeId?: number | null;
   projeNo?: string | null;
   musteri?: string | null;
   lokasyon?: string | null;
@@ -74,6 +75,35 @@ export interface EksiklerdenSahaProjesiOlusturDto {
   sandiklar: EksikSahaSandikDto[];
 }
 
+export interface SandiklardanSahaProjesiOlusturDto {
+  kaynakProjeId: number;
+  hedefSahaProjeId?: number | null;
+  sandikIds: number[];
+  projeNo?: string | null;
+  aciklama?: string | null;
+}
+
+
+export interface SahaAktarimDto {
+  sahaCekiSatiriId: number;
+  sahaProjeId: number;
+  sahaProjeNo: string;
+  sahaSandikId?: number | null;
+  sahaSandikNo: string;
+  kaynakProjeId: number;
+  kaynakProjeNo: string;
+  kaynakSandikNo: string;
+  siraNo: number;
+  barkodNo: string;
+  aciklama: string;
+  miktar: number;
+  birim: string;
+  durumMetni: string;
+  sevkEdildiMi: boolean;
+  islemGormusMu: boolean;
+  geriAlinabilirMi: boolean;
+  geriAlinamamaNedeni?: string | null;
+}
 export interface ProjeTransferDto {
   id: number;
   kaynakProjeNo: string;

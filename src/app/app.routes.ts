@@ -164,14 +164,14 @@ export const routes: Routes = [
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/saha-yonetimi/eksik-saha-olustur/eksik-saha-olustur.component').then(m => m.EksikSahaOlusturComponent),
-        data: { menuKod: 'eksik-saha-projesi', requiredYetki: 'W' },
+        data: { menuKod: 'sahaya-aktar', requiredYetki: 'W' },
       },
       {
         path: 'saha-yonetimi/eksik-olustur/:projeId',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/saha-yonetimi/eksik-saha-olustur/eksik-saha-olustur.component').then(m => m.EksikSahaOlusturComponent),
-        data: { menuKod: 'eksik-saha-projesi', requiredYetki: 'W' },
+        data: { menuKod: 'sahaya-aktar', requiredYetki: 'W' },
       },
       {
         path: 'saha-yonetimi/grid/:projeId',

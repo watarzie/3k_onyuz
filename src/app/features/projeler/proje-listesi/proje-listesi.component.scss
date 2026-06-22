@@ -818,6 +818,148 @@ table {
   }
 }
 
+.saha-aktarim-modal {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.saha-aktarim-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #d7f1e4;
+  border-radius: 10px;
+  background: #f6fffb;
+  color: #4d5f77;
+  font-size: .88rem;
+
+  i {
+    color: #118450;
+    font-size: 17px;
+    margin-top: 1px;
+  }
+}
+
+.saha-aktarim-list {
+  display: grid;
+  gap: 10px;
+  max-height: min(560px, calc(100vh - 260px));
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.saha-aktarim-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px 150px 100px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e3ebf5;
+  border-radius: 12px;
+  background: #fff;
+
+  &.is-blocked {
+    background: #fbfcfe;
+  }
+}
+
+.saha-aktarim-main {
+  min-width: 0;
+}
+
+.saha-aktarim-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+
+  strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #172033;
+  }
+}
+
+.source-project {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #eef6ff;
+  color: #2563eb;
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.saha-aktarim-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 7px;
+  color: #6b7b91;
+  font-size: .8rem;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  i {
+    color: #94a3b8;
+  }
+}
+
+.saha-aktarim-qty {
+  text-align: right;
+
+  strong {
+    display: block;
+    color: #172033;
+    font-size: 1rem;
+  }
+
+  small {
+    color: #6b7b91;
+    font-weight: 700;
+  }
+}
+
+.saha-aktarim-status {
+  display: grid;
+  gap: 5px;
+
+  small {
+    color: #8a5a00;
+    line-height: 1.25;
+  }
+}
+
+.status-pill {
+  width: max-content;
+  max-width: 100%;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: .75rem;
+  font-weight: 800;
+
+  &.is-ready {
+    background: #eaf8f1;
+    color: #118450;
+  }
+
+  &.is-blocked {
+    background: #fff4e6;
+    color: #b45309;
+  }
+}
+
+.saha-aktarim-action {
+  display: flex;
+  justify-content: flex-end;
+}
+
 // ===== Pagination =====
 .pagination {
   .page-item {
@@ -926,5 +1068,24 @@ table {
     gap: 12px;
     padding: 14px 12px;
     font-size: 16px;
+  }
+}
+
+@media (max-width: 992px) {
+  .saha-aktarim-item {
+    grid-template-columns: minmax(0, 1fr) 76px;
+  }
+
+  .saha-aktarim-status,
+  .saha-aktarim-action {
+    grid-column: 1 / -1;
+  }
+
+  .saha-aktarim-action {
+    justify-content: stretch;
+
+    .btn {
+      width: 100%;
+    }
   }
 }

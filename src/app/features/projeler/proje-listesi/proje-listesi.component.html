@@ -297,6 +297,11 @@
                           </a>
 
                           }
+                          @if (isSahaYonetimi() && canManageSahaAktarimGeriAl()) {
+                            <button type="button" class="btn btn-sm btn-outline-success" (click)="openSahaAktarimModal(p)" title="Saha Aktarımları">
+                              <i class="ri-node-tree me-1"></i>Aktarımlar
+                            </button>
+                          }
                         }
                       }
                       
@@ -568,6 +573,90 @@
             }
             Oluştur
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ===== Saha Aktarımları Modal ===== -->
+@if (showSahaAktarimModal()) {
+  <div class="modal-backdrop fade show" (click)="closeSahaAktarimModal()"></div>
+  <div class="modal d-block fade show" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+      <div class="modal-content border-0 shadow-lg saha-aktarim-modal">
+        <div class="modal-header border-0">
+          <div>
+            <h5 class="modal-title"><i class="ri-node-tree me-2 text-success"></i>Saha Aktarımları</h5>
+            <small class="text-muted">{{ sahaAktarimProje()?.projeNo }} - {{ sahaAktarimProje()?.musteri }}</small>
+          </div>
+          <button type="button" class="btn-close" (click)="closeSahaAktarimModal()" [disabled]="!!sahaAktarimGeriAlSaving()"></button>
+        </div>
+
+        <div class="modal-body pt-0">
+          <div class="saha-aktarim-info mb-3">
+            <i class="ri-information-line"></i>
+            <span>Bu liste normal projelerden eksik tamamlamak için bu saha projesine aktarılan satırları gösterir.</span>
+          </div>
+
+          @if (sahaAktarimLoading()) {
+            <div class="text-center py-5">
+              <span class="spinner-border text-success me-2"></span>
+              <span class="text-muted">Aktarımlar yükleniyor...</span>
+            </div>
+          } @else if (sahaAktarimlari().length === 0) {
+            <div class="text-center py-5">
+              <div class="empty-icon mb-3 text-muted" style="font-size: 3rem;"><i class="ri-inbox-line"></i></div>
+              <h5 class="fw-semibold mb-2">Aktarım bulunmuyor</h5>
+              <p class="text-muted mb-0">Bu saha projesinde normal projeden gelen eksik aktarımı yok.</p>
+            </div>
+          } @else {
+            <div class="saha-aktarim-list">
+              @for (aktarim of sahaAktarimlari(); track aktarim.sahaCekiSatiriId) {
+                <div class="saha-aktarim-item" [class.is-blocked]="!aktarim.geriAlinabilirMi">
+                  <div class="saha-aktarim-main">
+                    <div class="saha-aktarim-title">
+                      <span class="source-project">{{ aktarim.kaynakProjeNo }}</span>
+                      <strong>#{{ aktarim.siraNo }} · {{ aktarim.aciklama || aktarim.barkodNo }}</strong>
+                    </div>
+                    <div class="saha-aktarim-meta">
+                      <span><i class="ri-archive-stack-line"></i>Kaynak Sandık: {{ aktarim.kaynakSandikNo || '-' }}</span>
+                      <span><i class="ri-inbox-line"></i>Saha Sandığı: {{ aktarim.sahaSandikNo || '-' }}</span>
+                      <span><i class="ri-barcode-line"></i>{{ aktarim.barkodNo || '-' }}</span>
+                    </div>
+                  </div>
+
+                  <div class="saha-aktarim-qty">
+                    <strong>{{ formatAktarimMiktar(aktarim.miktar) }}</strong>
+                    <small>{{ formatAktarimBirim(aktarim.birim) }}</small>
+                  </div>
+
+                  <div class="saha-aktarim-status">
+                    <span class="status-pill" [class.is-ready]="aktarim.geriAlinabilirMi" [class.is-blocked]="!aktarim.geriAlinabilirMi">
+                      {{ aktarim.geriAlinabilirMi ? 'Geri alınabilir' : 'Kilitli' }}
+                    </span>
+                    @if (!aktarim.geriAlinabilirMi && aktarim.geriAlinamamaNedeni) {
+                      <small>{{ aktarim.geriAlinamamaNedeni }}</small>
+                    }
+                  </div>
+
+                  <div class="saha-aktarim-action">
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-warning"
+                      (click)="sahaAktarimGeriAl(aktarim)"
+                      [disabled]="!canWriteSahaAktarimGeriAl() || !aktarim.geriAlinabilirMi || sahaAktarimGeriAlSaving() === aktarim.sahaCekiSatiriId">
+                      @if (sahaAktarimGeriAlSaving() === aktarim.sahaCekiSatiriId) {
+                        <span class="spinner-border spinner-border-sm"></span>
+                      } @else {
+                        <i class="ri-arrow-go-back-line me-1"></i>Geri Al
+                      }
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
         </div>
       </div>
     </div>
