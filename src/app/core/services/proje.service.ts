@@ -36,8 +36,26 @@ export class ProjeService {
   }
 
   /** Dropdown'lar için hafif proje listesi — Include yok, sadece Id/ProjeNo/Musteri */
-  getProjeDropdownListesi(): Observable<ApiResult<ProjeDropdownDto[]>> {
-    return this.api.get<ProjeDropdownDto[]>(API.PROJE.DROPDOWN);
+  getProjeDropdownListesi(filters?: {
+    projeTipiId?: number;
+    searchTerm?: string;
+    isSevkEdilen?: boolean;
+    take?: number;
+    includeIds?: number[];
+  }): Observable<ApiResult<ProjeDropdownDto[]>> {
+    let params = new HttpParams();
+
+    if (filters?.projeTipiId !== undefined) params = params.set('projeTipiId', filters.projeTipiId.toString());
+    if (filters?.searchTerm?.trim()) params = params.set('searchTerm', filters.searchTerm.trim());
+    if (filters?.isSevkEdilen !== undefined) params = params.set('isSevkEdilen', filters.isSevkEdilen.toString());
+    if (filters?.take !== undefined) params = params.set('take', filters.take.toString());
+    filters?.includeIds?.forEach(id => {
+      if (Number.isFinite(id) && id > 0) {
+        params = params.append('includeIds', id.toString());
+      }
+    });
+
+    return this.api.get<ProjeDropdownDto[]>(API.PROJE.DROPDOWN, { params });
   }
 
   projeOlustur(dto: ProjeOlusturDto): Observable<ApiResult<ProjeDto>> {

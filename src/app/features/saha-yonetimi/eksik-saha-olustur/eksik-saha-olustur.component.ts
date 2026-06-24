@@ -7,7 +7,7 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { ProjeService } from '../../../core/services/proje.service';
 import { SandikService } from '../../../core/services/sandik.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { EksikUrunForSandikDto, ProjeDto } from '../../../shared/models';
+import { EksikUrunForSandikDto, ProjeDropdownDto, SandikDto } from '../../../shared/models';
 
 interface SepetUrun extends EksikUrunForSandikDto {
   draftId: string;
@@ -17,6 +17,10 @@ interface SepetUrun extends EksikUrunForSandikDto {
 
 interface SepetSandik {
   id: string;
+  hedefSandikId?: number | null;
+  isExisting?: boolean;
+  existingUrunSayisi?: number;
+  durumMetni?: string;
   sandikNo: string;
   sandikIsmi: string;
   en: number | null;
@@ -55,13 +59,24 @@ export class EksikSahaOlusturComponent implements OnInit {
   selectedUrunMiktar = signal(0);
   projeSecimiId = signal<number | null>(null);
   projeDropdownOpen = signal(false);
+  hedefTipi = signal<'new' | 'existing'>('new');
+  hedefSahaProjeId = signal<number | null>(null);
+  hedefSahaProjeLoading = signal(false);
+  hedefSahaProjeSearchTerm = signal('');
+  hedefSahaDropdownOpen = signal(false);
 
-  kaynakProjeler = signal<ProjeDto[]>([]);
+  kaynakProjeler = signal<ProjeDropdownDto[]>([]);
+  hedefSahaProjeleri = signal<ProjeDropdownDto[]>([]);
+  hedefSahaSandiklari = signal<SandikDto[]>([]);
   selectedProjeIds = signal<number[]>([]);
   aktifKaynakProjeId = signal<number | null>(null);
   eksikUrunler = signal<EksikUrunForSandikDto[]>([]);
   sandiklar = signal<SepetSandik[]>([]);
   private lastDefaultProjeNo = '';
+  private kaynakProjeSearchTimer?: ReturnType<typeof setTimeout>;
+  private hedefSahaSearchTimer?: ReturnType<typeof setTimeout>;
+  private kaynakProjeSearchRequest = 0;
+  private hedefSahaSearchRequest = 0;
 
   breadcrumb = [
     { label: 'Ana Kontrol Paneli', link: '/dashboard' },
@@ -111,6 +126,22 @@ export class EksikSahaOlusturComponent implements OnInit {
     });
   });
 
+  filteredHedefSahaProjeleri = computed(() => {
+    const term = this.hedefSahaProjeSearchTerm().trim().toLocaleLowerCase('tr-TR');
+    const list = this.hedefSahaProjeleri();
+    if (!term) return list;
+
+    return list.filter(p => [
+      p.projeNo,
+      p.musteri,
+    ].some(value => (value ?? '').toLocaleLowerCase('tr-TR').includes(term)));
+  });
+
+  seciliHedefSahaProje = computed(() => {
+    const id = this.hedefSahaProjeId();
+    return id ? this.hedefSahaProjeleri().find(p => p.id === id) ?? null : null;
+  });
+
   toplamEksikAdet = computed(() => this.eksikUrunler().reduce((sum, u) => sum + u.kalanMiktar, 0));
   toplamSepetAdet = computed(() =>
     this.sandiklar().reduce((sum, sandik) => sum + sandik.urunler.reduce((s, u) => s + u.miktar, 0), 0)
@@ -137,17 +168,50 @@ export class EksikSahaOlusturComponent implements OnInit {
   @HostListener('document:click')
   closeProjectDropdownFromOutside(): void {
     this.closeProjeDropdown();
+    this.closeHedefSahaDropdown();
   }
 
   loadKaynakProjeler(): void {
+    this.loadKaynakProjeOptions(this.projeAramaTerm(), true);
+  }
+
+  onKaynakProjeSearchChange(value: string): void {
+    this.projeAramaTerm.set(value);
+    if (this.kaynakProjeSearchTimer) {
+      clearTimeout(this.kaynakProjeSearchTimer);
+    }
+
+    this.kaynakProjeSearchTimer = setTimeout(() => this.loadKaynakProjeOptions(value), 250);
+  }
+
+  onHedefSahaProjeSearchChange(value: string): void {
+    this.hedefSahaProjeSearchTerm.set(value);
+    if (this.hedefSahaSearchTimer) {
+      clearTimeout(this.hedefSahaSearchTimer);
+    }
+
+    this.hedefSahaSearchTimer = setTimeout(() => this.loadHedefSahaProjeleri(value), 250);
+  }
+
+  private loadKaynakProjeOptions(searchTerm = this.projeAramaTerm(), refreshEksikler = false): void {
+    const requestId = ++this.kaynakProjeSearchRequest;
     this.loadingProjeler.set(true);
-    this.projeService.getProjeListesi(1, 1000, 1).subscribe({
+    this.projeService.getProjeDropdownListesi({
+      projeTipiId: 1,
+      searchTerm,
+      take: 50,
+      includeIds: this.selectedProjeIds(),
+    }).subscribe({
       next: res => {
+        if (requestId !== this.kaynakProjeSearchRequest) return;
+
         if (res.isSuccess && res.value) {
-          this.kaynakProjeler.set(res.value.items ?? []);
+          this.kaynakProjeler.set(res.value ?? []);
           this.refreshKaynakProjeNo();
           this.updateDefaultProjeNo();
-          this.loadEksikler();
+          if (refreshEksikler) {
+            this.loadEksikler();
+          }
         } else {
           this.loading.set(false);
           this.toast.error(res.error || 'Kaynak projeler yüklenemedi.');
@@ -155,6 +219,8 @@ export class EksikSahaOlusturComponent implements OnInit {
         this.loadingProjeler.set(false);
       },
       error: () => {
+        if (requestId !== this.kaynakProjeSearchRequest) return;
+
         this.loadingProjeler.set(false);
         this.loading.set(false);
         this.toast.error('Sunucu hatası oluştu.');
@@ -214,12 +280,16 @@ export class EksikSahaOlusturComponent implements OnInit {
     this.projeSecimiId.set(null);
     this.projeAramaTerm.set('');
     this.closeProjeDropdown();
-    this.loadEksikler();
+    this.loadKaynakProjeOptions('', true);
   }
 
   toggleProjeDropdown(): void {
     if (this.loadingProjeler()) return;
-    this.projeDropdownOpen.update(open => !open);
+    const nextOpen = !this.projeDropdownOpen();
+    this.projeDropdownOpen.set(nextOpen);
+    if (nextOpen) {
+      this.loadKaynakProjeOptions(this.projeAramaTerm());
+    }
   }
 
   closeProjeDropdown(): void {
@@ -236,6 +306,62 @@ export class EksikSahaOlusturComponent implements OnInit {
     const selectedId = this.projeSecimiId();
     const proje = this.kaynakProjeler().find(p => p.id === selectedId);
     return proje ? `${proje.projeNo} - ${proje.musteri || '-'}` : 'Proje seçin';
+  }
+
+  setHedefTipi(tip: 'new' | 'existing'): void {
+    this.hedefTipi.set(tip);
+
+    if (tip === 'new') {
+      this.hedefSahaProjeId.set(null);
+      this.hedefSahaSandiklari.set([]);
+      this.hedefSahaProjeSearchTerm.set('');
+      this.closeHedefSahaDropdown();
+      this.sandiklar.update(list => {
+        const taslakSandiklar = list.filter(s => !s.isExisting);
+        return taslakSandiklar.length > 0 ? taslakSandiklar : [this.createEmptySandik('1')];
+      });
+      this.updateDefaultProjeNo();
+      return;
+    }
+
+    this.yeniProjeNo.set('');
+    this.closeHedefSahaDropdown();
+    if (this.hedefSahaProjeleri().length === 0) {
+      this.loadHedefSahaProjeleri();
+    }
+  }
+
+  toggleHedefSahaDropdown(): void {
+    if (this.hedefSahaProjeLoading()) return;
+    const nextOpen = !this.hedefSahaDropdownOpen();
+    this.hedefSahaDropdownOpen.set(nextOpen);
+    if (nextOpen) {
+      this.loadHedefSahaProjeleri(this.hedefSahaProjeSearchTerm());
+    }
+  }
+
+  closeHedefSahaDropdown(): void {
+    this.hedefSahaDropdownOpen.set(false);
+  }
+
+  selectHedefSahaProje(proje: ProjeDropdownDto): void {
+    if (this.hedefSahaProjeId() && this.hedefSahaProjeId() !== proje.id) {
+      const mevcutSandikUrunuVar = this.sandiklar().some(s => s.isExisting && s.urunler.length > 0);
+      if (mevcutSandikUrunuVar) {
+        this.toast.warning('Mevcut saha sandıklarına eklenmiş ürün var. Hedef projeyi değiştirmeden önce bu ürünleri sepetten kaldırın.');
+        return;
+      }
+    }
+
+    this.hedefSahaProjeId.set(proje.id);
+    this.hedefSahaProjeSearchTerm.set('');
+    this.closeHedefSahaDropdown();
+    this.loadHedefSahaSandiklari(proje.id);
+  }
+
+  selectedHedefSahaLabel(): string {
+    const proje = this.seciliHedefSahaProje();
+    return proje ? `${proje.projeNo} - ${proje.musteri || '-'}` : 'Saha projesi seçin';
   }
 
   filterByKaynakProje(projeId: number): void {
@@ -257,29 +383,20 @@ export class EksikSahaOlusturComponent implements OnInit {
     if (this.aktifKaynakProjeId() === projeId) {
       this.aktifKaynakProjeId.set(null);
     }
-    this.loadEksikler();
+    this.loadKaynakProjeOptions(this.projeAramaTerm(), true);
   }
 
   addSandik(): void {
-    const nextNo = this.getNextSandikNo();
-    const id = this.createDraftId();
-    this.sandiklar.update(list => [
-      ...list,
-      {
-        id,
-        sandikNo: nextNo,
-        sandikIsmi: '',
-        en: null,
-        boy: null,
-        yukseklik: null,
-        netKg: null,
-        grossKg: null,
-        urunler: [],
-      }
-    ]);
+    this.sandiklar.update(list => [...list, this.createEmptySandik()]);
   }
 
   removeSandik(sandikId: string): void {
+    const sandik = this.sandiklar().find(s => s.id === sandikId);
+    if (sandik?.isExisting) {
+      this.toast.info('Mevcut saha sandığı bu ekrandan silinemez.');
+      return;
+    }
+
     if (this.sandiklar().length === 1) {
       this.toast.warning('En az bir sandık kalmalıdır.');
       return;
@@ -288,16 +405,16 @@ export class EksikSahaOlusturComponent implements OnInit {
   }
 
   updateSandikNo(sandikId: string, value: string): void {
-    this.sandiklar.update(list => list.map(s => s.id === sandikId ? { ...s, sandikNo: value } : s));
+    this.sandiklar.update(list => list.map(s => s.id === sandikId && !s.isExisting ? { ...s, sandikNo: value } : s));
   }
 
   updateSandikIsmi(sandikId: string, value: string): void {
-    this.sandiklar.update(list => list.map(s => s.id === sandikId ? { ...s, sandikIsmi: value } : s));
+    this.sandiklar.update(list => list.map(s => s.id === sandikId && !s.isExisting ? { ...s, sandikIsmi: value } : s));
   }
 
   updateSandikOlcu(sandikId: string, field: 'en' | 'boy' | 'yukseklik' | 'netKg' | 'grossKg', value: number | string | null): void {
     this.sandiklar.update(list => list.map(s => {
-      if (s.id !== sandikId) return s;
+      if (s.id !== sandikId || s.isExisting) return s;
       return { ...s, [field]: this.toNullablePositiveNumber(value) };
     }));
   }
@@ -417,6 +534,7 @@ export class EksikSahaOlusturComponent implements OnInit {
     const sandiklar = this.sandiklar()
       .map(sandik => ({
         sandikNo: sandik.sandikNo.trim(),
+        hedefSandikId: sandik.hedefSandikId ?? null,
         sandikIsmi: sandik.sandikIsmi.trim() || null,
         en: sandik.en,
         boy: sandik.boy,
@@ -444,6 +562,17 @@ export class EksikSahaOlusturComponent implements OnInit {
       return;
     }
 
+    const hedefTipi = this.hedefTipi();
+    if (hedefTipi === 'new' && !this.yeniProjeNo().trim()) {
+      this.toast.error('Saha proje numarası girilmelidir.');
+      return;
+    }
+
+    if (hedefTipi === 'existing' && !this.hedefSahaProjeId()) {
+      this.toast.error('Aktarım yapılacak saha projesi seçilmelidir.');
+      return;
+    }
+
     const tekrarEdenSandik = sandiklar
       .map(s => s.sandikNo.toLocaleLowerCase('tr-TR'))
       .find((value, index, list) => list.indexOf(value) !== index);
@@ -456,17 +585,18 @@ export class EksikSahaOlusturComponent implements OnInit {
     this.saving.set(true);
     this.projeService.eksiklerdenSahaProjesiOlustur({
       kaynakProjeId: this.selectedProjeIds()[0] ?? null,
-      projeNo: this.yeniProjeNo().trim() || null,
+      hedefSahaProjeId: hedefTipi === 'existing' ? this.hedefSahaProjeId() : null,
+      projeNo: hedefTipi === 'new' ? this.yeniProjeNo().trim() || null : null,
       aciklama: this.aciklama().trim() || null,
       sandiklar,
     }).subscribe({
       next: res => {
         this.saving.set(false);
         if (res.isSuccess && res.value) {
-          this.toast.success('Saha projesi oluşturuldu.');
+          this.toast.success(hedefTipi === 'existing' ? 'Eksikler mevcut saha projesine eklendi.' : 'Saha projesi oluşturuldu.');
           this.router.navigate(['/saha-yonetimi', res.value.id]);
         } else {
-          this.toast.error(res.error || 'Saha projesi oluşturulamadı.');
+          this.toast.error(res.error || 'Eksikler sahaya aktarılamadı.');
         }
       },
       error: () => {
@@ -513,6 +643,8 @@ export class EksikSahaOlusturComponent implements OnInit {
   }
 
   private updateDefaultProjeNo(): void {
+    if (this.hedefTipi() === 'existing') return;
+
     const nextDefault = this.buildDefaultSahaProjeNo();
     if (!nextDefault) return;
 
@@ -546,10 +678,109 @@ export class EksikSahaOlusturComponent implements OnInit {
     return Math.random().toString(36).slice(2, 10);
   }
 
+  private createEmptySandik(sandikNo = this.getNextSandikNo()): SepetSandik {
+    return {
+      id: this.createDraftId(),
+      sandikNo,
+      sandikIsmi: '',
+      en: null,
+      boy: null,
+      yukseklik: null,
+      netKg: null,
+      grossKg: null,
+      urunler: [],
+    };
+  }
+
   private toNullablePositiveNumber(value: number | string | null): number | null {
     if (value === null || value === '') return null;
     const numericValue = Number(value);
     if (!Number.isFinite(numericValue)) return null;
     return Math.max(numericValue, 0);
+  }
+
+  private loadHedefSahaProjeleri(searchTerm = this.hedefSahaProjeSearchTerm()): void {
+    const requestId = ++this.hedefSahaSearchRequest;
+    this.hedefSahaProjeLoading.set(true);
+    this.projeService.getProjeDropdownListesi({
+      projeTipiId: 2,
+      searchTerm,
+      isSevkEdilen: false,
+      take: 50,
+      includeIds: this.hedefSahaProjeId() ? [this.hedefSahaProjeId()!] : [],
+    }).subscribe({
+      next: res => {
+        if (requestId !== this.hedefSahaSearchRequest) return;
+
+        this.hedefSahaProjeLoading.set(false);
+        if (res.isSuccess && res.value) {
+          this.hedefSahaProjeleri.set(this.filterAktifSahaProjeleri(res.value ?? []));
+        } else {
+          this.toast.warning(res.error || 'Saha projeleri yüklenemedi.');
+        }
+      },
+      error: () => {
+        if (requestId !== this.hedefSahaSearchRequest) return;
+
+        this.hedefSahaProjeLoading.set(false);
+        this.toast.error('Saha projeleri yüklenirken sunucu hatası oluştu.');
+      }
+    });
+  }
+
+  private loadHedefSahaSandiklari(projeId: number): void {
+    this.sandikService.getSandiklar(projeId).subscribe({
+      next: res => {
+        if (!res.isSuccess || !res.value) {
+          this.toast.warning(res.error || 'Saha sandıkları yüklenemedi.');
+          this.hedefSahaSandiklari.set([]);
+          return;
+        }
+
+        const hedefSandiklar = [...res.value]
+          .sort((a, b) => this.extractNumber(a.sandikNo) - this.extractNumber(b.sandikNo))
+          .map<SepetSandik>(sandik => ({
+            id: `existing-${sandik.id}`,
+            hedefSandikId: sandik.id,
+            isExisting: true,
+            existingUrunSayisi: sandik.urunSayisi,
+            durumMetni: sandik.durumMetni,
+            sandikNo: sandik.sandikNo,
+            sandikIsmi: sandik.ad ?? '',
+            en: sandik.en ?? null,
+            boy: sandik.boy ?? null,
+            yukseklik: sandik.yukseklik ?? null,
+            netKg: sandik.netKg ?? null,
+            grossKg: sandik.grossKg ?? null,
+            urunler: [],
+          }));
+
+        const taslakSandiklar = this.sandiklar()
+          .filter(s => !s.isExisting && s.urunler.length > 0);
+
+        const sepetSandiklari = [...hedefSandiklar, ...taslakSandiklar];
+        this.hedefSahaSandiklari.set(res.value);
+        this.sandiklar.set(sepetSandiklari);
+        if (sepetSandiklari.length === 0) {
+          this.addSandik();
+        }
+      },
+      error: () => {
+        this.hedefSahaSandiklari.set([]);
+        this.toast.error('Saha sandıkları yüklenirken sunucu hatası oluştu.');
+      }
+    });
+  }
+
+  private filterAktifSahaProjeleri(projeler: ProjeDropdownDto[]): ProjeDropdownDto[] {
+    return projeler
+      .filter(p => p.projeTipiId === 2)
+      .filter(p => p.durumId !== 5 && p.durumId !== 6)
+      .sort((a, b) => a.projeNo.localeCompare(b.projeNo, 'tr-TR'));
+  }
+
+  private extractNumber(value: string): number {
+    const match = (value ?? '').match(/(\d+)/);
+    return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
   }
 }

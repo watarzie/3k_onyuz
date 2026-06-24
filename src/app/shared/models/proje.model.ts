@@ -55,6 +55,7 @@ export interface EksikSahaUrunDto {
 }
 
 export interface EksikSahaSandikDto {
+  hedefSandikId?: number | null;
   sandikNo: string;
   sandikIsmi?: string | null;
   en?: number | null;
@@ -139,4 +140,7 @@ export interface ProjeDropdownDto {
   id: number;
   projeNo: string;
   musteri: string;
+  projeTipiId?: number;
+  durumId?: number;
+  lokasyon?: string | null;
 }

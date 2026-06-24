@@ -1,4 +1,4 @@
-<div class="page-title-area mb-4">
+﻿<div class="page-title-area mb-4">
   <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
     <div>
       <h2 class="fw-bold mb-1">
@@ -16,7 +16,7 @@
         } @else {
           <i class="ri-checkbox-circle-line me-1"></i>
         }
-        Proje Oluştur
+        {{ hedefTipi() === 'existing' ? 'Projeye Ekle' : 'Proje Oluştur' }}
       </button>
     </div>
   </div>
@@ -68,7 +68,7 @@
                 placeholder="Proje adı/no ara..."
                 autocomplete="off"
                 [ngModel]="projeAramaTerm()"
-                (ngModelChange)="projeAramaTerm.set($event)"
+                (ngModelChange)="onKaynakProjeSearchChange($event)"
                 (keydown.escape)="closeProjeDropdown()" />
             </div>
 
@@ -197,13 +197,95 @@
   <aside class="basket-panel">
     <div class="basket-settings">
       <div>
-        <label class="form-label">Saha Proje No</label>
-        <input
-          type="text"
-          class="form-control"
-          [ngModel]="yeniProjeNo()"
-          (ngModelChange)="yeniProjeNo.set($event)" />
+        <label class="form-label">Hedef</label>
+        <div class="target-segment" role="group" aria-label="Saha aktarım hedefi">
+          <button
+            type="button"
+            [class.active]="hedefTipi() === 'new'"
+            (click)="setHedefTipi('new')">
+            <i class="ri-add-circle-line"></i>
+            Yeni saha
+          </button>
+          <button
+            type="button"
+            [class.active]="hedefTipi() === 'existing'"
+            (click)="setHedefTipi('existing')">
+            <i class="ri-folder-transfer-line"></i>
+            Mevcut saha
+          </button>
+        </div>
       </div>
+
+      @if (hedefTipi() === 'existing') {
+        <div>
+          <label class="form-label">Saha Projesi</label>
+          <div class="project-combobox target-project-combobox" [class.open]="hedefSahaDropdownOpen()" (click)="$event.stopPropagation()">
+            <button
+              type="button"
+              class="project-combobox-toggle"
+              (click)="toggleHedefSahaDropdown()"
+              [disabled]="hedefSahaProjeLoading()">
+              <span>{{ selectedHedefSahaLabel() }}</span>
+              <i class="ri-arrow-down-s-line"></i>
+            </button>
+
+            @if (hedefSahaDropdownOpen()) {
+              <div class="project-combobox-menu">
+                <div class="project-combobox-search">
+                  <i class="ri-search-line"></i>
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="Saha proje ara..."
+                    autocomplete="off"
+                    [ngModel]="hedefSahaProjeSearchTerm()"
+                    (ngModelChange)="onHedefSahaProjeSearchChange($event)"
+                    (keydown.escape)="closeHedefSahaDropdown()" />
+                </div>
+
+                <div class="project-combobox-options">
+                  @if (hedefSahaProjeLoading()) {
+                    <div class="project-combobox-empty">Saha projeleri yükleniyor...</div>
+                  } @else if (filteredHedefSahaProjeleri().length === 0) {
+                    <div class="project-combobox-empty">Saha projesi bulunamadı</div>
+                  } @else {
+                    @for (proje of filteredHedefSahaProjeleri(); track proje.id) {
+                      <button
+                        type="button"
+                        class="project-combobox-option"
+                        [class.active]="hedefSahaProjeId() === proje.id"
+                        (click)="selectHedefSahaProje(proje)">
+                        <span>{{ proje.projeNo }}</span>
+                        <small>{{ proje.musteri || '-' }}</small>
+                      </button>
+                    }
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          @if (seciliHedefSahaProje(); as hedef) {
+            <div class="target-selected mt-2">
+              <i class="ri-folder-received-line"></i>
+              <div>
+                <strong>{{ hedef.projeNo }}</strong>
+                <span>{{ hedef.musteri || '-' }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div>
+          <label class="form-label">Saha Proje No</label>
+          <input
+            type="text"
+            class="form-control"
+            [ngModel]="yeniProjeNo()"
+            (ngModelChange)="yeniProjeNo.set($event)" />
+        </div>
+      }
+
       <div>
         <label class="form-label">Açıklama</label>
         <textarea
@@ -233,19 +315,35 @@
               <input
                 type="text"
                 class="form-control case-no-input"
+                [disabled]="!!sandik.isExisting"
                 [ngModel]="sandik.sandikNo"
                 (ngModelChange)="updateSandikNo(sandik.id, $event)" />
               <input
                 type="text"
                 class="form-control"
                 placeholder="Sandık ismi"
+                [disabled]="!!sandik.isExisting"
                 [ngModel]="sandik.sandikIsmi"
                 (ngModelChange)="updateSandikIsmi(sandik.id, $event)" />
             </div>
-            <button type="button" class="btn btn-sm btn-light text-danger" (click)="removeSandik(sandik.id)">
-              <i class="ri-delete-bin-line"></i>
-            </button>
+            @if (sandik.isExisting) {
+              <span class="existing-case-badge">
+                <i class="ri-folder-received-line"></i>
+                Mevcut
+              </span>
+            } @else {
+              <button type="button" class="btn btn-sm btn-light text-danger" (click)="removeSandik(sandik.id)">
+                <i class="ri-delete-bin-line"></i>
+              </button>
+            }
           </div>
+
+          @if (sandik.isExisting) {
+            <div class="existing-case-info">
+              <span><i class="ri-stack-line"></i>{{ sandik.existingUrunSayisi || 0 }} mevcut ürün</span>
+              <span><i class="ri-checkbox-circle-line"></i>{{ sandik.durumMetni || '-' }}</span>
+            </div>
+          }
 
           <div class="case-measurements">
             <label>
@@ -256,6 +354,7 @@
                 min="0"
                 step="0.01"
                 placeholder="0"
+                [disabled]="!!sandik.isExisting"
                 [ngModel]="sandik.en"
                 (ngModelChange)="updateSandikOlcu(sandik.id, 'en', $event)" />
             </label>
@@ -267,6 +366,7 @@
                 min="0"
                 step="0.01"
                 placeholder="0"
+                [disabled]="!!sandik.isExisting"
                 [ngModel]="sandik.boy"
                 (ngModelChange)="updateSandikOlcu(sandik.id, 'boy', $event)" />
             </label>
@@ -278,6 +378,7 @@
                 min="0"
                 step="0.01"
                 placeholder="0"
+                [disabled]="!!sandik.isExisting"
                 [ngModel]="sandik.yukseklik"
                 (ngModelChange)="updateSandikOlcu(sandik.id, 'yukseklik', $event)" />
             </label>
@@ -289,6 +390,7 @@
                 min="0"
                 step="0.01"
                 placeholder="0"
+                [disabled]="!!sandik.isExisting"
                 [ngModel]="sandik.netKg"
                 (ngModelChange)="updateSandikOlcu(sandik.id, 'netKg', $event)" />
             </label>
@@ -300,6 +402,7 @@
                 min="0"
                 step="0.01"
                 placeholder="0"
+                [disabled]="!!sandik.isExisting"
                 [ngModel]="sandik.grossKg"
                 (ngModelChange)="updateSandikOlcu(sandik.id, 'grossKg', $event)" />
             </label>
@@ -308,7 +411,7 @@
           @if (sandik.urunler.length === 0) {
             <div class="drop-empty">
               <i class="ri-inbox-archive-line"></i>
-              <span>Boş sandık</span>
+              <span>{{ sandik.isExisting ? 'Yeni aktarım bekliyor' : 'Boş sandık' }}</span>
             </div>
           } @else {
             <div class="basket-items">
@@ -401,7 +504,12 @@
             <span class="choice-no">{{ sandik.sandikNo || '-' }}</span>
             <span class="choice-main">
               <strong>{{ sandik.sandikIsmi || 'İsimsiz sandık' }}</strong>
-              <small>{{ sandik.urunler.length }} satır, {{ formatAdet(getSandikToplamAdet(sandik)) }} adet</small>
+              <small>
+                @if (sandik.isExisting) {
+                  {{ sandik.existingUrunSayisi || 0 }} mevcut ürün,
+                }
+                {{ sandik.urunler.length }} yeni satır, {{ formatAdet(getSandikToplamAdet(sandik)) }} adet
+              </small>
             </span>
             <i class="ri-add-circle-line"></i>
           </button>

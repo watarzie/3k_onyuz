@@ -65,6 +65,8 @@ export class UcKSandiklarComponent implements OnInit {
   hedefSahaProjeleri = signal<ProjeDropdownDto[]>([]);
   hedefSahaProjeLoading = signal(false);
   hedefSahaProjeSearchTerm = signal('');
+  private hedefSahaSearchTimer?: ReturnType<typeof setTimeout>;
+  private hedefSahaSearchRequest = 0;
   filteredHedefSahaProjeleri = computed(() => {
     const term = this.hedefSahaProjeSearchTerm().trim().toLocaleLowerCase('tr-TR');
     const list = this.hedefSahaProjeleri();
@@ -142,7 +144,7 @@ export class UcKSandiklarComponent implements OnInit {
   }
 
   loadProjeBilgisi() {
-    this.projeService.getProjeDropdownListesi().subscribe((res) => {
+    this.projeService.getProjeDropdownListesi({ includeIds: [this.projeId()], take: 1 }).subscribe((res) => {
       if (res.isSuccess && res.value) {
         this.mevcutProje.set(res.value.find(p => p.id === this.projeId()) ?? null);
       }
@@ -622,6 +624,15 @@ export class UcKSandiklarComponent implements OnInit {
     this.sahayaAktarHedefProjeId.set(proje.id);
   }
 
+  onHedefSahaProjeSearchChange(value: string) {
+    this.hedefSahaProjeSearchTerm.set(value);
+    if (this.hedefSahaSearchTimer) {
+      clearTimeout(this.hedefSahaSearchTimer);
+    }
+
+    this.hedefSahaSearchTimer = setTimeout(() => this.loadHedefSahaProjeleri(value), 250);
+  }
+
   getSelectedHedefSahaProje(): ProjeDropdownDto | null {
     const id = this.sahayaAktarHedefProjeId();
     return id ? this.hedefSahaProjeleri().find(p => p.id === id) ?? null : null;
@@ -695,22 +706,30 @@ export class UcKSandiklarComponent implements OnInit {
     return `SAHA-${yyyy}${mm}${dd}`;
   }
 
-  private loadHedefSahaProjeleri() {
-    if (this.hedefSahaProjeLoading()) return;
-
+  private loadHedefSahaProjeleri(searchTerm = this.hedefSahaProjeSearchTerm()) {
+    const requestId = ++this.hedefSahaSearchRequest;
     this.hedefSahaProjeLoading.set(true);
-    this.projeService.getProjeListesi(1, 500, 2, undefined, false).subscribe({
+    this.projeService.getProjeDropdownListesi({
+      projeTipiId: 2,
+      searchTerm,
+      isSevkEdilen: false,
+      take: 50,
+      includeIds: this.sahayaAktarHedefProjeId() ? [this.sahayaAktarHedefProjeId()!] : [],
+    }).subscribe({
       next: (res) => {
+        if (requestId !== this.hedefSahaSearchRequest) return;
+
         this.hedefSahaProjeLoading.set(false);
         if (res.isSuccess && res.value) {
-          this.hedefSahaProjeleri.set(res.value.items.map(p => ({
-            id: p.id,
-            projeNo: p.projeNo,
-            musteri: p.musteri
-          })));
+          this.hedefSahaProjeleri.set((res.value ?? [])
+            .filter(p => p.projeTipiId === 2)
+            .filter(p => p.durumId !== 5 && p.durumId !== 6)
+            .sort((a, b) => a.projeNo.localeCompare(b.projeNo, 'tr-TR')));
         }
       },
       error: () => {
+        if (requestId !== this.hedefSahaSearchRequest) return;
+
         this.hedefSahaProjeLoading.set(false);
         this.toast.error('Saha projeleri yüklenemedi.');
       }
