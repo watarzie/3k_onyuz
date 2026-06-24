@@ -211,7 +211,7 @@
                 @if (shouldShowActions(p)) {
                   <td>
                     <div class="d-flex gap-1 flex-wrap">
-                      @if (isSevkEdilen() && p.projeTipiId === 1 && canSeeGerceklesenRapor()) {
+                      @if (canShowGerceklesenRapor(p)) {
                         <div class="report-download" (click)="$event.stopPropagation()">
                           <button type="button" class="btn btn-sm btn-danger report-download-trigger" (click)="toggleReportMenu($event, 'gerceklesen-' + p.id, p, 'gerceklesen')" [disabled]="isGerceklesenDownloading(p.id)" title="Gerçekleşen Çeki Listesi Raporu">
                             @if (isGerceklesenDownloading(p.id)) {

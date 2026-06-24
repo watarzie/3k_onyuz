@@ -75,6 +75,7 @@ export class ProjeListesiComponent implements OnInit {
   canSeeSaha3K = computed(() => this.permissions.hasAccess('saha-3k-modulu'));
   canSeeSahaRapor = computed(() => this.permissions.hasAccess('saha-raporu'));
   canSeeSahaSevkSonrasiEksikRapor = computed(() => this.permissions.hasAccess('saha-sevk-sonrasi-eksik-raporu'));
+  canSeeSahaGerceklesenRapor = computed(() => this.permissions.hasAccess('saha-gerceklesen-ceki-raporu'));
   canSeeSahaSandiklar = computed(() => this.permissions.hasAccess('saha-sandiklar'));
   canManageSahaAktarimGeriAl = computed(() => this.permissions.hasAccess('saha-aktarim-geri-al'));
   canWriteSahaAktarimGeriAl = computed(() => this.permissions.canWrite('saha-aktarim-geri-al'));
@@ -86,7 +87,7 @@ export class ProjeListesiComponent implements OnInit {
   );
   hasSahaYonetimiActions = computed(() =>
     this.isSahaYonetimi() &&
-    (this.canSeeSahaGrid() || this.canSeeSaha3K() || this.canSeeSahaRapor() || this.canSeeSahaSevkSonrasiEksikRapor() || this.canSeeSahaSandiklar() || this.canManageSahaAktarimGeriAl() || this.canSevkEtCurrent() || this.canDeleteProjectCurrent())
+    (this.canSeeSahaGrid() || this.canSeeSaha3K() || this.canSeeSahaRapor() || this.canSeeSahaSevkSonrasiEksikRapor() || this.canSeeSahaGerceklesenRapor() || this.canSeeSahaSandiklar() || this.canManageSahaAktarimGeriAl() || this.canSevkEtCurrent() || this.canDeleteProjectCurrent())
   );
   hasYedekYonetimiActions = computed(() => this.isYedekYonetimi());
   hasActionColumn = computed(() =>
@@ -94,6 +95,7 @@ export class ProjeListesiComponent implements OnInit {
     this.hasSahaYonetimiActions() ||
     this.hasYedekYonetimiActions() ||
     (this.isSevkEdilen() && this.canSeeGerceklesenRapor()) ||
+    (this.isSahaYonetimi() && this.canSeeSahaGerceklesenRapor()) ||
     (!this.isSandikMode() && this.canSevkEt()) ||
     (!this.isSandikMode() && this.hasAnySevkiyatGecmisi()) ||
     this.isSevkEdilen() ||
@@ -375,10 +377,18 @@ export class ProjeListesiComponent implements OnInit {
     if (this.isYedekYonetimi()) return this.hasYedekYonetimiActions();
     if (this.isSandikYonetimi()) return this.hasSandikYonetimiActions();
 
-    return (this.isSevkEdilen() && p.projeTipiId === 1 && this.canSeeGerceklesenRapor()) ||
+    return this.canShowGerceklesenRapor(p) ||
       (!this.isSandikMode() && this.hasSevkiyatGecmisi(p)) ||
       (!this.isSandikMode() && this.canSevkEt()) ||
       this.canDeleteProjectCurrent();
+  }
+
+  canShowGerceklesenRapor(p: ProjeDto): boolean {
+    if (this.isSahaYonetimi()) {
+      return p.projeTipiId === 2 && this.canSeeSahaGerceklesenRapor() && this.hasSevkiyatGecmisi(p);
+    }
+
+    return this.isSevkEdilen() && p.projeTipiId === 1 && this.canSeeGerceklesenRapor();
   }
   @HostListener('document:click')
   closeReportMenu() {
@@ -501,7 +511,8 @@ export class ProjeListesiComponent implements OnInit {
   indirGerceklesenCekiListesiPdf(proje: ProjeDto) {
     this.closeReportMenu();
     this.downloadingGerceklesenPdf.set(proje.id);
-    this.pdfService.gerceklesenCekiListesiPdf(proje.id).subscribe({
+    const menuKod = this.isSahaYonetimi() ? 'saha-gerceklesen-ceki-raporu' : 'gerceklesen-ceki-raporu';
+    this.pdfService.gerceklesenCekiListesiPdf(proje.id, menuKod).subscribe({
       next: (blob) => {
         this.downloadingGerceklesenPdf.set(null);
         const url = window.URL.createObjectURL(blob);
@@ -522,7 +533,8 @@ export class ProjeListesiComponent implements OnInit {
   indirGerceklesenCekiListesiExcel(proje: ProjeDto) {
     this.closeReportMenu();
     this.downloadingGerceklesenExcel.set(proje.id);
-    this.pdfService.gerceklesenCekiListesiExcel(proje.id).subscribe({
+    const menuKod = this.isSahaYonetimi() ? 'saha-gerceklesen-ceki-raporu' : 'gerceklesen-ceki-raporu';
+    this.pdfService.gerceklesenCekiListesiExcel(proje.id, menuKod).subscribe({
       next: (blob) => {
         this.downloadingGerceklesenExcel.set(null);
         const url = window.URL.createObjectURL(blob);

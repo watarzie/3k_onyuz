@@ -11,7 +11,6 @@ import { Observable } from 'rxjs';
 @Injectable({ providedIn: 'root' })
 export class PdfService {
   private api = inject(BaseApiService);
-  private readonly gerceklesenRaporOptions = { headers: { 'X-Menu-Kod': 'gerceklesen-ceki-raporu' } };
   private menuOptions(menuKod: string) { return { headers: { 'X-Menu-Kod': menuKod } }; }
 
   indirPdf(projeId: number): Observable<Blob> {
@@ -38,12 +37,12 @@ export class PdfService {
     return this.api.downloadFile(API.PDF.EKSIK_URUNLER_EXCEL(projeId), this.menuOptions(menuKod));
   }
 
-  gerceklesenCekiListesiPdf(projeId: number): Observable<Blob> {
-    return this.api.downloadFile(API.PDF.GERCEKLESEN_CEKI_LISTESI(projeId), this.gerceklesenRaporOptions);
+  gerceklesenCekiListesiPdf(projeId: number, menuKod = 'gerceklesen-ceki-raporu'): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.GERCEKLESEN_CEKI_LISTESI(projeId), this.menuOptions(menuKod));
   }
 
-  gerceklesenCekiListesiExcel(projeId: number): Observable<Blob> {
-    return this.api.downloadFile(API.PDF.GERCEKLESEN_CEKI_LISTESI_EXCEL(projeId), this.gerceklesenRaporOptions);
+  gerceklesenCekiListesiExcel(projeId: number, menuKod = 'gerceklesen-ceki-raporu'): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.GERCEKLESEN_CEKI_LISTESI_EXCEL(projeId), this.menuOptions(menuKod));
   }
 
   uckSandikDurumPdf(projeId: number, menuKod = '3k-sandik-durum-raporu'): Observable<Blob> {
