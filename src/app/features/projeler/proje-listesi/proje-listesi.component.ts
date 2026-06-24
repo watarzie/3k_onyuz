@@ -511,8 +511,10 @@ export class ProjeListesiComponent implements OnInit {
   indirGerceklesenCekiListesiPdf(proje: ProjeDto) {
     this.closeReportMenu();
     this.downloadingGerceklesenPdf.set(proje.id);
-    const menuKod = this.isSahaYonetimi() ? 'saha-gerceklesen-ceki-raporu' : 'gerceklesen-ceki-raporu';
-    this.pdfService.gerceklesenCekiListesiPdf(proje.id, menuKod).subscribe({
+    const request$ = this.isSahaYonetimi()
+      ? this.pdfService.sahaGerceklesenCekiListesiPdf(proje.id)
+      : this.pdfService.gerceklesenCekiListesiPdf(proje.id);
+    request$.subscribe({
       next: (blob) => {
         this.downloadingGerceklesenPdf.set(null);
         const url = window.URL.createObjectURL(blob);
@@ -533,8 +535,10 @@ export class ProjeListesiComponent implements OnInit {
   indirGerceklesenCekiListesiExcel(proje: ProjeDto) {
     this.closeReportMenu();
     this.downloadingGerceklesenExcel.set(proje.id);
-    const menuKod = this.isSahaYonetimi() ? 'saha-gerceklesen-ceki-raporu' : 'gerceklesen-ceki-raporu';
-    this.pdfService.gerceklesenCekiListesiExcel(proje.id, menuKod).subscribe({
+    const request$ = this.isSahaYonetimi()
+      ? this.pdfService.sahaGerceklesenCekiListesiExcel(proje.id)
+      : this.pdfService.gerceklesenCekiListesiExcel(proje.id);
+    request$.subscribe({
       next: (blob) => {
         this.downloadingGerceklesenExcel.set(null);
         const url = window.URL.createObjectURL(blob);

@@ -45,6 +45,20 @@ export class PdfService {
     return this.api.downloadFile(API.PDF.GERCEKLESEN_CEKI_LISTESI_EXCEL(projeId), this.menuOptions(menuKod));
   }
 
+  sahaGerceklesenCekiListesiPdf(projeId: number): Observable<Blob> {
+    return this.api.downloadFile(
+      API.PDF.SAHA_GERCEKLESEN_CEKI_LISTESI(projeId),
+      this.menuOptions('saha-gerceklesen-ceki-raporu')
+    );
+  }
+
+  sahaGerceklesenCekiListesiExcel(projeId: number): Observable<Blob> {
+    return this.api.downloadFile(
+      API.PDF.SAHA_GERCEKLESEN_CEKI_LISTESI_EXCEL(projeId),
+      this.menuOptions('saha-gerceklesen-ceki-raporu')
+    );
+  }
+
   uckSandikDurumPdf(projeId: number, menuKod = '3k-sandik-durum-raporu'): Observable<Blob> {
     return this.api.downloadFile(API.PDF.UCK_SANDIK_DURUM(projeId), this.menuOptions(menuKod));
   }
