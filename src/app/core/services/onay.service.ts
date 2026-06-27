@@ -6,6 +6,22 @@ import { API } from '../constants/api-endpoints';
 import { ApiResult } from '../../shared/models/common.model';
 import { OnayBekleyenIslemDto, IslemOnaylaCommand, IslemReddetCommand } from '../../shared/models/onay-bekleyen-islem.model';
 
+export interface OnayKuraliDto {
+  lookupUcKDurumId: number | null;
+  islemKodu: string;
+  islemAdi: string;
+  onayGerektirirMi: boolean;
+  onayGerektirirMiDegistirilebilir: boolean;
+  yetkiliRolIdleri: number[];
+}
+
+export interface OnayKuraliGuncelleRequest {
+  lookupUcKDurumId: number | null;
+  islemKodu: string;
+  onayGerektirirMi: boolean;
+  yetkiliRolIdleri: number[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -121,11 +137,11 @@ export class OnayService {
     return this.api.post<any>(API.ONAY.REDDET, command);
   }
 
-  getKurallar(): Observable<ApiResult<any[]>> {
-    return this.api.get<any[]>(`${API.ONAY.BEKLEYENLER.replace('/bekleyenler', '')}/kurallar`);
+  getKurallar(): Observable<ApiResult<OnayKuraliDto[]>> {
+    return this.api.get<OnayKuraliDto[]>(`${API.ONAY.BEKLEYENLER.replace('/bekleyenler', '')}/kurallar`);
   }
 
-  updateKural(lookupUcKDurumId: number, onayGerektirirMi: boolean): Observable<ApiResult<any>> {
-    return this.api.put<any>(`${API.ONAY.BEKLEYENLER.replace('/bekleyenler', '')}/kural-guncelle/${lookupUcKDurumId}`, onayGerektirirMi);
+  updateKural(request: OnayKuraliGuncelleRequest): Observable<ApiResult<any>> {
+    return this.api.put<any>(`${API.ONAY.BEKLEYENLER.replace('/bekleyenler', '')}/kural-guncelle`, request);
   }
 }

@@ -71,6 +71,8 @@ export class ProjeListesiComponent implements OnInit {
   canUseEksikTamamlama = computed(() => this.permissions.canWrite('sahaya-aktar'));
   canDeleteProject = computed(() => this.permissions.canWrite('proje-sil'));
   canSevkEt = computed(() => this.permissions.hasAccess('proje-sevk-et'));
+  canUploadCeki = computed(() => this.permissions.canWrite('ceki-yukle'));
+  canUpdatePlanlananSevkTarihi = computed(() => this.permissions.canWrite('planlanan-sevk-tarihi'));
   canSeeSahaGrid = computed(() => this.permissions.hasAccess('saha-grid-modulu'));
   canSeeSaha3K = computed(() => this.permissions.hasAccess('saha-3k-modulu'));
   canSeeSahaRapor = computed(() => this.permissions.hasAccess('saha-raporu'));
@@ -87,7 +89,7 @@ export class ProjeListesiComponent implements OnInit {
   );
   hasSahaYonetimiActions = computed(() =>
     this.isSahaYonetimi() &&
-    (this.canSeeSahaGrid() || this.canSeeSaha3K() || this.canSeeSahaRapor() || this.canSeeSahaSevkSonrasiEksikRapor() || this.canSeeSahaGerceklesenRapor() || this.canSeeSahaSandiklar() || this.canManageSahaAktarimGeriAl() || this.canSevkEtCurrent() || this.canDeleteProjectCurrent())
+    (this.canSeeSahaGrid() || this.canSeeSaha3K() || this.canSeeSahaRapor() || this.canSeeSahaSevkSonrasiEksikRapor() || this.canSeeSahaGerceklesenRapor() || this.canSeeSahaSandiklar() || this.canManageSahaAktarimGeriAl() || this.canSevkEtCurrent() || this.canUpdatePlanlananSevkTarihi() || this.canDeleteProjectCurrent())
   );
   hasYedekYonetimiActions = computed(() => this.isYedekYonetimi());
   hasActionColumn = computed(() =>
@@ -97,6 +99,7 @@ export class ProjeListesiComponent implements OnInit {
     (this.isSevkEdilen() && this.canSeeGerceklesenRapor()) ||
     (this.isSahaYonetimi() && this.canSeeSahaGerceklesenRapor()) ||
     (!this.isSandikMode() && this.canSevkEt()) ||
+    (!this.isSandikMode() && this.canUpdatePlanlananSevkTarihi()) ||
     (!this.isSandikMode() && this.hasAnySevkiyatGecmisi()) ||
     this.isSevkEdilen() ||
     (!this.isSandikMode() && this.canDeleteProjectCurrent())
@@ -776,7 +779,7 @@ export class ProjeListesiComponent implements OnInit {
     this.sevkTarihiSaving.set(true);
     const tarih = this.toApiDateTime(this.guncelSevkTarihi());
     
-    this.projeService.sevkTarihiGuncelle(this.selectedProjeId(), tarih, this.getSevkMenuKod()).subscribe({
+    this.projeService.sevkTarihiGuncelle(this.selectedProjeId(), tarih).subscribe({
       next: (res) => {
         this.sevkTarihiSaving.set(false);
         if (res.isSuccess) {

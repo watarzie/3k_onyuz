@@ -1,5 +1,6 @@
 export interface OnayBekleyenIslemDto {
   id: number;
+  islemKodu: string;
   islemAciklamasi: string;
   talepEdenKisi: string;
   olusturulmaTarihi: string;

@@ -3,7 +3,7 @@
   <div class="header-actions">
     <app-breadcrumb [items]="breadcrumb"></app-breadcrumb>
     <div class="actions">
-      @if (canWrite()) {
+      @if (canManageRules()) {
         <button class="btn btn-primary me-2" (click)="openSettingsModal()">
           <i class="ri-settings-3-line"></i>
           <span>Sistem Kuralları</span>
@@ -96,8 +96,8 @@
 <!-- Rules Modal -->
 @if (showKurallarModal()) {
   <div class="modal-backdrop fade show"></div>
-  <div class="modal fade show" style="display: block;" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+  <div class="modal fade show approval-rules-shell" style="display: block;" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content">
         <div class="modal-header border-bottom-0 pb-0">
           <h5 class="modal-title">
@@ -107,20 +107,50 @@
           <button type="button" class="btn-close" (click)="closeSettingsModal()" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <p class="text-muted small mb-4">Hangi 3K operasyonlarının yetkili onayına düşeceğini buradan anlık olarak (Zero-Deployment) belirleyebilirsiniz.</p>
+          <p class="text-muted small mb-4">Onaya düşen tüm operasyonları ve bu operasyonları hangi rollerin onaylayabileceğini buradan yönetebilirsiniz.</p>
           
           <div class="rules-list">
-            @for (kural of kurallar(); track kural.lookupUcKDurumId) {
-              <div class="rule-item d-flex justify-content-between align-items-center p-3 mb-2 border rounded hover-bg">
-                <div class="rule-info">
-                  <h6 class="mb-0 fw-medium">{{ kural.islemAdi }}</h6>
-                  <small class="text-muted">Onay gereksinimi: <b>{{ kural.onayGerektirirMi ? 'Evet' : 'Hayır' }}</b></small>
+            @for (kural of kurallar(); track kural.islemKodu) {
+              <div class="approval-rule-card" [class.is-saving]="kuralUpdating(kural)">
+                <div class="approval-rule-card__main">
+                  <div class="rule-info">
+                    <h6>{{ kural.islemAdi }}</h6>
+                    <div class="rule-meta">
+                      <span>{{ kural.islemKodu }}</span>
+                      @if (!kural.onayGerektirirMiDegistirilebilir) {
+                        <span class="always-approval-badge">Her zaman onayda</span>
+                      } @else {
+                        <span>Onay gereksinimi: <b>{{ kural.onayGerektirirMi ? 'Evet' : 'Hayır' }}</b></span>
+                      }
+                    </div>
+                  </div>
+                  <div class="form-check form-switch m-0">
+                    <input class="form-check-input flexSwitchCheckChecked"
+                           type="checkbox"
+                           role="switch"
+                           [checked]="kural.onayGerektirirMi"
+                           [disabled]="!kural.onayGerektirirMiDegistirilebilir || kuralUpdating(kural)"
+                           (change)="toggleKural(kural)">
+                  </div>
                 </div>
-                <div class="form-check form-switch m-0">
-                  <input class="form-check-input flexSwitchCheckChecked" type="checkbox" role="switch"
-                         [checked]="kural.onayGerektirirMi"
-                         (change)="toggleKural(kural)"
-                         style="width: 2.5rem; height: 1.25rem; cursor: pointer;">
+
+                <div class="approval-roles">
+                  <span class="approval-roles__label">Onaycı roller</span>
+                  <div class="approval-roles__list">
+                    @for (rol of roller(); track rol.id) {
+                      <button type="button"
+                              class="role-chip"
+                              [class.active]="rolSeciliMi(kural, rol.id)"
+                              [disabled]="kuralUpdating(kural)"
+                              (click)="toggleKuralRol(kural, rol.id)">
+                        <i [class]="rolSeciliMi(kural, rol.id) ? 'ri-check-line' : 'ri-add-line'"></i>
+                        {{ rol.ad }}
+                      </button>
+                    }
+                    @if (roller().length === 0) {
+                      <span class="text-muted small">Rol listesi yükleniyor...</span>
+                    }
+                  </div>
                 </div>
               </div>
             }

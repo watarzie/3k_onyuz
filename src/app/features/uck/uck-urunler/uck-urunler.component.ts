@@ -234,7 +234,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     const isSaha = this.activeMenuKod === 'saha-3k-modulu';
     this.breadcrumb = [
       { label: 'Ana Kontrol Paneli', link: '/dashboard' },
-      { label: isSaha ? 'Saha Yönetimi' : 'Projeler', link: isSaha ? '/saha-yonetimi' : '/projeler' },
+      { label: isSaha ? 'Saha Yönetimi' : 'Sandık Yönetimi', link: isSaha ? '/saha-yonetimi' : '/sandik-yonetimi' },
       { label: '3K Sandıklar', link: isSaha ? `/saha-yonetimi/uck/${id}` : `/uck/${id}` },
       { label: sNo || '3K Ürünler' },
     ];

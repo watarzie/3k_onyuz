@@ -26,6 +26,151 @@
   }
 }
 
+.approval-rules-shell {
+  .modal-dialog {
+    max-width: 860px;
+  }
+
+  .modal-content {
+    border: 0;
+    border-radius: 10px;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, .2);
+    overflow: hidden;
+  }
+
+  .modal-body {
+    max-height: 72vh;
+    overflow-y: auto;
+  }
+}
+
+.rules-list {
+  display: grid;
+  gap: .75rem;
+}
+
+.approval-rule-card {
+  display: grid;
+  gap: .85rem;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+  transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
+
+  &:hover {
+    border-color: #bfdbfe;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, .06);
+  }
+
+  &.is-saving {
+    opacity: .72;
+    cursor: wait;
+  }
+}
+
+.approval-rule-card__main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+
+  .form-switch .form-check-input {
+    width: 2.65rem;
+    height: 1.35rem;
+    cursor: pointer;
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: .55;
+    }
+  }
+}
+
+.rule-info {
+  min-width: 0;
+
+  h6 {
+    margin: 0;
+    color: #1f2937;
+    font-size: .98rem;
+    font-weight: 750;
+  }
+}
+
+.rule-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+  margin-top: .35rem;
+  color: #64748b;
+  font-size: .78rem;
+}
+
+.always-approval-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: .15rem .45rem;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-weight: 700;
+}
+
+.approval-roles {
+  display: grid;
+  gap: .45rem;
+  padding-top: .8rem;
+  border-top: 1px dashed #dbe3ef;
+}
+
+.approval-roles__label {
+  color: #64748b;
+  font-size: .73rem;
+  font-weight: 800;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.approval-roles__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+}
+
+.role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  min-height: 30px;
+  padding: .28rem .65rem;
+  border: 1px solid #d8e0ea;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: .8rem;
+  font-weight: 700;
+  transition: border-color .16s ease, background-color .16s ease, color .16s ease, transform .16s ease;
+
+  &:hover:not(:disabled) {
+    border-color: #93c5fd;
+    background: #eff6ff;
+    color: #2563eb;
+    transform: translateY(-1px);
+  }
+
+  &.active {
+    border-color: #22c55e;
+    background: #ecfdf5;
+    color: #047857;
+  }
+
+  &:disabled {
+    cursor: wait;
+    opacity: .7;
+  }
+}
+
 .reject-modal-shell {
   .modal-dialog {
     max-width: 560px;
@@ -237,5 +382,9 @@
 
   .reject-modal__footer {
     grid-template-columns: 1fr;
+  }
+
+  .approval-rule-card__main {
+    align-items: flex-start;
   }
 }

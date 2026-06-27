@@ -19,7 +19,9 @@ export class ProjeService {
   cekiYukle(dosya: File): Observable<ApiResult<CekiYuklemeResultDto>> {
     const formData = new FormData();
     formData.append('dosya', dosya);
-    return this.api.postFormData<CekiYuklemeResultDto>(API.CEKI.YUKLE, formData);
+    return this.api.postFormData<CekiYuklemeResultDto>(API.CEKI.YUKLE, formData, {
+      headers: { 'X-Menu-Kod': 'ceki-yukle' },
+    });
   }
 
   cekiRevizyonOnizle(dosya: File): Observable<ApiResult<CekiRevizyonOnizlemeSonuc>> {

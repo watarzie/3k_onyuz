@@ -40,13 +40,22 @@
     "CEKI_VERISI_DUZENLE": "Packing List Data Edit",
     "CEKI_VERISI_SIL": "Packing List Data Delete",
     "CEKI_REVIZYON_YUKLE": "Packing List Revision Upload",
+    "CEKI_YUKLE": "Packing List Upload",
+    "PLANLANAN_SEVK_TARIHI": "Planned Shipment Date",
+    "ONAY_KURALLARI_YONET": "Approval Rules Management",
     "3K_SANDIK_DURUM_RAPORU": "3K Crate Status Report",
     "SAHA_SEVK_SONRASI_EKSIK_RAPORU": "Post-Shipment Missing Report",
     "SAHA_3K_SANDIK_DURUM_RAPORU": "Field 3K Crate Status Report",
     "KALITE_MODULU": "Quality Module",
     "SUREC_MODULU": "Process Module",
     "3K_IS_LISTESI": "3K Work List",
-    "ISLEM_ONAY": "Approval Center"
+    "ISLEM_ONAY": "Approval Center",
+    "ONAY_UCK_PROJEDEN_KARSILANDI": "Approval: Match from Project",
+    "ONAY_UCK_STOKTAN_KARSILANDI": "Approval: Match from Stock",
+    "ONAY_UCK_TEDARIKCIDEN_GELDI": "Approval: Supplier Delivery",
+    "ONAY_SANDIK_KILIDI_AC": "Approval: Unlock Crate",
+    "ONAY_PROJE_KILIDI_AC": "Approval: Unlock Project",
+    "ONAY_GENEL": "Approval: General Action"
   },
   "ACTIONS": {
     "SAVE": "Save",

@@ -232,7 +232,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     const isSaha = this.activeMenuKod === 'saha-grid-modulu';
     this.breadcrumb = [
       { label: 'Ana Kontrol Paneli', link: '/dashboard' },
-      { label: isSaha ? 'Saha Yönetimi' : 'Projeler', link: isSaha ? '/saha-yonetimi' : '/projeler' },
+      { label: isSaha ? 'Saha Yönetimi' : 'Sandık Yönetimi', link: isSaha ? '/saha-yonetimi' : '/sandik-yonetimi' },
       { label: isSaha ? 'Saha Grid Modülü' : 'Grid Modülü' },
     ];
     this.loadProjeBilgisi();

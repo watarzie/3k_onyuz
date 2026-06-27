@@ -123,7 +123,11 @@ export class ProjeService {
   }
 
   sevkTarihiGuncelle(projeId: number, planlananSevkTarihi: string | null, menuKod?: string): Observable<ApiResult<boolean>> {
-    return this.api.put<boolean>(API.PROJE.SEVK_TARIHI_GUNCELLE, { projeId, planlananSevkTarihi }, menuKod ? this.menuOptions(menuKod) : undefined);
+    return this.api.put<boolean>(
+      API.PROJE.SEVK_TARIHI_GUNCELLE,
+      { projeId, planlananSevkTarihi },
+      this.menuOptions(menuKod ?? 'planlanan-sevk-tarihi')
+    );
   }
 
   projeSil(projeId: number, menuKod = 'proje-sil'): Observable<ApiResult<boolean>> {
@@ -163,7 +167,11 @@ export class ProjeService {
   cekiYukle(dosya: File): Observable<ApiResult<CekiYuklemeResultDto>> {
     const formData = new FormData();
     formData.append('dosya', dosya);
-    return this.api.postFormData<CekiYuklemeResultDto>(API.CEKI.YUKLE, formData);
+    return this.api.postFormData<CekiYuklemeResultDto>(
+      API.CEKI.YUKLE,
+      formData,
+      this.menuOptions('ceki-yukle')
+    );
   }
 
   cekiRevizyonOnizle(dosya: File): Observable<ApiResult<CekiRevizyonOnizlemeSonuc>> {

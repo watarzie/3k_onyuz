@@ -22,13 +22,13 @@
         <button class="btn btn-primary-gradient" (click)="openProjeOlusturModal()">
           <i class="ri-add-line me-2"></i>Proje Oluştur
         </button>
-      } @else if (!isSevkEdilen() && !isSahaYonetimi() && !isYedekYonetimi() && (canWriteCurrentMenu() || canUploadRevision())) {
+      } @else if (!isSevkEdilen() && !isSahaYonetimi() && !isYedekYonetimi() && (canUploadCeki() || canUploadRevision())) {
         @if (canUploadRevision()) {
           <button class="btn btn-outline-warning" (click)="openUploadModal('revizyon')">
             <i class="ri-git-branch-line me-2"></i>Revizyon Yükle
           </button>
         }
-        @if (canWriteCurrentMenu()) {
+        @if (canUploadCeki()) {
           <button class="btn btn-primary-gradient" (click)="openUploadModal('normal')">
             <i class="ri-upload-2-line me-2"></i>Çeki Yükle
           </button>
@@ -120,7 +120,7 @@
           <div class="empty-icon mb-3"><i class="ri-folder-add-line"></i></div>
           <h5 class="fw-semibold mb-2">Henüz proje bulunmuyor</h5>
           <p class="text-muted mb-3">Başlamak için bir çeki dosyası yükleyin</p>
-          @if (canWriteCurrentMenu()) {
+          @if (canUploadCeki()) {
             <button class="btn btn-primary-gradient" (click)="openUploadModal('normal')">
               <i class="ri-upload-2-line me-2"></i>Çeki Yükle
             </button>
@@ -305,24 +305,30 @@
                         }
                       }
                       
-                      @if (canSevkEtCurrent() && (!isSandikMode() || isSahaYonetimi() || isYedekYonetimi())) {
+                      @if ((canSevkEtCurrent() || canUpdatePlanlananSevkTarihi()) && (!isSandikMode() || isSahaYonetimi() || isYedekYonetimi())) {
                         @if (p.durumMetni === 'SevkEdildi' || p.durumMetni === 'Sevk Edildi') {
-                          <button class="btn btn-sm btn-outline-primary" (click)="openKilitAcModal(p)">
-                            <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
-                          </button>
-                        } @else {
-                          @if (hasSevkiyatGecmisi(p)) {
+                          @if (canSevkEtCurrent()) {
                             <button class="btn btn-sm btn-outline-primary" (click)="openKilitAcModal(p)">
                               <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
                             </button>
                           }
-                          <button class="btn btn-sm btn-warning" (click)="openSevkTarihiModal(p)" title="Planlanan Sevk Tarihi Gir">
-                            <i class="ri-calendar-event-line me-1"></i>Planlanan Sevk Tarihi
-                          </button>
-                          <button class="btn btn-sm btn-warning" (click)="openSevkEtModal(p)" title="Projeyi Sevk Et">
-                            <i class="ri-truck-line me-1"></i>
-                            {{ p.durumMetni === 'EksikSevkEdildi' || p.durumMetni === 'Eksik Sevk Edildi' ? 'Kalanı Sevk Et' : 'Sevk Et' }}
-                          </button>
+                        } @else {
+                          @if (canSevkEtCurrent() && hasSevkiyatGecmisi(p)) {
+                            <button class="btn btn-sm btn-outline-primary" (click)="openKilitAcModal(p)">
+                              <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
+                            </button>
+                          }
+                          @if (canUpdatePlanlananSevkTarihi()) {
+                            <button class="btn btn-sm btn-warning" (click)="openSevkTarihiModal(p)" title="Planlanan Sevk Tarihi Gir">
+                              <i class="ri-calendar-event-line me-1"></i>Planlanan Sevk Tarihi
+                            </button>
+                          }
+                          @if (canSevkEtCurrent()) {
+                            <button class="btn btn-sm btn-warning" (click)="openSevkEtModal(p)" title="Projeyi Sevk Et">
+                              <i class="ri-truck-line me-1"></i>
+                              {{ p.durumMetni === 'EksikSevkEdildi' || p.durumMetni === 'Eksik Sevk Edildi' ? 'Kalanı Sevk Et' : 'Sevk Et' }}
+                            </button>
+                          }
                         }
                       }
 

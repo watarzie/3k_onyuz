@@ -1,9 +1,11 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { DatePipe, NgClass } from '@angular/common';
-import { OnayService } from '../../core/services/onay.service';
+import { OnayKuraliDto, OnayService } from '../../core/services/onay.service';
 import { ToastService } from '../../core/services/toast.service';
 import { PermissionService } from '../../core/services/permission.service';
+import { RolService } from '../../core/services/rol.service';
 import { OnayBekleyenIslemDto } from '../../shared/models/onay-bekleyen-islem.model';
+import { RolDto } from '../../shared/models/rol.model';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
 
 @Component({
@@ -17,11 +19,15 @@ export class OnayListesiComponent implements OnInit {
   private onayService = inject(OnayService);
   private toast = inject(ToastService);
   private permissions = inject(PermissionService);
+  private rolService = inject(RolService);
 
   public canWrite = computed(() => this.permissions.canWrite('islem-onay-merkezi'));
+  public canManageRules = computed(() => this.permissions.canWrite('onay-kurallari-yonet'));
 
   bekleyenler = signal<OnayBekleyenIslemDto[]>([]);
-  kurallar = signal<any[]>([]);
+  kurallar = signal<OnayKuraliDto[]>([]);
+  roller = signal<RolDto[]>([]);
+  updatingKuralKodlari = signal<Set<string>>(new Set());
   loading = signal<boolean>(true);
   showKurallarModal = signal<boolean>(false);
   onayModalIslem = signal<OnayBekleyenIslemDto | null>(null);
@@ -37,8 +43,9 @@ export class OnayListesiComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadData();
-    if (this.canWrite()) {
+    if (this.canManageRules()) {
       this.loadKurallar();
+      this.loadRoller();
     }
   }
 
@@ -50,25 +57,107 @@ export class OnayListesiComponent implements OnInit {
     });
   }
 
-  toggleKural(kural: any) {
-    const newValue = !kural.onayGerektirirMi;
-    // Optimistic update
-    kural.onayGerektirirMi = newValue;
-    this.kurallar.set([...this.kurallar()]);
+  loadRoller() {
+    this.rolService.getRoller().subscribe({
+      next: (roller) => this.roller.set(roller),
+      error: () => this.toast.error('Rol listesi yüklenemedi.')
+    });
+  }
 
-    this.onayService.updateKural(kural.lookupUcKDurumId, newValue).subscribe(res => {
-      if (res.isSuccess) {
-        this.toast.success('Kural başarıyla güncellendi. Sistem saniyesinde adapte oldu.');
-      } else {
-        kural.onayGerektirirMi = !newValue;
-        this.kurallar.set([...this.kurallar()]);
-        this.toast.error(res.error || 'Güncelleme başarısız!');
+  toggleKural(kural: OnayKuraliDto) {
+    if (!kural.onayGerektirirMiDegistirilebilir || this.kuralUpdating(kural)) return;
+
+    const previous = this.cloneKural(kural);
+    const updated = { ...kural, onayGerektirirMi: !kural.onayGerektirirMi };
+
+    this.updateLocalKural(updated);
+    this.saveKural(updated, previous, 'Kural başarıyla güncellendi.');
+  }
+
+  toggleKuralRol(kural: OnayKuraliDto, rolId: number) {
+    if (this.kuralUpdating(kural)) return;
+
+    const previous = this.cloneKural(kural);
+    const mevcutRoller = kural.yetkiliRolIdleri ?? [];
+    const yetkiliRolIdleri = mevcutRoller.includes(rolId)
+      ? mevcutRoller.filter(id => id !== rolId)
+      : [...mevcutRoller, rolId].sort((a, b) => a - b);
+
+    const updated = { ...kural, yetkiliRolIdleri };
+
+    this.updateLocalKural(updated);
+    this.saveKural(updated, previous, 'Onaycı roller güncellendi.');
+  }
+
+  kuralUpdating(kural: OnayKuraliDto): boolean {
+    return this.updatingKuralKodlari().has(this.kuralKey(kural));
+  }
+
+  rolSeciliMi(kural: OnayKuraliDto, rolId: number): boolean {
+    return (kural.yetkiliRolIdleri ?? []).includes(rolId);
+  }
+
+  private saveKural(kural: OnayKuraliDto, previous: OnayKuraliDto, successMessage: string) {
+    this.setKuralUpdating(kural, true);
+
+    this.onayService.updateKural({
+      lookupUcKDurumId: kural.lookupUcKDurumId,
+      islemKodu: kural.islemKodu,
+      onayGerektirirMi: kural.onayGerektirirMi,
+      yetkiliRolIdleri: kural.yetkiliRolIdleri ?? []
+    }).subscribe({
+      next: (res) => {
+        this.setKuralUpdating(kural, false);
+        if (res.isSuccess) {
+          this.toast.success(successMessage);
+        } else {
+          this.updateLocalKural(previous);
+          this.toast.error(res.error || 'Güncelleme başarısız!');
+        }
+      },
+      error: () => {
+        this.setKuralUpdating(kural, false);
+        this.updateLocalKural(previous);
+        this.toast.error('Güncelleme başarısız!');
       }
     });
   }
 
+  private updateLocalKural(updated: OnayKuraliDto) {
+    this.kurallar.set(this.kurallar().map(kural =>
+      this.kuralKey(kural) === this.kuralKey(updated) ? updated : kural
+    ));
+  }
+
+  private cloneKural(kural: OnayKuraliDto): OnayKuraliDto {
+    return {
+      ...kural,
+      yetkiliRolIdleri: [...(kural.yetkiliRolIdleri ?? [])]
+    };
+  }
+
+  private kuralKey(kural: OnayKuraliDto): string {
+    return kural.islemKodu || `UCK_${kural.lookupUcKDurumId}`;
+  }
+
+  private setKuralUpdating(kural: OnayKuraliDto, updating: boolean) {
+    const next = new Set(this.updatingKuralKodlari());
+    const key = this.kuralKey(kural);
+
+    if (updating) {
+      next.add(key);
+    } else {
+      next.delete(key);
+    }
+
+    this.updatingKuralKodlari.set(next);
+  }
+
   openSettingsModal() {
+    if (!this.canManageRules()) return;
+
     this.loadKurallar();
+    this.loadRoller();
     this.showKurallarModal.set(true);
   }
 

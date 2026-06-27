@@ -41,13 +41,22 @@
     "CEKI_VERISI_DUZENLE": "Çeki Verisi Düzenleme",
     "CEKI_VERISI_SIL": "Çeki Verisi Silme",
     "CEKI_REVIZYON_YUKLE": "Çeki Revizyon Yükleme",
+    "CEKI_YUKLE": "Çeki Yükleme",
+    "PLANLANAN_SEVK_TARIHI": "Planlanan Sevk Tarihi",
+    "ONAY_KURALLARI_YONET": "Onay Kuralları Yönetimi",
     "3K_SANDIK_DURUM_RAPORU": "3K Sandık Durum Raporu",
     "SAHA_SEVK_SONRASI_EKSIK_RAPORU": "Sevk Sonrası Eksik Raporu",
     "SAHA_3K_SANDIK_DURUM_RAPORU": "Saha 3K Sandık Durum Raporu",
     "KALITE_MODULU": "Kalite Modülü",
     "SUREC_MODULU": "Süreç Modülü",
     "3K_IS_LISTESI": "3K İş Listesi",
-    "ISLEM_ONAY": "İşlem Onay Merkezi"
+    "ISLEM_ONAY": "İşlem Onay Merkezi",
+    "ONAY_UCK_PROJEDEN_KARSILANDI": "Onay: Projeden Karşılama",
+    "ONAY_UCK_STOKTAN_KARSILANDI": "Onay: Stoktan Karşılama",
+    "ONAY_UCK_TEDARIKCIDEN_GELDI": "Onay: Tedarikçiden Teslim",
+    "ONAY_SANDIK_KILIDI_AC": "Onay: Sandık Kilidi Açma",
+    "ONAY_PROJE_KILIDI_AC": "Onay: Proje Kilidi Açma",
+    "ONAY_GENEL": "Onay: Genel İşlem"
   },
   "ACTIONS": {
     "SAVE": "Kaydet",

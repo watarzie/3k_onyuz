@@ -135,7 +135,7 @@ export class UcKSandiklarComponent implements OnInit {
     const isSaha = this.isSahaContext();
     this.breadcrumb = [
       { label: 'Ana Kontrol Paneli', link: '/dashboard' },
-      { label: isSaha ? 'Saha Yönetimi' : 'Projeler', link: isSaha ? '/saha-yonetimi' : '/projeler' },
+      { label: isSaha ? 'Saha Yönetimi' : 'Sandık Yönetimi', link: isSaha ? '/saha-yonetimi' : '/sandik-yonetimi' },
       { label: isSaha ? 'Saha 3K Modülü' : '3K Modülü' },
     ];
     this.loadProjeBilgisi();
