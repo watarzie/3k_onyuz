@@ -20,6 +20,10 @@
         <input type="text" [placeholder]="'USER.SEARCH_PLACEHOLDER' | translate"
                [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)">
       </div>
+      <button *ngIf="canManageNotifications()" class="btn-notification-settings" (click)="openNotificationSettings()">
+        <i class="ri-notification-badge-line"></i>
+        Bildirim Alıcıları
+      </button>
       <button class="btn-add" (click)="openAddModal()">
         <i class="ri-user-add-line"></i>
         {{ 'USER.ADD_NEW' | translate }}
@@ -76,6 +80,71 @@
         </tr>
       </tbody>
     </table>
+  </div>
+</div>
+
+<!-- ===== Bildirim Alıcı Ayarları ===== -->
+<div class="modal-overlay" *ngIf="showNotificationSettings()" (click)="closeNotificationSettings()">
+  <div class="modal-content notification-settings-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <h6><i class="ri-notification-badge-line me-2"></i>Bildirim Alıcıları</h6>
+        <p>Çeki veya revizyon yüklenince bildirim alacak kullanıcıları belirleyin.</p>
+      </div>
+      <button class="btn-close-modal" (click)="closeNotificationSettings()" [disabled]="notificationSettingsSaving()">
+        <i class="ri-close-line"></i>
+      </button>
+    </div>
+
+    <div class="notification-settings-body">
+      <div *ngIf="notificationSettingsLoading()" class="notification-settings-state">
+        <span class="spinner-border spinner-border-sm text-primary"></span> Kullanıcılar yükleniyor
+      </div>
+
+      <div *ngIf="!notificationSettingsLoading()" class="notification-settings-table-wrapper">
+        <table class="notification-settings-table">
+          <thead>
+            <tr>
+              <th>Kullanıcı</th>
+              <th class="text-center">Çeki Yüklendi</th>
+              <th class="text-center">Revizyon Yüklendi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of notificationSettings()">
+              <td>
+                <strong>{{ item.adSoyad }}</strong>
+                <span>{{ item.email }} · {{ item.rol }}</span>
+              </td>
+              <td class="text-center">
+                <label class="notification-switch">
+                  <input type="checkbox" [checked]="item.cekiYuklendiBildirimi"
+                         (change)="toggleNotificationSetting(item.kullaniciId, 'cekiYuklendiBildirimi')">
+                  <span></span>
+                </label>
+              </td>
+              <td class="text-center">
+                <label class="notification-switch revision">
+                  <input type="checkbox" [checked]="item.cekiRevizyonuBildirimi"
+                         (change)="toggleNotificationSetting(item.kullaniciId, 'cekiRevizyonuBildirimi')">
+                  <span></span>
+                </label>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeNotificationSettings()" [disabled]="notificationSettingsSaving()">İptal</button>
+      <button class="btn-confirm" (click)="saveNotificationSettings()"
+              [disabled]="notificationSettingsSaving() || notificationSettingsLoading()">
+        <i class="ri-save-line" *ngIf="!notificationSettingsSaving()"></i>
+        <i class="ri-loader-4-line spin" *ngIf="notificationSettingsSaving()"></i>
+        Ayarları Kaydet
+      </button>
+    </div>
   </div>
 </div>
 

@@ -166,12 +166,137 @@
           </div>
           <div class="project-status-grid">
             @for (durum of detay.sandikDurumOzetleri; track durum.durumId) {
-              <div class="project-status-item" [style.--status-color]="getSandikDurumColor(durum.durumId)">
-                <i [class]="getSandikDurumIcon(durum.durumId)"></i>
+              <button type="button"
+                      class="project-status-item"
+                      [class.is-clickable]="canOpenSandikDurumDetay(durum)"
+                      [class.is-selected]="selectedSandikDurumDetay()?.durumId === durum.durumId"
+                      [disabled]="!canOpenSandikDurumDetay(durum)"
+                      [attr.aria-expanded]="selectedSandikDurumDetay()?.durumId === durum.durumId"
+                      aria-controls="sandikDurumDetayPanel"
+                      [title]="durum.sandikSayisi > 0 ? 'Bu durumdaki sandıkları görüntüle' : 'Bu durumda sandık bulunmuyor'"
+                      [style.--status-color]="getSandikDurumColor(durum.durumId)"
+                      (click)="toggleSandikDurumDetay(durum)">
+                <i [class]="getSandikDurumIcon(durum.durumId) + ' status-main-icon'"></i>
                 <div><strong>{{ durum.sandikSayisi }}</strong><span>{{ durum.durumMetni }}</span></div>
-              </div>
+                @if (durum.sandikSayisi > 0) {
+                  <i class="ri-arrow-down-s-line status-open-icon"></i>
+                }
+              </button>
             }
           </div>
+
+          @if (selectedSandikDurumDetay(); as seciliDurum) {
+            <section id="sandikDurumDetayPanel"
+                     class="sandik-status-drilldown"
+                     aria-live="polite"
+                     aria-labelledby="sandikDurumDetayBaslik"
+                     [attr.aria-busy]="loadingSandikDurumDetay()"
+                     [style.--status-color]="getSandikDurumColor(seciliDurum.durumId)">
+              <header class="drilldown-header">
+                <div class="drilldown-title">
+                  <span class="drilldown-title-icon"><i [class]="getSandikDurumIcon(seciliDurum.durumId)"></i></span>
+                  <div>
+                    <h6 id="sandikDurumDetayBaslik">{{ seciliDurum.durumMetni }} Durumundaki Sandıklar</h6>
+                    <p>
+                      <strong>{{ detay.projeNo }}</strong>
+                      @if (detay.musteri) { <span>• {{ detay.musteri }}</span> }
+                    </p>
+                  </div>
+                </div>
+                <button type="button" class="drilldown-close" title="Sandık listesini kapat"
+                        aria-label="Sandık listesini kapat" (click)="closeSandikDurumDetay()">
+                  <i class="ri-close-line"></i>
+                </button>
+              </header>
+
+              <div class="drilldown-toolbar">
+                <div class="drilldown-search">
+                  <i class="ri-search-line"></i>
+                  <input type="search"
+                         [value]="sandikDurumDetaySearch()"
+                         aria-label="Sandık numarası ara"
+                         placeholder="Sandık numarası ara..."
+                         autocomplete="off"
+                         (input)="onSandikDurumDetaySearch($event)" />
+                  @if (sandikDurumDetaySearch()) {
+                    <button type="button" title="Aramayı temizle" aria-label="Aramayı temizle"
+                            (click)="clearSandikDurumDetaySearch()">
+                      <i class="ri-close-line"></i>
+                    </button>
+                  }
+                </div>
+                <span class="drilldown-count">
+                  <strong>{{ sandikDurumDetayTotal() }}</strong> sandık
+                </span>
+              </div>
+
+              <div class="drilldown-content">
+                @if (loadingSandikDurumDetay() && sandikDurumDetaylari().length === 0) {
+                  <div class="drilldown-skeleton" role="status" aria-label="Sandıklar yükleniyor">
+                    <p class="visually-hidden">Sandıklar yükleniyor.</p>
+                    @for (item of [1, 2, 3, 4]; track item) {
+                      <span><i></i><i></i><i></i></span>
+                    }
+                  </div>
+                } @else if (sandikDurumDetayError() && sandikDurumDetaylari().length === 0) {
+                  <div class="drilldown-state is-error">
+                    <i class="ri-error-warning-line"></i>
+                    <strong>Sandık listesi yüklenemedi</strong>
+                    <span>{{ sandikDurumDetayError() }}</span>
+                    <button type="button" (click)="loadSandikDurumDetay(true)">
+                      <i class="ri-refresh-line"></i> Yeniden dene
+                    </button>
+                  </div>
+                } @else if (sandikDurumDetaylari().length === 0) {
+                  <div class="drilldown-state">
+                    <i class="ri-inbox-archive-line"></i>
+                    <strong>Sandık bulunamadı</strong>
+                    <span>
+                      {{ sandikDurumDetaySearch() ? 'Arama kriteriyle eşleşen sandık yok.' : 'Bu durumda listelenecek sandık bulunmuyor.' }}
+                    </span>
+                  </div>
+                } @else {
+                  <div class="drilldown-crate-grid">
+                    @for (sandik of sandikDurumDetaylari(); track sandik.sandikId) {
+                      <article class="drilldown-crate-card">
+                        <span class="crate-card-icon"><i class="ri-archive-line"></i></span>
+                        <div class="crate-card-copy">
+                          <strong>Sandık {{ sandik.sandikNo }}</strong>
+                          @if (sandik.sandikAdi) { <span>{{ sandik.sandikAdi }}</span> }
+                          @if (sandik.depoLokasyonMetni) {
+                            <small>
+                              <span><i class="ri-map-pin-line"></i>{{ sandik.depoLokasyonMetni }}</span>
+                            </small>
+                          }
+                        </div>
+                      </article>
+                    }
+                  </div>
+
+                  @if (sandikDurumDetayError()) {
+                    <div class="drilldown-inline-error">
+                      <i class="ri-error-warning-line"></i>{{ sandikDurumDetayError() }}
+                    </div>
+                  }
+                }
+              </div>
+
+              @if (sandikDurumDetaylari().length > 0) {
+                <footer class="drilldown-footer">
+                  <span>{{ sandikDurumDetaylari().length }} / {{ sandikDurumDetayTotal() }} sandık gösteriliyor</span>
+                  @if (sandikDurumDetayHasMore()) {
+                    <button type="button" (click)="loadSandikDurumDetay()" [disabled]="loadingSandikDurumDetay()">
+                      @if (loadingSandikDurumDetay()) {
+                        <span class="spinner-border spinner-border-sm"></span> Yükleniyor
+                      } @else {
+                        <i class="ri-add-line"></i> Daha fazla göster
+                      }
+                    </button>
+                  }
+                </footer>
+              }
+            </section>
+          }
         </div>
       } @else {
         <div class="project-breakdown-placeholder">

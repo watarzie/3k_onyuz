@@ -1,7 +1,18 @@
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  OnDestroy,
+  OnInit,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
+import { debounceTime, Subject, Subscription } from 'rxjs';
 import { TranslationService } from '../../core/services/translation.service';
 import { StatCardComponent } from '../../shared/components/stat-card/stat-card.component';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
@@ -155,29 +166,45 @@ interface DashboardProjeSandikDurumDto {
   sandikDurumOzetleri: DashboardSandikDurumDto[];
 }
 
+interface DashboardProjeDurumSandikDto {
+  sandikId: number;
+  sandikNo: string;
+  sandikAdi?: string | null;
+  durumId: number;
+  durumMetni: string;
+  depoLokasyonId?: number | null;
+  depoLokasyonMetni?: string | null;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [TranslatePipe, StatCardComponent, StatusBadgeComponent, BreadcrumbComponent, RouterLink, NgClass],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   ts = inject(TranslationService);
   private api = inject(BaseApiService);
   private lookupService = inject(LookupService);
+  private readonly destroyRef = inject(DestroyRef);
 
   private readonly projelerPageSize = 20;
   private readonly kritikPageSize = 12;
   private readonly eksikPageSize = 12;
   private readonly sahaSandikPageSize = 12;
+  private readonly sandikDurumDetayPageSize = 20;
   private projelerRequestSeq = 0;
   private sahaSandikRequestSeq = 0;
   private transferProjeOptionsRequestSeq = 0;
   private sandikDurumProjeOptionsRequestSeq = 0;
   private projeSandikDurumRequestSeq = 0;
+  private sandikDurumDetayRequestSeq = 0;
   private transferProjeSearchTimer?: ReturnType<typeof setTimeout>;
   private sandikDurumProjeSearchTimer?: ReturnType<typeof setTimeout>;
+  private readonly sandikDurumDetaySearchChanges = new Subject<string>();
+  private sandikDurumDetayRequest?: Subscription;
 
   ozet = signal<DashboardOzetDto | null>(null);
   projeler = signal<DashboardProjeItemDto[]>([]);
@@ -189,6 +216,14 @@ export class DashboardComponent implements OnInit {
   selectedTransferProje = signal<DashboardProjeFilterOptionDto | null>(null);
   selectedSandikDurumProje = signal<DashboardProjeFilterOptionDto | null>(null);
   projeSandikDurumDetay = signal<DashboardProjeSandikDurumDto | null>(null);
+  selectedSandikDurumDetay = signal<DashboardSandikDurumDto | null>(null);
+  sandikDurumDetaylari = signal<DashboardProjeDurumSandikDto[]>([]);
+  sandikDurumDetaySearch = signal('');
+  sandikDurumDetayPage = signal(0);
+  sandikDurumDetayTotal = signal(0);
+  sandikDurumDetayHasMore = signal(false);
+  loadingSandikDurumDetay = signal(false);
+  sandikDurumDetayError = signal('');
   transferProjeSearch = signal('');
   sandikDurumProjeSearch = signal('');
   transferProjeDropdownOpen = signal(false);
@@ -401,6 +436,13 @@ export class DashboardComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.sandikDurumDetaySearchChanges
+      .pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef))
+      .subscribe(searchTerm => {
+        if (searchTerm !== this.sandikDurumDetaySearch().trim()) return;
+        this.loadSandikDurumDetay(true);
+      });
+
     this.loadDepoLokasyonlari();
     this.loadOzet();
     this.loadProjeler(true);
@@ -601,6 +643,13 @@ export class DashboardComponent implements OnInit {
     this.loadSahayaAktarilanSandiklar(true);
   }
 
+  ngOnDestroy() {
+    if (this.transferProjeSearchTimer) clearTimeout(this.transferProjeSearchTimer);
+    if (this.sandikDurumProjeSearchTimer) clearTimeout(this.sandikDurumProjeSearchTimer);
+    this.sandikDurumDetayRequestSeq++;
+    this.sandikDurumDetayRequest?.unsubscribe();
+  }
+
   clearTransferProjeFilter() {
     this.selectedTransferProje.set(null);
     this.transferProjeSearch.set('');
@@ -635,6 +684,7 @@ export class DashboardComponent implements OnInit {
   }
 
   selectSandikDurumProje(option: DashboardProjeFilterOptionDto) {
+    this.resetSandikDurumDetay();
     this.selectedSandikDurumProje.set(option);
     this.sandikDurumProjeSearch.set(this.getProjeOptionLabel(option));
     this.sandikDurumProjeDropdownOpen.set(false);
@@ -642,6 +692,7 @@ export class DashboardComponent implements OnInit {
   }
 
   clearSandikDurumProjeFilter(closeDropdown = true) {
+    this.resetSandikDurumDetay();
     this.selectedSandikDurumProje.set(null);
     this.projeSandikDurumDetay.set(null);
     this.sandikDurumProjeSearch.set('');
@@ -652,6 +703,97 @@ export class DashboardComponent implements OnInit {
 
   closeSandikDurumProjeDropdown() {
     setTimeout(() => this.sandikDurumProjeDropdownOpen.set(false), 150);
+  }
+
+  canOpenSandikDurumDetay(durum: DashboardSandikDurumDto): boolean {
+    return this.selectedSandikDurumProje() !== null && durum.sandikSayisi > 0;
+  }
+
+  toggleSandikDurumDetay(durum: DashboardSandikDurumDto): void {
+    if (!this.canOpenSandikDurumDetay(durum)) return;
+
+    if (this.selectedSandikDurumDetay()?.durumId === durum.durumId) {
+      this.closeSandikDurumDetay();
+      return;
+    }
+
+    this.resetSandikDurumDetay();
+    this.selectedSandikDurumDetay.set(durum);
+    this.loadSandikDurumDetay(true);
+  }
+
+  closeSandikDurumDetay(): void {
+    this.resetSandikDurumDetay();
+  }
+
+  onSandikDurumDetaySearch(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.sandikDurumDetaySearch.set(value);
+    this.sandikDurumDetaySearchChanges.next(value.trim());
+  }
+
+  clearSandikDurumDetaySearch(): void {
+    if (!this.sandikDurumDetaySearch()) return;
+    this.sandikDurumDetaySearch.set('');
+    this.sandikDurumDetaySearchChanges.next('');
+  }
+
+  loadSandikDurumDetay(reset = false): void {
+    const proje = this.selectedSandikDurumProje();
+    const durum = this.selectedSandikDurumDetay();
+    if (!proje || !durum || durum.sandikSayisi <= 0) return;
+    if (!reset && (this.loadingSandikDurumDetay() || !this.sandikDurumDetayHasMore())) return;
+
+    if (reset) {
+      this.sandikDurumDetayRequest?.unsubscribe();
+      this.sandikDurumDetaylari.set([]);
+      this.sandikDurumDetayPage.set(0);
+      this.sandikDurumDetayTotal.set(this.sandikDurumDetaySearch().trim() ? 0 : durum.sandikSayisi);
+      this.sandikDurumDetayHasMore.set(true);
+      this.sandikDurumDetayError.set('');
+    }
+
+    const nextPage = this.sandikDurumDetayPage() + 1;
+    const requestSeq = ++this.sandikDurumDetayRequestSeq;
+    const searchTerm = this.sandikDurumDetaySearch().trim();
+    this.loadingSandikDurumDetay.set(true);
+    this.sandikDurumDetayError.set('');
+
+    this.sandikDurumDetayRequest = this.api.get<DashboardPagedResultDto<DashboardProjeDurumSandikDto>>(
+      API.DASHBOARD.PROJE_DURUM_SANDIKLARI(
+        proje.id,
+        durum.durumId,
+        nextPage,
+        this.sandikDurumDetayPageSize,
+        searchTerm
+      ),
+      { headers: { 'X-Menu-Kod': 'dashboard' } }
+    ).subscribe({
+      next: res => {
+        if (requestSeq !== this.sandikDurumDetayRequestSeq) return;
+        this.loadingSandikDurumDetay.set(false);
+
+        if (!res.isSuccess || !res.value) {
+          this.sandikDurumDetayError.set(res.error || 'Sandık listesi yüklenemedi.');
+          return;
+        }
+
+        const pageItems = res.value.items ?? [];
+        this.sandikDurumDetaylari.update(items => {
+          if (reset) return pageItems;
+          const mevcutIds = new Set(items.map(item => item.sandikId));
+          return [...items, ...pageItems.filter(item => !mevcutIds.has(item.sandikId))];
+        });
+        this.sandikDurumDetayPage.set(res.value.page);
+        this.sandikDurumDetayTotal.set(res.value.totalCount);
+        this.sandikDurumDetayHasMore.set(res.value.hasMore);
+      },
+      error: () => {
+        if (requestSeq !== this.sandikDurumDetayRequestSeq) return;
+        this.loadingSandikDurumDetay.set(false);
+        this.sandikDurumDetayError.set('Sandık listesi yüklenirken bağlantı hatası oluştu.');
+      },
+    });
   }
 
   getProjeOptionLabel(option: DashboardProjeFilterOptionDto): string {
@@ -715,6 +857,19 @@ export class DashboardComponent implements OnInit {
         }
       },
     });
+  }
+
+  private resetSandikDurumDetay(): void {
+    this.sandikDurumDetayRequestSeq++;
+    this.sandikDurumDetayRequest?.unsubscribe();
+    this.selectedSandikDurumDetay.set(null);
+    this.sandikDurumDetaylari.set([]);
+    this.sandikDurumDetaySearch.set('');
+    this.sandikDurumDetayPage.set(0);
+    this.sandikDurumDetayTotal.set(0);
+    this.sandikDurumDetayHasMore.set(false);
+    this.loadingSandikDurumDetay.set(false);
+    this.sandikDurumDetayError.set('');
   }
 
   onProjelerScroll(event: Event) {

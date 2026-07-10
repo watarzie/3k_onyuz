@@ -34,7 +34,6 @@ const KARSILAMA_TIPLERI: KarsilamaTipi[] = [
   { id: UcKDurum.GeriGonderildi, value: 'Geri Gönderildi', label: 'GERİ GÖNDERİLDİ', color: '#D32F2F', bgClass: 'row-geri-gonderildi' },
 ];
 
-import { OnayService } from '../../../core/services/onay.service';
 
 @Component({
   selector: 'app-uck-urunler',
@@ -52,7 +51,6 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   private projeService = inject(ProjeService);
   private gridService = inject(GridService);
   private stokService = inject(StokService);
-  private onayService = inject(OnayService);
   private sandikService = inject(SandikService);
   private confirmService = inject(ConfirmService);
   private pdfService = inject(PdfService);
@@ -1061,8 +1059,6 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
           const returnedStatus = (res.value as any)?.statusCode;
           if (res.statusCode === 202 || returnedStatus === 202) {
             this.toast.info('İşleminiz yetkili onayına sunulmuştur.');
-            // Header'a anlık bildir
-            this.onayService.notifyHeaderForNewApproval();
           } else {
             this.toast.success('3K durumu başarıyla güncellendi.');
           }

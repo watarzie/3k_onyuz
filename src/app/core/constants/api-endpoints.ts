@@ -45,6 +45,8 @@ export const API = {
     PROJE_SECENEKLERI: (searchTerm = '', projeTipiId?: number | null, sadeceSandikAktarimli = false, take = 30) =>
       `${BASE}/dashboard/proje-secenekleri?take=${take}&sadeceSandikAktarimli=${sadeceSandikAktarimli}${projeTipiId ? `&projeTipiId=${projeTipiId}` : ''}${searchTerm.trim() ? `&searchTerm=${encodeURIComponent(searchTerm.trim())}` : ''}`,
     PROJE_SANDIK_DURUMLARI: (projeId: number) => `${BASE}/dashboard/projeler/${projeId}/sandik-durumlari`,
+    PROJE_DURUM_SANDIKLARI: (projeId: number, durumId: number, page: number, pageSize: number, searchTerm = '') =>
+      `${BASE}/dashboard/projeler/${projeId}/sandiklar?durumId=${durumId}&page=${page}&pageSize=${pageSize}${searchTerm.trim() ? `&searchTerm=${encodeURIComponent(searchTerm.trim())}` : ''}`,
   },
   CEKI: {
     YUKLE: `${BASE}/ceki/yukle`,
@@ -112,6 +114,14 @@ export const API = {
     ONAYLA: `${BASE}/onay/onayla`,
     REDDET: `${BASE}/onay/reddet`,
     SSE_STREAM: `${BASE}/onay/sse-stream`,
+  },
+  BILDIRIM: {
+    LIST: `${BASE}/bildirimler`,
+    DETAY: (bildirimId: number) => `${BASE}/bildirimler/${bildirimId}`,
+    OKUNMAMIS: `${BASE}/bildirimler/okunmamis`,
+    OKUNDU: (bildirimId: number) => `${BASE}/bildirimler/${bildirimId}/okundu`,
+    TUMUNU_OKUNDU: `${BASE}/bildirimler/tumunu-okundu`,
+    ABONELIK_AYARLARI: `${BASE}/bildirimler/abonelik-ayarlari`,
   },
   HAREKET: {
     BY_PROJE: (projeId: number) => `${BASE}/hareketgecmisi/${projeId}/gecmis`,

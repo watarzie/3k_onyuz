@@ -1,18 +1,20 @@
-import { TranslatePipe } from '../../shared/pipes/translate.pipe';
-import { Component, effect, inject, signal, HostListener, OnInit, OnDestroy } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { NgClass } from '@angular/common';
-import { ToggleService } from './toggle.service';
-import { AuthService } from '../../core/auth/auth.service';
-import { TranslationService } from '../../core/services/translation.service';
-import { PermissionService } from '../../core/services/permission.service';
-import { OnayService } from '../../core/services/onay.service';
+import { DatePipe, NgClass } from '@angular/common';
+import { Component, computed, effect, HostListener, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { AuthService } from '../../core/auth/auth.service';
+import { BildirimService } from '../../core/services/bildirim.service';
+import { OnayService } from '../../core/services/onay.service';
+import { PermissionService } from '../../core/services/permission.service';
+import { TranslationService } from '../../core/services/translation.service';
+import { BildirimDto, BildirimTipi } from '../../shared/models';
+import { TranslatePipe } from '../../shared/pipes/translate.pipe';
+import { ToggleService } from './toggle.service';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [TranslatePipe, RouterLink, NgClass],
+  imports: [TranslatePipe, RouterLink, NgClass, DatePipe],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
 })
@@ -22,92 +24,120 @@ export class HeaderComponent implements OnInit, OnDestroy {
   ts = inject(TranslationService);
   permissions = inject(PermissionService);
   onayService = inject(OnayService);
+  bildirimService = inject(BildirimService);
+  private router = inject(Router);
 
   isSticky = signal(false);
   isProfileOpen = signal(false);
   isLangOpen = signal(false);
   isNotificationOpen = signal(false);
+  bekleyenIslemSayisi = signal(0);
+  markingAllRead = signal(false);
 
-  // Bildirim zili için
-  bekleyenIslemSayisi = signal<number>(0);
+  notificationBadgeCount = computed(() =>
+    this.bildirimService.toplamOkunmamis() + (this.canSeeApprovalQueue ? this.bekleyenIslemSayisi() : 0)
+  );
+
   private approvalUpdateSubscription?: Subscription;
 
-  get canSeeApprovalQueue() {
+  get canSeeApprovalQueue(): boolean {
     return this.permissions.hasAccess('islem-onay-merkezi');
   }
 
   constructor() {
-    // Reaktif Etki (Effect): Yetkiler backend'den yüklendiğinde veya değiştiğinde tetiklenir
     effect(() => {
       if (this.canSeeApprovalQueue) {
         this.fetchApprovalCount();
-        this.onayService.connectToApprovalStream();
       } else {
-        this.onayService.disconnectStream();
+        this.bekleyenIslemSayisi.set(0);
       }
     });
   }
 
-  ngOnInit() {
-    // Anlık işlemler için olay dinleyicisi (SSE'den de tetikleniyor)
-    this.approvalUpdateSubscription = this.onayService.onayIstendi$.subscribe(() => {
-      this.fetchApprovalCount();
+  ngOnInit(): void {
+    this.bildirimService.loadUnread();
+    this.bildirimService.connectToStream();
+    this.approvalUpdateSubscription = this.bildirimService.onayGuncellendi$.subscribe(() => {
+      if (this.canSeeApprovalQueue) this.fetchApprovalCount();
     });
   }
 
-  ngOnDestroy() {
+  ngOnDestroy(): void {
     this.approvalUpdateSubscription?.unsubscribe();
-    this.onayService.disconnectStream();
+    this.bildirimService.disconnectStream();
   }
 
-  fetchApprovalCount() {
+  fetchApprovalCount(): void {
     if (!this.canSeeApprovalQueue) return;
-    
+
     this.onayService.getBekleyenSayisi().subscribe(res => {
-      if (res.isSuccess) {
-        this.bekleyenIslemSayisi.set(res.value || 0);
-      }
+      if (res.isSuccess) this.bekleyenIslemSayisi.set(res.value ?? 0);
     });
   }
 
-  toggle() { this.toggleService.toggle(); }
+  toggle(): void {
+    this.toggleService.toggle();
+  }
 
-  toggleProfile() { this.isProfileOpen.update(v => !v); }
+  toggleProfile(): void {
+    this.isProfileOpen.update(value => !value);
+  }
 
-  toggleLang() { this.isLangOpen.update(v => !v); }
+  toggleLang(): void {
+    this.isLangOpen.update(value => !value);
+  }
 
-  toggleNotification() { this.isNotificationOpen.update(v => !v); }
+  toggleNotification(): void {
+    this.isNotificationOpen.update(value => !value);
+    if (this.isNotificationOpen()) this.bildirimService.loadUnread();
+  }
 
-  switchLang(lang: string) {
+  openNotification(bildirim: BildirimDto): void {
+    this.isNotificationOpen.set(false);
+    void this.router.navigate(['/bildirimler', bildirim.id]);
+  }
+
+  openNotificationCenter(): void {
+    this.isNotificationOpen.set(false);
+  }
+
+  markAllAsRead(): void {
+    if (this.markingAllRead() || this.bildirimService.toplamOkunmamis() === 0) return;
+
+    this.markingAllRead.set(true);
+    this.bildirimService.markAllAsRead().subscribe(() => this.markingAllRead.set(false));
+  }
+
+  getBildirimIcon(tipId: BildirimTipi): string {
+    return tipId === BildirimTipi.CekiRevizyonuYuklendi
+      ? 'ri-file-edit-line'
+      : 'ri-file-excel-2-line';
+  }
+
+  getBildirimClass(tipId: BildirimTipi): string {
+    return tipId === BildirimTipi.CekiRevizyonuYuklendi ? 'revision' : 'upload';
+  }
+
+  switchLang(lang: string): void {
     this.ts.switchLanguage(lang);
     this.isLangOpen.set(false);
   }
 
-  logout() { this.auth.logout(); }
+  logout(): void {
+    this.auth.logout();
+  }
 
   @HostListener('window:scroll')
-  onScroll() {
+  onScroll(): void {
     this.isSticky.set(window.scrollY >= 50);
   }
 
   @HostListener('document:click', ['$event'])
-  onDocClick(e: Event) {
-    const target = e.target as HTMLElement;
-    if (!target.closest('.profile-menu') && this.isProfileOpen()) {
-      this.isProfileOpen.set(false);
-    }
-    if (!target.closest('.lang-menu') && this.isLangOpen()) {
-      this.isLangOpen.set(false);
-    }
-    
-    // Check if click was inside the notification container, if not close it.
-    // However, the button AND the dropdown are inside .profile-menu in our new HTML.
-    // So we need to distinct them or just check the notification part.
-    // Actually, in the HTML I put it inside a div with class "profile-menu".
-    // It's safer to just check .notification-dropdown or give the wrapper a class.
-    // Let's add a class 'notification-wrapper' to it. Let's just check the button.
-    const isNotificationClick = target.closest('[title="Bildirimler"]') || target.closest('.notification-dropdown');
-    if (!isNotificationClick && this.isNotificationOpen()) {
+  onDocClick(event: Event): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.profile-menu') && this.isProfileOpen()) this.isProfileOpen.set(false);
+    if (!target.closest('.lang-menu') && this.isLangOpen()) this.isLangOpen.set(false);
+    if (!target.closest('.notification-wrapper') && this.isNotificationOpen()) {
       this.isNotificationOpen.set(false);
     }
   }

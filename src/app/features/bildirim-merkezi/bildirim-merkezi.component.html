@@ -1,0 +1,299 @@
+<div class="notification-page fade-in">
+  <div class="page-heading">
+    <div>
+      <app-breadcrumb [items]="breadcrumb" />
+      <div class="heading-copy">
+        <span class="heading-icon"><i class="ri-notification-4-line"></i></span>
+        <div>
+          <h2>Bildirim Merkezi</h2>
+          <p>Size gönderilen sistem bildirimlerini görüntüleyin ve yönetin.</p>
+        </div>
+      </div>
+    </div>
+
+    <button type="button" class="mark-all-read" (click)="markAllAsRead()"
+            [disabled]="markingAllRead() || toplamOkunmamis() === 0">
+      @if (markingAllRead()) {
+        <span class="spinner-border spinner-border-sm"></span>
+      } @else {
+        <i class="ri-check-double-line"></i>
+      }
+      Tümünü okundu işaretle
+    </button>
+  </div>
+
+  <section class="filter-card" aria-label="Bildirim filtreleri">
+    <div class="status-tabs" role="tablist" aria-label="Okunma durumu">
+      <button type="button" role="tab" [class.active]="durum() === 'tumu'"
+              [attr.aria-selected]="durum() === 'tumu'" (click)="setDurum('tumu')">
+        Tümü
+      </button>
+      <button type="button" role="tab" [class.active]="durum() === 'okunmamis'"
+              [attr.aria-selected]="durum() === 'okunmamis'" (click)="setDurum('okunmamis')">
+        Okunmamış
+        @if (toplamOkunmamis() > 0) {
+          <span>{{ toplamOkunmamis() > 99 ? '99+' : toplamOkunmamis() }}</span>
+        }
+      </button>
+      <button type="button" role="tab" [class.active]="durum() === 'okunmus'"
+              [attr.aria-selected]="durum() === 'okunmus'" (click)="setDurum('okunmus')">
+        Okunmuş
+      </button>
+    </div>
+
+    <div class="filter-grid">
+      <label class="filter-field search-field">
+        <span>Bildirim veya proje ara</span>
+        <div class="input-shell">
+          <i class="ri-search-line"></i>
+          <input type="search" [value]="arama()" (input)="onSearchInput($event)"
+                 placeholder="Başlık, içerik veya proje no..." autocomplete="off">
+          @if (arama()) {
+            <button type="button" title="Aramayı temizle" aria-label="Aramayı temizle"
+                    (click)="clearSearch()">
+              <i class="ri-close-line"></i>
+            </button>
+          }
+        </div>
+      </label>
+
+      <label class="filter-field">
+        <span>Bildirim türü</span>
+        <div class="select-shell">
+          <i class="ri-price-tag-3-line"></i>
+          <select [value]="tipId() ?? ''" (change)="onTipChange($event)">
+            <option value="">Tüm türler</option>
+            <option [value]="BildirimTipi.CekiYuklendi">Yeni Çeki</option>
+            <option [value]="BildirimTipi.CekiRevizyonuYuklendi">Revizyon Çekisi</option>
+          </select>
+          <i class="ri-arrow-down-s-line select-arrow"></i>
+        </div>
+      </label>
+
+      <label class="filter-field">
+        <span>Tarih aralığı</span>
+        <div class="select-shell">
+          <i class="ri-calendar-line"></i>
+          <select [value]="tarihFiltresi()" (change)="onTarihFiltresiChange($event)">
+            <option value="tumu">Tüm zamanlar</option>
+            <option value="bugun">Bugün</option>
+            <option value="son7Gun">Son 7 gün</option>
+            <option value="son30Gun">Son 30 gün</option>
+            <option value="ozel">Özel tarih aralığı</option>
+          </select>
+          <i class="ri-arrow-down-s-line select-arrow"></i>
+        </div>
+      </label>
+
+      <div class="filter-actions">
+        <button type="button" class="reset-filter" (click)="resetFilters()" [disabled]="!filtreAktif()">
+          <i class="ri-restart-line"></i>
+          Filtreleri temizle
+        </button>
+      </div>
+    </div>
+
+    @if (tarihFiltresi() === 'ozel') {
+      <div class="custom-date-range">
+        <label>
+          <span>Başlangıç</span>
+          <input type="date" [value]="baslangicTarihi()" (change)="onBaslangicTarihiChange($event)">
+        </label>
+        <span class="date-separator"><i class="ri-arrow-right-line"></i></span>
+        <label>
+          <span>Bitiş</span>
+          <input type="date" [value]="bitisTarihi()" (change)="onBitisTarihiChange($event)">
+        </label>
+        <button type="button" (click)="applyCustomDateRange()">
+          <i class="ri-filter-3-line"></i>
+          Tarihi uygula
+        </button>
+      </div>
+    }
+  </section>
+
+  <div class="notification-workspace" [class.detail-open]="seciliBildirimId() !== null">
+    <section class="notification-list-card">
+      <header class="list-header">
+        <div>
+          <h3>Bildirimler</h3>
+          <p>
+            @if (toplamKayit() > 0) {
+              {{ paginationStart() }}-{{ paginationEnd() }} arası, toplam {{ toplamKayit() }} kayıt
+            } @else {
+              Kayıt bulunamadı
+            }
+          </p>
+        </div>
+        <span class="unread-summary">
+          <i class="ri-mail-unread-line"></i>
+          {{ toplamOkunmamis() }} okunmamış
+        </span>
+      </header>
+
+      <div class="notification-list-body" [class.is-loading]="loading()">
+        @if (loading() && bildirimler().length === 0) {
+          <div class="list-skeleton" aria-label="Bildirimler yükleniyor">
+            @for (item of [1, 2, 3, 4, 5]; track item) {
+              <div class="skeleton-row">
+                <span></span><div><i></i><i></i><i></i></div>
+              </div>
+            }
+          </div>
+        } @else if (loadError()) {
+          <div class="list-state error-state">
+            <span><i class="ri-wifi-off-line"></i></span>
+            <strong>Bildirimler yüklenemedi</strong>
+            <p>{{ loadError() }}</p>
+            <button type="button" (click)="loadBildirimler()"><i class="ri-refresh-line"></i> Yeniden dene</button>
+          </div>
+        } @else if (bildirimler().length === 0) {
+          <div class="list-state empty-state">
+            <span><i class="ri-notification-off-line"></i></span>
+            <strong>{{ filtreAktif() ? 'Filtrelerle eşleşen bildirim yok' : 'Henüz bildiriminiz yok' }}</strong>
+            <p>{{ filtreAktif() ? 'Filtreleri değiştirerek tekrar deneyebilirsiniz.' : 'Size gönderilen bildirimler burada listelenecek.' }}</p>
+            @if (filtreAktif()) {
+              <button type="button" (click)="resetFilters()"><i class="ri-restart-line"></i> Filtreleri temizle</button>
+            }
+          </div>
+        } @else {
+          <div class="notification-items">
+            @for (bildirim of bildirimler(); track bildirim.id) {
+              <button type="button" class="notification-row"
+                      [class.unread]="!bildirim.okunduMu"
+                      [class.active]="seciliBildirimId() === bildirim.id"
+                      [attr.aria-current]="seciliBildirimId() === bildirim.id ? 'true' : null"
+                      (click)="openDetail(bildirim)">
+                <span class="unread-dot" aria-hidden="true"></span>
+                <span class="type-icon" [ngClass]="getBildirimClass(bildirim.tipId)">
+                  <i [class]="getBildirimIcon(bildirim.tipId)"></i>
+                </span>
+                <span class="row-copy">
+                  <span class="row-title-line">
+                    <strong>{{ bildirim.baslik }}</strong>
+                    <time>{{ bildirim.olusturulmaTarihi | date:'dd.MM.yyyy HH:mm' }}</time>
+                  </span>
+                  <span class="row-message">{{ bildirim.mesaj }}</span>
+                  <span class="row-meta">
+                    <span class="type-label">{{ getBildirimTipiAdi(bildirim.tipId) }}</span>
+                    @if (bildirim.metadata?.projeNo; as projeNo) {
+                      <span><i class="ri-folder-3-line"></i>{{ projeNo }}</span>
+                    }
+                    <span [class.is-unread]="!bildirim.okunduMu">
+                      <i [class]="bildirim.okunduMu ? 'ri-check-double-line' : 'ri-mail-unread-line'"></i>
+                      {{ bildirim.okunduMu ? 'Okundu' : 'Okunmamış' }}
+                    </span>
+                  </span>
+                </span>
+                <i class="ri-arrow-right-s-line row-arrow"></i>
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <footer class="list-footer">
+        <label>
+          <span>Sayfa başına</span>
+          <select [value]="sayfaBoyutu()" (change)="onPageSizeChange($event)">
+            @for (size of pageSizeOptions; track size) {
+              <option [value]="size">{{ size }}</option>
+            }
+          </select>
+        </label>
+
+        <nav class="pagination-controls" aria-label="Bildirim sayfaları">
+          <button type="button" (click)="goToPage(sayfa() - 1)" [disabled]="sayfa() <= 1" aria-label="Önceki sayfa">
+            <i class="ri-arrow-left-s-line"></i>
+          </button>
+          @for (page of pageNumbers(); track page) {
+            <button type="button" class="page-number" [class.active]="page === sayfa()" (click)="goToPage(page)">
+              {{ page }}
+            </button>
+          }
+          <button type="button" (click)="goToPage(sayfa() + 1)" [disabled]="sayfa() >= toplamSayfa()" aria-label="Sonraki sayfa">
+            <i class="ri-arrow-right-s-line"></i>
+          </button>
+        </nav>
+      </footer>
+    </section>
+
+    <aside class="notification-detail-card" aria-live="polite">
+      @if (detailLoading()) {
+        <div class="detail-skeleton">
+          <span class="detail-skeleton-icon"></span>
+          <i></i><i></i><i></i><i></i>
+        </div>
+      } @else if (detailError()) {
+        <button type="button" class="close-detail" (click)="closeDetail()" aria-label="Detayı kapat">
+          <i class="ri-close-line"></i>
+        </button>
+        <div class="detail-state error-state">
+          <span><i class="ri-error-warning-line"></i></span>
+          <strong>Bildirim açılamadı</strong>
+          <p>{{ detailError() }}</p>
+          <button type="button" (click)="closeDetail()">Listeye dön</button>
+        </div>
+      } @else if (seciliBildirim(); as bildirim) {
+        <header class="detail-header">
+          <button type="button" class="close-detail" (click)="closeDetail()" aria-label="Detayı kapat">
+            <i class="ri-close-line"></i>
+          </button>
+          <span class="detail-type-icon" [ngClass]="getBildirimClass(bildirim.tipId)">
+            <i [class]="getBildirimIcon(bildirim.tipId)"></i>
+          </span>
+          <div class="detail-badges">
+            <span class="type-badge">{{ getBildirimTipiAdi(bildirim.tipId) }}</span>
+            <span class="read-badge" [class.unread]="!bildirim.okunduMu">
+              <i [class]="bildirim.okunduMu ? 'ri-check-double-line' : 'ri-mail-unread-line'"></i>
+              {{ bildirim.okunduMu ? 'Okundu' : 'Okunmamış' }}
+            </span>
+          </div>
+          <h3>{{ bildirim.baslik }}</h3>
+          <time><i class="ri-time-line"></i>{{ bildirim.olusturulmaTarihi | date:'dd.MM.yyyy HH:mm' }}</time>
+        </header>
+
+        <div class="detail-content">
+          <section class="message-box">
+            <span>Bildirim içeriği</span>
+            <p>{{ bildirim.mesaj }}</p>
+          </section>
+
+          <section class="detail-information">
+            <h4>Bildirim bilgileri</h4>
+            <dl>
+              @if (bildirim.metadata?.projeNo; as projeNo) {
+                <div><dt>Proje</dt><dd><i class="ri-folder-3-line"></i>{{ projeNo }}</dd></div>
+              }
+              @if (bildirim.metadata?.olusturanKullaniciAdi; as kullaniciAdi) {
+                <div><dt>İşlemi yapan</dt><dd><i class="ri-user-3-line"></i>{{ kullaniciAdi }}</dd></div>
+              }
+              @if (bildirim.referansTipi) {
+                <div><dt>Referans</dt><dd>{{ bildirim.referansTipi }}@if (bildirim.referansId) { #{{ bildirim.referansId }}}</dd></div>
+              }
+              @if (bildirim.okunmaTarihi) {
+                <div><dt>Okunma tarihi</dt><dd>{{ bildirim.okunmaTarihi | date:'dd.MM.yyyy HH:mm' }}</dd></div>
+              }
+            </dl>
+          </section>
+        </div>
+
+        @if (guvenliHedefUrl()) {
+          <footer class="detail-footer">
+            <button type="button" class="related-record-button" (click)="goToRelatedRecord()">
+              <i class="ri-external-link-line"></i>
+              İlgili kayda git
+              <i class="ri-arrow-right-line"></i>
+            </button>
+          </footer>
+        }
+      } @else {
+        <div class="detail-state select-state">
+          <span><i class="ri-cursor-line"></i></span>
+          <strong>Bir bildirim seçin</strong>
+          <p>Detayları görmek için soldaki listeden bir bildirime tıklayın.</p>
+        </div>
+      }
+    </aside>
+  </div>
+</div>

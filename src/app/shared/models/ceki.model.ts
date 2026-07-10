@@ -2,6 +2,8 @@
 
 export interface CekiYuklemeResultDto {
   cekiId: number;
+  projeId: number;
+  projeNo: string;
   satirSayisi: number;
   sandikSayisi: number;
   mesaj: string;

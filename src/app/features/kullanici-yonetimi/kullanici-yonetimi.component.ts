@@ -6,8 +6,10 @@ import { KullaniciService } from '../../core/services/kullanici.service';
 import { RolService } from '../../core/services/rol.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmService } from '../../core/services/confirm.service';
+import { BildirimService } from '../../core/services/bildirim.service';
+import { PermissionService } from '../../core/services/permission.service';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
-import { KullaniciDto, KullaniciGuncelleRequest, RolDto, RegisterDto } from '../../shared/models';
+import { BildirimAbonelikAyariDto, KullaniciDto, KullaniciGuncelleRequest, RolDto, RegisterDto } from '../../shared/models';
 
 @Component({
   selector: 'app-kullanici-yonetimi',
@@ -21,6 +23,10 @@ export class KullaniciYonetimiComponent implements OnInit {
   private rolService = inject(RolService);
   private toast = inject(ToastService);
   private confirmSvc = inject(ConfirmService);
+  private bildirimService = inject(BildirimService);
+  private permissions = inject(PermissionService);
+
+  canManageNotifications = computed(() => this.permissions.canWrite('kullanicilar'));
 
   isLoading = signal(false);
   kullanicilar = signal<KullaniciDto[]>([]);
@@ -35,6 +41,12 @@ export class KullaniciYonetimiComponent implements OnInit {
   // Yeni kullanıcı modali
   showAddModal = signal(false);
   newUser = signal<RegisterDto>({ adSoyad: '', email: '', sifre: '', rolId: 0 });
+
+  // Bildirim alıcı ayarları
+  showNotificationSettings = signal(false);
+  notificationSettingsLoading = signal(false);
+  notificationSettingsSaving = signal(false);
+  notificationSettings = signal<BildirimAbonelikAyariDto[]>([]);
 
   filteredKullanicilar = computed(() => {
     const list = this.kullanicilar();
@@ -63,6 +75,59 @@ export class KullaniciYonetimiComponent implements OnInit {
     });
     this.rolService.getRoller().subscribe({
       next: (data) => this.roller.set(data),
+    });
+  }
+
+  openNotificationSettings(): void {
+    if (!this.canManageNotifications()) return;
+
+    this.showNotificationSettings.set(true);
+    this.notificationSettingsLoading.set(true);
+    this.bildirimService.getAbonelikAyarlari().subscribe(res => {
+      this.notificationSettingsLoading.set(false);
+      if (res.isSuccess && res.value) {
+        this.notificationSettings.set(res.value);
+      } else {
+        this.toast.error(res.error || 'Bildirim alıcıları yüklenemedi.');
+      }
+    });
+  }
+
+  closeNotificationSettings(): void {
+    if (this.notificationSettingsSaving()) return;
+    this.showNotificationSettings.set(false);
+  }
+
+  toggleNotificationSetting(
+    kullaniciId: number,
+    field: 'cekiYuklendiBildirimi' | 'cekiRevizyonuBildirimi'
+  ): void {
+    this.notificationSettings.update(items => items.map(item =>
+      item.kullaniciId === kullaniciId ? { ...item, [field]: !item[field] } : item
+    ));
+  }
+
+  saveNotificationSettings(): void {
+    if (this.notificationSettingsSaving()) return;
+
+    const settings = this.notificationSettings();
+    this.notificationSettingsSaving.set(true);
+    this.bildirimService.updateAbonelikAyarlari({
+      cekiYuklendiAliciIdleri: settings
+        .filter(item => item.cekiYuklendiBildirimi)
+        .map(item => item.kullaniciId),
+      cekiRevizyonuAliciIdleri: settings
+        .filter(item => item.cekiRevizyonuBildirimi)
+        .map(item => item.kullaniciId),
+    }).subscribe(res => {
+      this.notificationSettingsSaving.set(false);
+      if (!res.isSuccess) {
+        this.toast.error(res.error || 'Bildirim alıcıları kaydedilemedi.');
+        return;
+      }
+
+      this.showNotificationSettings.set(false);
+      this.toast.success('Bildirim alıcıları başarıyla güncellendi.');
     });
   }
 

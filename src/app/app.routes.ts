@@ -142,6 +142,18 @@ export const routes: Routes = [
         data: { menuKod: 'islem-onay-merkezi', title: 'İşlem Onay Merkezi' },
       },
 
+      // --- Kullanıcı Bildirim Merkezi (oturum açan tüm kullanıcılar) ---
+      {
+        path: 'bildirimler/:id',
+        loadComponent: () =>
+          import('./features/bildirim-merkezi/bildirim-merkezi.component').then(m => m.BildirimMerkeziComponent),
+      },
+      {
+        path: 'bildirimler',
+        loadComponent: () =>
+          import('./features/bildirim-merkezi/bildirim-merkezi.component').then(m => m.BildirimMerkeziComponent),
+      },
+
       // --- Stok ---
       {
         path: 'stok',
