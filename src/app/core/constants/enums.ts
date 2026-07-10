@@ -100,6 +100,16 @@ export enum UcKDurum {
   FazlaGeldi = 14,
 }
 
+// ===== Süreç Durumu =====
+export enum SurecDurum {
+  Ambar = 1,
+  Imalat = 2,
+  Tedarik = 3,
+  Tedarik3KTeslim = 4,
+  Sipariste = 5,
+  Tamamlandi = 6,
+}
+
 // ===== Stok Durumu =====
 export enum StokDurum {
   Aktif = 1,

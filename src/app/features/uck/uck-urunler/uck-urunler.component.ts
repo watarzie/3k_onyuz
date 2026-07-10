@@ -542,7 +542,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     this.panelUrun.set(urun);
     this.panelTip.set(urun.ucKKarsilamaTipiMetni === 'Bekliyor' ? '' : urun.ucKKarsilamaTipiMetni);
     this.panelGelenAdet.set(urun.gelenMiktar);
-    this.panelKaynakHedef.set(urun.kaynakHedefProjeNo ?? '');
+    const karsilamaKaynakProjesi = urun.projeKarsilanan > 0 ? urun.kaynakHedefProjeNo?.trim() ?? '' : '';
+    this.panelKaynakHedef.set(karsilamaKaynakProjesi);
     this.panelKaynakCekiSatiriId.set(null);
     this.panelStokKaydiId.set(null);
     this.panelFazlaStogaAktar.set(true);
@@ -551,8 +552,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     this.panelError.set('');
 
     // Eğer önceden girilmiş bir proje varsa, kaynak ürünleri yükle
-    if (urun.kaynakHedefProjeNo) {
-      const selectedProje = this.projeler().find(p => p.projeNo === urun.kaynakHedefProjeNo);
+    if (karsilamaKaynakProjesi) {
+      const selectedProje = this.projeler().find(p => p.projeNo === karsilamaKaynakProjesi);
       if (selectedProje) {
         this.onKaynakProjeChange(selectedProje.id.toString());
       }
@@ -702,6 +703,22 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     }
 
     return ozetler;
+  }
+
+  getProjedenAlinanProjeOzeti(urun: UcKUrunDto): string {
+    const projeNolari = (urun.transferZinciri ?? [])
+      .filter(transfer => transfer.yon === 'Gelen')
+      .map(transfer => transfer.kaynakProjeNo);
+
+    return this.formatProjeListesi(projeNolari) || urun.kaynakHedefProjeNo?.trim() || '-';
+  }
+
+  getProjeyeVerilenProjeOzeti(urun: UcKUrunDto): string {
+    const projeNolari = (urun.transferZinciri ?? [])
+      .filter(transfer => transfer.yon !== 'Gelen')
+      .map(transfer => transfer.hedefProjeNo);
+
+    return this.formatProjeListesi(projeNolari) || urun.kaynakHedefProjeNo?.trim() || '-';
   }
 
   private formatProjeListesi(projeler: string[]): string {

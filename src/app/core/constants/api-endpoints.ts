@@ -40,6 +40,11 @@ export const API = {
       `${BASE}/dashboard/projeler?page=${page}&pageSize=${pageSize}${projeTipiId != null ? `&projeTipiId=${projeTipiId}` : ''}`,
     KRITIK_EKSIKLER: (page: number, pageSize: number) => `${BASE}/dashboard/kritik-eksikler?page=${page}&pageSize=${pageSize}`,
     EKSIK_SIRALAMA: (page: number, pageSize: number) => `${BASE}/dashboard/eksik-siralama?page=${page}&pageSize=${pageSize}`,
+    SAHAYA_AKTARILAN_SANDIKLAR: (page: number, pageSize: number, projeId?: number | null) =>
+      `${BASE}/dashboard/sahaya-aktarilan-sandiklar?page=${page}&pageSize=${pageSize}${projeId ? `&projeId=${projeId}` : ''}`,
+    PROJE_SECENEKLERI: (searchTerm = '', projeTipiId?: number | null, sadeceSandikAktarimli = false, take = 30) =>
+      `${BASE}/dashboard/proje-secenekleri?take=${take}&sadeceSandikAktarimli=${sadeceSandikAktarimli}${projeTipiId ? `&projeTipiId=${projeTipiId}` : ''}${searchTerm.trim() ? `&searchTerm=${encodeURIComponent(searchTerm.trim())}` : ''}`,
+    PROJE_SANDIK_DURUMLARI: (projeId: number) => `${BASE}/dashboard/projeler/${projeId}/sandik-durumlari`,
   },
   CEKI: {
     YUKLE: `${BASE}/ceki/yukle`,

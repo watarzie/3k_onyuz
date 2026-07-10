@@ -51,10 +51,16 @@
       </button>
       }
       @if (canSurec) {
-      <button class="btn btn-outline-info" [disabled]="!hasSelection" (click)="openSurecModal()">
+      <button class="btn btn-outline-info"
+              [disabled]="!hasSelection || selectedSurecTamamlandiCount() > 0"
+              [title]="selectedSurecTamamlandiCount() > 0 ? 'Tamamlanan süreçler güncellenemez.' : ''"
+              (click)="openSurecModal()">
         <i class="ri-settings-3-line me-1"></i>Süreç ({{ selectedIds().size }})
       </button>
-      <button class="btn btn-ambar-talep" [disabled]="!hasSelection" (click)="openAmbarTalepModal()">
+      <button class="btn btn-ambar-talep"
+              [disabled]="!hasSelection || selectedSurecTamamlandiCount() > 0"
+              [title]="selectedSurecTamamlandiCount() > 0 ? 'Tamamlanan süreçler için talep kaynağı değiştirilemez.' : ''"
+              (click)="openAmbarTalepModal()">
         <i class="ri-file-list-3-line me-1"></i>Talep Formu
       </button>
       }
@@ -197,7 +203,9 @@
             <td>
               <span class="durum-badge" [style.background]="getSurecDurumColor(getEffectiveSurecDurum(u)) + '15'"
                 [style.color]="getSurecDurumColor(getEffectiveSurecDurum(u))"
-                [style.border-color]="getSurecDurumColor(getEffectiveSurecDurum(u)) + '30'">
+                [style.border-color]="getSurecDurumColor(getEffectiveSurecDurum(u)) + '30'"
+                [title]="isSurecTamamlandi(u) ? 'Tamamlanan süreç kilitlidir ve güncellenemez.' : ''">
+                @if (isSurecTamamlandi(u)) { <i class="ri-lock-2-line me-1"></i> }
                 {{ getEffectiveSurecDurum(u) ?? '-' }}
               </span>
             </td>

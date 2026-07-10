@@ -81,6 +81,249 @@
   </div>
 </div>
 
+<div class="dash-card sandik-durum-panel mb-4">
+  <div class="dash-card-header">
+    <h5 class="fw-semibold mb-0"><i class="ri-archive-stack-line me-2 text-success"></i>{{ sandikDurumBaslik() }}</h5>
+    <span class="summary-filter-chip">{{ selectedProjeTipiOzet()?.projeTipiMetni ?? 'Tüm Projeler' }}</span>
+  </div>
+  <div class="dash-card-body">
+    <div class="sandik-summary-label"><i class="ri-bar-chart-grouped-line"></i>Genel Özet</div>
+    @if (dashboardSummaryLoading()) {
+      <div class="sandik-status-skeleton" aria-hidden="true">
+        <span></span><span></span><span></span><span></span>
+      </div>
+    } @else {
+      <div class="sandik-status-grid">
+        @for (durum of sandikDurumOzetleri(); track durum.durumId) {
+          <div class="sandik-status-card" [style.--status-color]="getSandikDurumColor(durum.durumId)">
+            <span class="sandik-status-icon"><i [class]="getSandikDurumIcon(durum.durumId)"></i></span>
+            <div>
+              <strong>{{ durum.sandikSayisi }}</strong>
+              <span>{{ durum.durumMetni }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <div class="project-crate-breakdown">
+      <div class="project-crate-breakdown-header">
+        <div>
+          <h6><i class="ri-folder-chart-line"></i>Proje Bazlı Kırılım</h6>
+          <span>Yalnızca seçtiğiniz projenin sandık durumları yüklenir.</span>
+        </div>
+        <div class="dashboard-project-filter">
+          <i class="ri-search-line filter-search-icon"></i>
+          <input type="search"
+                 [value]="sandikDurumProjeSearch()"
+                 placeholder="Proje ara..."
+                 autocomplete="off"
+                 (focus)="onSandikDurumProjeFilterFocus()"
+                 (blur)="closeSandikDurumProjeDropdown()"
+                 (input)="onSandikDurumProjeSearch($event)" />
+          @if (selectedSandikDurumProje()) {
+            <button type="button" class="filter-clear-button" title="Proje filtresini temizle" (click)="clearSandikDurumProjeFilter()">
+              <i class="ri-close-line"></i>
+            </button>
+          }
+          @if (sandikDurumProjeDropdownOpen()) {
+            <div class="dashboard-project-options">
+              <div class="project-options-header">
+                <span>Proje seçin</span>
+                <small>En fazla 30 sonuç</small>
+              </div>
+              @if (loadingSandikDurumProjeOptions()) {
+                <div class="filter-loading"><span class="spinner-border spinner-border-sm"></span> Projeler aranıyor</div>
+              } @else if (sandikDurumProjeSecenekleri().length === 0) {
+                <div class="filter-empty">Eşleşen proje bulunamadı.</div>
+              } @else {
+                @for (option of sandikDurumProjeSecenekleri(); track option.id) {
+                  <button type="button" class="project-option" (mousedown)="$event.preventDefault()" (click)="selectSandikDurumProje(option)">
+                    <span class="project-option-icon"><i [class]="getProjeTipiIcon(option.projeTipiId)"></i></span>
+                    <span class="project-option-copy">
+                      <strong>{{ option.projeNo }}</strong>
+                      <small>{{ option.musteri || 'Müşteri bilgisi yok' }}</small>
+                    </span>
+                    <i class="ri-arrow-right-s-line project-option-arrow"></i>
+                  </button>
+                }
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      @if (loadingProjeSandikDurum()) {
+        <div class="project-breakdown-loading"><span class="spinner-border spinner-border-sm text-primary"></span> Proje kırılımı yükleniyor</div>
+      } @else if (projeSandikDurumDetay(); as detay) {
+        <div class="selected-project-summary">
+          <div class="selected-project-heading">
+            <div>
+              <strong>{{ detay.projeNo }}</strong>
+              <span>{{ detay.musteri }}</span>
+            </div>
+            <span class="summary-filter-chip">{{ detay.toplamSandik }} sandık</span>
+          </div>
+          <div class="project-status-grid">
+            @for (durum of detay.sandikDurumOzetleri; track durum.durumId) {
+              <div class="project-status-item" [style.--status-color]="getSandikDurumColor(durum.durumId)">
+                <i [class]="getSandikDurumIcon(durum.durumId)"></i>
+                <div><strong>{{ durum.sandikSayisi }}</strong><span>{{ durum.durumMetni }}</span></div>
+              </div>
+            }
+          </div>
+        </div>
+      } @else {
+        <div class="project-breakdown-placeholder">
+          <i class="ri-cursor-line"></i>
+          Proje bazlı sandık kırılımını görmek için bir proje seçin.
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+<div class="dash-card saha-transfer-panel mb-4">
+  <div class="dash-card-header">
+    <h5 class="fw-semibold mb-0"><i class="ri-route-line me-2 text-primary"></i>Sahaya Aktarılan Sandıklar</h5>
+    <div class="transfer-panel-actions">
+      <div class="dashboard-project-filter transfer-project-filter">
+        <i class="ri-search-line filter-search-icon"></i>
+        <input type="search"
+               [value]="transferProjeSearch()"
+               placeholder="Kaynak veya hedef proje ara..."
+               autocomplete="off"
+               (focus)="onTransferProjeFilterFocus()"
+               (blur)="closeTransferProjeDropdown()"
+               (input)="onTransferProjeSearch($event)" />
+        @if (selectedTransferProje()) {
+          <button type="button" class="filter-clear-button" title="Proje filtresini temizle" (click)="clearTransferProjeFilter()">
+            <i class="ri-close-line"></i>
+          </button>
+        }
+        @if (transferProjeDropdownOpen()) {
+          <div class="dashboard-project-options">
+            <div class="project-options-header">
+              <span>Aktarım projesi seçin</span>
+              <small>Kaynak veya hedef</small>
+            </div>
+            <button type="button" class="all-projects-option" (mousedown)="$event.preventDefault()" (click)="clearTransferProjeFilter()">
+              <span class="project-option-icon"><i class="ri-route-line"></i></span>
+              <span class="project-option-copy">
+                <strong>Tüm Aktarımlar</strong>
+                <small>Proje filtresini kaldır</small>
+              </span>
+              <i class="ri-arrow-right-s-line project-option-arrow"></i>
+            </button>
+            @if (loadingTransferProjeOptions()) {
+              <div class="filter-loading"><span class="spinner-border spinner-border-sm"></span> Projeler aranıyor</div>
+            } @else if (transferProjeSecenekleri().length === 0) {
+              <div class="filter-empty">Eşleşen aktarım projesi bulunamadı.</div>
+            } @else {
+              @for (option of transferProjeSecenekleri(); track option.id) {
+                <button type="button" class="project-option" (mousedown)="$event.preventDefault()" (click)="selectTransferProje(option)">
+                  <span class="project-option-icon"><i [class]="getProjeTipiIcon(option.projeTipiId)"></i></span>
+                  <span class="project-option-copy">
+                    <strong>{{ option.projeNo }}</strong>
+                    <small>{{ option.musteri || 'Müşteri bilgisi yok' }}</small>
+                  </span>
+                  <i class="ri-arrow-right-s-line project-option-arrow"></i>
+                </button>
+              }
+            }
+          </div>
+        }
+      </div>
+      <span class="summary-filter-chip">{{ sahaSandikTotal() }} sandık</span>
+    </div>
+  </div>
+  <div class="dash-card-body p-0">
+    @if (loadingSahaSandiklari() && sahayaAktarilanSandiklar().length === 0) {
+      <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
+    } @else if (sahayaAktarilanSandiklar().length === 0) {
+      <div class="saha-transfer-empty">
+        <i class="ri-inbox-archive-line"></i>
+        <span>Henüz sahaya aktarılmış sandık bulunmuyor.</span>
+      </div>
+    } @else {
+      <div class="dashboard-scroll-table saha-transfer-table" (scroll)="onSahaSandikScroll($event)">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Kaynak Proje / Sandık</th>
+              <th>Hedef Saha / Sandık</th>
+              <th>Sandık Durumu</th>
+              <th>İçerik</th>
+              <th>Aktarım Durumu</th>
+              <th>Aktarım Tarihi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (sandik of sahayaAktarilanSandiklar(); track sandik.sahaAktarimId + '-' + sandik.kaynakSandikId + '-' + sandik.sahaSandikId) {
+              <tr>
+                <td>
+                  <div class="transfer-project-cell source">
+                    <span class="transfer-direction-icon"><i class="ri-folder-upload-line"></i></span>
+                    <div>
+                      <strong>{{ sandik.kaynakProjeNo }}</strong>
+                      <span>Sandık {{ sandik.kaynakSandikNo }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="transfer-project-cell target">
+                    <span class="transfer-direction-icon"><i class="ri-map-pin-add-line"></i></span>
+                    <div>
+                      <strong>{{ sandik.sahaProjeNo }}</strong>
+                      <span>Sandık {{ sandik.sahaSandikNo }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="transfer-crate-status" [style.--status-color]="getSandikDurumColor(sandik.sandikDurumId)">
+                    <i [class]="getSandikDurumIcon(sandik.sandikDurumId)"></i>
+                    {{ sandik.sandikDurumMetni }}
+                  </span>
+                </td>
+                <td>
+                  <div class="transfer-content-cell">
+                    <strong>{{ sandik.toplamUrunSayisi }} ürün</strong>
+                    <span>{{ formatAktarimMiktari(sandik.toplamMiktar) }} toplam miktar</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="transfer-status-list">
+                    @for (durum of sandik.aktarimDurumlari; track durum.durumId) {
+                      <span [style.--status-color]="getSahaAktarimDurumColor(durum.durumId)">
+                        {{ durum.durumMetni }} <strong>{{ durum.urunSayisi }}</strong>
+                      </span>
+                    }
+                  </div>
+                </td>
+                <td class="transfer-date-cell">
+                  <strong>{{ formatAktarimTarihi(sandik.aktarimTarihi) }}</strong>
+                  @if (sandik.sevkTarihi) {
+                    <span>Sevk: {{ formatAktarimTarihi(sandik.sevkTarihi) }}</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        @if (loadingSahaSandiklari()) {
+          <div class="load-more-row"><span class="spinner-border spinner-border-sm text-primary"></span> Yükleniyor</div>
+        }
+      </div>
+      <div class="dash-card-footer">
+        <span class="text-muted small">{{ sahayaAktarilanSandiklar().length }} / {{ sahaSandikTotal() }} sandık gösteriliyor</span>
+        @if (sahaSandikHasMore()) {
+          <button class="btn btn-sm btn-light ms-auto" (click)="loadSahayaAktarilanSandiklar()" [disabled]="loadingSahaSandiklari()">Daha Fazla</button>
+        }
+      </div>
+    }
+  </div>
+</div>
+
 <div class="row g-3 mb-4">
   <div class="col-xl-8">
     <div class="dash-card h-100">
@@ -117,7 +360,7 @@
               <thead>
                 <tr>
                   <th>Proje No</th>
-                  <th>Toplam Sandık</th>
+                  <th>Sandık Durumları</th>
                   <th>Lokasyon</th>
                   <th>Başlama</th>
                   <th>Durum</th>
@@ -131,7 +374,20 @@
                       <span class="proje-dot" [style.background]="getProgressColor(p.tamamlanmaYuzdesi)"></span>
                       {{ p.projeNo }}
                     </td>
-                    <td>{{ p.sandikSayisi }}</td>
+                    <td class="project-crate-status-cell">
+                      <div class="project-crate-total">{{ p.sandikSayisi }} toplam</div>
+                      <div class="project-crate-badges">
+                        @for (durum of p.sandikDurumOzetleri ?? []; track durum.durumId) {
+                          @if (durum.sandikSayisi > 0) {
+                            <span [style.--status-color]="getSandikDurumColor(durum.durumId)"
+                                  [title]="durum.durumMetni + ': ' + durum.sandikSayisi">
+                              <i [class]="getSandikDurumIcon(durum.durumId)"></i>
+                              {{ durum.sandikSayisi }} {{ durum.durumMetni }}
+                            </span>
+                          }
+                        }
+                      </div>
+                    </td>
                     <td><span class="badge bg-soft-secondary text-secondary rounded-pill">{{ p.lokasyon ?? '-' }}</span></td>
                     <td class="baslama-cell">
                       <div class="baslama-date">{{ formatBaslamaTarihi(p.baslamaTarihi) }}</div>

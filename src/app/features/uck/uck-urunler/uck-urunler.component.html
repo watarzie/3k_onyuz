@@ -205,21 +205,21 @@
             <td class="text-center" [ngClass]="{'text-danger fw-semibold': u.geriGonderilenMiktar > 0}">{{
               u.geriGonderilenMiktar > 0 ? u.geriGonderilenMiktar : '-' }}</td>
             <td style="max-width:160px">
-              @if (u.projeKarsilanan > 0 && u.kaynakHedefProjeNo) {
+              @if (u.projeKarsilanan > 0) {
               <div class="d-flex align-items-center gap-1">
                 <i class="ri-arrow-left-line text-primary"></i>
                 <span class="text-primary fw-semibold text-truncate"
-                  [title]="'Karşılandı ← ' + u.kaynakHedefProjeNo + ' (' + u.projeKarsilanan + ' adet)'">{{
-                  u.kaynakHedefProjeNo }}</span>
+                  [title]="'Karşılandı ← ' + getProjedenAlinanProjeOzeti(u) + ' (' + u.projeKarsilanan + ' adet)'">{{
+                  getProjedenAlinanProjeOzeti(u) }}</span>
                 <span class="badge bg-primary-subtle text-primary" style="font-size:10px">{{ u.projeKarsilanan }}</span>
               </div>
               }
-              @if (u.projeGonderilen > 0 && u.kaynakHedefProjeNo) {
+              @if (u.projeGonderilen > 0) {
               <div class="d-flex align-items-center gap-1" [class.mt-1]="u.projeKarsilanan > 0">
                 <i class="ri-arrow-right-line text-warning"></i>
                 <span class="text-warning fw-semibold text-truncate"
-                  [title]="'Gönderildi → ' + u.kaynakHedefProjeNo + ' (' + u.projeGonderilen + ' adet)'">{{
-                  u.kaynakHedefProjeNo }}</span>
+                  [title]="'Gönderildi → ' + getProjeyeVerilenProjeOzeti(u) + ' (' + u.projeGonderilen + ' adet)'">{{
+                  getProjeyeVerilenProjeOzeti(u) }}</span>
                 <span class="badge bg-warning-subtle text-warning" style="font-size:10px">{{ u.projeGonderilen }}</span>
               </div>
               }
@@ -232,7 +232,7 @@
               <div class="transfer-net mt-1">Net: {{ u.netKullanilabilir }} {{ u.birim }}</div>
               }
               @if (!u.projeKarsilanan && !u.projeGonderilen) {
-              <span class="text-muted">{{ u.kaynakHedefProjeNo ?? '-' }}</span>
+              <span class="text-muted">-</span>
               }
             </td>
             <td>

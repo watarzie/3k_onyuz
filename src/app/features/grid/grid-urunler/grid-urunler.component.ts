@@ -16,7 +16,7 @@ import { StatCardComponent } from '../../../shared/components/stat-card/stat-car
 import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
 import { GridUrunDto, GridDurumGuncelleDto, ProjeDropdownDto, CekiSatiriAnaVeriGuncelleDto, SahaTamamlamaIzDto } from '../../../shared/models/index';
-import { GridDurum, GridSevkDurum, UcKDurum } from '../../../core/constants/enums';
+import { GridDurum, GridSevkDurum, SurecDurum, UcKDurum } from '../../../core/constants/enums';
 import { PermissionService } from '../../../core/services/permission.service';
 
 declare const pdfMake: any;
@@ -68,6 +68,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   private confirmService = inject(ConfirmService);
   permissions = inject(PermissionService);
   private readonly sevkEdilmisSandikMesaji = 'Bu ürün sevk edilmiş sandıkta olduğu için Grid işlemi yapılamaz.';
+  private readonly tamamlanmisSurecMesaji = 'Süreci tamamlanan ürünlerin süreç durumu değiştirilemez.';
 
   projeId = signal(0);
   mevcutProje = signal<ProjeDropdownDto | null>(null);
@@ -209,6 +210,9 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   });
 
   selectedUrunler = computed(() => this.urunler().filter(u => this.selectedIds().has(u.cekiSatiriId)));
+  selectedSurecTamamlandiCount = computed(() =>
+    this.selectedUrunler().filter(u => this.isSurecTamamlandi(u)).length
+  );
   selectedTadilattaCount = computed(() => this.selectedUrunler().filter(u => this.isTadilatta(u)).length);
   topluSevkKilitMesaji = computed(() => {
     const count = this.selectedTadilattaCount();
@@ -1220,6 +1224,18 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     return u.surecDurumMetni ?? undefined;
   }
 
+  isSurecTamamlandi(u: GridUrunDto): boolean {
+    return u.surecDurumId === SurecDurum.Tamamlandi || this.getEffectiveSurecDurum(u) === 'Tamamlandı';
+  }
+
+  hasSurecTamamlandiSecim(): boolean {
+    const count = this.selectedSurecTamamlandiCount();
+    if (count === 0) return false;
+
+    this.toast.warning(`${count} ürünün süreci tamamlandı. ${this.tamamlanmisSurecMesaji}`);
+    return true;
+  }
+
   // ===== Toplu Kalite Atama =====
   openKaliteModal() {
     if (this.hasSevkKilitliSecim()) return;
@@ -1261,6 +1277,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   // ===== Toplu Süreç Atama =====
   openSurecModal() {
     if (this.hasSevkKilitliSecim()) return;
+    if (this.hasSurecTamamlandiSecim()) return;
 
     this.surecDurumSecim.set(0);
     this.showSurecModal.set(true);
@@ -1269,6 +1286,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   confirmSurec() {
     if (this.hasSevkKilitliSecim()) return;
+    if (this.hasSurecTamamlandiSecim()) return;
 
     if (!this.surecDurumSecim()) { this.toast.error('Süreç durumu seçiniz.'); return; }
     this.surecSaving.set(true);
@@ -1299,6 +1317,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   // ===== Talep Formu =====
   openAmbarTalepModal() {
     if (this.hasSevkKilitliSecim()) return;
+    if (this.hasSurecTamamlandiSecim()) return;
 
     const selected = this.selectedUrunler();
     if (selected.length === 0) {
