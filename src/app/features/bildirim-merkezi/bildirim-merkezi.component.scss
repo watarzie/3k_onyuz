@@ -80,6 +80,76 @@
   &:disabled { opacity: .52; cursor: not-allowed; }
 }
 
+.center-view-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 6px;
+  border: 1px solid #e7eaf0;
+  border-radius: 14px;
+  background: #f7f8fb;
+
+  > button {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-width: 0;
+    min-height: 58px;
+    padding: 9px 12px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: #64748b;
+    background: transparent;
+    text-align: left;
+    transition: border-color .16s, background-color .16s, box-shadow .16s, transform .16s;
+
+    &:hover { border-color: #e0e3ee; background: rgba(255, 255, 255, .7); }
+    &.active {
+      border-color: #dfe1ff;
+      color: #334155;
+      background: #fff;
+      box-shadow: 0 5px 14px rgba(15, 23, 42, .055);
+      transform: translateY(-1px);
+    }
+    &:focus-visible { outline: 2px solid #7774f6; outline-offset: 2px; }
+
+    > span:nth-child(2) { display: grid; min-width: 0; gap: 2px; }
+    strong { color: inherit; font-size: 11px; font-weight: 750; }
+    small { overflow: hidden; color: #8a97aa; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+  }
+}
+
+.view-tab-icon {
+  display: inline-flex;
+  flex: 0 0 36px;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  font-size: 17px;
+
+  &.notifications { color: #514ee7; background: #ececff; }
+  &.approvals { color: #087b59; background: #e3f7ef; }
+}
+
+.view-tab-count {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 21px;
+  height: 20px;
+  margin-left: auto;
+  padding: 0 6px;
+  border-radius: 999px;
+  color: #fff;
+  background: #ef4444;
+  font-size: 9px;
+  font-weight: 800;
+}
+
 .filter-card,
 .notification-list-card,
 .notification-detail-card {
@@ -836,4 +906,9 @@
   .pagination-controls { align-self: stretch; justify-content: center; }
   .detail-header,
   .detail-content { padding-left: 17px; padding-right: 17px; }
+  .center-view-tabs { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
 }

@@ -111,6 +111,8 @@ export const API = {
   ONAY: {
     BEKLEYENLER: `${BASE}/onay`,
     BEKLEYEN_SAYISI: `${BASE}/onay/bekleyen-sayisi`,
+    GECMIS: `${BASE}/onay/gecmis`,
+    GECMIS_DETAY: (id: number) => `${BASE}/onay/gecmis/${id}`,
     ONAYLA: `${BASE}/onay/onayla`,
     REDDET: `${BASE}/onay/reddet`,
     SSE_STREAM: `${BASE}/onay/sse-stream`,

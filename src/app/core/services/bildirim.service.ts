@@ -25,6 +25,8 @@ export class BildirimService {
   private sseConnecting = false;
   private sseConnectionId = 0;
   private sseRetryCount = 0;
+  private hasConnectedOnce = false;
+  private initialUnreadFallbackLoaded = false;
   private readonly maxSseRetries = 10;
 
   readonly bildirimler = signal<BildirimDto[]>([]);
@@ -105,7 +107,7 @@ export class BildirimService {
 
     import('@microsoft/fetch-event-source').then(({ fetchEventSource }) => {
       if (connectionId !== this.sseConnectionId || !this.sseController) {
-        this.sseConnecting = false;
+        if (connectionId === this.sseConnectionId) this.sseConnecting = false;
         return;
       }
 
@@ -115,10 +117,22 @@ export class BildirimService {
         headers: { Authorization: `Bearer ${token}` },
         signal: this.sseController.signal,
         onopen: async response => {
+          if (connectionId !== this.sseConnectionId || !this.sseController) return;
+
           this.sseConnecting = false;
           if (!response.ok) throw new Error(`SSE connection failed: ${response.status}`);
+
+          const isReconnect = this.hasConnectedOnce;
+          this.hasConnectedOnce = true;
           this.sseRetryCount = 0;
           this.loadUnread();
+
+          if (isReconnect) {
+            // SSE bağlantısı kapalıyken kaçmış olabilecek olayları sunucudaki
+            // güncel snapshot üzerinden ilgili ekranlara yeniden sorgulatır.
+            this.notificationUpdateSource.next();
+            this.approvalUpdateSource.next();
+          }
         },
         onmessage: event => {
           this.sseRetryCount = 0;
@@ -134,8 +148,13 @@ export class BildirimService {
           }
         },
         onerror: error => {
+          if (connectionId !== this.sseConnectionId || !this.sseController) return;
+
           this.sseConnecting = false;
           this.sseRetryCount++;
+
+          this.loadInitialUnreadFallback();
+
           console.error(`SSE Error (${this.sseRetryCount}/${this.maxSseRetries}):`, error);
           if (this.sseRetryCount >= this.maxSseRetries) {
             this.disconnectStream();
@@ -144,22 +163,39 @@ export class BildirimService {
           return Math.min(this.sseRetryCount * 1000, 10000);
         },
       }).catch(error => {
+        if (connectionId !== this.sseConnectionId) return;
+
         this.sseConnecting = false;
-        if (connectionId === this.sseConnectionId && this.sseController) {
+        this.loadInitialUnreadFallback();
+        if (this.sseController) {
           console.error('SSE bağlantısı kurulamadı.', error);
           this.sseController = null;
         }
       });
     }).catch(error => {
+      if (connectionId !== this.sseConnectionId) return;
+
       this.sseConnecting = false;
-      if (connectionId === this.sseConnectionId) this.sseController = null;
+      this.loadInitialUnreadFallback();
+      this.sseController = null;
       console.error('SSE istemcisi yüklenemedi.', error);
     });
+  }
+
+  private loadInitialUnreadFallback(): void {
+    if (this.hasConnectedOnce || this.initialUnreadFallbackLoaded) return;
+
+    // İlk SSE bağlantısı kurulamazsa zil sayacını bağlantıya bağımlı bırakma.
+    this.initialUnreadFallbackLoaded = true;
+    this.loadUnread();
   }
 
   disconnectStream(): void {
     this.sseConnectionId++;
     this.sseConnecting = false;
+    this.sseRetryCount = 0;
+    this.hasConnectedOnce = false;
+    this.initialUnreadFallbackLoaded = false;
     this.sseController?.abort();
     this.sseController = null;
   }

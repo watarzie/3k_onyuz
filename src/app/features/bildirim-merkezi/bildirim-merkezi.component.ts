@@ -1,8 +1,17 @@
 import { DatePipe, NgClass } from '@angular/common';
-import { Component, computed, DestroyRef, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  OnDestroy,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, PRIMARY_OUTLET, Router } from '@angular/router';
-import { debounceTime, distinctUntilChanged, Subject, Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged, map, Subject, Subscription } from 'rxjs';
 import { BildirimService } from '../../core/services/bildirim.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -13,15 +22,18 @@ import {
   BildirimTipi,
 } from '../../shared/models';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
+import { IslemOnayGecmisiComponent } from './islem-onay-gecmisi.component';
 
 type TarihFiltresi = 'tumu' | 'bugun' | 'son7Gun' | 'son30Gun' | 'ozel';
+type BildirimMerkeziGorunumu = 'bildirimler' | 'onaylar';
 
 @Component({
   selector: 'app-bildirim-merkezi',
   standalone: true,
-  imports: [DatePipe, NgClass, BreadcrumbComponent],
+  imports: [DatePipe, NgClass, BreadcrumbComponent, IslemOnayGecmisiComponent],
   templateUrl: './bildirim-merkezi.component.html',
   styleUrl: './bildirim-merkezi.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BildirimMerkeziComponent implements OnInit, OnDestroy {
   private readonly bildirimService = inject(BildirimService);
@@ -36,6 +48,7 @@ export class BildirimMerkeziComponent implements OnInit, OnDestroy {
   private detailRequest?: Subscription;
 
   readonly BildirimTipi = BildirimTipi;
+  readonly aktifGorunum = signal<BildirimMerkeziGorunumu>('bildirimler');
   readonly pageSizeOptions = [10, 20, 50];
   readonly breadcrumb = [
     { label: 'Ana Kontrol Paneli', link: '/dashboard' },
@@ -97,11 +110,28 @@ export class BildirimMerkeziComponent implements OnInit, OnDestroy {
 
     this.bildirimService.bildirimGuncellendi$
       .pipe(debounceTime(150), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.loadBildirimler(false));
+      .subscribe(() => {
+        if (this.aktifGorunum() === 'bildirimler') this.loadBildirimler(false);
+      });
+
+    this.route.queryParamMap
+      .pipe(
+        map(params => params.get('gorunum') === 'onaylar' ? 'onaylar' : 'bildirimler'),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(gorunum => this.applyGorunum(gorunum));
 
     this.route.paramMap
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(params => {
+        if (this.aktifGorunum() === 'onaylar') {
+          this.seciliBildirimId.set(null);
+          this.seciliBildirim.set(null);
+          this.detailError.set('');
+          return;
+        }
+
         const rawId = params.get('id');
         if (!rawId) {
           this.seciliBildirimId.set(null);
@@ -121,7 +151,7 @@ export class BildirimMerkeziComponent implements OnInit, OnDestroy {
         this.loadBildirimDetayi(id);
       });
 
-    this.loadBildirimler(false);
+    if (this.aktifGorunum() === 'bildirimler') this.loadBildirimler(false);
   }
 
   ngOnDestroy(): void {
@@ -134,6 +164,20 @@ export class BildirimMerkeziComponent implements OnInit, OnDestroy {
     this.durum.set(value);
     this.sayfa.set(1);
     this.loadBildirimler();
+  }
+
+  setGorunum(value: BildirimMerkeziGorunumu): void {
+    if (this.aktifGorunum() === value) return;
+    this.applyGorunum(value);
+
+    if (value === 'onaylar') {
+      void this.router.navigate(['/bildirimler'], {
+        queryParams: { ...this.getRouteQueryParams(), gorunum: 'onaylar' },
+      });
+      return;
+    }
+
+    void this.router.navigate(['/bildirimler'], { queryParams: this.getRouteQueryParams() });
   }
 
   onSearchInput(event: Event): void {
@@ -398,6 +442,7 @@ export class BildirimMerkeziComponent implements OnInit, OnDestroy {
 
   private restoreFiltersFromUrl(): void {
     const params = this.route.snapshot.queryParamMap;
+    if (params.get('gorunum') === 'onaylar') this.aktifGorunum.set('onaylar');
     const durum = params.get('durum');
     if (durum === 'okunmamis' || durum === 'okunmus') this.durum.set(durum);
 
@@ -420,6 +465,24 @@ export class BildirimMerkeziComponent implements OnInit, OnDestroy {
 
     const pageSize = Number(params.get('sayfaBoyutu'));
     if (this.pageSizeOptions.includes(pageSize)) this.sayfaBoyutu.set(pageSize);
+  }
+
+  private applyGorunum(value: BildirimMerkeziGorunumu): void {
+    if (this.aktifGorunum() === value) return;
+
+    this.aktifGorunum.set(value);
+    if (value === 'onaylar') {
+      this.listRequest?.unsubscribe();
+      this.detailRequest?.unsubscribe();
+      this.loading.set(false);
+      this.detailLoading.set(false);
+      this.seciliBildirimId.set(null);
+      this.seciliBildirim.set(null);
+      this.detailError.set('');
+      return;
+    }
+
+    this.loadBildirimler(false);
   }
 
   private resolveSafeTarget(rawUrl?: string | null): string | null {

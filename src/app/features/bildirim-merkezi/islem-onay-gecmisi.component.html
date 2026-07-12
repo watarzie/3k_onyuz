@@ -1,0 +1,333 @@
+<section class="approval-history" aria-labelledby="approval-history-title">
+  <div class="history-note" role="note">
+    <span><i class="ri-history-line"></i></span>
+    <div>
+      <strong id="approval-history-title">İşlem onayı geçmişi</strong>
+      <p>
+        Bu alan bildirimlerin okunma durumundan bağımsızdır. Onaylanan veya reddedilen
+        işlemler geçmişten silinmez; karar ve çalıştırma sonuçları ayrı izlenir.
+      </p>
+    </div>
+  </div>
+
+  <section class="history-filter-card" aria-label="İşlem onayı geçmişi filtreleri">
+    <div class="scope-tabs" role="group" aria-label="Kayıt kapsamı">
+      <button type="button" [class.active]="kapsam() === 'tumu'"
+              [attr.aria-pressed]="kapsam() === 'tumu'" (click)="setKapsam('tumu')">
+        <i class="ri-inbox-archive-line"></i>Tümü
+      </button>
+      <button type="button" [class.active]="kapsam() === 'kararVerdiklerim'"
+              [attr.aria-pressed]="kapsam() === 'kararVerdiklerim'"
+              (click)="setKapsam('kararVerdiklerim')">
+        <i class="ri-user-follow-line"></i>Karar verdiklerim
+      </button>
+      <button type="button" [class.active]="kapsam() === 'taleplerim'"
+              [attr.aria-pressed]="kapsam() === 'taleplerim'" (click)="setKapsam('taleplerim')">
+        <i class="ri-send-plane-line"></i>Taleplerim
+      </button>
+      <button type="button" [class.active]="kapsam() === 'bekleyenler'"
+              [attr.aria-pressed]="kapsam() === 'bekleyenler'" (click)="setKapsam('bekleyenler')">
+        <i class="ri-timer-line"></i>Bekleyenler
+      </button>
+    </div>
+
+    <div class="history-filter-grid">
+      <label class="history-filter-field search-field">
+        <span>İşlem veya personel ara</span>
+        <div class="input-shell">
+          <i class="ri-search-line"></i>
+          <input type="search" [value]="arama()" (input)="onSearchInput($event)"
+                 maxlength="200" placeholder="İşlem kodu, açıklama, proje veya personel..."
+                 autocomplete="off">
+          @if (arama()) {
+            <button type="button" title="Aramayı temizle" aria-label="Aramayı temizle"
+                    (click)="clearSearch()">
+              <i class="ri-close-line"></i>
+            </button>
+          }
+        </div>
+      </label>
+
+      <label class="history-filter-field">
+        <span>İş akışı durumu</span>
+        <div class="select-shell">
+          <i class="ri-route-line"></i>
+          <select [value]="durum()" (change)="onDurumChange($event)">
+            <option value="tumu">Tüm durumlar</option>
+            <option value="bekliyor">Bekliyor</option>
+            <option value="onaylandi">Onaylandı</option>
+            <option value="reddedildi">Reddedildi</option>
+          </select>
+          <i class="ri-arrow-down-s-line select-arrow"></i>
+        </div>
+      </label>
+
+      <label class="history-filter-field">
+        <span>Çalıştırma sonucu</span>
+        <div class="select-shell">
+          <i class="ri-terminal-box-line"></i>
+          <select [value]="calistirmaDurumu()" (change)="onCalistirmaDurumuChange($event)">
+            <option value="tumu">Tüm sonuçlar</option>
+            <option value="bilinmiyor">Sonuç kaydı yok</option>
+            <option value="bekliyor">Çalıştırma bekliyor</option>
+            <option value="calisiyor">Çalışıyor</option>
+            <option value="basarili">Başarılı</option>
+            <option value="basarisiz">Başarısız</option>
+            <option value="atlandi">Çalıştırılmadı</option>
+          </select>
+          <i class="ri-arrow-down-s-line select-arrow"></i>
+        </div>
+      </label>
+
+      <label class="history-filter-field">
+        <span>Son hareket tarihi</span>
+        <div class="select-shell">
+          <i class="ri-calendar-line"></i>
+          <select [value]="tarihFiltresi()" (change)="onTarihFiltresiChange($event)">
+            <option value="tumu">Tüm zamanlar</option>
+            <option value="bugun">Bugün</option>
+            <option value="son7Gun">Son 7 gün</option>
+            <option value="son30Gun">Son 30 gün</option>
+            <option value="ozel">Özel tarih aralığı</option>
+          </select>
+          <i class="ri-arrow-down-s-line select-arrow"></i>
+        </div>
+      </label>
+
+      <div class="history-filter-actions">
+        <button type="button" class="reset-filter" (click)="resetFilters()" [disabled]="!filtreAktif()">
+          <i class="ri-restart-line"></i>Filtreleri temizle
+        </button>
+      </div>
+    </div>
+
+    @if (tarihFiltresi() === 'ozel') {
+      <div class="custom-date-range">
+        <label>
+          <span>Başlangıç</span>
+          <input type="date" [value]="baslangicTarihi()" (change)="onBaslangicTarihiChange($event)">
+        </label>
+        <span class="date-separator"><i class="ri-arrow-right-line"></i></span>
+        <label>
+          <span>Bitiş</span>
+          <input type="date" [value]="bitisTarihi()" (change)="onBitisTarihiChange($event)">
+        </label>
+        <button type="button" (click)="applyCustomDateRange()">
+          <i class="ri-filter-3-line"></i>Tarihi uygula
+        </button>
+      </div>
+    }
+  </section>
+
+  <div class="history-workspace" [class.detail-open]="seciliKayitId() !== null">
+    <section class="history-list-card" [attr.aria-busy]="loading()">
+      <header class="list-header">
+        <div>
+          <h3>İşlem kayıtları</h3>
+          <p>
+            @if (toplamKayit() > 0) {
+              {{ paginationStart() }}-{{ paginationEnd() }} arası, toplam {{ toplamKayit() }} kayıt
+            } @else {
+              Kayıt bulunamadı
+            }
+          </p>
+        </div>
+        <span class="history-summary"><i class="ri-shield-check-line"></i>Kalıcı geçmiş</span>
+      </header>
+
+      <div class="history-list-body" [class.is-loading]="loading()">
+        @if (loading() && kayitlar().length === 0) {
+          <div class="list-skeleton" aria-label="İşlem onayı geçmişi yükleniyor">
+            @for (item of [1, 2, 3, 4, 5]; track item) {
+              <div class="skeleton-row"><span></span><div><i></i><i></i><i></i></div></div>
+            }
+          </div>
+        } @else if (loadError()) {
+          <div class="list-state error-state">
+            <span><i class="ri-wifi-off-line"></i></span>
+            <strong>İşlem geçmişi yüklenemedi</strong>
+            <p>{{ loadError() }}</p>
+            <button type="button" (click)="loadGecmis()"><i class="ri-refresh-line"></i>Yeniden dene</button>
+          </div>
+        } @else if (kayitlar().length === 0) {
+          <div class="list-state empty-state">
+            <span><i class="ri-inbox-archive-line"></i></span>
+            <strong>{{ filtreAktif() ? 'Filtrelerle eşleşen işlem yok' : 'Bu kapsamda işlem bulunmuyor' }}</strong>
+            <p>{{ filtreAktif() ? 'Filtreleri değiştirerek tekrar deneyebilirsiniz.' : 'İşlem onayı kayıtları oluştuğunda burada listelenecek.' }}</p>
+            @if (filtreAktif()) {
+              <button type="button" (click)="resetFilters()"><i class="ri-restart-line"></i>Filtreleri temizle</button>
+            }
+          </div>
+        } @else {
+          <div class="history-items">
+            @for (kayit of kayitlar(); track kayit.id) {
+              <button type="button" class="history-row"
+                      [class.active]="seciliKayitId() === kayit.id"
+                      [attr.aria-current]="seciliKayitId() === kayit.id ? 'true' : null"
+                      (click)="openDetail(kayit)">
+                <span class="type-icon" [ngClass]="getDurumClass(kayit.durumId)">
+                  <i [class]="getDurumIcon(kayit.durumId)"></i>
+                </span>
+                <span class="row-copy">
+                  <span class="row-title-line">
+                    <strong>{{ kayit.islemAdi || kayit.islemKodu }}</strong>
+                    <time>{{ kayit.talepTarihi | date:'dd.MM.yyyy HH:mm' }}</time>
+                  </span>
+                  <span class="row-message">{{ kayit.islemAciklamasi }}</span>
+                  <span class="row-meta">
+                    <span><i class="ri-user-3-line"></i>{{ kayit.talepEdenKisi }}</span>
+                    @if (kayit.projeNo) {
+                      <span><i class="ri-folder-3-line"></i>{{ kayit.projeNo }}</span>
+                    }
+                    <span class="workflow-badge" [ngClass]="getDurumClass(kayit.durumId)">
+                      {{ kayit.durum }}
+                    </span>
+                    <span class="execution-badge" [ngClass]="getCalistirmaClass(kayit)">
+                      {{ kayit.calistirmaDurumu }}
+                    </span>
+                  </span>
+                </span>
+                <i class="ri-arrow-right-s-line row-arrow"></i>
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <footer class="list-footer">
+        <label>
+          <span>Sayfa başına</span>
+          <select [value]="sayfaBoyutu()" (change)="onPageSizeChange($event)">
+            @for (size of pageSizeOptions; track size) {
+              <option [value]="size">{{ size }}</option>
+            }
+          </select>
+        </label>
+
+        <nav class="pagination-controls" aria-label="İşlem geçmişi sayfaları">
+          <button type="button" (click)="goToPage(sayfa() - 1)" [disabled]="sayfa() <= 1" aria-label="Önceki sayfa">
+            <i class="ri-arrow-left-s-line"></i>
+          </button>
+          @for (page of pageNumbers(); track page) {
+            <button type="button" class="page-number" [class.active]="page === sayfa()" (click)="goToPage(page)">
+              {{ page }}
+            </button>
+          }
+          <button type="button" (click)="goToPage(sayfa() + 1)" [disabled]="sayfa() >= toplamSayfa()" aria-label="Sonraki sayfa">
+            <i class="ri-arrow-right-s-line"></i>
+          </button>
+        </nav>
+      </footer>
+    </section>
+
+    <aside class="history-detail-card" aria-live="polite" [attr.aria-busy]="detailLoading()">
+      @if (detailLoading()) {
+        <div class="detail-skeleton"><span></span><i></i><i></i><i></i><i></i></div>
+      } @else if (detailError()) {
+        <button type="button" class="close-detail" (click)="closeDetail()" aria-label="Detayı kapat">
+          <i class="ri-close-line"></i>
+        </button>
+        <div class="detail-state error-state">
+          <span><i class="ri-error-warning-line"></i></span>
+          <strong>İşlem kaydı açılamadı</strong>
+          <p>{{ detailError() }}</p>
+          <button type="button" (click)="closeDetail()">Listeye dön</button>
+        </div>
+      } @else if (seciliKayit(); as kayit) {
+        <header class="detail-header">
+          <button type="button" class="close-detail" (click)="closeDetail()" aria-label="Detayı kapat">
+            <i class="ri-close-line"></i>
+          </button>
+          <span class="detail-type-icon" [ngClass]="getDurumClass(kayit.durumId)">
+            <i [class]="getDurumIcon(kayit.durumId)"></i>
+          </span>
+          <div class="detail-badges">
+            <span class="workflow-badge" [ngClass]="getDurumClass(kayit.durumId)">{{ kayit.durum }}</span>
+            <span class="execution-badge" [ngClass]="getCalistirmaClass(kayit)">{{ kayit.calistirmaDurumu }}</span>
+          </div>
+          <h3>{{ kayit.islemAdi || kayit.islemKodu }}</h3>
+          <time><i class="ri-time-line"></i>Talep: {{ kayit.talepTarihi | date:'dd.MM.yyyy HH:mm' }}</time>
+        </header>
+
+        <div class="detail-content">
+          <section class="message-box">
+            <span>İşlem açıklaması</span>
+            <p>{{ kayit.islemAciklamasi }}</p>
+          </section>
+
+          <section class="detail-information">
+            <h4>İş akışı bilgileri</h4>
+            <dl>
+              <div><dt>İşlem kodu</dt><dd>{{ kayit.islemKodu }}</dd></div>
+              @if (kayit.projeNo) {
+                <div><dt>Proje</dt><dd><i class="ri-folder-3-line"></i>{{ kayit.projeNo }}</dd></div>
+              }
+              <div><dt>Talep eden</dt><dd><i class="ri-user-3-line"></i>{{ kayit.talepEdenKisi }}</dd></div>
+              <div><dt>Talep tarihi</dt><dd>{{ kayit.talepTarihi | date:'dd.MM.yyyy HH:mm' }}</dd></div>
+              <div><dt>Karar veren</dt><dd>{{ kayit.kararVerenKisi || 'Henüz karar verilmedi' }}</dd></div>
+              <div>
+                <dt>Karar tarihi</dt>
+                <dd [class.missing-value]="!kayit.kararTarihi && kayit.durumId !== 1">
+                  {{ kayit.kararTarihi
+                    ? (kayit.kararTarihi | date:'dd.MM.yyyy HH:mm')
+                    : (kayit.durumId === 1 ? 'Henüz karar verilmedi' : 'Tarih kaydı yok') }}
+                </dd>
+              </div>
+              <div><dt>İş akışı durumu</dt><dd>{{ kayit.durum }}</dd></div>
+              <div><dt>Çalıştırma sonucu</dt><dd>{{ kayit.calistirmaDurumu }}</dd></div>
+              @if (kayit.calistirmaBaslamaTarihi) {
+                <div><dt>Çalıştırma başlangıcı</dt><dd>{{ kayit.calistirmaBaslamaTarihi | date:'dd.MM.yyyy HH:mm:ss' }}</dd></div>
+              }
+              @if (kayit.calistirmaBitisTarihi) {
+                <div><dt>Çalıştırma bitişi</dt><dd>{{ kayit.calistirmaBitisTarihi | date:'dd.MM.yyyy HH:mm:ss' }}</dd></div>
+              }
+              @if (kayit.referansTipi || kayit.referansId) {
+                <div><dt>Referans</dt><dd>{{ kayit.referansTipi || 'Kayıt' }}@if (kayit.referansId) { #{{ kayit.referansId }}}</dd></div>
+              }
+            </dl>
+          </section>
+
+          @if (kayit.kararAciklamasi) {
+            <section class="result-message decision-message">
+              <span>
+                <i class="ri-chat-check-line"></i>
+                {{ kayit.durumId === 3 ? 'Ret nedeni' : 'Karar açıklaması' }}
+              </span>
+              <p>{{ kayit.kararAciklamasi }}</p>
+            </section>
+          }
+
+          @if (kayit.calistirmaHatasi) {
+            <section class="result-message error-message">
+              <span><i class="ri-error-warning-line"></i>Çalıştırma sonucu</span>
+              <p>{{ kayit.calistirmaHatasi }}</p>
+            </section>
+          }
+
+          @if (kayit.calistirmaDurumuId === 0) {
+            <section class="legacy-note" role="note">
+              <i class="ri-information-line"></i>
+              <span>Bu eski kaydın çalıştırma sonucu doğrulanamadığı için “Bilinmiyor” olarak gösteriliyor.</span>
+            </section>
+          }
+        </div>
+
+        @if (canOpenApprovalCenter()) {
+          <footer class="detail-footer">
+            <button type="button" class="approval-center-button" (click)="goToApprovalCenter()">
+              <i class="ri-shield-check-line"></i>
+              İşlem Onay Merkezi'ne git
+              <i class="ri-arrow-right-line"></i>
+            </button>
+          </footer>
+        }
+      } @else {
+        <div class="detail-state select-state">
+          <span><i class="ri-cursor-line"></i></span>
+          <strong>Bir işlem kaydı seçin</strong>
+          <p>Karar ve çalıştırma ayrıntılarını görmek için soldaki listeden bir kayıt seçin.</p>
+        </div>
+      }
+    </aside>
+  </div>
+</section>

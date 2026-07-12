@@ -1,5 +1,17 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  OnDestroy,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { DatePipe, NgClass } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { debounceTime, Subject, Subscription } from 'rxjs';
+import { BildirimService } from '../../core/services/bildirim.service';
 import { OnayKuraliDto, OnayService } from '../../core/services/onay.service';
 import { ToastService } from '../../core/services/toast.service';
 import { PermissionService } from '../../core/services/permission.service';
@@ -13,13 +25,18 @@ import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcru
   standalone: true,
   imports: [DatePipe, NgClass, BreadcrumbComponent],
   templateUrl: './onay-listesi.component.html',
-  styleUrls: ['./onay-listesi.component.scss']
+  styleUrls: ['./onay-listesi.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class OnayListesiComponent implements OnInit {
+export class OnayListesiComponent implements OnInit, OnDestroy {
   private onayService = inject(OnayService);
+  private bildirimService = inject(BildirimService);
   private toast = inject(ToastService);
   private permissions = inject(PermissionService);
   private rolService = inject(RolService);
+  private destroyRef = inject(DestroyRef);
+  private readonly refreshRequests = new Subject<void>();
+  private loadRequest?: Subscription;
 
   public canWrite = computed(() => this.permissions.canWrite('islem-onay-merkezi'));
   public canManageRules = computed(() => this.permissions.canWrite('onay-kurallari-yonet'));
@@ -42,11 +59,23 @@ export class OnayListesiComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    this.refreshRequests
+      .pipe(debounceTime(120), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.fetchData());
+
+    this.bildirimService.onayGuncellendi$
+      .pipe(debounceTime(120), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.loadData());
+
     this.loadData();
     if (this.canManageRules()) {
       this.loadKurallar();
       this.loadRoller();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.loadRequest?.unsubscribe();
   }
 
   loadKurallar() {
@@ -166,12 +195,18 @@ export class OnayListesiComponent implements OnInit {
   }
 
   loadData() {
+    this.refreshRequests.next();
+  }
+
+  private fetchData() {
+    this.loadRequest?.unsubscribe();
     this.loading.set(true);
-    this.onayService.getBekleyenler().subscribe((res) => {
+    this.loadRequest = this.onayService.getBekleyenler().subscribe((res) => {
       this.loading.set(false);
       if (res.isSuccess && res.value) {
         this.bekleyenler.set(res.value);
       } else {
+        this.bekleyenler.set([]);
         this.toast.error(res.error || 'Veriler yüklenemedi.');
       }
     });
@@ -195,16 +230,18 @@ export class OnayListesiComponent implements OnInit {
     this.onayService.onayla({ onayBekleyenIslemId: islem.id }).subscribe({
       next: (res) => {
         this.onaySubmitting.set(false);
+        this.onayModalIslem.set(null);
+        this.loadData();
         if (res.isSuccess) {
           this.toast.success('İşlem başarıyla onaylandı ve çalıştırıldı.');
-          this.closeOnayModal();
-          this.loadData();
         } else {
           this.toast.error(res.error || 'Onay işlemi başarısız.');
         }
       },
       error: () => {
         this.onaySubmitting.set(false);
+        this.onayModalIslem.set(null);
+        this.loadData();
         this.toast.error('Onay işlemi başarısız.');
       }
     });
@@ -240,16 +277,20 @@ export class OnayListesiComponent implements OnInit {
     this.onayService.reddet({ onayBekleyenIslemId: islem.id, redAciklamasi: reason }).subscribe({
       next: (res) => {
         this.retSubmitting.set(false);
+        this.retModalIslem.set(null);
+        this.redAciklamasi.set('');
+        this.loadData();
         if (res.isSuccess) {
           this.toast.success('İşlem isteği reddedildi.');
-          this.closeRetModal();
-          this.loadData();
         } else {
           this.toast.error(res.error || 'Kayıt başarısız.');
         }
       },
       error: () => {
         this.retSubmitting.set(false);
+        this.retModalIslem.set(null);
+        this.redAciklamasi.set('');
+        this.loadData();
         this.toast.error('Kayıt başarısız.');
       }
     });

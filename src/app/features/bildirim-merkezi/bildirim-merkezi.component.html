@@ -6,23 +6,54 @@
         <span class="heading-icon"><i class="ri-notification-4-line"></i></span>
         <div>
           <h2>Bildirim Merkezi</h2>
-          <p>Size gönderilen sistem bildirimlerini görüntüleyin ve yönetin.</p>
+          <p>
+            {{ aktifGorunum() === 'bildirimler'
+              ? 'Size gönderilen sistem bildirimlerini görüntüleyin ve yönetin.'
+              : 'Kişisel işlem onayı geçmişinizi, kararları ve çalıştırma sonuçlarını izleyin.' }}
+          </p>
         </div>
       </div>
     </div>
 
-    <button type="button" class="mark-all-read" (click)="markAllAsRead()"
-            [disabled]="markingAllRead() || toplamOkunmamis() === 0">
-      @if (markingAllRead()) {
-        <span class="spinner-border spinner-border-sm"></span>
-      } @else {
-        <i class="ri-check-double-line"></i>
-      }
-      Tümünü okundu işaretle
-    </button>
+    @if (aktifGorunum() === 'bildirimler') {
+      <button type="button" class="mark-all-read" (click)="markAllAsRead()"
+              [disabled]="markingAllRead() || toplamOkunmamis() === 0">
+        @if (markingAllRead()) {
+          <span class="spinner-border spinner-border-sm"></span>
+        } @else {
+          <i class="ri-check-double-line"></i>
+        }
+        Tümünü okundu işaretle
+      </button>
+    }
   </div>
 
-  <section class="filter-card" aria-label="Bildirim filtreleri">
+  <nav class="center-view-tabs" aria-label="Bildirim merkezi bölümleri">
+    <button type="button" [class.active]="aktifGorunum() === 'bildirimler'"
+            [attr.aria-current]="aktifGorunum() === 'bildirimler' ? 'page' : null"
+            (click)="setGorunum('bildirimler')">
+      <span class="view-tab-icon notifications"><i class="ri-notification-3-line"></i></span>
+      <span>
+        <strong>Bildirimlerim</strong>
+        <small>Okundu ve okunmamış kişisel bildirimler</small>
+      </span>
+      @if (toplamOkunmamis() > 0) {
+        <span class="view-tab-count">{{ toplamOkunmamis() > 99 ? '99+' : toplamOkunmamis() }}</span>
+      }
+    </button>
+    <button type="button" [class.active]="aktifGorunum() === 'onaylar'"
+            [attr.aria-current]="aktifGorunum() === 'onaylar' ? 'page' : null"
+            (click)="setGorunum('onaylar')">
+      <span class="view-tab-icon approvals"><i class="ri-shield-check-line"></i></span>
+      <span>
+        <strong>İşlem Onayları</strong>
+        <small>Bekleyen ve sonuçlanan onay geçmişi</small>
+      </span>
+    </button>
+  </nav>
+
+  @if (aktifGorunum() === 'bildirimler') {
+    <section class="filter-card" aria-label="Bildirim filtreleri">
     <div class="status-tabs" role="tablist" aria-label="Okunma durumu">
       <button type="button" role="tab" [class.active]="durum() === 'tumu'"
               [attr.aria-selected]="durum() === 'tumu'" (click)="setDurum('tumu')">
@@ -110,9 +141,9 @@
         </button>
       </div>
     }
-  </section>
+    </section>
 
-  <div class="notification-workspace" [class.detail-open]="seciliBildirimId() !== null">
+    <div class="notification-workspace" [class.detail-open]="seciliBildirimId() !== null">
     <section class="notification-list-card">
       <header class="list-header">
         <div>
@@ -295,5 +326,8 @@
         </div>
       }
     </aside>
-  </div>
+    </div>
+  } @else {
+    <app-islem-onay-gecmisi />
+  }
 </div>

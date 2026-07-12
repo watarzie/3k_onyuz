@@ -55,7 +55,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.bildirimService.loadUnread();
     this.bildirimService.connectToStream();
     this.approvalUpdateSubscription = this.bildirimService.onayGuncellendi$.subscribe(() => {
       if (this.canSeeApprovalQueue) this.fetchApprovalCount();
