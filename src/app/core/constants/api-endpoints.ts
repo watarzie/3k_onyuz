@@ -34,6 +34,22 @@ export const API = {
     SEVK_TARIHI_GUNCELLE: `${BASE}/proje/sevk-tarihi-guncelle`,
     DELETE: (id: number) => `${BASE}/proje/${id}`,
   },
+  AMBALAJ: {
+    PROJELER: `${BASE}/ambalaj/projeler`,
+    PLAN: (projeId: number, kaynakProjeTipiId?: number, grup?: number) => {
+      const params = new URLSearchParams();
+      if (kaynakProjeTipiId) params.set('kaynakProjeTipiId', kaynakProjeTipiId.toString());
+      if (grup) params.set('grup', grup.toString());
+      const query = params.toString();
+      return `${BASE}/ambalaj/projeler/${projeId}/plan${query ? `?${query}` : ''}`;
+    },
+    KALEMLER: (projeId: number) => `${BASE}/ambalaj/projeler/${projeId}/kalemler`,
+    KALEM: (kalemId: number) => `${BASE}/ambalaj/kalemler/${kalemId}`,
+    BAGIMSIZ_SANDIKLAR: (tur?: number) => `${BASE}/ambalaj/bagimsiz-sandiklar${tur ? `?tur=${tur}` : ''}`,
+    BAGIMSIZ_SANDIK: (sandikId: number) => `${BASE}/ambalaj/bagimsiz-sandiklar/${sandikId}`,
+    IC_SANDIK_SABLONLARI: `${BASE}/ambalaj/ic-sandik-sablonlari`,
+    IC_SANDIK_SABLONU: (sablonId: number) => `${BASE}/ambalaj/ic-sandik-sablonlari/${sablonId}`,
+  },
   DASHBOARD: {
     OZET: `${BASE}/dashboard/ozet`,
     PROJELER: (page: number, pageSize: number, projeTipiId?: number | null) =>
@@ -151,6 +167,8 @@ export const API = {
     DEPO_SANDIK: (projeTipiId?: number | null) =>
       projeTipiId ? `${BASE}/pdf/depo-sandik?projeTipiId=${projeTipiId}` : `${BASE}/pdf/depo-sandik`,
     DEPO_SANDIK_PROJE: (projeId: number) => `${BASE}/pdf/depo-sandik/proje/${projeId}`,
+    AMBALAJ_URETIM: (projeId: number, tur?: number | null) =>
+      `${BASE}/pdf/ambalaj-uretim/${projeId}${tur ? `?tur=${tur}` : ''}`,
   },
   LOOKUP: {
     GET: `${BASE}/lookup`,

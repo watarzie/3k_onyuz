@@ -252,6 +252,15 @@ export const routes: Routes = [
 
       // --- Hareket Geçmişi ---
       {
+        path: 'ambalaj-uretim-listesi',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/ambalaj-uretim-listesi/ambalaj-uretim-listesi.component').then(m => m.AmbalajUretimListesiComponent),
+        data: { menuKod: 'ambalaj-uretim-listesi', title: 'Ambalaj Üretim Listesi' },
+      },
+
+      // --- Hareket Geçmişi ---
+      {
         path: 'hareket-gecmisi',
         canActivate: [menuGuard],
         loadComponent: () =>

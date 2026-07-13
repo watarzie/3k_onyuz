@@ -1,0 +1,21 @@
+Private Sub Worksheet_Activate()
+Dim Res1, Res2, Res3 As Variant
+Dim Dy1, Dy2, Dy3 As Variant
+ActiveSheet.DrawingObjects.Delete
+Dy1 = ActiveWorkbook.Path & "\" & Worksheets("HESAPLAMA").Range("AD13") & ".JPG"
+Dy2 = ActiveWorkbook.Path & "\" & Worksheets("HESAPLAMA").Range("AD14") & ".JPG"
+Dy3 = ActiveWorkbook.Path & "\" & Worksheets("HESAPLAMA").Range("AD26") & ".JPG"
+Set Res1 = ActiveSheet.Pictures.Insert(Dy1)
+Set Res2 = ActiveSheet.Pictures.Insert(Dy2)
+Set Res3 = ActiveSheet.Pictures.Insert(Dy3)
+
+Res1.Top = Range("b2").Top
+Res2.Top = Range("b2").Top + Res1.Height + 20
+Res3.Top = Range("b2").Top + 20 + Res1.Height + 20 + Res2.Height + 20
+
+Res1.Left = Range("b2").Left
+Res2.Left = Range("b2").Left
+Res3.Left = Range("b2").Left
+
+
+End Sub
