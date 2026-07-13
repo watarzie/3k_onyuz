@@ -29,6 +29,42 @@ table {
 }
 .cursor-pointer { cursor: pointer; }
 .gelen-text { font-weight: 600; }
+.ana-toplam-meta {
+  margin-top: 3px;
+  color: #64748B;
+  font-size: 10px;
+  font-weight: 600;
+
+  i { margin-right: 4px; }
+}
+.sandik-transfer-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 260px;
+  margin-top: 5px;
+  padding: 3px 8px;
+  overflow: hidden;
+  color: #1D4ED8;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sandik-miktar-cell {
+  min-width: 92px;
+
+  small {
+    display: block;
+    margin-top: 2px;
+    color: #64748B;
+    font-size: 10px;
+  }
+}
 .btn-action {
   background: linear-gradient(135deg, #605DFF, #8B5CF6);
   color: #fff; font-size: 12px; border-radius: 6px; padding: 4px 12px;
@@ -65,6 +101,19 @@ table {
   .info-item {
     small { display: block; margin-bottom: 4px; }
   }
+}
+.panel-transfer-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 10px 12px;
+  color: #1D4ED8;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.4;
 }
 .action-buttons {
   display: flex; flex-wrap: wrap; gap: 8px;

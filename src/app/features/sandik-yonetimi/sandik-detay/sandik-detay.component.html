@@ -156,13 +156,28 @@
                     <div>
                       <span class="fw-medium">{{ item.aciklama }}</span>
                       <small class="d-block text-muted">{{ item.barkodNo }}</small>
+                      @if (hasAnaToplamFarki(item)) {
+                        <small class="d-block ana-toplam-meta">
+                          <i class="ri-file-list-3-line"></i>Ana toplam: {{ formatMiktar(getAnaIstenenAdet(item)) }}
+                        </small>
+                      }
                       @if (item.kaynakProjeNo) {
                         <small class="d-block text-primary fw-semibold"><i class="ri-folder-line me-1"></i>{{ item.kaynakProjeNo }}</small>
+                      }
+                      @if (getSandikTransferOzeti(item)) {
+                        <small class="sandik-transfer-pill" [title]="getSandikTransferOzeti(item)">
+                          <i class="ri-route-line"></i>{{ getSandikTransferOzeti(item) }}
+                        </small>
                       }
                     </div>
                   </div>
                 </td>
-                <td>{{ item.istenenAdet }}</td>
+                <td class="sandik-miktar-cell">
+                  <span class="fw-semibold">{{ formatMiktar(getSandikMiktari(item)) }}</span>
+                  @if (item.birimMetni) {
+                    <small>{{ item.birimMetni }}</small>
+                  }
+                </td>
                 <td>
                   <span [ngClass]="{
                     'text-success fw-semibold': item.konulanAdet === item.istenenAdet,
@@ -212,8 +227,11 @@
             <span class="fw-semibold">{{ selectedUrun()!.barkodNo }}</span>
           </div>
           <div class="info-item">
-            <small class="text-muted">İstenen</small>
-            <span class="fw-semibold">{{ selectedUrun()!.istenenAdet }}</span>
+            <small class="text-muted">Bu Sandıkta</small>
+            <span class="fw-semibold">{{ formatMiktar(getSandikMiktari(selectedUrun()!)) }}</span>
+            @if (hasAnaToplamFarki(selectedUrun()!)) {
+              <small class="ana-toplam-meta">Ana toplam: {{ formatMiktar(getAnaIstenenAdet(selectedUrun()!)) }}</small>
+            }
           </div>
           <div class="info-item">
             <small class="text-muted">Konulan</small>
@@ -224,6 +242,13 @@
             <app-status-badge [status]="selectedUrun()!.durumMetni" [label]="getDurumLabel(selectedUrun()!.durumMetni)" />
           </div>
         </div>
+
+        @if (getSandikTransferOzeti(selectedUrun()!)) {
+          <div class="panel-transfer-summary mt-3">
+            <i class="ri-route-line"></i>
+            <span>{{ getSandikTransferOzeti(selectedUrun()!) }}</span>
+          </div>
+        }
 
         <hr />
         <h6 class="fw-semibold mb-3">Konulan Adet Güncelle</h6>
@@ -274,7 +299,7 @@
         </div>
         <div class="mb-3">
           <label class="form-label fw-semibold">Taşınacak Adet <span class="text-danger">*</span></label>
-          <input type="number" class="form-control" min="1" [max]="tasiUrun()!.konulanAdet"
+          <input type="number" class="form-control" min="0.0001" step="0.0001" [max]="tasiUrun()!.konulanAdet"
             [ngModel]="tasinanAdet()" (ngModelChange)="tasinanAdet.set($event)" />
           <small class="text-muted">Maksimum: {{ tasiUrun()!.konulanAdet }}</small>
         </div>

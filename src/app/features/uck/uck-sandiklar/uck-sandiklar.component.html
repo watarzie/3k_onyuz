@@ -121,7 +121,8 @@
         </div>
         }
 
-        <div [routerLink]="isSandikKilitli(s) ? null : [uckRoutePrefix(), projeId(), s.sandikNo]" class="sandik-card h-100"
+        <div [routerLink]="isSandikKilitli(s) ? null : [uckRoutePrefix(), projeId(), s.sandikNo]"
+          [queryParams]="isSandikKilitli(s) ? null : { sandikId: s.id }" class="sandik-card h-100"
           [ngClass]="'s-' + s.durumMetni.toLowerCase()" [class.is-closed]="isSandikKapandi(s)" [class.is-shipped]="isSandikSevkEdildi(s)"
           [class.is-shipment-correction]="isSandikDuzeltmeyeAcik(s)" [class.is-field-transferred]="isSandikSahayaAktarildi(s)"
           [attr.aria-disabled]="isSandikKilitli(s)" (click)="onSandikCardClick($event, s)"

@@ -4,6 +4,14 @@ import { SahaTamamlamaIzDto } from './saha-iz.model';
 export interface GridUrunDto {
   cekiSatiriId: number;
   sandikIcerikId?: number;
+  /** Çeki satırındaki sandık dağılımından bağımsız toplam talep. */
+  anaIstenenAdet?: number;
+  /** Bu sandık içeriğine tahsis edilmiş güncel miktar. */
+  sandikMiktari?: number;
+  sandikBazliDagitim?: boolean;
+  sandikAktarilanGiris?: number;
+  sandikAktarilanCikis?: number;
+  sandikTransferOzeti?: string;
   isSahaManuelSandikIcerigi?: boolean;
   kaynakCekiSatiriId?: number;
   kaynakProjeNo?: string;

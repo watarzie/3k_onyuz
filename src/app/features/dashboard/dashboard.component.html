@@ -81,6 +81,201 @@
   </div>
 </div>
 
+<div class="row g-3 mb-4">
+  <div class="col-xl-8">
+    <div class="dash-card h-100">
+      <div class="dash-card-header">
+        <div class="dashboard-title-with-filters">
+          <h5 class="fw-semibold mb-0"><i class="ri-folder-chart-line me-2 text-primary"></i>{{ projelerBaslik() }}</h5>
+          <div class="section-type-tabs">
+            <button type="button"
+                    [class.active]="selectedProjeTipiId() === null"
+                    (click)="selectProjeTipi(null)">
+              Tümü
+            </button>
+            @for (tip of projeTipiOzetleri(); track tip.projeTipiId) {
+              <button type="button"
+                      [class.active]="selectedProjeTipiId() === tip.projeTipiId"
+                      (click)="selectProjeTipi(tip.projeTipiId)">
+                {{ tip.projeTipiMetni }}
+              </button>
+            }
+          </div>
+        </div>
+        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" routerLink="/projeler">
+          <i class="ri-add-line me-1"></i> Yeni Proje Ekle
+        </button>
+      </div>
+      <div class="dash-card-body p-0">
+        @if ((loading() || loadingProjeler()) && projeler().length === 0) {
+          <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
+        } @else if (projeler().length === 0) {
+          <div class="text-center py-5 text-muted">Bu kriterde proje bulunmuyor.</div>
+        } @else {
+          <div class="dashboard-scroll-table" (scroll)="onProjelerScroll($event)">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Proje No</th>
+                  <th>Sandık Durumları</th>
+                  <th>Lokasyon</th>
+                  <th>Başlama</th>
+                  <th>Durum</th>
+                  <th>Tamamlanma</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of projeler(); track p.id) {
+                  <tr>
+                    <td class="fw-semibold">
+                      <span class="proje-dot" [style.background]="getProgressColor(p.tamamlanmaYuzdesi)"></span>
+                      {{ p.projeNo }}
+                    </td>
+                    <td class="project-crate-status-cell">
+                      <div class="project-crate-total">{{ p.sandikSayisi }} toplam</div>
+                      <div class="project-crate-badges">
+                        @for (durum of p.sandikDurumOzetleri ?? []; track durum.durumId) {
+                          @if (durum.sandikSayisi > 0) {
+                            <span [style.--status-color]="getSandikDurumColor(durum.durumId)"
+                                  [title]="durum.durumMetni + ': ' + durum.sandikSayisi">
+                              <i [class]="getSandikDurumIcon(durum.durumId)"></i>
+                              {{ durum.sandikSayisi }} {{ durum.durumMetni }}
+                            </span>
+                          }
+                        }
+                      </div>
+                    </td>
+                    <td><span class="badge bg-soft-secondary text-secondary rounded-pill">{{ p.lokasyon ?? '-' }}</span></td>
+                    <td class="baslama-cell">
+                      <div class="baslama-date">{{ formatBaslamaTarihi(p.baslamaTarihi) }}</div>
+                      <div class="baslama-duration">{{ getCalismaMetni(p) }}</div>
+                    </td>
+                    <td><app-status-badge [status]="p.durumMetni" [label]="p.durumMetni" /></td>
+                    <td style="min-width: 140px;">
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="progress flex-grow-1" style="height: 6px;">
+                          <div class="progress-bar" [style.width.%]="p.tamamlanmaYuzdesi" [style.background]="getProgressColor(p.tamamlanmaYuzdesi)"></div>
+                        </div>
+                        <small class="fw-bold" [style.color]="getProgressColor(p.tamamlanmaYuzdesi)">{{ p.tamamlanmaYuzdesi }}%</small>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+            @if (loadingProjeler() && projeler().length > 0) {
+              <div class="load-more-row"><span class="spinner-border spinner-border-sm text-primary"></span> Yükleniyor</div>
+            }
+          </div>
+          <div class="dash-card-footer">
+            <span class="text-muted small">{{ projeler().length }} / {{ projelerTotal() }} proje gösteriliyor</span>
+            @if (projelerHasMore()) {
+              <button class="btn btn-sm btn-light ms-auto" (click)="loadProjeler()" [disabled]="loadingProjeler()">Daha Fazla</button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-4">
+    <div class="dash-card mb-3">
+      <div class="dash-card-header">
+        <h6 class="fw-semibold mb-0"><i class="ri-error-warning-line me-2 text-danger"></i>Kritik Eksikler</h6>
+      </div>
+      <div class="dash-card-body p-0">
+        @if (loadingKritik() && kritikProjeler().length === 0) {
+          <div class="text-center py-4"><span class="spinner-border spinner-border-sm text-primary"></span></div>
+        } @else if (kritikProjeler().length === 0) {
+          <div class="text-center py-4 text-muted small">Eksik proje yok.</div>
+        } @else {
+          <div class="kritik-list virtual-list" (scroll)="onKritikScroll($event)">
+            @for (k of kritikProjeler(); track k.projeNo) {
+              <div class="kritik-item">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="kritik-badge">{{ k.sandik }}</span>
+                  <div>
+                    <div class="fw-semibold small">{{ k.projeNo }}</div>
+                    <div class="text-muted" style="font-size: 11px;">{{ k.toplam }} üründen {{ k.eksik }} eksik</div>
+                  </div>
+                </div>
+                <span class="badge bg-danger bg-opacity-10 text-danger fw-bold">{{ k.eksik }}</span>
+              </div>
+            }
+            @if (loadingKritik()) {
+              <div class="load-more-row"><span class="spinner-border spinner-border-sm text-primary"></span> Yükleniyor</div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="dash-card">
+      <div class="dash-card-header">
+        <h6 class="fw-semibold mb-0"><i class="ri-pie-chart-line me-2 text-primary"></i>{{ projeOzetiBaslik() }}</h6>
+        <span class="summary-filter-chip">{{ selectedProjeTipiOzet()?.projeTipiMetni ?? 'Tüm Projeler' }}</span>
+      </div>
+      <div class="dash-card-body">
+        @if (dashboardSummaryLoading()) {
+          <div class="dashboard-summary-skeleton" aria-hidden="true">
+            <div class="summary-skeleton-row">
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <div class="summary-skeleton-progress"></div>
+            <div class="summary-skeleton-legend">
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+        } @else {
+          <div class="ozet-row">
+            <div class="ozet-item">
+              <div class="ozet-number text-primary">{{ projeOzetiHazirlanan() }}</div>
+              <div class="ozet-label">Hazırlanıyor</div>
+            </div>
+            <div class="ozet-item">
+              <div class="ozet-number text-success">{{ projeOzetiSevkEdilen() }}</div>
+              <div class="ozet-label">Sevk Edilen</div>
+            </div>
+            <div class="ozet-item">
+              <div class="ozet-number text-warning">{{ projeOzetiEksikSevk() }}</div>
+              <div class="ozet-label">Eksik Sevk Edilen</div>
+            </div>
+            <div class="ozet-item">
+              <div class="ozet-number text-info">{{ projeOzetiTamamlanan() }}</div>
+              <div class="ozet-label">Tamamlanan</div>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="mini-progress-row">
+              <span class="small text-muted">Durum Dağılımı</span>
+              <div class="progress" style="height: 8px;">
+                @if (projeOzetiToplam() > 0) {
+                  <div class="progress-bar bg-primary" [style.width.%]="(projeOzetiHazirlanan() / projeOzetiToplam()) * 100"></div>
+                  <div class="progress-bar bg-success" [style.width.%]="(projeOzetiSevkEdilen() / projeOzetiToplam()) * 100"></div>
+                  <div class="progress-bar bg-warning" [style.width.%]="(projeOzetiEksikSevk() / projeOzetiToplam()) * 100"></div>
+                  <div class="progress-bar bg-info" [style.width.%]="(projeOzetiTamamlanan() / projeOzetiToplam()) * 100"></div>
+                }
+              </div>
+              <div class="d-flex gap-3 mt-2 flex-wrap">
+                <span class="mini-legend"><span class="legend-dot bg-primary"></span> Hazırlanıyor</span>
+                <span class="mini-legend"><span class="legend-dot bg-success"></span> Sevk</span>
+                <span class="mini-legend"><span class="legend-dot bg-warning"></span> Eksik Sevk</span>
+                <span class="mini-legend"><span class="legend-dot bg-info"></span> Tamamlanan</span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="dash-card sandik-durum-panel mb-4">
   <div class="dash-card-header">
     <h5 class="fw-semibold mb-0"><i class="ri-archive-stack-line me-2 text-success"></i>{{ sandikDurumBaslik() }}</h5>
@@ -446,201 +641,6 @@
         }
       </div>
     }
-  </div>
-</div>
-
-<div class="row g-3 mb-4">
-  <div class="col-xl-8">
-    <div class="dash-card h-100">
-      <div class="dash-card-header">
-        <div class="dashboard-title-with-filters">
-          <h5 class="fw-semibold mb-0"><i class="ri-folder-chart-line me-2 text-primary"></i>{{ projelerBaslik() }}</h5>
-          <div class="section-type-tabs">
-            <button type="button"
-                    [class.active]="selectedProjeTipiId() === null"
-                    (click)="selectProjeTipi(null)">
-              Tümü
-            </button>
-            @for (tip of projeTipiOzetleri(); track tip.projeTipiId) {
-              <button type="button"
-                      [class.active]="selectedProjeTipiId() === tip.projeTipiId"
-                      (click)="selectProjeTipi(tip.projeTipiId)">
-                {{ tip.projeTipiMetni }}
-              </button>
-            }
-          </div>
-        </div>
-        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" routerLink="/projeler">
-          <i class="ri-add-line me-1"></i> Yeni Proje Ekle
-        </button>
-      </div>
-      <div class="dash-card-body p-0">
-        @if ((loading() || loadingProjeler()) && projeler().length === 0) {
-          <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
-        } @else if (projeler().length === 0) {
-          <div class="text-center py-5 text-muted">Bu kriterde proje bulunmuyor.</div>
-        } @else {
-          <div class="dashboard-scroll-table" (scroll)="onProjelerScroll($event)">
-            <table class="table table-hover align-middle mb-0">
-              <thead>
-                <tr>
-                  <th>Proje No</th>
-                  <th>Sandık Durumları</th>
-                  <th>Lokasyon</th>
-                  <th>Başlama</th>
-                  <th>Durum</th>
-                  <th>Tamamlanma</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (p of projeler(); track p.id) {
-                  <tr>
-                    <td class="fw-semibold">
-                      <span class="proje-dot" [style.background]="getProgressColor(p.tamamlanmaYuzdesi)"></span>
-                      {{ p.projeNo }}
-                    </td>
-                    <td class="project-crate-status-cell">
-                      <div class="project-crate-total">{{ p.sandikSayisi }} toplam</div>
-                      <div class="project-crate-badges">
-                        @for (durum of p.sandikDurumOzetleri ?? []; track durum.durumId) {
-                          @if (durum.sandikSayisi > 0) {
-                            <span [style.--status-color]="getSandikDurumColor(durum.durumId)"
-                                  [title]="durum.durumMetni + ': ' + durum.sandikSayisi">
-                              <i [class]="getSandikDurumIcon(durum.durumId)"></i>
-                              {{ durum.sandikSayisi }} {{ durum.durumMetni }}
-                            </span>
-                          }
-                        }
-                      </div>
-                    </td>
-                    <td><span class="badge bg-soft-secondary text-secondary rounded-pill">{{ p.lokasyon ?? '-' }}</span></td>
-                    <td class="baslama-cell">
-                      <div class="baslama-date">{{ formatBaslamaTarihi(p.baslamaTarihi) }}</div>
-                      <div class="baslama-duration">{{ getCalismaMetni(p) }}</div>
-                    </td>
-                    <td><app-status-badge [status]="p.durumMetni" [label]="p.durumMetni" /></td>
-                    <td style="min-width: 140px;">
-                      <div class="d-flex align-items-center gap-2">
-                        <div class="progress flex-grow-1" style="height: 6px;">
-                          <div class="progress-bar" [style.width.%]="p.tamamlanmaYuzdesi" [style.background]="getProgressColor(p.tamamlanmaYuzdesi)"></div>
-                        </div>
-                        <small class="fw-bold" [style.color]="getProgressColor(p.tamamlanmaYuzdesi)">{{ p.tamamlanmaYuzdesi }}%</small>
-                      </div>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-            @if (loadingProjeler() && projeler().length > 0) {
-              <div class="load-more-row"><span class="spinner-border spinner-border-sm text-primary"></span> Yükleniyor</div>
-            }
-          </div>
-          <div class="dash-card-footer">
-            <span class="text-muted small">{{ projeler().length }} / {{ projelerTotal() }} proje gösteriliyor</span>
-            @if (projelerHasMore()) {
-              <button class="btn btn-sm btn-light ms-auto" (click)="loadProjeler()" [disabled]="loadingProjeler()">Daha Fazla</button>
-            }
-          </div>
-        }
-      </div>
-    </div>
-  </div>
-
-  <div class="col-xl-4">
-    <div class="dash-card mb-3">
-      <div class="dash-card-header">
-        <h6 class="fw-semibold mb-0"><i class="ri-error-warning-line me-2 text-danger"></i>Kritik Eksikler</h6>
-      </div>
-      <div class="dash-card-body p-0">
-        @if (loadingKritik() && kritikProjeler().length === 0) {
-          <div class="text-center py-4"><span class="spinner-border spinner-border-sm text-primary"></span></div>
-        } @else if (kritikProjeler().length === 0) {
-          <div class="text-center py-4 text-muted small">Eksik proje yok.</div>
-        } @else {
-          <div class="kritik-list virtual-list" (scroll)="onKritikScroll($event)">
-            @for (k of kritikProjeler(); track k.projeNo) {
-              <div class="kritik-item">
-                <div class="d-flex align-items-center gap-2">
-                  <span class="kritik-badge">{{ k.sandik }}</span>
-                  <div>
-                    <div class="fw-semibold small">{{ k.projeNo }}</div>
-                    <div class="text-muted" style="font-size: 11px;">{{ k.toplam }} üründen {{ k.eksik }} eksik</div>
-                  </div>
-                </div>
-                <span class="badge bg-danger bg-opacity-10 text-danger fw-bold">{{ k.eksik }}</span>
-              </div>
-            }
-            @if (loadingKritik()) {
-              <div class="load-more-row"><span class="spinner-border spinner-border-sm text-primary"></span> Yükleniyor</div>
-            }
-          </div>
-        }
-      </div>
-    </div>
-
-    <div class="dash-card">
-      <div class="dash-card-header">
-        <h6 class="fw-semibold mb-0"><i class="ri-pie-chart-line me-2 text-primary"></i>{{ projeOzetiBaslik() }}</h6>
-        <span class="summary-filter-chip">{{ selectedProjeTipiOzet()?.projeTipiMetni ?? 'Tüm Projeler' }}</span>
-      </div>
-      <div class="dash-card-body">
-        @if (dashboardSummaryLoading()) {
-          <div class="dashboard-summary-skeleton" aria-hidden="true">
-            <div class="summary-skeleton-row">
-              <span></span>
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-            <div class="summary-skeleton-progress"></div>
-            <div class="summary-skeleton-legend">
-              <span></span>
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-          </div>
-        } @else {
-          <div class="ozet-row">
-            <div class="ozet-item">
-              <div class="ozet-number text-primary">{{ projeOzetiHazirlanan() }}</div>
-              <div class="ozet-label">Hazırlanıyor</div>
-            </div>
-            <div class="ozet-item">
-              <div class="ozet-number text-success">{{ projeOzetiSevkEdilen() }}</div>
-              <div class="ozet-label">Sevk Edilen</div>
-            </div>
-            <div class="ozet-item">
-              <div class="ozet-number text-warning">{{ projeOzetiEksikSevk() }}</div>
-              <div class="ozet-label">Eksik Sevk Edilen</div>
-            </div>
-            <div class="ozet-item">
-              <div class="ozet-number text-info">{{ projeOzetiTamamlanan() }}</div>
-              <div class="ozet-label">Tamamlanan</div>
-            </div>
-          </div>
-          <div class="mt-3">
-            <div class="mini-progress-row">
-              <span class="small text-muted">Durum Dağılımı</span>
-              <div class="progress" style="height: 8px;">
-                @if (projeOzetiToplam() > 0) {
-                  <div class="progress-bar bg-primary" [style.width.%]="(projeOzetiHazirlanan() / projeOzetiToplam()) * 100"></div>
-                  <div class="progress-bar bg-success" [style.width.%]="(projeOzetiSevkEdilen() / projeOzetiToplam()) * 100"></div>
-                  <div class="progress-bar bg-warning" [style.width.%]="(projeOzetiEksikSevk() / projeOzetiToplam()) * 100"></div>
-                  <div class="progress-bar bg-info" [style.width.%]="(projeOzetiTamamlanan() / projeOzetiToplam()) * 100"></div>
-                }
-              </div>
-              <div class="d-flex gap-3 mt-2 flex-wrap">
-                <span class="mini-legend"><span class="legend-dot bg-primary"></span> Hazırlanıyor</span>
-                <span class="mini-legend"><span class="legend-dot bg-success"></span> Sevk</span>
-                <span class="mini-legend"><span class="legend-dot bg-warning"></span> Eksik Sevk</span>
-                <span class="mini-legend"><span class="legend-dot bg-info"></span> Tamamlanan</span>
-              </div>
-            </div>
-          </div>
-        }
-      </div>
-    </div>
   </div>
 </div>
 

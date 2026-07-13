@@ -13,7 +13,7 @@
       <app-readonly-banner />
       @if (canDeleteCekiVerisi()) {
       <button class="btn btn-outline-danger" [disabled]="!hasSelection" (click)="deleteSelectedCekiSatirlari()">
-        <i class="ri-delete-bin-line me-1"></i>Çeki Sil ({{ selectedIds().size }})
+        <i class="ri-delete-bin-line me-1"></i>Çeki Sil ({{ selectedRowKeys().size }})
       </button>
       }
       <button *appCanWrite class="btn btn-primary" (click)="openManuelEkleModal()">
@@ -24,7 +24,7 @@
         [class.show]="showTopluIslemlerMenu()">
         <button class="btn btn-dark dropdown-toggle" [disabled]="!hasSelection" type="button"
           (click)="showTopluIslemlerMenu.set(!showTopluIslemlerMenu())">
-          <i class="ri-stack-line me-1"></i>Toplu İşlemler ({{ selectedIds().size }})
+          <i class="ri-stack-line me-1"></i>Toplu İşlemler ({{ selectedRowKeys().size }})
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow-lg" [class.show]="showTopluIslemlerMenu()">
           <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('tamGeldi')">
@@ -47,7 +47,7 @@
       </div>
       @if (canKalite) {
       <button class="btn btn-outline-warning" [disabled]="!hasSelection" (click)="openKaliteModal()">
-        <i class="ri-shield-check-line me-1"></i>Kalite ({{ selectedIds().size }})
+        <i class="ri-shield-check-line me-1"></i>Kalite ({{ selectedRowKeys().size }})
       </button>
       }
       @if (canSurec) {
@@ -55,7 +55,7 @@
               [disabled]="!hasSelection || selectedSurecTamamlandiCount() > 0"
               [title]="selectedSurecTamamlandiCount() > 0 ? 'Tamamlanan süreçler güncellenemez.' : ''"
               (click)="openSurecModal()">
-        <i class="ri-settings-3-line me-1"></i>Süreç ({{ selectedIds().size }})
+        <i class="ri-settings-3-line me-1"></i>Süreç ({{ selectedRowKeys().size }})
       </button>
       <button class="btn btn-ambar-talep"
               [disabled]="!hasSelection || selectedSurecTamamlandiCount() > 0"
@@ -156,12 +156,12 @@
           </tr>
         </thead>
         <tbody>
-          @for (u of filtered(); track u.cekiSatiriId) {
-          <tr [ngClass]="[getRowClass(u), isSelected(u.cekiSatiriId) ? 'row-selected' : '']"
+          @for (u of filtered(); track getRowKey(u)) {
+          <tr [ngClass]="[getRowClass(u), isSelected(u) ? 'row-selected' : '']"
               class="cursor-pointer" (click)="onRowClick(u, $event)">
             @if (canSelectRows) {
-            <td><input type="checkbox" class="form-check-input" [checked]="isSelected(u.cekiSatiriId)"
-                (change)="toggleSelect(u.cekiSatiriId)" [disabled]="isCheckboxDisabled(u)" /></td>
+            <td><input type="checkbox" class="form-check-input" [checked]="isSelected(u)"
+                (change)="toggleSelect(u)" [disabled]="isCheckboxDisabled(u)" /></td>
             }
             <td class="text-muted">{{ u.siraNo }}</td>
             <td><code class="barkod">{{ u.barkodNo }}</code></td>
@@ -189,7 +189,20 @@
                 </div>
               </div>
             </td>
-            <td class="text-center fw-semibold miktar-cell">{{ u.istenenAdet }} <small class="text-muted fw-normal">{{ u.birim }}</small></td>
+            <td class="text-center miktar-cell">
+              <div class="sandik-allocation-amount">
+                <span class="fw-semibold">{{ formatMiktar(getSandikMiktari(u)) }}</span>
+                <small class="text-muted fw-normal">{{ u.birim }}</small>
+              </div>
+              @if (hasAnaToplamFarki(u)) {
+              <small class="allocation-secondary">Ana toplam: {{ formatMiktar(getAnaIstenenAdet(u)) }}</small>
+              }
+              @if (getSandikTransferOzeti(u)) {
+              <small class="allocation-transfer" [title]="getSandikTransferOzeti(u)">
+                <i class="ri-route-line"></i>{{ getSandikTransferOzeti(u) }}
+              </small>
+              }
+            </td>
             <td><span class="badge-sandik">{{ u.sandikNo }}</span></td>
             <!-- Kalite -->
             <td>
@@ -335,7 +348,7 @@
   <div class="card-footer d-flex align-items-center justify-content-between">
     <small class="text-muted">{{ filtered().length }} / {{ urunler().length }} ürün</small>
     @if (canSelectRows) {
-    <span class="fw-semibold text-primary" [hidden]="!hasSelection">{{ selectedIds().size }} ürün
+    <span class="fw-semibold text-primary" [hidden]="!hasSelection">{{ selectedRowKeys().size }} ürün
       seçildi</span>
     }
   </div>
@@ -422,7 +435,7 @@
       <div class="d-flex gap-3 flex-wrap">
         <span class="ozet-chip"><i class="ri-barcode-line"></i> {{ anaVeriUrun()!.barkodNo }}</span>
         <span class="ozet-chip"><i class="ri-archive-line"></i> {{ anaVeriUrun()!.sandikNo }}</span>
-        <span class="ozet-chip"><i class="ri-stack-line"></i> {{ anaVeriUrun()!.istenenAdet }} {{ anaVeriUrun()!.birim }}</span>
+        <span class="ozet-chip"><i class="ri-stack-line"></i> Ana toplam: {{ formatMiktar(getAnaIstenenAdet(anaVeriUrun()!)) }} {{ anaVeriUrun()!.birim }}</span>
       </div>
     </div>
 
@@ -505,9 +518,17 @@
       <div class="d-flex gap-3 flex-wrap">
         <span class="ozet-chip"><i class="ri-barcode-line"></i> {{ panelUrun()!.barkodNo }}</span>
         <span class="ozet-chip"><i class="ri-archive-line"></i> {{ panelUrun()!.sandikNo }}</span>
-        <span class="ozet-chip"><i class="ri-stack-line"></i> {{ panelUrun()!.istenenAdet }} {{ panelUrun()!.birim
-          }}</span>
+        <span class="ozet-chip"><i class="ri-stack-line"></i> Bu sandıkta: {{ formatMiktar(getSandikMiktari(panelUrun()!)) }} {{ panelUrun()!.birim }}</span>
+        @if (hasAnaToplamFarki(panelUrun()!)) {
+        <span class="ozet-chip"><i class="ri-file-list-3-line"></i> Ana toplam: {{ formatMiktar(getAnaIstenenAdet(panelUrun()!)) }} {{ panelUrun()!.birim }}</span>
+        }
       </div>
+      @if (getSandikTransferOzeti(panelUrun()!)) {
+      <div class="panel-transfer-summary mt-2">
+        <i class="ri-route-line"></i>
+        <span>{{ getSandikTransferOzeti(panelUrun()!) }}</span>
+      </div>
+      }
     </div>
 
     <!-- Hata -->
@@ -625,7 +646,7 @@
   <div class="modal-body">
     <div class="alert-info-custom mb-3">
       <i class="ri-information-line me-2"></i>
-      <strong>{{ selectedIds().size }}</strong> ürün seçildi. Yeniden sevk gerekli satırlarda yalnızca
+      <strong>{{ selectedRowKeys().size }}</strong> ürün seçildi. Yeniden sevk gerekli satırlarda yalnızca
       <strong>yeniden sevk adedi</strong>, parçalı eksik sevk satırlarında yalnızca <strong>kalan adet</strong>,
       kısmi trafo sevk satırlarında yalnızca <strong>Grid gelen adet</strong>
       3K'ya sevk edilecek.
@@ -660,7 +681,7 @@
   <div class="modal-body">
     <div class="alert-info-custom mb-3" [style.border-left-color]="topluIslemRenk()">
       <i class="ri-information-line me-2"></i>
-      <strong>{{ selectedIds().size }}</strong> ürün seçildi.
+      <strong>{{ selectedRowKeys().size }}</strong> ürün seçildi.
       <span>{{ topluIslemAciklamaMetni() }}</span>
     </div>
     <div class="mb-3">
@@ -775,7 +796,7 @@
         <button class="btn-close" (click)="closeKaliteModal()"></button>
       </div>
       <div class="modal-body">
-        <p class="text-muted mb-3"><strong>{{ selectedIds().size }}</strong> ürün seçildi.</p>
+        <p class="text-muted mb-3"><strong>{{ selectedRowKeys().size }}</strong> ürün seçildi.</p>
         <label class="form-label fw-semibold">Kalite Durumu</label>
         <select class="form-select" [ngModel]="kaliteDurumSecim()" (ngModelChange)="kaliteDurumSecim.set(+$event)">
           <option [value]="0" disabled>Seçiniz...</option>
@@ -806,7 +827,7 @@
         <button class="btn-close" (click)="closeSurecModal()"></button>
       </div>
       <div class="modal-body">
-        <p class="text-muted mb-3"><strong>{{ selectedIds().size }}</strong> ürün seçildi.</p>
+        <p class="text-muted mb-3"><strong>{{ selectedRowKeys().size }}</strong> ürün seçildi.</p>
         <label class="form-label fw-semibold">Süreç Durumu</label>
         <select class="form-select" [ngModel]="surecDurumSecim()" (ngModelChange)="surecDurumSecim.set(+$event)">
           <option [value]="0" disabled>Seçiniz...</option>

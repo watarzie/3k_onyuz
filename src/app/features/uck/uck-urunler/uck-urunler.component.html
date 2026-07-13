@@ -117,13 +117,13 @@
           </tr>
         </thead>
         <tbody>
-          @for (u of filtered(); track u.cekiSatiriId) {
-          <tr [attr.id]="getRowDomId(u.cekiSatiriId)" [ngClass]="[getRowClass(u), isSelected(u.cekiSatiriId) ? 'row-selected' : '']"
+          @for (u of filtered(); track getRowKey(u)) {
+          <tr [attr.id]="getRowDomId(u)" [ngClass]="[getRowClass(u), isSelected(u) ? 'row-selected' : '']"
               class="cursor-pointer" (click)="onRowClick(u, $event)">
             @if (canSelectRows) {
             <td>
-              <input type="checkbox" class="form-check-input" [checked]="isSelected(u.cekiSatiriId)"
-                (change)="toggleSelect(u.cekiSatiriId)" [disabled]="isCheckboxDisabled(u)" />
+              <input type="checkbox" class="form-check-input" [checked]="isSelected(u)"
+                (change)="toggleSelect(u)" [disabled]="isCheckboxDisabled(u)" />
             </td>
             }
             <td class="text-muted">{{ u.siraNo }}</td>
@@ -153,7 +153,20 @@
               </div>
             </td>
             <td><span class="badge-sandik">{{ u.sandikNo }}</span></td>
-            <td class="text-center fw-semibold miktar-cell">{{ u.istenenAdet }} <small class="text-muted fw-normal">{{ u.birim }}</small></td>
+            <td class="text-center miktar-cell">
+              <div class="sandik-allocation-amount">
+                <span class="fw-semibold">{{ formatMiktar(getSandikMiktari(u)) }}</span>
+                <small class="text-muted fw-normal">{{ u.birim }}</small>
+              </div>
+              @if (hasAnaToplamFarki(u)) {
+              <small class="allocation-secondary">Ana toplam: {{ formatMiktar(getAnaIstenenAdet(u)) }}</small>
+              }
+              @if (getSandikTransferOzeti(u)) {
+              <small class="allocation-transfer" [title]="getSandikTransferOzeti(u)">
+                <i class="ri-route-line"></i>{{ getSandikTransferOzeti(u) }}
+              </small>
+              }
+            </td>
             <!-- Kalite (read-only) -->
             <td>
               <span class="durum-badge" [style.background]="getKaliteDurumColor(u.kaliteDurumMetni) + '15'"
@@ -428,7 +441,7 @@
       <div class="d-flex gap-3 flex-wrap">
         <span class="ozet-chip"><i class="ri-barcode-line"></i> {{ anaVeriUrun()!.barkodNo }}</span>
         <span class="ozet-chip"><i class="ri-archive-line"></i> {{ anaVeriUrun()!.sandikNo }}</span>
-        <span class="ozet-chip"><i class="ri-stack-line"></i> {{ anaVeriUrun()!.istenenAdet }} {{ anaVeriUrun()!.birim }}</span>
+        <span class="ozet-chip"><i class="ri-stack-line"></i> Ana toplam: {{ formatMiktar(getAnaIstenenAdet(anaVeriUrun()!)) }} {{ anaVeriUrun()!.birim }}</span>
       </div>
     </div>
 
@@ -510,9 +523,17 @@
       <div class="d-flex gap-3 flex-wrap">
         <span class="ozet-chip"><i class="ri-barcode-line"></i> {{ panelUrun()!.barkodNo }}</span>
         <span class="ozet-chip"><i class="ri-archive-line"></i> {{ panelUrun()!.sandikNo }}</span>
-        <span class="ozet-chip"><i class="ri-stack-line"></i> {{ panelUrun()!.istenenAdet }} {{ panelUrun()!.birim
-          }}</span>
+        <span class="ozet-chip"><i class="ri-stack-line"></i> Bu sandıkta: {{ formatMiktar(getSandikMiktari(panelUrun()!)) }} {{ panelUrun()!.birim }}</span>
+        @if (hasAnaToplamFarki(panelUrun()!)) {
+        <span class="ozet-chip"><i class="ri-file-list-3-line"></i> Ana toplam: {{ formatMiktar(getAnaIstenenAdet(panelUrun()!)) }} {{ panelUrun()!.birim }}</span>
+        }
       </div>
+      @if (getSandikTransferOzeti(panelUrun()!)) {
+      <div class="panel-transfer-summary mt-2">
+        <i class="ri-route-line"></i>
+        <span>{{ getSandikTransferOzeti(panelUrun()!) }}</span>
+      </div>
+      }
     </div>
 
     <!-- Hata -->

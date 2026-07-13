@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, UcKDurumSifirlaDto, UcKIsListesiDto } from '../../shared/models/index';
+import { ApiResult, UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, UcKDurumSifirlaDto, UcKIsListesiDto, UcKTopluSecimDto } from '../../shared/models/index';
 
 /**
  * UcKController:
@@ -32,8 +32,15 @@ export class UcKService {
     this.channel.postMessage('UCK_UPDATED');
   }
 
-  getUrunler(projeId: number): Observable<ApiResult<UcKUrunDto[]>> {
-    return this.api.get<UcKUrunDto[]>(API.UCK.URUNLER(projeId));
+  getUrunler(projeId: number, sandikId?: number | null, sandikNo?: string | null): Observable<ApiResult<UcKUrunDto[]>> {
+    const endpoint = API.UCK.URUNLER(projeId);
+    const query = new URLSearchParams();
+    if (sandikId && sandikId > 0) query.set('sandikId', String(sandikId));
+    if (sandikNo?.trim()) query.set('sandikNo', sandikNo.trim());
+    const queryString = query.toString();
+    const url = queryString ? `${endpoint}?${queryString}` : endpoint;
+
+    return this.api.get<UcKUrunDto[]>(url);
   }
 
   getIsListesi(params: { page?: number; pageSize?: number; isTipi?: string; projeId?: number | null; sadeceBugun?: boolean } = {}): Observable<ApiResult<UcKIsListesiDto>> {
@@ -73,7 +80,7 @@ export class UcKService {
   }
 
   /** Toplu 3K durumu sıfırlama (geri alma) */
-  topluSifirla(dto: { projeId: number; cekiSatiriIdler: number[]; aciklama?: string }): Observable<ApiResult<unknown>> {
+  topluSifirla(dto: { projeId: number; cekiSatiriIdler: number[]; secimler?: UcKTopluSecimDto[]; aciklama?: string }): Observable<ApiResult<unknown>> {
     return this.api.put<unknown>(API.UCK.TOPLU_SIFIRLA, dto);
   }
 }

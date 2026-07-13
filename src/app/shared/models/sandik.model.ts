@@ -48,6 +48,13 @@ export interface SandikIcerikDto {
   barkodNo: string;
   aciklama: string;
   istenenAdet: number;
+  /** Çeki satırındaki sandık dağılımından bağımsız toplam talep. */
+  anaIstenenAdet?: number;
+  /** Bu sandık içeriğine tahsis edilmiş güncel miktar. */
+  sandikMiktari?: number;
+  sandikAktarilanGiris?: number;
+  sandikAktarilanCikis?: number;
+  sandikTransferOzeti?: string;
   konulanAdet: number;
   eksikAdet: number;
   durumId: number;
@@ -163,6 +170,8 @@ export interface UrunTasiDto {
   hedefSandikId: number;
   tasinanAdet: number;
   projeId: number;
+  /** Aynı taşıma isteğinin ağ tekrarlarında ikinci kez uygulanmasını engeller. */
+  islemAnahtari: string;
 }
 
 export interface EksikUrunForSandikDto {

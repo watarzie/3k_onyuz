@@ -81,6 +81,7 @@ export class SandikDetayComponent implements OnInit {
   tasiUrun = signal<SandikIcerikDto | null>(null);
   hedefSandikId = signal(0);
   tasinanAdet = signal(1);
+  tasiIslemAnahtari = signal('');
   tasiSaving = signal(false);
   projeSandiklari = signal<SandikDto[]>([]);
 
@@ -279,6 +280,38 @@ export class SandikDetayComponent implements OnInit {
       IadeEdildi: this.ts.translate('STATUS.IADE_EDILDI'), Bekliyor: this.ts.translate('STATUS.BEKLIYOR'),
     };
     return map[durum] ?? durum;
+  }
+
+  getSandikMiktari(item: SandikIcerikDto): number {
+    return Math.max(Number(item.sandikMiktari ?? item.istenenAdet ?? item.miktar ?? 0), 0);
+  }
+
+  getAnaIstenenAdet(item: SandikIcerikDto): number {
+    return Math.max(Number(item.anaIstenenAdet ?? item.istenenAdet ?? item.miktar ?? 0), 0);
+  }
+
+  hasAnaToplamFarki(item: SandikIcerikDto): boolean {
+    return Math.abs(this.getAnaIstenenAdet(item) - this.getSandikMiktari(item)) > 0.0001;
+  }
+
+  getSandikTransferOzeti(item: SandikIcerikDto): string {
+    const apiOzeti = item.sandikTransferOzeti?.trim();
+    if (apiOzeti) return apiOzeti;
+
+    const giris = Math.max(Number(item.sandikAktarilanGiris ?? 0), 0);
+    const cikis = Math.max(Number(item.sandikAktarilanCikis ?? 0), 0);
+    const ozetler: string[] = [];
+    if (giris > 0) ozetler.push(`${this.formatMiktar(giris)} adet giriş`);
+    if (cikis > 0) ozetler.push(`${this.formatMiktar(cikis)} adet çıkış`);
+    return ozetler.join(' · ');
+  }
+
+  formatMiktar(value: number | null | undefined): string {
+    const numericValue = Number(value ?? 0);
+    return numericValue.toLocaleString('tr-TR', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: Number.isInteger(numericValue) ? 0 : 3
+    });
   }
 
   // ===== Side Panel =====
@@ -585,6 +618,7 @@ export class SandikDetayComponent implements OnInit {
     this.tasiUrun.set(item);
     this.tasinanAdet.set(item.konulanAdet);
     this.hedefSandikId.set(0);
+    this.tasiIslemAnahtari.set(crypto.randomUUID());
     this.showTasiModal.set(true);
     this.closePanel();
   }
@@ -592,6 +626,7 @@ export class SandikDetayComponent implements OnInit {
   closeTasiModal() {
     this.showTasiModal.set(false);
     this.tasiUrun.set(null);
+    this.tasiIslemAnahtari.set('');
   }
 
   urunTasi() {
@@ -606,16 +641,24 @@ export class SandikDetayComponent implements OnInit {
       this.toast.error('Hedef sandık seçiniz.');
       return;
     }
-    if (this.tasinanAdet() <= 0 || this.tasinanAdet() > urun.konulanAdet) {
-      this.toast.error(`Taşınacak adet 1 ile ${urun.konulanAdet} arasında olmalıdır.`);
+    const tasinanAdet = Number(this.tasinanAdet());
+    if (!Number.isFinite(tasinanAdet) || tasinanAdet <= 0 || tasinanAdet > urun.konulanAdet) {
+      this.toast.error(`Taşınacak miktar 0'dan büyük ve en fazla ${urun.konulanAdet} olmalıdır.`);
       return;
     }
+    if (Math.abs(tasinanAdet * 10_000 - Math.round(tasinanAdet * 10_000)) > 1e-8) {
+      this.toast.error('Taşınacak miktar en fazla 4 ondalık basamak içerebilir.');
+      return;
+    }
+    const islemAnahtari = this.tasiIslemAnahtari() || crypto.randomUUID();
+    this.tasiIslemAnahtari.set(islemAnahtari);
     this.tasiSaving.set(true);
     this.sandikService.urunTasi({
       kaynakSandikIcerikId: urun.id,
       hedefSandikId: this.hedefSandikId(),
-      tasinanAdet: this.tasinanAdet(),
+      tasinanAdet,
       projeId: this.projeId(),
+      islemAnahtari,
     }).subscribe({
       next: (res) => {
         this.tasiSaving.set(false);

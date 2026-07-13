@@ -76,7 +76,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   filtered = signal<GridUrunDto[]>([]);
   mevcutSandikNolari = signal<string[]>([]);
   loading = signal(true);
-  selectedIds = signal<Set<number>>(new Set());
+  selectedRowKeys = signal<Set<string>>(new Set());
   filterDurum = signal('');
   searchTerm = signal('');
   selectedSandikNo = signal('');
@@ -209,7 +209,10 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     return proje ? `${proje.projeNo} - ${proje.musteri}` : `Proje #${this.projeId()}`;
   });
 
-  selectedUrunler = computed(() => this.urunler().filter(u => this.selectedIds().has(u.cekiSatiriId)));
+  selectedUrunler = computed(() => {
+    const keys = this.selectedRowKeys();
+    return this.urunler().filter(u => keys.has(this.getRowKey(u)));
+  });
   selectedSurecTamamlandiCount = computed(() =>
     this.selectedUrunler().filter(u => this.isSurecTamamlandi(u)).length
   );
@@ -344,45 +347,59 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
 
   // ===== Checkbox =====
-  toggleSelect(id: number) {
+  getRowKey(urun: GridUrunDto): string {
+    return urun.sandikIcerikId
+      ? `sandik-icerik-${urun.sandikIcerikId}`
+      : `ceki-satiri-${urun.cekiSatiriId}`;
+  }
+
+  toggleSelect(urun: GridUrunDto) {
     if (!this.canSelectRows) return;
-    const urun = this.urunler().find(u => u.cekiSatiriId === id);
-    if (urun && this.isSahaManuelIcerik(urun)) return;
-    if (urun && this.isSatirSevkKilidi(urun)) {
+    if (this.isSahaManuelIcerik(urun)) return;
+    if (this.isSatirSevkKilidi(urun)) {
       this.toast.error(this.sevkEdilmisSandikMesaji);
       return;
     }
 
-    const s = new Set(this.selectedIds());
-    s.has(id) ? s.delete(id) : s.add(id);
-    this.selectedIds.set(s);
+    const key = this.getRowKey(urun);
+    const s = new Set(this.selectedRowKeys());
+    s.has(key) ? s.delete(key) : s.add(key);
+    this.selectedRowKeys.set(s);
   }
   toggleSelectAll() {
     if (!this.canSelectRows) return;
 
     const selectable = this.filtered().filter(u => !this.isCheckboxDisabled(u));
-    const current = new Set(this.selectedIds());
+    const current = new Set(this.selectedRowKeys());
 
     if (selectable.length === 0) {
-      this.selectedIds.set(new Set());
+      this.selectedRowKeys.set(new Set());
       return;
     }
 
-    if (selectable.every(u => current.has(u.cekiSatiriId))) {
-      selectable.forEach(u => current.delete(u.cekiSatiriId));
+    if (selectable.every(u => current.has(this.getRowKey(u)))) {
+      selectable.forEach(u => current.delete(this.getRowKey(u)));
     } else {
-      selectable.forEach(u => current.add(u.cekiSatiriId));
+      selectable.forEach(u => current.add(this.getRowKey(u)));
     }
 
-    this.selectedIds.set(current);
+    this.selectedRowKeys.set(current);
   }
-  isSelected(id: number): boolean { return this.selectedIds().has(id); }
+  isSelected(urun: GridUrunDto): boolean { return this.selectedRowKeys().has(this.getRowKey(urun)); }
   get allSelected(): boolean {
     const selectable = this.filtered().filter(u => !this.isCheckboxDisabled(u));
-    return selectable.length > 0 && selectable.every(u => this.selectedIds().has(u.cekiSatiriId));
+    return selectable.length > 0 && selectable.every(u => this.selectedRowKeys().has(this.getRowKey(u)));
   }
-  get hasSelection(): boolean { return this.selectedIds().size > 0; }
+  get hasSelection(): boolean { return this.selectedRowKeys().size > 0; }
   get hasSelectableRows(): boolean { return this.filtered().some(u => !this.isCheckboxDisabled(u)); }
+
+  private getSelectedCekiSatiriIds(): number[] {
+    return Array.from(new Set(
+      this.selectedUrunler()
+        .map(u => u.cekiSatiriId)
+        .filter(id => id > 0)
+    ));
+  }
 
   // ===== Satır rengi =====
   getRowClass(u: GridUrunDto): string {
@@ -818,7 +835,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     this.topluSevkSaving.set(true);
     this.gridService.topluSevk({
       projeId: this.projeId(),
-      cekiSatiriIdler: Array.from(this.selectedIds()),
+      cekiSatiriIdler: this.getSelectedCekiSatiriIds(),
       aciklama: this.topluSevkAciklama() || undefined,
     }).subscribe({
       next: (res) => {
@@ -827,7 +844,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
           this.toast.success('Seçili ürünler başarıyla sevk edildi.');
           this.gridService.notifyGridUpdated();
           this.closeTopluSevk();
-          this.selectedIds.set(new Set());
+          this.selectedRowKeys.set(new Set());
           this.loadUrunler(false);
         } else {
           this.toast.error(res.error ?? 'Toplu sevk işlemi başarısız.');
@@ -918,15 +935,12 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
 
   private temizleSevkKilitliSecimler() {
-    const kilitliIdler = new Set(this.urunler()
-      .filter(u => this.isCheckboxDisabled(u))
-      .map(u => u.cekiSatiriId));
-
-    if (kilitliIdler.size === 0) return;
-
-    const temizSecim = Array.from(this.selectedIds()).filter(id => !kilitliIdler.has(id));
-    if (temizSecim.length !== this.selectedIds().size) {
-      this.selectedIds.set(new Set(temizSecim));
+    const secilebilirSatirlar = new Set(this.urunler()
+      .filter(u => !this.isCheckboxDisabled(u))
+      .map(u => this.getRowKey(u)));
+    const temizSecim = Array.from(this.selectedRowKeys()).filter(key => secilebilirSatirlar.has(key));
+    if (temizSecim.length !== this.selectedRowKeys().size) {
+      this.selectedRowKeys.set(new Set(temizSecim));
     }
   }
 
@@ -1073,7 +1087,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     this.anaBarkodNo.set(urun.barkodNo ?? '');
     this.anaOlcuResmiPozNo.set(urun.olcuResmiPozNo ?? '');
     this.anaAciklama.set(urun.aciklama ?? '');
-    this.anaIstenenAdet.set(this.toNumber(urun.istenenAdet));
+    this.anaIstenenAdet.set(this.getAnaIstenenAdet(urun));
     this.anaBirimId.set(urun.birimId ?? this.mapBirimId(urun.birim));
     this.anaSandikNo.set(urun.sandikNo ?? '');
     this.anaError.set('');
@@ -1143,7 +1157,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
 
   async deleteSelectedCekiSatirlari() {
-    const ids = Array.from(this.selectedIds());
+    const ids = this.getSelectedCekiSatiriIds();
     if (!this.canDeleteCekiVerisi() || ids.length === 0) return;
     if (this.hasSevkKilitliSecim()) return;
 
@@ -1162,7 +1176,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
         if (res.isSuccess) {
           const silinen = res.value?.silinenSatirSayisi ?? ids.length;
           this.toast.success(`${silinen} çeki satırı silindi.`);
-          this.selectedIds.set(new Set());
+          this.selectedRowKeys.set(new Set());
           this.gridService.notifyGridUpdated();
           this.loadUrunler(false);
           this.loadSandiklar();
@@ -1224,6 +1238,30 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     return u.surecDurumMetni ?? undefined;
   }
 
+  getSandikMiktari(urun: GridUrunDto): number {
+    return Math.max(Number(urun.sandikMiktari ?? urun.istenenAdet ?? 0), 0);
+  }
+
+  getAnaIstenenAdet(urun: GridUrunDto): number {
+    return Math.max(Number(urun.anaIstenenAdet ?? urun.istenenAdet ?? 0), 0);
+  }
+
+  hasAnaToplamFarki(urun: GridUrunDto): boolean {
+    return Math.abs(this.getAnaIstenenAdet(urun) - this.getSandikMiktari(urun)) > 0.0001;
+  }
+
+  getSandikTransferOzeti(urun: GridUrunDto): string {
+    const apiOzeti = urun.sandikTransferOzeti?.trim();
+    if (apiOzeti) return apiOzeti;
+
+    const giris = Math.max(Number(urun.sandikAktarilanGiris ?? 0), 0);
+    const cikis = Math.max(Number(urun.sandikAktarilanCikis ?? 0), 0);
+    const ozetler: string[] = [];
+    if (giris > 0) ozetler.push(`${this.formatMiktar(giris)} giriş`);
+    if (cikis > 0) ozetler.push(`${this.formatMiktar(cikis)} çıkış`);
+    return ozetler.join(' · ');
+  }
+
   isSurecTamamlandi(u: GridUrunDto): boolean {
     return u.surecDurumId === SurecDurum.Tamamlandi || this.getEffectiveSurecDurum(u) === 'Tamamlandı';
   }
@@ -1252,7 +1290,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     this.kaliteSaving.set(true);
     this.gridService.kaliteDurumGuncelle({
       projeId: this.projeId(),
-      cekiSatiriIdler: Array.from(this.selectedIds()),
+      cekiSatiriIdler: this.getSelectedCekiSatiriIds(),
       kaliteDurumId: this.kaliteDurumSecim(),
     }).subscribe({
       next: (res) => {
@@ -1261,7 +1299,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
           this.toast.success('Kalite durumu başarıyla güncellendi.');
           this.gridService.notifyGridUpdated();
           this.closeKaliteModal();
-          this.selectedIds.set(new Set());
+          this.selectedRowKeys.set(new Set());
           this.loadUrunler(false);
         } else {
           this.toast.error(res.error ?? 'Kalite güncelleme başarısız.');
@@ -1292,7 +1330,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     this.surecSaving.set(true);
     this.gridService.surecDurumGuncelle({
       projeId: this.projeId(),
-      cekiSatiriIdler: Array.from(this.selectedIds()),
+      cekiSatiriIdler: this.getSelectedCekiSatiriIds(),
       surecDurumId: this.surecDurumSecim(),
     }).subscribe({
       next: (res) => {
@@ -1301,7 +1339,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
           this.toast.success('Süreç durumu başarıyla güncellendi.');
           this.gridService.notifyGridUpdated();
           this.closeSurecModal();
-          this.selectedIds.set(new Set());
+          this.selectedRowKeys.set(new Set());
           this.loadUrunler(false);
         } else {
           this.toast.error(res.error ?? 'Süreç güncelleme başarısız.');
@@ -1499,7 +1537,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       this.toast.success('Talep Formu PDF olarak indirildi.');
 
       // Seçili ürünlerin süreç durumunu talep kaynağına göre güncelle
-      const cekiIdler = items.map(i => i.cekiSatiriId);
+      const cekiIdler = Array.from(new Set(items.map(i => i.cekiSatiriId)));
       this.gridService.surecDurumGuncelle({
         projeId: this.projeId(),
         cekiSatiriIdler: cekiIdler,
@@ -1509,7 +1547,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
           if (res.isSuccess) {
             this.toast.success(`Seçili ürünlerin süreç durumu "${talepKaynak}" olarak güncellendi.`);
             this.gridService.notifyGridUpdated();
-            this.selectedIds.set(new Set());
+            this.selectedRowKeys.set(new Set());
             this.loadUrunler(false);
           } else {
             this.toast.error(res.error ?? 'S\u00fcre\u00e7 durumu g\u00fcncellenemedi.');
@@ -1566,7 +1604,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     if (this.hasSevkKilitliSecim()) return;
 
     const tip = this.topluIslemTipi();
-    const ids = Array.from(this.selectedIds());
+    const ids = this.getSelectedCekiSatiriIds();
     if (ids.length === 0) return;
 
     this.topluIslemSaving.set(true);
@@ -1604,7 +1642,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       this.toast.success(`${this.topluIslemBaslik()} işlemi başarıyla tamamlandı.`);
       this.gridService.notifyGridUpdated();
       this.closeTopluIslemModal();
-      this.selectedIds.set(new Set());
+      this.selectedRowKeys.set(new Set());
       this.loadUrunler(false);
     } else {
       this.toast.error(res.error ?? 'Toplu işlem başarısız.');

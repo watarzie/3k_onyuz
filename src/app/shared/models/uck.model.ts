@@ -4,6 +4,17 @@ import { SahaTamamlamaIzDto } from './saha-iz.model';
 export interface UcKUrunDto {
   cekiSatiriId: number;
   sandikIcerikId?: number;
+  /** Çeki satırındaki ana talep; sandık dağılımından bağımsız toplamdır. */
+  anaIstenenAdet?: number;
+  /** Bu sandık içeriğine tahsis edilmiş güncel miktardır. */
+  sandikMiktari?: number;
+  sandikBazliDagitim?: boolean;
+  toplamGridGelenAdet?: number;
+  toplamUcKGelenMiktar?: number;
+  toplamKalanMiktar?: number;
+  sandikAktarilanGiris?: number;
+  sandikAktarilanCikis?: number;
+  sandikTransferOzeti?: string;
   isSahaManuelSandikIcerigi?: boolean;
   kaynakCekiSatiriId?: number;
   kaynakProjeNo?: string;
@@ -131,6 +142,7 @@ export interface UcKIsListesiItemDto {
 
 export interface UcKDurumGuncelleDto {
   cekiSatiriId: number;
+  sandikIcerikId?: number;
   projeId: number;
   karsilamaTipiId: number;
   gelenAdet?: number;
@@ -149,11 +161,18 @@ export interface UcKDurumGuncelleDto {
 export interface TopluTamGeldiDto {
   projeId: number;
   cekiSatiriIdler: number[];
+  secimler?: UcKTopluSecimDto[];
   aciklama?: string;
+}
+
+export interface UcKTopluSecimDto {
+  cekiSatiriId: number;
+  sandikIcerikId?: number;
 }
 
 export interface UcKDurumSifirlaDto {
   cekiSatiriId: number;
+  sandikIcerikId?: number;
   projeId: number;
   aciklama?: string;
 }

@@ -18,7 +18,7 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
-import { UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, ProjeDropdownDto, GridUrunDto, StokKaydiDto, CekiSatiriAnaVeriGuncelleDto, SahaTamamlamaIzDto } from '../../../shared/models/index';
+import { UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, UcKTopluSecimDto, ProjeDropdownDto, GridUrunDto, StokKaydiDto, CekiSatiriAnaVeriGuncelleDto, SahaTamamlamaIzDto } from '../../../shared/models/index';
 import { UcKDurum, GridSevkDurum, GridDurum } from '../../../core/constants/enums';
 
 interface KarsilamaTipi { id: number; value: string; label: string; color: string; bgClass: string; }
@@ -61,6 +61,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   private readonly sevkEdilmisSandikMesaji = 'Bu ürün sevk edilmiş sandıkta olduğu için işlem yapılamaz.';
 
   projeId = signal(0);
+  sandikId = signal<number | null>(null);
   sandikNo = signal('');
   urunler = signal<UcKUrunDto[]>([]);
   filtered = signal<UcKUrunDto[]>([]);
@@ -117,7 +118,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   sahaAktarimGeriAlSaving = signal<number | null>(null);
 
   // Checkbox + Toplu TamGeldi
-  selectedIds = signal<Set<number>>(new Set());
+  selectedRowKeys = signal<Set<string>>(new Set());
   showTopluModal = signal(false);
   topluAciklama = signal('');
   topluSaving = signal(false);
@@ -212,8 +213,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   eksikGeldi = computed(() => this.urunler().filter(u => u.ucKKarsilamaTipiMetni === 'Sevk Adeti Eksik Geldi').length);
   tamamlanan = computed(() => this.urunler().filter(u => u.kalan === 0).length);
   kalanlar = computed(() => this.urunler().filter(u => u.kalan > 0).length);
-  get hasSelection(): boolean { return this.selectedIds().size > 0; }
-  get selectionCount(): number { return this.selectedIds().size; }
+  get hasSelection(): boolean { return this.selectedRowKeys().size > 0; }
+  get selectionCount(): number { return this.selectedRowKeys().size; }
 
   karsilamaTipleri = KARSILAMA_TIPLERI;
   breadcrumb: { label: string; link?: string }[] = [];
@@ -225,9 +226,14 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('projeId'));
     const sNo = this.route.snapshot.paramMap.get('sandikNo') ?? '';
+    const sandikIdParam = Number(
+      this.route.snapshot.paramMap.get('sandikId') ??
+      this.route.snapshot.queryParamMap.get('sandikId')
+    );
     const focusParam = Number(this.route.snapshot.queryParamMap.get('focusCekiSatiriId'));
     const initialFocusCekiSatiriId = Number.isFinite(focusParam) && focusParam > 0 ? focusParam : null;
     this.projeId.set(id);
+    this.sandikId.set(Number.isFinite(sandikIdParam) && sandikIdParam > 0 ? sandikIdParam : null);
     this.sandikNo.set(sNo);
     const isSaha = this.activeMenuKod === 'saha-3k-modulu';
     this.breadcrumb = [
@@ -290,7 +296,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       this.loading.set(true);
     }
     const scrollSnapshot = showLoader ? null : this.captureTableScroll();
-    this.uckService.getUrunler(this.projeId()).subscribe((res) => {
+    this.uckService.getUrunler(this.projeId(), this.sandikId(), this.sandikNo()).subscribe((res) => {
       if (showLoader) {
         this.loading.set(false);
       }
@@ -305,8 +311,14 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     });
   }
 
-  getRowDomId(cekiSatiriId: number): string {
-    return `uck-row-${cekiSatiriId}`;
+  getRowKey(urun: UcKUrunDto): string {
+    return urun.sandikIcerikId
+      ? `sandik-icerik-${urun.sandikIcerikId}`
+      : `ceki-satiri-${urun.cekiSatiriId}`;
+  }
+
+  getRowDomId(urun: UcKUrunDto): string {
+    return `uck-row-${this.getRowKey(urun)}`;
   }
 
   private rememberFocus(cekiSatiriId?: number | null) {
@@ -326,7 +338,10 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   private restoreRowPosition(focusCekiSatiriId: number | null, scrollSnapshot: { top: number; left: number } | null) {
     window.requestAnimationFrame(() => {
-      const row = focusCekiSatiriId ? document.getElementById(this.getRowDomId(focusCekiSatiriId)) : null;
+      const focusUrun = focusCekiSatiriId
+        ? this.urunler().find(u => u.cekiSatiriId === focusCekiSatiriId)
+        : null;
+      const row = focusUrun ? document.getElementById(this.getRowDomId(focusUrun)) : null;
       if (row) {
         row.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
         row.classList.add('row-focus-flash');
@@ -703,6 +718,30 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     return ozetler;
   }
 
+  getSandikMiktari(urun: UcKUrunDto): number {
+    return Math.max(Number(urun.sandikMiktari ?? urun.istenenAdet ?? 0), 0);
+  }
+
+  getAnaIstenenAdet(urun: UcKUrunDto): number {
+    return Math.max(Number(urun.anaIstenenAdet ?? urun.istenenAdet ?? 0), 0);
+  }
+
+  hasAnaToplamFarki(urun: UcKUrunDto): boolean {
+    return Math.abs(this.getAnaIstenenAdet(urun) - this.getSandikMiktari(urun)) > 0.0001;
+  }
+
+  getSandikTransferOzeti(urun: UcKUrunDto): string {
+    const apiOzeti = urun.sandikTransferOzeti?.trim();
+    if (apiOzeti) return apiOzeti;
+
+    const giris = Math.max(Number(urun.sandikAktarilanGiris ?? 0), 0);
+    const cikis = Math.max(Number(urun.sandikAktarilanCikis ?? 0), 0);
+    const ozetler: string[] = [];
+    if (giris > 0) ozetler.push(`${this.formatMiktar(giris)} giriş`);
+    if (cikis > 0) ozetler.push(`${this.formatMiktar(cikis)} çıkış`);
+    return ozetler.join(' · ');
+  }
+
   getProjedenAlinanProjeOzeti(urun: UcKUrunDto): string {
     const projeNolari = (urun.transferZinciri ?? [])
       .filter(transfer => transfer.yon === 'Gelen')
@@ -1035,6 +1074,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     const _aciklama = tip === 'Geri Gönderildi' ? this.panelAciklama() : this.panelAciklama();
     const dto: UcKDurumGuncelleDto = {
       cekiSatiriId: u.cekiSatiriId,
+      sandikIcerikId: u.sandikIcerikId,
       projeId: this.projeId(),
       karsilamaTipiId: KARSILAMA_TIPLERI.find(t => t.value === tip)?.id ?? 0,
       gelenAdet: this.panelGelenAdet(),
@@ -1092,6 +1132,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
     this.uckService.durumSifirla({
       cekiSatiriId: u.cekiSatiriId,
+      sandikIcerikId: u.sandikIcerikId,
       projeId: this.projeId(),
     }).subscribe({
       next: (res) => {
@@ -1116,42 +1157,59 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   }
 
   // ===== Checkbox Selection =====
-  toggleSelect(id: number) {
+  toggleSelect(urun: UcKUrunDto) {
     if (!this.canSelectRows) return;
 
-    const urun = this.filtered().find(u => u.cekiSatiriId === id);
-    if (urun && this.isCheckboxDisabled(urun)) return;
+    if (this.isCheckboxDisabled(urun)) return;
 
-    const s = new Set(this.selectedIds());
-    s.has(id) ? s.delete(id) : s.add(id);
-    this.selectedIds.set(s);
+    const key = this.getRowKey(urun);
+    const s = new Set(this.selectedRowKeys());
+    s.has(key) ? s.delete(key) : s.add(key);
+    this.selectedRowKeys.set(s);
   }
   toggleSelectAll() {
     if (!this.canSelectRows) return;
 
     const selectable = this.filtered().filter(u => !this.isCheckboxDisabled(u));
     if (selectable.length === 0) {
-      this.selectedIds.set(new Set());
+      this.selectedRowKeys.set(new Set());
       return;
     }
 
-    const s = new Set(this.selectedIds());
-    if (selectable.every(u => s.has(u.cekiSatiriId))) {
-      selectable.forEach(u => s.delete(u.cekiSatiriId));
+    const s = new Set(this.selectedRowKeys());
+    if (selectable.every(u => s.has(this.getRowKey(u)))) {
+      selectable.forEach(u => s.delete(this.getRowKey(u)));
     } else {
-      selectable.forEach(u => s.add(u.cekiSatiriId));
+      selectable.forEach(u => s.add(this.getRowKey(u)));
     }
-    this.selectedIds.set(s);
+    this.selectedRowKeys.set(s);
   }
-  isSelected(id: number): boolean { return this.selectedIds().has(id); }
+  isSelected(urun: UcKUrunDto): boolean { return this.selectedRowKeys().has(this.getRowKey(urun)); }
   get allSelected(): boolean {
     const selectable = this.filtered().filter(u => !this.isCheckboxDisabled(u));
-    return selectable.length > 0 && selectable.every(u => this.selectedIds().has(u.cekiSatiriId));
+    return selectable.length > 0 && selectable.every(u => this.selectedRowKeys().has(this.getRowKey(u)));
   }
 
   private getSelectedUrunler(): UcKUrunDto[] {
-    const ids = this.selectedIds();
-    return this.urunler().filter(u => ids.has(u.cekiSatiriId));
+    const keys = this.selectedRowKeys();
+    return this.urunler().filter(u => keys.has(this.getRowKey(u)));
+  }
+
+  private getSelectedCekiSatiriIds(): number[] {
+    return Array.from(new Set(
+      this.getSelectedUrunler()
+        .map(u => u.cekiSatiriId)
+        .filter(id => id > 0)
+    ));
+  }
+
+  private getSelectedSecimler(): UcKTopluSecimDto[] {
+    return this.getSelectedUrunler()
+      .filter(u => u.cekiSatiriId > 0)
+      .map(u => ({
+        cekiSatiriId: u.cekiSatiriId,
+        sandikIcerikId: u.sandikIcerikId
+      }));
   }
 
   private hasSevkKilitliSecim(): boolean {
@@ -1175,7 +1233,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     this.topluSaving.set(true);
     const dto: TopluTamGeldiDto = {
       projeId: this.projeId(),
-      cekiSatiriIdler: Array.from(this.selectedIds()),
+      cekiSatiriIdler: this.getSelectedCekiSatiriIds(),
+      secimler: this.getSelectedSecimler(),
       aciklama: this.topluAciklama() || undefined,
     };
     this.uckService.topluTamGeldi(dto).subscribe({
@@ -1185,7 +1244,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
           this.toast.success(`${dto.cekiSatiriIdler.length} ürün Sevk Adeti Tam Geldi olarak işaretlendi.`);
           this.rememberFocus(dto.cekiSatiriIdler[0]);
           this.closeTopluTamGeldi();
-          this.selectedIds.set(new Set());
+          this.selectedRowKeys.set(new Set());
           this.uckService.notifyUckUpdated();
         } else {
           this.toast.error(res.error ?? 'Toplu güncelleme başarısız.');
@@ -1218,7 +1277,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     this.topluTedarikciSaving.set(true);
     const dto: TopluTamGeldiDto = {
       projeId: this.projeId(),
-      cekiSatiriIdler: Array.from(this.selectedIds()),
+      cekiSatiriIdler: this.getSelectedCekiSatiriIds(),
+      secimler: this.getSelectedSecimler(),
       aciklama: this.topluTedarikciAciklama() || undefined,
     };
     this.uckService.topluTedarikci(dto).subscribe({
@@ -1228,7 +1288,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
           this.toast.success(`${dto.cekiSatiriIdler.length} ürün Tedarikçiden Karşılandı olarak işaretlendi.`);
           this.rememberFocus(dto.cekiSatiriIdler[0]);
           this.closeTopluTedarikci();
-          this.selectedIds.set(new Set());
+          this.selectedRowKeys.set(new Set());
           this.uckService.notifyUckUpdated();
         } else {
           this.toast.error(res.error ?? 'Toplu güncelleme başarısız.');
@@ -1274,7 +1334,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     this.anaBarkodNo.set(urun.barkodNo ?? '');
     this.anaOlcuResmiPozNo.set(urun.olcuResmiPozNo ?? '');
     this.anaAciklama.set(urun.aciklama ?? '');
-    this.anaIstenenAdet.set(this.toNumber(urun.istenenAdet));
+    this.anaIstenenAdet.set(this.getAnaIstenenAdet(urun));
     this.anaBirimId.set(urun.birimId ?? this.mapBirimId(urun.birim));
     this.anaSandikNo.set(urun.sandikNo ?? '');
     this.anaError.set('');
@@ -1334,7 +1394,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   }
 
   async deleteSelectedCekiSatirlari() {
-    const ids = Array.from(this.selectedIds());
+    const ids = this.getSelectedCekiSatiriIds();
     if (!this.canDeleteCekiVerisi() || ids.length === 0) return;
     if (this.hasSevkKilitliSecim()) return;
 
@@ -1353,7 +1413,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
         if (res.isSuccess) {
           const silinen = res.value?.silinenSatirSayisi ?? ids.length;
           this.toast.success(`${silinen} çeki satırı silindi.`);
-          this.selectedIds.set(new Set());
+          this.selectedRowKeys.set(new Set());
           this.uckService.notifyUckUpdated();
           this.gridService.notifyGridUpdated();
           this.loadUrunler(false);
@@ -1422,9 +1482,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   // ===== Toplu Tam Geldi butonu aktif mi? =====
   // Seçili ürünlerin TÜMÜ Grid tarafından sevk edilmiş olmalı
   get isTopluTamGeldiAllowed(): boolean {
-    if (this.selectedIds().size === 0) return false;
-    const ids = this.selectedIds();
-    const selected = this.urunler().filter(u => ids.has(u.cekiSatiriId));
+    if (this.selectedRowKeys().size === 0) return false;
+    const selected = this.getSelectedUrunler();
     return selected.length > 0 && selected.every(u =>
       !this.isSatirSevkKilidi(u) &&
       u.gridSevkDurumuId === GridSevkDurum.SevkEdildi &&
@@ -1493,7 +1552,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   closeTopluGeriAl() { this.showTopluGeriAlModal.set(false); }
 
   confirmTopluGeriAl() {
-    const ids = Array.from(this.selectedIds());
+    const ids = this.getSelectedCekiSatiriIds();
     if (ids.length === 0) return;
     if (this.hasSevkKilitliSecim()) return;
 
@@ -1501,6 +1560,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     this.uckService.topluSifirla({
       projeId: this.projeId(),
       cekiSatiriIdler: ids,
+      secimler: this.getSelectedSecimler(),
       aciklama: this.topluGeriAlAciklama() || undefined,
     }).subscribe({
       next: (res) => {
@@ -1509,7 +1569,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
           this.toast.success('Seçili ürünlerin 3K durumları başarıyla sıfırlandı.');
           this.rememberFocus(ids[0]);
           this.closeTopluGeriAl();
-          this.selectedIds.set(new Set());
+          this.selectedRowKeys.set(new Set());
           this.uckService.notifyUckUpdated();
         } else {
           this.toast.error(res.error ?? 'Toplu geri alma başarısız.');
