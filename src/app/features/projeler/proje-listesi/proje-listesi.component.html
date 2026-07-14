@@ -18,7 +18,11 @@
           <i class="ri-tools-line me-2"></i>Eksiklerden Oluştur
         </a>
       }
-      @if ((isSahaYonetimi() || isYedekYonetimi()) && canWriteCurrentMenu()) {
+      @if (isYedekYonetimi() && canUploadYedekCeki()) {
+        <button class="btn btn-primary-gradient" (click)="openUploadModal('yedek')">
+          <i class="ri-file-excel-2-line me-2"></i>Yedek Çekisi Yükle
+        </button>
+      } @else if (isSahaYonetimi() && canWriteCurrentMenu()) {
         <button class="btn btn-primary-gradient" (click)="openProjeOlusturModal()">
           <i class="ri-add-line me-2"></i>Proje Oluştur
         </button>
@@ -107,13 +111,22 @@
         @if (isSevkEdilen()) {
           <div class="empty-icon mb-3 text-muted" style="font-size: 3rem;"><i class="ri-truck-line"></i></div>
           <h5 class="fw-semibold mb-2">Sevk edilen proje bulunmuyor</h5>
-        } @else if (isSahaYonetimi() || isYedekYonetimi()) {
+        } @else if (isSahaYonetimi()) {
           <div class="empty-icon mb-3" style="font-size: 3rem;"><i class="ri-archive-drawer-line"></i></div>
-          <h5 class="fw-semibold mb-2">Henüz {{ isSahaYonetimi() ? 'saha' : 'yedek' }} projesi bulunmuyor</h5>
+          <h5 class="fw-semibold mb-2">Henüz saha projesi bulunmuyor</h5>
           <p class="text-muted mb-3">Başlamak için yeni bir proje oluşturun</p>
-          @if ((isSahaYonetimi() || isYedekYonetimi()) && canWriteCurrentMenu()) {
+          @if (canWriteCurrentMenu()) {
             <button class="btn btn-primary-gradient" (click)="openProjeOlusturModal()">
               <i class="ri-add-line me-2"></i>Proje Oluştur
+            </button>
+          }
+        } @else if (isYedekYonetimi()) {
+          <div class="empty-icon mb-3 text-success" style="font-size: 3rem;"><i class="ri-file-excel-2-line"></i></div>
+          <h5 class="fw-semibold mb-2">Henüz yedek projesi bulunmuyor</h5>
+          <p class="text-muted mb-3">Yedek çeki dosyasını yüklediğinizde proje ve ilk sandık otomatik oluşturulur.</p>
+          @if (canUploadYedekCeki()) {
+            <button class="btn btn-primary-gradient" (click)="openUploadModal('yedek')">
+              <i class="ri-upload-2-line me-2"></i>Yedek Çekisi Yükle
             </button>
           }
         } @else {
@@ -176,7 +189,7 @@
                   </td>
                 }
                 @if (isSandikMode()) {
-                  <td>{{ p.musteri ?? '-' }}</td>
+                  <td>{{ p.musteri || '-' }}</td>
                   <td>
                     <span class="fw-semibold">{{ p.hazirSandikSayisi }}/{{ p.sandikSayisi }}</span>
                     <small class="text-muted ms-1">hazır</small>
@@ -264,7 +277,17 @@
                               <i class="ri-archive-stack-line me-1"></i>3K
                             </a>
                           }
-                          @if (isYedekYonetimi() || canSeeSahaRapor()) {
+                          @if (isYedekYonetimi() && canSeeYedekGrid()) {
+                            <a [routerLink]="['/yedek-yonetimi/grid', p.id]" class="btn btn-sm btn-action-grid" title="Yedek Grid Modülü">
+                              <i class="ri-database-2-line me-1"></i>Grid
+                            </a>
+                          }
+                          @if (isYedekYonetimi() && canSeeYedek3K()) {
+                            <a [routerLink]="['/yedek-yonetimi/uck', p.id]" class="btn btn-sm btn-action-3k" title="Yedek 3K Modülü">
+                              <i class="ri-archive-stack-line me-1"></i>3K
+                            </a>
+                          }
+                          @if ((isYedekYonetimi() && canSeeYedekRapor()) || (isSahaYonetimi() && canSeeSahaRapor())) {
 
                             <button class="btn btn-sm btn-danger" (click)="indirSahaProjePdf(p)" [disabled]="downloadingPdf() === p.id" [title]="isSahaYonetimi() ? 'Saha Raporu' : 'Yedek Raporu'">
                             @if (downloadingPdf() === p.id) {
@@ -274,6 +297,20 @@
                             }
                           </button>
 
+                          }
+
+                          @if (isYedekYonetimi() && canSeeYedekEksikRapor()) {
+                            <div class="report-download" (click)="$event.stopPropagation()">
+                              <button type="button" class="btn btn-sm btn-outline-danger report-download-trigger" (click)="toggleReportMenu($event, 'yedek-eksik-' + p.id, p, 'eksik')" [disabled]="isEksikDownloading(p.id)" title="Yedek Eksik Raporu">
+                                @if (isEksikDownloading(p.id)) {
+                                  <span class="spinner-border spinner-border-sm"></span>
+                                } @else {
+                                  <i class="ri-file-warning-line"></i>
+                                }
+                                <span>Eksik Raporu</span>
+                                <i class="ri-arrow-down-s-line report-download-chevron" [class.open]="isReportMenuOpen('yedek-eksik-' + p.id)"></i>
+                              </button>
+                            </div>
                           }
 
                           @if (isSahaYonetimi() && canSeeSahaSevkSonrasiEksikRapor()) {
@@ -290,7 +327,7 @@
                             </div>
                           }
 
-                          @if (isYedekYonetimi() || canSeeSahaSandiklar()) {
+                          @if ((isYedekYonetimi() && canSeeYedekSandiklar()) || (isSahaYonetimi() && canSeeSahaSandiklar())) {
 
                             <a [routerLink]="[routePrefix, p.id]" class="btn btn-sm btn-outline-primary" title="Sandıklar">
                             <i class="ri-inbox-line me-1"></i>Sandıklar
@@ -305,7 +342,7 @@
                         }
                       }
                       
-                      @if ((canSevkEtCurrent() || canUpdatePlanlananSevkTarihi()) && (!isSandikMode() || isSahaYonetimi() || isYedekYonetimi())) {
+                      @if ((canSevkEtCurrent() || canUpdatePlanlananSevkTarihiCurrent()) && (!isSandikMode() || isSahaYonetimi() || isYedekYonetimi())) {
                         @if (p.durumMetni === 'SevkEdildi' || p.durumMetni === 'Sevk Edildi') {
                           @if (canSevkEtCurrent()) {
                             <button class="btn btn-sm btn-outline-primary" (click)="openKilitAcModal(p)">
@@ -318,7 +355,7 @@
                               <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
                             </button>
                           }
-                          @if (canUpdatePlanlananSevkTarihi()) {
+                          @if (canUpdatePlanlananSevkTarihiCurrent()) {
                             <button class="btn btn-sm btn-warning" (click)="openSevkTarihiModal(p)" title="Planlanan Sevk Tarihi Gir">
                               <i class="ri-calendar-event-line me-1"></i>Planlanan Sevk Tarihi
                             </button>
@@ -420,15 +457,26 @@
 <!-- ===== Çeki Yükle Modal ===== -->
 @if (showUploadModal()) {
   <div class="modal-overlay" (click)="closeUploadModal()"></div>
-  <div class="upload-modal" [class.revision-mode]="uploadMode() === 'revizyon'">
+  <div class="upload-modal" [class.revision-mode]="uploadMode() === 'revizyon'" [class.yedek-mode]="isYedekUpload()">
     <div class="modal-header d-flex align-items-center justify-content-between">
       <h5 class="fw-semibold mb-0">
-        <i [class]="uploadMode() === 'revizyon' ? 'ri-git-branch-line me-2' : 'ri-upload-2-line me-2'"></i>
-        {{ uploadMode() === 'revizyon' ? 'Revizyon Çekisi Yükle' : 'Çeki Dosyası Yükle' }}
+        <i [class]="uploadMode() === 'revizyon' ? 'ri-git-branch-line me-2' : isYedekUpload() ? 'ri-box-3-line me-2' : 'ri-upload-2-line me-2'"></i>
+        {{ uploadMode() === 'revizyon' ? 'Revizyon Çekisi Yükle' : isYedekUpload() ? 'Yedek Çekisi Yükle' : 'Çeki Dosyası Yükle' }}
       </h5>
       <button class="btn btn-sm border-0" (click)="closeUploadModal()"><i class="ri-close-line fs-5"></i></button>
     </div>
     <div class="modal-body">
+      @if (isYedekUpload()) {
+        <div class="yedek-upload-info mb-3">
+          <div class="yedek-upload-info-icon"><i class="ri-information-line"></i></div>
+          <div>
+            <strong>Yedek çeki formatı</strong>
+            <p>Proje numarası <b>C1</b> hücresinden; kalem, bileşen, açıklama, miktar ve depo yeri bilgileri <b>A–E</b> sütunlarından okunur.</p>
+            <small>Tüm ürünler başlangıçta 1 numaralı sandıkta toplanır. Sonradan yeni sandık oluşturup ürünleri taşıyabilirsiniz.</small>
+          </div>
+        </div>
+      }
+
       <!-- Sonuç Mesajı -->
       @if (uploadResult()) {
         <div class="alert mb-3" [ngClass]="{
@@ -442,13 +490,14 @@
 
       <!-- Drag & Drop Zone -->
       @if (!selectedFile()) {
-        <div class="upload-zone text-center p-5 border rounded bg-light"
-             (dragover)="onDragOver($event)" (drop)="onDrop($event)">
+        <div class="upload-zone drop-zone"
+             [class.drag-over]="dragOver()"
+             (dragover)="onDragOver($event)" (dragleave)="onDragLeave()" (drop)="onDrop($event)">
           <i class="ri-file-excel-2-line text-primary mb-3" style="font-size: 3rem;"></i>
-          <h6>{{ uploadMode() === 'revizyon' ? 'Revizyon Excel dosyasını sürükleyip bırakın' : 'Excel dosyasını sürükleyip bırakın' }}</h6>
-          <p class="text-muted small mb-3">Sadece .xlsx dosyaları kabul edilir</p>
-          <input type="file" id="fileInput" class="d-none" accept=".xlsx" (change)="onFileSelected($event)">
-          <button class="btn btn-outline-primary btn-sm" onclick="document.getElementById('fileInput').click()">Dosya Seç</button>
+          <h6>{{ uploadMode() === 'revizyon' ? 'Revizyon Excel dosyasını sürükleyip bırakın' : isYedekUpload() ? 'Yedek çeki dosyasını sürükleyip bırakın' : 'Excel dosyasını sürükleyip bırakın' }}</h6>
+          <p class="text-muted small mb-3">Yalnızca .xlsx dosyaları kabul edilir</p>
+          <input #fileInput type="file" class="d-none" accept=".xlsx" (change)="onFileSelected($event)">
+          <button type="button" class="btn btn-outline-primary btn-sm" (click)="fileInput.click()">Dosya Seç</button>
         </div>
       } @else {
         <div class="file-preview d-flex align-items-center p-3 border rounded">
@@ -545,7 +594,7 @@
           @if (uploading()) {
             <span class="spinner-border spinner-border-sm me-2"></span>Yükleniyor...
           } @else {
-            Yükle ve İşle
+            {{ isYedekUpload() ? 'Yedek Projesini Oluştur' : 'Yükle ve İşle' }}
           }
         </button>
       }

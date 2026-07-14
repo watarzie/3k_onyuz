@@ -520,7 +520,10 @@ export class BildirimMerkeziComponent implements OnInit, OnDestroy {
     if (path.startsWith('/saha-yonetimi/grid/')) return 'saha-grid-modulu';
     if (path.startsWith('/saha-yonetimi/uck/')) return 'saha-3k-modulu';
     if (path === '/saha-yonetimi' || path.startsWith('/saha-yonetimi/')) return 'saha-yonetimi';
-    if (path === '/yedek-yonetimi' || path.startsWith('/yedek-yonetimi/')) return 'yedek-yonetimi';
+    if (path === '/yedek-yonetimi/grid' || path.startsWith('/yedek-yonetimi/grid/')) return 'yedek-grid-modulu';
+    if (path === '/yedek-yonetimi/uck' || path.startsWith('/yedek-yonetimi/uck/')) return 'yedek-3k-modulu';
+    if (path === '/yedek-yonetimi') return 'yedek-yonetimi';
+    if (path.startsWith('/yedek-yonetimi/')) return 'yedek-sandiklar';
     if (path === '/hareket-gecmisi' || path.startsWith('/hareket-gecmisi/')) return 'hareket-gecmisi';
     return null;
   }

@@ -50,6 +50,7 @@ export const API = {
   },
   CEKI: {
     YUKLE: `${BASE}/ceki/yukle`,
+    YEDEK_YUKLE: `${BASE}/ceki/yedek-yukle`,
     REVIZYON_ONIZLE: `${BASE}/ceki/revizyon-onizle`,
     REVIZYON_YUKLE: `${BASE}/ceki/revizyon-yukle`,
     SATIRLAR: (cekiId: number) => `${BASE}/ceki/${cekiId}/satirlar`,

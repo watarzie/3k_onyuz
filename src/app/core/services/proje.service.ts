@@ -174,6 +174,16 @@ export class ProjeService {
     );
   }
 
+  yedekCekiYukle(dosya: File): Observable<ApiResult<CekiYuklemeResultDto>> {
+    const formData = new FormData();
+    formData.append('dosya', dosya);
+    return this.api.postFormData<CekiYuklemeResultDto>(
+      API.CEKI.YEDEK_YUKLE,
+      formData,
+      this.menuOptions('yedek-ceki-yukle')
+    );
+  }
+
   cekiRevizyonOnizle(dosya: File): Observable<ApiResult<CekiRevizyonOnizlemeSonuc>> {
     const formData = new FormData();
     formData.append('dosya', dosya);

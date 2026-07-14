@@ -281,7 +281,7 @@
                 <button class="btn btn-sm btn-action btn-admin-edit"
                   (click)="openAnaVeriPanel(u); $event.stopPropagation()"
                   [disabled]="isSahaManuelIcerik(u)"
-                  [title]="isSahaManuelIcerik(u) ? 'Manuel saha urunu sandik detayindan yonetilir' : 'Ceki verisini duzenle'">
+                  [title]="isSahaManuelIcerik(u) ? (manuelIcerikTekilAdi + ' sandık detayından yönetilir') : 'ÇEKİ verisini düzenle'">
                   <i class="ri-file-edit-line"></i>
                 </button>
                 }
@@ -292,7 +292,7 @@
                   <i class="ri-edit-line"></i>
                 </button>
                 @if (u.isManuelEklenen && !isSahaManuelIcerik(u)) {
-                <button class="btn btn-sm btn-outline-danger" (click)="manuelUrunSil(u); $event.stopPropagation()" title="Manuel urunu sil">
+                <button class="btn btn-sm btn-outline-danger" (click)="manuelUrunSil(u); $event.stopPropagation()" title="Manuel ürünü sil">
                   <i class="ri-delete-bin-line"></i>
                 </button>
                 }

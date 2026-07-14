@@ -321,7 +321,7 @@
                 <button class="btn btn-sm btn-action btn-admin-edit"
                   (click)="openAnaVeriPanel(u); $event.stopPropagation()"
                   [disabled]="isSahaManuelIcerik(u) || isSatirSevkKilidi(u)"
-                  [title]="isSahaManuelIcerik(u) ? 'Manuel saha urunu sandik detayindan yonetilir' : (isSatirSevkKilidi(u) ? getUcKBlokajMesaji(u) : 'Ceki verisini duzenle')">
+                  [title]="isSahaManuelIcerik(u) ? (manuelIcerikTekilAdi + ' sandık detayından yönetilir') : (isSatirSevkKilidi(u) ? getUcKBlokajMesaji(u) : 'ÇEKİ verisini düzenle')">
                   <i class="ri-file-edit-line"></i>
                 </button>
                 }

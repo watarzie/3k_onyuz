@@ -152,7 +152,7 @@
               </button>
             </div>
             }
-            @if (canWriteSandik() && isSandikKilitli(s) && !isSandikSahayaAktarildi(s)) {
+            @if (canWriteSevk() && isSandikKilitli(s) && !isSandikSahayaAktarildi(s)) {
             <div class="card-top-actions">
               <button
                 class="card-icon-btn card-unlock-btn"
@@ -163,7 +163,7 @@
               </button>
             </div>
             }
-            @if (canWriteSandik() && isSandikDuzeltmeyeAcik(s)) {
+            @if (canWriteSevk() && isSandikDuzeltmeyeAcik(s)) {
             <div class="card-top-actions">
               <button
                 class="card-icon-btn card-complete-correction-btn"
@@ -350,7 +350,7 @@
 }
 
 <!-- ===== Sandık Lokasyon Modal ===== -->
-@if (showLokasyonModal() && selectedSandikForLocIds().length > 0) {
+@if (canWriteSandik() && showLokasyonModal() && selectedSandikForLocIds().length > 0) {
 <div class="modal-overlay" (click)="closeLokasyonModal()"></div>
 <div class="toplu-sevk-modal"
   style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1055; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
@@ -391,7 +391,7 @@
 }
 
 <!-- ===== Sandık Ekleme Modal ===== -->
-@if (showSandikEkleModal()) {
+@if (canWriteSandik() && showSandikEkleModal()) {
 <div class="modal-overlay" (click)="closeSandikEkleModal()"></div>
 <div class="toplu-sevk-modal"
   style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1055; width: 100%; max-width: 440px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
@@ -463,7 +463,7 @@
 }
 
 <!-- ===== Sevkiyat Kilidi Açma Talebi ===== -->
-@if (showKilitAcModal()) {
+@if (canWriteSevk() && showKilitAcModal()) {
 <div class="modal-overlay" (click)="closeKilitAcModal()"></div>
 <div class="toplu-sevk-modal kilit-ac-modal"
   style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1055; width: 100%; max-width: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
