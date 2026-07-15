@@ -96,6 +96,56 @@ table {
   tr:last-child td { border-bottom: none; }
   tr:hover { background: #F8FAFC; }
 }
+
+.shipment-date-column {
+  min-width: 205px;
+}
+
+.shipment-date-cell {
+  white-space: nowrap;
+}
+
+.shipment-date-stack {
+  display: grid;
+  gap: 5px;
+}
+
+.shipment-date {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 4px 7px;
+  border-radius: 7px;
+  font-size: 12px;
+
+  i {
+    font-size: 13px;
+    line-height: 1;
+  }
+
+  &--planned {
+    color: #6d28d9;
+    background: rgba(109, 40, 217, .08);
+  }
+
+  &--actual {
+    color: #15803d;
+    background: rgba(21, 128, 61, .08);
+  }
+}
+
+.shipment-date-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.shipment-date-value {
+  color: var(--blackColor);
+  font-weight: 600;
+}
 .proje-icon {
   width: 36px; height: 36px; border-radius: 8px;
   background: linear-gradient(135deg, rgba(96,93,255,.1), rgba(139,92,246,.1));

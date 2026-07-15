@@ -160,6 +160,12 @@ export class ProjeListesiComponent implements OnInit {
   selectedProjeId = signal(0);
   sevkTarihiProje = signal<ProjeDto | null>(null);
   guncelSevkTarihi = signal('');
+  planlananSevkTarihiGecerli = computed(() => {
+    const value = this.guncelSevkTarihi().trim();
+    const dateTimeLocalPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/;
+
+    return dateTimeLocalPattern.test(value) && !Number.isNaN(new Date(value).getTime());
+  });
   sevkTarihiSaving = signal(false);
 
   // Sevk Et Modal
@@ -337,8 +343,10 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   private toApiDateTime(value: string): string | null {
-    if (!value) return null;
-    return value.length === 16 ? `${value}:00` : value;
+    const normalizedValue = value.trim();
+    if (!normalizedValue) return null;
+
+    return normalizedValue.length === 16 ? `${normalizedValue}:00` : normalizedValue;
   }
 
   private compareSandikNo(a?: string | null, b?: string | null): number {
@@ -776,14 +784,43 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   kaydetSevkTarihi() {
-    this.sevkTarihiSaving.set(true);
     const tarih = this.toApiDateTime(this.guncelSevkTarihi());
-    
-    this.projeService.sevkTarihiGuncelle(this.selectedProjeId(), tarih).subscribe({
+
+    if (!tarih || !this.planlananSevkTarihiGecerli()) {
+      this.toastService.error('Lütfen geçerli bir planlanan sevk tarihi ve saati seçiniz.');
+      return;
+    }
+
+    this.planlananSevkTarihiGuncelle(tarih, 'Planlanan sevk tarihi güncellendi.');
+  }
+
+  async planlananSevkTarihiKaldir(): Promise<void> {
+    if (!this.sevkTarihiProje()?.planlananSevkTarihi || this.sevkTarihiSaving()) return;
+
+    const onay = await this.confirmService.ask({
+      title: 'Planlanan Sevk Tarihini Kaldır',
+      message: 'Bu projedeki kayıtlı planlanan sevk tarihi kaldırılacaktır.',
+      confirmText: 'Tarihi Kaldır',
+      cancelText: 'Vazgeç',
+      type: 'warning'
+    });
+
+    if (!onay) return;
+
+    this.planlananSevkTarihiGuncelle(null, 'Planlanan sevk tarihi kaldırıldı.');
+  }
+
+  private planlananSevkTarihiGuncelle(tarih: string | null, basariMesaji: string): void {
+    const projeId = this.selectedProjeId();
+    if (projeId <= 0 || this.sevkTarihiSaving()) return;
+
+    this.sevkTarihiSaving.set(true);
+
+    this.projeService.sevkTarihiGuncelle(projeId, tarih).subscribe({
       next: (res) => {
         this.sevkTarihiSaving.set(false);
         if (res.isSuccess) {
-          this.toastService.success('Sevk tarihi güncellendi.');
+          this.toastService.success(basariMesaji);
           this.closeSevkTarihiModal();
           this.loadProjeler();
         } else {

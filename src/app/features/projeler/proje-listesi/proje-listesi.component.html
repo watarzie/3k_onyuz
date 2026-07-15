@@ -146,7 +146,7 @@
                 <th>{{ 'LABELS.LOKASYON' | translate }}</th>
               }
               <th>{{ 'LABELS.durumMetni' | translate }}</th>
-              <th>Sevk Tarihi</th>
+              <th class="shipment-date-column">{{ 'LABELS.SEVK_TAKVIMI' | translate }}</th>
               <th>{{ 'LABELS.TAMAMLANMA' | translate }}</th>
                   @if (hasActionColumn()) {
                 <th>İşlemler</th>
@@ -187,14 +187,27 @@
                   <td>{{ p.lokasyon ?? '-' }}</td>
                 }
                 <td><app-status-badge [status]="p.durumMetni" [label]="getDurumLabel(p.durumMetni)" /></td>
-                <td>
-                  @if (p.gerceklesenSevkTarihi) {
-                    <span class="fw-semibold text-success">{{ p.gerceklesenSevkTarihi | date:'dd.MM.yyyy HH:mm' }}</span>
-                  } @else if (p.planlananSevkTarihi) {
-                    {{ p.planlananSevkTarihi | date:'dd.MM.yyyy HH:mm' }}
-                  } @else {
-                    <span class="text-muted">-</span>
-                  }
+                <td class="shipment-date-cell">
+                  <div class="shipment-date-stack">
+                    <div class="shipment-date shipment-date--planned">
+                      <span class="shipment-date-label">
+                        <i class="ri-calendar-event-line" aria-hidden="true"></i>
+                        {{ 'LABELS.PLANLANAN' | translate }}
+                      </span>
+                      <span class="shipment-date-value" [class.text-muted]="!p.planlananSevkTarihi">
+                        {{ p.planlananSevkTarihi ? (p.planlananSevkTarihi | date:'dd.MM.yyyy HH:mm') : '-' }}
+                      </span>
+                    </div>
+                    <div class="shipment-date shipment-date--actual">
+                      <span class="shipment-date-label">
+                        <i class="ri-checkbox-circle-line" aria-hidden="true"></i>
+                        {{ 'LABELS.GERCEKLESEN' | translate }}
+                      </span>
+                      <span class="shipment-date-value" [class.text-muted]="!p.gerceklesenSevkTarihi">
+                        {{ p.gerceklesenSevkTarihi ? (p.gerceklesenSevkTarihi | date:'dd.MM.yyyy HH:mm') : '-' }}
+                      </span>
+                    </div>
+                  </div>
                 </td>
                 <td>
                   <div class="d-flex align-items-center gap-2">
@@ -401,13 +414,21 @@
           <div class="mb-0">
             <label class="form-label fw-semibold">Planlanan Sevk Tarihi</label>
             <input type="datetime-local" class="form-control" step="60"
-                   [ngModel]="guncelSevkTarihi()" (ngModelChange)="guncelSevkTarihi.set($event)" />
-            <small class="text-muted d-block mt-1">Bu alan opsiyoneldir. Proje fiilen sevk edildiğinde tarih otomatik olarak güncellenir.</small>
+                   required
+                   [value]="guncelSevkTarihi()"
+                   [attr.aria-invalid]="!planlananSevkTarihiGecerli()"
+                   (input)="guncelSevkTarihi.set($any($event.target).value)" />
+            <small class="text-muted d-block mt-1">Tarih ve saat birlikte seçilmelidir. Kayıtlı tarihi kaldırmak için ayrı kaldırma işlemini kullanabilirsiniz.</small>
           </div>
         </div>
         <div class="modal-footer border-0 d-flex gap-2">
-          <button class="btn btn-light flex-grow-1" (click)="closeSevkTarihiModal()" [disabled]="sevkTarihiSaving()">Vazgeç</button>
-          <button class="btn btn-warning flex-grow-1" (click)="kaydetSevkTarihi()" [disabled]="sevkTarihiSaving()">
+          @if (sevkTarihiProje()?.planlananSevkTarihi) {
+            <button type="button" class="btn btn-outline-danger flex-grow-1" (click)="planlananSevkTarihiKaldir()" [disabled]="sevkTarihiSaving()">
+              <i class="ri-delete-bin-line me-1"></i> Kayıtlı Tarihi Kaldır
+            </button>
+          }
+          <button type="button" class="btn btn-light flex-grow-1" (click)="closeSevkTarihiModal()" [disabled]="sevkTarihiSaving()">Vazgeç</button>
+          <button type="button" class="btn btn-warning flex-grow-1" (click)="kaydetSevkTarihi()" [disabled]="sevkTarihiSaving() || !planlananSevkTarihiGecerli()">
             @if (sevkTarihiSaving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
             <i class="ri-save-line me-1"></i> Kaydet
           </button>
