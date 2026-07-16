@@ -105,6 +105,13 @@ export interface SahaAktarimDto {
   geriAlinabilirMi: boolean;
   geriAlinamamaNedeni?: string | null;
 }
+
+export interface SahaSandikAktarimGeriAlResultDto {
+  geriAlinanSatirSayisi: number;
+  geriAlinanToplamMiktar: number;
+  sandikBosaldiMi: boolean;
+}
+
 export interface ProjeTransferDto {
   id: number;
   kaynakProjeNo: string;

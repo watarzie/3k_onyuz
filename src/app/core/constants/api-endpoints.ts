@@ -26,6 +26,7 @@ export const API = {
     EKSIKLERDEN_SAHA_OLUSTUR: `${BASE}/proje/eksiklerden-saha-olustur`,
     SANDIKLARDAN_SAHA_OLUSTUR: `${BASE}/proje/sandiklardan-saha-olustur`,
     SAHA_AKTARIM_GERI_AL: `${BASE}/proje/saha-aktarim-geri-al`,
+    SAHA_SANDIK_AKTARIMLARI_GERI_AL: `${BASE}/proje/saha-sandik-aktarimlari-geri-al`,
     SAHA_AKTARIMLARI: (id: number) => `${BASE}/proje/${id}/saha-aktarimlari`,
     SANDIK_KAPAT: `${BASE}/proje/sandik-kapat`,
     SEVK_ET: (id: number) => `${BASE}/proje/${id}/sevk-et`,

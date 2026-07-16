@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiRevizyonOnizlemeSonuc, CekiRevizyonSonuc, CekiSatiriDto, ProjeDropdownDto, SevkiyatDto, EksiklerdenSahaProjesiOlusturDto, SandiklardanSahaProjesiOlusturDto, SahaAktarimDto } from '../../shared/models/index';
+import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiRevizyonOnizlemeSonuc, CekiRevizyonSonuc, CekiSatiriDto, ProjeDropdownDto, SevkiyatDto, EksiklerdenSahaProjesiOlusturDto, SandiklardanSahaProjesiOlusturDto, SahaAktarimDto, SahaSandikAktarimGeriAlResultDto } from '../../shared/models/index';
 
 /**
  * ProjeController (2 endpoint) + CekiController (2 endpoint):
@@ -83,6 +83,17 @@ export class ProjeService {
       API.PROJE.SAHA_AKTARIM_GERI_AL,
       {
         sahaCekiSatiriId,
+        aciklama: aciklama?.trim() || null
+      },
+      this.menuOptions('saha-aktarim-geri-al')
+    );
+  }
+
+  sahaSandikAktarimlariGeriAl(sahaSandikId: number, aciklama?: string): Observable<ApiResult<SahaSandikAktarimGeriAlResultDto>> {
+    return this.api.post<SahaSandikAktarimGeriAlResultDto>(
+      API.PROJE.SAHA_SANDIK_AKTARIMLARI_GERI_AL,
+      {
+        sahaSandikId,
         aciklama: aciklama?.trim() || null
       },
       this.menuOptions('saha-aktarim-geri-al')

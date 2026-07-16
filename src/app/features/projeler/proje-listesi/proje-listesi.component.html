@@ -617,7 +617,7 @@
             <h5 class="modal-title"><i class="ri-node-tree me-2 text-success"></i>Saha Aktarımları</h5>
             <small class="text-muted">{{ sahaAktarimProje()?.projeNo }} - {{ sahaAktarimProje()?.musteri }}</small>
           </div>
-          <button type="button" class="btn-close" (click)="closeSahaAktarimModal()" [disabled]="!!sahaAktarimGeriAlSaving()"></button>
+          <button type="button" class="btn-close" (click)="closeSahaAktarimModal()" [disabled]="sahaAktarimIslemVar()"></button>
         </div>
 
         <div class="modal-body pt-0">
@@ -639,48 +639,87 @@
             </div>
           } @else {
             <div class="saha-aktarim-list">
-              @for (aktarim of sahaAktarimlari(); track aktarim.sahaCekiSatiriId) {
-                <div class="saha-aktarim-item" [class.is-blocked]="!aktarim.geriAlinabilirMi">
-                  <div class="saha-aktarim-main">
-                    <div class="saha-aktarim-title">
-                      <span class="source-project">{{ aktarim.kaynakProjeNo }}</span>
-                      <strong>#{{ aktarim.siraNo }} · {{ aktarim.aciklama || aktarim.barkodNo }}</strong>
+              @for (grup of sahaAktarimGruplari(); track grup.sahaSandikId ?? grup.sahaSandikNo) {
+                <section class="saha-aktarim-group" [class.is-blocked]="!grup.geriAlinabilirMi">
+                  <div class="saha-aktarim-group-header">
+                    <div class="saha-aktarim-group-identity">
+                      <span class="saha-aktarim-group-icon"><i class="ri-inbox-line"></i></span>
+                      <div>
+                        <strong>Saha Sandığı {{ grup.sahaSandikNo }}</strong>
+                        <div class="saha-aktarim-group-summary">
+                          <span>{{ grup.aktarimlar.length }} aktarım satırı</span>
+                          <span>{{ formatAktarimGrupMiktar(grup) }}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div class="saha-aktarim-meta">
-                      <span><i class="ri-archive-stack-line"></i>Kaynak Sandık: {{ aktarim.kaynakSandikNo || '-' }}</span>
-                      <span><i class="ri-inbox-line"></i>Saha Sandığı: {{ aktarim.sahaSandikNo || '-' }}</span>
-                      <span><i class="ri-barcode-line"></i>{{ aktarim.barkodNo || '-' }}</span>
+
+                    <div class="saha-aktarim-group-state">
+                      <span class="status-pill" [class.is-ready]="grup.geriAlinabilirMi" [class.is-blocked]="!grup.geriAlinabilirMi">
+                        {{ grup.geriAlinabilirMi ? 'Tümü geri alınabilir' : 'Toplu işlem kilitli' }}
+                      </span>
+                      @if (!grup.geriAlinabilirMi && grup.geriAlinamamaNedeni) {
+                        <small><i class="ri-lock-line"></i>{{ grup.geriAlinamamaNedeni }}</small>
+                      }
                     </div>
-                  </div>
 
-                  <div class="saha-aktarim-qty">
-                    <strong>{{ formatAktarimMiktar(aktarim.miktar) }}</strong>
-                    <small>{{ formatAktarimBirim(aktarim.birim) }}</small>
-                  </div>
-
-                  <div class="saha-aktarim-status">
-                    <span class="status-pill" [class.is-ready]="aktarim.geriAlinabilirMi" [class.is-blocked]="!aktarim.geriAlinabilirMi">
-                      {{ aktarim.geriAlinabilirMi ? 'Geri alınabilir' : 'Kilitli' }}
-                    </span>
-                    @if (!aktarim.geriAlinabilirMi && aktarim.geriAlinamamaNedeni) {
-                      <small>{{ aktarim.geriAlinamamaNedeni }}</small>
-                    }
-                  </div>
-
-                  <div class="saha-aktarim-action">
                     <button
                       type="button"
-                      class="btn btn-sm btn-outline-warning"
-                      (click)="sahaAktarimGeriAl(aktarim)"
-                      [disabled]="!canWriteSahaAktarimGeriAl() || !aktarim.geriAlinabilirMi || sahaAktarimGeriAlSaving() === aktarim.sahaCekiSatiriId">
-                      @if (sahaAktarimGeriAlSaving() === aktarim.sahaCekiSatiriId) {
-                        <span class="spinner-border spinner-border-sm"></span>
+                      class="btn btn-sm btn-warning saha-aktarim-group-action"
+                      (click)="sahaSandikAktarimlariniGeriAl(grup)"
+                      [disabled]="!canWriteSahaAktarimGeriAl() || !grup.geriAlinabilirMi || sahaAktarimIslemVar()">
+                      @if (sahaSandikAktarimGeriAlSaving() === grup.sahaSandikId) {
+                        <span class="spinner-border spinner-border-sm me-1"></span>Geri Alınıyor
                       } @else {
-                        <i class="ri-arrow-go-back-line me-1"></i>Geri Al
+                        <i class="ri-arrow-go-back-line me-1"></i>Tüm Aktarımları Geri Al
                       }
                     </button>
                   </div>
-                </div>
+
+                  <div class="saha-aktarim-group-items">
+                    @for (aktarim of grup.aktarimlar; track aktarim.sahaCekiSatiriId) {
+                      <div class="saha-aktarim-item" [class.is-blocked]="!aktarim.geriAlinabilirMi">
+                        <div class="saha-aktarim-main">
+                          <div class="saha-aktarim-title">
+                            <span class="source-project">{{ aktarim.kaynakProjeNo }}</span>
+                            <strong>#{{ aktarim.siraNo }} · {{ aktarim.aciklama || aktarim.barkodNo }}</strong>
+                          </div>
+                          <div class="saha-aktarim-meta">
+                            <span><i class="ri-archive-stack-line"></i>Kaynak Sandık: {{ aktarim.kaynakSandikNo || '-' }}</span>
+                            <span><i class="ri-barcode-line"></i>{{ aktarim.barkodNo || '-' }}</span>
+                          </div>
+                        </div>
+
+                        <div class="saha-aktarim-qty">
+                          <strong>{{ formatAktarimMiktar(aktarim.miktar) }}</strong>
+                          <small>{{ formatAktarimBirim(aktarim.birim) }}</small>
+                        </div>
+
+                        <div class="saha-aktarim-status">
+                          <span class="status-pill" [class.is-ready]="aktarim.geriAlinabilirMi" [class.is-blocked]="!aktarim.geriAlinabilirMi">
+                            {{ aktarim.geriAlinabilirMi ? 'Geri alınabilir' : 'Kilitli' }}
+                          </span>
+                          @if (!aktarim.geriAlinabilirMi && aktarim.geriAlinamamaNedeni) {
+                            <small>{{ aktarim.geriAlinamamaNedeni }}</small>
+                          }
+                        </div>
+
+                        <div class="saha-aktarim-action">
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-outline-warning"
+                            (click)="sahaAktarimGeriAl(aktarim)"
+                            [disabled]="!canWriteSahaAktarimGeriAl() || !aktarim.geriAlinabilirMi || sahaAktarimIslemVar()">
+                            @if (sahaAktarimGeriAlSaving() === aktarim.sahaCekiSatiriId) {
+                              <span class="spinner-border spinner-border-sm"></span>
+                            } @else {
+                              <i class="ri-arrow-go-back-line me-1"></i>Geri Al
+                            }
+                          </button>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </section>
               }
             </div>
           }

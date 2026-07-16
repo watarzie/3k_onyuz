@@ -17,6 +17,14 @@ import { ConfirmService } from '../../../core/services/confirm.service';
 import { PdfService } from '../../../core/services/pdf.service';
 import { SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
 
+interface SahaAktarimGrubu {
+  sahaSandikId: number | null;
+  sahaSandikNo: string;
+  aktarimlar: SahaAktarimDto[];
+  geriAlinabilirMi: boolean;
+  geriAlinamamaNedeni: string | null;
+}
+
 @Component({
   selector: 'app-proje-listesi',
   standalone: true,
@@ -192,6 +200,61 @@ export class ProjeListesiComponent implements OnInit {
   sahaAktarimlari = signal<SahaAktarimDto[]>([]);
   sahaAktarimLoading = signal(false);
   sahaAktarimGeriAlSaving = signal<number | null>(null);
+  sahaSandikAktarimGeriAlSaving = signal<number | null>(null);
+  sahaAktarimIslemVar = computed(() =>
+    this.sahaAktarimGeriAlSaving() !== null || this.sahaSandikAktarimGeriAlSaving() !== null
+  );
+  sahaAktarimGruplari = computed<SahaAktarimGrubu[]>(() => {
+    const gruplar = new Map<string, SahaAktarimGrubu>();
+
+    for (const aktarim of this.sahaAktarimlari()) {
+      const sahaSandikId = aktarim.sahaSandikId && aktarim.sahaSandikId > 0
+        ? aktarim.sahaSandikId
+        : null;
+      const sahaSandikNo = (aktarim.sahaSandikNo ?? '').trim() || '-';
+      const anahtar = sahaSandikId !== null ? `id:${sahaSandikId}` : `no:${sahaSandikNo}`;
+      const mevcut = gruplar.get(anahtar);
+
+      if (mevcut) {
+        mevcut.aktarimlar.push(aktarim);
+        continue;
+      }
+
+      gruplar.set(anahtar, {
+        sahaSandikId,
+        sahaSandikNo,
+        aktarimlar: [aktarim],
+        geriAlinabilirMi: false,
+        geriAlinamamaNedeni: null
+      });
+    }
+
+    return Array.from(gruplar.values())
+      .map(grup => {
+        const nedenler = Array.from(new Set(
+          grup.aktarimlar
+            .filter(aktarim => !aktarim.geriAlinabilirMi)
+            .map(aktarim => aktarim.geriAlinamamaNedeni?.trim())
+            .filter((neden): neden is string => !!neden)
+        ));
+
+        const sandikMevcutMu = grup.sahaSandikId !== null;
+        const tumSatirlarGeriAlinabilirMi = grup.aktarimlar.every(aktarim => aktarim.geriAlinabilirMi);
+
+        return {
+          ...grup,
+          geriAlinabilirMi: sandikMevcutMu && tumSatirlarGeriAlinabilirMi,
+          geriAlinamamaNedeni: !sandikMevcutMu
+            ? 'Saha sandığı kaydı bulunamadığı için toplu geri alma yapılamaz.'
+            : nedenler.length > 0
+              ? nedenler.join(' ')
+              : tumSatirlarGeriAlinabilirMi
+                ? null
+                : 'Sandıktaki en az bir aktarım geri alınabilir durumda değil.'
+        };
+      })
+      .sort((a, b) => this.sandikNoCollator.compare(a.sahaSandikNo, b.sahaSandikNo));
+  });
   readonly kilitAcmaTipleri = SevkiyatKilitAcmaTipi;
   sevkGecmisiSevkiyatSayisi = computed(() => this.sevkGecmisi().filter(kayit => !kayit.isKilitAcma).length);
   sevkEtSelectableSandiklar = computed(() => this.sevkEtSandiklar().filter(s => !this.isSandikSevkEdildi(s)));
@@ -890,12 +953,14 @@ export class ProjeListesiComponent implements OnInit {
     this.sahaAktarimProje.set(proje);
     this.sahaAktarimlari.set([]);
     this.sahaAktarimLoading.set(false);
+    this.sahaAktarimGeriAlSaving.set(null);
+    this.sahaSandikAktarimGeriAlSaving.set(null);
     this.showSahaAktarimModal.set(true);
     this.loadSahaAktarimlari(proje.id);
   }
 
   closeSahaAktarimModal() {
-    if (this.sahaAktarimGeriAlSaving()) return;
+    if (this.sahaAktarimIslemVar()) return;
 
     this.showSahaAktarimModal.set(false);
     this.sahaAktarimProje.set(null);
@@ -931,9 +996,22 @@ export class ProjeListesiComponent implements OnInit {
     return !normalized || normalized === '?' ? 'Adet' : normalized;
   }
 
+  formatAktarimGrupMiktar(grup: SahaAktarimGrubu): string {
+    const birimler = new Map<string, number>();
+
+    for (const aktarim of grup.aktarimlar) {
+      const birim = this.formatAktarimBirim(aktarim.birim);
+      birimler.set(birim, (birimler.get(birim) ?? 0) + (Number(aktarim.miktar) || 0));
+    }
+
+    return Array.from(birimler.entries())
+      .map(([birim, miktar]) => `${this.formatAktarimMiktar(miktar)} ${birim}`)
+      .join(' + ');
+  }
+
   async sahaAktarimGeriAl(aktarim: SahaAktarimDto): Promise<void> {
     const proje = this.sahaAktarimProje();
-    if (!proje || !this.canWriteSahaAktarimGeriAl() || !aktarim.geriAlinabilirMi || this.sahaAktarimGeriAlSaving()) return;
+    if (!proje || !this.canWriteSahaAktarimGeriAl() || !aktarim.geriAlinabilirMi || this.sahaAktarimIslemVar()) return;
 
     const onay = await this.confirmService.ask({
       title: 'Saha Aktarımını Geri Al',
@@ -960,6 +1038,54 @@ export class ProjeListesiComponent implements OnInit {
       error: () => {
         this.sahaAktarimGeriAlSaving.set(null);
         this.toastService.error('Saha aktarımı geri alınırken sunucu hatası oluştu.');
+      }
+    });
+  }
+
+  async sahaSandikAktarimlariniGeriAl(grup: SahaAktarimGrubu): Promise<void> {
+    const proje = this.sahaAktarimProje();
+    if (
+      !proje ||
+      !this.canWriteSahaAktarimGeriAl() ||
+      !grup.geriAlinabilirMi ||
+      grup.sahaSandikId === null ||
+      this.sahaAktarimIslemVar()
+    ) {
+      return;
+    }
+
+    const onay = await this.confirmService.ask({
+      title: 'Sandıktaki Tüm Aktarımları Geri Al',
+      message: `<strong>Saha Sandığı ${grup.sahaSandikNo}</strong> içindeki <strong>${grup.aktarimlar.length} aktarım satırı</strong> (${this.formatAktarimGrupMiktar(grup)}) tek işlemde geri alınacak.<br>Ürünler kaynak normal projelerinin eksik takibine geri döner. İşlem sırasında herhangi bir satır geri alınamazsa hiçbir kayıt değiştirilmez.`,
+      confirmText: 'Tümünü Geri Al',
+      cancelText: 'Vazgeç',
+      type: 'warning'
+    });
+
+    if (!onay) return;
+
+    this.sahaSandikAktarimGeriAlSaving.set(grup.sahaSandikId);
+    this.projeService.sahaSandikAktarimlariGeriAl(
+      grup.sahaSandikId,
+      `Saha Yönetimi üzerinden Saha Sandığı ${grup.sahaSandikNo} içindeki tüm aktarımlar geri alındı.`
+    ).subscribe({
+      next: (res) => {
+        this.sahaSandikAktarimGeriAlSaving.set(null);
+        if (res.isSuccess) {
+          const sonuc = res.value;
+          const mesaj = sonuc
+            ? `${sonuc.geriAlinanSatirSayisi} aktarım satırı (${this.formatAktarimGrupMiktar(grup)}) geri alındı${sonuc.sandikBosaldiMi ? '; saha sandığı boşaldı.' : '.'}`
+            : 'Sandıktaki tüm saha aktarımları geri alındı.';
+          this.toastService.success(mesaj);
+          this.loadSahaAktarimlari(proje.id);
+          this.loadProjeler();
+        } else {
+          this.toastService.error(res.error || 'Sandıktaki aktarımlar geri alınamadı.');
+        }
+      },
+      error: () => {
+        this.sahaSandikAktarimGeriAlSaving.set(null);
+        this.toastService.error('Sandıktaki aktarımlar geri alınırken sunucu hatası oluştu.');
       }
     });
   }
