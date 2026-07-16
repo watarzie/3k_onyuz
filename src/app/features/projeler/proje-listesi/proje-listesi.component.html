@@ -159,7 +159,7 @@
                 <th>{{ 'LABELS.LOKASYON' | translate }}</th>
               }
               <th>{{ 'LABELS.durumMetni' | translate }}</th>
-              <th>Sevk Tarihi</th>
+              <th class="shipment-date-column">{{ 'LABELS.SEVK_TAKVIMI' | translate }}</th>
               <th>{{ 'LABELS.TAMAMLANMA' | translate }}</th>
                   @if (hasActionColumn()) {
                 <th>İşlemler</th>
@@ -200,14 +200,27 @@
                   <td>{{ p.lokasyon ?? '-' }}</td>
                 }
                 <td><app-status-badge [status]="p.durumMetni" [label]="getDurumLabel(p.durumMetni)" /></td>
-                <td>
-                  @if (p.gerceklesenSevkTarihi) {
-                    <span class="fw-semibold text-success">{{ p.gerceklesenSevkTarihi | date:'dd.MM.yyyy HH:mm' }}</span>
-                  } @else if (p.planlananSevkTarihi) {
-                    {{ p.planlananSevkTarihi | date:'dd.MM.yyyy HH:mm' }}
-                  } @else {
-                    <span class="text-muted">-</span>
-                  }
+                <td class="shipment-date-cell">
+                  <div class="shipment-date-stack">
+                    <div class="shipment-date shipment-date--planned">
+                      <span class="shipment-date-label">
+                        <i class="ri-calendar-event-line" aria-hidden="true"></i>
+                        {{ 'LABELS.PLANLANAN' | translate }}
+                      </span>
+                      <span class="shipment-date-value" [class.text-muted]="!p.planlananSevkTarihi">
+                        {{ p.planlananSevkTarihi ? (p.planlananSevkTarihi | date:'dd.MM.yyyy HH:mm') : '-' }}
+                      </span>
+                    </div>
+                    <div class="shipment-date shipment-date--actual">
+                      <span class="shipment-date-label">
+                        <i class="ri-checkbox-circle-line" aria-hidden="true"></i>
+                        {{ 'LABELS.GERCEKLESEN' | translate }}
+                      </span>
+                      <span class="shipment-date-value" [class.text-muted]="!p.gerceklesenSevkTarihi">
+                        {{ p.gerceklesenSevkTarihi ? (p.gerceklesenSevkTarihi | date:'dd.MM.yyyy HH:mm') : '-' }}
+                      </span>
+                    </div>
+                  </div>
                 </td>
                 <td>
                   <div class="d-flex align-items-center gap-2">
@@ -438,13 +451,21 @@
           <div class="mb-0">
             <label class="form-label fw-semibold">Planlanan Sevk Tarihi</label>
             <input type="datetime-local" class="form-control" step="60"
-                   [ngModel]="guncelSevkTarihi()" (ngModelChange)="guncelSevkTarihi.set($event)" />
-            <small class="text-muted d-block mt-1">Bu alan opsiyoneldir. Proje fiilen sevk edildiğinde tarih otomatik olarak güncellenir.</small>
+                   required
+                   [value]="guncelSevkTarihi()"
+                   [attr.aria-invalid]="!planlananSevkTarihiGecerli()"
+                   (input)="guncelSevkTarihi.set($any($event.target).value)" />
+            <small class="text-muted d-block mt-1">Tarih ve saat birlikte seçilmelidir. Kayıtlı tarihi kaldırmak için ayrı kaldırma işlemini kullanabilirsiniz.</small>
           </div>
         </div>
         <div class="modal-footer border-0 d-flex gap-2">
-          <button class="btn btn-light flex-grow-1" (click)="closeSevkTarihiModal()" [disabled]="sevkTarihiSaving()">Vazgeç</button>
-          <button class="btn btn-warning flex-grow-1" (click)="kaydetSevkTarihi()" [disabled]="sevkTarihiSaving()">
+          @if (sevkTarihiProje()?.planlananSevkTarihi) {
+            <button type="button" class="btn btn-outline-danger flex-grow-1" (click)="planlananSevkTarihiKaldir()" [disabled]="sevkTarihiSaving()">
+              <i class="ri-delete-bin-line me-1"></i> Kayıtlı Tarihi Kaldır
+            </button>
+          }
+          <button type="button" class="btn btn-light flex-grow-1" (click)="closeSevkTarihiModal()" [disabled]="sevkTarihiSaving()">Vazgeç</button>
+          <button type="button" class="btn btn-warning flex-grow-1" (click)="kaydetSevkTarihi()" [disabled]="sevkTarihiSaving() || !planlananSevkTarihiGecerli()">
             @if (sevkTarihiSaving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
             <i class="ri-save-line me-1"></i> Kaydet
           </button>
@@ -645,7 +666,7 @@
             <h5 class="modal-title"><i class="ri-node-tree me-2 text-success"></i>Saha Aktarımları</h5>
             <small class="text-muted">{{ sahaAktarimProje()?.projeNo }} - {{ sahaAktarimProje()?.musteri }}</small>
           </div>
-          <button type="button" class="btn-close" (click)="closeSahaAktarimModal()" [disabled]="!!sahaAktarimGeriAlSaving()"></button>
+          <button type="button" class="btn-close" (click)="closeSahaAktarimModal()" [disabled]="sahaAktarimIslemVar()"></button>
         </div>
 
         <div class="modal-body pt-0">
@@ -667,48 +688,87 @@
             </div>
           } @else {
             <div class="saha-aktarim-list">
-              @for (aktarim of sahaAktarimlari(); track aktarim.sahaCekiSatiriId) {
-                <div class="saha-aktarim-item" [class.is-blocked]="!aktarim.geriAlinabilirMi">
-                  <div class="saha-aktarim-main">
-                    <div class="saha-aktarim-title">
-                      <span class="source-project">{{ aktarim.kaynakProjeNo }}</span>
-                      <strong>#{{ aktarim.siraNo }} · {{ aktarim.aciklama || aktarim.barkodNo }}</strong>
+              @for (grup of sahaAktarimGruplari(); track grup.sahaSandikId ?? grup.sahaSandikNo) {
+                <section class="saha-aktarim-group" [class.is-blocked]="!grup.geriAlinabilirMi">
+                  <div class="saha-aktarim-group-header">
+                    <div class="saha-aktarim-group-identity">
+                      <span class="saha-aktarim-group-icon"><i class="ri-inbox-line"></i></span>
+                      <div>
+                        <strong>Saha Sandığı {{ grup.sahaSandikNo }}</strong>
+                        <div class="saha-aktarim-group-summary">
+                          <span>{{ grup.aktarimlar.length }} aktarım satırı</span>
+                          <span>{{ formatAktarimGrupMiktar(grup) }}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div class="saha-aktarim-meta">
-                      <span><i class="ri-archive-stack-line"></i>Kaynak Sandık: {{ aktarim.kaynakSandikNo || '-' }}</span>
-                      <span><i class="ri-inbox-line"></i>Saha Sandığı: {{ aktarim.sahaSandikNo || '-' }}</span>
-                      <span><i class="ri-barcode-line"></i>{{ aktarim.barkodNo || '-' }}</span>
+
+                    <div class="saha-aktarim-group-state">
+                      <span class="status-pill" [class.is-ready]="grup.geriAlinabilirMi" [class.is-blocked]="!grup.geriAlinabilirMi">
+                        {{ grup.geriAlinabilirMi ? 'Tümü geri alınabilir' : 'Toplu işlem kilitli' }}
+                      </span>
+                      @if (!grup.geriAlinabilirMi && grup.geriAlinamamaNedeni) {
+                        <small><i class="ri-lock-line"></i>{{ grup.geriAlinamamaNedeni }}</small>
+                      }
                     </div>
-                  </div>
 
-                  <div class="saha-aktarim-qty">
-                    <strong>{{ formatAktarimMiktar(aktarim.miktar) }}</strong>
-                    <small>{{ formatAktarimBirim(aktarim.birim) }}</small>
-                  </div>
-
-                  <div class="saha-aktarim-status">
-                    <span class="status-pill" [class.is-ready]="aktarim.geriAlinabilirMi" [class.is-blocked]="!aktarim.geriAlinabilirMi">
-                      {{ aktarim.geriAlinabilirMi ? 'Geri alınabilir' : 'Kilitli' }}
-                    </span>
-                    @if (!aktarim.geriAlinabilirMi && aktarim.geriAlinamamaNedeni) {
-                      <small>{{ aktarim.geriAlinamamaNedeni }}</small>
-                    }
-                  </div>
-
-                  <div class="saha-aktarim-action">
                     <button
                       type="button"
-                      class="btn btn-sm btn-outline-warning"
-                      (click)="sahaAktarimGeriAl(aktarim)"
-                      [disabled]="!canWriteSahaAktarimGeriAl() || !aktarim.geriAlinabilirMi || sahaAktarimGeriAlSaving() === aktarim.sahaCekiSatiriId">
-                      @if (sahaAktarimGeriAlSaving() === aktarim.sahaCekiSatiriId) {
-                        <span class="spinner-border spinner-border-sm"></span>
+                      class="btn btn-sm btn-warning saha-aktarim-group-action"
+                      (click)="sahaSandikAktarimlariniGeriAl(grup)"
+                      [disabled]="!canWriteSahaAktarimGeriAl() || !grup.geriAlinabilirMi || sahaAktarimIslemVar()">
+                      @if (sahaSandikAktarimGeriAlSaving() === grup.sahaSandikId) {
+                        <span class="spinner-border spinner-border-sm me-1"></span>Geri Alınıyor
                       } @else {
-                        <i class="ri-arrow-go-back-line me-1"></i>Geri Al
+                        <i class="ri-arrow-go-back-line me-1"></i>Tüm Aktarımları Geri Al
                       }
                     </button>
                   </div>
-                </div>
+
+                  <div class="saha-aktarim-group-items">
+                    @for (aktarim of grup.aktarimlar; track aktarim.sahaCekiSatiriId) {
+                      <div class="saha-aktarim-item" [class.is-blocked]="!aktarim.geriAlinabilirMi">
+                        <div class="saha-aktarim-main">
+                          <div class="saha-aktarim-title">
+                            <span class="source-project">{{ aktarim.kaynakProjeNo }}</span>
+                            <strong>#{{ aktarim.siraNo }} · {{ aktarim.aciklama || aktarim.barkodNo }}</strong>
+                          </div>
+                          <div class="saha-aktarim-meta">
+                            <span><i class="ri-archive-stack-line"></i>Kaynak Sandık: {{ aktarim.kaynakSandikNo || '-' }}</span>
+                            <span><i class="ri-barcode-line"></i>{{ aktarim.barkodNo || '-' }}</span>
+                          </div>
+                        </div>
+
+                        <div class="saha-aktarim-qty">
+                          <strong>{{ formatAktarimMiktar(aktarim.miktar) }}</strong>
+                          <small>{{ formatAktarimBirim(aktarim.birim) }}</small>
+                        </div>
+
+                        <div class="saha-aktarim-status">
+                          <span class="status-pill" [class.is-ready]="aktarim.geriAlinabilirMi" [class.is-blocked]="!aktarim.geriAlinabilirMi">
+                            {{ aktarim.geriAlinabilirMi ? 'Geri alınabilir' : 'Kilitli' }}
+                          </span>
+                          @if (!aktarim.geriAlinabilirMi && aktarim.geriAlinamamaNedeni) {
+                            <small>{{ aktarim.geriAlinamamaNedeni }}</small>
+                          }
+                        </div>
+
+                        <div class="saha-aktarim-action">
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-outline-warning"
+                            (click)="sahaAktarimGeriAl(aktarim)"
+                            [disabled]="!canWriteSahaAktarimGeriAl() || !aktarim.geriAlinabilirMi || sahaAktarimIslemVar()">
+                            @if (sahaAktarimGeriAlSaving() === aktarim.sahaCekiSatiriId) {
+                              <span class="spinner-border spinner-border-sm"></span>
+                            } @else {
+                              <i class="ri-arrow-go-back-line me-1"></i>Geri Al
+                            }
+                          </button>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </section>
               }
             </div>
           }
