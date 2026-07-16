@@ -236,18 +236,46 @@ export const routes: Routes = [
         data: { menuKod: 'yedek-yonetimi' },
       },
       {
+        path: 'yedek-yonetimi/grid/:projeId',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/grid/grid-urunler/grid-urunler.component').then(m => m.GridUrunlerComponent),
+        data: { menuKod: 'yedek-grid-modulu' },
+      },
+      {
+        path: 'yedek-yonetimi/uck/:projeId',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/uck/uck-sandiklar/uck-sandiklar.component').then(m => m.UcKSandiklarComponent),
+        data: { menuKod: 'yedek-3k-modulu' },
+      },
+      {
+        path: 'yedek-yonetimi/uck/sandik/:projeId/:sandikId',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/sandik-yonetimi/sandik-detay/sandik-detay.component').then(m => m.SandikDetayComponent),
+        data: { menuKod: 'yedek-3k-modulu' },
+      },
+      {
+        path: 'yedek-yonetimi/uck/:projeId/:sandikNo',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/uck/uck-urunler/uck-urunler.component').then(m => m.UcKUrunlerComponent),
+        data: { menuKod: 'yedek-3k-modulu' },
+      },
+      {
         path: 'yedek-yonetimi/:projeId',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/sandik-yonetimi/sandik-listesi/sandik-listesi.component').then(m => m.SandikListesiComponent),
-        data: { menuKod: 'yedek-yonetimi' },
+        data: { menuKod: 'yedek-sandiklar' },
       },
       {
         path: 'yedek-yonetimi/:projeId/:sandikId',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/sandik-yonetimi/sandik-detay/sandik-detay.component').then(m => m.SandikDetayComponent),
-        data: { menuKod: 'yedek-yonetimi' },
+        data: { menuKod: 'yedek-sandiklar' },
       },
 
       // --- Hareket Geçmişi ---

@@ -1,7 +1,6 @@
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslationService } from '../../../core/services/translation.service';
 import { SandikService } from '../../../core/services/sandik.service';
@@ -18,7 +17,7 @@ import { PermissionService } from '../../../core/services/permission.service';
 @Component({
   selector: 'app-sandik-listesi',
   standalone: true,
-  imports: [TranslatePipe, RouterLink, NgClass, FormsModule, StatusBadgeComponent, BreadcrumbComponent],
+  imports: [TranslatePipe, RouterLink, FormsModule, StatusBadgeComponent, BreadcrumbComponent],
   templateUrl: './sandik-listesi.component.html',
   styleUrl: './sandik-listesi.component.scss',
 })
@@ -60,6 +59,7 @@ export class SandikListesiComponent implements OnInit {
   routePrefix = signal('/sandik-yonetimi');
   isSahaYedek = signal(false);
   isSahaYonetimi = signal(false);
+  isYedekYonetimi = signal(false);
   canWriteSandik = computed(() => {
     const menuKod = this.route.snapshot.data['menuKod'] || 'sandik-yonetimi';
     return this.permissionService.canWrite(menuKod);
@@ -76,10 +76,11 @@ export class SandikListesiComponent implements OnInit {
       this.routePrefix.set('/saha-yonetimi');
       this.isSahaYedek.set(true);
       this.isSahaYonetimi.set(true);
-    } else if (menuKod === 'yedek-yonetimi') {
+    } else if (menuKod === 'yedek-yonetimi' || menuKod === 'yedek-sandiklar') {
       title = 'Yedek Yönetimi';
       this.routePrefix.set('/yedek-yonetimi');
       this.isSahaYedek.set(true);
+      this.isYedekYonetimi.set(true);
     }
 
     this.breadcrumb = [
@@ -135,13 +136,14 @@ export class SandikListesiComponent implements OnInit {
 
   indirPdf(sandikId: number) {
     this.downloadingPdf.set(sandikId);
-    this.pdfService.sahaSandikPdf(sandikId, this.isSahaYonetimi() ? 'saha-raporu' : undefined).subscribe({
+    const menuKod = this.isSahaYonetimi() ? 'saha-raporu' : this.isYedekYonetimi() ? 'yedek-raporu' : undefined;
+    this.pdfService.sahaSandikPdf(sandikId, menuKod).subscribe({
       next: (blob) => {
         this.downloadingPdf.set(null);
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `SahaSandikRaporu_${sandikId}.pdf`;
+        a.download = `${this.isYedekYonetimi() ? 'Yedek' : 'Saha'}SandikRaporu_${sandikId}.pdf`;
         a.click();
         window.URL.revokeObjectURL(url);
         this.toast.success('Rapor başarıyla indirildi.');

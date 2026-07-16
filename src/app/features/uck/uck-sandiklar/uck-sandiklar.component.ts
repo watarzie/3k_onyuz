@@ -11,7 +11,6 @@ import { PermissionService } from '../../../core/services/permission.service';
 import { LookupService } from '../../../core/services/lookup.service';
 import { PdfService } from '../../../core/services/pdf.service';
 import { SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
-import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { SandikDto, LookupResponse, ProjeDropdownDto } from '../../../shared/models/index';
@@ -19,7 +18,7 @@ import { SandikDto, LookupResponse, ProjeDropdownDto } from '../../../shared/mod
 @Component({
   selector: 'app-uck-sandiklar',
   standalone: true,
-  imports: [RouterLink, NgClass, FormsModule, StatusBadgeComponent, BreadcrumbComponent, StatCardComponent],
+  imports: [RouterLink, NgClass, FormsModule, BreadcrumbComponent, StatCardComponent],
   templateUrl: './uck-sandiklar.component.html',
   styleUrl: './uck-sandiklar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,10 +42,18 @@ export class UcKSandiklarComponent implements OnInit {
   }
 
   isSahaContext = computed(() => this.activeMenuKod === 'saha-3k-modulu');
-  uckRoutePrefix = computed(() => this.isSahaContext() ? '/saha-yonetimi/uck' : '/uck');
-  uckSandikRoutePrefix = computed(() => this.isSahaContext() ? '/saha-yonetimi/uck/sandik' : '/uck/sandik');
+  isYedekContext = computed(() => this.activeMenuKod === 'yedek-3k-modulu');
+  uckRoutePrefix = computed(() =>
+    this.isSahaContext() ? '/saha-yonetimi/uck' : this.isYedekContext() ? '/yedek-yonetimi/uck' : '/uck'
+  );
+  uckSandikRoutePrefix = computed(() =>
+    this.isSahaContext() ? '/saha-yonetimi/uck/sandik' : this.isYedekContext() ? '/yedek-yonetimi/uck/sandik' : '/uck/sandik'
+  );
   canWriteSandik = computed(() => this.permissionService.canWrite(this.activeMenuKod));
-  canSandiklariSahayaAktar = computed(() => !this.isSahaContext() && this.permissionService.canWrite('sahaya-aktar'));
+  canWriteSevk = computed(() => this.permissionService.canWrite(this.activeMenuKod));
+  canSandiklariSahayaAktar = computed(() =>
+    !this.isSahaContext() && !this.isYedekContext() && this.permissionService.canWrite('sahaya-aktar')
+  );
   canUseSandikSelection = computed(() => this.canWriteSandik() || this.canSandiklariSahayaAktar());
   canSeeSandikDurumRaporu = computed(() => this.permissionService.hasAccess(this.sandikDurumRaporMenuKod()));
 
@@ -133,10 +140,13 @@ export class UcKSandiklarComponent implements OnInit {
     const id = Number(this.route.snapshot.paramMap.get('projeId'));
     this.projeId.set(id);
     const isSaha = this.isSahaContext();
+    const isYedek = this.isYedekContext();
+    const parentLabel = isSaha ? 'Saha Yönetimi' : isYedek ? 'Yedek Yönetimi' : 'Sandık Yönetimi';
+    const parentLink = isSaha ? '/saha-yonetimi' : isYedek ? '/yedek-yonetimi' : '/sandik-yonetimi';
     this.breadcrumb = [
       { label: 'Ana Kontrol Paneli', link: '/dashboard' },
-      { label: isSaha ? 'Saha Yönetimi' : 'Sandık Yönetimi', link: isSaha ? '/saha-yonetimi' : '/sandik-yonetimi' },
-      { label: isSaha ? 'Saha 3K Modülü' : '3K Modülü' },
+      { label: parentLabel, link: parentLink },
+      { label: isSaha ? 'Saha 3K Modülü' : isYedek ? 'Yedek 3K Modülü' : '3K Modülü' },
     ];
     this.loadProjeBilgisi();
     this.loadLookups();
@@ -281,6 +291,8 @@ export class UcKSandiklarComponent implements OnInit {
   }
 
   saveLokasyon() {
+    if (!this.canWriteSandik() || this.isSavingLokasyon()) return;
+
     if (!this.yeniLokasyonId()) {
       this.toast.error('Lütfen bir lokasyon seçiniz.');
       return;
@@ -400,7 +412,9 @@ export class UcKSandiklarComponent implements OnInit {
   }
 
   private sandikDurumRaporMenuKod(): string {
-    return this.isSahaContext() ? 'saha-3k-sandik-durum-raporu' : '3k-sandik-durum-raporu';
+    if (this.isSahaContext()) return 'saha-3k-sandik-durum-raporu';
+    if (this.isYedekContext()) return 'yedek-3k-sandik-durum-raporu';
+    return '3k-sandik-durum-raporu';
   }
 
   onSandikCardClick(event: Event, sandik: SandikDto) {
@@ -415,7 +429,7 @@ export class UcKSandiklarComponent implements OnInit {
     event.preventDefault();
     event.stopPropagation();
 
-    if (!this.canWriteSandik()) return;
+    if (!this.canWriteSevk()) return;
     if (!this.isSandikKilitli(sandik)) return;
     if (this.isSandikSahayaAktarildi(sandik)) {
       this.toast.error(this.getSandikKilitMesaji(sandik));
@@ -436,6 +450,8 @@ export class UcKSandiklarComponent implements OnInit {
   }
 
   sandikKilidiAcOnayla() {
+    if (!this.canWriteSevk() || this.kilitAcSaving()) return;
+
     const sandik = this.kilitAcSandik();
     if (!sandik) return;
 
@@ -481,7 +497,7 @@ export class UcKSandiklarComponent implements OnInit {
     event.preventDefault();
     event.stopPropagation();
 
-    if (!this.canWriteSandik() || !this.isSandikDuzeltmeyeAcik(sandik) || this.isDuzeltmeTamamlaSaving(sandik)) {
+    if (!this.canWriteSevk() || !this.isSandikDuzeltmeyeAcik(sandik) || this.isDuzeltmeTamamlaSaving(sandik)) {
       return;
     }
 
@@ -536,6 +552,8 @@ export class UcKSandiklarComponent implements OnInit {
   }
 
   toggleSelection(sandikId: number) {
+    if (!this.canUseSandikSelection()) return;
+
     const sandik = this.sandiklar().find(s => s.id === sandikId);
     if (sandik && this.isSandikKilitli(sandik)) return;
 
@@ -551,6 +569,8 @@ export class UcKSandiklarComponent implements OnInit {
   }
 
   toggleAll() {
+    if (!this.canUseSandikSelection()) return;
+
     if (this.isAllSelected()) {
       const set = new Set(this.selectedSandikIds());
       this.getSecilebilirSandiklar().forEach(s => set.delete(s.id));
@@ -563,6 +583,8 @@ export class UcKSandiklarComponent implements OnInit {
   }
 
   topluHazirYap() {
+    if (!this.canWriteSandik()) return;
+
     if (this.selectedSandikIds().size === 0) return;
     const ids = this.secilenSevkEdilmemisSandikIdleri();
     if (ids.length === 0) {
@@ -748,6 +770,8 @@ export class UcKSandiklarComponent implements OnInit {
   }
 
   private topluKapatConfirm(ids: number[], forceClose: boolean) {
+    if (!this.canWriteSandik()) return;
+
     this.sandikService.topluKapat(ids, forceClose).subscribe({
       next: async (apiRes) => {
         const res = apiRes.value ?? apiRes;
@@ -846,6 +870,8 @@ export class UcKSandiklarComponent implements OnInit {
   }
 
   private kapatSandikConfirm(sandikId: number, forceClose: boolean) {
+    if (!this.canWriteSandik()) return;
+
     this.sandikService.kapat(sandikId, forceClose).subscribe({
       next: async (apiRes) => {
         const res = apiRes.value ?? apiRes;
@@ -895,6 +921,8 @@ export class UcKSandiklarComponent implements OnInit {
   // ===== Sandık Ekleme =====
 
   openSandikEkleModal() {
+    if (!this.canWriteSandik()) return;
+
     const maxNo = this.sandiklar().reduce((max, s) => {
       const num = parseInt(s.sandikNo.replace(/\D/g, ''), 10);
       return isNaN(num) ? max : Math.max(max, num);
@@ -916,6 +944,8 @@ export class UcKSandiklarComponent implements OnInit {
   }
 
   sandikEkle() {
+    if (!this.canWriteSandik() || this.ekSaving()) return;
+
     const no = this.ekSandikNo().trim();
     if (!no) {
       this.toast.error('Sandık numarası girilmelidir.');

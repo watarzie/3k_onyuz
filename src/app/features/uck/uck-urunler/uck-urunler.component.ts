@@ -1,5 +1,5 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -38,7 +38,7 @@ const KARSILAMA_TIPLERI: KarsilamaTipi[] = [
 @Component({
   selector: 'app-uck-urunler',
   standalone: true,
-  imports: [RouterLink, NgClass, DatePipe, FormsModule, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent],
+  imports: [NgClass, DatePipe, FormsModule, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent],
   templateUrl: './uck-urunler.component.html',
   styleUrl: './uck-urunler.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -223,6 +223,26 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     return this.route.snapshot.data?.['menuKod'] || '3k-modulu';
   }
 
+  get manuelIcerikTekilAdi(): string {
+    return this.activeMenuKod === 'yedek-3k-modulu'
+      ? 'manuel yedek malzemesi'
+      : 'manuel saha ürünü';
+  }
+
+  private get manuelIcerikCogulAdi(): string {
+    return this.activeMenuKod === 'yedek-3k-modulu'
+      ? 'Manuel yedek malzemeleri'
+      : 'Manuel saha ürünleri';
+  }
+
+  private getManuelIcerikUcKMesaji(): string {
+    return `${this.manuelIcerikCogulAdi} sandık içeriğidir; 3K işlemi gerektirmez.`;
+  }
+
+  private getManuelIcerikYonetimMesaji(): string {
+    return `${this.manuelIcerikCogulAdi} sandık detayı üzerinden yönetilir.`;
+  }
+
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('projeId'));
     const sNo = this.route.snapshot.paramMap.get('sandikNo') ?? '';
@@ -236,10 +256,14 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     this.sandikId.set(Number.isFinite(sandikIdParam) && sandikIdParam > 0 ? sandikIdParam : null);
     this.sandikNo.set(sNo);
     const isSaha = this.activeMenuKod === 'saha-3k-modulu';
+    const isYedek = this.activeMenuKod === 'yedek-3k-modulu';
+    const parentLabel = isSaha ? 'Saha Yönetimi' : isYedek ? 'Yedek Yönetimi' : 'Sandık Yönetimi';
+    const parentLink = isSaha ? '/saha-yonetimi' : isYedek ? '/yedek-yonetimi' : '/sandik-yonetimi';
+    const uckLink = isSaha ? `/saha-yonetimi/uck/${id}` : isYedek ? `/yedek-yonetimi/uck/${id}` : `/uck/${id}`;
     this.breadcrumb = [
       { label: 'Ana Kontrol Paneli', link: '/dashboard' },
-      { label: isSaha ? 'Saha Yönetimi' : 'Sandık Yönetimi', link: isSaha ? '/saha-yonetimi' : '/sandik-yonetimi' },
-      { label: '3K Sandıklar', link: isSaha ? `/saha-yonetimi/uck/${id}` : `/uck/${id}` },
+      { label: parentLabel, link: parentLink },
+      { label: isYedek ? 'Yedek 3K Sandıklar' : '3K Sandıklar', link: uckLink },
       { label: sNo || '3K Ürünler' },
     ];
 
@@ -548,7 +572,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   openPanel(urun: UcKUrunDto) {
     if (this.isSahaManuelIcerik(urun)) {
-      this.toast.info('Manuel saha urunleri sandik icerigidir; 3K islemi gerektirmez.');
+      this.toast.info(this.getManuelIcerikUcKMesaji());
       return;
     }
 
@@ -1322,7 +1346,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   openAnaVeriPanel(urun: UcKUrunDto) {
     if (!this.canEditCekiVerisi()) return;
     if (this.isSahaManuelIcerik(urun)) {
-      this.toast.info('Manuel saha urunleri sandik detayi uzerinden yonetilir.');
+      this.toast.info(this.getManuelIcerikYonetimMesaji());
       return;
     }
     if (this.isSatirSevkKilidi(urun)) {
@@ -1463,7 +1487,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   getEditDisabledReason(u: UcKUrunDto): string {
     if (!this.isEditDisabled(u)) return '';
-    if (this.isSahaManuelIcerik(u)) return 'Manuel saha urunleri sandik icerigidir; 3K islemi gerektirmez.';
+    if (this.isSahaManuelIcerik(u)) return this.getManuelIcerikUcKMesaji();
     if (this.isSahayaAktarilmis(u)) return 'Bu ürün sahaya aktarıldığı için işlem saha projesinde yürütülmelidir.';
     if (this.isSatirSevkKilidi(u)) return this.sevkEdilmisSandikMesaji;
     if (u.kaliteDurumMetni === 'Tadilatta') return 'Kalite Tadilatta olduğu için işlem yapılamaz.';
@@ -1495,7 +1519,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   // ===== Eksik Ürünler Raporu İndirme =====
   eksikUrunlerRaporuIndir() {
     this.toast.info('Rapor hazırlanıyor...');
-    this.pdfService.eksikUrunlerPdf(this.projeId()).subscribe({
+    const menuKod = this.activeMenuKod === 'yedek-3k-modulu' ? 'yedek-eksik-raporu' : 'eksik-raporu';
+    this.pdfService.eksikUrunlerPdf(this.projeId(), menuKod).subscribe({
       next: (blob) => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -1512,7 +1537,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   // ===== Manuel Ürün Silme =====
   async manuelUrunSil(u: UcKUrunDto) {
     if (this.isSahaManuelIcerik(u)) {
-      this.toast.info('Manuel saha urunleri sandik detayi uzerinden silinir.');
+      this.toast.info(`${this.manuelIcerikCogulAdi} sandık detayı üzerinden silinir.`);
       return;
     }
     if (this.isSatirSevkKilidi(u)) {

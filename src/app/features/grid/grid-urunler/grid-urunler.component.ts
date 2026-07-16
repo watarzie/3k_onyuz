@@ -1,5 +1,5 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy, ChangeDetectionStrategy, WritableSignal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -10,7 +10,6 @@ import { ProjeService } from '../../../core/services/proje.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmService } from '../../../core/services/confirm.service';
 
-import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
@@ -51,7 +50,7 @@ const SEVK_DURUMLARI: DurumSecenegi[] = [
 @Component({
   selector: 'app-grid-urunler',
   standalone: true,
-  imports: [RouterLink, NgClass, DatePipe, FormsModule, StatusBadgeComponent, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent],
+  imports: [NgClass, DatePipe, FormsModule, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent],
   templateUrl: './grid-urunler.component.html',
   styleUrl: './grid-urunler.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -231,16 +230,39 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     return this.route.snapshot.data?.['menuKod'] || 'grid-modulu';
   }
 
+  get manuelIcerikTekilAdi(): string {
+    return this.activeMenuKod === 'yedek-grid-modulu'
+      ? 'manuel yedek malzemesi'
+      : 'manuel saha ürünü';
+  }
+
+  private get manuelIcerikCogulAdi(): string {
+    return this.activeMenuKod === 'yedek-grid-modulu'
+      ? 'Manuel yedek malzemeleri'
+      : 'Manuel saha ürünleri';
+  }
+
+  private getManuelIcerikGridMesaji(): string {
+    return `${this.manuelIcerikCogulAdi} sandık içeriğidir; Grid işlemi gerektirmez.`;
+  }
+
+  private getManuelIcerikYonetimMesaji(): string {
+    return `${this.manuelIcerikCogulAdi} sandık detayı üzerinden yönetilir.`;
+  }
+
   private syncSub?: Subscription;
 
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('projeId'));
     this.projeId.set(id);
     const isSaha = this.activeMenuKod === 'saha-grid-modulu';
+    const isYedek = this.activeMenuKod === 'yedek-grid-modulu';
+    const parentLabel = isSaha ? 'Saha Yönetimi' : isYedek ? 'Yedek Yönetimi' : 'Sandık Yönetimi';
+    const parentLink = isSaha ? '/saha-yonetimi' : isYedek ? '/yedek-yonetimi' : '/sandik-yonetimi';
     this.breadcrumb = [
       { label: 'Ana Kontrol Paneli', link: '/dashboard' },
-      { label: isSaha ? 'Saha Yönetimi' : 'Sandık Yönetimi', link: isSaha ? '/saha-yonetimi' : '/sandik-yonetimi' },
-      { label: isSaha ? 'Saha Grid Modülü' : 'Grid Modülü' },
+      { label: parentLabel, link: parentLink },
+      { label: isSaha ? 'Saha Grid Modülü' : isYedek ? 'Yedek Grid Modülü' : 'Grid Modülü' },
     ];
     this.loadProjeBilgisi();
     this.loadUrunler();
@@ -542,7 +564,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   openPanel(urun: GridUrunDto) {
     if (this.isSahaManuelIcerik(urun)) {
-      this.toast.info('Manuel saha urunleri sandik icerigidir; Grid islemi gerektirmez.');
+      this.toast.info(this.getManuelIcerikGridMesaji());
       return;
     }
 
@@ -1034,7 +1056,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   getUcKBlokajMesaji(u: GridUrunDto): string {
     if (this.isSahaManuelIcerik(u)) {
-      return 'Manuel saha urunleri sandik icerigidir; Grid islemi gerektirmez.';
+      return this.getManuelIcerikGridMesaji();
     }
     if (this.isSatirSevkKilidi(u)) {
       return this.sevkEdilmisSandikMesaji;
@@ -1074,7 +1096,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   openAnaVeriPanel(urun: GridUrunDto) {
     if (!this.canEditCekiVerisi()) return;
     if (this.isSahaManuelIcerik(urun)) {
-      this.toast.info('Manuel saha urunleri sandik detayi uzerinden yonetilir.');
+      this.toast.info(this.getManuelIcerikYonetimMesaji());
       return;
     }
     if (this.isSatirSevkKilidi(urun)) {
@@ -1105,7 +1127,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     const urun = this.anaVeriUrun();
     if (!urun || this.anaSaving()) return;
     if (this.isSahaManuelIcerik(urun)) {
-      this.anaError.set('Manuel saha urunleri sandik detayi uzerinden yonetilir.');
+      this.anaError.set(this.getManuelIcerikYonetimMesaji());
       return;
     }
     if (this.isSatirSevkKilidi(urun)) {
