@@ -11,7 +11,17 @@ import { SandikService } from '../../../core/services/sandik.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
-import { CekiRevizyonOnizlemeSonuc, ProjeDto, SahaAktarimDto, SandikDto, SevkiyatDto } from '../../../shared/models/index';
+import { CekiRevizyonOnizlemeComponent } from '../../../shared/components/ceki-revizyon-onizleme/ceki-revizyon-onizleme.component';
+import {
+  CekiRevizyonOnizlemeSonuc,
+  CekiRevizyonOnayKuyruguYaniti,
+  CekiRevizyonSorunu,
+  CekiRevizyonYuklemeYaniti,
+  ProjeDto,
+  SahaAktarimDto,
+  SandikDto,
+  SevkiyatDto,
+} from '../../../shared/models/index';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmService } from '../../../core/services/confirm.service';
 import { PdfService } from '../../../core/services/pdf.service';
@@ -25,10 +35,16 @@ interface SahaAktarimGrubu {
   geriAlinamamaNedeni: string | null;
 }
 
+interface RevisionIssueViewModel {
+  issue: CekiRevizyonSorunu;
+  context: string[];
+  categoryLabel: string;
+}
+
 @Component({
   selector: 'app-proje-listesi',
   standalone: true,
-  imports: [TranslatePipe, RouterLink, NgClass, StatusBadgeComponent, BreadcrumbComponent, FormsModule, DatePipe],
+  imports: [TranslatePipe, RouterLink, NgClass, StatusBadgeComponent, BreadcrumbComponent, CekiRevizyonOnizlemeComponent, FormsModule, DatePipe],
   templateUrl: './proje-listesi.component.html',
   styleUrl: './proje-listesi.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -177,18 +193,14 @@ export class ProjeListesiComponent implements OnInit {
   uploading = signal(false);
   previewingRevision = signal(false);
   revisionPreview = signal<CekiRevizyonOnizlemeSonuc | null>(null);
-  revisionFilter = signal<'all' | 'A' | 'U' | 'D'>('all');
-  filteredRevisionRows = computed(() => {
-    const preview = this.revisionPreview();
-    if (!preview) return [];
-
-    const filter = this.revisionFilter();
-    if (filter === 'all') {
-      return preview.satirlar;
-    }
-
-    return preview.satirlar.filter(row => row.checkKodu === filter);
-  });
+  revisionServerIssues = signal<CekiRevizyonSorunu[]>([]);
+  revisionServerIssueViewModels = computed<RevisionIssueViewModel[]>(() =>
+    this.revisionServerIssues().map(issue => ({
+      issue,
+      context: this.buildRevisionIssueContext(issue),
+      categoryLabel: issue.kategori === 'DurumCakismasi' ? 'Durum çakışması' : 'Doğrulama',
+    }))
+  );
   uploadResult = signal<{ success: boolean; message: string } | null>(null);
   dragOver = signal(false);
 
@@ -688,7 +700,7 @@ export class ProjeListesiComponent implements OnInit {
     this.showUploadModal.set(true);
     this.selectedFile.set(null);
     this.revisionPreview.set(null);
-    this.revisionFilter.set('all');
+    this.revisionServerIssues.set([]);
     this.uploadResult.set(null);
   }
 
@@ -696,7 +708,7 @@ export class ProjeListesiComponent implements OnInit {
     this.showUploadModal.set(false);
     this.selectedFile.set(null);
     this.revisionPreview.set(null);
-    this.revisionFilter.set('all');
+    this.revisionServerIssues.set([]);
     this.uploadResult.set(null);
   }
 
@@ -742,7 +754,7 @@ export class ProjeListesiComponent implements OnInit {
 
     this.selectedFile.set(file);
     this.revisionPreview.set(null);
-    this.revisionFilter.set('all');
+    this.revisionServerIssues.set([]);
     this.uploadResult.set(null);
   }
 
@@ -753,14 +765,13 @@ export class ProjeListesiComponent implements OnInit {
     this.previewingRevision.set(true);
     this.uploadResult.set(null);
     this.revisionPreview.set(null);
-    this.revisionFilter.set('all');
+    this.revisionServerIssues.set([]);
 
     this.projeService.cekiRevizyonOnizle(file).subscribe({
       next: (res) => {
         this.previewingRevision.set(false);
         if (res.isSuccess && res.value) {
           this.revisionPreview.set(res.value);
-          this.revisionFilter.set('all');
           if (res.value.uygulanabilirMi) {
             this.toastService.success(res.value.mesaj);
           } else {
@@ -768,6 +779,7 @@ export class ProjeListesiComponent implements OnInit {
             this.toastService.error(res.value.mesaj);
           }
         } else {
+          this.revisionServerIssues.set(res.issues ?? []);
           this.uploadResult.set({ success: false, message: res.error ?? 'Revizyon ön izleme başarısız.' });
           this.toastService.error(res.error ?? 'Revizyon ön izleme başarısız. Lütfen dosyayı kontrol edin.');
         }
@@ -784,35 +796,37 @@ export class ProjeListesiComponent implements OnInit {
     const file = this.selectedFile();
     if (!file) return;
 
-    if (this.uploadMode() === 'revizyon' && !this.revisionPreview()) {
+    const mode = this.uploadMode();
+
+    if (mode === 'revizyon' && !this.revisionPreview()) {
       this.previewRevision();
       return;
     }
 
-    if (this.uploadMode() === 'revizyon' && this.revisionPreview() && !this.revisionPreview()!.uygulanabilirMi) {
+    if (mode === 'revizyon' && this.revisionPreview() && !this.revisionPreview()!.uygulanabilirMi) {
       this.uploadResult.set({ success: false, message: 'Ön izlemede engelli satırlar var. Revizyon uygulanamaz.' });
       return;
     }
 
     this.uploading.set(true);
     this.uploadResult.set(null);
+    this.revisionServerIssues.set([]);
 
-    const request$: any = this.uploadMode() === 'revizyon'
-      ? this.projeService.cekiRevizyonYukle(file)
-      : this.uploadMode() === 'yedek'
-        ? this.projeService.yedekCekiYukle(file)
-        : this.projeService.cekiYukle(file);
+    if (mode === 'revizyon') {
+      this.uploadRevisionCeki(file);
+      return;
+    }
+
+    const request$ = mode === 'yedek'
+      ? this.projeService.yedekCekiYukle(file)
+      : this.projeService.cekiYukle(file);
 
     request$.subscribe({
-      next: (res: any) => {
+      next: (res) => {
         this.uploading.set(false);
         if (res.isSuccess && res.value) {
-          const value = res.value as any;
-          if (this.uploadMode() === 'revizyon') {
-            this.toastService.success(
-              value.mesaj ?? `Revizyon uygulandı. Eklenen: ${value.eklenenSatirSayisi}, Güncellenen: ${value.guncellenenSatirSayisi}, Silinen: ${value.silinenSatirSayisi}.`
-            );
-          } else if (this.uploadMode() === 'yedek') {
+          const value = res.value;
+          if (mode === 'yedek') {
             this.toastService.success(
               value.mesaj ?? `Yedek çekisi başarıyla yüklendi. ${value.satirSayisi} satır tek sandıkta oluşturuldu.`
             );
@@ -834,64 +848,81 @@ export class ProjeListesiComponent implements OnInit {
     });
   }
 
+  private uploadRevisionCeki(file: File): void {
+    this.projeService.cekiRevizyonYukle(file).subscribe({
+      next: (res) => {
+        this.uploading.set(false);
+
+        if (!res.isSuccess || !res.value) {
+          this.revisionServerIssues.set(res.issues ?? []);
+          const message = res.error ?? 'Revizyon yükleme başarısız.';
+          this.uploadResult.set({ success: false, message });
+          this.toastService.error(message);
+          return;
+        }
+
+        const response = res.value;
+        if (this.isRevisionApprovalQueueResponse(response)) {
+          if (response.value.sonucTipi !== 'OnayBekliyor') {
+            this.showUnexpectedRevisionResponse();
+            return;
+          }
+
+          this.toastService.success(
+            response.message || response.value.mesaj || 'Revizyon talebi başarıyla onaya gönderildi.'
+          );
+          this.closeUploadModal();
+          return;
+        }
+
+        if (response.sonucTipi !== 'Uygulandi') {
+          this.showUnexpectedRevisionResponse();
+          return;
+        }
+
+        this.toastService.success(
+          response.mesaj ||
+          `Revizyon doğrudan uygulandı. Eklenen: ${response.eklenenSatirSayisi}, Güncellenen: ${response.guncellenenSatirSayisi}, Silinen: ${response.silinenSatirSayisi}.`
+        );
+        this.closeUploadModal();
+        this.loadProjeler();
+      },
+      error: () => {
+        this.uploading.set(false);
+        this.uploadResult.set({ success: false, message: 'Revizyon yükleme sırasında hata oluştu.' });
+        this.toastService.error('Sunucuyla bağlantı kurulurken hata oluştu.');
+      },
+    });
+  }
+
+  private isRevisionApprovalQueueResponse(
+    response: CekiRevizyonYuklemeYaniti
+  ): response is CekiRevizyonOnayKuyruguYaniti {
+    return 'statusCode' in response && response.statusCode === 202 && !!response.value;
+  }
+
+  private showUnexpectedRevisionResponse(): void {
+    const message = 'Revizyon işleminin sonucu doğrulanamadı. Lütfen sayfayı yenileyip işlem geçmişini kontrol edin.';
+    this.uploadResult.set({ success: false, message });
+    this.toastService.error(message);
+  }
+
   removeFile() {
     this.selectedFile.set(null);
     this.revisionPreview.set(null);
-    this.revisionFilter.set('all');
+    this.revisionServerIssues.set([]);
     this.uploadResult.set(null);
   }
 
-  setRevisionFilter(filter: 'all' | 'A' | 'U' | 'D') {
-    this.revisionFilter.set(filter);
-  }
-
-  revisionOperationClass(checkKodu: string): string {
-    if (checkKodu === 'A') return 'is-add';
-    if (checkKodu === 'U') return 'is-update';
-    if (checkKodu === 'D') return 'is-delete';
-    return '';
-  }
-
-  revisionOperationLabel(checkKodu: string): string {
-    if (checkKodu === 'A') return 'Eklenecek';
-    if (checkKodu === 'U') return 'Güncellenecek';
-    if (checkKodu === 'D') return 'Silinecek';
-    return checkKodu;
-  }
-
-  formatRevisionChange(change: string): string {
-    if (!change) return '';
-
-    const separatorIndex = change.indexOf(':');
-    if (separatorIndex < 0) return change;
-
-    const fieldName = change.slice(0, separatorIndex).trim();
-    const rawValue = change.slice(separatorIndex + 1).trim();
-    const arrow = rawValue.includes('→') ? '→' : rawValue.includes('->') ? '->' : '';
-
-    if (!arrow) {
-      return `${fieldName}: ${this.formatRevisionValue(fieldName, rawValue)}`;
-    }
-
-    const [oldValue, newValue] = rawValue.split(arrow).map(value => value.trim());
-    return `${fieldName}: ${this.formatRevisionValue(fieldName, oldValue)} → ${this.formatRevisionValue(fieldName, newValue)}`;
-  }
-
-  private formatRevisionValue(fieldName: string, value: string): string {
-    const normalized = (value ?? '').trim();
-    if (!normalized || normalized === '-') return '-';
-
-    const numericFields = ['miktar', 'sıra no', 'birim'];
-    const isNumericField = numericFields.includes(fieldName.toLocaleLowerCase('tr-TR'));
-    const numericValue = normalized.replace(',', '.');
-
-    if (!isNumericField || !/^-?\d+(\.\d+)?$/.test(numericValue)) {
-      return normalized;
-    }
-
-    const [integerPart, decimalPart] = numericValue.split('.');
-    const cleanDecimal = (decimalPart ?? '').replace(/0+$/, '');
-    return cleanDecimal ? `${integerPart}.${cleanDecimal}` : integerPart;
+  private buildRevisionIssueContext(issue: CekiRevizyonSorunu): string[] {
+    const context: string[] = [];
+    if (issue.excelSatirNo != null) context.push(`Excel satırı ${issue.excelSatirNo}`);
+    if (issue.siraNo != null) context.push(`Sıra no ${issue.siraNo}`);
+    if (issue.barkodNo?.trim()) context.push(`Barkod ${issue.barkodNo.trim()}`);
+    if (issue.pozNo?.trim()) context.push(`Poz ${issue.pozNo.trim()}`);
+    if (issue.sandikNo?.trim()) context.push(`Sandık ${issue.sandikNo.trim()}`);
+    if (issue.checkKodu?.trim()) context.push(`CHECK ${issue.checkKodu.trim()}`);
+    return context;
   }
 
   formatFileSize(bytes: number): string {

@@ -1,3 +1,5 @@
+import type { CekiRevizyonOnizlemeSonuc } from './ceki.model';
+
 export type OnayGecmisiKapsami = 'tumu' | 'kararVerdiklerim' | 'taleplerim' | 'bekleyenler';
 
 export type OnayGecmisiDurumu = 'tumu' | 'bekliyor' | 'onaylandi' | 'reddedildi';
@@ -36,6 +38,12 @@ export interface OnayGecmisiDto {
   projeNo?: string | null;
   hedefUrl?: string | null;
   aksiyonAktifMi: boolean;
+  revizyonDetayi?: OnayRevizyonDetayiDto | null;
+}
+
+export interface OnayRevizyonDetayiDto {
+  talepId: number;
+  onizleme: CekiRevizyonOnizlemeSonuc;
 }
 
 export interface OnayGecmisiListeDto {

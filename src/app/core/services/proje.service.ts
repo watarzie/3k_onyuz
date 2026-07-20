@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiRevizyonOnizlemeSonuc, CekiRevizyonSonuc, CekiSatiriDto, ProjeDropdownDto, SevkiyatDto, EksiklerdenSahaProjesiOlusturDto, SandiklardanSahaProjesiOlusturDto, SahaAktarimDto, SahaSandikAktarimGeriAlResultDto } from '../../shared/models/index';
+import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiRevizyonApiResult, CekiRevizyonYuklemeYaniti, CekiRevizyonOnizlemeSonuc, CekiSatiriDto, ProjeDropdownDto, SevkiyatDto, EksiklerdenSahaProjesiOlusturDto, SandiklardanSahaProjesiOlusturDto, SahaAktarimDto, SahaSandikAktarimGeriAlResultDto } from '../../shared/models/index';
 
 /**
  * ProjeController (2 endpoint) + CekiController (2 endpoint):
@@ -195,7 +195,7 @@ export class ProjeService {
     );
   }
 
-  cekiRevizyonOnizle(dosya: File): Observable<ApiResult<CekiRevizyonOnizlemeSonuc>> {
+  cekiRevizyonOnizle(dosya: File): Observable<CekiRevizyonApiResult<CekiRevizyonOnizlemeSonuc>> {
     const formData = new FormData();
     formData.append('dosya', dosya);
     return this.api.postFormData<CekiRevizyonOnizlemeSonuc>(
@@ -205,10 +205,10 @@ export class ProjeService {
     );
   }
 
-  cekiRevizyonYukle(dosya: File): Observable<ApiResult<CekiRevizyonSonuc>> {
+  cekiRevizyonYukle(dosya: File): Observable<CekiRevizyonApiResult<CekiRevizyonYuklemeYaniti>> {
     const formData = new FormData();
     formData.append('dosya', dosya);
-    return this.api.postFormData<CekiRevizyonSonuc>(
+    return this.api.postFormData<CekiRevizyonYuklemeYaniti>(
       API.CEKI.REVIZYON_YUKLE,
       formData,
       this.menuOptions('ceki-revizyon-yukle')

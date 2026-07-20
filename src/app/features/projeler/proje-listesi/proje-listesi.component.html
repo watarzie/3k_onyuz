@@ -535,62 +535,44 @@
         </div>
       }
 
-      @if (uploadMode() === 'revizyon' && revisionPreview(); as preview) {
-        <div class="revision-preview mt-3">
-          <div class="revision-preview-header">
+      @if (uploadMode() === 'revizyon' && revisionServerIssues().length > 0) {
+        <section class="revision-apply-issues mt-3" role="alert" aria-live="assertive">
+          <div class="revision-apply-issues-header">
+            <span class="revision-apply-issues-icon"><i class="ri-error-warning-line"></i></span>
             <div>
-              <div class="revision-preview-title">Revizyon Ön İzleme</div>
-              <div class="revision-preview-subtitle">{{ preview.projeNo }} · {{ preview.toplamIsaretliSatirSayisi }} işaretli satır</div>
+              <strong>{{ revisionPreview() ? 'Revizyon uygulanamadı' : 'Revizyon ön izlenemedi' }}</strong>
+              <span>{{ revisionServerIssues().length }} sorun bulundu. Dosyadaki ilgili satırları aşağıdaki nedenlere göre düzeltin.</span>
             </div>
-            <span class="revision-status" [class.is-ready]="preview.uygulanabilirMi" [class.is-blocked]="!preview.uygulanabilirMi">
-              {{ preview.uygulanabilirMi ? 'Uygulanabilir' : 'Engel Var' }}
-            </span>
           </div>
 
-          <div class="revision-summary">
-            <button type="button" class="revision-summary-item is-all" [class.is-active]="revisionFilter() === 'all'" (click)="setRevisionFilter('all')">
-              <span>{{ preview.toplamIsaretliSatirSayisi }}</span>
-              <small>Tümü</small>
-            </button>
-            <button type="button" class="revision-summary-item is-add" [class.is-active]="revisionFilter() === 'A'" (click)="setRevisionFilter('A')">
-              <span>{{ preview.eklenenSatirSayisi }}</span>
-              <small>Eklenecek</small>
-            </button>
-            <button type="button" class="revision-summary-item is-update" [class.is-active]="revisionFilter() === 'U'" (click)="setRevisionFilter('U')">
-              <span>{{ preview.guncellenenSatirSayisi }}</span>
-              <small>Güncellenecek</small>
-            </button>
-            <button type="button" class="revision-summary-item is-delete" [class.is-active]="revisionFilter() === 'D'" (click)="setRevisionFilter('D')">
-              <span>{{ preview.silinecekSatirSayisi }}</span>
-              <small>Silinecek</small>
-            </button>
-          </div>
-
-          <div class="revision-row-list">
-            @for (row of filteredRevisionRows(); track row.excelSatirNo) {
-              <div class="revision-row" [ngClass]="revisionOperationClass(row.checkKodu)">
-                <div class="revision-row-main">
-                  <span class="revision-op" [ngClass]="revisionOperationClass(row.checkKodu)">{{ revisionOperationLabel(row.checkKodu) }}</span>
-                  <div class="revision-row-text">
-                    <strong>#{{ row.yeniSiraNo }} · {{ row.tanim || '-' }}</strong>
-                  </div>
+          <div class="revision-apply-issue-list">
+            @for (issueView of revisionServerIssueViewModels(); track $index) {
+              <article class="revision-apply-issue">
+                <div class="revision-apply-issue-heading">
+                  <span class="revision-issue-category">{{ issueView.categoryLabel }}</span>
+                  @if (issueView.issue.kod) {
+                    <span class="revision-issue-code">{{ issueView.issue.kod }}</span>
+                  }
                 </div>
-
-                @if (row.degisiklikler.length > 0) {
-                  <div class="revision-changes">
-                    @for (change of row.degisiklikler; track change) {
-                      <span>{{ formatRevisionChange(change) }}</span>
+                @if (issueView.issue.tanim) {
+                  <strong class="revision-issue-product">{{ issueView.issue.tanim }}</strong>
+                }
+                <p>{{ issueView.issue.mesaj }}</p>
+                @if (issueView.context.length > 0) {
+                  <div class="revision-issue-context">
+                    @for (context of issueView.context; track context) {
+                      <span>{{ context }}</span>
                     }
                   </div>
                 }
-              </div>
-            } @empty {
-              <div class="revision-empty">
-                Bu filtrede gösterilecek satır yok.
-              </div>
+              </article>
             }
           </div>
-        </div>
+        </section>
+      }
+
+      @if (uploadMode() === 'revizyon' && revisionPreview(); as preview) {
+        <app-ceki-revizyon-onizleme class="d-block mt-3" [preview]="preview" />
       }
     </div>
     <div class="modal-footer d-flex gap-2">
@@ -605,9 +587,9 @@
         </button>
         <button class="btn btn-primary-gradient flex-grow-1" (click)="uploadCeki()" [disabled]="!selectedFile() || !revisionPreview() || !revisionPreview()!.uygulanabilirMi || uploading() || previewingRevision()">
           @if (uploading()) {
-            <span class="spinner-border spinner-border-sm me-2"></span>Uygulanıyor...
+            <span class="spinner-border spinner-border-sm me-2"></span>Onaya Gönderiliyor...
           } @else {
-            Revizyonu Uygula
+            Onaya Gönder
           }
         </button>
       } @else {

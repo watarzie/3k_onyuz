@@ -170,7 +170,9 @@
 <!-- Approve Modal -->
 @if (onayModalIslem(); as islem) {
   <div class="modal-backdrop fade show"></div>
-  <div class="modal fade show reject-modal-shell" style="display: block;" tabindex="-1">
+  <div class="modal fade show reject-modal-shell"
+       [class.has-revision-detail]="!!onayModalDetay()?.revizyonDetayi?.onizleme"
+       style="display: block;" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content reject-modal approve-modal">
         <div class="modal-header reject-modal__header">
@@ -192,15 +194,50 @@
             <strong>{{ islem.islemAciklamasi }}</strong>
           </div>
 
-          <div class="approve-info">
-            <i class="ri-information-line"></i>
-            <span>Onay sonrası talep çalıştırılır ve işlem geçmişine kaydedilir.</span>
-          </div>
+          @if (onayModalDetayLoading()) {
+            <div class="approval-detail-state" role="status" aria-live="polite">
+              <span class="spinner-border spinner-border-sm text-primary"></span>
+              <div>
+                <strong>İşlem ayrıntıları yükleniyor</strong>
+                <p>Onaylamadan önce değişiklikler güvenli biçimde hazırlanıyor.</p>
+              </div>
+            </div>
+          } @else if (onayModalDetayError()) {
+            <div class="approval-detail-state is-error" role="alert">
+              <i class="ri-error-warning-line"></i>
+              <div>
+                <strong>İşlem ayrıntıları yüklenemedi</strong>
+                <p>{{ onayModalDetayError() }}</p>
+                <button type="button" (click)="retryOnayDetayi()">Yeniden Dene</button>
+              </div>
+            </div>
+          } @else if (onayModalDetay(); as detay) {
+            <div class="approval-detail-meta">
+              @if (detay.projeNo) {
+                <span><i class="ri-folder-3-line"></i>Proje: <strong>{{ detay.projeNo }}</strong></span>
+              }
+              <span><i class="ri-user-3-line"></i>Talep eden: <strong>{{ detay.talepEdenKisi }}</strong></span>
+              <span><i class="ri-time-line"></i>Talep: <strong>{{ detay.talepTarihi | date:'dd.MM.yyyy HH:mm' }}</strong></span>
+            </div>
+
+            @if (detay.revizyonDetayi?.onizleme; as onizleme) {
+              <app-ceki-revizyon-onizleme
+                class="approval-revision-preview"
+                [preview]="onizleme"
+                baslik="Onaylanacak Revizyon Değişiklikleri" />
+            }
+
+            <div class="approve-info">
+              <i class="ri-information-line"></i>
+              <span>Onay sonrası talep sunucuda yeniden doğrulanır, çalıştırılır ve işlem geçmişine kaydedilir.</span>
+            </div>
+          }
         </div>
 
         <div class="modal-footer reject-modal__footer">
           <button type="button" class="btn btn-light reject-cancel" (click)="closeOnayModal()" [disabled]="onaySubmitting()">Vazgeç</button>
-          <button type="button" class="btn reject-submit approve-submit" (click)="submitOnayModal()" [disabled]="onaySubmitting()">
+          <button type="button" class="btn reject-submit approve-submit" (click)="submitOnayModal()"
+                  [disabled]="onaySubmitting() || onayModalDetayLoading() || !!onayModalDetayError() || !onayModalDetay()">
             @if (onaySubmitting()) {
               <span class="spinner-border spinner-border-sm me-2"></span>
             } @else {

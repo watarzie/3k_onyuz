@@ -17,13 +17,15 @@ import { ToastService } from '../../core/services/toast.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { RolService } from '../../core/services/rol.service';
 import { OnayBekleyenIslemDto } from '../../shared/models/onay-bekleyen-islem.model';
+import { OnayGecmisiDto } from '../../shared/models/onay-gecmisi.model';
 import { RolDto } from '../../shared/models/rol.model';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
+import { CekiRevizyonOnizlemeComponent } from '../../shared/components/ceki-revizyon-onizleme/ceki-revizyon-onizleme.component';
 
 @Component({
   selector: 'app-onay-listesi',
   standalone: true,
-  imports: [DatePipe, NgClass, BreadcrumbComponent],
+  imports: [DatePipe, NgClass, BreadcrumbComponent, CekiRevizyonOnizlemeComponent],
   templateUrl: './onay-listesi.component.html',
   styleUrls: ['./onay-listesi.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,6 +39,7 @@ export class OnayListesiComponent implements OnInit, OnDestroy {
   private destroyRef = inject(DestroyRef);
   private readonly refreshRequests = new Subject<void>();
   private loadRequest?: Subscription;
+  private detailRequest?: Subscription;
 
   public canWrite = computed(() => this.permissions.canWrite('islem-onay-merkezi'));
   public canManageRules = computed(() => this.permissions.canWrite('onay-kurallari-yonet'));
@@ -48,6 +51,9 @@ export class OnayListesiComponent implements OnInit, OnDestroy {
   loading = signal<boolean>(true);
   showKurallarModal = signal<boolean>(false);
   onayModalIslem = signal<OnayBekleyenIslemDto | null>(null);
+  onayModalDetay = signal<OnayGecmisiDto | null>(null);
+  onayModalDetayLoading = signal<boolean>(false);
+  onayModalDetayError = signal<string>('');
   onaySubmitting = signal<boolean>(false);
   retModalIslem = signal<OnayBekleyenIslemDto | null>(null);
   redAciklamasi = signal<string>('');
@@ -76,6 +82,7 @@ export class OnayListesiComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.loadRequest?.unsubscribe();
+    this.detailRequest?.unsubscribe();
   }
 
   loadKurallar() {
@@ -214,23 +221,42 @@ export class OnayListesiComponent implements OnInit, OnDestroy {
 
   openOnayModal(islem: OnayBekleyenIslemDto) {
     this.onayModalIslem.set(islem);
+    this.loadOnayDetayi(islem.id);
   }
 
   closeOnayModal() {
     if (this.onaySubmitting()) return;
+    this.detailRequest?.unsubscribe();
     this.onayModalIslem.set(null);
+    this.onayModalDetay.set(null);
+    this.onayModalDetayLoading.set(false);
+    this.onayModalDetayError.set('');
+  }
+
+  retryOnayDetayi(): void {
+    const islem = this.onayModalIslem();
+    if (!islem || this.onaySubmitting()) return;
+
+    this.loadOnayDetayi(islem.id);
   }
 
   submitOnayModal() {
     const islem = this.onayModalIslem();
 
-    if (!islem || this.onaySubmitting()) return;
+    if (
+      !islem ||
+      this.onaySubmitting() ||
+      this.onayModalDetayLoading() ||
+      this.onayModalDetayError() ||
+      !this.onayModalDetay()
+    ) return;
 
     this.onaySubmitting.set(true);
     this.onayService.onayla({ onayBekleyenIslemId: islem.id }).subscribe({
       next: (res) => {
         this.onaySubmitting.set(false);
         this.onayModalIslem.set(null);
+        this.onayModalDetay.set(null);
         this.loadData();
         if (res.isSuccess) {
           this.toast.success('İşlem başarıyla onaylandı ve çalıştırıldı.');
@@ -241,9 +267,30 @@ export class OnayListesiComponent implements OnInit, OnDestroy {
       error: () => {
         this.onaySubmitting.set(false);
         this.onayModalIslem.set(null);
+        this.onayModalDetay.set(null);
         this.loadData();
         this.toast.error('Onay işlemi başarısız.');
       }
+    });
+  }
+
+  private loadOnayDetayi(islemId: number): void {
+    this.detailRequest?.unsubscribe();
+    this.onayModalDetay.set(null);
+    this.onayModalDetayError.set('');
+    this.onayModalDetayLoading.set(true);
+
+    this.detailRequest = this.onayService.getGecmisDetayi(islemId).subscribe(res => {
+      this.onayModalDetayLoading.set(false);
+
+      if (!res.isSuccess || !res.value) {
+        this.onayModalDetayError.set(
+          res.error || 'Onaylanacak işlemin ayrıntıları yüklenemedi.'
+        );
+        return;
+      }
+
+      this.onayModalDetay.set(res.value);
     });
   }
 

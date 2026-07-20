@@ -175,6 +175,11 @@
   .modal-dialog {
     max-width: 560px;
   }
+
+  &.has-revision-detail .modal-dialog {
+    width: calc(100% - 2rem);
+    max-width: 1120px;
+  }
 }
 
 .reject-modal {
@@ -360,6 +365,88 @@
     margin-top: .05rem;
     color: #2563eb;
     font-size: 1.05rem;
+  }
+}
+
+.approval-detail-state {
+  display: flex;
+  align-items: flex-start;
+  gap: .75rem;
+  min-height: 88px;
+  padding: 1rem;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  color: #334155;
+  background: #f8fbff;
+
+  > span,
+  > i {
+    flex: 0 0 auto;
+    margin-top: .15rem;
+  }
+
+  strong,
+  p { display: block; }
+
+  p {
+    margin: .25rem 0 0;
+    color: #64748b;
+    font-size: .84rem;
+  }
+
+  &.is-error {
+    border-color: #fecaca;
+    color: #991b1b;
+    background: #fff7f7;
+
+    > i { font-size: 1.15rem; }
+
+    p { color: #7f1d1d; }
+
+    button {
+      margin-top: .65rem;
+      padding: .4rem .7rem;
+      border: 1px solid #ef4444;
+      border-radius: 7px;
+      color: #b91c1c;
+      background: #fff;
+      font-size: .8rem;
+      font-weight: 700;
+    }
+  }
+}
+
+.approval-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+  margin-bottom: 1rem;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .45rem .65rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    color: #64748b;
+    background: #f8fafc;
+    font-size: .78rem;
+  }
+
+  i { color: #2563eb; }
+  strong { color: #334155; }
+}
+
+.approval-revision-preview {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.has-revision-detail {
+  .reject-modal__body {
+    max-height: calc(100vh - 215px);
+    overflow-y: auto;
   }
 }
 

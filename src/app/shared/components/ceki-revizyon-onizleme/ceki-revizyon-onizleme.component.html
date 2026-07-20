@@ -1,0 +1,405 @@
+<section class="revision-preview">
+  <header class="revision-preview-header">
+    <div>
+      <div class="revision-preview-title">{{ baslik() }}</div>
+      <div class="revision-preview-subtitle">
+        {{ preview().projeNo }} · {{ preview().toplamIsaretliSatirSayisi }} işaretli satır
+      </div>
+    </div>
+    <span class="revision-status"
+          [class.is-ready]="preview().uygulanabilirMi"
+          [class.is-blocked]="!preview().uygulanabilirMi">
+      {{ preview().uygulanabilirMi ? 'Uygulanabilir' : 'Engel Var' }}
+    </span>
+  </header>
+
+  @if (preview().engelliSatirSayisi > 0) {
+    <div class="revision-risk-banner is-blocked" role="alert">
+      <i class="ri-shield-cross-line"></i>
+      <div>
+        <strong>{{ preview().engelliSatirSayisi }} satır revizyonun uygulanmasını engelliyor.</strong>
+        <span>Her satır kartındaki kırmızı alanda engelin ayrıntılı nedenini görebilirsiniz.</span>
+      </div>
+    </div>
+  }
+
+  @if (preview().engelliSatirSayisi > 0 || uyariliSatirSayisi() > 0) {
+    <div class="revision-risk-filters" aria-label="Riskli revizyon satırları">
+      @if (preview().engelliSatirSayisi > 0) {
+        <button type="button" class="is-blocked" [class.is-active]="filtre() === 'blocked'"
+                (click)="filtrele('blocked')">
+          <i class="ri-close-circle-line"></i>{{ preview().engelliSatirSayisi }} Engelli satır
+        </button>
+      }
+      @if (uyariliSatirSayisi() > 0) {
+        <button type="button" class="is-warning" [class.is-active]="filtre() === 'warning'"
+                (click)="filtrele('warning')">
+          <i class="ri-alert-line"></i>{{ uyariliSatirSayisi() }} Uyarılı satır
+        </button>
+      }
+    </div>
+  }
+
+  <div class="revision-summary">
+    <button type="button" class="revision-summary-item is-all"
+            [class.is-active]="filtre() === 'all'" (click)="filtrele('all')">
+      <span>{{ preview().toplamIsaretliSatirSayisi }}</span>
+      <small>Tümü</small>
+    </button>
+    <button type="button" class="revision-summary-item is-add"
+            [class.is-active]="filtre() === 'A'" (click)="filtrele('A')">
+      <span>{{ preview().eklenenSatirSayisi }}</span>
+      <small>Eklenecek</small>
+    </button>
+    <button type="button" class="revision-summary-item is-update"
+            [class.is-active]="filtre() === 'U'" (click)="filtrele('U')">
+      <span>{{ preview().guncellenenSatirSayisi }}</span>
+      <small>Güncellenecek</small>
+    </button>
+    <button type="button" class="revision-summary-item is-delete"
+            [class.is-active]="filtre() === 'D'" (click)="filtrele('D')">
+      <span>{{ preview().silinecekSatirSayisi }}</span>
+      <small>Silinecek</small>
+    </button>
+    <button type="button" class="revision-summary-item is-unchanged"
+            [class.is-active]="filtre() === 'unchanged'" (click)="filtrele('unchanged')">
+      <span>{{ degisiklikOlmayanSatirSayisi() }}</span>
+      <small>Değişiklik Yok</small>
+    </button>
+  </div>
+
+  @if (sandikEtkileri().length > 0) {
+    <section class="crate-effects" aria-labelledby="crate-effects-title">
+      <header class="crate-effects-header">
+        <div>
+          <strong id="crate-effects-title"><i class="ri-inbox-archive-line"></i>Sandık etkileri</strong>
+          <span>Onaylandığında oluşacak veya bilgileri değişecek sandıklar</span>
+        </div>
+        <span class="crate-effects-count">{{ sandikEtkileri().length }} sandık</span>
+      </header>
+
+      <div class="crate-effects-list">
+        @for (etki of sandikEtkileri(); track etki.sandikNo) {
+          <article class="crate-effect-card" [class.is-new]="etki.yeniSandikMi">
+            <header class="crate-effect-card-header">
+              <strong>Sandık {{ etki.sandikNo }}</strong>
+              <span>{{ etki.yeniSandikMi ? 'Yeni sandık' : 'Bilgi değişikliği' }}</span>
+            </header>
+
+            <div class="crate-effect-context">
+              <span class="is-count"
+                    [title]="'Çeki içeriği: ' + guvenliSayi(etki.mevcutCekiIcerigiSayisi) + ' · Tamamlanan: ' + guvenliSayi(etki.tamamlanmisCekiIcerigiSayisi)">
+                <i class="ri-list-check-2"></i>{{ guvenliSayi(etki.mevcutIcerikSayisi) }} mevcut içerik
+              </span>
+              @if (etki.durumYenidenHesaplanacakMi) {
+                <span class="is-recalculate">
+                  <i class="ri-refresh-line"></i>Durumu yeniden hesaplanacak
+                </span>
+              }
+              @if (etki.bosKalirsaSilinecekMi) {
+                <span class="is-delete">
+                  <i class="ri-delete-bin-line"></i>Boş kalırsa silinecek
+                </span>
+              }
+            </div>
+
+            <div class="crate-effect-fields">
+              @if (sandikAlaniGoster(etki, etki.eskiAd, etki.yeniAd)) {
+                <div class="crate-effect-field">
+                  <span>Sandık adı</span>
+                  <div>
+                    @if (!etki.yeniSandikMi) {
+                      <del>{{ sandikDegeriniFormatla(etki.eskiAd) }}</del><i class="ri-arrow-right-line"></i>
+                    }
+                    <strong>{{ sandikDegeriniFormatla(etki.yeniAd) }}</strong>
+                  </div>
+                </div>
+              }
+              @if (sandikAlaniGoster(etki, etki.eskiAdIngilizce, etki.yeniAdIngilizce)) {
+                <div class="crate-effect-field">
+                  <span>İngilizce adı</span>
+                  <div>
+                    @if (!etki.yeniSandikMi) {
+                      <del>{{ sandikDegeriniFormatla(etki.eskiAdIngilizce) }}</del><i class="ri-arrow-right-line"></i>
+                    }
+                    <strong>{{ sandikDegeriniFormatla(etki.yeniAdIngilizce) }}</strong>
+                  </div>
+                </div>
+              }
+              @if (sandikAlaniGoster(etki, etki.eskiEn, etki.yeniEn)) {
+                <div class="crate-effect-field">
+                  <span>En</span>
+                  <div>
+                    @if (!etki.yeniSandikMi) {
+                      <del>{{ sandikDegeriniFormatla(etki.eskiEn, 'mm') }}</del><i class="ri-arrow-right-line"></i>
+                    }
+                    <strong>{{ sandikDegeriniFormatla(etki.yeniEn, 'mm') }}</strong>
+                  </div>
+                </div>
+              }
+              @if (sandikAlaniGoster(etki, etki.eskiBoy, etki.yeniBoy)) {
+                <div class="crate-effect-field">
+                  <span>Boy</span>
+                  <div>
+                    @if (!etki.yeniSandikMi) {
+                      <del>{{ sandikDegeriniFormatla(etki.eskiBoy, 'mm') }}</del><i class="ri-arrow-right-line"></i>
+                    }
+                    <strong>{{ sandikDegeriniFormatla(etki.yeniBoy, 'mm') }}</strong>
+                  </div>
+                </div>
+              }
+              @if (sandikAlaniGoster(etki, etki.eskiYukseklik, etki.yeniYukseklik)) {
+                <div class="crate-effect-field">
+                  <span>Yükseklik</span>
+                  <div>
+                    @if (!etki.yeniSandikMi) {
+                      <del>{{ sandikDegeriniFormatla(etki.eskiYukseklik, 'mm') }}</del><i class="ri-arrow-right-line"></i>
+                    }
+                    <strong>{{ sandikDegeriniFormatla(etki.yeniYukseklik, 'mm') }}</strong>
+                  </div>
+                </div>
+              }
+              @if (sandikAlaniGoster(etki, etki.eskiNetKg, etki.yeniNetKg)) {
+                <div class="crate-effect-field">
+                  <span>Net ağırlık</span>
+                  <div>
+                    @if (!etki.yeniSandikMi) {
+                      <del>{{ sandikDegeriniFormatla(etki.eskiNetKg, 'kg') }}</del><i class="ri-arrow-right-line"></i>
+                    }
+                    <strong>{{ sandikDegeriniFormatla(etki.yeniNetKg, 'kg') }}</strong>
+                  </div>
+                </div>
+              }
+              @if (sandikAlaniGoster(etki, etki.eskiGrossKg, etki.yeniGrossKg)) {
+                <div class="crate-effect-field">
+                  <span>Brüt ağırlık</span>
+                  <div>
+                    @if (!etki.yeniSandikMi) {
+                      <del>{{ sandikDegeriniFormatla(etki.eskiGrossKg, 'kg') }}</del><i class="ri-arrow-right-line"></i>
+                    }
+                    <strong>{{ sandikDegeriniFormatla(etki.yeniGrossKg, 'kg') }}</strong>
+                  </div>
+                </div>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    </section>
+  }
+
+  <div class="revision-row-list">
+    @for (satir of filtrelenmisSatirlar(); track satir.excelSatirNo) {
+      <article class="revision-row" [ngClass]="islemSinifi(satir.checkKodu)">
+        <div class="revision-row-main">
+          <div class="revision-row-badges">
+            <span class="revision-op" [ngClass]="islemSinifi(satir.checkKodu)">
+              {{ islemEtiketi(satir.checkKodu) }}
+            </span>
+            @if (!satir.uygulanabilirMi) {
+              <span class="revision-risk-badge is-blocked"><i class="ri-close-circle-fill"></i>Engelli</span>
+            } @else if (uyariliMi(satir)) {
+              <span class="revision-risk-badge is-warning"><i class="ri-alert-fill"></i>Uyarılı</span>
+            }
+          </div>
+          <div class="revision-row-text">
+            <strong>#{{ satir.yeniSiraNo }} · {{ satir.tanim || '-' }}</strong>
+            <small>Excel satırı {{ satir.excelSatirNo }} · CHECK {{ satir.checkKodu }}</small>
+          </div>
+        </div>
+
+        <div class="revision-row-meta">
+          @if (satir.barkodNo) {
+            <span><b>Barkod</b>{{ satir.barkodNo }}</span>
+          }
+          @if (satir.pozNo) {
+            <span><b>Poz</b>{{ satir.pozNo }}</span>
+          }
+          @if (satir.yeniKoliNo) {
+            <span><b>Sandık</b>{{ satir.yeniKoliNo }}</span>
+          }
+          @if (satir.yeniIstenenAdet != null) {
+            <span><b>Miktar</b>{{ satir.yeniIstenenAdet }}</span>
+          }
+          @if (satir.islemGormusMu) {
+            <span class="is-processed"><b>İşlem gören</b>{{ satir.islemGorenAdet }}</span>
+          }
+        </div>
+
+        @for (engel of satirEngelleri(satir); track engel) {
+          <div class="revision-row-message is-blocked">
+            <i class="ri-close-circle-line"></i>
+            <div><strong>Revizyonu engelleyen neden</strong><span>{{ engel }}</span></div>
+          </div>
+        }
+
+        @for (uyari of satirUyarilari(satir); track uyari) {
+          <div class="revision-row-message is-warning">
+            <i class="ri-alert-line"></i>
+            <div><strong>Dikkat edilmesi gereken durum</strong><span>{{ uyari }}</span></div>
+          </div>
+        }
+
+        @if (satir.geriAlmaEtkisi; as etki) {
+          <details class="revision-rollback-impact">
+            <summary>
+              <i class="ri-history-line"></i>
+              <div>
+                <strong>Otomatik geri alma etkisi</strong>
+                <span>{{ geriAlmaIslemMetni(satir.checkKodu) }}</span>
+              </div>
+              <i class="ri-arrow-down-s-line is-chevron"></i>
+            </summary>
+
+            <div class="revision-rollback-groups">
+              @if (gridEtkisiVarMi(etki)) {
+                <section class="revision-rollback-group is-grid">
+                  <header><i class="ri-route-line"></i>Grid</header>
+                  <div class="revision-rollback-metrics">
+                    @if (etki.gridDurumuId > 0 || etki.gridSevkDurumuId > 0 || etki.gridPersonelId != null) {
+                      <span>Durum/atama kaydı</span>
+                    }
+                    @if (etki.gridGelenAdet) {
+                      <span><b>Grid gelen</b>{{ sandikDegeriniFormatla(etki.gridGelenAdet) }}</span>
+                    }
+                    @if (etki.trafoSevkAdet) {
+                      <span><b>Trafo sevk</b>{{ sandikDegeriniFormatla(etki.trafoSevkAdet) }}</span>
+                    }
+                    @if (etki.gridSevkMiktari) {
+                      <span><b>Grid sevk</b>{{ sandikDegeriniFormatla(etki.gridSevkMiktari) }}</span>
+                    }
+                    @if (etki.yenidenSevkGerekliAdet) {
+                      <span><b>Yeniden sevk</b>{{ sandikDegeriniFormatla(etki.yenidenSevkGerekliAdet) }}</span>
+                    }
+                    @if (etki.gridSevkTarihi) {
+                      <span><b>Sevk tarihi</b>{{ tarihiFormatla(etki.gridSevkTarihi) }}</span>
+                    }
+                  </div>
+                  @if (etki.gridAciklama) {
+                    <p><b>Grid açıklaması</b>{{ etki.gridAciklama }}</p>
+                  }
+                </section>
+              }
+
+              @if (ucKEtkisiVarMi(etki)) {
+                <section class="revision-rollback-group is-uck">
+                  <header><i class="ri-checkbox-multiple-line"></i>3K</header>
+                  <div class="revision-rollback-metrics">
+                    @if (etki.ucKDurumuId > 0 || etki.ucKKarsilamaTipiId > 0 || etki.surecDurumId != null || etki.kaliteDurumId != null) {
+                      <span>Durum/karşılama kaydı</span>
+                    }
+                    @if (etki.gelenMiktar) {
+                      <span><b>Gelen</b>{{ sandikDegeriniFormatla(etki.gelenMiktar) }}</span>
+                    }
+                    @if (etki.karsilananMiktar) {
+                      <span><b>Karşılanan</b>{{ sandikDegeriniFormatla(etki.karsilananMiktar) }}</span>
+                    }
+                    @if (etki.stokKarsilanan) {
+                      <span><b>Stoktan</b>{{ sandikDegeriniFormatla(etki.stokKarsilanan) }}</span>
+                    }
+                    @if (etki.projeKarsilanan) {
+                      <span><b>Projeden</b>{{ sandikDegeriniFormatla(etki.projeKarsilanan) }}</span>
+                    }
+                    @if (etki.projeGonderilen) {
+                      <span><b>Projeye gönderilen</b>{{ sandikDegeriniFormatla(etki.projeGonderilen) }}</span>
+                    }
+                    @if (etki.tedarikciKarsilanan) {
+                      <span><b>Tedarikçiden</b>{{ sandikDegeriniFormatla(etki.tedarikciKarsilanan) }}</span>
+                    }
+                    @if (etki.hataliMiktar) {
+                      <span><b>Hatalı</b>{{ sandikDegeriniFormatla(etki.hataliMiktar) }}</span>
+                    }
+                    @if (etki.geriGonderilenMiktar) {
+                      <span><b>Geri gönderilen</b>{{ sandikDegeriniFormatla(etki.geriGonderilenMiktar) }}</span>
+                    }
+                    @if (etki.kaynakHedefProjeNo) {
+                      <span><b>Kaynak/hedef</b>{{ etki.kaynakHedefProjeNo }}</span>
+                    }
+                    @if (etki.teslimTarihi) {
+                      <span><b>Teslim tarihi</b>{{ tarihiFormatla(etki.teslimTarihi) }}</span>
+                    }
+                  </div>
+                  @if (etki.ucKAciklama) {
+                    <p><b>3K açıklaması</b>{{ etki.ucKAciklama }}</p>
+                  }
+                </section>
+              }
+
+              @if (sandikIcerikEtkisiVarMi(etki)) {
+                <section class="revision-rollback-group is-crate">
+                  <header><i class="ri-inbox-archive-line"></i>Sandık içeriği</header>
+                  <div class="revision-rollback-metrics">
+                    @if (etki.sandikIcerikSayisi > 0) {
+                      <span><b>İçerik kaydı</b>{{ etki.sandikIcerikSayisi }}</span>
+                    }
+                    @if (etki.tahsisMiktari) {
+                      <span><b>Tahsis</b>{{ sandikDegeriniFormatla(etki.tahsisMiktari) }}</span>
+                    }
+                    @if (etki.konulanAdet) {
+                      <span><b>Konulan</b>{{ sandikDegeriniFormatla(etki.konulanAdet) }}</span>
+                    }
+                    @if (etki.eksikAdet) {
+                      <span><b>Eksik</b>{{ sandikDegeriniFormatla(etki.eksikAdet) }}</span>
+                    }
+                    @if (etki.sandikStokKarsilanan) {
+                      <span><b>Stoktan</b>{{ sandikDegeriniFormatla(etki.sandikStokKarsilanan) }}</span>
+                    }
+                    @if (etki.sandikProjeKarsilanan) {
+                      <span><b>Projeden</b>{{ sandikDegeriniFormatla(etki.sandikProjeKarsilanan) }}</span>
+                    }
+                    @if (etki.sandikTedarikciKarsilanan) {
+                      <span><b>Tedarikçiden</b>{{ sandikDegeriniFormatla(etki.sandikTedarikciKarsilanan) }}</span>
+                    }
+                  </div>
+                </section>
+              }
+
+              @if (stokHareketEtkisiVarMi(etki)) {
+                <section class="revision-rollback-group is-stock">
+                  <header><i class="ri-stack-line"></i>Stok hareketi</header>
+                  <div class="revision-rollback-metrics">
+                    <span><b>Hareket</b>{{ etki.stokHareketSayisi }}</span>
+                    @if (etki.stoktanKarsilananMiktar) {
+                      <span><b>Stoktan karşılanan</b>{{ sandikDegeriniFormatla(etki.stoktanKarsilananMiktar) }}</span>
+                    }
+                    @if (etki.fazlaTeslimStogaAktarilanMiktar) {
+                      <span><b>Fazla teslim → stok</b>{{ sandikDegeriniFormatla(etki.fazlaTeslimStogaAktarilanMiktar) }}</span>
+                    }
+                    @if (etki.digerStokHareketMiktari) {
+                      <span><b>Diğer hareket</b>{{ sandikDegeriniFormatla(etki.digerStokHareketMiktari) }}</span>
+                    }
+                  </div>
+                </section>
+              }
+
+              @if (gelenTransferEtkisiVarMi(etki)) {
+                <section class="revision-rollback-group is-transfer">
+                  <header><i class="ri-git-pull-request-line"></i>Gelen proje transferi</header>
+                  <div class="revision-rollback-metrics">
+                    <span><b>Aktif transfer</b>{{ etki.gelenAktifProjeTransferSayisi }}</span>
+                    @if (gelenTransferKaynakSayisi(etki) > 0) {
+                      <span><b>Kaynak proje</b>{{ gelenTransferKaynakSayisi(etki) }}</span>
+                    }
+                    @if (etki.gelenAktifProjeTransferMiktari) {
+                      <span><b>Toplam miktar</b>{{ sandikDegeriniFormatla(etki.gelenAktifProjeTransferMiktari) }}</span>
+                    }
+                  </div>
+                </section>
+              }
+            </div>
+          </details>
+        }
+
+        @if (satir.degisiklikler.length > 0) {
+          <div class="revision-changes">
+            @for (degisiklik of satir.degisiklikler; track degisiklik) {
+              <span>{{ degisikligiFormatla(degisiklik) }}</span>
+            }
+          </div>
+        }
+      </article>
+    } @empty {
+      <div class="revision-empty">Bu filtrede gösterilecek satır yok.</div>
+    }
+  </div>
+</section>

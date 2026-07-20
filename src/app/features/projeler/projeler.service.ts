@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { BaseApiService } from '../../core/services/base-api.service';
 import { API } from '../../core/constants/api-endpoints';
-import { ApiResult, ProjeDto, CekiYuklemeResultDto, CekiRevizyonOnizlemeSonuc, CekiRevizyonSonuc } from '../../shared/models/index';
+import { ApiResult, ProjeDto, CekiYuklemeResultDto, CekiRevizyonApiResult, CekiRevizyonYuklemeYaniti, CekiRevizyonOnizlemeSonuc } from '../../shared/models/index';
 
 @Injectable({ providedIn: 'root' })
 export class ProjeService {
@@ -24,7 +24,7 @@ export class ProjeService {
     });
   }
 
-  cekiRevizyonOnizle(dosya: File): Observable<ApiResult<CekiRevizyonOnizlemeSonuc>> {
+  cekiRevizyonOnizle(dosya: File): Observable<CekiRevizyonApiResult<CekiRevizyonOnizlemeSonuc>> {
     const formData = new FormData();
     formData.append('dosya', dosya);
     return this.api.postFormData<CekiRevizyonOnizlemeSonuc>(API.CEKI.REVIZYON_ONIZLE, formData, {
@@ -32,10 +32,10 @@ export class ProjeService {
     });
   }
 
-  cekiRevizyonYukle(dosya: File): Observable<ApiResult<CekiRevizyonSonuc>> {
+  cekiRevizyonYukle(dosya: File): Observable<CekiRevizyonApiResult<CekiRevizyonYuklemeYaniti>> {
     const formData = new FormData();
     formData.append('dosya', dosya);
-    return this.api.postFormData<CekiRevizyonSonuc>(API.CEKI.REVIZYON_YUKLE, formData, {
+    return this.api.postFormData<CekiRevizyonYuklemeYaniti>(API.CEKI.REVIZYON_YUKLE, formData, {
       headers: { 'X-Menu-Kod': 'ceki-revizyon-yukle' },
     });
   }
