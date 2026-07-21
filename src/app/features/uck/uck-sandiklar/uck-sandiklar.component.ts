@@ -310,10 +310,19 @@ export class UcKSandiklarComponent implements OnInit {
       next: (res) => {
         this.isSavingLokasyon.set(false);
         if (res.isSuccess) {
-          this.toast.success('Lokasyon başarıyla güncellendi.');
+          const queued = res.statusCode === 202 || this.isApprovalQueueResponse(res.value);
+          if (queued) {
+            this.toast.info('Lokasyon atama talebi yetkili onayına gönderildi.');
+          } else {
+            this.toast.success('Lokasyon başarıyla güncellendi.');
+          }
           this.closeLokasyonModal();
           this.selectedSandikIds.set(new Set());
-          this.refreshSandiklar();
+          // Onay bekleyen talepte karttaki mevcut lokasyon korunur. Kural
+          // kapalıysa işlem doğrudan uygulanır ve güncel veri yeniden yüklenir.
+          if (!queued) {
+            this.refreshSandiklar();
+          }
         } else {
           this.toast.error(res.error || 'İşlem başarısız oldu.');
         }
@@ -323,6 +332,14 @@ export class UcKSandiklarComponent implements OnInit {
         this.toast.error('Sunucu ile iletişim kurulamadı.');
       }
     });
+  }
+
+  private isApprovalQueueResponse(value: unknown): value is { statusCode: 202 } {
+    if (typeof value !== 'object' || value === null || !('statusCode' in value)) {
+      return false;
+    }
+
+    return (value as { statusCode?: unknown }).statusCode === 202;
   }
 
   getDurumLabel(durum: string): string {

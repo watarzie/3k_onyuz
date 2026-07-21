@@ -1,6 +1,23 @@
+.history-toolbar {
+    position: relative;
+    z-index: 2;
+    overflow: visible;
+
+    &.dropdown-open {
+        z-index: 30;
+    }
+}
+
+.history-log-card {
+    position: relative;
+    z-index: 1;
+}
+
 .history-header-left {
+    position: relative;
     min-width: 0;
     flex-wrap: wrap;
+    overflow: visible;
 }
 
 .project-filter {
@@ -81,7 +98,10 @@
     top: calc(100% + 6px);
     left: 0;
     right: 0;
-    z-index: 40;
+    z-index: 100;
+    display: flex;
+    max-height: min(360px, calc(100vh - 160px));
+    flex-direction: column;
     overflow: hidden;
     border: 1px solid #d8dee8;
     border-radius: 8px;
@@ -111,9 +131,11 @@
 }
 
 .project-combobox-options {
-    max-height: 300px;
-    overflow: auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 5px;
+    scrollbar-gutter: stable;
 }
 
 .project-combobox-option {

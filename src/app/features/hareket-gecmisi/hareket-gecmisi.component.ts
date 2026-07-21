@@ -7,7 +7,7 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { HareketGecmisiService } from '../../core/services/hareket-gecmisi.service';
 import { ProjeService } from '../../core/services/proje.service';
 import { LookupService } from '../../core/services/lookup.service';
-import { HareketGecmisiDto, ProjeDto, LookupItem } from '../../shared/models/index';
+import { HareketGecmisiDto, ProjeDropdownDto, LookupItem } from '../../shared/models/index';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmService } from '../../core/services/confirm.service';
 
@@ -25,7 +25,7 @@ export class HareketGecmisiComponent implements OnInit {
   private confirmService = inject(ConfirmService);
   private lookupService = inject(LookupService);
 
-  projeler = signal<ProjeDto[]>([]);
+  projeler = signal<ProjeDropdownDto[]>([]);
   selectedProjeId = signal<number | null>(null);
   projeSearchTerm = signal('');
   projeDropdownOpen = signal(false);
@@ -95,13 +95,23 @@ export class HareketGecmisiComponent implements OnInit {
   }
 
   loadProjeler() {
-    this.projeService.getProjeListesi(1, 1000).subscribe(res => {
-      if (res.isSuccess && res.value) {
-        this.projeler.set(res.value.items);
-        if (this.projeler().length > 0) {
-          this.selectedProjeId.set(this.projeler()[0].id);
+    this.projeService.getProjeDropdownListesi().subscribe({
+      next: (res) => {
+        if (!res.isSuccess || !res.value) {
+          this.toast.error(res.error || 'Projeler yüklenemedi.');
+          return;
+        }
+
+        const projeler = [...res.value].sort((a, b) => b.id - a.id);
+        this.projeler.set(projeler);
+
+        if (projeler.length > 0) {
+          this.selectedProjeId.set(projeler[0].id);
           this.loadHareketler();
         }
+      },
+      error: () => {
+        this.toast.error('Projeler yüklenirken bağlantı hatası oluştu.');
       }
     });
   }

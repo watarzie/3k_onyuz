@@ -1,4 +1,6 @@
-<div class="row align-items-center mb-4">
+<div
+  class="row align-items-center mb-4 history-toolbar"
+  [class.dropdown-open]="projeDropdownOpen()">
   <div class="col-sm-4">
     <div class="d-flex align-items-center gap-3 history-header-left">
       <h5 class="mb-0">Hareket Geçmişi (Log)</h5>
@@ -64,7 +66,7 @@
   </div>
 </div>
 
-<div class="card bg-white border-0 rounded-3 mb-4 shadow-sm">
+<div class="card bg-white border-0 rounded-3 mb-4 shadow-sm history-log-card">
   <div class="card-body p-0">
     
     @if (loading()) {
