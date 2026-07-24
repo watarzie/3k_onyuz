@@ -37,6 +37,22 @@ export class PdfService {
     return this.api.downloadFile(API.PDF.EKSIK_URUNLER_EXCEL(projeId), this.menuOptions(menuKod));
   }
 
+  topluEksikUrunlerPdf(projeIds: number[]): Observable<Blob> {
+    return this.api.downloadPostFile(
+      API.PDF.TOPLU_EKSIK_URUNLER,
+      { projeIds },
+      this.menuOptions('eksik-raporu')
+    );
+  }
+
+  topluEksikUrunlerExcel(projeIds: number[]): Observable<Blob> {
+    return this.api.downloadPostFile(
+      API.PDF.TOPLU_EKSIK_URUNLER_EXCEL,
+      { projeIds },
+      this.menuOptions('eksik-raporu')
+    );
+  }
+
   gerceklesenCekiListesiPdf(projeId: number, menuKod = 'gerceklesen-ceki-raporu'): Observable<Blob> {
     return this.api.downloadFile(API.PDF.GERCEKLESEN_CEKI_LISTESI(projeId), this.menuOptions(menuKod));
   }

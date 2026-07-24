@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, OnDestroy, ChangeDetectionStrategy, WritableSignal } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy, ChangeDetectionStrategy, WritableSignal, HostListener } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -9,6 +9,7 @@ import { SandikService } from '../../../core/services/sandik.service';
 import { ProjeService } from '../../../core/services/proje.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmService } from '../../../core/services/confirm.service';
+import { PdfService } from '../../../core/services/pdf.service';
 
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
@@ -65,6 +66,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   private projeService = inject(ProjeService);
   private toast = inject(ToastService);
   private confirmService = inject(ConfirmService);
+  private pdfService = inject(PdfService);
   permissions = inject(PermissionService);
   private readonly sevkEdilmisSandikMesaji = 'Bu ürün sevk edilmiş sandıkta olduğu için Grid işlemi yapılamaz.';
   private readonly tamamlanmisSurecMesaji = 'Süreci tamamlanan ürünlerin süreç durumu değiştirilemez.';
@@ -96,6 +98,13 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   canEditCekiVerisi = computed(() => this.permissions.canWrite('ceki-verisi-duzenle'));
   canDeleteCekiVerisi = computed(() => this.permissions.canWrite('ceki-verisi-sil'));
   canSahaAktarimGeriAl = computed(() => this.permissions.canWrite('saha-aktarim-geri-al'));
+  canSeeEksikRapor = computed(() =>
+    this.activeMenuKod === 'grid-modulu' &&
+    this.mevcutProje()?.projeTipiId === 1 &&
+    this.permissions.hasAccess('eksik-raporu')
+  );
+  showEksikRaporMenu = signal(false);
+  eksikRaporDownloading = signal<'pdf' | 'excel' | null>(null);
 
   readonly birimSecenekleri = [
     { id: 1, label: 'Adet' },
@@ -278,6 +287,55 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     if (this.syncSub) {
       this.syncSub.unsubscribe();
     }
+  }
+
+  @HostListener('document:click')
+  closeEksikRaporMenu() {
+    this.showEksikRaporMenu.set(false);
+  }
+
+  toggleEksikRaporMenu() {
+    if (this.eksikRaporDownloading() !== null) return;
+    this.showEksikRaporMenu.update(value => !value);
+  }
+
+  indirEksikRapor(format: 'pdf' | 'excel') {
+    if (!this.canSeeEksikRapor() || this.eksikRaporDownloading() !== null || this.projeId() <= 0) return;
+
+    this.showEksikRaporMenu.set(false);
+    this.eksikRaporDownloading.set(format);
+
+    const request$ = format === 'pdf'
+      ? this.pdfService.eksikUrunlerPdf(this.projeId())
+      : this.pdfService.eksikUrunlerExcel(this.projeId());
+
+    request$.subscribe({
+      next: (blob) => {
+        this.eksikRaporDownloading.set(null);
+        const projeNo = this.safeFileName(this.mevcutProje()?.projeNo || `Proje_${this.projeId()}`);
+        this.downloadBlob(blob, `${projeNo}_EksikRaporu.${format === 'pdf' ? 'pdf' : 'xlsx'}`);
+        this.toast.success(`Eksik ürünler ${format === 'pdf' ? 'PDF' : 'Excel'} raporu indirildi.`);
+      },
+      error: () => {
+        this.eksikRaporDownloading.set(null);
+        this.toast.error('Eksik ürünler raporu indirilirken bir hata oluştu.');
+      },
+    });
+  }
+
+  private downloadBlob(blob: Blob, fileName: string) {
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 0);
+  }
+
+  private safeFileName(value: string): string {
+    return value.replace(/[<>:"/\\|?*\u0000-\u001F]/g, '_').trim() || 'Proje';
   }
 
   loadUrunler(showLoader = true) {

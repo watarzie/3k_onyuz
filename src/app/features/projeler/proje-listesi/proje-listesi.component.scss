@@ -97,6 +97,24 @@ table {
   tr:hover { background: #F8FAFC; }
 }
 
+.bulk-report-select-column {
+  width: 48px;
+  min-width: 48px;
+  padding-right: 6px !important;
+  text-align: center;
+
+  .form-check-input {
+    width: 17px;
+    height: 17px;
+    margin: 0;
+    cursor: pointer;
+
+    &:disabled {
+      cursor: not-allowed;
+    }
+  }
+}
+
 .shipment-date-column {
   min-width: 205px;
 }
@@ -404,6 +422,31 @@ table {
     display: block;
     margin-top: 4px;
     color: #477568;
+  }
+}
+
+.btn-bulk-missing-report {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 38px;
+  border: 1px solid rgba(220, 53, 69, .28);
+  background: rgba(220, 53, 69, .08);
+  color: #b42334;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 7px 13px;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    border-color: rgba(220, 53, 69, .45);
+    background: rgba(220, 53, 69, .14);
+    color: #941c2a;
+  }
+
+  &:disabled {
+    opacity: .55;
   }
 }
 
@@ -1089,6 +1132,9 @@ table {
     justify-content: stretch;
   }
   .btn-3k-work-list {
+    width: 100%;
+  }
+  .btn-bulk-missing-report {
     width: 100%;
   }
   .proje-type-filter {

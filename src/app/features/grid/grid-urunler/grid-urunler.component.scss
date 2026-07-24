@@ -58,6 +58,28 @@
   min-width: 0;
 }
 
+.eksik-report-dropdown {
+  .dropdown-menu {
+    min-width: 205px;
+    padding: 6px;
+    border: 1px solid var(--borderColor);
+    border-radius: 10px;
+  }
+
+  .dropdown-item {
+    border: 0;
+    border-radius: 7px;
+    padding: 9px 11px;
+    font-size: 13px;
+    font-weight: 600;
+
+    &:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+  }
+}
+
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -145,6 +167,18 @@
 
     app-readonly-banner {
       flex: 1 1 100%;
+    }
+  }
+
+  .eksik-report-dropdown {
+    flex: 1 1 150px;
+
+    > .btn {
+      width: 100%;
+    }
+
+    .dropdown-menu {
+      width: min(100vw - 32px, 320px);
     }
   }
 

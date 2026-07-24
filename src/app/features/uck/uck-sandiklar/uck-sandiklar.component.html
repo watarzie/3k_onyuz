@@ -83,6 +83,8 @@
         <button class="btn btn-sm btn-success d-flex align-items-center gap-1" (click)="topluHazirYap()">
           <i class="ri-lock-line"></i> Seçilenleri ({{selectedSandikIds().size}}) Kapat
         </button>
+        }
+        @if (canAssignLocation()) {
         <button class="btn btn-sm btn-info text-white d-flex align-items-center gap-1 ms-1"
           style="background-color: var(--bs-info); border-color: var(--bs-info);" (click)="topluLokasyonAtaModal()">
           <i class="ri-map-pin-add-line"></i> Toplu Lokasyon Belirle
@@ -202,9 +204,9 @@
               <span style="white-space: nowrap;" class="text-truncate" [title]="s.depoLokasyonMetni"><i
                   class="ri-map-pin-line flex-shrink-0"></i> {{ s.depoLokasyonMetni }}</span>
             </div>
-            @if (canWriteSandik() && !isSandikKilitli(s)) {
+            @if (((canAssignLocation() && !isSandikSevkEdildi(s)) || canWriteSandik()) && !isSandikKilitli(s)) {
             <div class="d-flex gap-1 ms-auto mt-1 flex-shrink-0">
-              @if (!isSandikSevkEdildi(s)) {
+              @if (canAssignLocation() && !isSandikSevkEdildi(s)) {
               <button class="btn btn-sm btn-outline-info d-flex align-items-center justify-content-center flex-shrink-0"
                 (click)="openLokasyonModal($event, s)"
                 style="width: 26px; height: 26px; padding: 0; font-size: 0.85rem; z-index: 2; position: relative;"
@@ -212,6 +214,7 @@
                 <i class="ri-map-pin-add-line"></i>
               </button>
               }
+              @if (canWriteSandik()) {
               <a [routerLink]="[uckSandikRoutePrefix(), projeId(), s.id]"
                 class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center flex-shrink-0"
                 (click)="$event.stopPropagation()"
@@ -219,6 +222,7 @@
                 title="Sandık İçerik Yönetimi">
                 <i class="ri-settings-3-line"></i>
               </a>
+              }
             </div>
             }
           </div>
@@ -350,7 +354,7 @@
 }
 
 <!-- ===== Sandık Lokasyon Modal ===== -->
-@if (canWriteSandik() && showLokasyonModal() && selectedSandikForLocIds().length > 0) {
+@if (canAssignLocation() && showLokasyonModal() && selectedSandikForLocIds().length > 0) {
 <div class="modal-overlay" (click)="closeLokasyonModal()"></div>
 <div class="toplu-sevk-modal"
   style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1055; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">

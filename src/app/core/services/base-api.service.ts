@@ -51,6 +51,10 @@ export class BaseApiService {
     return this.http.get(url, { ...(options ?? {}), responseType: 'blob' as const }) as unknown as Observable<Blob>;
   }
 
+  downloadPostFile(url: string, body: unknown, options?: any): Observable<Blob> {
+    return this.http.post(url, body, { ...(options ?? {}), responseType: 'blob' as const }) as unknown as Observable<Blob>;
+  }
+
   private wrapSuccess<T>(data: T): ApiResult<T> {
     return { isSuccess: true, value: data };
   }

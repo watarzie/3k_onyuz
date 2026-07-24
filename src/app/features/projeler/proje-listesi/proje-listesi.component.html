@@ -42,7 +42,7 @@
   </div>
 </div>
 
-@if (reportMenuKey()) {
+@if (reportMenuKey() || bulkEksikRaporMenuPosition()) {
   <div class="report-download-backdrop" (click)="closeReportMenu()"></div>
 }
 @if (reportMenuContext(); as menu) {
@@ -72,11 +72,46 @@
     }
   </div>
 }
+@if (bulkEksikRaporMenuPosition()) {
+  <div
+    class="report-download-menu report-download-menu-global"
+    [style.top.px]="bulkEksikRaporMenuPosition()?.top"
+    [style.left.px]="bulkEksikRaporMenuPosition()?.left"
+    (click)="$event.stopPropagation()">
+    <button type="button" class="report-download-item is-pdf"
+      [disabled]="bulkEksikRaporDownloading() !== null"
+      (click)="indirTopluEksikRapor('pdf')">
+      <span class="report-download-icon"><i class="ri-file-pdf-2-line"></i></span>
+      <span>PDF raporlarını ZIP indir</span>
+    </button>
+    <button type="button" class="report-download-item is-excel"
+      [disabled]="bulkEksikRaporDownloading() !== null"
+      (click)="indirTopluEksikRapor('excel')">
+      <span class="report-download-icon"><i class="ri-file-excel-2-line"></i></span>
+      <span>Excel raporlarını ZIP indir</span>
+    </button>
+  </div>
+}
 
 <div class="trezo-card border-0 shadow-none mb-4">
   <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
     <h5 class="fw-semibold mb-0">{{ isSahaYonetimi() ? 'Saha Projeleri' : isYedekYonetimi() ? 'Yedek Projeleri' : 'Projeler' }} ({{ totalCount() }})</h5>
     <div class="project-list-header-actions">
+      @if (canUseBulkEksikRapor()) {
+        <button type="button" class="btn btn-sm btn-bulk-missing-report report-download-trigger"
+          [disabled]="selectedEksikRaporCount() === 0 || bulkEksikRaporDownloading() !== null"
+          (click)="toggleBulkEksikRaporMenu($event)"
+          title="Seçilen projelerin eksik raporlarını indir">
+          @if (bulkEksikRaporDownloading() !== null) {
+            <span class="spinner-border spinner-border-sm"></span>
+          } @else {
+            <i class="ri-file-warning-line"></i>
+          }
+          <span>Toplu Eksik Raporu ({{ selectedEksikRaporCount() }})</span>
+          <i class="ri-arrow-down-s-line report-download-chevron"
+            [class.open]="bulkEksikRaporMenuPosition() !== null"></i>
+        </button>
+      }
       @if (canSee3KIsListesi()) {
         <a routerLink="/uck-is-listesi" class="btn btn-sm btn-3k-work-list">
           <i class="ri-list-check-3-line"></i>
@@ -145,6 +180,17 @@
         <table class="table table-hover align-middle mb-0">
           <thead>
             <tr>
+              @if (canUseBulkEksikRapor()) {
+                <th class="bulk-report-select-column">
+                  <input type="checkbox" class="form-check-input"
+                    aria-label="Bu sayfadaki projeleri rapor için seç"
+                    [checked]="allCurrentPageSelectedForEksikRapor()"
+                    [indeterminate]="someCurrentPageSelectedForEksikRapor()"
+                    [disabled]="bulkEksikRaporDownloading() !== null || projeler().length > 25"
+                    [title]="projeler().length > 25 ? 'Toplu seçim için sayfa başına en fazla 25 proje gösterin.' : ''"
+                    (change)="toggleAllEksikRaporProjects()" />
+                </th>
+              }
               <th>{{ 'LABELS.PROJE_NO' | translate }}</th>
               @if (showProjeTipiFilter()) {
                 <th>Proje Tipi</th>
@@ -169,6 +215,16 @@
           <tbody>
             @for (p of projeler(); track p.id) {
               <tr>
+                @if (canUseBulkEksikRapor()) {
+                  <td class="bulk-report-select-column">
+                    <input type="checkbox" class="form-check-input"
+                      [checked]="isEksikRaporProjeSelected(p.id)"
+                      [disabled]="bulkEksikRaporDownloading() !== null"
+                      [attr.aria-label]="p.projeNo + ' projesini rapor için seç'"
+                      (click)="$event.stopPropagation()"
+                      (change)="toggleEksikRaporProjeSelection(p.id)" />
+                  </td>
+                }
                 <td class="fw-semibold">
                   @if (isSandikMode()) {
                     <div class="d-flex align-items-center gap-2">

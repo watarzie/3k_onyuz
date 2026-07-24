@@ -51,10 +51,13 @@ export class UcKSandiklarComponent implements OnInit {
   );
   canWriteSandik = computed(() => this.permissionService.canWrite(this.activeMenuKod));
   canWriteSevk = computed(() => this.permissionService.canWrite(this.activeMenuKod));
+  canAssignLocation = computed(() => this.permissionService.canWrite('sandik-lokasyon-atama'));
   canSandiklariSahayaAktar = computed(() =>
     !this.isSahaContext() && !this.isYedekContext() && this.permissionService.canWrite('sahaya-aktar')
   );
-  canUseSandikSelection = computed(() => this.canWriteSandik() || this.canSandiklariSahayaAktar());
+  canUseSandikSelection = computed(() =>
+    this.canWriteSandik() || this.canAssignLocation() || this.canSandiklariSahayaAktar()
+  );
   canSeeSandikDurumRaporu = computed(() => this.permissionService.hasAccess(this.sandikDurumRaporMenuKod()));
 
   projeId = signal(0);
@@ -252,7 +255,7 @@ export class UcKSandiklarComponent implements OnInit {
   openLokasyonModal(event: Event, sandik: SandikDto) {
     event.preventDefault();
     event.stopPropagation();
-    if (!this.canWriteSandik()) return;
+    if (!this.canAssignLocation()) return;
     if (this.isSandikKilitli(sandik)) {
       this.toast.error(this.getSandikKilitMesaji(sandik));
       return;
@@ -264,8 +267,8 @@ export class UcKSandiklarComponent implements OnInit {
 
   topluLokasyonAtaModal() {
     if (this.selectedSandikIds().size === 0) return;
-    if (!this.canWriteSandik()) return;
-    const ids = this.secilenSevkEdilmemisSandikIdleri();
+    if (!this.canAssignLocation()) return;
+    const ids = this.secilenLokasyonAtanabilirSandikIdleri();
     if (ids.length === 0) {
       this.toast.error('Seçili sandıklar arasında işlem yapılabilir sandık bulunmuyor.');
       return;
@@ -291,7 +294,7 @@ export class UcKSandiklarComponent implements OnInit {
   }
 
   saveLokasyon() {
-    if (!this.canWriteSandik() || this.isSavingLokasyon()) return;
+    if (!this.canAssignLocation() || this.isSavingLokasyon()) return;
 
     if (!this.yeniLokasyonId()) {
       this.toast.error('Lütfen bir lokasyon seçiniz.');
@@ -555,6 +558,17 @@ export class UcKSandiklarComponent implements OnInit {
     const selected = this.selectedSandikIds();
     return this.sandiklar()
       .filter(s => selected.has(s.id) && !this.isSandikKilitli(s))
+      .map(s => s.id);
+  }
+
+  private secilenLokasyonAtanabilirSandikIdleri(): number[] {
+    const selected = this.selectedSandikIds();
+    return this.sandiklar()
+      .filter(s =>
+        selected.has(s.id) &&
+        !this.isSandikKilitli(s) &&
+        !this.isSandikSevkEdildi(s)
+      )
       .map(s => s.id);
   }
 

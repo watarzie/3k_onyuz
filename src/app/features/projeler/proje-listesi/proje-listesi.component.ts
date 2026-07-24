@@ -82,6 +82,9 @@ export class ProjeListesiComponent implements OnInit {
   reportMenuKey = signal<string | null>(null);
   reportMenuPosition = signal<{ top: number; left: number } | null>(null);
   reportMenuContext = signal<{ key: string; proje: ProjeDto; type: 'eksik' | 'gerceklesen' } | null>(null);
+  bulkEksikRaporMenuPosition = signal<{ top: number; left: number } | null>(null);
+  bulkEksikRaporDownloading = signal<'pdf' | 'excel' | null>(null);
+  selectedEksikRaporProjeIds = signal<Set<number>>(new Set());
 
   /**
    * Grid/3K buton gösterimi — Rol Yetki ekranından yönetilir.
@@ -90,6 +93,7 @@ export class ProjeListesiComponent implements OnInit {
   canSeeGrid = computed(() => this.permissions.hasAccess('grid-modulu'));
   canSee3K = computed(() => this.permissions.hasAccess('3k-modulu'));
   canSeeEksikRapor = computed(() => this.permissions.hasAccess('eksik-raporu'));
+  canUseBulkEksikRapor = computed(() => this.isSandikYonetimi() && this.canSeeEksikRapor());
   canSeeGerceklesenRapor = computed(() => this.permissions.hasAccess('gerceklesen-ceki-raporu'));
   canSee3KIsListesi = computed(() => this.isSandikYonetimi() && this.permissions.hasAccess('3k-is-listesi'));
   canUseEksikTamamlama = computed(() => this.permissions.canWrite('sahaya-aktar'));
@@ -174,6 +178,16 @@ export class ProjeListesiComponent implements OnInit {
 
   projeler = signal<ProjeDto[]>([]);
   loading = signal(true);
+  selectedEksikRaporCount = computed(() => this.selectedEksikRaporProjeIds().size);
+  allCurrentPageSelectedForEksikRapor = computed(() => {
+    const projeler = this.projeler();
+    const selected = this.selectedEksikRaporProjeIds();
+    return projeler.length > 0 && projeler.length <= 25 && projeler.every(proje => selected.has(proje.id));
+  });
+  someCurrentPageSelectedForEksikRapor = computed(() => {
+    const selected = this.selectedEksikRaporProjeIds();
+    return !this.allCurrentPageSelectedForEksikRapor() && this.projeler().some(proje => selected.has(proje.id));
+  });
 
   // Server-side pagination
   searchTerm = signal('');
@@ -369,6 +383,7 @@ export class ProjeListesiComponent implements OnInit {
   showProjeTipiFilter = computed(() => this.isAktifProjeler() || this.isSevkEdilen());
 
   loadProjeler() {
+    this.clearBulkEksikRaporSelection();
     this.loading.set(true);
 
     // Mode'a gore parametreleri belirle
@@ -407,6 +422,7 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   onSearch(event: Event) {
+    this.clearBulkEksikRaporSelection();
     const term = (event.target as HTMLInputElement).value;
     this.searchSubject.next(term);
   }
@@ -519,6 +535,122 @@ export class ProjeListesiComponent implements OnInit {
     this.reportMenuKey.set(null);
     this.reportMenuPosition.set(null);
     this.reportMenuContext.set(null);
+    this.bulkEksikRaporMenuPosition.set(null);
+  }
+
+  toggleBulkEksikRaporMenu(event: MouseEvent) {
+    event.stopPropagation();
+    if (this.bulkEksikRaporDownloading() !== null || this.selectedEksikRaporCount() === 0) return;
+
+    const wasOpen = this.bulkEksikRaporMenuPosition() !== null;
+    this.closeReportMenu();
+    if (wasOpen) return;
+
+    const button = event.currentTarget as HTMLElement;
+    const rect = button.getBoundingClientRect();
+    const menuWidth = 230;
+    const menuHeight = 118;
+    const gap = 8;
+    const left = Math.min(Math.max(8, rect.right - menuWidth), window.innerWidth - menuWidth - 8);
+    const opensBelow = rect.bottom + gap + menuHeight <= window.innerHeight - 8;
+    const top = opensBelow ? rect.bottom + gap : Math.max(8, rect.top - menuHeight - gap);
+
+    this.bulkEksikRaporMenuPosition.set({ top, left });
+  }
+
+  isEksikRaporProjeSelected(projeId: number): boolean {
+    return this.selectedEksikRaporProjeIds().has(projeId);
+  }
+
+  toggleEksikRaporProjeSelection(projeId: number) {
+    if (!this.canUseBulkEksikRapor() || this.bulkEksikRaporDownloading() !== null) return;
+
+    const next = new Set(this.selectedEksikRaporProjeIds());
+    if (next.has(projeId)) {
+      next.delete(projeId);
+    } else {
+      if (next.size >= 25) {
+        this.toastService.warning('Toplu eksik raporu için en fazla 25 proje seçebilirsiniz.');
+        return;
+      }
+      next.add(projeId);
+    }
+
+    this.selectedEksikRaporProjeIds.set(next);
+    if (next.size === 0) {
+      this.bulkEksikRaporMenuPosition.set(null);
+    }
+  }
+
+  toggleAllEksikRaporProjects() {
+    if (!this.canUseBulkEksikRapor() || this.bulkEksikRaporDownloading() !== null) return;
+
+    const projeler = this.projeler();
+    if (projeler.length > 25) {
+      this.toastService.warning('Sayfada 25’ten fazla proje var. En fazla 25 projeyi tek tek seçebilirsiniz.');
+      return;
+    }
+
+    if (this.allCurrentPageSelectedForEksikRapor()) {
+      this.selectedEksikRaporProjeIds.set(new Set());
+    } else {
+      this.selectedEksikRaporProjeIds.set(new Set(projeler.map(proje => proje.id)));
+    }
+    this.bulkEksikRaporMenuPosition.set(null);
+  }
+
+  indirTopluEksikRapor(format: 'pdf' | 'excel') {
+    if (!this.canUseBulkEksikRapor() || this.bulkEksikRaporDownloading() !== null) return;
+
+    const projeIds = Array.from(this.selectedEksikRaporProjeIds());
+    if (projeIds.length === 0) {
+      this.toastService.warning('Rapor için en az bir proje seçmelisiniz.');
+      return;
+    }
+    if (projeIds.length > 25) {
+      this.toastService.warning('Toplu eksik raporu için en fazla 25 proje seçebilirsiniz.');
+      return;
+    }
+
+    this.bulkEksikRaporMenuPosition.set(null);
+    this.bulkEksikRaporDownloading.set(format);
+    const request$ = format === 'pdf'
+      ? this.pdfService.topluEksikUrunlerPdf(projeIds)
+      : this.pdfService.topluEksikUrunlerExcel(projeIds);
+
+    request$.subscribe({
+      next: (blob) => {
+        this.bulkEksikRaporDownloading.set(null);
+        this.downloadBlobFile(blob, `Toplu_Eksik_Raporlari_${this.todayFileStamp()}.zip`);
+        this.toastService.success(`${projeIds.length} projenin eksik raporu ZIP olarak indirildi.`);
+      },
+      error: () => {
+        this.bulkEksikRaporDownloading.set(null);
+        this.toastService.error('Toplu eksik raporu indirilirken bir hata oluştu.');
+      },
+    });
+  }
+
+  private clearBulkEksikRaporSelection() {
+    this.selectedEksikRaporProjeIds.set(new Set());
+    this.bulkEksikRaporMenuPosition.set(null);
+  }
+
+  private downloadBlobFile(blob: Blob, fileName: string) {
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 0);
+  }
+
+  private todayFileStamp(): string {
+    const today = new Date();
+    const pad = (value: number) => value.toString().padStart(2, '0');
+    return `${today.getFullYear()}${pad(today.getMonth() + 1)}${pad(today.getDate())}`;
   }
 
   toggleReportMenu(event: MouseEvent, key: string, proje: ProjeDto, type: 'eksik' | 'gerceklesen') {
@@ -527,6 +659,7 @@ export class ProjeListesiComponent implements OnInit {
       this.closeReportMenu();
       return;
     }
+    this.bulkEksikRaporMenuPosition.set(null);
 
     const button = event.currentTarget as HTMLElement;
     const rect = button.getBoundingClientRect();

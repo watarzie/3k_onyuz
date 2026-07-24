@@ -11,6 +11,31 @@
     </div>
     <div class="page-actions d-flex align-items-center gap-2 flex-wrap">
       <app-readonly-banner />
+      @if (canSeeEksikRapor()) {
+      <div class="dropdown eksik-report-dropdown" [class.show]="showEksikRaporMenu()"
+        (click)="$event.stopPropagation()">
+        <button type="button" class="btn btn-outline-danger dropdown-toggle"
+          [disabled]="eksikRaporDownloading() !== null"
+          (click)="toggleEksikRaporMenu()">
+          @if (eksikRaporDownloading() !== null) {
+            <span class="spinner-border spinner-border-sm me-1"></span>
+          } @else {
+            <i class="ri-file-warning-line me-1"></i>
+          }
+          Eksik Raporu
+        </button>
+        <div class="dropdown-menu dropdown-menu-end shadow-lg" [class.show]="showEksikRaporMenu()">
+          <button type="button" class="dropdown-item" [disabled]="eksikRaporDownloading() !== null"
+            (click)="indirEksikRapor('pdf')">
+            <i class="ri-file-pdf-2-line text-danger me-2"></i>PDF olarak indir
+          </button>
+          <button type="button" class="dropdown-item" [disabled]="eksikRaporDownloading() !== null"
+            (click)="indirEksikRapor('excel')">
+            <i class="ri-file-excel-2-line text-success me-2"></i>Excel olarak indir
+          </button>
+        </div>
+      </div>
+      }
       @if (canDeleteCekiVerisi()) {
       <button class="btn btn-outline-danger" [disabled]="!hasSelection" (click)="deleteSelectedCekiSatirlari()">
         <i class="ri-delete-bin-line me-1"></i>Çeki Sil ({{ selectedRowKeys().size }})
