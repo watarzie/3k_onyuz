@@ -14,6 +14,7 @@ export interface SandikDto {
   silinebilirMi: boolean;
   depodaSayilacakMi: boolean;
   sahayaAktarildiMi?: boolean;
+  sahaUzerindenSevkEdildiMi?: boolean;
   sahayaAktarilanMiktar?: number;
   en?: number;
   boy?: number;
@@ -32,6 +33,7 @@ export interface SandikDetayDto {
   depoLokasyonId: number;
   depoLokasyonMetni: string;
   sahayaAktarildiMi?: boolean;
+  sahaUzerindenSevkEdildiMi?: boolean;
   sahayaAktarilanMiktar?: number;
   en?: number;
   boy?: number;

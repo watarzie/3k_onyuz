@@ -36,6 +36,7 @@ export class UcKSandiklarComponent implements OnInit {
   private pdfService = inject(PdfService);
   private readonly sevkEdilmisSandikMesaji = 'Bu sandık sevk edildiği için üzerinde işlem yapılamaz.';
   private readonly sahayaAktarilmisSandikMesaji = 'Bu sandık sahaya aktarıldığı için normal proje tarafında işlem yapılamaz. Geri almak için saha aktarımını geri alın.';
+  private readonly sahaUzerindenSevkEdilmisSandikMesaji = 'Bu sandık saha projesi üzerinden sevk edildi. Geri alma işlemi kaynak sandıktan değil, ilgili saha sevkiyatından yapılmalıdır.';
 
   private get activeMenuKod(): string {
     return this.route.snapshot.data?.['menuKod'] || '3k-modulu';
@@ -131,9 +132,9 @@ export class UcKSandiklarComponent implements OnInit {
   breadcrumb: { label: string; link?: string }[] = [];
 
   // Stats
-  get hazirCount(): number { return this.sandiklar().filter(s => s.durumMetni === 'Kapandı').length; }
-  get hazirlaniyorCount(): number { return this.sandiklar().filter(s => s.durumMetni === 'Hazırlanıyor').length; }
-  get sevkedildiCount(): number { return this.sandiklar().filter(s => s.durumMetni === 'Sevk Edildi').length; }
+  get hazirCount(): number { return this.sandiklar().filter(s => !this.isSandikSahaUzerindenSevkEdildi(s) && s.durumMetni === 'Kapandı').length; }
+  get hazirlaniyorCount(): number { return this.sandiklar().filter(s => !this.isSandikSahaUzerindenSevkEdildi(s) && s.durumMetni === 'Hazırlanıyor').length; }
+  get sevkedildiCount(): number { return this.sandiklar().filter(s => this.isSandikSevkEdildi(s)).length; }
   projeBaslik = computed(() => {
     const proje = this.mevcutProje();
     return proje ? `${proje.projeNo} - ${proje.musteri}` : `Proje #${this.projeId()}`;
@@ -375,7 +376,8 @@ export class UcKSandiklarComponent implements OnInit {
 
   isSandikSevkEdildi(sandik: SandikDto): boolean {
     const durumMetni = (sandik.durumMetni ?? '').trim();
-    return sandik.durumId === 4 ||
+    return sandik.sahaUzerindenSevkEdildiMi === true ||
+      sandik.durumId === 4 ||
       durumMetni === 'SevkEdildi' ||
       durumMetni === 'Sevk Edildi' ||
       durumMetni === 'Sevkedildi';
@@ -389,22 +391,33 @@ export class UcKSandiklarComponent implements OnInit {
     return sandik.sahayaAktarildiMi === true;
   }
 
+  isSandikSahaUzerindenSevkEdildi(sandik: SandikDto): boolean {
+    return sandik.sahaUzerindenSevkEdildiMi === true;
+  }
+
   isSandikKilitli(sandik: SandikDto): boolean {
-    return this.isSandikSahayaAktarildi(sandik) ||
+    return this.isSandikSahaUzerindenSevkEdildi(sandik) ||
+      this.isSandikSahayaAktarildi(sandik) ||
       (this.isSandikSevkEdildi(sandik) && !this.isSandikDuzeltmeyeAcik(sandik));
   }
 
   getSandikKilitMesaji(sandik: SandikDto): string {
+    if (this.isSandikSahaUzerindenSevkEdildi(sandik)) {
+      return this.sahaUzerindenSevkEdilmisSandikMesaji;
+    }
+
     return this.isSandikSahayaAktarildi(sandik)
       ? this.sahayaAktarilmisSandikMesaji
       : this.sevkEdilmisSandikMesaji;
   }
 
   getCardDurumLabel(sandik: SandikDto): string {
+    if (this.isSandikSahaUzerindenSevkEdildi(sandik)) return 'SEVK EDİLDİ (SAHA)';
     return this.isSandikSahayaAktarildi(sandik) ? 'SAHAYA AKTARILDI' : this.getDurumLabel(sandik.durumMetni);
   }
 
   getCardDurumColor(sandik: SandikDto): string {
+    if (this.isSandikSahaUzerindenSevkEdildi(sandik)) return this.getDurumColor('Sevk Edildi');
     return this.isSandikSahayaAktarildi(sandik) ? '#0F766E' : this.getDurumColor(sandik.durumMetni);
   }
 
@@ -451,7 +464,7 @@ export class UcKSandiklarComponent implements OnInit {
 
     if (!this.canWriteSevk()) return;
     if (!this.isSandikKilitli(sandik)) return;
-    if (this.isSandikSahayaAktarildi(sandik)) {
+    if (this.isSandikSahayaAktarildi(sandik) || this.isSandikSahaUzerindenSevkEdildi(sandik)) {
       this.toast.error(this.getSandikKilitMesaji(sandik));
       return;
     }

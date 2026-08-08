@@ -154,7 +154,7 @@
               </button>
             </div>
             }
-            @if (canWriteSevk() && isSandikKilitli(s) && !isSandikSahayaAktarildi(s)) {
+            @if (canWriteSevk() && isSandikKilitli(s) && !isSandikSahayaAktarildi(s) && !isSandikSahaUzerindenSevkEdildi(s)) {
             <div class="card-top-actions">
               <button
                 class="card-icon-btn card-unlock-btn"

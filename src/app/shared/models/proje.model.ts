@@ -18,6 +18,7 @@ export interface ProjeDto {
   calismaGunSayisi?: number;
   planlananSevkTarihi?: string;
   gerceklesenSevkTarihi?: string;
+  fizikselSevkEdilmisSandikVarMi: boolean;
   sorumluKisi: string;
   sandikSayisi: number;
   hazirSandikSayisi: number;

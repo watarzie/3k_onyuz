@@ -119,7 +119,7 @@ export class SandikListesiComponent implements OnInit {
         this.sandiklar().filter(
           (s) =>
             s.sandikNo.toLowerCase().includes(term) ||
-            s.durumMetni.toLowerCase().includes(term)
+            this.getEtkinDurumMetni(s).toLowerCase().includes(term)
         )
       );
     }
@@ -132,6 +132,16 @@ export class SandikListesiComponent implements OnInit {
       Tamamlandi: this.ts.translate('STATUS.TAMAMLANDI'),
     };
     return map[durum] ?? durum;
+  }
+
+  getEtkinDurumMetni(sandik: SandikDto): string {
+    return sandik.sahaUzerindenSevkEdildiMi ? 'Sevk Edildi' : sandik.durumMetni;
+  }
+
+  getEtkinDurumLabel(sandik: SandikDto): string {
+    return sandik.sahaUzerindenSevkEdildiMi
+      ? 'Sevk Edildi (Saha)'
+      : this.getDurumLabel(sandik.durumMetni);
   }
 
   indirPdf(sandikId: number) {

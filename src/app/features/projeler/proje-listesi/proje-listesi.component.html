@@ -413,13 +413,13 @@
                       
                       @if ((canSevkEtCurrent() || canUpdatePlanlananSevkTarihiCurrent()) && (!isSandikMode() || isSahaYonetimi() || isYedekYonetimi())) {
                         @if (p.durumMetni === 'SevkEdildi' || p.durumMetni === 'Sevk Edildi') {
-                          @if (canSevkEtCurrent()) {
+                          @if (canSevkEtCurrent() && p.fizikselSevkEdilmisSandikVarMi) {
                             <button class="btn btn-sm btn-outline-primary" (click)="openKilitAcModal(p)">
                               <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
                             </button>
                           }
                         } @else {
-                          @if (canSevkEtCurrent() && hasSevkiyatGecmisi(p)) {
+                          @if (canSevkEtCurrent() && p.fizikselSevkEdilmisSandikVarMi && hasSevkiyatGecmisi(p)) {
                             <button class="btn btn-sm btn-outline-primary" (click)="openKilitAcModal(p)">
                               <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
                             </button>

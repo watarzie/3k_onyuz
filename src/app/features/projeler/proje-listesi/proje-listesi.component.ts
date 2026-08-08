@@ -317,7 +317,7 @@ export class ProjeListesiComponent implements OnInit {
   });
   readonly kilitAcmaTipleri = SevkiyatKilitAcmaTipi;
   sevkGecmisiSevkiyatSayisi = computed(() => this.sevkGecmisi().filter(kayit => !kayit.isKilitAcma).length);
-  sevkEtSelectableSandiklar = computed(() => this.sevkEtSandiklar().filter(s => !this.isSandikSevkEdildi(s)));
+  sevkEtSelectableSandiklar = computed(() => this.sevkEtSandiklar().filter(s => this.isSandikSevkAdayi(s)));
   allSevkSandikSelected = computed(() => {
     const selectable = this.sevkEtSelectableSandiklar();
     const selected = this.selectedSevkSandikIds();
@@ -1423,7 +1423,14 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   isSandikSevkEdildi(sandik: SandikDto): boolean {
-    return sandik.durumId === 4 || sandik.durumMetni === 'SevkEdildi' || sandik.durumMetni === 'Sevk Edildi';
+    return sandik.sahaUzerindenSevkEdildiMi === true ||
+      sandik.durumId === 4 ||
+      sandik.durumMetni === 'SevkEdildi' ||
+      sandik.durumMetni === 'Sevk Edildi';
+  }
+
+  isSandikSevkAdayi(sandik: SandikDto): boolean {
+    return !this.isSandikSevkEdildi(sandik) && sandik.sahayaAktarildiMi !== true;
   }
 
   isSandikDuzeltmeyeAcik(sandik: SandikDto): boolean {
@@ -1442,7 +1449,7 @@ export class ProjeListesiComponent implements OnInit {
         if (res.isSuccess && res.value) {
           const sandiklar = this.sortBySandikNo(res.value);
           this.sevkEtSandiklar.set(sandiklar);
-          this.selectedSevkSandikIds.set(sandiklar.filter(s => !this.isSandikSevkEdildi(s)).map(s => s.id));
+          this.selectedSevkSandikIds.set(sandiklar.filter(s => this.isSandikSevkAdayi(s)).map(s => s.id));
         } else {
           this.toastService.error(res.error || 'Sandıklar yüklenemedi.');
         }

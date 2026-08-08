@@ -120,7 +120,8 @@ export class SandikDetayComponent implements OnInit {
     const s = this.sandik();
     if (!s) return false;
 
-    return s.durumId === 4 ||
+    return s.sahaUzerindenSevkEdildiMi === true ||
+      s.durumId === 4 ||
       s.durumMetni === 'SevkEdildi' ||
       s.durumMetni === 'Sevk Edildi' ||
       s.durumMetni === 'Sevkedildi';
@@ -132,7 +133,14 @@ export class SandikDetayComponent implements OnInit {
 
   isSandikKilitli(): boolean {
     const s = this.sandik();
-    return s?.sahayaAktarildiMi === true || (this.isSandikSevkEdildi() && !this.isSandikDuzeltmeyeAcik());
+    return s?.sahaUzerindenSevkEdildiMi === true ||
+      s?.sahayaAktarildiMi === true ||
+      (this.isSandikSevkEdildi() && !this.isSandikDuzeltmeyeAcik());
+  }
+
+  getSandikDurumMetni(): string {
+    const s = this.sandik();
+    return s?.sahaUzerindenSevkEdildiMi === true ? 'Sevk Edildi' : (s?.durumMetni ?? '');
   }
 
   async sandikDuzeltmeyiTamamla() {
@@ -171,14 +179,16 @@ export class SandikDetayComponent implements OnInit {
   }
 
   private isSandikDtoSevkEdildi(sandik: SandikDto): boolean {
-    return sandik.durumId === 4 ||
+    return sandik.sahaUzerindenSevkEdildiMi === true ||
+      sandik.durumId === 4 ||
       sandik.durumMetni === 'SevkEdildi' ||
       sandik.durumMetni === 'Sevk Edildi' ||
       sandik.durumMetni === 'Sevkedildi';
   }
 
   private isSandikDtoKilitli(sandik: SandikDto): boolean {
-    return sandik.sahayaAktarildiMi === true ||
+    return sandik.sahaUzerindenSevkEdildiMi === true ||
+      sandik.sahayaAktarildiMi === true ||
       (this.isSandikDtoSevkEdildi(sandik) && sandik.sevkiyatDuzeltmeAcikMi !== true);
   }
 

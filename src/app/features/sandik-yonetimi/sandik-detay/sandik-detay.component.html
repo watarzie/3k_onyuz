@@ -57,7 +57,7 @@
         </div>
       </div>
         <div class="sandik-meta mt-3 d-flex gap-4 flex-wrap align-items-center">
-          <div><small class="text-muted">Durum</small> <app-status-badge [status]="sandik()!.durumMetni" [label]="getDurumLabel(sandik()!.durumMetni)" /></div>
+          <div><small class="text-muted">Durum</small> <app-status-badge [status]="getSandikDurumMetni()" [label]="getDurumLabel(getSandikDurumMetni())" /></div>
           <div><small class="text-muted">{{ 'LABELS.LOKASYON' | translate }}</small> <span class="ms-2 fw-semibold">{{ sandik()!.depoLokasyonMetni }}</span></div>
           <div class="vr"></div>
           <div><small class="text-muted">Boy:</small> <span class="ms-1 fw-semibold">{{ sandik()!.boy ? sandik()!.boy + ' mm' : '-' }}</span></div>

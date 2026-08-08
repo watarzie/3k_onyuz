@@ -43,7 +43,7 @@
             @for (s of filteredSandiklar(); track s.id) {
               <tr>
                 <td class="fw-semibold">{{ s.sandikNo }}</td>
-                <td><app-status-badge [status]="s.durumMetni" [label]="getDurumLabel(s.durumMetni)" /></td>
+                <td><app-status-badge [status]="getEtkinDurumMetni(s)" [label]="getEtkinDurumLabel(s)" /></td>
                 <td>
                   <span class="badge bg-secondary-subtle text-secondary">{{ s.urunSayisi }}</span>
                 </td>
