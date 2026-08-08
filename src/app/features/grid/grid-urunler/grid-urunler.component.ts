@@ -850,8 +850,16 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
 
   // ===== Durum Sıfırlama (Geri Alma) =====
-  durumSifirla() {
-    const u = this.panelUrun();
+  hasGridResetState(u?: GridUrunDto | null): boolean {
+    if (!u) return false;
+
+    return (u.gridDurumuMetni !== 'Bekliyor' && u.gridDurumuMetni !== 'Gelmedi')
+      || u.kaliteDurumId != null
+      || u.surecDurumId != null;
+  }
+
+  durumSifirla(urun?: GridUrunDto) {
+    const u = urun ?? this.panelUrun();
     if (!u) return;
     if (this.isSatirSevkKilidi(u)) {
       this.panelError.set(this.sevkEdilmisSandikMesaji);
@@ -859,7 +867,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (!confirm(`"${u.aciklama}" ürününün Grid durumunu sıfırlamak istediğinize emin misiniz?\n\nGridDurum, GelenAdet, TrafoSevkAdet, SevkDurumu vb. tüm Grid alanları sıfırlanacak ve ürün çeki yüklendiğindeki ham durumuna dönecektir.\n\nBu işlem geri alınamaz.`))
+    if (!confirm(`"${u.aciklama}" ürününün Grid durumunu sıfırlamak istediğinize emin misiniz?\n\nGrid alanlarıyla birlikte Kalite ve Süreç durumları da temizlenecek; ürün çeki yüklendiğindeki ham durumuna dönecektir.\n\nBu işlem geri alınamaz.`))
       return;
 
     this.panelSaving.set(true);
@@ -1131,6 +1139,13 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   /** Kalite = Tadilatta ise Grid düzenleme kilitlenir */
   isTadilatta(u: GridUrunDto): boolean {
     return u.kaliteDurumMetni === 'Tadilatta';
+  }
+
+  isGridResetBlocked(u: GridUrunDto): boolean {
+    return this.isSahaManuelIcerik(u)
+      || this.isSahayaAktarilmis(u)
+      || this.isSatirSevkKilidi(u)
+      || this.isUcKIslemYapilmis(u);
   }
 
   /** Menü bazlı kontrol - Kalite butonlarını görme yetkisi */
@@ -1662,7 +1677,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     tamGeldi: { baslik: 'Toplu Tam Geldi', icon: 'ri-checkbox-circle-line', renk: '#25B003', aciklama: 'Seçili ürünler Tam Geldi olarak işaretlenecek.', onay: 'Tam Geldi Yap' },
     gridKapandi: { baslik: 'Toplu Grid Kapandı', icon: 'ri-lock-line', renk: '#37474F', aciklama: 'Seçili ürünler Grid Kapandı olarak işaretlenecek.', onay: 'Grid Kapandı Yap' },
     iptal: { baslik: 'Toplu İptal', icon: 'ri-close-circle-line', renk: '#FFB200', aciklama: 'Seçili ürünler İptal olarak işaretlenecek.', onay: 'İptal Et' },
-    geriAl: { baslik: 'Toplu Geri Al', icon: 'ri-arrow-go-back-line', renk: '#D32F2F', aciklama: 'Seçili ürünlerin Grid durumları sıfırlanacak. 3K işlem yapılmış ürünler atlanacaktır.', onay: 'Geri Al' },
+    geriAl: { baslik: 'Toplu Geri Al', icon: 'ri-arrow-go-back-line', renk: '#D32F2F', aciklama: 'Seçili ürünlerin Grid, Kalite ve Süreç durumları sıfırlanacak. 3K işlem yapılmış ürünler atlanacaktır.', onay: 'Geri Al' },
   };
 
   topluIslemBaslik = computed(() => this.topluIslemConfig[this.topluIslemTipi()]?.baslik ?? '');

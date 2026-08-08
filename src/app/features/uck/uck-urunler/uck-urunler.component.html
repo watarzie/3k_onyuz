@@ -286,11 +286,18 @@
                 </button>
                 }
                 @if (canUcKWrite) {
+                @if (isTadilatta(u) && !isUcKResetBlocked(u)) {
+                <button class="btn btn-sm btn-outline-danger" (click)="durumSifirla(u); $event.stopPropagation()"
+                  title="Tadilatta durumunu ve 3K/Süreç alanlarını başlangıca döndür">
+                  <i class="ri-arrow-go-back-line"></i>
+                </button>
+                } @else {
                 <button class="btn btn-sm btn-action" (click)="openPanel(u); $event.stopPropagation()"
                   [title]="getEditDisabledReason(u) || 'Duzenle'"
                   [disabled]="isEditDisabled(u)">
                   <i class="ri-edit-line"></i>
                 </button>
+                }
                 @if (u.isManuelEklenen && !isSahaManuelIcerik(u)) {
                 <button class="btn btn-sm btn-outline-danger" (click)="manuelUrunSil(u); $event.stopPropagation()" title="Manuel ürünü sil">
                   <i class="ri-delete-bin-line"></i>
@@ -751,9 +758,9 @@
     <!-- Kaydet -->
     <div class="d-flex gap-2">
       <button class="btn btn-outline flex-grow-1" (click)="closePanel()">İptal</button>
-      @if (panelUrun()?.ucKKarsilamaTipiMetni !== 'Bekliyor') {
+      @if (hasUcKResetState(panelUrun())) {
       <button class="btn btn-outline-danger" (click)="durumSifirla()" [disabled]="panelSaving()"
-        title="3K karşılama durumunu sıfırla (Bekliyor'a döndür)">
+        title="3K durumunu sıfırla; ürün tamamen başlangıca dönerse Kalite ve Süreç durumlarını da temizle">
         <i class="ri-arrow-go-back-line me-1"></i>Geri Al
       </button>
       }
@@ -837,8 +844,9 @@
   <div class="modal-body">
     <div class="alert-info-custom mb-3" style="border-left-color:#D32F2F">
       <i class="ri-information-line me-2"></i>
-      <strong>{{ selectionCount }}</strong> ürün seçildi. Seçili ürünlerin 3K durumları sıfırlanacak.
-      3K işlem yapılmamış veya Grid İptal durumundaki ürünler atlanacaktır.
+      <strong>{{ selectionCount }}</strong> ürün seçildi. Seçili ürünlerin 3K durumları sıfırlanacak;
+      toplam 3K hareketi başlangıç seviyesine dönen ürünlerin Kalite ve Süreç durumları da temizlenecek.
+      Sıfırlanacak alanı bulunmayan veya Grid İptal durumundaki ürünler atlanacaktır.
     </div>
     <div class="mb-3">
       <label class="form-label fw-semibold">Açıklama</label>

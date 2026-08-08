@@ -516,6 +516,7 @@ export class ProjeListesiComponent implements OnInit {
     return this.canShowGerceklesenRapor(p) ||
       (!this.isSandikMode() && this.hasSevkiyatGecmisi(p)) ||
       (!this.isSandikMode() && this.canSevkEt()) ||
+      (!this.isSandikMode() && this.canUpdatePlanlananSevkTarihiCurrent()) ||
       this.canDeleteProjectCurrent();
   }
 

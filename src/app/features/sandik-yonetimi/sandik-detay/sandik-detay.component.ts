@@ -197,7 +197,7 @@ export class SandikDetayComponent implements OnInit {
     const sId = Number(this.route.snapshot.paramMap.get('sandikId'));
     const menuKod = this.route.snapshot.data['menuKod'] || 'sandik-yonetimi';
     this.isSahaYedek.set(
-      menuKod === 'saha-yonetimi' || menuKod === 'saha-sandiklar' ||
+      menuKod === 'saha-yonetimi' || menuKod === 'saha-sandiklar' || menuKod === 'saha-3k-modulu' ||
       menuKod === 'yedek-yonetimi' || menuKod === 'yedek-sandiklar' || menuKod === 'yedek-3k-modulu'
     );
     this.isSahaYonetimi.set(menuKod === 'saha-yonetimi' || menuKod === 'saha-sandiklar');

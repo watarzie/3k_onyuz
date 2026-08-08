@@ -1144,11 +1144,24 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   }
 
   // ===== Durum Sıfırlama (Geri Alma) =====
-  durumSifirla() {
-    const u = this.panelUrun();
+  hasUcKResetState(u?: UcKUrunDto | null): boolean {
+    if (!u) return false;
+
+    return u.ucKKarsilamaTipiMetni !== 'Bekliyor'
+      || u.gelenMiktar > 0
+      || u.karsilananMiktar > 0
+      || u.projeGonderilen > 0
+      || u.hataliMiktar > 0
+      || u.geriGonderilenMiktar > 0
+      || u.kaliteDurumId != null
+      || u.surecDurumId != null;
+  }
+
+  durumSifirla(urun?: UcKUrunDto) {
+    const u = urun ?? this.panelUrun();
     if (!u) return;
 
-    if (!confirm(`"${u.aciklama}" ürününün 3K karşılama durumunu sıfırlamak istediğinize emin misiniz?\n\nGelenMiktar, StokKarsilanan, ProjeKarsilanan vb. tüm 3K alanları sıfırlanacak ve ürün "Bekliyor" durumuna dönecektir.\n\nBu işlem geri alınamaz.`))
+    if (!confirm(`"${u.aciklama}" ürününün 3K karşılama durumunu sıfırlamak istediğinize emin misiniz?\n\n3K alanları sıfırlanacak; ürünün toplam 3K hareketi başlangıç seviyesine dönerse Kalite ve Süreç durumları da temizlenecektir. Diğer sandıklarda devam eden hareketler varsa bu iki durum korunur.\n\nBu işlem geri alınamaz.`))
       return;
 
     this.panelSaving.set(true);
@@ -1470,11 +1483,19 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   }
 
   isEditDisabled(u: UcKUrunDto): boolean {
+    if (this.isUcKResetBlocked(u)) return true;
+    return this.isTadilatta(u);
+  }
+
+  isTadilatta(u: UcKUrunDto): boolean {
+    return u.kaliteDurumMetni === 'Tadilatta';
+  }
+
+  isUcKResetBlocked(u: UcKUrunDto): boolean {
     if (this.isSahaManuelIcerik(u)) return true;
     if (this.isSahayaAktarilmis(u)) return true;
     if (this.isSatirSevkKilidi(u)) return true;
     if (u.gridDurumuId === GridDurum.Iptal || u.gridDurumuId === GridDurum.GridKapandi) return true;
-    if (u.kaliteDurumMetni === 'Tadilatta') return true;
 
     if (u.gridDurumuId === GridDurum.TrafoSevk) {
       const gridSevkVar = u.gridSevkDurumuId === GridSevkDurum.SevkEdildi && (u.gridSevkMiktari ?? 0) > 0;
@@ -1490,7 +1511,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     if (this.isSahaManuelIcerik(u)) return this.getManuelIcerikUcKMesaji();
     if (this.isSahayaAktarilmis(u)) return 'Bu ürün sahaya aktarıldığı için işlem saha projesinde yürütülmelidir.';
     if (this.isSatirSevkKilidi(u)) return this.sevkEdilmisSandikMesaji;
-    if (u.kaliteDurumMetni === 'Tadilatta') return 'Kalite Tadilatta olduğu için işlem yapılamaz.';
+    if (this.isTadilatta(u)) return 'Kalite Tadilatta olduğu için işlem yapılamaz.';
     if (u.gridDurumuId === GridDurum.Iptal) return 'Grid iptal ettiği için işlem yapılamaz.';
     if (u.gridDurumuId === GridDurum.GridKapandi) return 'Grid kapandığı için işlem yapılamaz.';
     if (u.gridDurumuId === GridDurum.TrafoSevk) return 'Tamamı trafoda sevk edildiği için 3K fiziksel işlem yok.';

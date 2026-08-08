@@ -351,7 +351,12 @@
                 </button>
                 }
                 @if (canGridWrite) {
-                  @if (isSahaManuelIcerik(u) || isSatirSevkKilidi(u) || isUcKIslemYapilmis(u) || isTadilatta(u)) {
+                  @if (isTadilatta(u) && !isGridResetBlocked(u)) {
+                  <button class="btn btn-sm btn-outline-danger" (click)="durumSifirla(u); $event.stopPropagation()"
+                    title="Tadilatta durumunu ve Grid/Süreç alanlarını başlangıca döndür">
+                    <i class="ri-arrow-go-back-line"></i>
+                  </button>
+                  } @else if (isSahaManuelIcerik(u) || isSahayaAktarilmis(u) || isSatirSevkKilidi(u) || isUcKIslemYapilmis(u) || isTadilatta(u)) {
                   <button class="btn btn-sm btn-action btn-locked" disabled [title]="getUcKBlokajMesaji(u)">
                     <i class="ri-lock-line"></i>
                   </button>
@@ -645,9 +650,9 @@
     <!-- Kaydet -->
     <div class="d-flex gap-2">
       <button class="btn btn-outline flex-grow-1" (click)="closePanel()">İptal</button>
-      @if (panelUrun()?.gridDurumuMetni !== 'Bekliyor' && panelUrun()?.gridDurumuMetni !== 'Gelmedi') {
+      @if (hasGridResetState(panelUrun())) {
       <button class="btn btn-outline-danger" (click)="durumSifirla()" [disabled]="panelSaving()"
-        title="Grid durumunu sıfırla (Ham duruma döndür)">
+        title="Grid, Kalite ve Süreç durumlarını sıfırla (Ham duruma döndür)">
         <i class="ri-arrow-go-back-line me-1"></i>Geri Al
       </button>
       }
