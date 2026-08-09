@@ -65,6 +65,8 @@ export interface SandikIcerikDto {
   kontrolEdenBasHarf?: string;
   remarks?: string;
   isManuelEklenen: boolean;
+  /** Backend'in aktarım, sevk ve işlem durumlarını birlikte değerlendirerek verdiği güvenli silme kararı. */
+  manuelSilinebilirMi: boolean;
   // Saha/Yedek
   isim?: string;
   miktar: number;

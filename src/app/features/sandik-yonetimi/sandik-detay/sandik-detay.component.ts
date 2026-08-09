@@ -15,6 +15,7 @@ import { EksikUrunForSandikDto, SandikDetayDto, SandikIcerikDto, SandikDto } fro
 import { Birim } from '../../../core/constants/enums';
 
 import { ConfirmService } from '../../../core/services/confirm.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-sandik-detay',
@@ -138,6 +139,10 @@ export class SandikDetayComponent implements OnInit {
       (this.isSandikSevkEdildi() && !this.isSandikDuzeltmeyeAcik());
   }
 
+  isSandikTasimayaKilitli(): boolean {
+    return this.isSandikKilitli() || this.isSandikSevkEdildi();
+  }
+
   getSandikDurumMetni(): string {
     const s = this.sandik();
     return s?.sahaUzerindenSevkEdildiMi === true ? 'Sevk Edildi' : (s?.durumMetni ?? '');
@@ -192,6 +197,10 @@ export class SandikDetayComponent implements OnInit {
       (this.isSandikDtoSevkEdildi(sandik) && sandik.sevkiyatDuzeltmeAcikMi !== true);
   }
 
+  private isSandikDtoTasimayaKilitli(sandik: SandikDto): boolean {
+    return this.isSandikDtoKilitli(sandik) || this.isSandikDtoSevkEdildi(sandik);
+  }
+
   ngOnInit() {
     const pId = Number(this.route.snapshot.paramMap.get('projeId'));
     const sId = Number(this.route.snapshot.paramMap.get('sandikId'));
@@ -200,7 +209,9 @@ export class SandikDetayComponent implements OnInit {
       menuKod === 'saha-yonetimi' || menuKod === 'saha-sandiklar' || menuKod === 'saha-3k-modulu' ||
       menuKod === 'yedek-yonetimi' || menuKod === 'yedek-sandiklar' || menuKod === 'yedek-3k-modulu'
     );
-    this.isSahaYonetimi.set(menuKod === 'saha-yonetimi' || menuKod === 'saha-sandiklar');
+    this.isSahaYonetimi.set(
+      menuKod === 'saha-yonetimi' || menuKod === 'saha-sandiklar' || menuKod === 'saha-3k-modulu'
+    );
     this.isYedekYonetimi.set(
       menuKod === 'yedek-yonetimi' || menuKod === 'yedek-sandiklar' || menuKod === 'yedek-3k-modulu'
     );
@@ -286,7 +297,7 @@ export class SandikDetayComponent implements OnInit {
     this.sandikService.getSandiklar(this.projeId()).subscribe((res) => {
       if (res.isSuccess && res.value) {
         // Mevcut sandığı hariç tut
-        this.projeSandiklari.set(res.value.filter(s => s.id !== this.sandikId() && !this.isSandikDtoKilitli(s)));
+        this.projeSandiklari.set(res.value.filter(s => s.id !== this.sandikId() && !this.isSandikDtoTasimayaKilitli(s)));
       }
     });
   }
@@ -380,8 +391,8 @@ export class SandikDetayComponent implements OnInit {
     this.tamamlamaAdetleri.set({});
     this.showUrunEkleModal.set(true);
 
-    // Saha/Yedek modunda projeden seçim eski akış olarak korunur.
-    if (this.isSahaYedek()) {
+    // Projeden seçim yalnızca Saha projelerinde eksik tamamlama üretir.
+    if (this.isSahaYonetimi()) {
       this.projeService.getProjeListesi(1, 1000, 1).subscribe(res => {
         if (res.isSuccess && res.value) {
           this.normalProjeler.set(res.value.items);
@@ -461,7 +472,7 @@ export class SandikDetayComponent implements OnInit {
     });
   }
 
-  projedenUrunEkle() {
+  async projedenUrunEkle() {
     if (!this.ensureCanWriteSandik()) return;
 
     if (this.isSandikKilitli()) {
@@ -487,7 +498,6 @@ export class SandikDetayComponent implements OnInit {
       return;
     }
 
-    let tamamlanan = 0;
     let hata = 0;
 
     for (const u of urunler) {
@@ -503,32 +513,22 @@ export class SandikDetayComponent implements OnInit {
         kaynakProjeNo: u.projeNo,
         aciklama: this.yeniEkAciklama().trim() || undefined
       };
-      this.projeService.sahaYedekMalzemeEkle(payload).subscribe({
-        next: (res: any) => {
-          tamamlanan++;
-          if (!res.isSuccess) hata++;
-          if (tamamlanan === urunler.length) {
-            this.urunEklemeSaving.set(false);
-            if (hata === 0) {
-              this.toast.success(`${urunler.length} ürün başarıyla eklendi.`);
-              this.closeUrunEkleModal();
-              this.loadSandik();
-            } else {
-              this.toast.error(`${hata} ürün eklenemedi.`);
-              this.loadSandik();
-            }
-          }
-        },
-        error: () => {
-          tamamlanan++;
-          hata++;
-          if (tamamlanan === urunler.length) {
-            this.urunEklemeSaving.set(false);
-            this.toast.error(`${hata} ürün eklenemedi.`);
-          }
-        }
-      });
+      try {
+        const res: any = await firstValueFrom(this.projeService.sahaYedekMalzemeEkle(payload));
+        if (!res.isSuccess) hata++;
+      } catch {
+        hata++;
+      }
     }
+
+    this.urunEklemeSaving.set(false);
+    if (hata === 0) {
+      this.toast.success(`${urunler.length} ürün başarıyla eklendi.`);
+      this.closeUrunEkleModal();
+    } else {
+      this.toast.error(`${hata} ürün eklenemedi.`);
+    }
+    this.loadSandik();
   }
 
   // ===== Özellik Güncelleme =====
@@ -655,7 +655,7 @@ export class SandikDetayComponent implements OnInit {
   openTasiModal(item: SandikIcerikDto) {
     if (!this.ensureCanWriteSandik()) return;
 
-    if (this.isSandikKilitli()) {
+    if (this.isSandikTasimayaKilitli()) {
       this.toast.error('Bu sandık sevk edildiği için üzerinde işlem yapılamaz.');
       return;
     }
@@ -683,7 +683,7 @@ export class SandikDetayComponent implements OnInit {
   urunTasi() {
     if (!this.ensureCanWriteSandik()) return;
 
-    if (this.isSandikKilitli()) {
+    if (this.isSandikTasimayaKilitli()) {
       this.toast.error('Bu sandık sevk edildiği için üzerinde işlem yapılamaz.');
       return;
     }
@@ -781,8 +781,8 @@ export class SandikDetayComponent implements OnInit {
   async manuelUrunSil(item: SandikIcerikDto) {
     if (!this.ensureCanWriteSandik()) return;
 
-    if (!item.isManuelEklenen) {
-      this.toast.error('ÇEKİ kaynağından gelen ürünler sandık detayından silinemez.');
+    if (item.manuelSilinebilirMi !== true) {
+      this.toast.error('Bu ürün sevk, saha aktarımı veya kaynak bağlantısı nedeniyle doğrudan silinemez. Aktarım kökenli ürünlerde resmi saha aktarımı geri alma işlemini kullanın.');
       return;
     }
 

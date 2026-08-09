@@ -191,10 +191,10 @@
                       <button class="btn btn-sm btn-action" (click)="selectUrun(item)" title="Düzenle">
                         <i class="ri-edit-line"></i>
                       </button>
-                      <button class="btn btn-sm btn-outline-info" (click)="openTasiModal(item)" title="Sandık Taşı" [disabled]="isSandikKilitli()">
+                      <button class="btn btn-sm btn-outline-info" (click)="openTasiModal(item)" title="Sandık Taşı" [disabled]="isSandikTasimayaKilitli()">
                         <i class="ri-swap-line"></i>
                       </button>
-                      @if (item.isManuelEklenen) {
+                      @if (item.manuelSilinebilirMi === true) {
                         <button class="btn btn-sm btn-outline-danger" (click)="manuelUrunSil(item)" title="Manuel ürünü sil" [disabled]="isSandikKilitli()">
                           <i class="ri-delete-bin-line"></i>
                         </button>
@@ -263,7 +263,7 @@
 
           <hr />
           <div class="d-flex gap-2">
-            <button class="btn btn-outline-info flex-grow-1" (click)="openTasiModal(selectedUrun()!)" [disabled]="isSandikKilitli()">
+            <button class="btn btn-outline-info flex-grow-1" (click)="openTasiModal(selectedUrun()!)" [disabled]="isSandikTasimayaKilitli()">
               <i class="ri-swap-line me-1"></i> Sandık Taşı
             </button>
           </div>
@@ -327,7 +327,7 @@
         <button class="btn btn-sm border-0" (click)="closeUrunEkleModal()"><i class="ri-close-line fs-5"></i></button>
       </div>
       <div class="modal-body-custom">
-        @if (isSahaYedek()) {
+        @if (isSahaYonetimi()) {
           <div class="d-flex gap-2 mb-3">
             <button class="btn btn-sm" [ngClass]="eklemeMode() === 'manuel' ? 'btn-primary' : 'btn-outline-primary'" (click)="eklemeMode.set('manuel')">
               <i class="ri-edit-line me-1"></i>Manuel Giriş
@@ -376,8 +376,8 @@
           } @else {
             <div class="row g-3 mt-1 mb-3">
               <div class="col-12">
-                <label class="form-label fw-semibold">Proje No <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" [ngModel]="yeniKaynakProjeNo()" (ngModelChange)="yeniKaynakProjeNo.set($event)" placeholder="Zorunlu alan" />
+                <label class="form-label fw-semibold">Kaynak Proje No</label>
+                <input type="text" class="form-control" [ngModel]="yeniKaynakProjeNo()" (ngModelChange)="yeniKaynakProjeNo.set($event)" placeholder="İsteğe bağlı" />
               </div>
             </div>
             <div class="mb-3">

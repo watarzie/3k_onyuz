@@ -1431,7 +1431,9 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   isSandikSevkAdayi(sandik: SandikDto): boolean {
-    return !this.isSandikSevkEdildi(sandik) && sandik.sahayaAktarildiMi !== true;
+    return sandik.durumId === 3 &&
+      !this.isSandikSevkEdildi(sandik) &&
+      sandik.sahayaAktarildiMi !== true;
   }
 
   isSandikDuzeltmeyeAcik(sandik: SandikDto): boolean {
