@@ -81,6 +81,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   filterDurum = signal('');
   searchTerm = signal('');
   selectedSandikNo = signal('');
+  focusCekiSatiriId = signal<number | null>(null);
 
   // Side panel state
   showPanel = signal(false);
@@ -264,6 +265,8 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('projeId'));
     this.projeId.set(id);
+    const focusCekiSatiriId = Number(this.route.snapshot.queryParamMap.get('focusCekiSatiriId'));
+    this.focusCekiSatiriId.set(Number.isInteger(focusCekiSatiriId) && focusCekiSatiriId > 0 ? focusCekiSatiriId : null);
     const isSaha = this.activeMenuKod === 'saha-grid-modulu';
     const isYedek = this.activeMenuKod === 'yedek-grid-modulu';
     const parentLabel = isSaha ? 'Saha Yönetimi' : isYedek ? 'Yedek Yönetimi' : 'Sandık Yönetimi';
@@ -355,8 +358,24 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
         this.urunler.set(sorted);
         this.temizleSevkKilitliSecimler();
         this.applyFilter();
+        this.scrollToFocusedRow();
       }
     });
+  }
+
+  isFocusedFromWorkList(urun: GridUrunDto): boolean {
+    return this.focusCekiSatiriId() === urun.cekiSatiriId;
+  }
+
+  private scrollToFocusedRow(): void {
+    const cekiSatiriId = this.focusCekiSatiriId();
+    if (!cekiSatiriId) return;
+
+    window.setTimeout(() => {
+      document
+        .querySelector<HTMLElement>(`tr[data-ceki-satiri-id="${cekiSatiriId}"]`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    }, 0);
   }
 
   applyFilter() {

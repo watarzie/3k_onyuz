@@ -48,7 +48,7 @@ export class SidebarComponent {
         yetkiTipiId: node.yetkiTipiId,
         // Route=null olanları sidebar'da GİZLE (grid-modulu, 3k-modulu gibi)
         children: node.children
-          ?.filter(child => !!child.route && child.kod !== '3k-is-listesi')
+          ?.filter(child => !!child.route && child.kod !== '3k-is-listesi' && child.kod !== 'grid-is-listesi')
           .map(child => ({
             label: this.ts.translate(child.labelKey),
             kod: child.kod,

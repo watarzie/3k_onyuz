@@ -96,6 +96,7 @@ export class ProjeListesiComponent implements OnInit {
   canUseBulkEksikRapor = computed(() => this.isSandikYonetimi() && this.canSeeEksikRapor());
   canSeeGerceklesenRapor = computed(() => this.permissions.hasAccess('gerceklesen-ceki-raporu'));
   canSee3KIsListesi = computed(() => this.isSandikYonetimi() && this.permissions.hasAccess('3k-is-listesi'));
+  canSeeGridIsListesi = computed(() => this.isSandikYonetimi() && this.permissions.hasAccess('grid-is-listesi'));
   canUseEksikTamamlama = computed(() => this.permissions.canWrite('sahaya-aktar'));
   canDeleteProject = computed(() => this.permissions.canWrite('proje-sil'));
   canSevkEt = computed(() => this.permissions.canWrite('proje-sevk-et'));

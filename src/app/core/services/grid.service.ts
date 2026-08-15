@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { BaseApiService } from '../../core/services/base-api.service';
 import { API } from '../../core/constants/api-endpoints';
-import { ApiResult, GridUrunDto, GridDurumGuncelleDto, GridTopluSevkDto, GridDurumSifirlaDto, KaliteDurumGuncelleDto, SurecDurumGuncelleDto } from '../../shared/models/index';
+import { ApiResult, GridUrunDto, GridDurumGuncelleDto, GridTopluSevkDto, GridDurumSifirlaDto, KaliteDurumGuncelleDto, SurecDurumGuncelleDto, GridIsListesiDto } from '../../shared/models/index';
 
 /**
  * GridController endpoints:
@@ -37,6 +37,26 @@ export class GridService {
   /** Proje bazında tüm ürünlerin grid + 3K durumları */
   getUrunler(projeId: number): Observable<ApiResult<GridUrunDto[]>> {
     return this.api.get<GridUrunDto[]>(API.GRID.URUNLER(projeId));
+  }
+
+  getIsListesi(params: { page?: number; pageSize?: number; isTipi?: string; projeId?: number | null; sadeceBugun?: boolean } = {}): Observable<ApiResult<GridIsListesiDto>> {
+    const query = new URLSearchParams();
+    query.set('page', String(params.page ?? 1));
+    query.set('pageSize', String(params.pageSize ?? 25));
+
+    if (params.isTipi && params.isTipi !== 'all') {
+      query.set('isTipi', params.isTipi);
+    }
+
+    if (params.projeId) {
+      query.set('projeId', String(params.projeId));
+    }
+
+    if (params.sadeceBugun) {
+      query.set('sadeceBugun', 'true');
+    }
+
+    return this.api.get<GridIsListesiDto>(`${API.GRID.IS_LISTESI}?${query.toString()}`);
   }
 
   /** Tekli ürün durumu güncelle */

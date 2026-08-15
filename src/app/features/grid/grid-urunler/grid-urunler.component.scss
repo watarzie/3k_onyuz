@@ -222,6 +222,20 @@ table {
 // Satır tıklanabilir
 .cursor-pointer { cursor: pointer; }
 
+tbody tr.row-worklist-focus {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid #2563EB;
+  outline-offset: -2px;
+  box-shadow: inset 5px 0 0 #2563EB;
+  animation: worklistFocusPulse 1.4s ease-out 2;
+}
+
+@keyframes worklistFocusPulse {
+  0%, 100% { background-color: inherit; }
+  45% { background-color: #DBEAFE; }
+}
+
 // Row renk kuralları
 @mixin kalan-row($class, $accent, $bg, $hover) {
   tbody tr.#{$class} {

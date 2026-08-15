@@ -511,6 +511,7 @@ export class BildirimMerkeziComponent implements OnInit, OnDestroy {
     if (path === '/projeler/sevk-edilen' || path.startsWith('/projeler/sevk-edilen/')) return 'sevk-edilen';
     if (path === '/projeler' || path.startsWith('/projeler/')) return 'aktif-projeler';
     if (path === '/sandik-yonetimi' || path.startsWith('/sandik-yonetimi/')) return 'sandik-yonetimi';
+    if (path === '/grid-is-listesi' || path.startsWith('/grid-is-listesi/')) return 'grid-is-listesi';
     if (path === '/grid' || path.startsWith('/grid/')) return 'grid-modulu';
     if (path === '/uck-is-listesi' || path.startsWith('/uck-is-listesi/')) return '3k-is-listesi';
     if (path === '/uck' || path.startsWith('/uck/')) return '3k-modulu';

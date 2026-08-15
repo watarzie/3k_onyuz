@@ -96,6 +96,13 @@ export const routes: Routes = [
         data: { menuKod: '3k-is-listesi' },
       },
       {
+        path: 'grid-is-listesi',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/grid/grid-is-listesi/grid-is-listesi.component').then(m => m.GridIsListesiComponent),
+        data: { menuKod: 'grid-is-listesi' },
+      },
+      {
         path: 'grid/:projeId',
         canActivate: [menuGuard],
         loadComponent: () =>

@@ -86,6 +86,7 @@ export const API = {
   },
   GRID: {
     URUNLER: (projeId: number) => `${BASE}/grid/${projeId}/urunler`,
+    IS_LISTESI: `${BASE}/grid/is-listesi`,
     DURUM_GUNCELLE: `${BASE}/grid/durum-guncelle`,
     DURUM_SIFIRLA: `${BASE}/grid/durum-sifirla`,
     TOPLU_SEVK: `${BASE}/grid/toplu-sevk`,

@@ -118,6 +118,12 @@
           <span>3K İş Listesi</span>
         </a>
       }
+      @if (canSeeGridIsListesi()) {
+        <a routerLink="/grid-is-listesi" class="btn btn-sm btn-3k-work-list">
+          <i class="ri-list-check-3-line"></i>
+          <span>Grid İş Listesi</span>
+        </a>
+      }
       @if (showProjeTipiFilter()) {
         <div class="proje-type-filter" role="group" aria-label="Proje tipi filtresi">
           @for (option of projeTipiFilterOptions; track option.label) {

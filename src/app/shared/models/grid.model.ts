@@ -66,6 +66,56 @@ export interface GridUrunDto {
   surecDurumMetni?: string;
 }
 
+export interface GridIsListesiDto {
+  toplam: number;
+  eksikGelen: number;
+  yenidenSevkGerekli: number;
+  bugunGridIslemi: number;
+  liste: GridPagedResultDto<GridIsListesiItemDto>;
+}
+
+export interface GridPagedResultDto<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
+export interface GridIsListesiItemDto {
+  cekiSatiriId: number;
+  projeId: number;
+  projeTipiId: number;
+  projeNo: string;
+  musteri: string;
+  sandikNo?: string;
+  siraNo: number;
+  barkodNo: string;
+  olcuResmiPozNo?: string;
+  aciklama: string;
+  birim: string;
+  istenenAdet: number;
+  gridGelenAdet: number;
+  gridEksikMiktar: number;
+  gridSevkMiktari: number;
+  trafoSevkAdet: number;
+  yenidenSevkGerekliAdet: number;
+  ucKGelenMiktar: number;
+  kalanMiktar: number;
+  gridDurumuId: number;
+  gridDurumuMetni: string;
+  gridSevkDurumuId: number;
+  gridSevkDurumuMetni: string;
+  ucKDurumuId: number;
+  ucKDurumuMetni: string;
+  gridAciklama?: string;
+  gridSevkTarihi?: string;
+  sonIslemTarihi?: string;
+  isTipi: string;
+  isTipiMetni: string;
+  oncelik: number;
+}
+
 export interface GridDurumGuncelleDto {
   cekiSatiriId: number;
   projeId: number;

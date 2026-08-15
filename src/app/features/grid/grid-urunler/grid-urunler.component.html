@@ -182,7 +182,8 @@
         </thead>
         <tbody>
           @for (u of filtered(); track getRowKey(u)) {
-          <tr [ngClass]="[getRowClass(u), isSelected(u) ? 'row-selected' : '']"
+          <tr [ngClass]="[getRowClass(u), isSelected(u) ? 'row-selected' : '', isFocusedFromWorkList(u) ? 'row-worklist-focus' : '']"
+              [attr.data-ceki-satiri-id]="u.cekiSatiriId"
               class="cursor-pointer" (click)="onRowClick(u, $event)">
             @if (canSelectRows) {
             <td><input type="checkbox" class="form-check-input" [checked]="isSelected(u)"
