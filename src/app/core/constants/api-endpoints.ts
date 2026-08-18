@@ -18,6 +18,10 @@ export const API = {
     LOGIN: `${BASE}/auth/login`,
     SEED_ADMIN: `${BASE}/auth/seed-admin`,
     REFRESH_TOKEN: `${BASE}/auth/refresh-token`,
+    TWO_FACTOR_SETUP_START: `${BASE}/auth/2fa/setup/start`,
+    TWO_FACTOR_SETUP_CONFIRM: `${BASE}/auth/2fa/setup/confirm`,
+    TWO_FACTOR_VERIFY: `${BASE}/auth/2fa/verify`,
+    TWO_FACTOR_RECOVERY_VERIFY: `${BASE}/auth/2fa/recovery/verify`,
   },
   PROJE: {
     LIST: `${BASE}/proje`,
@@ -137,6 +141,8 @@ export const API = {
     UPDATE: `${BASE}/kullanici/guncelle`,
     DELETE: (id: number) => `${BASE}/kullanici/${id}/sil`,
     SIFRE_DEGISTIR: `${BASE}/kullanici/sifre-degistir`,
+    TWO_FACTOR_REQUIREMENT: (id: number) => `${BASE}/kullanici/${id}/iki-faktor-zorunlulugu`,
+    TWO_FACTOR_RESET: (id: number) => `${BASE}/kullanici/${id}/2fa`,
   },
   PDF: {
     INDIR: (projeId: number) => `${BASE}/pdf/${projeId}/indir`,

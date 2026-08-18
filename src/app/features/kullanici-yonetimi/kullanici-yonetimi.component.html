@@ -44,6 +44,7 @@
           <th>{{ 'USER.NAME' | translate }}</th>
           <th>{{ 'USER.EMAIL' | translate }}</th>
           <th>{{ 'USER.ROLE' | translate }}</th>
+          <th>{{ 'USER.TWO_FACTOR_COLUMN' | translate }}</th>
           <th class="w-actions">{{ 'ACTIONS.ISLEM' | translate }}</th>
         </tr>
       </thead>
@@ -62,12 +63,58 @@
             <span class="role-badge" [ngClass]="getRolBadgeClass(k.rol)">{{ k.rol }}</span>
           </td>
           <td>
+            <div class="two-factor-cell">
+              <div class="two-factor-policy-row">
+                <label
+                  class="user-two-factor-switch"
+                  [class.read-only]="!canManageTwoFactor()"
+                  [title]="(k.ikiFaktorZorunluMu ? 'USER.TWO_FACTOR_REQUIRED_HELP' : 'USER.TWO_FACTOR_OPTIONAL_HELP') | translate">
+                  <input
+                    type="checkbox"
+                    [checked]="k.ikiFaktorZorunluMu"
+                    [disabled]="!canManageTwoFactor() || isTwoFactorBusy(k.id)"
+                    [attr.aria-label]="(k.ikiFaktorZorunluMu ? 'USER.TWO_FACTOR_REQUIRED_HELP' : 'USER.TWO_FACTOR_OPTIONAL_HELP') | translate"
+                    (change)="updateTwoFactorRequirement(k, $any($event.target).checked)" />
+                  <span class="switch-track"><span class="switch-thumb"></span></span>
+                </label>
+                <span class="two-factor-policy-label">
+                  {{ (k.ikiFaktorZorunluMu ? 'USER.TWO_FACTOR_REQUIRED' : 'USER.TWO_FACTOR_OPTIONAL') | translate }}
+                </span>
+                <i
+                  *ngIf="twoFactorPolicyPendingIds().has(k.id)"
+                  class="ri-loader-4-line spin two-factor-spinner"
+                  [title]="'USER.TWO_FACTOR_SAVING' | translate"></i>
+              </div>
+
+              <span
+                class="enrollment-badge"
+                [class.enrolled]="k.ikiFaktorEtkinMi"
+                [class.not-enrolled]="!k.ikiFaktorEtkinMi"
+                [title]="twoFactorStatusTitle(k)">
+                <i [class]="k.ikiFaktorEtkinMi ? 'ri-checkbox-circle-line' : 'ri-time-line'"></i>
+                {{ (k.ikiFaktorEtkinMi ? 'USER.TWO_FACTOR_ENROLLED' : 'USER.TWO_FACTOR_NOT_ENROLLED') | translate }}
+              </span>
+            </div>
+          </td>
+          <td>
             <div class="action-buttons">
               <button class="btn-icon edit" (click)="openEditModal(k)" title="Düzenle">
                 <i class="ri-edit-line"></i>
               </button>
               <button class="btn-icon key" (click)="openPasswordModal(k)" title="Şifre Değiştir">
                 <i class="ri-lock-password-line"></i>
+              </button>
+              <button
+                *ngIf="canManageTwoFactor()"
+                class="btn-icon two-factor-reset"
+                (click)="resetTwoFactor(k)"
+                [disabled]="!k.ikiFaktorEtkinMi || isTwoFactorBusy(k.id)"
+                [attr.aria-label]="'USER.TWO_FACTOR_RESET' | translate"
+                [title]="(k.ikiFaktorEtkinMi ? 'USER.TWO_FACTOR_RESET' : 'USER.TWO_FACTOR_NOT_ENROLLED_HELP') | translate">
+                <i
+                  [class]="twoFactorResetPendingIds().has(k.id)
+                    ? 'ri-loader-4-line spin'
+                    : 'ri-shield-keyhole-line'"></i>
               </button>
               <button class="btn-icon danger" (click)="deleteUser(k)" title="Sil">
                 <i class="ri-delete-bin-line"></i>
@@ -76,7 +123,7 @@
           </td>
         </tr>
         <tr *ngIf="filteredKullanicilar().length === 0">
-          <td colspan="5" class="empty-row">{{ 'COMMON.NO_DATA' | translate }}</td>
+          <td colspan="6" class="empty-row">{{ 'COMMON.NO_DATA' | translate }}</td>
         </tr>
       </tbody>
     </table>

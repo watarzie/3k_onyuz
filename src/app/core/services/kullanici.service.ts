@@ -3,7 +3,11 @@ import { Observable } from 'rxjs';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
 import { ApiResult, RegisterDto } from '../../shared/models/index';
-import { KullaniciDto, KullaniciGuncelleRequest } from '../../shared/models';
+import {
+  KullaniciDto,
+  KullaniciGuncelleRequest,
+  KullaniciIkiFaktorDurumDto,
+} from '../../shared/models';
 
 /**
  * Kullanıcı Yönetimi servisi.
@@ -37,5 +41,19 @@ export class KullaniciService {
 
   sifreDegistir(kullaniciId: number, yeniSifre: string): Observable<ApiResult<boolean>> {
     return this.api.put<boolean>(API.KULLANICI.SIFRE_DEGISTIR, { kullaniciId, yeniSifre });
+  }
+
+  ikiFaktorZorunlulugunuGuncelle(
+    kullaniciId: number,
+    zorunluMu: boolean
+  ): Observable<ApiResult<KullaniciIkiFaktorDurumDto>> {
+    return this.api.put<KullaniciIkiFaktorDurumDto>(
+      API.KULLANICI.TWO_FACTOR_REQUIREMENT(kullaniciId),
+      { zorunluMu }
+    );
+  }
+
+  ikiFaktorKurulumunuSifirla(kullaniciId: number): Observable<ApiResult<boolean>> {
+    return this.api.delete<boolean>(API.KULLANICI.TWO_FACTOR_RESET(kullaniciId));
   }
 }

@@ -29,14 +29,24 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const api = inject(BaseApiService);
   const router = inject(Router);
 
-  // Token ve aktif menü bağlamı varsa header'a ekle.
-  const cloned = addAuthContext(req, session.token, getActiveMenuKod(router));
+  // Parola ve 2FA challenge istekleri tam oturum değildir. Eski bir oturum
+  // bulunsa dahi bearer/menu header'larını bu isteklere taşımıyoruz.
+  const preAuthenticationRequest = isPreAuthenticationRequest(req.url);
+  const cloned = preAuthenticationRequest
+    ? removeAuthContext(req)
+    : addAuthContext(req, session.token, getActiveMenuKod(router));
 
   return next(cloned).pipe(
     catchError((error) => {
       if (error instanceof HttpErrorResponse && error.status === 401) {
+        // Login/2FA hataları kendi ekranında ele alınır; silent refresh veya
+        // logout yan etkisi challenge akışını bozmasın.
+        if (preAuthenticationRequest) {
+          return throwError(() => error);
+        }
+
         // Refresh endpoint'i 401 dönerse sonsuz döngüye girme
-        if (req.url.includes('refresh-token') || req.url.includes('login')) {
+        if (req.url.includes('refresh-token')) {
           authService.logout();
           return throwError(() => error);
         }
@@ -46,6 +56,15 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     })
   );
 };
+
+function isPreAuthenticationRequest(url: string): boolean {
+  return /\/auth\/(?:login|2fa(?:\/|$))/i.test(url);
+}
+
+function removeAuthContext(req: HttpRequest<unknown>): HttpRequest<unknown> {
+  const headers = req.headers.delete('Authorization').delete('X-Menu-Kod');
+  return headers === req.headers ? req : req.clone({ headers });
+}
 
 function addAuthContext(req: HttpRequest<unknown>, token: string | null, menuKod: string | null): HttpRequest<unknown> {
   const headers: Record<string, string> = {};

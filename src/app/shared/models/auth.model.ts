@@ -7,6 +7,7 @@ export type { ApiResult };
 export interface LoginDto {
   email: string;
   sifre: string;
+  beniHatirla: boolean;
 }
 
 export interface RegisterDto {
@@ -16,9 +17,46 @@ export interface RegisterDto {
   rolId: number;
 }
 
+export type LoginNextStep =
+  | 'authenticated'
+  | 'twoFactorRequired'
+  | 'twoFactorSetupRequired';
+
 export interface LoginResultDto {
-  token: string;
-  kullanici: KullaniciAuthDto;
+  nextStep: LoginNextStep;
+  token?: string | null;
+  kullanici?: KullaniciAuthDto | null;
+  challengeToken?: string | null;
+  expiresInSeconds?: number | null;
+  kurtarmaKodlari?: string[] | null;
+}
+
+export interface TwoFactorSetupStartRequest {
+  challengeToken: string;
+}
+
+export interface TwoFactorCodeRequest {
+  challengeToken: string;
+  kod: string;
+}
+
+export interface TwoFactorRecoveryRequest {
+  challengeToken: string;
+  kurtarmaKodu: string;
+}
+
+export interface TwoFactorSetupDto {
+  challengeToken: string;
+  expiresInSeconds: number;
+  qrCodeDataUri: string;
+  manuelAnahtar: string;
+}
+
+export interface PendingTwoFactorChallenge {
+  challengeToken: string;
+  nextStep: Exclude<LoginNextStep, 'authenticated'>;
+  expiresAt: number;
+  rememberMe: boolean;
 }
 
 export interface KullaniciAuthDto {

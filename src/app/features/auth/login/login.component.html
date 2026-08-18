@@ -1,70 +1,270 @@
 <div class="login-wrapper">
-  <div class="login-card" aria-label="3K giriş formu">
-    <div class="login-header text-center">
-      <img class="brand-mark mx-auto" src="/images/3k-emblem.svg" alt="3K amblem" />
-      <h1>3K</h1>
-      <p>All Processes. <span>One Flow.</span></p>
+  <div
+    class="login-card"
+    [class.wide-card]="flowStep() === 'setup' || flowStep() === 'recoveryCodes'"
+    [attr.aria-label]="'AUTH_2FA.LOGIN_CARD_LABEL' | translate">
+    <div class="language-switcher" aria-label="Language">
+      <button type="button" [class.active]="ts.currentLang() === 'tr'" (click)="switchLang('tr')">TR</button>
+      <button type="button" [class.active]="ts.currentLang() === 'en'" (click)="switchLang('en')">EN</button>
+    </div>
+
+    <div class="login-header text-center" [class.compact]="flowStep() !== 'credentials'">
+      <img class="brand-mark mx-auto" src="/images/3k-emblem.svg" alt="3K" />
+      @if (flowStep() === 'credentials') {
+        <h1>3K</h1>
+        <p>All Processes. <span>One Flow.</span></p>
+      }
     </div>
 
     @if (error()) {
-      <div class="alert alert-danger d-flex align-items-center gap-2 py-2 px-3">
+      <div class="alert alert-danger d-flex align-items-center gap-2 py-2 px-3" role="alert">
         <i class="ri-error-warning-line"></i>
         <span>{{ error() }}</span>
       </div>
     }
 
-    <form [formGroup]="form" (ngSubmit)="submit()">
-      <div class="form-group">
-        <div class="input-shell">
-          <i class="ri-mail-line field-icon"></i>
-          <input
-            type="email"
-            class="form-control"
-            formControlName="email"
-            autocomplete="username"
-            [ngClass]="{'is-invalid': getError('email')}"
-            placeholder="Email" />
-        </div>
-        @if (getError('email')) {
-          <small class="text-danger mt-1 d-block">{{ getError('email') }}</small>
-        }
-      </div>
+    @switch (flowStep()) {
+      @case ('credentials') {
+        <form [formGroup]="form" (ngSubmit)="submit()">
+          <div class="form-group">
+            <div class="input-shell">
+              <i class="ri-mail-line field-icon"></i>
+              <input
+                type="email"
+                class="form-control"
+                formControlName="email"
+                autocomplete="username"
+                [ngClass]="{'is-invalid': getError('email')}"
+                [placeholder]="'LABELS.EMAIL' | translate" />
+            </div>
+            @if (getError('email')) {
+              <small class="text-danger mt-1 d-block">{{ getError('email') }}</small>
+            }
+          </div>
 
-      <div class="form-group">
-        <div class="input-shell">
-          <i class="ri-lock-2-line field-icon"></i>
-          <input
-            [type]="showPassword() ? 'text' : 'password'"
-            class="form-control"
-            formControlName="sifre"
-            autocomplete="current-password"
-            [ngClass]="{'is-invalid': getError('sifre')}"
-            placeholder="Şifre" />
-          <button type="button" class="btn-toggle" (click)="togglePassword()" aria-label="Şifre görünürlüğünü değiştir">
-            <i [class]="showPassword() ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
+          <div class="form-group">
+            <div class="input-shell">
+              <i class="ri-lock-2-line field-icon"></i>
+              <input
+                [type]="showPassword() ? 'text' : 'password'"
+                class="form-control"
+                formControlName="sifre"
+                autocomplete="current-password"
+                [ngClass]="{'is-invalid': getError('sifre')}"
+                [placeholder]="'LABELS.SIFRE' | translate" />
+              <button
+                type="button"
+                class="btn-toggle"
+                (click)="togglePassword()"
+                [attr.aria-label]="'AUTH_2FA.TOGGLE_PASSWORD' | translate">
+                <i [class]="showPassword() ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
+              </button>
+            </div>
+            @if (getError('sifre')) {
+              <small class="text-danger mt-1 d-block">{{ getError('sifre') }}</small>
+            }
+          </div>
+
+          <div class="login-options">
+            <label class="remember-option">
+              <input type="checkbox" formControlName="rememberMe" />
+              <span class="checkmark"></span>
+              {{ 'AUTH_2FA.REMEMBER_ME' | translate }}
+            </label>
+          </div>
+
+          <button type="submit" class="btn btn-login w-100" [disabled]="loading()">
+            @if (loading()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>
+            }
+            {{ 'LABELS.GIRIS_YAP' | translate }}
           </button>
-        </div>
-        @if (getError('sifre')) {
-          <small class="text-danger mt-1 d-block">{{ getError('sifre') }}</small>
-        }
-      </div>
+        </form>
+      }
 
-      <div class="login-options">
-        <label class="remember-option">
-          <input type="checkbox" formControlName="rememberMe" />
-          <span class="checkmark"></span>
-          Beni Hatırla
-        </label>
-      </div>
+      @case ('setup') {
+        <section class="two-factor-view" aria-labelledby="two-factor-setup-title">
+          <div class="security-icon"><i class="ri-qr-code-line"></i></div>
+          <h2 id="two-factor-setup-title">{{ 'AUTH_2FA.SETUP_TITLE' | translate }}</h2>
+          <p class="view-description">{{ 'AUTH_2FA.SETUP_DESCRIPTION' | translate }}</p>
 
-      <button type="submit" class="btn btn-login w-100" [disabled]="loading()">
-        @if (loading()) {
-          <span class="spinner-border spinner-border-sm me-2"></span>
-        }
-        {{ 'LABELS.GIRIS_YAP' | translate }}
-      </button>
-    </form>
+          @if (setupDetails(); as setup) {
+            <div class="setup-grid">
+              <div class="qr-panel">
+                <img [src]="setup.qrCodeDataUri" [alt]="'AUTH_2FA.QR_ALT' | translate" />
+                <small>{{ 'AUTH_2FA.SCAN_QR' | translate }}</small>
+              </div>
 
-    <div class="login-footer">© 2026 3K. Tüm hakları saklıdır.</div>
+              <div class="manual-panel">
+                <span class="step-label">{{ 'AUTH_2FA.MANUAL_KEY_LABEL' | translate }}</span>
+                <p>{{ 'AUTH_2FA.MANUAL_KEY_HELP' | translate }}</p>
+                <div class="manual-key">
+                  <code>{{ setup.manuelAnahtar }}</code>
+                  <button type="button" (click)="copyManualKey()">
+                    <i [class]="copiedManualKey() ? 'ri-check-line' : 'ri-file-copy-line'"></i>
+                    {{ (copiedManualKey() ? 'AUTH_2FA.COPIED' : 'AUTH_2FA.COPY') | translate }}
+                  </button>
+                </div>
+
+                <div class="authenticator-hint">
+                  <i class="ri-smartphone-line"></i>
+                  <span>{{ 'AUTH_2FA.APP_HINT' | translate }}</span>
+                </div>
+
+                <form [formGroup]="verificationForm" (ngSubmit)="submitVerificationCode()">
+                  <label for="setup-code">{{ 'AUTH_2FA.ENTER_FIRST_CODE' | translate }}</label>
+                  <div class="input-shell code-shell">
+                    <i class="ri-shield-keyhole-line field-icon"></i>
+                    <input
+                      id="setup-code"
+                      class="form-control code-input"
+                      formControlName="kod"
+                      inputmode="numeric"
+                      autocomplete="one-time-code"
+                      maxlength="6"
+                      [placeholder]="'AUTH_2FA.CODE_PLACEHOLDER' | translate" />
+                  </div>
+                  @if (getVerificationCodeError()) {
+                    <small class="text-danger d-block">{{ getVerificationCodeError() }}</small>
+                  }
+
+                  <div class="challenge-timer">
+                    <i class="ri-time-line"></i>
+                    {{ 'AUTH_2FA.EXPIRES_IN' | translate }} <strong>{{ countdownText() }}</strong>
+                  </div>
+
+                  <button type="submit" class="btn btn-login w-100" [disabled]="loading()">
+                    @if (loading()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                    {{ 'AUTH_2FA.CONFIRM_SETUP' | translate }}
+                  </button>
+                </form>
+              </div>
+            </div>
+          } @else {
+            <div class="loading-state">
+              <span class="spinner-border"></span>
+              <span>{{ 'AUTH_2FA.PREPARING_SETUP' | translate }}</span>
+            </div>
+          }
+
+          <button type="button" class="btn-link-action" (click)="cancelTwoFactor()" [disabled]="loading()">
+            <i class="ri-arrow-left-line"></i> {{ 'AUTH_2FA.BACK_TO_LOGIN' | translate }}
+          </button>
+        </section>
+      }
+
+      @case ('verify') {
+        <section class="two-factor-view" aria-labelledby="two-factor-verify-title">
+          <div class="security-icon"><i class="ri-shield-keyhole-line"></i></div>
+          <h2 id="two-factor-verify-title">{{ 'AUTH_2FA.VERIFY_TITLE' | translate }}</h2>
+          <p class="view-description">{{ 'AUTH_2FA.VERIFY_DESCRIPTION' | translate }}</p>
+
+          <form [formGroup]="verificationForm" (ngSubmit)="submitVerificationCode()">
+            <div class="input-shell code-shell">
+              <i class="ri-key-2-line field-icon"></i>
+              <input
+                class="form-control code-input"
+                formControlName="kod"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                autofocus
+                [placeholder]="'AUTH_2FA.CODE_PLACEHOLDER' | translate" />
+            </div>
+            @if (getVerificationCodeError()) {
+              <small class="text-danger d-block">{{ getVerificationCodeError() }}</small>
+            }
+
+            <div class="challenge-timer">
+              <i class="ri-time-line"></i>
+              {{ 'AUTH_2FA.EXPIRES_IN' | translate }} <strong>{{ countdownText() }}</strong>
+            </div>
+
+            <button type="submit" class="btn btn-login w-100" [disabled]="loading()">
+              @if (loading()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+              {{ 'AUTH_2FA.VERIFY_AND_LOGIN' | translate }}
+            </button>
+          </form>
+
+          <button type="button" class="btn-link-action" (click)="showRecoveryMode()">
+            <i class="ri-lifebuoy-line"></i> {{ 'AUTH_2FA.USE_RECOVERY_CODE' | translate }}
+          </button>
+          <button type="button" class="btn-link-action muted" (click)="cancelTwoFactor()">
+            <i class="ri-arrow-left-line"></i> {{ 'AUTH_2FA.BACK_TO_LOGIN' | translate }}
+          </button>
+        </section>
+      }
+
+      @case ('recovery') {
+        <section class="two-factor-view" aria-labelledby="recovery-title">
+          <div class="security-icon warning"><i class="ri-lifebuoy-line"></i></div>
+          <h2 id="recovery-title">{{ 'AUTH_2FA.RECOVERY_TITLE' | translate }}</h2>
+          <p class="view-description">{{ 'AUTH_2FA.RECOVERY_DESCRIPTION' | translate }}</p>
+
+          <form [formGroup]="recoveryForm" (ngSubmit)="submitRecoveryCode()">
+            <div class="input-shell recovery-shell">
+              <i class="ri-key-line field-icon"></i>
+              <input
+                class="form-control recovery-input"
+                formControlName="kurtarmaKodu"
+                autocomplete="one-time-code"
+                autofocus
+                [placeholder]="'AUTH_2FA.RECOVERY_PLACEHOLDER' | translate" />
+            </div>
+            @if (getRecoveryCodeError()) {
+              <small class="text-danger d-block">{{ getRecoveryCodeError() }}</small>
+            }
+
+            <div class="challenge-timer">
+              <i class="ri-time-line"></i>
+              {{ 'AUTH_2FA.EXPIRES_IN' | translate }} <strong>{{ countdownText() }}</strong>
+            </div>
+
+            <button type="submit" class="btn btn-login w-100" [disabled]="loading()">
+              @if (loading()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+              {{ 'AUTH_2FA.RECOVERY_LOGIN' | translate }}
+            </button>
+          </form>
+
+          <button type="button" class="btn-link-action" (click)="showAuthenticatorMode()">
+            <i class="ri-shield-keyhole-line"></i> {{ 'AUTH_2FA.USE_AUTHENTICATOR' | translate }}
+          </button>
+          <button type="button" class="btn-link-action muted" (click)="cancelTwoFactor()">
+            <i class="ri-arrow-left-line"></i> {{ 'AUTH_2FA.BACK_TO_LOGIN' | translate }}
+          </button>
+        </section>
+      }
+
+      @case ('recoveryCodes') {
+        <section class="two-factor-view recovery-codes-view" aria-labelledby="recovery-codes-title">
+          <div class="security-icon success"><i class="ri-checkbox-circle-line"></i></div>
+          <h2 id="recovery-codes-title">{{ 'AUTH_2FA.RECOVERY_CODES_TITLE' | translate }}</h2>
+          <p class="view-description">{{ 'AUTH_2FA.RECOVERY_CODES_DESCRIPTION' | translate }}</p>
+
+          <div class="important-notice">
+            <i class="ri-alert-line"></i>
+            <span>{{ 'AUTH_2FA.RECOVERY_CODES_ONCE' | translate }}</span>
+          </div>
+
+          <div class="recovery-code-grid">
+            @for (code of recoveryCodes(); track code) {
+              <code>{{ code }}</code>
+            }
+          </div>
+
+          <button type="button" class="btn-secondary-action" (click)="copyRecoveryCodes()">
+            <i [class]="copiedRecoveryCodes() ? 'ri-check-line' : 'ri-file-copy-line'"></i>
+            {{ (copiedRecoveryCodes() ? 'AUTH_2FA.COPIED' : 'AUTH_2FA.COPY_ALL') | translate }}
+          </button>
+
+          <button type="button" class="btn btn-login w-100" (click)="acknowledgeRecoveryCodes()" [disabled]="loading()">
+            @if (loading()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+            {{ 'AUTH_2FA.SAVED_AND_CONTINUE' | translate }}
+          </button>
+        </section>
+      }
+    }
+
+    <div class="login-footer">{{ 'AUTH_2FA.FOOTER' | translate }}</div>
   </div>
 </div>
