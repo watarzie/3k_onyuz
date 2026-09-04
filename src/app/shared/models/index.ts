@@ -17,4 +17,6 @@ export * from './kullanici.model';
 export * from './onay-bekleyen-islem.model';
 export * from './onay-gecmisi.model';
 export * from './bildirim.model';
+export * from './ambalaj.model';
+export * from './finans.model';
 

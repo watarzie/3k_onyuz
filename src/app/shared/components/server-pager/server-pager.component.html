@@ -1,0 +1,58 @@
+<nav class="server-pager" aria-label="Sayfalama">
+  <div class="server-pager__summary">
+    <span aria-live="polite">
+      {{ startItem() }}-{{ endItem() }} / {{ safeTotalCount() }} kayıt
+    </span>
+
+    <span class="server-pager__divider" aria-hidden="true"></span>
+
+    <label class="server-pager__page-size">
+      <span>Sayfa başına</span>
+      <select
+        class="form-select form-select-sm"
+        aria-label="Sayfa başına kayıt sayısı"
+        [value]="safePageSize()"
+        (change)="onPageSizeSelect($event)"
+      >
+        @for (size of availablePageSizes(); track size) {
+          <option [value]="size">{{ size }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  <div class="server-pager__controls">
+    <button
+      type="button"
+      class="server-pager__button"
+      aria-label="Önceki sayfa"
+      [disabled]="!canGoPrevious()"
+      (click)="requestPreviousPage()"
+    >
+      <i class="ri-arrow-left-s-line" aria-hidden="true"></i>
+    </button>
+
+    @for (page of visiblePages(); track page) {
+      <button
+        type="button"
+        class="server-pager__button server-pager__page"
+        [class.is-active]="page === activePage()"
+        [attr.aria-current]="page === activePage() ? 'page' : null"
+        [attr.aria-label]="page + '. sayfaya git'"
+        (click)="requestPage(page)"
+      >
+        {{ page }}
+      </button>
+    }
+
+    <button
+      type="button"
+      class="server-pager__button"
+      aria-label="Sonraki sayfa"
+      [disabled]="!canGoNext()"
+      (click)="requestNextPage()"
+    >
+      <i class="ri-arrow-right-s-line" aria-hidden="true"></i>
+    </button>
+  </div>
+</nav>

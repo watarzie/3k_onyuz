@@ -39,7 +39,6 @@ export class RolYonetimiComponent implements OnInit {
     if (!term) return list;
     return list.filter(r => r.ad.toLowerCase().includes(term));
   });
-
   ngOnInit(): void {
     this.loadRoles();
   }

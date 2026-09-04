@@ -55,6 +55,35 @@ export class BaseApiService {
     return this.http.post(url, body, { ...(options ?? {}), responseType: 'blob' as const }) as unknown as Observable<Blob>;
   }
 
+  /**
+   * responseType=blob isteklerinde API'nin JSON hata gövdesi de Blob olarak gelir.
+   * İndirme ekranlarının gerçek backend mesajını gösterebilmesi için güvenli şekilde ayrıştırır.
+   */
+  async downloadErrorMessage(error: unknown, fallback: string): Promise<string> {
+    if (!(error instanceof HttpErrorResponse)) return fallback;
+    const body = error.error;
+    if (body instanceof Blob) {
+      try {
+        const text = (await body.text()).trim();
+        if (!text) return fallback;
+        try {
+          const json = JSON.parse(text) as { message?: string; error?: string; title?: string };
+          return json.message || json.error || json.title || fallback;
+        } catch {
+          return text;
+        }
+      } catch {
+        return fallback;
+      }
+    }
+    if (typeof body === 'string' && body.trim()) return body.trim();
+    if (body && typeof body === 'object') {
+      const response = body as { message?: string; error?: string; title?: string };
+      return response.message || response.error || response.title || fallback;
+    }
+    return error.status === 0 ? 'Sunucuya bağlanılamıyor.' : fallback;
+  }
+
   private wrapSuccess<T>(data: T): ApiResult<T> {
     return { isSuccess: true, value: data };
   }

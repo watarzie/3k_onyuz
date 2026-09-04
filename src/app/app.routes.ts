@@ -285,6 +285,24 @@ export const routes: Routes = [
         data: { menuKod: 'yedek-sandiklar' },
       },
 
+      // --- Ambalaj Üretim ---
+      {
+        path: 'ambalaj-uretim-listesi',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/ambalaj-uretim-listesi/ambalaj-uretim-listesi.component').then(m => m.AmbalajUretimListesiComponent),
+        data: { menuKod: 'ambalaj-uretim-listesi', title: 'Ambalaj Üretim Listesi' },
+      },
+
+      // --- Finans ve Sipariş Takibi ---
+      {
+        path: 'finans-yonetimi',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/finans-yonetimi/finans-aylik.component').then(m => m.FinansYonetimiComponent),
+        data: { menuKod: 'finans-yonetimi', title: 'Finans ve Sipariş Takibi' },
+      },
+
       // --- Hareket Geçmişi ---
       {
         path: 'hareket-gecmisi',

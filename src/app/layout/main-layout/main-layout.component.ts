@@ -7,13 +7,12 @@ import { ToggleService } from '../header/toggle.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { ToastComponent } from '../../shared/components/toast/toast.component';
 import { SessionTimeoutService } from '../../core/services/session-timeout.service';
-import { SessionTimeoutModalComponent } from '../../shared/components/session-timeout-modal/session-timeout-modal.component';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent, HeaderComponent, NgClass, ToastComponent, SessionTimeoutModalComponent, ConfirmModalComponent],
+  imports: [RouterOutlet, SidebarComponent, HeaderComponent, NgClass, ToastComponent, ConfirmModalComponent],
   template: `
     <app-sidebar />
     <div class="main-content" [ngClass]="{'sidebar-toggled': toggleService.isSidebarToggled()}">
@@ -23,7 +22,6 @@ import { ConfirmModalComponent } from '../../shared/components/confirm-modal/con
       </div>
     </div>
     <app-toast />
-    <app-session-timeout-modal />
     <app-confirm-modal />
   `,
   styles: [`
@@ -58,7 +56,7 @@ export class MainLayoutComponent implements OnInit {
     if (!this.permissionService.loaded()) {
       this.permissionService.loadPermissions();
     }
-    // Session timeout izlemeyi başlat
+    // JWT geçerlilik süresini izlemeyi başlat
     this.sessionTimeout.initialize();
   }
 }
