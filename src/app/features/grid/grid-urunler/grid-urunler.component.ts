@@ -1356,8 +1356,17 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     return Math.max(Number(urun.sandikMiktari ?? urun.istenenAdet ?? 0), 0);
   }
 
+  getGuncelMiktar(urun: GridUrunDto): number {
+    return Math.max(Number(urun.istenenAdet ?? 0), 0);
+  }
+
   getAnaIstenenAdet(urun: GridUrunDto): number {
     return Math.max(Number(urun.anaIstenenAdet ?? urun.istenenAdet ?? 0), 0);
+  }
+
+  hasMiktarDuzenlemesi(urun: GridUrunDto): boolean {
+    const orijinal = urun.orijinalIstenenAdet;
+    return typeof orijinal === 'number' && Number.isFinite(orijinal);
   }
 
   hasAnaToplamFarki(urun: GridUrunDto): boolean {

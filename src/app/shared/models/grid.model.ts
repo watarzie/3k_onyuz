@@ -6,6 +6,8 @@ export interface GridUrunDto {
   sandikIcerikId?: number;
   /** Çeki satırındaki sandık dağılımından bağımsız toplam talep. */
   anaIstenenAdet?: number;
+  /** İlk miktar düzenlemesinden önceki çeki miktarı; null ise kayıtlı miktar düzenlemesi yoktur. */
+  orijinalIstenenAdet?: number | null;
   /** Bu sandık içeriğine tahsis edilmiş güncel miktar. */
   sandikMiktari?: number;
   sandikBazliDagitim?: boolean;

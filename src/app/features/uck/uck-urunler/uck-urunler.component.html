@@ -155,11 +155,16 @@
             <td><span class="badge-sandik">{{ u.sandikNo }}</span></td>
             <td class="text-center miktar-cell">
               <div class="sandik-allocation-amount">
-                <span class="fw-semibold">{{ formatMiktar(getSandikMiktari(u)) }}</span>
+                <span class="fw-semibold">{{ formatMiktar(getGuncelMiktar(u)) }}</span>
                 <small class="text-muted fw-normal">{{ u.birim }}</small>
               </div>
-              @if (hasAnaToplamFarki(u)) {
+              @if (u.sandikBazliDagitim && hasAnaToplamFarki(u)) {
               <small class="allocation-secondary">Ana toplam: {{ formatMiktar(getAnaIstenenAdet(u)) }}</small>
+              }
+              @if (hasMiktarDuzenlemesi(u)) {
+              <small class="allocation-secondary" title="İlk miktar düzenlemesinden önce çeki satırında kayıtlı miktar">
+                {{ u.sandikBazliDagitim ? 'Çeki toplamında' : 'Çekide' }}: {{ formatMiktar(u.orijinalIstenenAdet) }} · Miktar güncellendi
+              </small>
               }
               @if (getSandikTransferOzeti(u)) {
               <small class="allocation-transfer" [title]="getSandikTransferOzeti(u)">

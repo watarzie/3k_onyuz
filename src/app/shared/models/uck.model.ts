@@ -6,6 +6,8 @@ export interface UcKUrunDto {
   sandikIcerikId?: number;
   /** Çeki satırındaki ana talep; sandık dağılımından bağımsız toplamdır. */
   anaIstenenAdet?: number;
+  /** İlk miktar düzenlemesinden önceki çeki miktarı; null ise kayıtlı miktar düzenlemesi yoktur. */
+  orijinalIstenenAdet?: number | null;
   /** Bu sandık içeriğine tahsis edilmiş güncel miktardır. */
   sandikMiktari?: number;
   sandikBazliDagitim?: boolean;

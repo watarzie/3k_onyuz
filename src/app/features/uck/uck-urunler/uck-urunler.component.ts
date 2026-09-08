@@ -746,8 +746,19 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     return Math.max(Number(urun.sandikMiktari ?? urun.istenenAdet ?? 0), 0);
   }
 
+  getGuncelMiktar(urun: UcKUrunDto): number {
+    return urun.sandikBazliDagitim
+      ? this.getSandikMiktari(urun)
+      : this.getAnaIstenenAdet(urun);
+  }
+
   getAnaIstenenAdet(urun: UcKUrunDto): number {
     return Math.max(Number(urun.anaIstenenAdet ?? urun.istenenAdet ?? 0), 0);
+  }
+
+  hasMiktarDuzenlemesi(urun: UcKUrunDto): boolean {
+    const orijinal = urun.orijinalIstenenAdet;
+    return typeof orijinal === 'number' && Number.isFinite(orijinal);
   }
 
   hasAnaToplamFarki(urun: UcKUrunDto): boolean {
