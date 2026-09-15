@@ -41,6 +41,16 @@ export interface UcKUrunDto {
   gridSevkDurumuId: number;
   gridSevkDurumuMetni: string;
   gridSevkMiktari?: number;
+  /** Backend'in aktif Grid sevk partisi için verdiği teslim uygunluğu kararı. */
+  aktifGridSevkPartisiTeslimeAcikMi?: boolean;
+  /** Aktif Grid sevk partisinde 3K tarafından henüz teslim alınmamış miktar. */
+  aktifGridSevkPartisiKalanMiktari?: number;
+  /** Aktif sevke bağlı fazla teslimin stoka alınabilmesi için backend kararı. */
+  aktifGridSevkPartisiFazlaTeslimeAcikMi?: boolean;
+  /** Seçili sandıktan güvenle Grid'e geri gönderilebilecek fiziksel miktar. */
+  gridGeriGonderilebilirMiktar?: number;
+  /** Geri gönderimin aktif sevk yaşam döngüsünü bozmadan yapılabileceğine dair backend kararı. */
+  gridGeriGonderimeAcikMi?: boolean;
   ucKKarsilamaTipiId: number;
   ucKKarsilamaTipiMetni: string;
   gelenMiktar: number;

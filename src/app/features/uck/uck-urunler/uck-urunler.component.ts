@@ -577,8 +577,12 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     }
 
     this.panelUrun.set(urun);
-    this.panelTip.set(urun.ucKKarsilamaTipiMetni === 'Bekliyor' ? '' : urun.ucKKarsilamaTipiMetni);
-    this.panelGelenAdet.set(urun.gelenMiktar);
+    const mevcutTip = urun.ucKKarsilamaTipiMetni === 'Bekliyor' ? '' : urun.ucKKarsilamaTipiMetni;
+    this.panelTip.set(mevcutTip);
+    // Bu panel yeni bir hareket üretir; toplam gelen miktar yeni hareketin adedi
+    // değildir. Önceden işlenmiş satır tekrar açıldığında aynı hareketin ikinci kez
+    // yazılmasını önlemek için yalnız güvenli işlem varsayımlarını hazırla.
+    this.panelGelenAdet.set(this.getPanelAcilisMiktari(urun, mevcutTip));
     const karsilamaKaynakProjesi = urun.projeKarsilanan > 0 ? urun.kaynakHedefProjeNo?.trim() ?? '' : '';
     this.panelKaynakHedef.set(karsilamaKaynakProjesi);
     this.panelKaynakCekiSatiriId.set(null);
@@ -600,6 +604,19 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     this.showPanel.set(true);
   }
 
+  private getPanelAcilisMiktari(urun: UcKUrunDto, tip: string): number {
+    switch (tip) {
+      case 'Sevk Adeti Tam Geldi':
+        return this.getTamGeldiOtomatikMiktari(urun);
+      case 'Projeden Karşılandı':
+        return urun.kalan > 0 ? urun.kalan : 0;
+      default:
+        // Eksik/Fazla/Geri gönderim ile stok/tedarikçi miktarları kümülatif
+        // durum değil, bu kayıtta uygulanacak artış/azalış miktarıdır.
+        return 0;
+    }
+  }
+
   closePanel() {
     this.showPanel.set(false);
     this.panelUrun.set(null);
@@ -612,8 +629,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
     switch (tip) {
       case 'Sevk Adeti Tam Geldi':
-        // KURAL 1: Grid sevk miktarı kadar otomatik set et
-        this.panelGelenAdet.set(u.gridSevkMiktari ?? u.istenenAdet);
+        // Backend sözleşmesi varsa yalnız aktif sevk partisinin bekleyen miktarını al.
+        this.panelGelenAdet.set(this.getTamGeldiOtomatikMiktari(u));
         this.panelKaynakHedef.set('');
         break;
       case 'Gelmedi':
@@ -621,7 +638,9 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
         this.panelKaynakHedef.set('');
         break;
       case 'Sevk Adeti Eksik Geldi':
-        this.panelGelenAdet.set(u.gelenMiktar > 0 ? u.gelenMiktar : 0);
+        // Bu alan kümülatif 3K geleni değil, mevcut aktif partiden bu işlemde
+        // teslim alınacak artış miktarını temsil eder.
+        this.panelGelenAdet.set(0);
         this.panelKaynakHedef.set('');
         break;
       case 'Projeden Karşılandı':
@@ -640,7 +659,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
         this.panelFazlaStogaAktar.set(true);
         break;
       case 'Geri Gönderildi':
-        this.panelGelenAdet.set(u.gelenMiktar > 0 ? u.gelenMiktar : 0);
+        this.panelGelenAdet.set(this.getGridGeriGonderilebilirMiktar(u));
         this.panelKaynakHedef.set('');
         break;
     }
@@ -905,6 +924,80 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       tipId === UcKDurum.FazlaGeldi;
   }
 
+  private hasAktifGridSevkPartisiSozlesmesi(u: UcKUrunDto): boolean {
+    return typeof u.aktifGridSevkPartisiTeslimeAcikMi === 'boolean';
+  }
+
+  private getAktifGridSevkPartisiKalanMiktari(u: UcKUrunDto): number {
+    const kalan = Number(u.aktifGridSevkPartisiKalanMiktari ?? 0);
+    return Number.isFinite(kalan) ? Math.max(kalan, 0) : 0;
+  }
+
+  isAktifGridSevkPartisiTeslimeAcik(u: UcKUrunDto): boolean {
+    return this.hasAktifGridSevkPartisiSozlesmesi(u) &&
+      u.aktifGridSevkPartisiTeslimeAcikMi === true &&
+      this.getAktifGridSevkPartisiKalanMiktari(u) > 0;
+  }
+
+  getTamGeldiOtomatikMiktari(u: UcKUrunDto): number {
+    if (this.hasAktifGridSevkPartisiSozlesmesi(u)) {
+      return this.isAktifGridSevkPartisiTeslimeAcik(u)
+        ? this.getAktifGridSevkPartisiKalanMiktari(u)
+        : 0;
+    }
+
+    return Math.max(u.gridSevkMiktari ?? u.istenenAdet, 0);
+  }
+
+  private isKismiFizikselSevkTeslimeAcik(u: UcKUrunDto): boolean {
+    if (this.hasAktifGridSevkPartisiSozlesmesi(u)) {
+      return this.isAktifGridSevkPartisiTeslimeAcik(u);
+    }
+
+    return u.gridSevkDurumuId === GridSevkDurum.SevkEdildi &&
+      (u.gridSevkMiktari ?? 0) > 0;
+  }
+
+  private hasAktifGridSevkPartisiFazlaTeslimSozlesmesi(u: UcKUrunDto): boolean {
+    return typeof u.aktifGridSevkPartisiFazlaTeslimeAcikMi === 'boolean';
+  }
+
+  isAktifGridSevkPartisiFazlaTeslimeAcik(u: UcKUrunDto): boolean {
+    if (this.hasAktifGridSevkPartisiFazlaTeslimSozlesmesi(u)) {
+      return u.aktifGridSevkPartisiFazlaTeslimeAcikMi === true;
+    }
+
+    // Ayrı backend kararını göndermeyen sürümler için eski davranış.
+    return u.gridSevkDurumuId === GridSevkDurum.SevkEdildi &&
+      (u.gridSevkMiktari ?? 0) > 0;
+  }
+
+  private hasGridGeriGonderimSozlesmesi(u: UcKUrunDto): boolean {
+    // Alanlardan biri geldiyse yeni sözleşme başlamıştır; eksik/bozuk yarım
+    // payload'ı legacy kabul edip aksiyon açmak yerine güvenli biçimde kapatırız.
+    return typeof u.gridGeriGonderimeAcikMi === 'boolean' ||
+      typeof u.gridGeriGonderilebilirMiktar === 'number';
+  }
+
+  getGridGeriGonderilebilirMiktar(u: UcKUrunDto): number {
+    if (this.hasGridGeriGonderimSozlesmesi(u)) {
+      const miktar = Number(u.gridGeriGonderilebilirMiktar);
+      return Number.isFinite(miktar) ? Math.max(miktar, 0) : 0;
+    }
+
+    // Eski backend sürümüyle kısa dağıtım geçişinde mevcut davranışı korur.
+    return Math.max(Number(u.gelenMiktar) || 0, 0);
+  }
+
+  isGridGeriGonderimeAcik(u: UcKUrunDto): boolean {
+    if (this.hasGridGeriGonderimSozlesmesi(u)) {
+      return u.gridGeriGonderimeAcikMi === true &&
+        this.getGridGeriGonderilebilirMiktar(u) > 0;
+    }
+
+    return this.getGridGeriGonderilebilirMiktar(u) > 0;
+  }
+
   private isGridKaynakKarsilamaAcik(u: UcKUrunDto): boolean {
     return u.gridDurumuId === GridDurum.EksikGeldi ||
       u.gridDurumuId === GridDurum.Gelmedi ||
@@ -932,13 +1025,15 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     if (u.gridDurumuId === GridDurum.Iptal) return true;
 
     if (u.gridDurumuId === GridDurum.TrafoSevk) {
-      const kismiSevkVar = u.gridSevkDurumuId === GridSevkDurum.SevkEdildi && (u.gridSevkMiktari ?? 0) > 0;
       const fizikselTip = this.isFizikselSevkTip(tip);
       const kaynakTip = this.isKaynakKarsilamaTip(tip);
+      const fizikselSevkAcik = tip === 'Fazla Geldi'
+        ? this.isAktifGridSevkPartisiFazlaTeslimeAcik(u)
+        : this.isKismiFizikselSevkTeslimeAcik(u);
 
-      if (fizikselTip) return !kismiSevkVar;
+      if (fizikselTip) return !fizikselSevkAcik;
       if (kaynakTip) return u.kalan <= 0;
-      if (tip === 'Geri Gönderildi') return u.gelenMiktar <= 0;
+      if (tip === 'Geri Gönderildi') return !this.isGridGeriGonderimeAcik(u);
       return true;
     }
 
@@ -947,12 +1042,23 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       return !this.isKaynakKarsilamaTip(tip);
     }
 
-    // Hatalı Ürün seçeneği kaldırıldı — GeriGonderilmeSebebi içine taşındı
+    if (tip === 'Geri Gönderildi') {
+      return !this.isGridGeriGonderimeAcik(u);
+    }
+
+    if (tip === 'Fazla Geldi') {
+      return !this.isAktifGridSevkPartisiFazlaTeslimeAcik(u);
+    }
+
+    // Yeni backend sözleşmesi fiziksel parti uygunluğunda tek otoritedir.
+    if (this.hasAktifGridSevkPartisiSozlesmesi(u) && this.isFizikselSevkTip(tip)) {
+      return !this.isAktifGridSevkPartisiTeslimeAcik(u);
+    }
+
+    // Legacy backend fallback'i: mevcut enum tabanlı davranış aynen korunur.
 
     // Sevk Adeti Tam Geldi → Grid sevk edilmiş olmalı
     if (tip === 'Sevk Adeti Tam Geldi' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) return true;
-    if (tip === 'Fazla Geldi' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) return true;
-
     // Projeden/Stoktan/Tedarikçi → Grid eksik/gelmedi/trafo veya 3K geri gönderim sonrası kalan açık olmalı
     if (this.isKaynakKarsilamaTip(tip)) {
       return !this.isGridKaynakKarsilamaAcik(u) &&
@@ -981,11 +1087,29 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     return u.kalan;
   }
 
+  get panelAdetUstSiniri(): number | null {
+    const u = this.panelUrun();
+    if (!u || this.panelTip() === 'Fazla Geldi') return null;
+    if (this.panelTip() === 'Geri Gönderildi') {
+      return this.getGridGeriGonderilebilirMiktar(u);
+    }
+    if (this.hasAktifGridSevkPartisiSozlesmesi(u) && this.isFizikselSevkTip(this.panelTip())) {
+      return this.getAktifGridSevkPartisiKalanMiktari(u);
+    }
+    return u.kalan;
+  }
+
   getGridSevkGorunum(u: UcKUrunDto): number {
     const aktifSevk = Math.max(u.gridSevkMiktari ?? 0, 0);
     const gelen = Math.max(u.gelenMiktar ?? 0, 0);
 
     if (aktifSevk <= 0) return 0;
+
+    if (this.hasAktifGridSevkPartisiSozlesmesi(u)) {
+      return this.isAktifGridSevkPartisiTeslimeAcik(u)
+        ? gelen + this.getAktifGridSevkPartisiKalanMiktari(u)
+        : Math.max(gelen, aktifSevk);
+    }
 
     if (u.ucKKarsilamaTipiId === UcKDurum.Bekliyor && u.gridSevkDurumuId === GridSevkDurum.SevkEdildi) {
       return gelen + aktifSevk;
@@ -1001,13 +1125,16 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
     // Grid İptal blokajı
     if (u.gridDurumuId === GridDurum.Iptal) return 'Bu ürün Grid tarafından iptal edildiği için işlem yapılamaz.';
+    if (u.gridDurumuId === GridDurum.GridKapandi) return 'Bu ürün Grid tarafından kapatıldığı için işlem yapılamaz.';
 
     if (u.gridDurumuId === GridDurum.TrafoSevk) {
-      const kismiSevkVar = u.gridSevkDurumuId === GridSevkDurum.SevkEdildi && (u.gridSevkMiktari ?? 0) > 0;
       const fizikselTip = this.isFizikselSevkTip(tip);
       const kaynakTip = this.isKaynakKarsilamaTip(tip);
+      const fizikselSevkAcik = tip === 'Fazla Geldi'
+        ? this.isAktifGridSevkPartisiFazlaTeslimeAcik(u)
+        : this.isKismiFizikselSevkTeslimeAcik(u);
 
-      if (fizikselTip && !kismiSevkVar) {
+      if (fizikselTip && !fizikselSevkAcik) {
         return 'Trafo sevk satırında 3K işlemi için Grid gelen miktar önce 3K’ya sevk edilmelidir.';
       }
       if (kaynakTip && u.kalan <= 0) {
@@ -1022,12 +1149,23 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       }
     }
 
-    // Sevk Adeti Tam Geldi → Grid sevk edilmiş olmalı
-    if (tip === 'Sevk Adeti Tam Geldi' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) {
-      return 'Grid tarafından eksiksiz sevk edilmeden "Sevk Adeti Tam Geldi" olarak işaretlenemez.';
+    if (tip === 'Fazla Geldi' && !this.isAktifGridSevkPartisiFazlaTeslimeAcik(u)) {
+      return 'Fazla teslim için backend tarafından işleme açık bir Grid sevk partisi bulunmuyor.';
     }
-    if (tip === 'Fazla Geldi' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) {
-      return 'Grid tarafından sevk edilmeden "Fazla Geldi" işlemi yapılamaz.';
+
+    if (tip !== 'Fazla Geldi' &&
+      this.hasAktifGridSevkPartisiSozlesmesi(u) &&
+      this.isFizikselSevkTip(tip) &&
+      !this.isAktifGridSevkPartisiTeslimeAcik(u)) {
+      return '3K teslimine açık, bekleyen miktarı bulunan aktif bir Grid sevk partisi yok.';
+    }
+
+    // Legacy backend fallback'i: yeni alanlar henüz gönderilmiyorsa mevcut enum
+    // tabanlı doğrulama aynen korunur. Yeni sözleşmede backend kararı otoritedir.
+    if (!this.hasAktifGridSevkPartisiSozlesmesi(u)) {
+      if (tip === 'Sevk Adeti Tam Geldi' && u.gridSevkDurumuId !== GridSevkDurum.SevkEdildi) {
+        return 'Grid tarafından eksiksiz sevk edilmeden "Sevk Adeti Tam Geldi" olarak işaretlenemez.';
+      }
     }
 
     // Hatalı Ürün → Grid sevk edilmiş olmalı
@@ -1046,6 +1184,10 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     if (tip === 'Sevk Adeti Eksik Geldi') {
       if (this.panelGelenAdet() <= 0) return 'Gelen adet girilmelidir.';
       if (this.panelGelenAdet() >= u.istenenAdet) return 'Gelen adet miktardan küçük olmalıdır.';
+      if (this.hasAktifGridSevkPartisiSozlesmesi(u) &&
+        this.panelGelenAdet() > this.getAktifGridSevkPartisiKalanMiktari(u)) {
+        return 'Gelen adet aktif Grid sevk partisinde bekleyen miktardan büyük olamaz.';
+      }
     }
     if (tip === 'Projeden Karşılandı') {
       if (this.panelGelenAdet() <= 0) return 'Karşılanan adet girilmelidir.';
@@ -1084,10 +1226,15 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       if (!this.panelFazlaStogaAktar()) return 'Fazla gelen adet stoka aktarılmalıdır.';
     }
     if (tip === 'Geri Gönderildi') {
+      if (!this.isGridGeriGonderimeAcik(u)) {
+        return 'Bu ürün için geri gönderime açık, fiziksel olarak teslim alınmış bir Grid miktarı bulunmuyor veya aktif sevk partisi henüz tamamlanmadı.';
+      }
       if (!this.panelGeriGonderilmeSebebi()) return 'Geri gönderilme sebebi seçilmelidir.';
       if (this.panelGelenAdet() <= 0) return 'Geri gönderilen adet girilmelidir.';
-      const u2 = this.panelUrun()!;
-      if (this.panelGelenAdet() > u2.gelenMiktar) return `Geri gönderilen adet (${this.panelGelenAdet()}), 3K gelen miktardan (${u2.gelenMiktar}) büyük olamaz.`;
+      const geriGonderilebilir = this.getGridGeriGonderilebilirMiktar(u);
+      if (this.panelGelenAdet() > geriGonderilebilir) {
+        return `Geri gönderilen adet (${this.panelGelenAdet()}), seçili sandıktaki geri gönderilebilir Grid miktarından (${geriGonderilebilir}) büyük olamaz.`;
+      }
     }
 
     // KURAL 3 (Dumb UI): Overflow kontrolü backend'de yapılır.
@@ -1271,6 +1418,10 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   // ===== Toplu Tam Geldi Modal =====
   openTopluTamGeldi() {
     if (this.hasSevkKilitliSecim()) return;
+    if (!this.isTopluTamGeldiAllowed) {
+      this.toast.error('Seçili ürünlerin tamamında 3K teslimine açık, bekleyen miktarı bulunan bir Grid sevk partisi olmalıdır.');
+      return;
+    }
     this.topluAciklama.set('');
     this.showTopluModal.set(true);
   }
@@ -1509,7 +1660,9 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     if (u.gridDurumuId === GridDurum.Iptal || u.gridDurumuId === GridDurum.GridKapandi) return true;
 
     if (u.gridDurumuId === GridDurum.TrafoSevk) {
-      const gridSevkVar = u.gridSevkDurumuId === GridSevkDurum.SevkEdildi && (u.gridSevkMiktari ?? 0) > 0;
+      const gridSevkVar = this.isKismiFizikselSevkTeslimeAcik(u) ||
+        this.isAktifGridSevkPartisiFazlaTeslimeAcik(u) ||
+        this.isGridGeriGonderimeAcik(u);
       const kaynaklaKarsilanacakKalanVar = u.kalan > 0;
       return !gridSevkVar && !kaynaklaKarsilanacakKalanVar;
     }
@@ -1540,12 +1693,17 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   get isTopluTamGeldiAllowed(): boolean {
     if (this.selectedRowKeys().size === 0) return false;
     const selected = this.getSelectedUrunler();
-    return selected.length > 0 && selected.every(u =>
-      !this.isSatirSevkKilidi(u) &&
-      u.gridSevkDurumuId === GridSevkDurum.SevkEdildi &&
-      u.ucKKarsilamaTipiId !== UcKDurum.TamGeldi &&
-      (u.gridDurumuId !== GridDurum.TrafoSevk || (u.gridSevkMiktari ?? 0) > 0)
-    );
+    return selected.length > 0 && selected.every(u => {
+      if (this.isSatirSevkKilidi(u)) return false;
+
+      if (this.hasAktifGridSevkPartisiSozlesmesi(u)) {
+        return this.isAktifGridSevkPartisiTeslimeAcik(u);
+      }
+
+      return u.gridSevkDurumuId === GridSevkDurum.SevkEdildi &&
+        u.ucKKarsilamaTipiId !== UcKDurum.TamGeldi &&
+        (u.gridDurumuId !== GridDurum.TrafoSevk || (u.gridSevkMiktari ?? 0) > 0);
+    });
   }
 
   // ===== Eksik Ürünler Raporu İndirme =====

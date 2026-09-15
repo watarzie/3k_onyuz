@@ -39,6 +39,10 @@ export interface GridUrunDto {
   gridSevkDurumuMetni: string;
   gridSevkMiktari?: number;
   yenidenSevkGerekliAdet: number;
+  /** Backend iş kuralına göre satırın yeni bir Grid sevk partisine açılabilmesi. */
+  gridYenidenSevkEdilebilirMi?: boolean;
+  /** Yeni sevk partisi için backend tarafından hesaplanan azami miktar. */
+  gridYenidenSevkUstSiniri?: number;
   gridSevkTarihi?: string;
   gridAciklama?: string;
   gridEksikMiktar: number;

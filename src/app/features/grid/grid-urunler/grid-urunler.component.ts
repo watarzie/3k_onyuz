@@ -656,7 +656,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     }
 
     this.panelUrun.set(urun);
-    if (this.isParcaliEksikYenidenSevkUrun(urun)) {
+    if (this.isGridYenidenSevkAcikUrun(urun) && this.isParcaliEksikYenidenSevkUrun(urun)) {
       this.panelDurum.set('Tam Geldi');
       this.panelGelenAdet.set(urun.istenenAdet);
       this.panelTrafoSevkAdet.set(0);
@@ -1086,6 +1086,16 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       (u.kalanMiktar ?? 0) > 0;
   }
 
+  isBackendYenidenSevkAcikUrun(u: GridUrunDto | null | undefined): boolean {
+    return !!u &&
+      u.gridYenidenSevkEdilebilirMi === true &&
+      (u.gridYenidenSevkUstSiniri ?? 0) > 0;
+  }
+
+  private hasBackendYenidenSevkKarari(u: GridUrunDto | null | undefined): boolean {
+    return !!u && typeof u.gridYenidenSevkEdilebilirMi === 'boolean';
+  }
+
   isTamamlanmisParcaliEksikSevkUrun(u: GridUrunDto | null | undefined): boolean {
     return !!u &&
       u.gridDurumuId === GridDurum.TamGeldi &&
@@ -1096,12 +1106,21 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
 
   isGridYenidenSevkAcikUrun(u: GridUrunDto | null | undefined): boolean {
+    if (this.hasBackendYenidenSevkKarari(u)) {
+      return this.isBackendYenidenSevkAcikUrun(u);
+    }
+
     return this.isYenidenSevkGerekliUrun(u) ||
       this.isProjeGonderilenYenidenSevkUrun(u) ||
       this.isParcaliEksikYenidenSevkUrun(u);
   }
 
   getYenidenSevkLimit(u: GridUrunDto): number {
+    if (this.hasBackendYenidenSevkKarari(u)) {
+      return this.isBackendYenidenSevkAcikUrun(u)
+        ? Math.max(u.gridYenidenSevkUstSiniri ?? 0, 0)
+        : 0;
+    }
     if (this.isYenidenSevkGerekliUrun(u)) {
       return Math.max(u.yenidenSevkGerekliAdet ?? 0, 0);
     }
@@ -1132,7 +1151,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
 
   get isParcaliEksikYenidenSevk(): boolean {
-    return this.isParcaliEksikYenidenSevkUrun(this.panelUrun());
+    return this.isGridYenidenSevkAcik && this.isParcaliEksikYenidenSevkUrun(this.panelUrun());
   }
 
   get isGridYenidenSevkAcik(): boolean {

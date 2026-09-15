@@ -54,9 +54,10 @@
           <i class="ri-stack-line me-1"></i>Toplu İşlemler ({{ selectionCount }})
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow-lg" [class.show]="showTopluIslemlerMenu()">
-          <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluTamGeldi()">
+          <li><button type="button" class="dropdown-item" [disabled]="!isTopluTamGeldiAllowed"
+            (click)="showTopluIslemlerMenu.set(false); openTopluTamGeldi()">
             <i class="ri-check-double-line me-2 text-success"></i>Toplu Sevk Adeti Tam Geldi
-          </a></li>
+          </button></li>
           <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluTedarikci()">
             <i class="ri-truck-line me-2" style="color:#1B7D3A"></i>Toplu Tedarikçiden Karşıla
           </a></li>
@@ -584,9 +585,9 @@
       </label>
       <input type="number" class="form-control" [ngModel]="panelGelenAdet()"
         (ngModelChange)="panelGelenAdet.set($event); recalcPanel()" [disabled]="!isGelenAdetAktif" min="0"
-        [attr.max]="panelTip() === 'Fazla Geldi' ? null : panelUrun()!.kalan" step="any" />
+        [attr.max]="panelAdetUstSiniri" step="any" />
       @if (panelTip() === 'Sevk Adeti Tam Geldi') {
-      <small class="text-muted">Otomatik: Grid sevk miktarı kadar teslim alınacak</small>
+      <small class="text-muted">Otomatik: Aktif Grid sevk partisinde bekleyen miktar teslim alınacak</small>
       }
       @if (panelTip() === 'Fazla Geldi') {
       <small class="text-muted">Buraya yalnızca fazla teslim edilen adet girilir.</small>
