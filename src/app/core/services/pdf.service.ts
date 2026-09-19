@@ -37,20 +37,28 @@ export class PdfService {
     return this.api.downloadFile(API.PDF.EKSIK_URUNLER_EXCEL(projeId), this.menuOptions(menuKod));
   }
 
-  topluEksikUrunlerPdf(projeIds: number[]): Observable<Blob> {
+  topluEksikUrunlerPdf(projeIds: number[], projeTipi: 1 | 2 | 3 = 1): Observable<Blob> {
     return this.api.downloadPostFile(
       API.PDF.TOPLU_EKSIK_URUNLER,
-      { projeIds },
-      this.menuOptions('eksik-raporu')
+      { projeIds, projeTipi },
+      this.menuOptions(this.topluEksikMenuKodu(projeTipi))
     );
   }
 
-  topluEksikUrunlerExcel(projeIds: number[]): Observable<Blob> {
+  topluEksikUrunlerExcel(projeIds: number[], projeTipi: 1 | 2 | 3 = 1): Observable<Blob> {
     return this.api.downloadPostFile(
       API.PDF.TOPLU_EKSIK_URUNLER_EXCEL,
-      { projeIds },
-      this.menuOptions('eksik-raporu')
+      { projeIds, projeTipi },
+      this.menuOptions(this.topluEksikMenuKodu(projeTipi))
     );
+  }
+
+  private topluEksikMenuKodu(projeTipi: 1 | 2 | 3): string {
+    return projeTipi === 2 ? 'saha-sevk-sonrasi-eksik-raporu' : projeTipi === 3 ? 'yedek-eksik-raporu' : 'eksik-raporu';
+  }
+
+  downloadErrorMessage(error: unknown, fallback: string): Promise<string> {
+    return this.api.downloadErrorMessage(error, fallback);
   }
 
   gerceklesenCekiListesiPdf(projeId: number, menuKod = 'gerceklesen-ceki-raporu'): Observable<Blob> {

@@ -28,6 +28,9 @@ table {
   tr:hover { background: #F8FAFC; }
 }
 .cursor-pointer { cursor: pointer; }
+.bulk-select-cell { width: 44px; padding-right: 6px; }
+.bulk-select-cell .form-check-input { cursor: pointer; }
+table tr.bulk-selected td { background: #f0f3ff; }
 .gelen-text { font-weight: 600; }
 .ana-toplam-meta {
   margin-top: 3px;

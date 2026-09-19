@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
+import { SandikUrunleriTopluTasiDto } from '../../shared/models/sandik-toplu-tasima.model';
 import {
   ApiResult, SandikDto, SandikDetayDto, SandikEkleDto, ManuelUrunEkleDto,
   UrunGuncelleDto, SandikDegistirDto, TeslimAlDto, TopluTeslimAlDto,
@@ -138,6 +139,10 @@ export class SandikService {
 
   urunTasi(dto: UrunTasiDto): Observable<ApiResult<unknown>> {
     return this.api.post<unknown>(API.SANDIK.URUN_TASI, dto);
+  }
+
+  urunleriTopluTasi(dto: SandikUrunleriTopluTasiDto): Observable<ApiResult<unknown>> {
+    return this.api.post<unknown>(API.SANDIK.URUNLERI_TOPLU_TASI, dto);
   }
 
   // ===== Silme =====

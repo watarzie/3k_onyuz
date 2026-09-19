@@ -127,12 +127,26 @@
   <div class="trezo-card border-0 shadow-none">
     <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
       <h5 class="fw-semibold mb-0">İçerikler ({{ sandik()!.icerikler.length }})</h5>
+      @if (canWriteSandik()) {
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          @if (topluTasimaUrunleri().length) {
+            <small class="text-muted">{{ topluTasimaUrunleri().length }} {{ 'BULK_CRATE_MOVE.SELECTED' | translate }}</small>
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="tasimaSeciminiTemizle()">{{ 'BULK_CRATE_MOVE.CLEAR' | translate }}</button>
+          }
+          <button type="button" class="btn btn-sm btn-outline-primary" (click)="openTopluTasiModal()" [disabled]="!topluTasimaUrunleri().length || isSandikTasimayaKilitli()">
+            <i class="ri-swap-line me-1"></i>{{ 'BULK_CRATE_MOVE.ACTION' | translate }}
+          </button>
+        </div>
+      }
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
           <thead>
             <tr>
+              @if (canWriteSandik()) {
+                <th class="bulk-select-cell"><input type="checkbox" class="form-check-input" [checked]="tumTasimaIcerikleriSecili()" [indeterminate]="topluTasimaUrunleri().length > 0 && !tumTasimaIcerikleriSecili()" [disabled]="isSandikTasimayaKilitli() || !tasinabilirIcerikler().length" (change)="tumTasimaSeciminiDegistir()" [attr.aria-label]="'BULK_CRATE_MOVE.SELECT_ALL' | translate" /></th>
+              }
               <th>{{ 'LABELS.URUN' | translate }}</th>
               <th>{{ 'LABELS.MIKTAR' | translate }}</th>
               <th>Konulan</th>
@@ -145,7 +159,10 @@
           </thead>
           <tbody>
             @for (item of sandik()!.icerikler; track item.id) {
-              <tr (click)="selectUrun(item)" class="cursor-pointer">
+              <tr (click)="selectUrun(item)" class="cursor-pointer" [class.bulk-selected]="seciliTasimaIcerikleri().has(item.id)">
+                @if (canWriteSandik()) {
+                  <td class="bulk-select-cell" (click)="$event.stopPropagation()"><input type="checkbox" class="form-check-input" [checked]="seciliTasimaIcerikleri().has(item.id)" [disabled]="isSandikTasimayaKilitli() || getSandikMiktari(item) <= 0" (change)="tasimaSeciminiDegistir(item)" [attr.aria-label]="('BULK_CRATE_MOVE.SELECT_ROW' | translate) + ' #' + item.id" /></td>
+                }
                 <td>
                   <div class="d-flex align-items-center gap-2">
                     <i class="ri-arrow-right-s-line text-muted"></i>
@@ -276,6 +293,9 @@
   }
 
   <!-- ===== Ürün Taşıma Modal ===== -->
+  @if (canWriteSandik() && showTopluTasiModal()) {
+    <app-sandik-toplu-tasi [projeId]="projeId()" [kaynakSandikId]="sandikId()" [kaynakSandikNo]="sandik()!.sandikNo" [urunler]="topluTasimaUrunleri()" [hedefSandiklar]="projeSandiklari()" [canWrite]="canWriteSandik() && !isSandikTasimayaKilitli()" (closed)="showTopluTasiModal.set(false)" (moved)="topluTasimaTamamlandi()" />
+  }
   @if (canWriteSandik() && showTasiModal() && tasiUrun()) {
     <div class="modal-overlay" (click)="closeTasiModal()"></div>
     <div class="modal-container">

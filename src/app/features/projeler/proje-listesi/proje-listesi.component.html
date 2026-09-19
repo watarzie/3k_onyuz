@@ -299,6 +299,9 @@
                 @if (shouldShowActions(p)) {
                   <td>
                     <div class="d-flex gap-1 flex-wrap">
+                      @if (canSeeRevizyonGecmisi(p)) {
+                        <button type="button" class="btn btn-sm btn-outline-primary" (click)="revizyonGecmisiProje.set(p)"><i class="ri-history-line me-1"></i>{{ 'REV_HISTORY.TITLE' | translate }}</button>
+                      }
                       @if (canShowGerceklesenRapor(p)) {
                         <div class="report-download" (click)="$event.stopPropagation()">
                           <button type="button" class="btn btn-sm btn-danger report-download-trigger" (click)="toggleReportMenu($event, 'gerceklesen-' + p.id, p, 'gerceklesen')" [disabled]="isGerceklesenDownloading(p.id)" title="Gerçekleşen Çeki Listesi Raporu">
@@ -1123,4 +1126,8 @@
       </div>
     </div>
   </div>
+}
+
+@if (revizyonGecmisiProje(); as project) {
+  <app-ceki-revizyon-gecmisi [projeId]="project.id" [projeNo]="project.projeNo" (closed)="revizyonGecmisiProje.set(null)" />
 }

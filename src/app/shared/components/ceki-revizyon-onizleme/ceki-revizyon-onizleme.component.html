@@ -209,6 +209,9 @@
         </div>
 
         <div class="revision-row-meta">
+          @if (satir.mevcutCekiSatiriId != null) {
+            <span><b>ID</b>{{ satir.mevcutCekiSatiriId }}</span>
+          }
           @if (satir.barkodNo) {
             <span><b>Barkod</b>{{ satir.barkodNo }}</span>
           }

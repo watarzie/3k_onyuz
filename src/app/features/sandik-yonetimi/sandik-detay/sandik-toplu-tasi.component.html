@@ -1,0 +1,56 @@
+<div class="bulk-overlay" (click)="close()"></div>
+<section class="bulk-modal" role="dialog" aria-modal="true" aria-labelledby="bulk-move-title" (keydown.escape)="close()" tabindex="-1">
+  <header>
+    <div>
+      <h5 id="bulk-move-title"><i class="ri-swap-line me-2"></i>{{ 'BULK_CRATE_MOVE.TITLE' | translate }}</h5>
+      <small class="text-muted">{{ kaynakSandikNo() }} <i class="ri-arrow-right-line mx-2"></i>{{ seciliHedef()?.sandikNo || ('BULK_CRATE_MOVE.CHOOSE_TARGET' | translate) }}</small>
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="saving()" (click)="close()" [attr.aria-label]="'ACTIONS.CANCEL' | translate"><i class="ri-close-line"></i></button>
+  </header>
+  <div class="bulk-body" [attr.aria-busy]="saving()">
+    <p class="bulk-note"><i class="ri-information-line me-2"></i>{{ 'BULK_CRATE_MOVE.ATOMIC_NOTE' | translate }}</p>
+    <label class="form-label fw-semibold" for="bulk-target">{{ 'BULK_CRATE_MOVE.TARGET' | translate }}</label>
+    <select id="bulk-target" class="form-select mb-3" [ngModel]="hedefSandikId()" (ngModelChange)="hedefSandikId.set(+$event)" [disabled]="saving()">
+      <option [ngValue]="0">{{ 'BULK_CRATE_MOVE.CHOOSE_TARGET' | translate }}</option>
+      @for (hedef of hedefSandiklar(); track hedef.id) {
+        <option [ngValue]="hedef.id">{{ hedef.sandikNo }}{{ hedef.ad ? ' · ' + hedef.ad : '' }}</option>
+      }
+    </select>
+    @if (!hedefSandiklar().length) {
+      <p class="text-warning">{{ 'BULK_CRATE_MOVE.NO_TARGET' | translate }}</p>
+    }
+    <div class="table-responsive bulk-preview">
+      <table class="table align-middle mb-0">
+        <thead><tr>
+          <th>{{ 'LABELS.URUN' | translate }}</th>
+          <th class="text-end">{{ 'BULK_CRATE_MOVE.ALLOCATION' | translate }}</th>
+          <th>{{ 'BULK_CRATE_MOVE.MOVE_AMOUNT' | translate }}</th>
+          <th class="text-end">{{ 'BULK_CRATE_MOVE.PHYSICAL' | translate }}</th>
+        </tr></thead>
+        <tbody>
+          @for (urun of urunler(); track urun.id) {
+            <tr>
+              <td class="product"><strong>{{ urun.aciklama || urun.isim }}</strong><small class="d-block text-muted">{{ urun.barkodNo || '-' }} · #{{ urun.id }}</small></td>
+              <td class="text-end">{{ format(tahsis(urun)) }}<small class="d-block text-muted">{{ urun.birimMetni }}</small></td>
+              <td class="amount">
+                <input type="number" class="form-control" min="0.0001" step="0.0001" [max]="tahsis(urun)" [ngModel]="miktarlar()[urun.id]" (ngModelChange)="miktarDegistir(urun.id, $event)" [disabled]="saving()" [attr.aria-label]="('BULK_CRATE_MOVE.MOVE_AMOUNT' | translate) + ' #' + urun.id" />
+                <button type="button" class="btn btn-link btn-sm px-0" [disabled]="saving()" (click)="miktarDegistir(urun.id, tahsis(urun))">{{ 'BULK_CRATE_MOVE.ALL' | translate }}</button>
+              </td>
+              <td class="text-end">{{ format(fiziksel(urun)) }}<small class="d-block text-muted">{{ urun.birimMetni }}</small></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <small class="d-block text-muted mt-3">{{ 'BULK_CRATE_MOVE.PHYSICAL_NOTE' | translate }}</small>
+    @if (error()) { <div role="alert" class="alert alert-danger mt-3 mb-0">{{ error() }}</div> }
+  </div>
+  <footer>
+    <span class="text-muted me-auto">{{ urunler().length }} {{ 'BULK_CRATE_MOVE.SELECTED' | translate }}</span>
+    <button type="button" class="btn btn-outline-secondary" [disabled]="saving()" (click)="close()">{{ 'ACTIONS.CANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary" [disabled]="saving() || !canWrite() || !seciliHedef()" (click)="submit()">
+      @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+      {{ (saving() ? 'BULK_CRATE_MOVE.MOVING' : 'BULK_CRATE_MOVE.CONFIRM') | translate }}
+    </button>
+  </footer>
+</section>

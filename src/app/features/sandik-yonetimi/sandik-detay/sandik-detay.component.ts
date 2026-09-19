@@ -1,5 +1,6 @@
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, signal, computed, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -13,6 +14,7 @@ import { StatusBadgeComponent } from '../../../shared/components/status-badge/st
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { EksikUrunForSandikDto, SandikDetayDto, SandikIcerikDto, SandikDto } from '../../../shared/models/index';
 import { Birim } from '../../../core/constants/enums';
+import { SandikTopluTasiComponent } from './sandik-toplu-tasi.component';
 
 import { ConfirmService } from '../../../core/services/confirm.service';
 import { firstValueFrom } from 'rxjs';
@@ -20,7 +22,7 @@ import { firstValueFrom } from 'rxjs';
 @Component({
   selector: 'app-sandik-detay',
   standalone: true,
-  imports: [TranslatePipe, NgClass, FormsModule, StatusBadgeComponent, BreadcrumbComponent],
+  imports: [TranslatePipe, NgClass, FormsModule, StatusBadgeComponent, BreadcrumbComponent, SandikTopluTasiComponent],
   templateUrl: './sandik-detay.component.html',
   styleUrl: './sandik-detay.component.scss',
 })
@@ -33,6 +35,9 @@ export class SandikDetayComponent implements OnInit {
   private auth = inject(AuthService);
   private permissionService = inject(PermissionService);
   private confirmService = inject(ConfirmService);
+  private readonly destroyRef = inject(DestroyRef);
+  private sandikLoadVersion = 0;
+  private hedefLoadVersion = 0;
 
   projeId = signal(0);
   sandikId = signal(0);
@@ -81,6 +86,14 @@ export class SandikDetayComponent implements OnInit {
   tasiIslemAnahtari = signal('');
   tasiSaving = signal(false);
   projeSandiklari = signal<SandikDto[]>([]);
+  seciliTasimaIcerikleri = signal<Set<number>>(new Set());
+  showTopluTasiModal = signal(false);
+  tasinabilirIcerikler = computed(() =>
+    (this.sandik()?.icerikler ?? []).filter(item => this.getSandikMiktari(item) > 0));
+  topluTasimaUrunleri = computed(() =>
+    this.tasinabilirIcerikler().filter(item => this.seciliTasimaIcerikleri().has(item.id)));
+  tumTasimaIcerikleriSecili = computed(() => this.tasinabilirIcerikler().length > 0 &&
+    this.tasinabilirIcerikler().every(item => this.seciliTasimaIcerikleri().has(item.id)));
 
   // Konulma güncelleme
   guncelKonulanAdet = signal(0);
@@ -256,11 +269,15 @@ export class SandikDetayComponent implements OnInit {
   }
 
   loadSandik() {
+    const version = ++this.sandikLoadVersion;
     this.loading.set(true);
-    this.sandikService.getSandikIcerik(this.sandikId()).subscribe((res) => {
+    this.sandikService.getSandikIcerik(this.sandikId()).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((res) => {
+      if (version !== this.sandikLoadVersion) return;
       this.loading.set(false);
       if (res.isSuccess && res.value) {
         this.sandik.set(res.value);
+        const mevcutIdler = new Set(res.value.icerikler.map(item => item.id));
+        this.seciliTasimaIcerikleri.update(ids => new Set([...ids].filter(id => mevcutIdler.has(id))));
         
         let parentLabel = this.ts.translate('MENU.SANDIK_YONETIMI');
         let parentLink = `/sandik-yonetimi/${this.projeId()}`;
@@ -294,7 +311,9 @@ export class SandikDetayComponent implements OnInit {
   }
 
   loadProjeSandiklari() {
-    this.sandikService.getSandiklar(this.projeId()).subscribe((res) => {
+    const version = ++this.hedefLoadVersion;
+    this.sandikService.getSandiklar(this.projeId()).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((res) => {
+      if (version !== this.hedefLoadVersion) return;
       if (res.isSuccess && res.value) {
         // Mevcut sandığı hariç tut
         this.projeSandiklari.set(res.value.filter(s => s.id !== this.sandikId() && !this.isSandikDtoTasimayaKilitli(s)));
@@ -651,6 +670,50 @@ export class SandikDetayComponent implements OnInit {
   }
 
   // ===== Ürün Taşıma =====
+
+  tasimaSeciminiDegistir(item: SandikIcerikDto): void {
+    if (!this.canWriteSandik() || this.isSandikTasimayaKilitli() || this.getSandikMiktari(item) <= 0) return;
+    const ids = new Set(this.seciliTasimaIcerikleri());
+    if (ids.has(item.id)) ids.delete(item.id);
+    else if (ids.size < 250) ids.add(item.id);
+    else {
+      this.toast.error(this.ts.translate('BULK_CRATE_MOVE.LIMIT'));
+      return;
+    }
+    this.seciliTasimaIcerikleri.set(ids);
+  }
+
+  tasimaSeciminiTemizle(): void {
+    this.seciliTasimaIcerikleri.set(new Set());
+  }
+
+  tumTasimaSeciminiDegistir(): void {
+    if (!this.canWriteSandik() || this.isSandikTasimayaKilitli()) return;
+    if (this.tumTasimaIcerikleriSecili()) {
+      this.seciliTasimaIcerikleri.set(new Set());
+      return;
+    }
+    if (this.tasinabilirIcerikler().length > 250) {
+      this.toast.error(this.ts.translate('BULK_CRATE_MOVE.LIMIT'));
+      return;
+    }
+    this.seciliTasimaIcerikleri.set(new Set(this.tasinabilirIcerikler().map(item => item.id)));
+  }
+
+  openTopluTasiModal(): void {
+    if (!this.ensureCanWriteSandik() || this.isSandikTasimayaKilitli() || !this.topluTasimaUrunleri().length) return;
+    this.closePanel();
+    this.loadProjeSandiklari();
+    this.showTopluTasiModal.set(true);
+  }
+
+  topluTasimaTamamlandi(): void {
+    this.showTopluTasiModal.set(false);
+    this.seciliTasimaIcerikleri.set(new Set());
+    this.toast.success(this.ts.translate('BULK_CRATE_MOVE.SUCCESS'));
+    this.loadSandik();
+    this.loadProjeSandiklari();
+  }
 
   openTasiModal(item: SandikIcerikDto) {
     if (!this.ensureCanWriteSandik()) return;

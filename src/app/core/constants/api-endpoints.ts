@@ -155,6 +155,9 @@ export const API = {
       `${BASE}/dashboard/projeler/${projeId}/sandiklar?durumId=${durumId}&page=${page}&pageSize=${pageSize}${searchTerm.trim() ? `&searchTerm=${encodeURIComponent(searchTerm.trim())}` : ''}`,
   },
   CEKI: {
+    REVIZYON_GECMISI: (projeId: number) => `${BASE}/ceki/revizyon-gecmisi/${projeId}`,
+    REVIZYON_DETAY: (projeId: number, kaynak: 'talep' | 'ceki', kayitId: number) => `${BASE}/ceki/revizyon-gecmisi/${projeId}/${kaynak}/${kayitId}`,
+    REVIZYON_DOSYA: (projeId: number, kaynak: 'talep' | 'ceki', kayitId: number) => `${BASE}/ceki/revizyon-gecmisi/${projeId}/${kaynak}/${kayitId}/dosya`,
     YUKLE: `${BASE}/ceki/yukle`,
     YEDEK_YUKLE: `${BASE}/ceki/yedek-yukle`,
     REVIZYON_ONIZLE: `${BASE}/ceki/revizyon-onizle`,
@@ -181,6 +184,7 @@ export const API = {
     TOPLU_KAPAT: `${BASE}/sandik/toplu-kapat`,
     LOKASYON_GUNCELLE: `${BASE}/sandik/lokasyon-guncelle`,
     URUN_TASI: `${BASE}/sandik/urun-tasi`,
+    URUNLERI_TOPLU_TASI: `${BASE}/sandik/urunleri-toplu-tasi`,
     SAHA_YEDEK_MALZEME_EKLE: `${BASE}/sandik/saha-yedek-malzeme-ekle`,
     SEVK_ET: `${BASE}/sandik/sevk-et`,
     KILIDI_AC: `${BASE}/sandik/kilidi-ac`,

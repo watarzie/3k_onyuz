@@ -1,0 +1,38 @@
+<div class="history-backdrop" (click)="closed.emit()">
+  <section class="history-dialog" role="dialog" aria-modal="true" aria-labelledby="revision-history-title" (click)="$event.stopPropagation()">
+    <header>
+      <div><h5 id="revision-history-title"><i class="ri-history-line me-2"></i>{{ 'REV_HISTORY.TITLE' | translate }}</h5><span class="text-secondary">{{ projeNo() }}</span></div>
+      <button class="btn btn-sm btn-light" type="button" (click)="closed.emit()" [attr.aria-label]="'REV_HISTORY.CLOSE' | translate"><i class="ri-close-line"></i></button>
+    </header>
+    <div class="history-body">
+      @if (error()) { <div class="alert alert-danger" role="alert">{{ error() }}</div> }
+      @if (loading()) { <div class="p-4 text-center"><span class="spinner-border spinner-border-sm"></span> {{ 'REV_HISTORY.LOADING' | translate }}</div> }
+      @else {
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead><tr><th>{{ 'REV_HISTORY.FILE' | translate }}</th><th>{{ 'REV_HISTORY.UPLOADED' | translate }}</th><th>{{ 'REV_HISTORY.STATUS' | translate }}</th><th>{{ 'REV_HISTORY.DECISION' | translate }}</th><th>{{ 'REV_HISTORY.CHANGES' | translate }}</th><th></th></tr></thead>
+            <tbody>
+              @for (row of rows(); track row.kaynak + row.kayitId) {
+                <tr>
+                  <td class="file-name"><strong>{{ row.dosyaAdi }}</strong><small>{{ row.kaynak === 'talep' ? ('REV_HISTORY.REQUEST' | translate) : ('REV_HISTORY.REVISION' | translate) }} #{{ row.kayitId }} @if (row.revizyonCekiId) { · {{ 'REV_HISTORY.REVISION' | translate }} #{{ row.revizyonCekiId }} }</small></td>
+                  <td>{{ row.yuklemeTarihi | date:'dd.MM.yyyy HH:mm' }}<small>{{ row.yukleyen || '—' }}</small></td>
+                  <td><span class="badge bg-light text-primary">{{ ('REV_HISTORY.STATE_' + row.durum) | translate }}</span><small>{{ row.uygulamaTarihi | date:'dd.MM.yyyy HH:mm' }}</small></td>
+                  <td>{{ row.onaylayan || '—' }}<small>{{ row.kararTarihi | date:'dd.MM.yyyy HH:mm' }}</small></td>
+                  <td class="text-nowrap"><span class="text-success">+{{ row.eklenenSatirSayisi ?? '—' }}</span> / {{ row.guncellenenSatirSayisi ?? '—' }} / <span class="text-danger">−{{ row.silinenSatirSayisi ?? '—' }}</span></td>
+                  <td><div class="d-flex gap-2"><button type="button" class="btn btn-sm btn-outline-primary" (click)="openDetail(row)" [disabled]="detailLoading()">{{ 'REV_HISTORY.DETAIL' | translate }}</button><button type="button" class="btn btn-sm btn-outline-secondary" (click)="download(row)" [disabled]="!row.dosyaMevcut || downloading()" [title]="(row.dosyaMevcut ? 'REV_HISTORY.DOWNLOAD' : 'REV_HISTORY.NO_FILE') | translate"><i class="ri-download-line"></i></button></div></td>
+                </tr>
+              } @empty { <tr><td colspan="6" class="p-4 text-center text-secondary">{{ 'REV_HISTORY.EMPTY' | translate }}</td></tr> }
+            </tbody>
+          </table>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-3"><small>{{ total() }} {{ 'REV_HISTORY.RECORDS' | translate }}</small><div class="d-flex gap-2"><button class="btn btn-sm btn-outline-secondary" [disabled]="page() <= 1" (click)="load(projeId(), page() - 1)">‹</button><span>{{ page() }} / {{ pages() || 1 }}</span><button class="btn btn-sm btn-outline-secondary" [disabled]="page() >= pages()" (click)="load(projeId(), page() + 1)">›</button></div></div>
+      }
+      @if (detailLoading()) { <div class="p-3 text-center"><span class="spinner-border spinner-border-sm"></span></div> }
+      @if (detail(); as selected) {
+        <div class="alert alert-info">{{ 'REV_HISTORY.SNAPSHOT_NOTE' | translate }} @if (selected.kayit.bilgi) { <div>{{ selected.kayit.bilgi }}</div> }</div>
+        @if (selected.onizleme; as preview) { <app-ceki-revizyon-onizleme [preview]="preview" [baslik]="'REV_HISTORY.SNAPSHOT' | translate" /> }
+        @else { <p class="text-secondary">{{ 'REV_HISTORY.NO_DETAIL' | translate }}</p> }
+      }
+    </div>
+  </section>
+</div>

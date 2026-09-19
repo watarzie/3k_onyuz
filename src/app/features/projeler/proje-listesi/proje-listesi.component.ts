@@ -1,5 +1,6 @@
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
-import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy, HostListener } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy, HostListener, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { FormsModule } from '@angular/forms';
@@ -12,6 +13,7 @@ import { PermissionService } from '../../../core/services/permission.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { CekiRevizyonOnizlemeComponent } from '../../../shared/components/ceki-revizyon-onizleme/ceki-revizyon-onizleme.component';
+import { CekiRevizyonGecmisiComponent } from '../../../shared/components/ceki-revizyon-gecmisi/ceki-revizyon-gecmisi.component';
 import {
   CekiRevizyonOnizlemeSonuc,
   CekiRevizyonOnayKuyruguYaniti,
@@ -44,7 +46,7 @@ interface RevisionIssueViewModel {
 @Component({
   selector: 'app-proje-listesi',
   standalone: true,
-  imports: [TranslatePipe, RouterLink, NgClass, StatusBadgeComponent, BreadcrumbComponent, CekiRevizyonOnizlemeComponent, FormsModule, DatePipe],
+  imports: [TranslatePipe, RouterLink, NgClass, StatusBadgeComponent, BreadcrumbComponent, CekiRevizyonOnizlemeComponent, CekiRevizyonGecmisiComponent, FormsModule, DatePipe],
   templateUrl: './proje-listesi.component.html',
   styleUrl: './proje-listesi.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -60,6 +62,8 @@ export class ProjeListesiComponent implements OnInit {
   private router = inject(Router);
   private pdfService = inject(PdfService);
   private readonly sandikNoCollator = new Intl.Collator('tr', { numeric: true, sensitivity: 'base' });
+  private readonly destroyRef = inject(DestroyRef);
+  private projeListeIstekSurumu = 0;
 
   isSandikYonetimi = signal(false);
   isSevkEdilen = signal(false);
@@ -85,6 +89,7 @@ export class ProjeListesiComponent implements OnInit {
   bulkEksikRaporMenuPosition = signal<{ top: number; left: number } | null>(null);
   bulkEksikRaporDownloading = signal<'pdf' | 'excel' | null>(null);
   selectedEksikRaporProjeIds = signal<Set<number>>(new Set());
+  revizyonGecmisiProje = signal<ProjeDto | null>(null);
 
   /**
    * Grid/3K buton gösterimi — Rol Yetki ekranından yönetilir.
@@ -93,7 +98,11 @@ export class ProjeListesiComponent implements OnInit {
   canSeeGrid = computed(() => this.permissions.hasAccess('grid-modulu'));
   canSee3K = computed(() => this.permissions.hasAccess('3k-modulu'));
   canSeeEksikRapor = computed(() => this.permissions.hasAccess('eksik-raporu'));
-  canUseBulkEksikRapor = computed(() => this.isSandikYonetimi() && this.canSeeEksikRapor());
+  canUseBulkEksikRapor = computed(() =>
+    (this.isSandikYonetimi() && this.canSeeEksikRapor()) ||
+    (this.isSahaYonetimi() && this.canSeeSahaSevkSonrasiEksikRapor()) ||
+    (this.isYedekYonetimi() && this.canSeeYedekEksikRapor())
+  );
   canSeeGerceklesenRapor = computed(() => this.permissions.hasAccess('gerceklesen-ceki-raporu'));
   canSee3KIsListesi = computed(() => this.isSandikYonetimi() && this.permissions.hasAccess('3k-is-listesi'));
   canSeeGridIsListesi = computed(() => this.isSandikYonetimi() && this.permissions.hasAccess('grid-is-listesi'));
@@ -155,6 +164,7 @@ export class ProjeListesiComponent implements OnInit {
       this.canUpdatePlanlananSevkTarihiCurrent() || this.canDeleteProjectCurrent())
   );
   hasActionColumn = computed(() =>
+    this.projeler().some(proje => this.canSeeRevizyonGecmisi(proje)) ||
     this.hasSandikYonetimiActions() ||
     this.hasSahaYonetimiActions() ||
     this.hasYedekYonetimiActions() ||
@@ -384,6 +394,7 @@ export class ProjeListesiComponent implements OnInit {
   showProjeTipiFilter = computed(() => this.isAktifProjeler() || this.isSevkEdilen());
 
   loadProjeler() {
+    const istekSurumu = ++this.projeListeIstekSurumu;
     this.clearBulkEksikRaporSelection();
     this.loading.set(true);
 
@@ -412,12 +423,18 @@ export class ProjeListesiComponent implements OnInit {
       projeTipiId,
       this.searchTerm() || undefined,
       isSevkEdilen
-    ).subscribe(res => {
+    ).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(res => {
+      if (istekSurumu !== this.projeListeIstekSurumu) return;
       this.loading.set(false);
       if (res.isSuccess && res.value) {
         this.projeler.set(res.value.items);
         this.totalCount.set(res.value.totalCount);
         this.totalPages.set(res.value.totalPages);
+      } else {
+        this.projeler.set([]);
+        this.totalCount.set(0);
+        this.totalPages.set(0);
+        this.toastService.error(res.error || 'Proje listesi alınamadı.');
       }
     });
   }
@@ -510,6 +527,7 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   shouldShowActions(p: ProjeDto): boolean {
+    if (this.canSeeRevizyonGecmisi(p)) return true;
     if (this.isSahaYonetimi()) return this.hasSahaYonetimiActions();
     if (this.isYedekYonetimi()) return this.hasYedekYonetimiActions();
     if (this.isSandikYonetimi()) return this.hasSandikYonetimiActions();
@@ -519,6 +537,13 @@ export class ProjeListesiComponent implements OnInit {
       (!this.isSandikMode() && this.canSevkEt()) ||
       (!this.isSandikMode() && this.canUpdatePlanlananSevkTarihiCurrent()) ||
       this.canDeleteProjectCurrent();
+  }
+
+  canSeeRevizyonGecmisi(proje: ProjeDto): boolean {
+    const menu = proje.projeTipiId === 2 ? 'saha-yonetimi'
+      : proje.projeTipiId === 3 ? 'yedek-yonetimi' : 'sandik-yonetimi';
+    return this.permissions.hasAccess(menu) || this.permissions.hasAccess('ceki-revizyon-yukle') ||
+      this.permissions.hasAccess('sevk-edilen');
   }
 
   canShowGerceklesenRapor(p: ProjeDto): boolean {
@@ -617,8 +642,8 @@ export class ProjeListesiComponent implements OnInit {
     this.bulkEksikRaporMenuPosition.set(null);
     this.bulkEksikRaporDownloading.set(format);
     const request$ = format === 'pdf'
-      ? this.pdfService.topluEksikUrunlerPdf(projeIds)
-      : this.pdfService.topluEksikUrunlerExcel(projeIds);
+      ? this.pdfService.topluEksikUrunlerPdf(projeIds, this.isSahaYonetimi() ? 2 : this.isYedekYonetimi() ? 3 : 1)
+      : this.pdfService.topluEksikUrunlerExcel(projeIds, this.isSahaYonetimi() ? 2 : this.isYedekYonetimi() ? 3 : 1);
 
     request$.subscribe({
       next: (blob) => {
@@ -626,9 +651,9 @@ export class ProjeListesiComponent implements OnInit {
         this.downloadBlobFile(blob, `Toplu_Eksik_Raporlari_${this.todayFileStamp()}.zip`);
         this.toastService.success(`${projeIds.length} projenin eksik raporu ZIP olarak indirildi.`);
       },
-      error: () => {
+      error: async (error: unknown) => {
         this.bulkEksikRaporDownloading.set(null);
-        this.toastService.error('Toplu eksik raporu indirilirken bir hata oluştu.');
+        this.toastService.error(await this.pdfService.downloadErrorMessage(error, 'Toplu eksik raporu indirilirken bir hata oluştu.'));
       },
     });
   }
