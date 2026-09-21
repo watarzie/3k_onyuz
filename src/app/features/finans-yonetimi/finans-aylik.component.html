@@ -1,4 +1,5 @@
-<div class="page-title-area mb-4">
+@if (permissions.hasAccess(izin.Modul)) {
+<div class="page-title-area finance-page-title mb-4">
   <div>
     <h2 class="fw-bold mb-1">Finans ve Sipariş Takibi</h2>
     <app-breadcrumb [items]="breadcrumb" />
@@ -7,22 +8,42 @@
 
 <section class="finance-shell">
   <nav class="main-tabs" aria-label="Finans bölümleri">
-    <button type="button" [class.active]="activeTab() === 'akis'" (click)="selectTab('akis')">
-      <i class="ri-calendar-check-line"></i>Finans İş Takibi
+    <button type="button" [class.active]="activeTab() === 'panel'" (click)="selectTab('panel')"><i class="ri-dashboard-line" aria-hidden="true"></i>Kontrol Paneli</button>
+    <button *appCanAccess="[izin.KayitGoruntule]" type="button" [class.active]="activeTab() === 'akis'" (click)="selectTab('akis')">
+      <i class="ri-calendar-check-line" aria-hidden="true"></i>Finans İş Takibi
     </button>
     <button
       type="button"
+      *appCanAccess="[izin.GiderGoruntule]"
       [class.active]="activeTab() === 'giderler'"
       (click)="selectTab('giderler')"
     >
-      <i class="ri-wallet-3-line"></i>Giderler
+      <i class="ri-wallet-3-line" aria-hidden="true"></i>Giderler
     </button>
+    @if (ayarOkuyabilir('duzenli') || ayarOkuyabilir('tarifeler')) {
     <button type="button" [class.active]="activeTab() === 'ayarlar'" (click)="selectTab('ayarlar')">
-      <i class="ri-settings-3-line"></i>İş ve Tarife Tanımları
+      <i class="ri-settings-3-line" aria-hidden="true"></i>İş ve Tarife Tanımları
     </button>
+    }
+    @if (permissions.hasAccess(izin.SiparisOperasyonGoruntule)) {<button type="button" [class.active]="activeTab() === 'belgeler'" (click)="selectTab('belgeler')"><i class="ri-file-list-3-line" aria-hidden="true"></i>PO ve Faturalar</button>}
+    @if (permissions.canWrite(izin.SablonYonet)) {<button type="button" [class.active]="activeTab() === 'sablonlar'" (click)="selectTab('sablonlar')"><i class="ri-layout-grid-line" aria-hidden="true"></i>İş Şablonları</button>}
+    @if (permissions.hasAccess(izin.RaporGoruntule)) {<button type="button" [class.active]="activeTab() === 'raporlar'" (click)="selectTab('raporlar')"><i class="ri-file-chart-line" aria-hidden="true"></i>Raporlar</button>}
+    @if (permissions.canWrite(izin.GiderKutuphanesiYonet)) {<button type="button" [class.active]="activeTab() === 'kategoriler'" (click)="selectTab('kategoriler')"><i class="ri-folder-settings-line" aria-hidden="true"></i>Gider Kategorileri</button>}
   </nav>
 
-  @if (activeTab() === 'akis') {
+  @if (activeTab() === 'panel') {<app-finans-panel (kayitAc)="detayHedef.set($event)" (siparisAc)="topluSiparisAc($event)" />}
+  @if (activeTab() === 'belgeler' && permissions.hasAccess(izin.SiparisOperasyonGoruntule)) {<app-finans-belgeler-listesi (detayAc)="detayHedef.set($event)" (faturaAc)="faturaAc($event)" />}
+  @if (activeTab() === 'sablonlar' && permissions.canWrite(izin.SablonYonet)) {<app-finans-sablonlar />}
+  @if (activeTab() === 'raporlar' && permissions.hasAccess(izin.RaporGoruntule)) {<app-finans-raporlar />}
+  @if (activeTab() === 'kategoriler' && permissions.canWrite(izin.GiderKutuphanesiYonet)) {<app-finans-kategoriler (degisti)="kategorileriYenile()" />}
+
+  @if (activeTab() === 'akis' && permissions.hasAccess(izin.KayitGoruntule)) {
+    <div class="finance-workspace monthly-workspace">
+    <div class="workspace-heading">
+      <span class="workspace-icon"><i class="ri-calendar-check-line" aria-hidden="true"></i></span>
+      <div><h3>Finans İş Takibi</h3><p>{{ donemBasligi() }}</p></div>
+    </div>
+    <div class="finance-surface monthly-overview">
     <header class="monthly-toolbar">
       <div class="month-selector">
         <button type="button" title="Önceki ay" (click)="donemDegistir(-1)">
@@ -44,10 +65,10 @@
             (ngModelChange)="iptalEdilenleriDegisti($event)"
           /><span>İptal edilenler</span></label
         >
-        <button type="button" class="btn btn-outline-primary" (click)="raporFormunuAc()">
+        <button *appCanAccess="[izin.RaporGoruntule]" type="button" class="btn btn-outline-primary" (click)="raporFormunuAc()">
           <i class="ri-file-chart-line"></i>Rapor
         </button>
-        <button type="button" class="btn btn-primary" (click)="yeniOzelIs()">
+        <button *appCanWrite="izin.ManuelIsEkle" type="button" class="btn btn-primary" (click)="yeniOzelIs()">
           <i class="ri-add-line"></i>Tek Seferlik İş
         </button>
       </div>
@@ -56,36 +77,38 @@
     <div class="summary-toolbar">
       <div><strong>Aylık finans özeti</strong><span>{{ aylikTotalCount() }} aktif iş</span></div>
       <label
-        ><i class="ri-search-2-line"></i
+        ><i class="ri-search-2-line" aria-hidden="true"></i
         ><input
           type="search"
           placeholder="İş veya proje ara"
+          aria-label="İş veya proje ara"
           [ngModel]="arama()"
           (ngModelChange)="aylikAramaDegisti($event)"
       /></label>
     </div>
     <div class="table-responsive finance-summary-wrap">
       <table class="table finance-summary mb-0">
-        <thead><tr><th>Para</th><th>Toplam Gelmesi Gereken</th><th>Siparişi Açılan</th><th>Siparişi Açılmayan</th><th>Faturalanan</th><th>Fatura Bekleyen</th><th>Gider</th><th>Net Gerçekleşen</th></tr></thead>
+        <thead><tr><th>Para</th><th *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">Toplam Gelmesi Gereken</th><th *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">Siparişi Açılan</th><th *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">Siparişi Açılmayan</th><th *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">Faturalanan</th><th *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">Fatura Bekleyen</th><th *appCanAccess="[izin.ParasalVeriGoruntule, izin.GiderGoruntule]">Gider</th><th *appCanAccess="[izin.ParasalVeriGoruntule, izin.KarlilikGoruntule]">Net Gerçekleşen</th></tr></thead>
         <tbody>
           @for (ozet of finansOzeti(); track ozet.paraBirimi) {
             <tr>
               <td><strong>{{ ozet.paraBirimi }}</strong></td>
-              <td>{{ ozet.toplam | number: '1.2-2' }}</td>
-              <td>{{ ozet.siparisAcik | number: '1.2-2' }}</td>
-              <td [class.attention-value]="ozet.siparisBekleyen > 0">{{ ozet.siparisBekleyen | number: '1.2-2' }}</td>
-              <td>{{ ozet.faturalanan | number: '1.2-2' }}</td>
-              <td [class.attention-value]="ozet.faturaBekleyen > 0">{{ ozet.faturaBekleyen | number: '1.2-2' }}</td>
-              <td>{{ ozet.gider | number: '1.2-2' }}</td>
-              <td [class.negative-value]="ozet.net < 0" [class.positive-value]="ozet.net > 0"><strong>{{ ozet.net | number: '1.2-2' }}</strong></td>
+              <td *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">{{ ozet.toplam | number: '1.2-2' }}</td>
+              <td *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">{{ ozet.siparisAcik | number: '1.2-2' }}</td>
+              <td *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]" [class.attention-value]="ozet.siparisBekleyen > 0">{{ ozet.siparisBekleyen | number: '1.2-2' }}</td>
+              <td *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">{{ ozet.faturalanan | number: '1.2-2' }}</td>
+              <td *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]" [class.attention-value]="ozet.faturaBekleyen > 0">{{ ozet.faturaBekleyen | number: '1.2-2' }}</td>
+              <td *appCanAccess="[izin.ParasalVeriGoruntule, izin.GiderGoruntule]">{{ ozet.gider | number: '1.2-2' }}</td>
+              <td *appCanAccess="[izin.ParasalVeriGoruntule, izin.KarlilikGoruntule]" [class.negative-value]="ozet.net < 0" [class.positive-value]="ozet.net > 0"><strong>{{ ozet.net | number: '1.2-2' }}</strong></td>
             </tr>
           }
         </tbody>
       </table>
     </div>
 
+    </div>
     @if (aylikLoading()) {
-      <div class="state">
+      <div class="state" role="status">
         <span class="spinner-border spinner-border-sm text-primary"></span> Aylık işler
         hazırlanıyor...
       </div>
@@ -104,11 +127,11 @@
                   [class]="grupAcik(grup.ad) ? 'ri-arrow-down-s-line' : 'ri-arrow-right-s-line'"
                 ></i
                 ><strong>{{ grup.ad }}</strong
-                ><em>{{ grup.satirlar.length }} iş</em></span
+                ><em>Bu sayfada {{ grup.satirlar.length }} iş</em></span
               >
-              <span class="group-totals"
+              <span class="group-totals" *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]"
                 ><b>{{ grup.eur | number: '1.2-2' }} EUR</b
-                ><b>{{ grup.try | number: '1.2-2' }} TRY</b></span
+                ><b>{{ grup.usd | number: '1.2-2' }} USD</b><b>{{ grup.try | number: '1.2-2' }} TRY</b></span
               >
             </button>
             @if (grupAcik(grup.ad)) {
@@ -119,10 +142,10 @@
                       <th>İş / Proje</th>
                       <th>Tarih</th>
                       <th>Miktar / Birim</th>
-                      <th>Tarife</th>
-                      <th>Net</th>
-                      <th>KDV</th>
-                      <th>Toplam</th>
+                      <th *appCanAccess="[izin.ParasalVeriGoruntule, izin.BirimFiyatGoruntule]">Tarife</th>
+                      <th *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">Net</th>
+                      <th *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">KDV</th>
+                      <th *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">Toplam</th>
                       <th>PO / Fatura</th>
                       <th>Durum</th>
                       <th>İşlem</th>
@@ -140,20 +163,14 @@
                       <tr
                         [class.cancelled]="satir.iptalEdildi"
                         [class.completed-row]="satirDurumu(satir) === 'Tamamlandı' && !satir.iptalEdildi"
-                        [class.project-row]="satir.isTuru === 1"
-                        [class.expanded]="projeAcik(satir.projeBirimAnahtari)"
-                        (click)="projeDegistir(satir, $event)"
                       >
                         <td>
                           <div class="work-name">
                             <strong>
-                              @if (satir.isTuru === 1) {
-                                <i [class]="projeAcik(satir.projeBirimAnahtari) ? 'ri-arrow-down-s-line' : 'ri-arrow-right-s-line'"></i>
-                              }
                               {{ satir.projeNo || satir.isAdi }}</strong
                             ><small>{{ satir.projeNo ? satir.isAdi : satir.kaynakTuru }}@if (satir.musteri) { · {{ satir.musteri }} }</small>
                             @if (satir.sandikTipi) {
-                              <small><strong>{{ satir.sandikTipi }}</strong>@if (satir.sandikTipi === 'Katlanır Sandık') { · {{ satir.boy }} × {{ satir.en }} × {{ satir.yukseklik }} mm }</small>
+                              <small><strong>{{ satir.sandikTipi }}</strong>@if (satir.sandikTipi === 'Katlanır Sandık' && permissions.hasAccess(alanIzni.OlcuGoruntule)) { · {{ satir.boy }} × {{ satir.en }} × {{ satir.yukseklik }} mm }</small>
                             }
                             @if (satir.isGrubu === 'Ana Ambalaj' && satir.sandikAdedi) {
                               <small>{{ satir.sandikAdedi }} sandık</small>
@@ -169,17 +186,17 @@
                           </div>
                         </td>
                         <td>
-                          <strong>{{ satir.miktar | number: '1.0-3' }}</strong> {{ satir.birim }}
+                          @if (miktarGorebilir(satir.birim, satir.isTuru)) {<strong>{{ satir.miktar | number: '1.0-3' }}</strong> {{ satir.birim }} }
                         </td>
-                        <td>{{ satir.birimFiyat | number: '1.2-4' }} {{ satir.paraBirimi }}</td>
-                        <td>{{ satir.netTutar | number: '1.2-2' }} {{ satir.paraBirimi }}</td>
-                        <td>
+                        <td *appCanAccess="[izin.ParasalVeriGoruntule, izin.BirimFiyatGoruntule]">{{ satir.birimFiyat | number: '1.2-4' }} {{ satir.paraBirimi }}</td>
+                        <td *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">{{ satir.netTutar | number: '1.2-2' }} {{ satir.paraBirimi }}</td>
+                        <td *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">
                           <span>%{{ satir.kdvOrani }}</span
                           ><small class="money-note"
                             >{{ satir.kdvTutari | number: '1.2-2' }} {{ satir.paraBirimi }}</small
                           >
                         </td>
-                        <td>
+                        <td *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">
                           <strong
                             >{{ satir.toplamTutar | number: '1.2-2' }}
                             {{ satir.paraBirimi }}</strong
@@ -201,7 +218,7 @@
                             >{{ satir.iptalEdildi ? 'İptal' : satirDurumu(satir) }}</span
                           >
                           @if (satir.isTuru === 1 && !satir.iptalEdildi) {
-                            <small class="money-note">Proje geneli</small>
+                            <small class="money-note">İş durumu</small>
                           }
                           @if (satir.iptalAciklamasi) {
                             <small class="cancel-reason">{{ satir.iptalAciklamasi }}</small>
@@ -211,9 +228,9 @@
                           <div class="row-actions">
                             @if (
                               (satir.miktarDuzenlenebilir || satir.tutarDuzenlenebilir) &&
-                              !satir.iptalEdildi
+                              !satir.iptalEdildi && aylikDegerDuzenlenebilir(satir)
                             ) {
-                              <button
+                              <button *appCanWrite="izin.FiyatlandirmaDegistir"
                                 type="button"
                                 title="Aylık değeri düzenle"
                                 (click)="aylikDegerDuzenle(satir)"
@@ -226,7 +243,7 @@
                               satir.isKaydiIds.length &&
                               !satir.poNumaralari.length
                             ) {
-                              <button
+                              <button *appCanWrite="izin.PoGir"
                                 type="button"
                                 title="Sipariş aç"
                                 [disabled]="
@@ -242,17 +259,16 @@
                               satir.poNumaralari.length &&
                               !satir.faturaNumaralari.length
                             ) {
-                              <button
+                              <button *appCanWrite="izin.FaturaGir"
                                 type="button"
                                 title="Faturalandır"
-                                [disabled]="faturalandirilanSiparisId() !== null"
                                 (click)="satiriFaturalandir(satir)"
                               >
                                 <i class="ri-check-double-line"></i>
                               </button>
                             }
                             @if (satir.ozelIsId && !satir.iptalEdildi) {
-                              <button
+                              <button *appCanWrite="izin.IsIptal"
                                 type="button"
                                 class="danger"
                                 title="İptal et"
@@ -262,83 +278,16 @@
                               </button>
                             }
                             @if (satir.ozelIsId && satir.iptalEdildi) {
-                              <button type="button" title="Geri al" (click)="ozelIsGeriAl(satir)">
+                              <button *appCanWrite="izin.ManuelIsDuzenle" type="button" title="Geri al" (click)="ozelIsGeriAl(satir)">
                                 <i class="ri-arrow-go-back-line"></i>
                               </button>
                             }
                           </div>
                         </td>
                       </tr>
-                      @if (satir.isTuru === 1 && projeAcik(satir.projeBirimAnahtari)) {
-                        @for (detay of projeAltKalemleri(satir); track detay.projeBirimAnahtari + '-' + detay.isTuru + '-' + detay.isKaydiIds.join('-')) {
-                          <tr
-                            class="project-detail-row"
-                            [class.cancelled]="detay.iptalEdildi"
-                            [class.completed-row]="detay.durum === 'Tamamlandı' && !detay.iptalEdildi"
-                          >
-                            <td>
-                              <div class="work-name detail-name">
-                                <strong>{{ detay.isGrubu }}</strong>
-                                <small>{{ detay.isAdi }}</small>
-                                @if (detay.sandikTipi) {
-                                  <small><strong>{{ detay.sandikTipi }}</strong>@if (detay.sandikTipi === 'Katlanır Sandık') { · {{ detay.boy }} × {{ detay.en }} × {{ detay.yukseklik }} mm }</small>
-                                }
-                              </div>
-                            </td>
-                            <td>
-                              <div class="date-stack">
-                                <span>{{ detay.uretimBaslangic | date: 'dd.MM.yyyy' }}</span>
-                                @if (detay.uretimBitis && detay.uretimBitis !== detay.uretimBaslangic) {
-                                  <small>{{ detay.uretimBitis | date: 'dd.MM.yyyy' }}</small>
-                                }
-                              </div>
-                            </td>
-                            <td><strong>{{ detay.miktar | number: '1.0-3' }}</strong> {{ detay.birim }}</td>
-                            <td>{{ detay.birimFiyat | number: '1.2-4' }} {{ detay.paraBirimi }}</td>
-                            <td>{{ detay.netTutar | number: '1.2-2' }} {{ detay.paraBirimi }}</td>
-                            <td>
-                              <span>%{{ detay.kdvOrani }}</span>
-                              <small class="money-note">{{ detay.kdvTutari | number: '1.2-2' }} {{ detay.paraBirimi }}</small>
-                            </td>
-                            <td><strong>{{ detay.toplamTutar | number: '1.2-2' }} {{ detay.paraBirimi }}</strong></td>
-                            <td>
-                              <div class="references">
-                                <span><b>PO</b>{{ detay.poNumaralari.join(', ') || '-' }}</span>
-                                <span><b>Fatura</b>{{ detay.faturaNumaralari.join(', ') || '-' }}</span>
-                              </div>
-                            </td>
-                            <td>
-                              <span
-                                class="status"
-                                [class.complete]="detay.durum === 'Tamamlandı' && !detay.iptalEdildi"
-                                [class.cancel-status]="detay.iptalEdildi"
-                              >{{ detay.iptalEdildi ? 'İptal' : detay.durum }}</span>
-                            </td>
-                            <td>
-                              <div class="row-actions">
-                                @if (!detay.iptalEdildi && detay.isKaydiIds.length && !detay.poNumaralari.length) {
-                                  <button type="button" title="Sipariş aç" (click)="siparisFormunuAc(detay)">
-                                    <i class="ri-file-add-line"></i>
-                                  </button>
-                                }
-                                @if (!detay.iptalEdildi && detay.poNumaralari.length && !detay.faturaNumaralari.length) {
-                                  <button type="button" title="Faturalandır" [disabled]="faturalandirilanSiparisId() !== null" (click)="satiriFaturalandir(detay)">
-                                    <i class="ri-check-double-line"></i>
-                                  </button>
-                                }
-                              </div>
-                            </td>
-                          </tr>
-                        }
-                        @if (!projeAltKalemleri(satir).length) {
-                          <tr class="project-detail-row empty-detail">
-                            <td colspan="10">Bu projeye bağlı ilave, iç, saha, yedek veya sarf kereste kaydı yok.</td>
-                          </tr>
-                        }
-                      }
                     } @empty {
                       <tr>
-                        <td colspan="10" class="empty-row">Bu grupta iş bulunmuyor.</td>
+                        <td colspan="10" class="empty-row"><i class="ri-inbox-2-line" aria-hidden="true"></i><span>Bu grupta iş bulunmuyor.</span></td>
                       </tr>
                     }
                   </tbody>
@@ -360,26 +309,32 @@
         (pageSizeChange)="aylikSayfaBoyutuDegisti($event)"
       />
     }
+    </div>
   }
 
-  @if (activeTab() === 'giderler') {
+  @if (activeTab() === 'giderler' && permissions.hasAccess(izin.GiderGoruntule)) {
+    <div class="finance-workspace expenses-workspace">
     <header class="section-toolbar">
-      <div>
+      <div class="workspace-heading">
+        <span class="workspace-icon"><i class="ri-wallet-3-line" aria-hidden="true"></i></span>
+        <div>
         <h3>Giderler</h3>
         <span>{{ giderTotalCount() }} kayıt</span>
+        </div>
       </div>
       <div class="toolbar-actions">
-        <button type="button" class="btn btn-outline-primary" [disabled]="giderRaporIndiriliyor() !== null" (click)="giderRaporuIndir('pdf')">
+        <button *appCanAccess="[izin.PdfAktar]" type="button" class="btn btn-outline-primary" [disabled]="giderRaporIndiriliyor() !== null" (click)="giderRaporuIndir('pdf')">
           <i class="ri-file-pdf-2-line"></i>PDF
         </button>
-        <button type="button" class="btn btn-outline-primary" [disabled]="giderRaporIndiriliyor() !== null" (click)="giderRaporuIndir('excel')">
+        <button *appCanAccess="[izin.ExcelAktar]" type="button" class="btn btn-outline-primary" [disabled]="giderRaporIndiriliyor() !== null" (click)="giderRaporuIndir('excel')">
           <i class="ri-file-excel-2-line"></i>Excel
         </button>
-        <button type="button" class="btn btn-primary" (click)="yeniGider()">
+        <button *appCanWrite="izin.GiderEkle" type="button" class="btn btn-primary" (click)="yeniGider()">
           <i class="ri-add-line"></i>Yeni Gider
         </button>
       </div>
     </header>
+    <div class="finance-surface">
     <div class="settings-search">
       <div>
         <strong>Gider kayıtları</strong>
@@ -387,11 +342,11 @@
       </div>
       <label for="gider-arama">
         <i class="ri-search-2-line"></i>
-        <input id="gider-arama" type="search" placeholder="Kategori, firma veya açıklama ara" [ngModel]="giderArama()" (ngModelChange)="giderAramaDegisti($event)" />
+        <input id="gider-arama" type="search" aria-label="Kategori, firma veya açıklama ara" placeholder="Kategori, firma veya açıklama ara" [ngModel]="giderArama()" (ngModelChange)="giderAramaDegisti($event)" />
       </label>
     </div>
     @if (giderLoading()) {
-      <div class="state"><span class="spinner-border spinner-border-sm text-primary"></span> Giderler yükleniyor...</div>
+      <div class="state" role="status"><span class="spinner-border spinner-border-sm text-primary"></span> Giderler yükleniyor...</div>
     } @else {
       <div class="table-responsive">
       <table class="table align-middle mb-0">
@@ -400,9 +355,9 @@
             <th>Tarih</th>
             <th>Kategori</th>
             <th>Açıklama</th>
-            <th>Matrah</th>
-            <th>KDV</th>
-            <th>Toplam</th>
+            <th *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">Matrah</th>
+            <th *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">KDV</th>
+            <th *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">Toplam</th>
             <th>Durum</th>
             <th>İşlem</th>
           </tr>
@@ -410,12 +365,12 @@
         <tbody>
           @for (gider of giderler(); track gider.id) {
             <tr [class.cancelled]="gider.iptalEdildi">
-              <td>{{ gider.tarih | date: 'dd.MM.yyyy' }}</td>
-              <td>{{ gider.kategori }}</td>
-              <td>{{ gider.aciklama }}</td>
-              <td>{{ gider.matrah | number: '1.2-2' }} {{ gider.paraBirimi }}</td>
-              <td>%{{ gider.kdvOrani }} · {{ gider.kdvTutari | number: '1.2-2' }} {{ gider.paraBirimi }}</td>
-              <td>
+              <td class="date-cell">{{ gider.tarih | date: 'dd.MM.yyyy' }}</td>
+              <td><span class="category-tag">{{ gider.kategori }}</span></td>
+              <td class="description-cell">{{ gider.aciklama }}</td>
+              <td *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">{{ gider.matrah | number: '1.2-2' }} {{ gider.paraBirimi }}</td>
+              <td *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">%{{ gider.kdvOrani }} · {{ gider.kdvTutari | number: '1.2-2' }} {{ gider.paraBirimi }}</td>
+              <td *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">
                 <strong>{{ gider.toplamTutar | number: '1.2-2' }} {{ gider.paraBirimi }}</strong>
               </td>
               <td>
@@ -425,19 +380,19 @@
               </td>
               <td>
                 <div class="row-actions">
-                  <button
+                  @if (giderDuzenlenebilir(gider)) {<button *appCanWrite="izin.GiderDuzenle"
                     type="button"
                     title="Düzenle"
                     [disabled]="gider.iptalEdildi"
                     (click)="giderDuzenle(gider)"
                   >
                     <i class="ri-edit-line"></i>
-                  </button>
+                  </button>}
                 </div>
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="8" class="empty-row">Aramayla eşleşen gider kaydı bulunamadı.</td></tr>
+            <tr><td colspan="8" class="empty-row"><i class="ri-wallet-3-line" aria-hidden="true"></i><span>Aramayla eşleşen gider kaydı bulunamadı.</span></td></tr>
           }
         </tbody>
       </table>
@@ -454,41 +409,49 @@
         (pageSizeChange)="giderSayfaBoyutuDegisti($event)"
       />
     }
+    </div>
+    </div>
   }
 
-  @if (activeTab() === 'ayarlar') {
+  @if (activeTab() === 'ayarlar' && (ayarOkuyabilir('duzenli') || ayarOkuyabilir('tarifeler'))) {
+    <div class="finance-workspace settings-workspace">
+    <div class="workspace-heading">
+      <span class="workspace-icon"><i class="ri-settings-3-line" aria-hidden="true"></i></span>
+      <div><h3>İş ve Tarife Tanımları</h3></div>
+    </div>
     <header class="section-toolbar settings-toolbar">
       <div class="segmented">
-        <button
+        @if (ayarOkuyabilir('duzenli')) {<button
           type="button"
           [class.active]="ayarGorunumu() === 'duzenli'"
           (click)="ayarGorunumuDegistir('duzenli')"
         >
-          Düzenli İşler</button
-        ><button
+          <i class="ri-repeat-line" aria-hidden="true"></i>Düzenli İşler</button>}
+        @if (ayarOkuyabilir('tarifeler')) {<button
           type="button"
           [class.active]="ayarGorunumu() === 'tarifeler'"
           (click)="ayarGorunumuDegistir('tarifeler')"
         >
-          Ürün ve Tarifeler
-        </button>
+          <i class="ri-price-tag-3-line" aria-hidden="true"></i>Ürün ve Tarifeler
+        </button>}
       </div>
-      <button
+      @if (ayarYazabilir(ayarGorunumu())) {<button
         type="button"
         class="btn btn-primary"
         (click)="ayarGorunumu() === 'duzenli' ? yeniDuzenliIs() : yeniUrun()"
       >
         <i class="ri-add-line"></i
         >{{ ayarGorunumu() === 'duzenli' ? 'Yeni Düzenli İş' : 'Yeni Tarife' }}
-      </button>
+      </button>}
     </header>
-    @if (ayarGorunumu() === 'duzenli') {
+    <div class="finance-surface">
+    @if (ayarGorunumu() === 'duzenli' && ayarOkuyabilir('duzenli')) {
       <div class="settings-search">
         <div><strong>Düzenli işler</strong><span>{{ duzenliTotalCount() }} kayıt</span></div>
-        <label for="duzenli-arama"><i class="ri-search-2-line"></i><input id="duzenli-arama" type="search" placeholder="İş adı veya tür ara" [ngModel]="duzenliArama()" (ngModelChange)="duzenliAramaDegisti($event)" /></label>
+        <label for="duzenli-arama"><i class="ri-search-2-line"></i><input id="duzenli-arama" type="search" aria-label="İş adı veya tür ara" placeholder="İş adı veya tür ara" [ngModel]="duzenliArama()" (ngModelChange)="duzenliAramaDegisti($event)" /></label>
       </div>
       @if (duzenliLoading()) {
-        <div class="state"><span class="spinner-border spinner-border-sm text-primary"></span> Düzenli işler yükleniyor...</div>
+        <div class="state" role="status"><span class="spinner-border spinner-border-sm text-primary"></span> Düzenli işler yükleniyor...</div>
       } @else {
         <div class="table-responsive">
         <table class="table align-middle mb-0">
@@ -498,8 +461,8 @@
               <th>Tür</th>
               <th>Tekrar</th>
               <th>Miktar</th>
-              <th>Birim Fiyat</th>
-              <th>KDV</th>
+              <th *appCanAccess="[izin.ParasalVeriGoruntule, izin.BirimFiyatGoruntule]">Birim Fiyat</th>
+              <th *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">KDV</th>
               <th>Durum</th>
               <th>İşlem</th>
             </tr>
@@ -512,9 +475,9 @@
                 </td>
                 <td>{{ is.isTuru }}</td>
                 <td>{{ is.tekrarSikligi }} · {{ is.olusturmaGunu }}. gün</td>
-                <td>{{ is.miktar | number: '1.0-2' }} {{ is.birim }}</td>
-                <td>{{ is.birimFiyat | number: '1.2-2' }} {{ is.paraBirimi }}</td>
-                <td>%{{ is.kdvOrani }}</td>
+                <td>@if (miktarGorebilir(is.birim)) { {{ is.miktar | number: '1.0-2' }} {{ is.birim }} }</td>
+                <td *appCanAccess="[izin.ParasalVeriGoruntule, izin.BirimFiyatGoruntule]">{{ is.birimFiyat | number: '1.2-2' }} {{ is.paraBirimi }}</td>
+                <td *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">%{{ is.kdvOrani }}</td>
                 <td>
                   <span class="status" [class.complete]="is.aktif">{{
                     is.aktif ? 'Aktif' : 'Pasif'
@@ -522,14 +485,14 @@
                 </td>
                 <td>
                   <div class="row-actions">
-                    <button type="button" title="Düzenle" (click)="duzenliIsDuzenle(is)">
+                    <button *appCanWrite="izin.DuzenliIsYonet" type="button" title="Düzenle" (click)="duzenliIsDuzenle(is)">
                       <i class="ri-edit-line"></i>
                     </button>
                   </div>
                 </td>
               </tr>
             } @empty {
-              <tr><td colspan="8" class="empty-row">Aramayla eşleşen düzenli iş bulunamadı.</td></tr>
+              <tr><td colspan="8" class="empty-row"><i class="ri-repeat-line" aria-hidden="true"></i><span>Aramayla eşleşen düzenli iş bulunamadı.</span></td></tr>
             }
           </tbody>
         </table>
@@ -546,13 +509,13 @@
           (pageSizeChange)="duzenliSayfaBoyutuDegisti($event)"
         />
       }
-    } @else {
+    } @else if (ayarGorunumu() === 'tarifeler' && ayarOkuyabilir('tarifeler')) {
       <div class="settings-search">
         <div><strong>Ürün ve tarifeler</strong><span>{{ urunTotalCount() }} tarife</span></div>
-        <label for="tarife-arama"><i class="ri-search-2-line"></i><input id="tarife-arama" type="search" placeholder="Kod, tarife, ambalaj veya iç sandık tipi ara" [ngModel]="tarifeArama()" (ngModelChange)="tarifeAramaDegisti($event)" /></label>
+        <label for="tarife-arama"><i class="ri-search-2-line"></i><input id="tarife-arama" type="search" aria-label="Kod, tarife, ambalaj veya iç sandık tipi ara" placeholder="Kod, tarife, ambalaj veya iç sandık tipi ara" [ngModel]="tarifeArama()" (ngModelChange)="tarifeAramaDegisti($event)" /></label>
       </div>
       @if (urunLoading()) {
-        <div class="state"><span class="spinner-border spinner-border-sm text-primary"></span> Ürün ve tarifeler yükleniyor...</div>
+        <div class="state" role="status"><span class="spinner-border spinner-border-sm text-primary"></span> Ürün ve tarifeler yükleniyor...</div>
       } @else {
         <div class="table-responsive">
         <table class="table align-middle mb-0">
@@ -561,8 +524,8 @@
               <th>Kod</th>
               <th>Ürün / Hizmet</th>
               <th>Fiyatlandırma</th>
-              <th>Birim Fiyat</th>
-              <th>KDV</th>
+              <th *appCanAccess="[izin.ParasalVeriGoruntule, izin.BirimFiyatGoruntule]">Birim Fiyat</th>
+              <th *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">KDV</th>
               <th>Eşleme</th>
               <th>Durum</th>
               <th>İşlem</th>
@@ -572,12 +535,12 @@
             @for (urun of urunler(); track urun.id) {
               <tr [class.cancelled]="!urun.aktif">
                 <td>
-                  <strong>{{ urun.kod }}</strong>
+                  <strong class="code-tag">{{ urun.kod }}</strong>
                 </td>
                 <td>{{ urun.ad }}</td>
                 <td>{{ urun.fiyatlandirmaBirimi === 2 ? 'm³' : 'Adet' }}</td>
-                <td>{{ urun.birimFiyat | number: '1.2-4' }} {{ urun.paraBirimi }}</td>
-                <td>%{{ urun.kdvOrani }}</td>
+                <td *appCanAccess="[izin.ParasalVeriGoruntule, izin.BirimFiyatGoruntule]">{{ urun.birimFiyat | number: '1.2-4' }} {{ urun.paraBirimi }}</td>
+                <td *appCanAccess="[izin.ParasalVeriGoruntule, izin.TutarGoruntule]">%{{ urun.kdvOrani }}</td>
                 <td>{{ urunEslesmeMetni(urun) }}</td>
                 <td>
                   <span class="status" [class.complete]="urun.aktif">{{
@@ -586,10 +549,10 @@
                 </td>
                 <td>
                   <div class="row-actions">
-                    <button type="button" title="Düzenle" (click)="urunDuzenle(urun)">
+                    <button *appCanWrite="izin.TarifeYonet" type="button" title="Düzenle" (click)="urunDuzenle(urun)">
                       <i class="ri-edit-line"></i>
                     </button>
-                    <button
+                    <button *appCanWrite="izin.TarifeYonet"
                       type="button"
                       class="danger"
                       title="Sil"
@@ -602,7 +565,7 @@
                 </td>
               </tr>
             } @empty {
-              <tr><td colspan="8" class="empty-row">Aramayla eşleşen tarife bulunamadı.</td></tr>
+              <tr><td colspan="8" class="empty-row"><i class="ri-price-tag-3-line" aria-hidden="true"></i><span>Aramayla eşleşen tarife bulunamadı.</span></td></tr>
             }
           </tbody>
         </table>
@@ -620,6 +583,8 @@
         />
       }
     }
+    </div>
+    </div>
   }
 </section>
 
@@ -632,7 +597,7 @@
     aria-labelledby="report-title"
   >
     <header>
-      <h3 id="report-title">Finans Raporları</h3>
+      <h3 id="report-title"><i class="ri-file-chart-line" aria-hidden="true"></i>Finans Raporları</h3>
       <button type="button" title="Kapat" (click)="raporAcik.set(false)">
         <i class="ri-close-line"></i>
       </button>
@@ -675,12 +640,12 @@
   </section>
 }
 
-@if (aylikDegerAcik()) {
+@if (aylikDegerAcik() && aylikDegerDuzenlenebilir(aylikDegerSatiri())) {
   <div class="modal-backdrop" (click)="aylikDegerAcik.set(false)"></div>
   <section class="side-panel compact" role="dialog" aria-modal="true">
     <header>
       <div>
-        <h3>Aylık Değeri Düzenle</h3>
+        <h3><i class="ri-edit-box-line" aria-hidden="true"></i>Aylık Değeri Düzenle</h3>
         <small>{{ aylikDegerSatiri()?.isAdi }}</small>
       </div>
       <button type="button" title="Kapat" (click)="aylikDegerAcik.set(false)">
@@ -710,12 +675,15 @@
   </section>
 }
 
+@if (dagitim(); as d) {<app-finans-dagitim [tur]="d.tur" [isKaydiIds]="d.ids" [siparisId]="d.siparisId" (kapat)="dagitim.set(null)" (kaydedildi)="belgeKaydedildi($event)" />}
+@if (detayHedef(); as h) {<app-finans-kayit-detay [hedef]="h" (kapat)="detayHedef.set(null)" (degisti)="aylikListeyiYukle()" (siparisAc)="topluSiparisAc($event)" (faturaAc)="faturaAc($event)" />}
+
 @if (iptalAcik()) {
   <div class="modal-backdrop" (click)="iptalAcik.set(false)"></div>
   <section class="side-panel compact" role="dialog" aria-modal="true">
     <header>
       <div>
-        <h3>İşi İptal Et</h3>
+        <h3><i class="ri-close-circle-line" aria-hidden="true"></i>İşi İptal Et</h3>
         <small>{{ iptalSatiri()?.isAdi }}</small>
       </div>
       <button type="button" title="Kapat" (click)="iptalAcik.set(false)">
@@ -745,20 +713,22 @@
   </section>
 }
 
-@if (ozelIsAcik()) {
+@if (ozelIsAcik() && permissions.canWrite(izin.ManuelIsEkle)) {
   <div class="modal-backdrop" (click)="ozelIsAcik.set(false)"></div>
   <section class="side-panel" role="dialog" aria-modal="true">
     <header>
-      <h3>Tek Seferlik İş</h3>
+      <h3><i class="ri-briefcase-4-line" aria-hidden="true"></i>Tek Seferlik İş</h3>
       <button type="button" title="Kapat" (click)="ozelIsAcik.set(false)">
         <i class="ri-close-line"></i>
       </button>
     </header>
     <div class="panel-body form-grid">
       <label class="field wide"
-        ><span>İş adı *</span><input class="form-control" [(ngModel)]="ozelIsForm.isAdi" /></label
+        ><span>İş adı *</span><input class="form-control" [(ngModel)]="ozelIsForm.isAdi" /></label>
+      <div class="field"><span>Proje</span><app-finans-proje-secici [projeId]="ozelIsForm.projeId" [etiket]="ozelProjeEtiketi" (secildi)="isProjesiSec('ozel', $event)" /></div>
+      <label class="field"><span>Müşteri / firma</span><input class="form-control" [(ngModel)]="ozelIsForm.musteri" /></label
       ><label class="field"
-        ><span>İş türü *</span><select class="form-select" [ngModel]="ozelIsForm.isTuru" (ngModelChange)="ozelIsTuruSecildi($event)"><option value="">İş türü seçin</option>@for (tur of ozelIsGrubuSecenekleri; track tur) { <option [value]="tur">{{ tur }}</option> }</select></label
+        ><span>İş türü *</span><input class="form-control" list="finans-ozel-turler" placeholder="Mevcut türü seçin veya yeni tür yazın" [ngModel]="ozelIsForm.isTuru" (ngModelChange)="ozelIsTuruSecildi($event)" maxlength="200" /><datalist id="finans-ozel-turler">@for (tur of ozelIsGrubuSecenekleri; track tur) {<option [value]="tur"></option>}</datalist></label
       ><label class="field"
         ><span>İş tarihi *</span
         ><input
@@ -772,16 +742,15 @@
         ><select class="form-select" [(ngModel)]="ozelIsForm.hesaplamaYontemi">
           <option [ngValue]="1">Sabit tutar</option>
           <option [ngValue]="3">Miktar × birim fiyat</option>
+          <option [ngValue]="2">Manuel toplam</option>
+          <option [ngValue]="4">m³ × birim fiyat</option>
         </select></label
       ><label class="field"
         ><span>Rapor grubu *</span
-        ><select class="form-select" [(ngModel)]="ozelIsForm.raporGrubu">
-          @for (grup of ozelIsGrubuSecenekleri; track grup) {
-            <option [value]="grup">{{ grup }}</option>
-          }
-          <option value="Özel">Özel grup</option>
-        </select></label
+        ><input class="form-control" [(ngModel)]="ozelIsForm.raporGrubu" maxlength="200" /></label
       >
+      <label class="field"><span>Talep eden</span><input class="form-control" [(ngModel)]="ozelIsForm.talepEdenKisi" maxlength="200" /></label>
+      <label class="field"><span>Talep eden bölüm</span><input class="form-control" [(ngModel)]="ozelIsForm.talepEdenBolum" maxlength="200" /></label>
       @if (ozelIsForm.raporGrubu === 'Özel') {
         <label class="field wide"
           ><span>Özel grup adı *</span
@@ -848,85 +817,12 @@
   </section>
 }
 
-@if (siparisAcik()) {
-  <div class="modal-backdrop" (click)="siparisAcik.set(false)"></div>
-  <section class="side-panel order-panel" role="dialog" aria-modal="true">
-    <header>
-      <div>
-        <h3>Sipariş Oluştur</h3>
-        <small>{{ siparisSatiri()?.projeNo || siparisSatiri()?.isAdi }}</small>
-      </div>
-      <button type="button" title="Kapat" (click)="siparisAcik.set(false)">
-        <i class="ri-close-line"></i>
-      </button>
-    </header>
-    <div class="panel-body">
-      <div class="form-grid">
-        <label class="field"
-          ><span>PO numarası *</span
-          ><input class="form-control" [(ngModel)]="siparisForm.poNumarasi" /></label
-        ><label class="field"
-          ><span>Sipariş tarihi *</span
-          ><input class="form-control" type="date" [(ngModel)]="siparisForm.siparisTarihi" /></label
-        ><label class="field wide"
-          ><span>Açıklama</span
-          ><textarea class="form-control" rows="2" [(ngModel)]="siparisForm.aciklama"></textarea>
-        </label>
-      </div>
-      @if (siparisYukleniyor()) {
-        <div class="state">İş kayıtları yükleniyor...</div>
-      } @else {
-        <div class="order-lines">
-          @for (kayit of siparisKayitlari(); track kayit.id) {
-            <div>
-              <span
-                ><strong>{{ kayit.sandikNo }}</strong
-                ><small>{{ kayit.sandikAdi }}</small>
-                @if (kayit.sandikTipi) {
-                  <small><strong>{{ kayit.sandikTipi }}</strong>@if (kayit.sandikTipi === 'Katlanır Sandık') { · {{ kayit.boy }} × {{ kayit.en }} × {{ kayit.yukseklik }} mm }</small>
-                }</span
-              ><label
-                ><em>Adet</em
-                ><input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  [(ngModel)]="siparisMiktarlari[kayit.id].adet" /></label
-              ><label
-                ><em>m³</em
-                ><input
-                  type="number"
-                  min="0"
-                  step="0.001"
-                  [(ngModel)]="siparisMiktarlari[kayit.id].m3"
-              /></label>
-            </div>
-          }
-        </div>
-      }
-      @if (siparisHatasi()) {
-        <div class="form-error">{{ siparisHatasi() }}</div>
-      }
-    </div>
-    <footer>
-      <button type="button" class="btn btn-light" (click)="siparisAcik.set(false)">Vazgeç</button
-      ><button
-        type="button"
-        class="btn btn-primary"
-        [disabled]="siparisKaydediliyor() || siparisYukleniyor()"
-        (click)="siparisKaydet()"
-      >
-        Siparişi Kaydet
-      </button>
-    </footer>
-  </section>
-}
 
-@if (giderAcik()) {
+@if (giderAcik() && permissions.hasAccess(izin.Modul) && permissions.canWrite(duzenlenenGiderId() ? izin.GiderDuzenle : izin.GiderEkle) && (!duzenlenenGiderId() || (giderAlanlariniGorebilir() && miktarGorebilir(giderForm.birim)))) {
   <div class="modal-backdrop" (click)="giderAcik.set(false)"></div>
   <section class="side-panel" role="dialog" aria-modal="true">
     <header>
-      <h3>{{ duzenlenenGiderId() ? 'Gideri Düzenle' : 'Yeni Gider' }}</h3>
+      <h3><i class="ri-wallet-3-line" aria-hidden="true"></i>{{ duzenlenenGiderId() ? 'Gideri Düzenle' : 'Yeni Gider' }}</h3>
       <button type="button" title="Kapat" (click)="giderAcik.set(false)">
         <i class="ri-close-line"></i>
       </button>
@@ -937,8 +833,9 @@
         ><input class="form-control" type="date" [(ngModel)]="giderForm.tarih" /></label
       ><label class="field"
         ><span>Kategori *</span
-        ><select class="form-select" [(ngModel)]="giderForm.kategoriId">
+        ><select class="form-select" [ngModel]="giderForm.kategoriId" (ngModelChange)="giderKategoriDegisti($event)" [disabled]="giderKaydediliyor()">
           <option [ngValue]="0">Kategori seçin</option>
+          @if (giderEskiKategori(); as eski) {<option [ngValue]="eski.id" disabled>{{eski.ad}} (mevcut kayıt · pasif/erişilemiyor)</option>}
           @for (kategori of giderKategorileri(); track kategori.id) {
             <option [ngValue]="kategori.id">{{ kategori.ad }}</option>
           }
@@ -947,13 +844,13 @@
         ><span>Açıklama *</span
         ><textarea class="form-control" rows="3" [(ngModel)]="giderForm.aciklama"></textarea></label
       ><label class="field"
-        ><span>Tutar *</span
+        ><span>Birim fiyat *</span
         ><input
           class="form-control"
           type="number"
           min="0.01"
           step="0.01"
-          [(ngModel)]="giderForm.tutar" /></label
+          [(ngModel)]="giderForm.birimFiyat" /></label
       ><label class="field"
         ><span>Para birimi *</span
         ><select class="form-select" [(ngModel)]="giderForm.paraBirimi">
@@ -970,6 +867,26 @@
           <option [ngValue]="20">%20</option>
         </select></label
       >
+      <label class="field"><span>Finans tarihi *</span><input class="form-control" type="date" [(ngModel)]="giderForm.finansTarihi" /></label>
+      <label class="field"><span>Miktar *</span><input class="form-control" type="number" min="0.0001" step="0.0001" [(ngModel)]="giderForm.miktar" /></label>
+      <label class="field"><span>Birim</span><input class="form-control" [(ngModel)]="giderForm.birim" /></label>
+      <label class="field"><span>Firma / kişi</span><input class="form-control" [(ngModel)]="giderForm.firmaVeyaKisi" /></label>
+      <label class="field"><span>Alt kategori / gider kalemi</span>
+        <select class="form-select" [ngModel]="giderForm.giderKalemiId" (ngModelChange)="giderKalemiSecildi($event)" [disabled]="giderKalemLoading() || giderKaydediliyor() || !giderForm.kategoriId">
+          <option [ngValue]="null">Kalem bağlantısı yok / serbest alt kategori</option>
+          @if (giderEskiKalem(); as eski) {<option [ngValue]="eski.id" disabled>{{eski.ad}} (#{{eski.id}} · mevcut kayıt)</option>}
+          @for (kalem of giderKalemleri(); track kalem.id) {<option [ngValue]="kalem.id">{{kalem.kod}} · {{kalem.ad}}</option>}
+        </select>
+        @if (giderKalemLoading()) {<small role="status">Aktif kalemler yükleniyor…</small>}
+        @if (giderEskiKalem() && !giderKalemLoading() && !giderKalemHatasi()) {<small>Eski kalem aktif listede değil. Bağlantı korunuyor; kaydetmek için aktif kalem seçin veya bağlantıyı kaldırın.</small>}
+      </label>
+      <label class="field"><span>Alt kategori adı</span><input class="form-control" [(ngModel)]="giderForm.altKategori" [readonly]="!!giderForm.giderKalemiId" /></label>
+      @if (giderKalemHatasi()) {<div class="form-error wide">{{giderKalemHatasi()}} Kategoriyi yeniden seçerek tekrar deneyebilirsiniz.</div>}
+      <label class="field"><span>Belge numarası</span><input class="form-control" [(ngModel)]="giderForm.belgeNo" /></label>
+      <div class="field"><span>Proje (isteğe bağlı)</span><app-finans-proje-secici [projeId]="giderForm.projeId" [etiket]="giderProjeEtiketi" (secildi)="giderProjesiSec($event)" /></div>
+      <label class="cancel-toggle"><input type="checkbox" [(ngModel)]="giderForm.kdvDahil" /><span>Birim fiyata KDV dahil</span></label>
+      <label class="cancel-toggle"><input type="checkbox" [(ngModel)]="giderForm.avansMi" /><span>Personel avansı (henüz maliyet değil)</span></label>
+      @if (!giderForm.avansMi) {<label class="field"><span>Mahsup edilen avans kayıt kimliği</span><input class="form-control" type="number" min="1" [(ngModel)]="giderForm.mahsupEdilenAvansId" /></label>}
       @if (giderHatasi()) {
         <div class="form-error wide">{{ giderHatasi() }}</div>
       }
@@ -979,7 +896,8 @@
       ><button
         type="button"
         class="btn btn-primary"
-        [disabled]="giderKaydediliyor()"
+        *appCanWrite="duzenlenenGiderId() ? izin.GiderDuzenle : izin.GiderEkle"
+        [disabled]="giderKaydediliyor() || giderKalemLoading()"
         (click)="giderKaydet()"
       >
         Kaydet
@@ -988,11 +906,11 @@
   </section>
 }
 
-@if (duzenliIsAcik()) {
+@if (duzenliIsAcik() && ayarYazabilir('duzenli') && (!duzenlenenDuzenliIsId() || (parasal(izin.BirimFiyatGoruntule) && parasal(izin.TutarGoruntule) && miktarGorebilir(duzenliIsForm.birim)))) {
   <div class="modal-backdrop" (click)="duzenliIsAcik.set(false)"></div>
   <section class="side-panel" role="dialog" aria-modal="true">
     <header>
-      <h3>{{ duzenlenenDuzenliIsId() ? 'Düzenli İşi Düzenle' : 'Yeni Düzenli İş' }}</h3>
+      <h3><i class="ri-repeat-line" aria-hidden="true"></i>{{ duzenlenenDuzenliIsId() ? 'Düzenli İşi Düzenle' : 'Yeni Düzenli İş' }}</h3>
       <button type="button" title="Kapat" (click)="duzenliIsAcik.set(false)">
         <i class="ri-close-line"></i>
       </button>
@@ -1000,7 +918,9 @@
     <div class="panel-body form-grid">
       <label class="field wide"
         ><span>İş adı *</span
-        ><input class="form-control" [(ngModel)]="duzenliIsForm.isAdi" /></label
+        ><input class="form-control" [(ngModel)]="duzenliIsForm.isAdi" /></label>
+      <div class="field"><span>Proje</span><app-finans-proje-secici [projeId]="duzenliIsForm.projeId" [etiket]="duzenliProjeEtiketi" (secildi)="isProjesiSec('duzenli', $event)" /></div>
+      <label class="field"><span>Müşteri / firma</span><input class="form-control" [(ngModel)]="duzenliIsForm.musteri" /></label
       ><label class="field"
         ><span>İş türü *</span
         ><input class="form-control" [(ngModel)]="duzenliIsForm.isTuru" /></label
@@ -1008,8 +928,6 @@
         ><span>Tekrar *</span
         ><select class="form-select" [(ngModel)]="duzenliIsForm.tekrarSikligi">
           <option>Aylık</option>
-          <option>Üç Aylık</option>
-          <option>Yıllık</option>
         </select></label
       ><label class="field"
         ><span>Başlangıç *</span
@@ -1094,11 +1012,11 @@
   </section>
 }
 
-@if (urunAcik()) {
+@if (urunAcik() && ayarYazabilir('tarifeler') && (!duzenlenenUrunId() || (parasal(izin.BirimFiyatGoruntule) && parasal(izin.TutarGoruntule) && (urunForm.sandikTipi !== 'Katlanır Sandık' || permissions.hasAccess(alanIzni.OlcuGoruntule))))) {
   <div class="modal-backdrop" (click)="urunAcik.set(false)"></div>
   <section class="side-panel" role="dialog" aria-modal="true">
     <header>
-      <h3>{{ duzenlenenUrunId() ? 'Tarifeyi Düzenle' : 'Yeni Tarife' }}</h3>
+      <h3><i class="ri-price-tag-3-line" aria-hidden="true"></i>{{ duzenlenenUrunId() ? 'Tarifeyi Düzenle' : 'Yeni Tarife' }}</h3>
       <button type="button" title="Kapat" (click)="urunAcik.set(false)">
         <i class="ri-close-line"></i>
       </button>
@@ -1179,7 +1097,7 @@
             [(ngModel)]="urunForm.sandikAdi" /></label
         >
       }
-      ><label class="check wide"><input type="checkbox" [(ngModel)]="urunForm.aktif" />Aktif</label>
+      <label class="check wide"><input type="checkbox" [(ngModel)]="urunForm.aktif" />Aktif</label>
       @if (urunHatasi()) {
         <div class="form-error wide">{{ urunHatasi() }}</div>
       }
@@ -1196,4 +1114,5 @@
       </button>
     </footer>
   </section>
+}
 }

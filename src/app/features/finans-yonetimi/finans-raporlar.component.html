@@ -1,0 +1,178 @@
+<section class="v2-section v2-management">
+  <header class="v2-toolbar v2-page-heading">
+    <div class="v2-heading">
+      <span class="v2-heading-icon"><i class="ri-file-chart-line" aria-hidden="true"></i></span>
+      <div>
+        <h3>{{ t('REPORT_TITLE') }}</h3>
+        <p>{{ t('REPORT_HELP') }}</p>
+      </div>
+    </div>
+    <button class="btn btn-light" [disabled]="loading()" (click)="filtreleriTemizle()">
+      <i class="ri-filter-off-line" aria-hidden="true"></i>{{ t('FILTERS_RESET') }}
+    </button>
+  </header>
+  <div class="v2-report-layout">
+    <div>
+      <article class="v2-card">
+        <header class="v2-card-heading">
+          <h4><i class="ri-equalizer-line" aria-hidden="true"></i>{{ t('REPORT_SCOPE') }}</h4>
+        </header>
+        <div class="v2-fields">
+          <label
+            >{{ t('REPORT')
+            }}<select [(ngModel)]="tur">
+              <option value="is">{{ t('REPORT_WORK') }}</option>
+              <option value="gider">{{ t('REPORT_EXPENSE') }}</option>
+              <option value="genel">{{ t('REPORT_SUMMARY') }}</option>
+              <option value="gider-kategori">{{ t('REPORT_CATEGORY') }}</option>
+              <option value="proje-maliyet">{{ t('REPORT_COST') }}</option>
+              <option value="siparis-bekleyen">{{ t('REPORT_PENDING_ORDER') }}</option>
+              <option value="fatura-bekleyen">{{ t('REPORT_PENDING_INVOICE') }}</option>
+            </select></label
+          >
+          <label
+            >{{ t('CURRENCY')
+            }}<select [(ngModel)]="filtre.paraBirimi">
+              <option [ngValue]="undefined">{{ t('REPORT_ALL_CURRENCIES') }}</option>
+              <option>EUR</option>
+              <option>USD</option>
+              <option>TRY</option>
+            </select></label
+          >
+          <label>{{ t('START') }}<input type="date" [(ngModel)]="filtre.baslangic" /></label>
+          <label>{{ t('END') }}<input type="date" [(ngModel)]="filtre.bitis" /></label>
+        </div>
+        <div class="v2-fields v2-report-search">
+          <label
+            >{{ t('PROJECT_NUMBER')
+            }}<input [(ngModel)]="filtre.projeNo" placeholder="PA699-02" /></label
+          ><label
+            >{{ t('SEARCH')
+            }}<input [(ngModel)]="filtre.arama" [placeholder]="t('REPORT_SEARCH_HINT')"
+          /></label>
+        </div>
+      </article>
+      <details class="v2-card v2-advanced">
+        <summary>
+          <span><i class="ri-filter-3-line" aria-hidden="true"></i>{{ t('ADVANCED_FILTERS') }}</span
+          ><i class="ri-arrow-down-s-line v2-disclosure" aria-hidden="true"></i>
+        </summary>
+        <div class="v2-advanced-content">
+          <fieldset class="v2-filter-group">
+            <legend>{{ t('DOCUMENT') }}</legend>
+            <div class="v2-fields">
+              <label>{{ t('PO_NUMBER') }}<input [(ngModel)]="filtre.poNumarasi" /></label
+              ><label>{{ t('INVOICE_NUMBER') }}<input [(ngModel)]="filtre.faturaNumarasi" /></label
+              ><label
+                >{{ t('REPORT_PO_STATUS')
+                }}<select [(ngModel)]="filtre.siparisDurumu">
+                  <option [ngValue]="undefined">{{ t('ALL') }}</option>
+                  <option [ngValue]="1">{{ t('REPORT_OPEN_PO') }}</option>
+                  <option [ngValue]="2">{{ t('REPORT_PARTLY_INVOICED') }}</option>
+                  <option [ngValue]="3">{{ t('REPORT_FULLY_INVOICED') }}</option>
+                  <option [ngValue]="4">{{ t('CANCELLED') }}</option>
+                </select></label
+              ><label
+                >{{ t('REPORT_INVOICE_DOCUMENT')
+                }}<select [(ngModel)]="filtre.faturaDurumu">
+                  <option [ngValue]="undefined">{{ t('ALL') }}</option>
+                  <option [ngValue]="1">{{ t('ACTIVE') }}</option>
+                  <option [ngValue]="2">{{ t('CANCELLED') }}</option>
+                </select></label
+              >
+            </div>
+          </fieldset>
+          <fieldset class="v2-filter-group">
+            <legend>{{ t('PROJECT_WORK') }}</legend>
+            <div class="v2-fields">
+              <label>{{ t('COMPANY_PERSON') }}<input [(ngModel)]="filtre.firma" /></label
+              ><label>{{ t('REQUESTER') }}<input [(ngModel)]="filtre.talepEden" /></label
+              ><label
+                >{{ t('TYPE')
+                }}<select [(ngModel)]="filtre.isTuru">
+                  <option [ngValue]="undefined">{{ t('ALL') }}</option>
+                  <option [ngValue]="1">{{ t('MAIN_PACKAGING') }}</option>
+                  <option [ngValue]="9">{{ t('WASTE_TIMBER') }}</option>
+                  <option [ngValue]="2">{{ t('ADDITIONAL') }}</option>
+                  <option [ngValue]="3">{{ t('INNER_CRATE') }}</option>
+                  <option [ngValue]="4">{{ t('SITE') }}</option>
+                  <option [ngValue]="5">{{ t('SPARE') }}</option>
+                  <option [ngValue]="8">{{ t('CUSTOM_REGULAR') }}</option>
+                  <option [ngValue]="6">{{ t('REPAIR') }}</option>
+                  <option [ngValue]="7">{{ t('OTHER') }}</option>
+                </select></label
+              ><label
+                >{{ t('REPORT_CRATE_TYPE')
+                }}<select [(ngModel)]="filtre.sandikCinsi">
+                  <option [ngValue]="undefined">{{ t('ALL') }}</option>
+                  <option value="1">{{ t('WOOD') }}</option>
+                  <option value="2">{{ t('CAGE') }}</option>
+                  <option value="3">{{ t('PLYWOOD') }}</option>
+                  <option value="4">{{ t('FOLDABLE') }}</option>
+                  <option value="99">{{ t('OTHER') }}</option>
+                </select></label
+              ><label
+                >{{ t('WORK_STATUS')
+                }}<select [(ngModel)]="filtre.durum">
+                  <option [ngValue]="undefined">{{ t('ALL') }}</option>
+                  <option [ngValue]="1">{{ t('PENDING_ORDER') }}</option>
+                  <option [ngValue]="2">{{ t('PARTIAL_ORDER') }}</option>
+                  <option [ngValue]="3">{{ t('FULL_ORDER') }}</option>
+                  <option [ngValue]="4">{{ t('PARTIAL_INVOICE') }}</option>
+                  <option [ngValue]="5">{{ t('FULL_INVOICE') }}</option>
+                </select></label
+              >
+              @if (permissions.hasAccess(izin.GiderGoruntule)) {
+                <label
+                  >{{ t('REPORT_CATEGORY_LABEL')
+                  }}<select [(ngModel)]="filtre.giderKategoriId">
+                    <option [ngValue]="undefined">{{ t('REPORT_ALL_CATEGORIES') }}</option>
+                    @for (k of kategoriler(); track k.id) {
+                      <option [ngValue]="k.id">{{ k.ad }}</option>
+                    }
+                  </select></label
+                >
+              }
+            </div>
+          </fieldset>
+          <label class="v2-check mt-3"
+            ><input type="checkbox" [(ngModel)]="filtre.iptalEdilenleriDahilEt" />{{
+              t('REPORT_INCLUDE_CANCELLED')
+            }}</label
+          >
+        </div>
+      </details>
+    </div>
+    <aside class="v2-card v2-export-card">
+      <span class="v2-export-icon"
+        ><i class="ri-download-cloud-2-line" aria-hidden="true"></i
+      ></span>
+      <h4>{{ t('REPORT_OUTPUT') }}</h4>
+      <p>{{ t('REPORT_OUTPUT_HELP') }}</p>
+      <div class="v2-export-actions">
+        @if (permissions.hasAccess(izin.PdfAktar)) {
+          <button class="btn btn-primary" [disabled]="loading()" (click)="indir('pdf')">
+            <i class="ri-file-pdf-2-line" aria-hidden="true"></i>{{ t('REPORT_PDF')
+            }}<i class="ri-download-2-line" aria-hidden="true"></i>
+          </button>
+        }
+        @if (permissions.hasAccess(izin.ExcelAktar)) {
+          <button class="btn btn-outline-primary" [disabled]="loading()" (click)="indir('excel')">
+            <i class="ri-file-excel-2-line" aria-hidden="true"></i>{{ t('REPORT_EXCEL')
+            }}<i class="ri-download-2-line" aria-hidden="true"></i>
+          </button>
+        }
+      </div>
+      @if (loading()) {
+        <p class="v2-loading-message" role="status">
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span
+          >{{ t('LOADING') }}
+        </p>
+      }
+      <div class="v2-export-note">
+        <i class="ri-information-line" aria-hidden="true"></i>
+        <p>{{ t('REPORT_HELP') }}</p>
+      </div>
+    </aside>
+  </div>
+</section>

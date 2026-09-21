@@ -1,0 +1,125 @@
+<section class="v2-section v2-management">
+  <header class="v2-toolbar v2-page-heading">
+    <div class="v2-heading">
+      <span class="v2-heading-icon"><i class="ri-file-list-3-line" aria-hidden="true"></i></span>
+      <div>
+        <h3>{{ t('DOC_TITLE') }}</h3>
+        <p>{{ t('DOC_HELP') }}</p>
+      </div>
+    </div>
+    @if (permissions.canWrite(izin.FaturaGir)) {
+      <button class="btn btn-primary" (click)="faturaAc.emit(null)">
+        <i class="ri-add-line" aria-hidden="true"></i>{{ t('CREATE_INVOICE') }}
+      </button>
+    }
+  </header>
+  <article class="v2-card v2-list-card">
+    <div class="v2-card-toolbar">
+      <div class="v2-segmented" role="group" [attr.aria-label]="t('DOC_TYPE')">
+        <button
+          [class.active]="tur === 'Siparis'"
+          [attr.aria-pressed]="tur === 'Siparis'"
+          (click)="turSec('Siparis')"
+        >
+          <i class="ri-shopping-bag-3-line" aria-hidden="true"></i>{{ t('DOC_POS') }}</button
+        ><button
+          [class.active]="tur === 'Fatura'"
+          [attr.aria-pressed]="tur === 'Fatura'"
+          (click)="turSec('Fatura')"
+        >
+          <i class="ri-bill-line" aria-hidden="true"></i>{{ t('INVOICES') }}
+        </button>
+      </div>
+      <label class="v2-search v2-document-search"
+        ><span class="visually-hidden">{{ t('SEARCH') }}</span
+        ><i class="ri-search-line" aria-hidden="true"></i
+        ><input
+          type="search"
+          [placeholder]="t('DOC_SEARCH_HINT')"
+          [(ngModel)]="arama"
+          (ngModelChange)="ara()"
+      /></label>
+    </div>
+    @if (hata()) {
+      <div class="v2-error v2-inset" role="alert">
+        <i class="ri-error-warning-line" aria-hidden="true"></i>{{ hata()
+        }}<button class="btn btn-light btn-sm" (click)="filtrele()">{{ t('REFRESH') }}</button>
+      </div>
+    }
+    @if (loading()) {
+      <div class="v2-empty" role="status">
+        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        <p>{{ t('RECORDS_LOADING') }}</p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table v2-table mb-0">
+          <thead>
+            <tr>
+              <th>{{ t('DOCUMENT') }}</th>
+              <th>{{ t('PROJECT') }}</th>
+              <th>{{ t('DATE') }}</th>
+              <th class="text-end">{{ t('ACTION') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of liste()?.items; track row.id) {
+              <tr>
+                <td>
+                  <div class="v2-document-cell">
+                    <span class="v2-document-icon"
+                      ><i
+                        [class]="tur === 'Siparis' ? 'ri-shopping-bag-3-line' : 'ri-bill-line'"
+                        aria-hidden="true"
+                      ></i></span
+                    ><strong>{{ numara(row) }}</strong>
+                  </div>
+                </td>
+                <td>{{ row.projeNo || '—' }}</td>
+                <td class="v2-nowrap">{{ tarih(row) | date: 'dd.MM.yyyy' }}</td>
+                <td>
+                  <div class="v2-actions justify-content-end">
+                    <button
+                      class="btn btn-outline-primary btn-sm"
+                      (click)="detayAc.emit({ tur: tur, id: row.id })"
+                    >
+                      <i class="ri-eye-line" aria-hidden="true"></i>{{ t('DOC_DETAIL') }}
+                    </button>
+                    @if (tur === 'Siparis' && permissions.canWrite(izin.FaturaGir)) {
+                      <button class="btn btn-light btn-sm" (click)="faturaAc.emit(row.id)">
+                        <i class="ri-add-line" aria-hidden="true"></i>{{ t('ADD_INVOICE') }}
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4">
+                  <div class="v2-empty">
+                    <i class="ri-file-search-line" aria-hidden="true"></i>
+                    <p>{{ t('DOC_EMPTY') }}</p>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (liste(); as p) {
+        <div class="v2-pager">
+          <app-server-pager
+            [pageNumber]="p.pageNumber"
+            [pageSize]="p.pageSize"
+            [totalCount]="p.totalCount"
+            [totalPages]="p.totalPages"
+            [hasPreviousPage]="p.hasPreviousPage"
+            [hasNextPage]="p.hasNextPage"
+            (pageChange)="sayfa($event)"
+            (pageSizeChange)="boyut($event)"
+          />
+        </div>
+      }
+    }
+  </article>
+</section>

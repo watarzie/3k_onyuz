@@ -13,6 +13,7 @@ import { YetkiTipi } from '../../../core/constants/enums';
 })
 export class MenuTreeComponent {
   @Input() nodes: MenuTreeDto[] = [];
+  @Input() disabled = false;
 
   expandedState = new Map<number, boolean>();
 
@@ -33,17 +34,13 @@ export class MenuTreeComponent {
    * N(1) → R(2) → W(3) → N(1)
    */
   onPermissionChange(node: MenuTreeDto): void {
+    if (this.disabled) return;
+    if (node.gerekenYetkiTipiId) {
+      node.yetkiTipiId = node.yetkiTipiId === YetkiTipi.N ? node.gerekenYetkiTipiId : YetkiTipi.N;
+      node.yetkiTipiMetni = node.yetkiTipiId === YetkiTipi.W ? 'W' : node.yetkiTipiId === YetkiTipi.R ? 'R' : 'N';
+      return;
+    }
     this.cyclePermission(node);
-
-    // Children varsa aynı yetkiyi children'a da uygula
-    if (node.children?.length) {
-      this.setPermissionToChildren(node, node.yetkiTipiId);
-    }
-
-    // Parent varsa yukarı doğru hesapla
-    if (node.parent) {
-      this.updateParentPermission(node.parent);
-    }
   }
 
   /** N(1) → R(2) → W(3) → N(1) döngüsü */

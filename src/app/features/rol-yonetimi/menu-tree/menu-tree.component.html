@@ -11,20 +11,22 @@
       <!-- Checkbox (tri-state) -->
       <input type="checkbox"
              class="form-check-input"
-             [checked]="node.yetkiTipiId === 3"
-             [indeterminate]="node.yetkiTipiId === 2"
+             [checked]="node.gerekenYetkiTipiId ? node.yetkiTipiId > 1 : node.yetkiTipiId === 3"
+             [indeterminate]="!node.gerekenYetkiTipiId && node.yetkiTipiId === 2"
+             [disabled]="disabled"
              (change)="onPermissionChange(node)">
 
       <!-- İkon -->
       <i *ngIf="node.icon" class="{{ node.icon }} node-icon"></i>
 
       <!-- Label -->
-      <span class="node-label">{{ node.labelKey | translate }}</span>
+      <span class="node-label">{{ node.ad || (node.labelKey | translate) }}</span>
+      <small *ngIf="node.kritikMi" class="text-danger">{{ 'PERMISSIONS.CRITICAL' | translate }}</small>
     </div>
 
     <!-- Recursive children -->
     <app-menu-tree *ngIf="hasChildren(node) && isExpanded(node)"
-                   [nodes]="node.children">
+                   [nodes]="node.children" [disabled]="disabled">
     </app-menu-tree>
   </li>
 </ul>

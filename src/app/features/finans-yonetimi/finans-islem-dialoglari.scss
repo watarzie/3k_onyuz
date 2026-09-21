@@ -1,0 +1,573 @@
+.v2-finance-dialog {
+  --dialog-primary: var(--primaryColor, #605dff);
+  --dialog-muted: var(--bodyColor, #64748b);
+  --dialog-line: var(--borderColor, #e5eaf1);
+  --dialog-soft: color-mix(in srgb, var(--dialog-primary) 6%, var(--whiteColor, #fff));
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 1080px);
+  max-height: calc(100dvh - 40px);
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--dialog-line);
+  border-radius: 14px;
+  background: var(--whiteColor, #fff);
+  box-shadow: 0 20px 70px #15253d33;
+
+  .v2-dialog-header {
+    flex: 0 0 auto;
+    align-items: center;
+    margin: 0;
+    padding: 22px 26px;
+    border-bottom: 1px solid var(--dialog-line);
+    background: var(--whiteColor, #fff);
+  }
+
+  .v2-dialog-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    min-width: 0;
+  }
+
+  .v2-dialog-heading > div {
+    min-width: 0;
+  }
+  .v2-dialog-heading h3 {
+    font-size: 18px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+  .v2-dialog-heading p {
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.65;
+  }
+  .v2-dialog-heading .v2-tag {
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .v2-dialog-icon {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    flex: 0 0 auto;
+    border-radius: 12px;
+    background: var(--dialog-soft);
+    color: var(--dialog-primary);
+    font-size: 23px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 40px;
+    padding: 9px 15px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+    transition:
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+  }
+
+  .btn i {
+    font-size: 16px;
+    line-height: 1;
+  }
+  .btn-sm {
+    min-height: 34px;
+    padding: 7px 11px;
+    font-size: 11px;
+  }
+  .btn-primary {
+    color: #fff;
+    background: var(--dialog-primary);
+    border-color: var(--dialog-primary);
+    box-shadow: 0 3px 8px #605dff16;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--dialog-primary) 88%, #000);
+  }
+  .btn-outline-primary {
+    color: var(--dialog-primary);
+    border-color: color-mix(in srgb, var(--dialog-primary) 30%, transparent);
+    background: transparent;
+  }
+  .btn-outline-primary:hover:not(:disabled),
+  .btn-light:hover:not(:disabled) {
+    background: var(--dialog-soft);
+  }
+  .btn-light {
+    color: var(--dialog-muted);
+    border-color: var(--dialog-line);
+    background: var(--whiteColor, #fff);
+  }
+  .btn-danger {
+    background: #dc3545;
+    border-color: #dc3545;
+    color: #fff;
+  }
+  .btn-outline-danger {
+    border-color: #f1b6bd;
+    color: #b42339;
+    background: transparent;
+  }
+  .btn-outline-danger:hover:not(:disabled) {
+    background: #fff1f2;
+  }
+  button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  button:focus-visible {
+    outline: 3px solid #605dff55;
+    outline-offset: 3px;
+  }
+  .v2-dialog-close {
+    width: 36px;
+    min-height: 36px;
+    padding: 6px;
+    flex: 0 0 auto;
+  }
+  .v2-dialog-close i {
+    font-size: 21px;
+  }
+
+  .v2-dialog-tabs {
+    flex: 0 0 auto;
+    min-width: 0;
+    width: 100%;
+    overflow-x: auto;
+    gap: 5px;
+    padding: 10px 26px 0;
+    margin: 0;
+    background: var(--whiteColor, #fff);
+    border-bottom: 1px solid var(--dialog-line);
+  }
+
+  .v2-dialog-tabs button {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 7px;
+    padding: 12px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 7px 7px 0 0;
+  }
+  .v2-dialog-tabs button i {
+    font-size: 16px;
+  }
+  .v2-dialog-tabs button.active {
+    background: var(--dialog-soft);
+    color: var(--dialog-primary);
+    border-color: var(--dialog-primary);
+  }
+  .v2-dialog-tabs button:hover:not(.active) {
+    background: #f7f8fb;
+  }
+
+  .v2-dialog-body {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 24px 26px;
+    background: #f6f7fb;
+  }
+  .v2-card {
+    padding: 22px;
+    margin-bottom: 20px;
+    border-radius: 11px;
+    border-color: var(--dialog-line);
+    box-shadow: 0 3px 10px #102a4303;
+    min-width: 0;
+  }
+  .v2-card:last-child {
+    margin-bottom: 0;
+  }
+  .v2-card > p:not(.v2-note) {
+    margin-top: 7px;
+    margin-bottom: 18px;
+    line-height: 1.65;
+  }
+  .v2-dialog-card-title {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .v2-dialog-card-title > i {
+    color: var(--dialog-primary);
+    font-size: 19px;
+  }
+  .v2-fields {
+    gap: 18px 20px;
+  }
+  label {
+    min-width: 0;
+    color: var(--blackColor, #334155);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  input:not([type='checkbox']),
+  select,
+  textarea {
+    min-height: 42px;
+    font-weight: 400;
+    border-color: var(--dialog-line);
+    background: var(--whiteColor, #fff);
+    transition: border-color 0.15s ease;
+  }
+  input::placeholder {
+    color: #94a3b8;
+    font-size: 12px;
+  }
+  textarea {
+    min-height: 90px;
+    resize: vertical;
+  }
+  input:focus,
+  select:focus,
+  textarea:focus {
+    border-color: var(--dialog-primary);
+    outline: 3px solid #605dff16;
+  }
+  input:disabled,
+  select:disabled,
+  textarea:disabled {
+    color: var(--dialog-muted);
+    background: #f3f5f8;
+    cursor: not-allowed;
+  }
+  input[type='checkbox'] {
+    flex: 0 0 18px;
+    accent-color: var(--dialog-primary);
+  }
+  .v2-check {
+    gap: 10px;
+    align-items: flex-start;
+    font-weight: 500;
+  }
+  .v2-check input {
+    margin-top: 1px;
+  }
+  .v2-dialog-reason {
+    margin-top: 20px;
+  }
+  .v2-dialog-section-heading {
+    margin: 26px 0 16px;
+    padding-top: 22px;
+    border-top: 1px solid var(--dialog-line);
+  }
+  .v2-price-component {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    padding: 16px;
+    box-shadow: none;
+    background: var(--dialog-soft);
+  }
+  .v2-price-component .v2-dialog-remove {
+    grid-column: 1/-1;
+    justify-self: end;
+    min-height: 32px;
+    padding: 6px 9px;
+    font-size: 11px;
+    color: #b42339;
+  }
+  .v2-pricing-card > .v2-note:first-child {
+    margin-top: 0;
+  }
+  .v2-dialog-context {
+    padding: 13px 16px;
+    border: 1px solid var(--dialog-line);
+    border-radius: 9px;
+    background: var(--whiteColor, #fff);
+  }
+  .v2-tag {
+    color: var(--dialog-primary);
+    background: var(--dialog-soft);
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.5;
+    border: 1px solid #605dff20;
+  }
+  .v2-note {
+    font-size: 12px;
+    line-height: 1.7;
+  }
+  .v2-dialog-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 13px 16px;
+    border-radius: 8px;
+    color: var(--dialog-muted);
+    background: var(--dialog-soft);
+  }
+  .v2-dialog-info > i {
+    margin-top: 1px;
+    color: var(--dialog-primary);
+    font-size: 17px;
+  }
+  .v2-dialog-search .v2-note {
+    margin-bottom: 0;
+  }
+  .v2-dialog-table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--dialog-line);
+    border-radius: 10px;
+    background: var(--whiteColor, #fff);
+  }
+  .v2-table {
+    width: 100%;
+    min-width: 590px;
+    margin-bottom: 0;
+    border-collapse: collapse;
+  }
+  .v2-table th {
+    padding: 13px 16px;
+    color: var(--dialog-muted);
+    background: var(--dialog-soft);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.45px;
+    border-bottom: 1px solid var(--dialog-line);
+    white-space: nowrap;
+  }
+  .v2-table td {
+    padding: 15px 16px;
+    font-size: 12px;
+    color: var(--blackColor, #334155);
+    border-color: var(--dialog-line);
+    background: transparent;
+    vertical-align: middle;
+  }
+  .v2-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  .v2-table tbody tr:hover {
+    background: var(--dialog-soft);
+  }
+  .v2-table small {
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .v2-table input:not([type='checkbox']) {
+    min-width: 115px;
+  }
+  .v2-table td[colspan] {
+    padding: 30px 20px;
+    text-align: center;
+    color: var(--dialog-muted);
+  }
+  .v2-dialog-action-cell {
+    text-align: right;
+  }
+  .v2-dialog-action-cell .btn {
+    white-space: nowrap;
+  }
+  .v2-dialog-check-cell {
+    width: 54px;
+    text-align: center;
+  }
+  .v2-dialog-number-cell {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .v2-dialog-amount-input {
+    width: 180px;
+  }
+  .v2-dialog-amount-input input {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .v2-dialog-definition {
+    grid-template-columns: minmax(140px, 1fr) minmax(0, 1.6fr);
+    gap: 0;
+    margin: 0;
+  }
+  .v2-dialog-definition dt,
+  .v2-dialog-definition dd {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--dialog-line);
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+  .v2-dialog-definition dt {
+    color: var(--dialog-muted);
+  }
+  .v2-dialog-definition dd {
+    color: var(--blackColor, #334155);
+    font-weight: 600;
+  }
+  .v2-dialog-definition dt:first-child,
+  .v2-dialog-definition dd:nth-child(2) {
+    padding-top: 0;
+  }
+  .v2-dialog-definition dt:nth-last-child(2),
+  .v2-dialog-definition dd:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+  .v2-dialog-upload {
+    gap: 10px;
+    padding: 20px;
+    border: 1px dashed #605dff55;
+    border-radius: 10px;
+    background: var(--whiteColor, #fff);
+    margin-bottom: 20px;
+  }
+  .v2-dialog-upload input[type='file'] {
+    background: var(--dialog-soft);
+    padding: 10px;
+  }
+  .v2-dialog-upload input::file-selector-button {
+    margin-right: 12px;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--whiteColor, #fff);
+    color: var(--dialog-primary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .v2-audit-table .v2-table {
+    min-width: 690px;
+  }
+  .v2-audit-table td {
+    max-width: 350px;
+    overflow-wrap: anywhere;
+  }
+  .v2-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 13px 16px;
+    font-size: 12px;
+    line-height: 1.65;
+    border: 1px solid #fecdd3;
+  }
+  .v2-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 45px 20px;
+    font-size: 12px;
+  }
+  .v2-empty .spinner-border {
+    color: var(--dialog-primary);
+  }
+  .v2-danger {
+    background: #fffafa;
+    border-color: #fecaca;
+  }
+  .v2-danger .v2-dialog-card-title > i {
+    color: #b42339;
+  }
+  .v2-dialog-footer {
+    flex-wrap: wrap;
+    align-items: center;
+    padding-top: 20px;
+    margin-top: 22px;
+    border-color: var(--dialog-line);
+  }
+  app-server-pager {
+    display: block;
+    margin-top: 16px;
+  }
+}
+
+@media (max-width: 700px) {
+  .v2-finance-dialog {
+    max-height: calc(100dvh - 16px);
+    padding: 0;
+    border-radius: 11px;
+    .v2-dialog-header {
+      padding: 18px 16px;
+      align-items: flex-start;
+    }
+    .v2-dialog-heading {
+      gap: 10px;
+    }
+    .v2-dialog-heading h3 {
+      font-size: 16px;
+    }
+    .v2-dialog-heading .v2-tag {
+      margin: 5px 0 0;
+    }
+    .v2-dialog-icon {
+      width: 38px;
+      height: 38px;
+      font-size: 20px;
+      border-radius: 9px;
+    }
+    .v2-dialog-tabs {
+      padding: 5px 16px 0;
+    }
+    .v2-dialog-tabs button {
+      padding: 11px 10px;
+      font-size: 11px;
+    }
+    .v2-dialog-body {
+      padding: 16px;
+    }
+    .v2-card {
+      padding: 17px;
+      margin-bottom: 16px;
+    }
+    .v2-fields {
+      gap: 15px;
+    }
+    .v2-price-component {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      padding: 13px;
+    }
+    .v2-dialog-definition {
+      grid-template-columns: minmax(95px, 0.8fr) minmax(0, 1.2fr);
+      gap: 0 14px;
+    }
+    .v2-dialog-definition dt,
+    .v2-dialog-definition dd {
+      font-size: 11px;
+    }
+    .v2-dialog-footer {
+      gap: 8px;
+    }
+    .v2-dialog-footer .btn {
+      flex: 1;
+    }
+  }
+}
+
+@media (max-width: 420px) {
+  .v2-finance-dialog {
+    .v2-dialog-icon {
+      display: none;
+    }
+    .v2-dialog-body {
+      padding: 12px;
+    }
+    .v2-card {
+      padding: 15px;
+    }
+    .v2-price-component {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .v2-dialog-footer {
+      align-items: stretch;
+      flex-direction: column;
+    }
+  }
+}

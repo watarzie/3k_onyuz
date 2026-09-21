@@ -13,7 +13,7 @@
     <div class="panel-card">
       <div class="panel-header">
         <h6>{{ 'ROLE.ROLES' | translate }}</h6>
-        <button class="btn-add" (click)="openAddModal()" title="Yeni Rol Ekle">
+        <button *ngIf="canManage()" class="btn-add" (click)="openAddModal()" title="Yeni Rol Ekle">
           <i class="ri-add-line"></i>
         </button>
       </div>
@@ -39,7 +39,7 @@
             <span class="role-name">{{ role.ad }}</span>
             <div class="role-actions">
               <button class="btn-icon danger" (click)="deleteRole(role, $event)" title="Sil"
-                      *ngIf="role.ad !== 'Admin'">
+                      *ngIf="role.ad !== 'Admin' && canManage()">
                 <i class="ri-delete-bin-line"></i>
               </button>
             </div>
@@ -73,7 +73,7 @@
               <small>{{ 'ROLE.PERMISSION_SETTINGS' | translate }}</small>
             </div>
           </div>
-          <button class="btn-save" (click)="savePermissions()" [disabled]="isSaving()">
+          <button *ngIf="canManage()" class="btn-save" (click)="savePermissions()" [disabled]="isSaving()">
             <i class="ri-save-line" *ngIf="!isSaving()"></i>
             <i class="ri-loader-4-line spin" *ngIf="isSaving()"></i>
             {{ 'COMMON.SAVE' | translate }}
@@ -106,7 +106,7 @@
 
           <!-- Menü Ağacı -->
           <app-menu-tree *ngIf="!isDetailLoading() && selectedRole()?.menuAgaci?.length"
-                         [nodes]="selectedRole()!.menuAgaci">
+                         [nodes]="selectedRole()!.menuAgaci" [disabled]="!canManage() || isSaving()">
           </app-menu-tree>
         </div>
       </ng-container>
@@ -124,6 +124,11 @@
       </button>
     </div>
     <div class="modal-body">
+      <label>{{ 'PERMISSIONS.TEMPLATE' | translate }}</label>
+      <select class="form-select mb-3" [ngModel]="selectedTemplate()" (ngModelChange)="selectedTemplate.set($event)">
+        <option value="">{{ 'PERMISSIONS.EMPTY_TEMPLATE' | translate }}</option>
+        <option *ngFor="let template of templates()" [value]="template.kod">{{ template.ad }}</option>
+      </select>
       <label>Rol Adı</label>
       <input type="text" class="form-control"
              [ngModel]="newRoleName()" (ngModelChange)="newRoleName.set($event)"

@@ -7,6 +7,7 @@ import {
   KullaniciDto,
   KullaniciGuncelleRequest,
   KullaniciIkiFaktorDurumDto,
+  KullaniciYetkiModel,
 } from '../../shared/models';
 
 /**
@@ -22,6 +23,14 @@ import {
 @Injectable({ providedIn: 'root' })
 export class KullaniciService {
   private api = inject(BaseApiService);
+
+  getYetkiler(id: number): Observable<ApiResult<KullaniciYetkiModel[]>> {
+    return this.api.get<KullaniciYetkiModel[]>(API.KULLANICI.YETKILER(id));
+  }
+
+  updateYetkiler(id: number, kararlar: Pick<KullaniciYetkiModel, 'menuTanimiId' | 'izinVerildi'>[]): Observable<ApiResult<unknown>> {
+    return this.api.put<unknown>(API.KULLANICI.YETKILER(id), kararlar);
+  }
 
   getKullanicilar(): Observable<ApiResult<KullaniciDto[]>> {
     return this.api.get<KullaniciDto[]>(API.KULLANICI.LIST);

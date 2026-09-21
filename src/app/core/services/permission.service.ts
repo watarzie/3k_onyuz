@@ -1,4 +1,4 @@
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, inject, signal, computed, DestroyRef, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { API } from '../constants/api-endpoints';
 import { MenuTreeDto } from '../../shared/models';
@@ -16,6 +16,32 @@ import { YetkiTipi } from '../constants/enums';
 @Injectable({ providedIn: 'root' })
 export class PermissionService {
   private http = inject(HttpClient);
+  private destroyRef = inject(DestroyRef);
+  private zone = inject(NgZone);
+  private channel: BroadcastChannel | null = null;
+
+  constructor() {
+    if (typeof window === 'undefined') return;
+    const refresh = () => {
+      if (this.loaded()) this.zone.run(() => void this.reloadPermissions());
+    };
+    window.addEventListener('focus', refresh);
+    const timer = window.setInterval(refresh, 30000);
+    if (typeof BroadcastChannel !== 'undefined') {
+      this.channel = new BroadcastChannel('3k-permission-changes');
+      this.channel.onmessage = refresh;
+    }
+    this.destroyRef.onDestroy(() => {
+      window.removeEventListener('focus', refresh);
+      window.clearInterval(timer);
+      this.channel?.close();
+    });
+  }
+
+  notifyPermissionsChanged(): void {
+    this.channel?.postMessage({ changed: true });
+    void this.reloadPermissions();
+  }
 
   /** Backend'den gelen yetkili menü ağacı */
   private _menuAgaci = signal<MenuTreeDto[]>([]);
@@ -136,7 +162,7 @@ export class PermissionService {
       if (node.kod) {
         map.set(node.kod, node.yetkiTipiId);
       }
-      if (node.route) {
+      if (node.route && node.yetkiTipiId >= YetkiTipi.R) {
         routes.add(node.route);
       }
       if (node.children?.length) {

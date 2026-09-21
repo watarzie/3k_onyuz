@@ -1,0 +1,242 @@
+<section class="v2-section v2-management">
+  <header class="v2-toolbar v2-page-heading">
+    <div class="v2-heading">
+      <span class="v2-heading-icon"
+        ><i class="ri-folder-settings-line" aria-hidden="true"></i
+      ></span>
+      <div>
+        <h3>{{ t('CATEGORY_TITLE') }}</h3>
+        <p>{{ t('CATEGORY_HELP') }}</p>
+      </div>
+    </div>
+  </header>
+  @if (hata()) {
+    <div class="v2-error" role="alert">
+      <i class="ri-error-warning-line" aria-hidden="true"></i>{{ hata() }}
+    </div>
+  }
+  <div class="v2-master-detail">
+    <article class="v2-card v2-category-master">
+      <header class="v2-card-heading">
+        <h4>{{ t('REPORT_CATEGORY_LABEL') }}</h4>
+        <span class="v2-tag">{{ kategoriler().length }}</span>
+      </header>
+      <label class="v2-search"
+        ><span class="visually-hidden">{{ t('SEARCH') }}</span
+        ><i class="ri-search-line" aria-hidden="true"></i
+        ><input
+          type="search"
+          [placeholder]="t('CATEGORY_SEARCH')"
+          [ngModel]="arama()"
+          (ngModelChange)="arama.set($event)"
+      /></label>
+      @if (loading()) {
+        <div class="v2-empty" role="status">
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+          <p>{{ t('LOADING') }}</p>
+        </div>
+      } @else {
+        <div class="v2-category-list">
+          @for (k of gorunenKategoriler(); track k.id) {
+            <div class="v2-category-row" [class.active]="seciliKategoriId() === k.id">
+              <button
+                class="v2-category-select"
+                [disabled]="kalemSaving()"
+                [attr.aria-pressed]="seciliKategoriId() === k.id"
+                (click)="kategoriSec(k.id)"
+              >
+                <i class="ri-folder-3-line" aria-hidden="true"></i
+                ><span
+                  ><strong>{{ k.ad }}</strong
+                  ><small>{{ t(k.aktif ? 'ACTIVE' : 'INACTIVE') }}</small></span
+                ><i class="ri-arrow-right-s-line" aria-hidden="true"></i>
+              </button>
+              @if (yonetebilir()) {
+                <button
+                  class="btn btn-light v2-icon-button"
+                  [disabled]="saving()"
+                  [attr.aria-label]="t('EDIT') + ': ' + k.ad"
+                  (click)="duzenle(k)"
+                >
+                  <i class="ri-edit-line" aria-hidden="true"></i>
+                </button>
+              }
+            </div>
+          } @empty {
+            <div class="v2-empty v2-empty-compact">
+              <i class="ri-folder-open-line" aria-hidden="true"></i>
+              <p>{{ t(arama() ? 'PANEL_EMPTY' : 'CATEGORY_EMPTY') }}</p>
+            </div>
+          }
+        </div>
+      }
+      @if (yonetebilir()) {
+        <div class="v2-category-editor">
+          <h4>{{ t(id ? 'CATEGORY_UPDATE' : 'CATEGORY_NEW') }}</h4>
+          <label
+            >{{ t('CATEGORY_NAME')
+            }}<input [(ngModel)]="ad" maxlength="200" [disabled]="saving()" /></label
+          ><label class="v2-check"
+            ><input type="checkbox" [(ngModel)]="aktif" [disabled]="saving()" />{{
+              t('ACTIVE')
+            }}</label
+          >
+          <footer class="v2-actions">
+            <button class="btn btn-primary" [disabled]="saving() || !ad.trim()" (click)="kaydet()">
+              <i class="ri-save-line" aria-hidden="true"></i
+              >{{ t(saving() ? 'SAVING' : id ? 'CATEGORY_UPDATE' : 'CATEGORY_ADD') }}
+            </button>
+            @if (id) {
+              <button class="btn btn-light" [disabled]="saving()" (click)="yeni()">
+                {{ t('CANCEL') }}
+              </button>
+            }
+          </footer>
+        </div>
+      }
+    </article>
+    <article class="v2-card v2-category-detail">
+      @if (seciliKategoriId()) {
+        <header class="v2-card-heading">
+          <div>
+            <span class="v2-eyebrow">{{ t('CATEGORY_ITEMS') }}</span>
+            <h4>{{ seciliKategori()?.ad }}</h4>
+          </div>
+          <span class="v2-status" [class.is-active]="seciliKategori()?.aktif">{{
+            t(seciliKategori()?.aktif ? 'ACTIVE' : 'INACTIVE')
+          }}</span>
+        </header>
+        @if (!seciliKategori()?.aktif) {
+          <p class="v2-warning">
+            Kategori pasif. Kalem değişikliği için önce kategoriyi aktifleştirin.
+          </p>
+        }
+        @if (kalemHatasi()) {
+          <div class="v2-error" role="alert">{{ kalemHatasi() }}</div>
+        }
+        @if (yonetebilir() && seciliKategori()?.aktif) {
+          <div class="v2-subform">
+            <div class="v2-card-heading">
+              <h4>{{ t(kalemId ? 'ITEM_UPDATE' : 'ITEM_NEW') }}</h4>
+              @if (kalemId) {
+                <button
+                  class="btn btn-light btn-sm"
+                  [disabled]="kalemSaving()"
+                  (click)="yeniKalem()"
+                >
+                  {{ t('CANCEL') }}
+                </button>
+              }
+            </div>
+            <div class="v2-fields">
+              <label
+                >{{ t('ITEM_CODE')
+                }}<input
+                  [(ngModel)]="kalemForm.kod"
+                  maxlength="100"
+                  [disabled]="kalemSaving()" /></label
+              ><label
+                >{{ t('ITEM_NAME')
+                }}<input [(ngModel)]="kalemForm.ad" maxlength="200" [disabled]="kalemSaving()"
+              /></label>
+            </div>
+            <div class="v2-card-heading mt-3">
+              <label class="v2-check"
+                ><input
+                  type="checkbox"
+                  [(ngModel)]="kalemForm.aktif"
+                  [disabled]="kalemSaving()"
+                />{{ t('ACTIVE') }}</label
+              ><button
+                class="btn btn-primary"
+                [disabled]="
+                  kalemSaving() ||
+                  !kalemForm.kod.trim() ||
+                  !kalemForm.ad.trim() ||
+                  (!!kalemId && !varsayilanlariGorebilir())
+                "
+                (click)="kalemKaydet()"
+              >
+                <i class="ri-save-line" aria-hidden="true"></i
+                >{{ t(kalemSaving() ? 'SAVING' : kalemId ? 'ITEM_UPDATE' : 'ITEM_ADD') }}
+              </button>
+            </div>
+            <p class="v2-field-help">
+              <i class="ri-information-line" aria-hidden="true"></i>{{ t('ITEM_DEFAULTS_HELP') }}
+            </p>
+          </div>
+          @if (!varsayilanlariGorebilir() || !kalemVarsayilanlariTam()) {
+            <p class="v2-warning">
+              Mevcut kalemi düzenlemek için gider, parasal veri, birim fiyat ve tutar görüntüleme
+              izinleri gerekir. İzin değiştiyse alt kalemleri yeniden yükleyin.
+            </p>
+          }
+        }
+        @if (kalemLoading()) {
+          <div class="v2-empty" role="status">
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            <p>{{ t('LOADING') }}</p>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="table v2-table mb-0">
+              <thead>
+                <tr>
+                  <th>{{ t('CODE') }}</th>
+                  <th>{{ t('ITEM_NAME') }}</th>
+                  <th>{{ t('STATUS') }}</th>
+                  <th class="text-end">{{ t('ACTION') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (k of kalemler(); track k.id) {
+                  <tr [class.v2-selected-row]="kalemId === k.id">
+                    <td>
+                      <span class="v2-code">{{ k.kod }}</span>
+                    </td>
+                    <td>
+                      <strong>{{ k.ad }}</strong>
+                    </td>
+                    <td>
+                      <span class="v2-status" [class.is-active]="k.aktif">{{
+                        t(k.aktif ? 'ACTIVE' : 'INACTIVE')
+                      }}</span>
+                    </td>
+                    <td class="text-end">
+                      @if (yonetebilir() && seciliKategori()?.aktif) {
+                        <button
+                          class="btn btn-outline-primary btn-sm"
+                          [disabled]="
+                            kalemSaving() || !varsayilanlariGorebilir() || !kalemVarsayilanlariTam()
+                          "
+                          (click)="kalemDuzenle(k)"
+                        >
+                          <i class="ri-edit-line" aria-hidden="true"></i>{{ t('EDIT') }}
+                        </button>
+                      }
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="4">
+                      <div class="v2-empty">
+                        <i class="ri-list-check-2" aria-hidden="true"></i>
+                        <p>{{ t('ITEM_EMPTY') }}</p>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      } @else {
+        <div class="v2-empty v2-category-placeholder">
+          <i class="ri-folder-open-line" aria-hidden="true"></i>
+          <h4>{{ t('CATEGORY_ITEMS') }}</h4>
+          <p>{{ t('CATEGORY_SELECT') }}</p>
+        </div>
+      }
+    </article>
+  </div>
+</section>

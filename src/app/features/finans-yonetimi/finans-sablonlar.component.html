@@ -1,0 +1,169 @@
+<section class="v2-section v2-management">
+  <header class="v2-toolbar v2-page-heading">
+    <div class="v2-heading">
+      <span class="v2-heading-icon"><i class="ri-layout-grid-line" aria-hidden="true"></i></span>
+      <div>
+        <h3>{{ t('TEMPLATE_TITLE') }}</h3>
+        <p>{{ t('TEMPLATE_HELP') }}</p>
+      </div>
+    </div>
+    @if (permissions.canWrite(izin.SablonYonet)) {
+      <button class="btn btn-primary" [disabled]="saving()" (click)="yeni()">
+        <i class="ri-add-line" aria-hidden="true"></i>{{ t('TEMPLATE_ADD') }}
+      </button>
+    }
+  </header>
+  @if (hata()) {
+    <div class="v2-error" role="alert">
+      <i class="ri-error-warning-line" aria-hidden="true"></i>{{ hata() }}
+    </div>
+  }
+  <div class="v2-template-layout" [class.editing]="acik()">
+    <article class="v2-card v2-list-card">
+      <div class="v2-card-toolbar">
+        <label class="v2-search"
+          ><span class="visually-hidden">{{ t('SEARCH') }}</span
+          ><i class="ri-search-line" aria-hidden="true"></i
+          ><input
+            type="search"
+            [placeholder]="t('TEMPLATE_SEARCH')"
+            [ngModel]="arama()"
+            (ngModelChange)="arama.set($event)"
+        /></label>
+        <span class="v2-tag">{{ gorunenSablonlar().length }} / {{ sablonlar().length }}</span>
+      </div>
+      @if (loading()) {
+        <div class="v2-empty" role="status">
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+          <p>{{ t('LOADING') }}</p>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table v2-table mb-0">
+            <thead>
+              <tr>
+                <th>{{ t('TEMPLATE_TITLE') }}</th>
+                <th>{{ t('VERSION') }}</th>
+                <th>{{ t('STATUS') }}</th>
+                <th class="text-end">{{ t('ACTION') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (s of gorunenSablonlar(); track s.id) {
+                <tr [class.v2-selected-row]="acik() && id === s.id">
+                  <td>
+                    <strong>{{ s.ad }}</strong
+                    ><small>{{ s.kod }}</small>
+                  </td>
+                  <td>
+                    <span class="v2-version">v{{ s.surum }}</span>
+                  </td>
+                  <td>
+                    <span class="v2-status" [class.is-active]="s.aktif">{{
+                      t(s.aktif ? 'ACTIVE' : 'INACTIVE')
+                    }}</span>
+                  </td>
+                  <td class="text-end">
+                    @if (permissions.canWrite(izin.SablonYonet)) {
+                      <button
+                        class="btn btn-outline-primary btn-sm"
+                        [disabled]="saving()"
+                        (click)="duzenle(s)"
+                      >
+                        <i class="ri-edit-line" aria-hidden="true"></i>{{ t('TEMPLATE_EDIT') }}
+                      </button>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="4">
+                    <div class="v2-empty">
+                      <i class="ri-layout-grid-line" aria-hidden="true"></i>
+                      <p>{{ t(arama() ? 'PANEL_EMPTY' : 'TEMPLATE_EMPTY') }}</p>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </article>
+    @if (acik() && permissions.canWrite(izin.SablonYonet)) {
+      <article class="v2-card v2-editor-card">
+        <header class="v2-card-heading">
+          <div>
+            <span class="v2-eyebrow">{{ t('VERSION') }}</span>
+            <h4>{{ t(id ? 'TEMPLATE_EDIT' : 'TEMPLATE_ADD') }}</h4>
+          </div>
+          <button
+            class="btn btn-light v2-icon-button"
+            [disabled]="saving()"
+            [attr.aria-label]="t('CLOSE')"
+            (click)="acik.set(false)"
+          >
+            <i class="ri-close-line" aria-hidden="true"></i>
+          </button>
+        </header>
+        <fieldset [disabled]="saving()">
+          <div class="v2-fields">
+            <label>{{ t('CODE') }} *<input [(ngModel)]="form.kod" /></label>
+            <label>{{ t('NAME') }} *<input [(ngModel)]="form.ad" /></label>
+          </div>
+          <label class="v2-check v2-switch-line"
+            ><input type="checkbox" [(ngModel)]="form.aktif" />{{ t('ACTIVE') }}</label
+          >
+          <div class="v2-card-heading v2-field-heading">
+            <h4>
+              {{ t('TEMPLATE_FIELDS') }} <span class="v2-tag">{{ form.alanlar.length }}</span>
+            </h4>
+            <button class="btn btn-outline-primary btn-sm" (click)="alanEkle()">
+              <i class="ri-add-line" aria-hidden="true"></i>{{ t('TEMPLATE_FIELD_ADD') }}
+            </button>
+          </div>
+          @for (a of form.alanlar; track $index) {
+            <div class="v2-field-definition">
+              <div class="v2-field-number">{{ $index + 1 }}</div>
+              <div class="v2-fields">
+                <label>{{ t('TEMPLATE_FIELD_CODE') }}<input [(ngModel)]="a.kod" /></label
+                ><label>{{ t('TEMPLATE_FIELD_TITLE') }}<input [(ngModel)]="a.ad" /></label
+                ><label
+                  >{{ t('TEMPLATE_FIELD_TYPE')
+                  }}<select [(ngModel)]="a.veriTuru">
+                    <option value="metin">{{ t('TEMPLATE_TEXT') }}</option>
+                    <option value="sayi">{{ t('TEMPLATE_NUMBER') }}</option>
+                    <option value="tarih">{{ t('TEMPLATE_DATE') }}</option>
+                    <option value="mantiksal">{{ t('TEMPLATE_BOOLEAN') }}</option>
+                  </select></label
+                ><label class="v2-check"
+                  ><input type="checkbox" [(ngModel)]="a.zorunlu" />{{ t('REQUIRED') }}</label
+                >
+              </div>
+              <button
+                class="btn btn-light v2-icon-button v2-remove"
+                (click)="alanSil($index)"
+                [attr.aria-label]="t('TEMPLATE_FIELD_REMOVE')"
+              >
+                <i class="ri-delete-bin-line" aria-hidden="true"></i>
+              </button>
+            </div>
+          } @empty {
+            <div class="v2-empty v2-empty-compact">
+              <i class="ri-input-field" aria-hidden="true"></i>
+              <p>{{ t('TEMPLATE_FIELDS_EMPTY') }}</p>
+            </div>
+          }
+        </fieldset>
+        <footer class="v2-form-footer">
+          <button class="btn btn-light" [disabled]="saving()" (click)="acik.set(false)">
+            {{ t('CANCEL') }}</button
+          ><button class="btn btn-primary" [disabled]="saving()" (click)="kaydet()">
+            <i class="ri-save-line" aria-hidden="true"></i
+            >{{ t(saving() ? 'SAVING' : 'TEMPLATE_SAVE') }}
+          </button>
+        </footer>
+      </article>
+    }
+  </div>
+</section>

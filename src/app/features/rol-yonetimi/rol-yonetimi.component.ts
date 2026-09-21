@@ -1,4 +1,5 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -8,6 +9,9 @@ import { ConfirmService } from '../../core/services/confirm.service';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { RolDto, RolDetayDto, MenuTreeDto, RolYetkiItemDto, RolGuncelleRequest } from '../../shared/models';
 import { MenuTreeComponent } from './menu-tree/menu-tree.component';
+import { PermissionService } from '../../core/services/permission.service';
+import { YETKI_ATAMA } from '../../core/constants/yetki-kodlari';
+import { RolSablonu } from '../../shared/models';
 
 @Component({
   selector: 'app-rol-yonetimi',
@@ -17,6 +21,12 @@ import { MenuTreeComponent } from './menu-tree/menu-tree.component';
   styleUrls: ['./rol-yonetimi.component.scss'],
 })
 export class RolYonetimiComponent implements OnInit {
+  private destroyRef = inject(DestroyRef);
+  private permissions = inject(PermissionService);
+  canManage = computed(() => this.permissions.canWrite('rol-yonetimi') && this.permissions.canWrite(YETKI_ATAMA));
+  templates = signal<RolSablonu[]>([]);
+  selectedTemplate = signal('');
+  private detailVersion = 0;
   private rolService = inject(RolService);
   private toast = inject(ToastService);
   private confirmSvc = inject(ConfirmService);
@@ -41,6 +51,10 @@ export class RolYonetimiComponent implements OnInit {
   });
   ngOnInit(): void {
     this.loadRoles();
+    this.rolService.getSablonlar().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: items => this.templates.set(items),
+      error: () => this.templates.set([]),
+    });
   }
 
   loadRoles(): void {
@@ -57,21 +71,25 @@ export class RolYonetimiComponent implements OnInit {
   }
 
   onSelectRole(role: RolDto): void {
+    const version = ++this.detailVersion;
     this.isDetailLoading.set(true);
-    this.rolService.getRolDetay(role.id).subscribe({
+    this.rolService.getRolDetay(role.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (detay) => {
+        if (version !== this.detailVersion) return;
         // Parent referanslarını set et (recursive)
         detay.menuAgaci.forEach(m => this.setParentRefs(m));
         this.selectedRole.set(detay);
         this.isDetailLoading.set(false);
       },
       error: () => {
+        if (version !== this.detailVersion) return;
         this.isDetailLoading.set(false);
       },
     });
   }
 
   savePermissions(): void {
+    if (!this.canManage() || this.isSaving()) return;
     const rol = this.selectedRole();
     if (!rol) return;
 
@@ -92,6 +110,7 @@ export class RolYonetimiComponent implements OnInit {
         updated.menuAgaci.forEach(m => this.setParentRefs(m));
         this.selectedRole.set(updated);
         this.isSaving.set(false);
+        this.permissions.notifyPermissionsChanged();
         this.toast.success('Yetki ayarları başarıyla kaydedildi.');
       },
       error: () => {
@@ -104,6 +123,8 @@ export class RolYonetimiComponent implements OnInit {
   // ===== Yeni Rol Ekleme =====
 
   openAddModal(): void {
+    if (!this.canManage()) return;
+    this.selectedTemplate.set('');
     this.newRoleName.set('');
     this.showAddModal.set(true);
   }
@@ -113,10 +134,11 @@ export class RolYonetimiComponent implements OnInit {
   }
 
   addRole(): void {
+    if (!this.canManage()) return;
     const name = this.newRoleName().trim();
     if (!name) return;
 
-    this.rolService.rolOlustur(name).subscribe({
+    this.rolService.rolOlustur(name, this.selectedTemplate() || undefined).subscribe({
       next: () => {
         this.toast.success(`"${name}" rolü başarıyla oluşturuldu.`);
         this.showAddModal.set(false);
@@ -132,6 +154,7 @@ export class RolYonetimiComponent implements OnInit {
 
   async deleteRole(role: RolDto, event: Event): Promise<void> {
     event.stopPropagation();
+    if (!this.canManage()) return;
     const onay = await this.confirmSvc.ask({
       title: 'Rol Sil',
       message: `"${role.ad}" rolünü silmek istediğinize emin misiniz?`,

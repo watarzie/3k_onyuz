@@ -51,12 +51,12 @@ export class AmbalajService {
     return this.api.get<AmbalajUretimPlanDto>(API.AMBALAJ.PLAN(projeId, kaynakProjeTipiId, grup));
   }
 
-  planKaydet(projeId: number, firinPartiNo: string, seciliKaynakSandikIds: number[], grup: AmbalajGrup, durumId: UretimDurumId, kaynakProjeTipiId?: number): Observable<ApiResult<AmbalajUretimPlanDto>> {
-    return this.api.put<AmbalajUretimPlanDto>(API.AMBALAJ.PLAN(projeId, kaynakProjeTipiId, grup), { firinPartiNo, seciliKaynakSandikIds, grup, durumId });
+  planKaydet(projeId: number, firinPartiNo: string, seciliKaynakSandikIds: number[], grup: AmbalajGrup, durumId: UretimDurumId, kaynakProjeTipiId?: number, gerekce?: string): Observable<ApiResult<AmbalajUretimPlanDto>> {
+    return this.api.put<AmbalajUretimPlanDto>(API.AMBALAJ.PLAN(projeId, kaynakProjeTipiId, grup), { firinPartiNo, seciliKaynakSandikIds, grup, durumId, ...(gerekce ? { gerekce } : {}) });
   }
 
-  ambalajKarariKaydet(sandikId: number, ambalajaDahilMi: boolean): Observable<ApiResult<AmbalajUretimPlanDto>> {
-    return this.api.put<AmbalajUretimPlanDto>(API.AMBALAJ.AMBALAJ_KARARI(sandikId), { ambalajaDahilMi });
+  ambalajKarariKaydet(sandikId: number, ambalajaDahilMi: boolean, gerekce?: string): Observable<ApiResult<AmbalajUretimPlanDto>> {
+    return this.api.put<AmbalajUretimPlanDto>(API.AMBALAJ.AMBALAJ_KARARI(sandikId), { ambalajaDahilMi, ...(gerekce ? { gerekce } : {}) });
   }
 
   kalemEkle(projeId: number, request: AmbalajKalemKaydetRequest): Observable<ApiResult<AmbalajUretimKalemDto>> {
@@ -67,8 +67,8 @@ export class AmbalajService {
     return this.api.put<AmbalajUretimKalemDto>(API.AMBALAJ.KALEM(kalemId), request);
   }
 
-  kalemSil(kalemId: number): Observable<ApiResult<void>> {
-    return this.api.delete<void>(API.AMBALAJ.KALEM(kalemId));
+  kalemSil(kalemId: number, gerekce?: string): Observable<ApiResult<void>> {
+    return this.api.delete<void>(`${API.AMBALAJ.KALEM(kalemId)}?gerekce=${encodeURIComponent(gerekce ?? '')}`);
   }
 
   getBagimsizSandiklar(request: AmbalajBagimsizSandikListelemeRequest = {
@@ -98,8 +98,8 @@ export class AmbalajService {
     return this.api.put<AmbalajBagimsizSandikDto>(API.AMBALAJ.BAGIMSIZ_SANDIK(sandikId), request);
   }
 
-  bagimsizSandikSil(sandikId: number): Observable<ApiResult<void>> {
-    return this.api.delete<void>(API.AMBALAJ.BAGIMSIZ_SANDIK(sandikId));
+  bagimsizSandikSil(sandikId: number, gerekce?: string): Observable<ApiResult<void>> {
+    return this.api.delete<void>(`${API.AMBALAJ.BAGIMSIZ_SANDIK(sandikId)}?gerekce=${encodeURIComponent(gerekce ?? '')}`);
   }
 
   getIlaveSandikAdaylari(projeId: number, mevcutKayitId?: number | null): Observable<ApiResult<AmbalajIlaveSandikAdayDto[]>> {
