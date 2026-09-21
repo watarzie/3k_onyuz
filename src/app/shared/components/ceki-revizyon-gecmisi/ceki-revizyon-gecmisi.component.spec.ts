@@ -23,7 +23,6 @@ describe('Revizyon geçmişi ekranı', () => {
       { provide: CekiRevizyonGecmisiService, useValue: service },
       { provide: TranslationService, useValue: { translate: (key: string) => key } },
     ] });
-    TestBed.overrideComponent(CekiRevizyonGecmisiComponent, { set: { template: '' } });
     fixture = TestBed.createComponent(CekiRevizyonGecmisiComponent);
     fixture.componentRef.setInput('projeId', 17);
     fixture.componentRef.setInput('projeNo', 'QA-17');
@@ -34,6 +33,22 @@ describe('Revizyon geçmişi ekranı', () => {
     expect(service.listele).toHaveBeenCalledWith(17, 1);
     expect(fixture.componentInstance.rows().map(row => row.kayitId)).toEqual([1]);
     expect(fixture.componentInstance.total()).toBe(21);
+  });
+
+  it('dosya mevcut olsa bile yalnız detay aksiyonunu gösterir', () => {
+    const row = { kayitId: 1, kaynak: 'talep', dosyaMevcut: true } as CekiRevizyonGecmisiKaydi;
+    fixture.componentInstance.rows.set([row]);
+    fixture.detectChanges();
+
+    const buttons = fixture.nativeElement.querySelectorAll('tbody button') as NodeListOf<HTMLButtonElement>;
+    expect(buttons.length).toBe(1);
+    expect(buttons[0].textContent).toContain('REV_HISTORY.DETAIL');
+    expect(fixture.nativeElement.querySelector('.ri-download-line')).toBeNull();
+
+    service.detay.and.returnValue(of({ isSuccess: true, value: { kayit: row, onizleme: null } }));
+    buttons[0].click();
+    expect(service.detay).toHaveBeenCalledWith(row);
+    expect(service.dosya).not.toHaveBeenCalled();
   });
 
   it('geciken önceki sayfa yanıtı yeni sayfayı ezmez', () => {

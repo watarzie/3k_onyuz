@@ -27,7 +27,6 @@ export class CekiRevizyonGecmisiComponent {
   readonly total = signal(0);
   readonly loading = signal(false);
   readonly detailLoading = signal(false);
-  readonly downloading = signal(false);
   readonly error = signal('');
   readonly detail = signal<CekiRevizyonGecmisiDetayi | null>(null);
   private requestVersion = 0;
@@ -74,26 +73,4 @@ export class CekiRevizyonGecmisiComponent {
     });
   }
 
-  download(row: CekiRevizyonGecmisiKaydi): void {
-    if (this.downloading()) return;
-    this.downloading.set(true);
-    const projeId = this.projeId();
-    this.error.set('');
-    this.service.dosya(row).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: blob => {
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = url;
-        anchor.download = row.dosyaAdi;
-        anchor.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-        this.downloading.set(false);
-      },
-      error: async (error: unknown) => {
-        const message = await this.service.dosyaHatasi(error, this.ts.translate('REV_HISTORY.FILE_ERROR'));
-        if (this.projeId() === projeId && !this.destroyRef.destroyed) this.error.set(message);
-        this.downloading.set(false);
-      },
-    });
-  }
 }

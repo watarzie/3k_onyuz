@@ -19,7 +19,7 @@
                   <td><span class="badge bg-light text-primary">{{ ('REV_HISTORY.STATE_' + row.durum) | translate }}</span><small>{{ row.uygulamaTarihi | date:'dd.MM.yyyy HH:mm' }}</small></td>
                   <td>{{ row.onaylayan || '—' }}<small>{{ row.kararTarihi | date:'dd.MM.yyyy HH:mm' }}</small></td>
                   <td class="text-nowrap"><span class="text-success">+{{ row.eklenenSatirSayisi ?? '—' }}</span> / {{ row.guncellenenSatirSayisi ?? '—' }} / <span class="text-danger">−{{ row.silinenSatirSayisi ?? '—' }}</span></td>
-                  <td><div class="d-flex gap-2"><button type="button" class="btn btn-sm btn-outline-primary" (click)="openDetail(row)" [disabled]="detailLoading()">{{ 'REV_HISTORY.DETAIL' | translate }}</button><button type="button" class="btn btn-sm btn-outline-secondary" (click)="download(row)" [disabled]="!row.dosyaMevcut || downloading()" [title]="(row.dosyaMevcut ? 'REV_HISTORY.DOWNLOAD' : 'REV_HISTORY.NO_FILE') | translate"><i class="ri-download-line"></i></button></div></td>
+                  <td><button type="button" class="btn btn-sm btn-outline-primary" (click)="openDetail(row)" [disabled]="detailLoading()">{{ 'REV_HISTORY.DETAIL' | translate }}</button></td>
                 </tr>
               } @empty { <tr><td colspan="6" class="p-4 text-center text-secondary">{{ 'REV_HISTORY.EMPTY' | translate }}</td></tr> }
             </tbody>
