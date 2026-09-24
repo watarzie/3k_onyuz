@@ -8,7 +8,6 @@ import { ToastService } from '../../core/services/toast.service';
 import { TranslationService } from '../../core/services/translation.service';
 import { KullaniciDto, KullaniciYetkiModel } from '../../shared/models';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
-import { YETKI_ATAMA } from '../../core/constants/yetki-kodlari';
 
 @Component({
   selector: 'app-kullanici-yetki-editor',
@@ -65,7 +64,7 @@ export class KullaniciYetkiEditorComponent implements OnChanges {
   loading = signal(false);
   saving = signal(false);
   error = signal('');
-  canManage = computed(() => this.permissions.canWrite(YETKI_ATAMA));
+  canManage = computed(() => this.permissions.canWrite('kullanicilar'));
   filtered = computed(() => {
     const term = this.search().trim().toLocaleLowerCase('tr');
     return this.rows().filter(row => !term || (row.ad + ' ' + row.kod).toLocaleLowerCase('tr').includes(term));

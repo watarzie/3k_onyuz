@@ -1,5 +1,4 @@
 /** Backend YetkiKodlari ile bire bir işlem/alan kodları. Kök W alt izin vermez. */
-export const YETKI_ATAMA = 'yetki-atama';
 export const AMBALAJ_YETKI = {
   Listele: 'ambalaj-uretim-listesi',
   KayitDuzenle: 'ambalaj-kayit-duzenle',

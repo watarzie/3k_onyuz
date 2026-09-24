@@ -219,6 +219,7 @@
 .permission-legend {
   display: flex;
   gap: 32px;
+  flex-wrap: wrap;
 
   .legend-item {
     display: flex;
@@ -323,4 +324,10 @@
   .role-container {
     grid-template-columns: 1fr;
   }
+}
+
+.permission-type-help {
+  margin: 8px 0 0;
+  color: #6c757d;
+  font-size: 12px;
 }

@@ -243,6 +243,12 @@
   },
   "PERMISSIONS": {
     "CRITICAL": "Kritik",
+    "FULL_ACCESS": "Yazma yetkisi",
+    "READ_ONLY": "Sadece okuma",
+    "NO_ACCESS": "Yetkisiz",
+    "READ_ACCESS": "Okuma",
+    "WRITE_ACCESS": "Yazma",
+    "PERMISSION_TYPE_HELP": "İşlem bazlı izinlerde etiket izin türünü, kutu ise iznin açık veya kapalı olduğunu gösterir.",
     "TEMPLATE": "Rol şablonu",
     "EMPTY_TEMPLATE": "Boş rol",
     "USER_TITLE": "Kullanıcıya özel izinler",

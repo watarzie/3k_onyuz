@@ -85,17 +85,19 @@
           <div class="permission-legend">
             <div class="legend-item">
               <input type="checkbox" disabled [checked]="true" class="form-check-input">
-              <span>Yetkili</span>
+              <span>{{ 'PERMISSIONS.FULL_ACCESS' | translate }}</span>
             </div>
             <div class="legend-item">
               <input type="checkbox" disabled [indeterminate]="true" class="form-check-input">
-              <span>Sadece Okuma</span>
+              <span>{{ 'PERMISSIONS.READ_ONLY' | translate }}</span>
             </div>
             <div class="legend-item">
               <input type="checkbox" disabled [checked]="false" class="form-check-input">
-              <span>Yetkisiz</span>
+              <span>{{ 'PERMISSIONS.NO_ACCESS' | translate }}</span>
             </div>
           </div>
+
+          <p class="permission-type-help">{{ 'PERMISSIONS.PERMISSION_TYPE_HELP' | translate }}</p>
 
           <hr>
 

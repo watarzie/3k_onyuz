@@ -10,7 +10,6 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { RolDto, RolDetayDto, MenuTreeDto, RolYetkiItemDto, RolGuncelleRequest } from '../../shared/models';
 import { MenuTreeComponent } from './menu-tree/menu-tree.component';
 import { PermissionService } from '../../core/services/permission.service';
-import { YETKI_ATAMA } from '../../core/constants/yetki-kodlari';
 import { RolSablonu } from '../../shared/models';
 
 @Component({
@@ -23,7 +22,7 @@ import { RolSablonu } from '../../shared/models';
 export class RolYonetimiComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
   private permissions = inject(PermissionService);
-  canManage = computed(() => this.permissions.canWrite('rol-yonetimi') && this.permissions.canWrite(YETKI_ATAMA));
+  canManage = computed(() => this.permissions.canWrite('rol-yonetimi'));
   templates = signal<RolSablonu[]>([]);
   selectedTemplate = signal('');
   private detailVersion = 0;

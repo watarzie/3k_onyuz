@@ -11,8 +11,8 @@
       <!-- Checkbox (tri-state) -->
       <input type="checkbox"
              class="form-check-input"
-             [checked]="node.gerekenYetkiTipiId ? node.yetkiTipiId > 1 : node.yetkiTipiId === 3"
-             [indeterminate]="!node.gerekenYetkiTipiId && node.yetkiTipiId === 2"
+             [checked]="node.yetkiTipiId === yetkiTipi.W"
+             [indeterminate]="node.yetkiTipiId === yetkiTipi.R"
              [disabled]="disabled"
              (change)="onPermissionChange(node)">
 
@@ -21,6 +21,12 @@
 
       <!-- Label -->
       <span class="node-label">{{ node.ad || (node.labelKey | translate) }}</span>
+      <span *ngIf="node.gerekenYetkiTipiId"
+            class="permission-type"
+            [class.permission-type-write]="node.gerekenYetkiTipiId === yetkiTipi.W">
+        {{ (node.gerekenYetkiTipiId === yetkiTipi.R
+            ? 'PERMISSIONS.READ_ACCESS' : 'PERMISSIONS.WRITE_ACCESS') | translate }}
+      </span>
       <small *ngIf="node.kritikMi" class="text-danger">{{ 'PERMISSIONS.CRITICAL' | translate }}</small>
     </div>
 

@@ -243,6 +243,12 @@
   },
   "PERMISSIONS": {
     "CRITICAL": "Critical",
+    "FULL_ACCESS": "Write access",
+    "READ_ONLY": "Read only",
+    "NO_ACCESS": "No access",
+    "READ_ACCESS": "Read",
+    "WRITE_ACCESS": "Write",
+    "PERMISSION_TYPE_HELP": "For action permissions, the label shows the permission type and the box shows whether it is enabled.",
     "TEMPLATE": "Role template",
     "EMPTY_TEMPLATE": "Empty role",
     "USER_TITLE": "User permissions",

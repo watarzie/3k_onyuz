@@ -11,7 +11,6 @@ import { PermissionService } from '../../core/services/permission.service';
 import { TranslationService } from '../../core/services/translation.service';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { KullaniciYetkiEditorComponent } from './kullanici-yetki-editor.component';
-import { YETKI_ATAMA } from '../../core/constants/yetki-kodlari';
 import { BildirimAbonelikAyariDto, KullaniciDto, KullaniciGuncelleRequest, RolDto, RegisterDto } from '../../shared/models';
 
 @Component({
@@ -32,7 +31,7 @@ export class KullaniciYonetimiComponent implements OnInit {
 
   canManageNotifications = computed(() => this.permissions.canWrite('kullanicilar'));
   canManageTwoFactor = computed(() => this.permissions.canWrite('kullanicilar'));
-  canManagePermissions = computed(() => this.permissions.canWrite(YETKI_ATAMA));
+  canManagePermissions = computed(() => this.permissions.canWrite('kullanicilar'));
   permissionUser = signal<KullaniciDto | null>(null);
 
   isLoading = signal(false);

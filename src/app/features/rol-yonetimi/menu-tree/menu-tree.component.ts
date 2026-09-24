@@ -12,6 +12,8 @@ import { YetkiTipi } from '../../../core/constants/enums';
   styleUrls: ['./menu-tree.component.scss'],
 })
 export class MenuTreeComponent {
+  readonly yetkiTipi = YetkiTipi;
+
   @Input() nodes: MenuTreeDto[] = [];
   @Input() disabled = false;
 
