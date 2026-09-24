@@ -11,6 +11,7 @@ import { RolDto, RolDetayDto, MenuTreeDto, RolYetkiItemDto, RolGuncelleRequest }
 import { MenuTreeComponent } from './menu-tree/menu-tree.component';
 import { PermissionService } from '../../core/services/permission.service';
 import { RolSablonu } from '../../shared/models';
+import { normalizeMenuTree } from '../../core/services/menu-permission-tree';
 
 @Component({
   selector: 'app-rol-yonetimi',
@@ -75,9 +76,10 @@ export class RolYonetimiComponent implements OnInit {
     this.rolService.getRolDetay(role.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (detay) => {
         if (version !== this.detailVersion) return;
+        const menuAgaci = normalizeMenuTree(detay.menuAgaci);
         // Parent referanslarını set et (recursive)
-        detay.menuAgaci.forEach(m => this.setParentRefs(m));
-        this.selectedRole.set(detay);
+        menuAgaci.forEach(m => this.setParentRefs(m));
+        this.selectedRole.set({ ...detay, menuAgaci });
         this.isDetailLoading.set(false);
       },
       error: () => {
@@ -96,7 +98,7 @@ export class RolYonetimiComponent implements OnInit {
 
     // Tüm menü node'larından yetki listesi çıkar (recursive)
     const yetkiler: RolYetkiItemDto[] = [];
-    this.collectPermissions(rol.menuAgaci, yetkiler);
+    this.collectPermissions(normalizeMenuTree(rol.menuAgaci), yetkiler);
 
     const request: RolGuncelleRequest = {
       id: rol.id,
@@ -106,8 +108,9 @@ export class RolYonetimiComponent implements OnInit {
 
     this.rolService.rolGuncelle(request).subscribe({
       next: (updated) => {
-        updated.menuAgaci.forEach(m => this.setParentRefs(m));
-        this.selectedRole.set(updated);
+        const menuAgaci = normalizeMenuTree(updated.menuAgaci);
+        menuAgaci.forEach(m => this.setParentRefs(m));
+        this.selectedRole.set({ ...updated, menuAgaci });
         this.isSaving.set(false);
         this.permissions.notifyPermissionsChanged();
         this.toast.success('Yetki ayarları başarıyla kaydedildi.');

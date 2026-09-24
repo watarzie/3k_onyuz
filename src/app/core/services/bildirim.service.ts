@@ -20,6 +20,7 @@ export class BildirimService {
   private readonly auth = inject(AuthService);
   private readonly approvalUpdateSource = new Subject<void>();
   private readonly notificationUpdateSource = new Subject<void>();
+  private readonly permissionUpdateSource = new Subject<void>();
 
   private sseController: AbortController | null = null;
   private sseConnecting = false;
@@ -34,6 +35,7 @@ export class BildirimService {
   readonly loading = signal(false);
   readonly onayGuncellendi$ = this.approvalUpdateSource.asObservable();
   readonly bildirimGuncellendi$ = this.notificationUpdateSource.asObservable();
+  readonly yetkiGuncellendi$ = this.permissionUpdateSource.asObservable();
   readonly bildirimVarMi = computed(() => this.toplamOkunmamis() > 0);
 
   loadUnread(limit = 20): void {
@@ -132,6 +134,7 @@ export class BildirimService {
             // güncel snapshot üzerinden ilgili ekranlara yeniden sorgulatır.
             this.notificationUpdateSource.next();
             this.approvalUpdateSource.next();
+            this.permissionUpdateSource.next();
           }
         },
         onmessage: event => {
@@ -141,6 +144,7 @@ export class BildirimService {
             this.notificationUpdateSource.next();
           }
           if (event.event === 'approval_update') this.approvalUpdateSource.next();
+          if (event.event === 'permission_update') this.permissionUpdateSource.next();
         },
         onclose: () => {
           if (connectionId === this.sseConnectionId && this.sseController) {

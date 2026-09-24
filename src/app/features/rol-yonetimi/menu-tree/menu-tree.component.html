@@ -10,11 +10,12 @@
 
       <!-- Checkbox (tri-state) -->
       <input type="checkbox"
+             #permissionCheckbox
              class="form-check-input"
              [checked]="node.yetkiTipiId === yetkiTipi.W"
              [indeterminate]="node.yetkiTipiId === yetkiTipi.R"
-             [disabled]="disabled"
-             (change)="onPermissionChange(node)">
+             [disabled]="isPermissionDisabled(node)"
+             (change)="onPermissionChange(node, permissionCheckbox)">
 
       <!-- İkon -->
       <i *ngIf="node.icon" class="{{ node.icon }} node-icon"></i>

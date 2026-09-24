@@ -4,6 +4,7 @@ import { NgClass } from '@angular/common';
 import { ToggleService } from '../header/toggle.service';
 import { TranslationService } from '../../core/services/translation.service';
 import { PermissionService } from '../../core/services/permission.service';
+import { YetkiTipi } from '../../core/constants/enums';
 
 interface MenuItem {
   label: string;
@@ -30,8 +31,7 @@ export class SidebarComponent {
 
   /**
    * Menü ağacı — TAMAMEN backend'den gelir.
-   * Backend yetkisiz menüleri zaten filtrelemiş olarak gönderir.
-   * Frontend sadece translate edip render eder.
+   * PermissionService etkin yetkiye göre sınırlar; burada da N düğümler elenir.
    */
   menu = computed<MenuItem[]>(() => {
     // Signal bağımlılıkları: dil + menü ağacı
@@ -39,7 +39,8 @@ export class SidebarComponent {
     const menuAgaci = this.permissionService.menuAgaci();
 
     return menuAgaci
-      .filter(node => node.route || (node.children && node.children.some(c => c.route)))
+      .filter(node => node.yetkiTipiId >= YetkiTipi.R &&
+        (node.route || node.children?.some(c => c.yetkiTipiId >= YetkiTipi.R && c.route)))
       .map(node => ({
         label: this.ts.translate(node.labelKey),
         kod: node.kod,
@@ -48,7 +49,8 @@ export class SidebarComponent {
         yetkiTipiId: node.yetkiTipiId,
         // Route=null olanları sidebar'da GİZLE (grid-modulu, 3k-modulu gibi)
         children: node.children
-          ?.filter(child => !!child.route && child.kod !== '3k-is-listesi' && child.kod !== 'grid-is-listesi')
+          ?.filter(child => child.yetkiTipiId >= YetkiTipi.R && !!child.route &&
+            child.kod !== '3k-is-listesi' && child.kod !== 'grid-is-listesi')
           .map(child => ({
             label: this.ts.translate(child.labelKey),
             kod: child.kod,

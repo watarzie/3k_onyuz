@@ -39,6 +39,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   );
 
   private approvalUpdateSubscription?: Subscription;
+  private permissionUpdateSubscription?: Subscription;
 
   get canSeeApprovalQueue(): boolean {
     return this.permissions.hasAccess('islem-onay-merkezi');
@@ -59,10 +60,14 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.approvalUpdateSubscription = this.bildirimService.onayGuncellendi$.subscribe(() => {
       if (this.canSeeApprovalQueue) this.fetchApprovalCount();
     });
+    this.permissionUpdateSubscription = this.bildirimService.yetkiGuncellendi$.subscribe(() => {
+      void this.permissions.refreshPermissions();
+    });
   }
 
   ngOnDestroy(): void {
     this.approvalUpdateSubscription?.unsubscribe();
+    this.permissionUpdateSubscription?.unsubscribe();
     this.bildirimService.disconnectStream();
   }
 

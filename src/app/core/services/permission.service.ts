@@ -3,14 +3,14 @@ import { HttpClient } from '@angular/common/http';
 import { API } from '../constants/api-endpoints';
 import { MenuTreeDto } from '../../shared/models';
 import { YetkiTipi } from '../constants/enums';
+import { normalizeMenuTree } from './menu-permission-tree';
 
 /**
  * Yetki Servisi — Backend-driven RBAC.
  *
  * GÜVENLİK PRENSİBİ:
- * - Menü ağacı TAMAMEN backend'den gelir (zaten filtrelenmiş).
- * - Backend yetkisiz (N) menüleri hiç göndermez.
- * - Frontend sadece render eder, filtreleme YAPMAZ.
+ * - Menü ağacı backend'den gelir; hiyerarşi istemcide de sınırlandırılır.
+ * - N üst düğüm ve altı gösterilmez; R üst düğüm altındaki W işlemleri etkin sayılmaz.
  * - Route Guard bu servisteki yetkili route listesini kontrol eder.
  */
 @Injectable({ providedIn: 'root' })
@@ -19,28 +19,39 @@ export class PermissionService {
   private destroyRef = inject(DestroyRef);
   private zone = inject(NgZone);
   private channel: BroadcastChannel | null = null;
+  private readonly focusRefreshAgeMs = 5 * 60 * 1000;
+  private lastSuccessfulLoadAt = 0;
+  private lastRefreshAttemptAt = 0;
+  private refreshPromise: Promise<boolean> | null = null;
+  private refreshQueued = false;
 
   constructor() {
     if (typeof window === 'undefined') return;
-    const refresh = () => {
-      if (this.loaded()) this.zone.run(() => void this.reloadPermissions());
+    const refreshOnFocus = () => {
+      const lastCheck = Math.max(this.lastSuccessfulLoadAt, this.lastRefreshAttemptAt);
+      if (this.loaded() && Date.now() - lastCheck >= this.focusRefreshAgeMs) {
+        this.zone.run(() => void this.refreshPermissions());
+      }
     };
-    window.addEventListener('focus', refresh);
-    const timer = window.setInterval(refresh, 30000);
+    const refreshOnChange = () => {
+      if (this.loaded() || this.loadPromise) {
+        this.zone.run(() => void this.refreshPermissions());
+      }
+    };
+    window.addEventListener('focus', refreshOnFocus);
     if (typeof BroadcastChannel !== 'undefined') {
       this.channel = new BroadcastChannel('3k-permission-changes');
-      this.channel.onmessage = refresh;
+      this.channel.onmessage = refreshOnChange;
     }
     this.destroyRef.onDestroy(() => {
-      window.removeEventListener('focus', refresh);
-      window.clearInterval(timer);
+      window.removeEventListener('focus', refreshOnFocus);
       this.channel?.close();
     });
   }
 
   notifyPermissionsChanged(): void {
     this.channel?.postMessage({ changed: true });
-    void this.reloadPermissions();
+    void this.refreshPermissions();
   }
 
   /** Backend'den gelen yetkili menü ağacı */
@@ -81,13 +92,7 @@ export class PermissionService {
               resolve(false);
               return;
             }
-            this._menuAgaci.set(menuAgaci);
-            const map = new Map<string, number>();
-            const routes = new Set<string>();
-            this.flattenTree(menuAgaci, map, routes);
-            this._yetkiMap.set(map);
-            this._allowedRoutes.set(routes);
-            this.loaded.set(true);
+            this.applyMenu(menuAgaci);
             resolve(true);
           },
           error: () => {
@@ -122,6 +127,51 @@ export class PermissionService {
     return this.ensurePermissionsLoaded();
   }
 
+  /** Canlı olay veya kullanıcı etkileşiminde güncelle; arada menüyü/yetkileri boşaltma. */
+  refreshPermissions(): Promise<boolean> {
+    if (!this.loaded()) {
+      const initialLoadPending = this.loadPromise !== null;
+      const requestVersion = this.loadVersion;
+      const initialLoad = this.ensurePermissionsLoaded();
+      return initialLoadPending
+        ? initialLoad.then(success => {
+            if (requestVersion !== this.loadVersion) return false;
+            return success ? this.refreshPermissions() : this.ensurePermissionsLoaded();
+          })
+        : initialLoad;
+    }
+    if (this.refreshPromise) {
+      this.refreshQueued = true;
+      return this.refreshPromise;
+    }
+
+    const requestVersion = this.loadVersion;
+    const request = async (): Promise<boolean> => {
+      let success = false;
+      do {
+        this.refreshQueued = false;
+        this.lastRefreshAttemptAt = Date.now();
+        success = await new Promise<boolean>((resolve) => {
+          this.http.get<MenuTreeDto[]>(API.MENU.KULLANICI_MENU).subscribe({
+            next: (menuAgaci) => {
+              if (requestVersion !== this.loadVersion) return resolve(false);
+              // İstek sürerken gelen yetki olayı eski snapshot'ı geçersiz kılar.
+              if (!this.refreshQueued) this.applyMenu(menuAgaci);
+              resolve(true);
+            },
+            error: () => resolve(false),
+          });
+        });
+      } while (this.refreshQueued && requestVersion === this.loadVersion && this.loaded());
+      return success && requestVersion === this.loadVersion;
+    };
+    const pending = request().finally(() => {
+      if (this.refreshPromise === pending) this.refreshPromise = null;
+    });
+    this.refreshPromise = pending;
+    return pending;
+  }
+
   /** Menüye erişim var mı? (W veya R) */
   hasAccess(menuKod: string): boolean {
     const yetki = this._yetkiMap().get(menuKod);
@@ -148,6 +198,10 @@ export class PermissionService {
   /** Oturumu temizle */
   clear(): void {
     this.loadVersion++;
+    this.lastSuccessfulLoadAt = 0;
+    this.lastRefreshAttemptAt = 0;
+    this.refreshQueued = false;
+    this.refreshPromise = null;
     this._menuAgaci.set([]);
     this._yetkiMap.set(new Map());
     this._allowedRoutes.set(new Set());
@@ -156,6 +210,21 @@ export class PermissionService {
   }
 
   // ===== Private Helpers =====
+
+  private applyMenu(menuAgaci: MenuTreeDto[]): void {
+    const effectiveMenu = normalizeMenuTree(menuAgaci, true);
+    const map = new Map<string, number>();
+    const routes = new Set<string>();
+    this.flattenTree(effectiveMenu, map, routes);
+    this._menuAgaci.set(effectiveMenu);
+    const previous = this._yetkiMap();
+    if (previous.size !== map.size || [...map].some(([code, permission]) => previous.get(code) !== permission)) {
+      this._yetkiMap.set(map);
+    }
+    this._allowedRoutes.set(routes);
+    this.loaded.set(true);
+    this.lastSuccessfulLoadAt = Date.now();
+  }
 
   private flattenTree(nodes: MenuTreeDto[], map: Map<string, number>, routes: Set<string>): void {
     for (const node of nodes) {

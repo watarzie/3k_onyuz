@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { MenuTreeDto } from '../../../shared/models';
 import { YetkiTipi } from '../../../core/constants/enums';
+import { capMenuPermission } from '../../../core/services/menu-permission-tree';
 
 @Component({
   selector: 'app-menu-tree',
@@ -31,67 +32,58 @@ export class MenuTreeComponent {
     this.expandedState.set(node.id, !this.isExpanded(node));
   }
 
+  isPermissionDisabled(node: MenuTreeDto): boolean {
+    const parentPermission = node.parent?.yetkiTipiId ?? YetkiTipi.W;
+    return this.disabled || parentPermission === YetkiTipi.N ||
+      (parentPermission === YetkiTipi.R && node.gerekenYetkiTipiId === YetkiTipi.W);
+  }
+
   /**
-   * Checkbox tıklandığında yetki döngüsü:
-   * N(1) → R(2) → W(3) → N(1)
+   * Menü iznini parent sınırında döndürür; işlem izinlerini yalnız tanımlı seviyede açar.
    */
-  onPermissionChange(node: MenuTreeDto): void {
-    if (this.disabled) return;
+  onPermissionChange(node: MenuTreeDto, checkbox?: HTMLInputElement): void {
+    if (this.isPermissionDisabled(node)) return;
+    const parentPermission = node.parent?.yetkiTipiId ?? YetkiTipi.W;
     if (node.gerekenYetkiTipiId) {
-      node.yetkiTipiId = node.yetkiTipiId === YetkiTipi.N ? node.gerekenYetkiTipiId : YetkiTipi.N;
-      node.yetkiTipiMetni = node.yetkiTipiId === YetkiTipi.W ? 'W' : node.yetkiTipiId === YetkiTipi.R ? 'R' : 'N';
-      return;
+      const next = node.yetkiTipiId === YetkiTipi.N ? node.gerekenYetkiTipiId : YetkiTipi.N;
+      this.setPermission(node, capMenuPermission(next, parentPermission, node.gerekenYetkiTipiId));
+    } else {
+      this.cyclePermission(node, parentPermission);
     }
-    this.cyclePermission(node);
+    this.capChildren(node);
+    // A native click on an indeterminate checkbox changes `checked` even when
+    // Angular's [checked] expression remains false (R -> N). Restore the DOM
+    // state explicitly so the displayed permission always matches the model.
+    if (checkbox) {
+      checkbox.checked = node.yetkiTipiId === YetkiTipi.W;
+      checkbox.indeterminate = node.yetkiTipiId === YetkiTipi.R;
+    }
   }
 
-  /** N(1) → R(2) → W(3) → N(1) döngüsü */
-  private cyclePermission(node: MenuTreeDto): void {
+  /** Parent R altında N ↔ R, parent W altında N → R → W → N. */
+  private cyclePermission(node: MenuTreeDto, parentPermission: number): void {
     if (node.yetkiTipiId === YetkiTipi.N) {
-      node.yetkiTipiId = YetkiTipi.R;
-      node.yetkiTipiMetni = 'R';
+      this.setPermission(node, YetkiTipi.R);
     } else if (node.yetkiTipiId === YetkiTipi.R) {
-      node.yetkiTipiId = YetkiTipi.W;
-      node.yetkiTipiMetni = 'W';
+      this.setPermission(node, parentPermission === YetkiTipi.W ? YetkiTipi.W : YetkiTipi.N);
     } else {
-      node.yetkiTipiId = YetkiTipi.N;
-      node.yetkiTipiMetni = 'N';
+      this.setPermission(node, YetkiTipi.N);
     }
   }
 
-  /** Tüm alt menülere aynı yetkiyi ata */
-  private setPermissionToChildren(node: MenuTreeDto, flag: number): void {
-    if (!node.children?.length) return;
-    const metni = flag === YetkiTipi.W ? 'W' : flag === YetkiTipi.R ? 'R' : 'N';
-    node.children.forEach(child => {
-      child.yetkiTipiId = flag;
-      child.yetkiTipiMetni = metni;
-      this.setPermissionToChildren(child, flag);
-    });
+  private setPermission(node: MenuTreeDto, permission: number): void {
+    node.yetkiTipiId = permission;
+    node.yetkiTipiMetni = YetkiTipi[permission];
   }
 
-  /** Parent'ın yetkisini children'a göre hesapla */
-  private updateParentPermission(parent: MenuTreeDto): void {
-    const children = parent.children;
-    if (!children?.length) return;
-
-    const allW = children.every(c => c.yetkiTipiId === YetkiTipi.W);
-    const allN = children.every(c => c.yetkiTipiId === YetkiTipi.N);
-
-    if (allW) {
-      parent.yetkiTipiId = YetkiTipi.W;
-      parent.yetkiTipiMetni = 'W';
-    } else if (allN) {
-      parent.yetkiTipiId = YetkiTipi.N;
-      parent.yetkiTipiMetni = 'N';
-    } else {
-      parent.yetkiTipiId = YetkiTipi.R; // karışık → indeterminate
-      parent.yetkiTipiMetni = 'R';
-    }
-
-    // Yukarı devam
-    if (parent.parent) {
-      this.updateParentPermission(parent.parent);
+  /** Keep existing N decisions while capping every descendant after a parent change. */
+  private capChildren(node: MenuTreeDto): void {
+    for (const child of node.children ?? []) {
+      this.setPermission(
+        child,
+        capMenuPermission(child.yetkiTipiId, node.yetkiTipiId, child.gerekenYetkiTipiId),
+      );
+      this.capChildren(child);
     }
   }
 }
