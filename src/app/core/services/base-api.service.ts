@@ -85,6 +85,14 @@ export class BaseApiService {
   }
 
   private wrapSuccess<T>(data: T): ApiResult<T> {
+    // Onay kuyruğuna kabul, işin uygulanmış sonucu değildir. HTTP 202 gövdesi
+    // mevcut API sözleşmesinde bu alanı taşır; çağıran ekran bunu ayırabilmelidir.
+    if (data && typeof data === 'object' && 'statusCode' in data && data.statusCode === 202) {
+      return { isSuccess: true, value: data, statusCode: 202 };
+    }
+    if (data && typeof data === 'object' && 'isSuccess' in data && data.isSuccess === false) {
+      return data as unknown as ApiResult<T>;
+    }
     return { isSuccess: true, value: data };
   }
 

@@ -1,0 +1,186 @@
+<div class="v2-modal-backdrop">
+  <section
+    class="v2-modal v2-finance-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="dagitim-title"
+  >
+    <header class="v2-dialog-header">
+      <div class="v2-dialog-heading">
+        <span class="v2-dialog-icon"><i class="ri-file-add-line" aria-hidden="true"></i></span>
+        <div>
+          <h3 id="dagitim-title">
+            {{ tur() === 'Siparis' ? t('CREATE_PO') : t('CREATE_INVOICE') }}
+          </h3>
+          <p>{{ t('ALLOC_HELP') }}</p>
+        </div>
+      </div>
+      <button
+        class="btn btn-light v2-dialog-close"
+        [attr.aria-label]="t('CLOSE')"
+        (click)="kapat.emit()"
+        [disabled]="saving()"
+      >
+        <i class="ri-close-line" aria-hidden="true"></i>
+      </button>
+    </header>
+    <div class="v2-dialog-body">
+      @if (hata()) {
+        <div class="v2-error" role="alert">
+          <i class="ri-error-warning-line" aria-hidden="true"></i>{{ hata() }}
+        </div>
+      }
+      @if (loading()) {
+        <div class="v2-empty" role="status">
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span
+          >{{ t('RECORDS_LOADING') }}
+        </div>
+      } @else if (tur() === 'Fatura' && !seciliPo()) {
+        <article class="v2-card v2-dialog-search">
+          <label
+            >{{ t('ALLOC_SEARCH_PO')
+            }}<input
+              type="search"
+              [placeholder]="t('ALLOC_SEARCH_HINT')"
+              [(ngModel)]="poArama"
+              (ngModelChange)="poAra()"
+          /></label>
+          <p class="v2-note">{{ t('ALLOC_PO_NOTE') }}</p>
+        </article>
+        <div class="v2-dialog-table-wrap">
+          <table class="table v2-table">
+            <thead>
+              <tr>
+                <th>PO</th>
+                <th>{{ t('PROJECT') }}</th>
+                <th>{{ t('DATE') }}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (po of siparisler()?.items; track po.id) {
+                <tr>
+                  <td>
+                    <strong>{{ po.poNumarasi }}</strong>
+                  </td>
+                  <td>{{ po.projeNo }}</td>
+                  <td>{{ po.siparisTarihi | date: 'dd.MM.yyyy' }}</td>
+                  <td class="v2-dialog-action-cell">
+                    <button class="btn btn-outline-primary btn-sm" (click)="poSec(po.id)">
+                      <i class="ri-arrow-right-line" aria-hidden="true"></i
+                      >{{ t('ALLOC_SELECT_ITEMS') }}
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="4">{{ t('ALLOC_NO_PO') }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (siparisler(); as page) {
+          <app-server-pager
+            [pageNumber]="page.pageNumber"
+            [pageSize]="page.pageSize"
+            [totalCount]="page.totalCount"
+            [totalPages]="page.totalPages"
+            [hasPreviousPage]="page.hasPreviousPage"
+            [hasNextPage]="page.hasNextPage"
+            (pageChange)="poSayfa($event)"
+          />
+        }
+      } @else {
+        @if (seciliPo(); as po) {
+          <div class="v2-toolbar v2-dialog-context">
+            <span class="v2-tag">PO: {{ po.ozet.poNumarasi }}</span
+            ><button class="btn btn-light btn-sm" (click)="poDegistir()">
+              <i class="ri-exchange-line" aria-hidden="true"></i>{{ t('ALLOC_CHANGE_PO') }}
+            </button>
+          </div>
+        }
+        <div class="v2-card v2-fields v2-dialog-document-fields">
+          <label
+            >{{ tur() === 'Siparis' ? t('PO_NUMBER') : t('ALLOC_ACTUAL_INVOICE') }} *<input
+              maxlength="120"
+              [(ngModel)]="numara" /></label
+          ><label>{{ t('ALLOC_DOCUMENT_DATE') }} *<input type="date" [(ngModel)]="tarih" /></label
+          ><label
+            >{{ t('CURRENCY')
+            }}<select [(ngModel)]="paraBirimi">
+              <option>EUR</option>
+              <option>USD</option>
+              <option>TRY</option>
+            </select></label
+          ><label>{{ t('DESCRIPTION') }}<input maxlength="2000" [(ngModel)]="aciklama" /></label>
+        </div>
+        <p class="v2-note v2-dialog-info">
+          <i class="ri-information-line" aria-hidden="true"></i>{{ t('ALLOC_NOTE') }}
+        </p>
+        <div class="table-responsive v2-dialog-table-wrap v2-allocation-table">
+          <table class="table v2-table">
+            <thead>
+              <tr>
+                <th class="v2-dialog-check-cell">{{ t('SELECT') }}</th>
+                <th>{{ t('PROJECT_WORK') }}</th>
+                <th class="v2-dialog-number-cell">{{ t('ALLOC_OPEN_BALANCE') }}</th>
+                <th class="v2-dialog-number-cell">{{ t('ALLOC_DOCUMENT_AMOUNT') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of satirlar(); track row.id) {
+                <tr>
+                  <td class="v2-dialog-check-cell">
+                    <input
+                      type="checkbox"
+                      [attr.aria-label]="row.ad + ' ' + t('ALLOC_ADD_ROW')"
+                      [(ngModel)]="row.secili"
+                      [disabled]="
+                        row.kalan == null || row.kalan <= 0 || row.paraBirimi !== paraBirimi
+                      "
+                    />
+                  </td>
+                  <td>
+                    <strong>{{ row.referans }}</strong
+                    ><small>{{ row.ad }}</small>
+                  </td>
+                  <td class="v2-dialog-number-cell">
+                    {{ row.kalan == null ? t('UNAVAILABLE') : (row.kalan | number: '1.2-2') }}
+                    {{ row.paraBirimi }}
+                  </td>
+                  <td class="v2-dialog-amount-input">
+                    <input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      [max]="row.kalan"
+                      [disabled]="!row.secili"
+                      [(ngModel)]="row.netTutar"
+                      [attr.aria-label]="row.ad + ' ' + t('AMOUNT')"
+                    />
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="4">{{ t('ALLOC_NO_RECORDS') }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <footer class="v2-dialog-footer">
+          <button class="btn btn-light" (click)="kapat.emit()" [disabled]="saving()">
+            {{ t('CANCEL') }}
+          </button>
+          @if (izinli()) {
+            <button class="btn btn-primary" (click)="kaydet()" [disabled]="saving() || loading()">
+              <i class="ri-save-3-line" aria-hidden="true"></i
+              >{{ saving() ? t('SAVING') : t('ALLOC_SAVE') }}
+            </button>
+          }
+        </footer>
+      }
+    </div>
+  </section>
+</div>

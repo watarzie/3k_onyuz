@@ -1,71 +1,38 @@
-import { Directive, inject, TemplateRef, ViewContainerRef, OnInit, OnDestroy, Input } from '@angular/core';
+import { Directive, Input, effect, inject, signal, TemplateRef, ViewContainerRef } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { PermissionService } from '../../core/services/permission.service';
-import { effect, DestroyRef } from '@angular/core';
 
-/**
- * Structural directive — Sadece W (yazma) yetkisi varken elementi gösterir.
- *
- * KULLANIM:
- *   <button *appCanWrite>Kaydet</button>
- *   <button *appCanWrite="'grid-modulu'">Özel kontrol</button>
- *
- * menuKod belirtilmezse → route data'dan otomatik alır.
- * menuKod belirtilirse → o menuKod'u kontrol eder.
- *
- * R (Read) yetkisinde element GÖRÜNMEz.
- * N (No access) sayfa zaten guard'da engellenir.
- */
-@Directive({
-  selector: '[appCanWrite]',
-  standalone: true,
-})
-export class CanWriteDirective implements OnInit {
-  private templateRef = inject(TemplateRef<any>);
+/** Yazma izni kaldırıldığında mevcut view da kaldırılır. Eksik bağlam erişim vermez. */
+@Directive({ selector: '[appCanWrite]', standalone: true })
+export class CanWriteDirective {
+  private templateRef = inject(TemplateRef<unknown>);
   private viewContainer = inject(ViewContainerRef);
   private permissions = inject(PermissionService);
   private route = inject(ActivatedRoute);
+  private routeData = toSignal(this.route.data, { initialValue: this.route.snapshot.data });
+  private override = signal('');
 
-  /** Opsiyonel: kontrol edilecek menuKod. Verilmezse route'tan alınır. */
-  @Input('appCanWrite') menuKodOverride: string = '';
+  @Input('appCanWrite')
+  set menuKodOverride(value: string | null | undefined) {
+    this.override.set(value?.trim() ?? '');
+  }
 
   private hasView = false;
 
-  ngOnInit(): void {
-    // Reactive check — permissions yüklendiğinde güncellenir
-    const checkInterval = setInterval(() => {
-      this.updateView();
-      if (this.permissions.loaded()) {
-        clearInterval(checkInterval);
-      }
-    }, 100);
-
-    // İlk kontrol
-    this.updateView();
-
-    // 2 saniye sonra temizle (güvenlik için)
-    setTimeout(() => clearInterval(checkInterval), 5000);
-  }
-
-  private updateView(): void {
-    const menuKod = this.menuKodOverride || this.route.snapshot.data?.['menuKod'];
-    if (!menuKod) {
-      // menuKod yoksa her zaman göster
-      if (!this.hasView) {
+  constructor() {
+    // effect ve route aboneliği directive yok edildiğinde Angular tarafından temizlenir.
+    effect(() => {
+      const code = this.override() || this.routeData()?.['menuKod'];
+      const allowed = this.permissions.loaded() && typeof code === 'string' &&
+        code.trim().length > 0 && this.permissions.canWrite(code);
+      if (allowed && !this.hasView) {
         this.viewContainer.createEmbeddedView(this.templateRef);
         this.hasView = true;
+      } else if (!allowed && this.hasView) {
+        this.viewContainer.clear();
+        this.hasView = false;
       }
-      return;
-    }
-
-    const canWrite = this.permissions.canWrite(menuKod);
-
-    if (canWrite && !this.hasView) {
-      this.viewContainer.createEmbeddedView(this.templateRef);
-      this.hasView = true;
-    } else if (!canWrite && this.hasView) {
-      this.viewContainer.clear();
-      this.hasView = false;
-    }
+    });
   }
 }

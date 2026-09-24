@@ -40,6 +40,11 @@ export const API = {
     DELETE: (id: number) => `${BASE}/proje/${id}`,
   },
   AMBALAJ: {
+    FORM_SURUMLERI: `${BASE}/ambalaj/uretim-formlari`,
+    FORM_SURUM_DOSYA: (id: number, format: string) => `${BASE}/ambalaj/uretim-formlari/${id}/dosya?format=${format}`,
+    GERCEKLESEN_RAPOR: `${BASE}/ambalaj/gerceklesen-uretim-raporu`,
+    GERCEKLESEN_RAPOR_DOSYA: `${BASE}/ambalaj/gerceklesen-uretim-raporu/dosya`,
+    GERCEKLESME: (id: number) => `${BASE}/ambalaj/gerceklesmeler/${id}`,
     PROJELER: `${BASE}/ambalaj/projeler`,
     PLAN: (projeId: number, kaynakProjeTipiId?: number, grup?: number) => {
       const params = new URLSearchParams();
@@ -79,6 +84,19 @@ export const API = {
     SECILI_URETIM_FORMU_DOSYA: `${BASE}/ambalaj/uretim-formu/dosya`,
   },
   FINANS: {
+    PANEL: `${BASE}/finans/panel`,
+    HAREKETLER: `${BASE}/finans/hareketler`,
+    GENEL_ARAMA: `${BASE}/finans/genel-arama`,
+    YASLANDIRMA: `${BASE}/finans/yaslandirma`,
+    FINANS_TARIHI: (id: number) => `${BASE}/finans/is-kayitlari/${id}/finans-tarihi`,
+    FIYATLANDIRMA: (id: number) => `${BASE}/finans/is-kayitlari/${id}/fiyatlandirma`,
+    SABLONLAR: `${BASE}/finans/sablonlar`,
+    SABLON: (id: number) => `${BASE}/finans/sablonlar/${id}`,
+    KALICI_SIL_ONIZLEME: `${BASE}/finans/kalici-silme/onizleme`,
+    KALICI_SIL: `${BASE}/finans/kalici-silme`,
+    BELGELER: `${BASE}/finans/belgeler`,
+    BELGE_INDIR: (id: number) => `${BASE}/finans/belgeler/${id}/indir`,
+    DENETIM: `${BASE}/finans/denetim`,
     DASHBOARD: `${BASE}/finans/dashboard`,
     DASHBOARD_GELIR: `${BASE}/finans/dashboard/gelir`,
     DASHBOARD_DURUM_TUTARLARI: `${BASE}/finans/dashboard/durum-tutarlari`,
@@ -119,6 +137,7 @@ export const API = {
     GIDER_GERI_AL: (giderId: number) => `${BASE}/finans/giderler/${giderId}/geri-al`,
     GIDER_KUTUPHANEYE_KAYDET: (giderId: number) => `${BASE}/finans/giderler/${giderId}/kutuphaneye-kaydet`,
     GIDER_KATEGORILERI: `${BASE}/finans/gider-kategorileri`,
+    OZET_RAPOR: (tur: string, format: string) => `${BASE}/finans/raporlar/ozet/${tur}/${format}`,
     GIDER_KUTUPHANE_KATEGORILERI: `${BASE}/finans/gider-kutuphanesi/kategoriler`,
     GIDER_KATEGORISI: (kategoriId: number) => `${BASE}/finans/gider-kategorileri/${kategoriId}`,
     GIDER_KALEMLERI: `${BASE}/finans/gider-kalemleri`,
@@ -241,6 +260,7 @@ export const API = {
     BY_PROJE: (projeId: number) => `${BASE}/hareketgecmisi/${projeId}/gecmis`,
   },
   KULLANICI: {
+    YETKILER: (id: number) => `${BASE}/kullanici/${id}/yetkiler`,
     LIST: `${BASE}/kullanici/liste`,
     CREATE: `${BASE}/kullanici/olustur`,
     UPDATE: `${BASE}/kullanici/guncelle`,
@@ -278,6 +298,7 @@ export const API = {
     DEPO_LOKASYON_DELETE: (id: number) => `${BASE}/lookup/depo-lokasyon/${id}`,
   },
   ROL: {
+    SABLONLAR: `${BASE}/rol/sablonlar`,
     LIST: `${BASE}/rol/liste`,
     DETAY: (id: number) => `${BASE}/rol/${id}/detay`,
     CREATE: `${BASE}/rol/olustur`,

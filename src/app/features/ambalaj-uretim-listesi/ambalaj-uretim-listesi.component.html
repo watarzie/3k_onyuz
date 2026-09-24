@@ -9,11 +9,15 @@
       <span>Yenile</span>
     </button>
   </header>
+  <app-uretim-yasam-dongusu [raporModu]="true" />
+  <label class="d-block mb-3">Kritik değişiklik / silme gerekçesi
+    <input class="form-control" [(ngModel)]="kritikGerekce" maxlength="1000" placeholder="Geçmişe yazılacak gerekçe" />
+  </label>
 
   <div class="row g-3 mb-4">
     <div class="col-xl-3 col-sm-6"><app-stat-card [value]="toplamProje()" [label]="bagimsizKuyruk() ? 'Sandık kaydı' : 'Üretim projesi'" icon="ri-folder-3-line" color="primary" /></div>
     <div class="col-xl-3 col-sm-6"><app-stat-card [value]="toplamSandik()" label="Planlanan sandık" icon="ri-archive-line" color="success" /></div>
-    <div class="col-xl-3 col-sm-6"><app-stat-card [value]="(toplamHacim() | number:'1.3-3') + ' m³'" label="Planlanan çam" icon="ri-ruler-2-line" color="info" /></div>
+    <div *appCanAccess="['ambalaj-m3-goruntule']" class="col-xl-3 col-sm-6 estimate-stat"><app-stat-card [value]="toplamHacim() === null ? '—' : (toplamHacim() | number:'1.3-3') + ' m³'" [label]="t('ESTIMATE_LABEL')" icon="ri-ruler-2-line" color="info" /><p class="estimate-help">{{ t('ESTIMATE_HELP') }}</p></div>
     <div class="col-xl-3 col-sm-6"><app-stat-card [value]="bagimsizKuyruk() ? '4 tür' : eksikProje() + ' proje'" [label]="bagimsizKuyruk() ? 'Kayıt türü' : 'Ölçüsü eksik'" icon="ri-error-warning-line" color="warning" /></div>
   </div>
 
@@ -46,7 +50,7 @@
             </div>
             <div class="add-actions">
               <button type="button" class="secondary-add" (click)="sablonFormOpen.set(!sablonFormOpen())"><i class="ri-bookmark-line"></i> İç sandık tipi</button>
-              <button type="button" (click)="bagimsizFormuAc()"><i class="ri-add-line"></i> Sandık ekle</button>
+              <button *appCanWrite="'ambalaj-kayit-ekle'" type="button" (click)="bagimsizFormuAc()"><i class="ri-add-line"></i> Sandık ekle</button>
             </div>
           </div>
 
@@ -59,10 +63,10 @@
           </div>
 
           <div class="special-report-grid" aria-label="Özel sandık raporları">
-            <button type="button" [disabled]="ozelRaporDownloading() !== null" [attr.aria-busy]="ozelRaporDownloading() === 4" (click)="ozelRaporIndir(4)"><i [class]="ozelRaporDownloading() === 4 ? 'ri-loader-4-line spin' : 'ri-file-pdf-2-line'"></i><span><strong>Saha sandık PDF</strong><small>{{ ozelRaporAdedi(4) }} sandık · {{ ozelRaporHacmi(4) | number:'1.3-3' }} m³</small></span></button>
-            <button type="button" [disabled]="ozelRaporDownloading() !== null" [attr.aria-busy]="ozelRaporDownloading() === 5" (click)="ozelRaporIndir(5)"><i [class]="ozelRaporDownloading() === 5 ? 'ri-loader-4-line spin' : 'ri-file-pdf-2-line'"></i><span><strong>Yedek sandık PDF</strong><small>{{ ozelRaporAdedi(5) }} sandık · {{ ozelRaporHacmi(5) | number:'1.3-3' }} m³</small></span></button>
-            <button type="button" [disabled]="ozelRaporDownloading() !== null" [attr.aria-busy]="ozelRaporDownloading() === 2" (click)="ozelRaporIndir(2)"><i [class]="ozelRaporDownloading() === 2 ? 'ri-loader-4-line spin' : 'ri-file-pdf-2-line'"></i><span><strong>İlave sandık PDF</strong><small>{{ ozelRaporAdedi(2) }} sandık · {{ ozelRaporHacmi(2) | number:'1.3-3' }} m³</small></span></button>
-            <button type="button" [disabled]="ozelRaporDownloading() !== null" [attr.aria-busy]="ozelRaporDownloading() === 3" (click)="ozelRaporIndir(3)"><i [class]="ozelRaporDownloading() === 3 ? 'ri-loader-4-line spin' : 'ri-file-pdf-2-line'"></i><span><strong>İç sandık PDF</strong><small>{{ ozelRaporAdedi(3) }} sandık · {{ ozelRaporHacmi(3) | number:'1.3-3' }} m³</small></span></button>
+            <button *appCanAccess="['ambalaj-pdf-indir']" type="button" [disabled]="ozelRaporDownloading() !== null" [attr.aria-busy]="ozelRaporDownloading() === 4" (click)="ozelRaporIndir(4)"><i [class]="ozelRaporDownloading() === 4 ? 'ri-loader-4-line spin' : 'ri-file-pdf-2-line'"></i><span><strong>Saha sandık PDF</strong><small>{{ ozelRaporAdedi(4) }} sandık <span *appCanAccess="['ambalaj-m3-goruntule']">· {{ ozelRaporHacmi(4) === null ? '—' : (ozelRaporHacmi(4) | number:'1.3-3') + ' m³' }}</span></small></span></button>
+            <button *appCanAccess="['ambalaj-pdf-indir']" type="button" [disabled]="ozelRaporDownloading() !== null" [attr.aria-busy]="ozelRaporDownloading() === 5" (click)="ozelRaporIndir(5)"><i [class]="ozelRaporDownloading() === 5 ? 'ri-loader-4-line spin' : 'ri-file-pdf-2-line'"></i><span><strong>Yedek sandık PDF</strong><small>{{ ozelRaporAdedi(5) }} sandık <span *appCanAccess="['ambalaj-m3-goruntule']">· {{ ozelRaporHacmi(5) === null ? '—' : (ozelRaporHacmi(5) | number:'1.3-3') + ' m³' }}</span></small></span></button>
+            <button *appCanAccess="['ambalaj-pdf-indir']" type="button" [disabled]="ozelRaporDownloading() !== null" [attr.aria-busy]="ozelRaporDownloading() === 2" (click)="ozelRaporIndir(2)"><i [class]="ozelRaporDownloading() === 2 ? 'ri-loader-4-line spin' : 'ri-file-pdf-2-line'"></i><span><strong>İlave sandık PDF</strong><small>{{ ozelRaporAdedi(2) }} sandık <span *appCanAccess="['ambalaj-m3-goruntule']">· {{ ozelRaporHacmi(2) === null ? '—' : (ozelRaporHacmi(2) | number:'1.3-3') + ' m³' }}</span></small></span></button>
+            <button *appCanAccess="['ambalaj-pdf-indir']" type="button" [disabled]="ozelRaporDownloading() !== null" [attr.aria-busy]="ozelRaporDownloading() === 3" (click)="ozelRaporIndir(3)"><i [class]="ozelRaporDownloading() === 3 ? 'ri-loader-4-line spin' : 'ri-file-pdf-2-line'"></i><span><strong>İç sandık PDF</strong><small>{{ ozelRaporAdedi(3) }} sandık <span *appCanAccess="['ambalaj-m3-goruntule']">· {{ ozelRaporHacmi(3) === null ? '—' : (ozelRaporHacmi(3) | number:'1.3-3') + ' m³' }}</span></small></span></button>
           </div>
 
           @if (sablonFormOpen()) {
@@ -70,9 +74,9 @@
               <div class="form-title"><strong>Yeni iç sandık tipi</strong><button type="button" (click)="sablonFormOpen.set(false)"><i class="ri-close-line"></i></button></div>
               <label><span>Tip adı *</span><input [(ngModel)]="sablonForm.ad" name="bagimsizSablonAd" /></label>
               <label><span>Sandık tipi *</span><select [(ngModel)]="sablonForm.sandikTipi" name="bagimsizSablonTip">@for (tip of sandikTipleri; track tip) { <option [ngValue]="tip">{{ tip }}</option> }</select></label>
-              <label><span>Boy (mm) *</span><input type="number" min="1" [(ngModel)]="sablonForm.boy" name="bagimsizSablonBoy" /></label>
-              <label><span>En (mm) *</span><input type="number" min="1" [(ngModel)]="sablonForm.en" name="bagimsizSablonEn" /></label>
-              <label><span>Yükseklik (mm) *</span><input type="number" min="1" [(ngModel)]="sablonForm.yukseklik" name="bagimsizSablonYukseklik" /></label>
+              <label *appCanAccess="['ambalaj-olcu-goruntule']"><span>Boy (mm) *</span><input type="number" min="1" [(ngModel)]="sablonForm.boy" name="bagimsizSablonBoy" /></label>
+              <label *appCanAccess="['ambalaj-olcu-goruntule']"><span>En (mm) *</span><input type="number" min="1" [(ngModel)]="sablonForm.en" name="bagimsizSablonEn" /></label>
+              <label *appCanAccess="['ambalaj-olcu-goruntule']"><span>Yükseklik (mm) *</span><input type="number" min="1" [(ngModel)]="sablonForm.yukseklik" name="bagimsizSablonYukseklik" /></label>
               <div class="form-actions"><button type="button" (click)="sablonFormOpen.set(false)">Vazgeç</button><button class="primary-action" type="submit" [disabled]="sablonSaving()"><i class="ri-save-3-line"></i> Kaydet</button></div>
             </form>
           }
@@ -172,7 +176,7 @@
                   </div>
                   @if (ozelForm.ustKaynakSandikId) {
                     <div class="source-choice-grid">
-                      <label><span>Kayıtlı İç Sandık Tipi</span><select [ngModel]="secilenOzelSablonId" (ngModelChange)="ozelSablonuUygula($any($event))" name="bagimsizSablon" [disabled]="ozelBaglantiKilitli() || ozelManuelDetayGirisi()"><option [ngValue]="undefined">Şablon seçin</option>@for (sablon of icSandikSablonlari(); track sablon.id) { <option [ngValue]="sablon.id">{{ sablon.ad }} · {{ sablon.sandikTipi }} · {{ sablon.boy }} × {{ sablon.en }} × {{ sablon.yukseklik }} mm</option> }</select></label>
+                      <label><span>Kayıtlı İç Sandık Tipi</span><select [ngModel]="secilenOzelSablonId" (ngModelChange)="ozelSablonuUygula($any($event))" name="bagimsizSablon" [disabled]="ozelBaglantiKilitli() || ozelManuelDetayGirisi()"><option [ngValue]="undefined">Şablon seçin</option>@for (sablon of icSandikSablonlari(); track sablon.id) { <option [ngValue]="sablon.id">{{ sablon.ad }} · {{ sablon.sandikTipi }}</option> }</select></label>
                       <div class="manual-checkbox-field" [class.disabled]="ozelBaglantiKilitli()">
                         <div class="form-check manual-checkbox">
                           <input id="ozelIcManuelGiris" class="form-check-input" type="checkbox" [ngModel]="ozelManuelDetayGirisi()" (ngModelChange)="ozelManuelDetayGirisiDegisti($event)" name="ozelIcManuelGiris" [disabled]="ozelBaglantiKilitli()" />
@@ -196,9 +200,9 @@
                     <label><span>Sandık Yapısı *</span><select [(ngModel)]="ozelForm.sandikTipi" name="bagimsizSandikTipi">@for (tip of ozelSandikTipleri; track tip) { <option [ngValue]="tip">{{ tip }}</option> }</select></label>
                     <label><span>Adet *</span><input type="number" min="1" [(ngModel)]="ozelForm.adet" name="bagimsizAdet" /></label>
                     <div class="special-crate-dimensions span-2">
-                      <label><span>Boy (mm) *</span><input type="number" min="1" [(ngModel)]="ozelForm.boy" name="bagimsizBoy" /></label>
-                      <label><span>En (mm) *</span><input type="number" min="1" [(ngModel)]="ozelForm.en" name="bagimsizEn" /></label>
-                      <label><span>Yükseklik (mm) *</span><input type="number" min="1" [(ngModel)]="ozelForm.yukseklik" name="bagimsizYukseklik" /></label>
+                      <label *appCanAccess="['ambalaj-olcu-goruntule']"><span>Boy (mm) *</span><input type="number" min="1" [(ngModel)]="ozelForm.boy" name="bagimsizBoy" /></label>
+                      <label *appCanAccess="['ambalaj-olcu-goruntule']"><span>En (mm) *</span><input type="number" min="1" [(ngModel)]="ozelForm.en" name="bagimsizEn" /></label>
+                      <label *appCanAccess="['ambalaj-olcu-goruntule']"><span>Yükseklik (mm) *</span><input type="number" min="1" [(ngModel)]="ozelForm.yukseklik" name="bagimsizYukseklik" /></label>
                     </div>
                     <div class="requester-field span-2">
                       <span class="field-label">Talep Eden *</span>
@@ -252,13 +256,13 @@
                   @for (sandik of bagimsizSandiklar(); track sandik.id) {
                     <tr [class.selected]="sandik.uretimeAlindi">
                       <td><strong>{{ sandik.turMetni }} · {{ sandik.sandikNo }}</strong><small>{{ sandik.ad }}</small></td>
-                      <td><div class="project-form-action"><strong>{{ sandik.projeNo || 'Proje seçilmemiş' }}</strong>@if (sandik.projeId) { <button type="button" class="icon-button pdf-button" [title]="ozelUretimFormuDownloading() === sandik.id ? 'PDF hazırlanıyor' : 'Bu proje için üretim formu al'" [disabled]="ozelUretimFormuDownloading() !== null" [attr.aria-busy]="ozelUretimFormuDownloading() === sandik.id" (click)="ozelUretimFormuIndir(sandik)"><i [class]="ozelUretimFormuDownloading() === sandik.id ? 'ri-loader-4-line spin' : 'ri-file-pdf-2-line'"></i></button> }</div><small>{{ sandik.ustSandikNo ? sandik.ustSandikNo + ' · ' + (sandik.ustSandikAdi || '') : sandik.kaynakSandikNo ? sandik.kaynakSandikNo + ' · ' + (sandik.kaynakSandikAdi || '') : sandik.musteri || '-' }}</small></td>
+                      <td><div class="project-form-action"><strong>{{ sandik.projeNo || 'Proje seçilmemiş' }}</strong>@if (sandik.projeId) { <button *appCanAccess="['ambalaj-form-indir']" type="button" class="icon-button pdf-button" [title]="ozelUretimFormuDownloading() === sandik.id ? 'PDF hazırlanıyor' : 'Bu proje için üretim formu al'" [disabled]="ozelUretimFormuDownloading() !== null" [attr.aria-busy]="ozelUretimFormuDownloading() === sandik.id" (click)="ozelUretimFormuIndir(sandik)"><i [class]="ozelUretimFormuDownloading() === sandik.id ? 'ri-loader-4-line spin' : 'ri-file-pdf-2-line'"></i></button> }</div><small>{{ sandik.ustSandikNo ? sandik.ustSandikNo + ' · ' + (sandik.ustSandikAdi || '') : sandik.kaynakSandikNo ? sandik.kaynakSandikNo + ' · ' + (sandik.kaynakSandikAdi || '') : sandik.musteri || '-' }}</small></td>
                       <td>{{ sandik.sandikTipi }}</td><td>{{ sandik.adet }}</td>
-                      <td>{{ sandik.boy }} × {{ sandik.en }} × {{ sandik.yukseklik }}</td>
-                      <td>{{ sandik.sandikTipi === 'Kontrplak Sandık' ? '-' : (sandik.hacimM3 | number:'1.3-3') + ' m³' }}</td>
+                      <td><span *appCanAccess="['ambalaj-olcu-goruntule']">{{ sandik.boy }} × {{ sandik.en }} × {{ sandik.yukseklik }}</span></td>
+                      <td><span *appCanAccess="['ambalaj-m3-goruntule']">{{ sandik.m3HesaplanabilirMi === false ? 'Hesaplanmaz' : sandik.hacimM3 === null ? '—' : (sandik.hacimM3 | number:'1.3-3') + ' m³' }}</span></td>
                       <td>{{ sandik.talimatVeren || '-' }}</td>
-                      <td><span class="status-complete"><i class="ri-checkbox-circle-line"></i> Tamamlandı</span></td>
-                      <td class="actions"><button type="button" class="icon-button" title="Düzenle" (click)="bagimsizFormuAc(sandik)"><i class="ri-pencil-line"></i></button><button type="button" class="icon-button danger" title="Sil" (click)="bagimsizSandikSil(sandik)"><i class="ri-delete-bin-line"></i></button></td>
+                      <td>{{ durumMetni(sandik.uretimDurumu || 1) }}<button class="btn btn-sm btn-outline-primary" (click)="bagimsizYasam.set(sandik)">Üretim işlemleri</button></td>
+                      <td class="actions"><button *appCanWrite="'ambalaj-kayit-duzenle'" type="button" class="icon-button" title="Düzenle" (click)="bagimsizFormuAc(sandik)"><i class="ri-pencil-line"></i></button><button *appCanWrite="'ambalaj-kayit-sil'" type="button" class="icon-button danger" title="Sil" (click)="bagimsizSandikSil(sandik)"><i class="ri-delete-bin-line"></i></button></td>
                     </tr>
                   } @empty { <tr><td colspan="9" class="empty-state">Bu filtrede özel sandık bulunamadı.</td></tr> }
                 }
@@ -266,6 +270,9 @@
             </table>
           </div>
           @if (!bagimsizLoading()) {
+            @if (bagimsizYasam()) {
+              <app-uretim-yasam-dongusu [bagimsiz]="bagimsizYasam()" (degisti)="bagimsizSandiklariYukle()" />
+            }
             <app-server-pager
               [pageNumber]="bagimsizPageNumber()"
               [pageSize]="bagimsizPageSize()"
@@ -305,16 +312,16 @@
               <td>{{ proje.musteri }}</td>
               <td><span class="type-badge type-{{ proje.projeTipiId }}">{{ proje.projeTipiMetni }}</span></td>
               <td><strong>{{ projeSandikSayisi(proje) }}</strong><small>{{ kuyrukBasligi() }}</small></td>
-              <td><strong>{{ projeHacmi(proje) | number:'1.3-3' }} m³</strong><small>çam ihtiyacı</small></td>
+              <td><span *appCanAccess="['ambalaj-m3-goruntule']"><strong>{{ projeHacmi(proje) === null ? '—' : (projeHacmi(proje) | number:'1.3-3') + ' m³' }}</strong><small>çam ihtiyacı</small></span></td>
               <td>
-                <select class="status-select status-{{ projeDurumId(proje) }}" [ngModel]="projeDurumId(proje)" (ngModelChange)="durumDegistir(proje, $event)" aria-label="Üretim durumu">
-                  <option [ngValue]="1">Beklemede</option><option [ngValue]="2">Üretimde</option><option [ngValue]="3">Tamamlandı</option>
-                </select>
+                <strong>{{ durumMetni(projeDurumId(proje)) }}</strong>
+                <small>Proje geneli: {{ durumMetni(proje.genelUretimDurumu || 1) }}</small>
+                <small>{{ proje.tamamlananSandikAdedi || 0 }} / {{ proje.gerekliSandikAdedi || 0 }} gerekli sandık tamamlandı</small>
               </td>
               <td>
                 <div class="batch-editor">
                   <input type="text" [(ngModel)]="firinTaslaklari[taslakAnahtari(proje.projeId)]" placeholder="Parti no" aria-label="Fırın parti numarası" />
-                  <button type="button" class="icon-button save-batch" title="Fırın parti numarasını kaydet" (click)="firinPartiKaydet(proje)"><i class="ri-save-3-line"></i></button>
+                  <button *appCanWrite="'ambalaj-plan-olustur'" type="button" class="icon-button save-batch" title="Fırın parti numarasını kaydet" (click)="firinPartiKaydet(proje)"><i class="ri-save-3-line"></i></button>
                 </div>
               </td>
               <td>
@@ -330,10 +337,10 @@
                 <a class="icon-button" [routerLink]="projeYolu(proje)" title="Sandık ölçülerini aç" aria-label="Sandık ölçülerini aç">
                   <i class="ri-ruler-line"></i>
                 </a>
-                <button type="button" class="plan-button" (click)="planAc(proje)">
+                <button *appCanAccess="['ambalaj-plan-goruntule', 'ambalaj-proje-detay-goruntule']" type="button" class="plan-button" (click)="planAc(proje)">
                   <i class="ri-settings-3-line"></i> Üretim planı
                 </button>
-                <button type="button" class="icon-button pdf-button" [title]="downloadingProjectId() === proje.projeId ? 'PDF hazırlanıyor' : 'Tüm üretim formunu indir'" [disabled]="downloadingProjectId() !== null" [attr.aria-busy]="downloadingProjectId() === proje.projeId" (click)="uretimFormuIndir(proje)">
+                <button *appCanAccess="['ambalaj-form-indir']" type="button" class="icon-button pdf-button" [title]="downloadingProjectId() === proje.projeId ? 'PDF hazırlanıyor' : 'Tüm üretim formunu indir'" [disabled]="downloadingProjectId() !== null" [attr.aria-busy]="downloadingProjectId() === proje.projeId" (click)="uretimFormuIndir(proje)">
                   <i [class]="downloadingProjectId() === proje.projeId ? 'ri-loader-4-line spin' : 'ri-file-pdf-2-line'"></i>
                 </button>
               </td>
@@ -379,15 +386,35 @@
       <div class="drawer-loading"><i class="ri-loader-4-line spin"></i> Üretim planı yükleniyor...</div>
     } @else if (plan()) {
       <div class="drawer-body">
+        <ng-template #durumAksiyonlari let-kalem>
+          <div class="production-row-state">
+            <span class="production-status status-{{ kalem.uretimDurumu || 1 }}">{{ kalem.ambalajaDahilMi === false ? t('EXCLUDED') : kalem.uretimDurumu === 3 ? t('COMPLETED') : kalem.uretimDurumu === 2 ? t('IN_PROGRESS') : t('WAITING') }}</span>
+            <div class="production-row-actions">
+              @if (kalem.id > 0 && kalem.uretimDurumu === 2 && izin.canWrite('ambalaj-uretimi-tamamla') && izin.canWrite('ambalaj-durum-duzenle')) {
+                <button type="button" class="complete-action" [disabled]="yasam.islemde()" (click)="yasam.durum(kalem.id, 3)"><i class="ri-check-line"></i>{{ t('COMPLETE') }}</button>
+              }
+              @if (kalem.id > 0 && kalem.uretimDurumu === 2 && izin.canWrite('ambalaj-durumu-geri-al') && izin.canWrite('ambalaj-durum-duzenle')) {
+                <button type="button" [disabled]="yasam.islemde()" (click)="yasam.durum(kalem.id, 1)">{{ t('BACKWARD') }}</button>
+              }
+              @if (kalem.id > 0 && kalem.uretimDurumu === 3 && izin.canWrite('ambalaj-uretimi-yeniden-ac') && izin.canWrite('ambalaj-durumu-geri-al') && izin.canWrite('ambalaj-durum-duzenle')) {
+                <button type="button" [disabled]="yasam.islemde()" (click)="yasam.durum(kalem.id, 2)"><i class="ri-restart-line"></i>{{ t('REOPEN') }}</button>
+              }
+            </div>
+          </div>
+        </ng-template>
         <section class="plan-toolbar">
           <label><span>Fırın Parti No</span><input type="text" [ngModel]="planFirinPartiNo(plan()!)" (ngModelChange)="firinPartiDegistir($event)" placeholder="Örn. FP-2026-041" /></label>
-          <label class="drawer-status"><span>Üretim Durumu</span><select class="status-select status-{{ planDurumId(plan()!) }}" [ngModel]="planDurumId(plan()!)" (ngModelChange)="planDurumDegistir($event)"><option [ngValue]="1">Beklemede</option><option [ngValue]="2">Üretimde</option><option [ngValue]="3">Tamamlandı</option></select></label>
-          <button class="primary-action" type="button" [disabled]="planSaving()" (click)="planKaydet()"><i class="ri-save-3-line"></i> {{ planSaving() ? 'Kaydediliyor' : 'Planı kaydet' }}</button>
+          <div class="drawer-status"><span class="toolbar-label">{{ t('GROUP_STATUS') }}</span><strong class="production-status status-{{ planDurumId(plan()!) }}">{{ durumMetni(planDurumId(plan()!)) }}</strong><small>{{ t('PROJECT_STATUS') }}: {{ durumMetni(plan()!.genelUretimDurumu || 1) }}</small></div>
+          <button *appCanWrite="'ambalaj-plan-olustur'" class="primary-action" type="button" [title]="t('PLAN_SELECTION_HELP')" [disabled]="planSaving() || yasam.islemde()" (click)="planKaydet(yasam.secim())"><i class="ri-save-3-line"></i> {{ t(planSaving() ? 'SAVING' : 'PLAN_SAVE') }}</button>
         </section>
+        <p class="plan-selection-help">{{ t('PLAN_SELECTION_HELP') }}</p>
+
+        <app-uretim-yasam-dongusu #yasam [plan]="plan()" [grup]="planGrup()" [entegre]="true"
+          [islemGerekcesi]="kritikGerekce" (gerekceDegisti)="kritikGerekce = $event" (degisti)="yasamDongusuDegisti()" />
 
         <div class="plan-metrics">
-          <div><span>Üretimde</span><strong>{{ seciliAdet() }} sandık</strong></div>
-          <div><span>Seçili hacim</span><strong>{{ seciliHacim() | number:'1.3-3' }} m³</strong></div>
+          <div><span>{{ t('SELECTED') }}</span><strong>{{ yasam.seciliAdet() }} {{ t('CRATE') }}</strong></div>
+          <div *appCanAccess="['ambalaj-m3-goruntule']"><span>Seçili hacim</span><strong>{{ yasam.seciliHacim() === null ? '—' : (yasam.seciliHacim() | number:'1.3-3') + ' m³' }}</strong></div>
           <div><span>Durum</span><strong>{{ durumMetni(planDurumId(plan()!)) }}</strong></div>
         </div>
 
@@ -396,19 +423,19 @@
           <div class="section-heading">
             <div><h3>{{ planGrup() === 2 ? 'İlave Sandıklar' : 'Proje Sandıkları' }}</h3><p>Sandık Yönetimi'nden gelen üretim sandıklarını seçin.</p></div>
             <div class="selection-actions">
-              <button type="button" (click)="tumKaynaklariSec(true)">Tümünü seç</button><button type="button" (click)="tumKaynaklariSec(false)">Temizle</button>
-              @if (manuelSandikEklenebilir()) { <button type="button" class="add-crate" (click)="kalemFormuAc(aktifManuelTur())"><i class="ri-add-line"></i> Manuel sandık</button> }
+              @if (yasam.secimYetkili()) {<button type="button" [disabled]="yasam.islemde()" (click)="yasam.hepsiniSec(true)">{{ t('SELECT_ALL') }}</button><button type="button" [disabled]="yasam.islemde()" (click)="yasam.hepsiniSec(false)">{{ t('CLEAR_SELECTION') }}</button>}
+              @if (manuelSandikEklenebilir()) { <button *appCanWrite="'ambalaj-kayit-ekle'" type="button" class="add-crate" (click)="kalemFormuAc(aktifManuelTur())"><i class="ri-add-line"></i> Manuel sandık</button> }
             </div>
           </div>
           <div class="crate-table-wrap">
             <table class="crate-table">
-              <thead><tr><th></th><th>Sandık</th><th>Adet</th><th>Ölçüler (mm)</th><th>Hacim</th><th>Ambalaj kararı</th></tr></thead>
+              <thead><tr><th></th><th>Sandık</th><th>Adet</th><th>Ölçüler (mm)</th><th>Hacim</th><th>Ambalaj kararı</th><th>{{ t('STATUS_ACTION') }}</th></tr></thead>
               <tbody>
                 @for (kalem of kaynakKalemler(); track kalem.kaynakSandikId) {
-                  <tr [class.selected]="kalem.uretimeAlindi" [class.packaging-excluded]="kalem.ambalajaDahilMi === false">
-                    <td><input type="checkbox" [checked]="kalem.uretimeAlindi" [disabled]="kalem.ambalajaDahilMi === false" (change)="kaynakSecimDegistir(kalem, $any($event.target).checked)" /></td>
+                  <tr [class.selected]="yasam.secim().includes(yasam.secimKimligi(kalem))" [class.packaging-excluded]="kalem.ambalajaDahilMi === false">
+                    <td><input type="checkbox" [attr.aria-label]="kalem.sandikNo + ' ' + t('SELECT')" [checked]="yasam.secim().includes(yasam.secimKimligi(kalem))" [disabled]="kalem.ambalajaDahilMi === false || yasam.islemde() || !yasam.secimYetkili()" (change)="yasam.sec(yasam.secimKimligi(kalem), $any($event.target).checked)" /></td>
                     <td><strong>{{ kalem.sandikNo }}</strong><small>{{ kalem.ad || '-' }}</small></td>
-                    <td>{{ kalem.adet }}</td><td>{{ kalem.boy }} × {{ kalem.en }} × {{ kalem.yukseklik }}</td><td>{{ kalem.hacimM3 | number:'1.3-3' }} m³</td>
+                    <td>{{ kalem.adet }}</td><td><span *appCanAccess="['ambalaj-olcu-goruntule']">{{ kalem.boy }} × {{ kalem.en }} × {{ kalem.yukseklik }}</span></td><td><span *appCanAccess="['ambalaj-m3-goruntule']">{{ kalem.m3HesaplanabilirMi === false ? t('NOT_APPLICABLE') : kalem.hacimM3 === null ? '—' : (kalem.hacimM3 | number:'1.3-3') + ' m³' }}</span></td>
                     <td>
                       @if (kalem.ambalajKarariOneriliyor || kalem.ambalajaDahilMi !== null) {
                         <div class="packaging-decision">
@@ -416,12 +443,13 @@
                           @else if (kalem.ambalajaDahilMi) { <span class="decision-included"><i class="ri-checkbox-circle-line"></i> Dahil onaylandı</span> }
                           @else { <span class="decision-excluded"><i class="ri-forbid-line"></i> Ambalaj yapılmaz</span> }
                           <div class="decision-actions">
-                            <button type="button" [class.active]="kalem.ambalajaDahilMi === true" [disabled]="ambalajKarariSaving()" (click)="ambalajKarariKaydet(kalem, true)">Dahil et</button>
-                            <button type="button" [class.active-excluded]="kalem.ambalajaDahilMi === false" [disabled]="ambalajKarariSaving()" (click)="ambalajKarariKaydet(kalem, false)">Yapılmaz</button>
+                            <button *appCanWrite="'ambalaj-dahil-et'" type="button" [class.active]="kalem.ambalajaDahilMi === true" [disabled]="ambalajKarariSaving()" (click)="ambalajKarariKaydet(kalem, true)">Dahil et</button>
+                            <button *appCanWrite="'ambalaj-haric-tut'" type="button" [class.active-excluded]="kalem.ambalajaDahilMi === false" [disabled]="ambalajKarariSaving()" (click)="ambalajKarariKaydet(kalem, false)">Yapılmaz</button>
                           </div>
                         </div>
                       } @else { <span class="decision-default">Varsayılan dahil</span> }
                     </td>
+                    <td class="production-state-cell"><ng-container *ngTemplateOutlet="durumAksiyonlari; context: { $implicit: kalem }" /></td>
                   </tr>
                 }
               </tbody>
@@ -438,8 +466,9 @@
               <p>{{ planGrup() === 3 ? 'Kayıtlı bir tipi seçerek farklı projelere aynı iç sandığı hızlıca ekleyin.' : 'Bu projeye özel manuel üretim sandıklarını yönetin.' }}</p>
             </div>
             <div class="add-actions">
+              @if (planGrup() === 3 && yasam.secimYetkili()) {<button type="button" [disabled]="yasam.islemde()" (click)="yasam.hepsiniSec(true)">{{ t('SELECT_ALL') }}</button><button type="button" [disabled]="yasam.islemde()" (click)="yasam.hepsiniSec(false)">{{ t('CLEAR_SELECTION') }}</button>}
               @if (planGrup() === 3) { <button type="button" class="secondary-add" (click)="sablonFormOpen.set(!sablonFormOpen())"><i class="ri-bookmark-line"></i> Tip kaydet</button> }
-              <button type="button" (click)="kalemFormuAc(aktifManuelTur())"><i class="ri-add-line"></i> {{ planGrup() === 3 ? 'İç sandık' : 'Sandık ekle' }}</button>
+              <button *appCanWrite="'ambalaj-kayit-ekle'" type="button" (click)="kalemFormuAc(aktifManuelTur())"><i class="ri-add-line"></i> {{ planGrup() === 3 ? 'İç sandık' : 'Sandık ekle' }}</button>
             </div>
           </div>
 
@@ -447,10 +476,10 @@
             <div class="template-library">
               @for (sablon of icSandikSablonlari(); track sablon.id) {
                 <div class="template-item">
-                  <button type="button" class="template-use" (click)="kalemFormuAc(3); sablonuUygula(sablon.id)">
-                    <strong>{{ sablon.ad }}</strong><span>{{ sablon.sandikTipi }}</span><small>{{ sablon.boy }} × {{ sablon.en }} × {{ sablon.yukseklik }} mm</small>
+                  <button *appCanWrite="'ambalaj-kayit-ekle'" type="button" class="template-use" (click)="kalemFormuAc(3); sablonuUygula(sablon.id)">
+                    <strong>{{ sablon.ad }}</strong><span>{{ sablon.sandikTipi }}</span><small *appCanAccess="['ambalaj-olcu-goruntule']">{{ sablon.boy }} × {{ sablon.en }} × {{ sablon.yukseklik }} mm</small>
                   </button>
-                  <button type="button" class="template-delete" title="Şablonu sil" (click)="sablonSil(sablon)"><i class="ri-delete-bin-line"></i></button>
+                  <button *appCanWrite="'ambalaj-kayit-sil'" type="button" class="template-delete" title="Şablonu sil" (click)="sablonSil(sablon)"><i class="ri-delete-bin-line"></i></button>
                 </div>
               } @empty { <div class="manual-empty">Henüz kayıtlı iç sandık tipi yok.</div> }
             </div>
@@ -461,9 +490,9 @@
               <div class="form-title"><strong>Yeni iç sandık tipi</strong><button type="button" (click)="sablonFormOpen.set(false)"><i class="ri-close-line"></i></button></div>
               <label><span>Tip adı *</span><input [(ngModel)]="sablonForm.ad" name="sablonAd" placeholder="Örn. Akım trafosu iç sandığı" /></label>
               <label><span>Sandık tipi *</span><select [(ngModel)]="sablonForm.sandikTipi" name="sablonSandikTipi">@for (tip of sandikTipleri; track tip) { <option [ngValue]="tip">{{ tip }}</option> }</select></label>
-              <label><span>Boy (mm) *</span><input type="number" min="1" [(ngModel)]="sablonForm.boy" name="sablonBoy" /></label>
-              <label><span>En (mm) *</span><input type="number" min="1" [(ngModel)]="sablonForm.en" name="sablonEn" /></label>
-              <label><span>Yükseklik (mm) *</span><input type="number" min="1" [(ngModel)]="sablonForm.yukseklik" name="sablonYukseklik" /></label>
+              <label *appCanAccess="['ambalaj-olcu-goruntule']"><span>Boy (mm) *</span><input type="number" min="1" [(ngModel)]="sablonForm.boy" name="sablonBoy" /></label>
+              <label *appCanAccess="['ambalaj-olcu-goruntule']"><span>En (mm) *</span><input type="number" min="1" [(ngModel)]="sablonForm.en" name="sablonEn" /></label>
+              <label *appCanAccess="['ambalaj-olcu-goruntule']"><span>Yükseklik (mm) *</span><input type="number" min="1" [(ngModel)]="sablonForm.yukseklik" name="sablonYukseklik" /></label>
               <div class="form-actions"><button type="button" (click)="sablonFormOpen.set(false)">Vazgeç</button><button class="primary-action" type="submit" [disabled]="sablonSaving()"><i class="ri-save-3-line"></i> Kaydet</button></div>
             </form>
           }
@@ -479,9 +508,9 @@
               <label><span>Sandık Adı *</span><input [(ngModel)]="kalemForm.ad" name="ad" /></label>
               <label><span>Sandık Tipi *</span><select [(ngModel)]="kalemForm.sandikTipi" name="sandikTipi">@for (tip of sandikTipleri; track tip) { <option [ngValue]="tip">{{ tip }}</option> }</select></label>
               <label><span>Adet *</span><input type="number" min="1" [(ngModel)]="kalemForm.adet" name="adet" /></label>
-              <label><span>Boy (mm) *</span><input type="number" min="1" [(ngModel)]="kalemForm.boy" name="boy" /></label>
-              <label><span>En (mm) *</span><input type="number" min="1" [(ngModel)]="kalemForm.en" name="en" /></label>
-              <label><span>Yükseklik (mm) *</span><input type="number" min="1" [(ngModel)]="kalemForm.yukseklik" name="yukseklik" /></label>
+              <label *appCanAccess="['ambalaj-olcu-goruntule']"><span>Boy (mm) *</span><input type="number" min="1" [(ngModel)]="kalemForm.boy" name="boy" /></label>
+              <label *appCanAccess="['ambalaj-olcu-goruntule']"><span>En (mm) *</span><input type="number" min="1" [(ngModel)]="kalemForm.en" name="en" /></label>
+              <label *appCanAccess="['ambalaj-olcu-goruntule']"><span>Yükseklik (mm) *</span><input type="number" min="1" [(ngModel)]="kalemForm.yukseklik" name="yukseklik" /></label>
               <label><span>Kullanım Amacı</span><input [(ngModel)]="kalemForm.kullanimAmaci" name="kullanimAmaci" /></label>
               <label><span>Kim Tarafından İstendi *</span><input [(ngModel)]="kalemForm.talimatVeren" name="talimatVeren" /></label>
               <label class="span-2"><span>Açıklama</span><textarea rows="2" [(ngModel)]="kalemForm.aciklama" name="aciklama"></textarea></label>
@@ -492,21 +521,19 @@
 
           <div class="manual-crates">
             @for (kalem of manuelKalemler(); track kalem.id) {
-              <article class="manual-crate" [class.inner]="kalem.tur === 3">
+              <article class="manual-crate lifecycle-manual-crate" [class.inner]="kalem.tur === 3" [class.selected]="yasam.secim().includes(yasam.secimKimligi(kalem))">
+                <label class="manual-selection-field"><input class="manual-selection" type="checkbox" [attr.aria-label]="kalem.sandikNo + ' ' + t('MANUAL_FORM_SELECTION')" [checked]="yasam.secim().includes(yasam.secimKimligi(kalem))" [disabled]="kalem.ambalajaDahilMi === false || yasam.islemde() || !yasam.secimYetkili()" (change)="yasam.sec(yasam.secimKimligi(kalem), $any($event.target).checked)" /><span>{{ t('MANUAL_FORM_SELECTION') }}</span></label>
                 <div class="crate-type">{{ kalem.turMetni }}</div>
-                <div class="crate-main"><strong>{{ kalem.sandikNo }} · {{ kalem.ad }}</strong><span>{{ kalem.sandikTipi }}{{ kalem.kullanimAmaci ? ' · ' + kalem.kullanimAmaci : '' }}</span><small>{{ kalem.boy }} × {{ kalem.en }} × {{ kalem.yukseklik }} mm · {{ kalem.adet }} adet · {{ kalem.hacimM3 | number:'1.3-3' }} m³</small></div>
-                <div class="crate-owner"><span>İsteyen</span><strong>{{ kalem.talimatVeren || '-' }}</strong></div>
-                <div class="crate-row-actions"><button type="button" title="Düzenle" (click)="kalemFormuAc($any(kalem.tur), kalem)"><i class="ri-pencil-line"></i></button><button type="button" class="danger" title="Sil" (click)="kalemSil(kalem)"><i class="ri-delete-bin-line"></i></button></div>
+                <div class="crate-main"><strong>{{ kalem.sandikNo }} · {{ kalem.ad }}</strong><span>{{ kalem.sandikTipi }}{{ kalem.kullanimAmaci ? ' · ' + kalem.kullanimAmaci : '' }}</span><small><span *appCanAccess="['ambalaj-olcu-goruntule']">{{ kalem.boy }} × {{ kalem.en }} × {{ kalem.yukseklik }} mm · </span>{{ kalem.adet }} adet <span *appCanAccess="['ambalaj-m3-goruntule']">· {{ kalem.m3HesaplanabilirMi === false ? 'Hesaplanmaz' : kalem.hacimM3 === null ? '—' : (kalem.hacimM3 | number:'1.3-3') + ' m³' }}</span></small></div>
+                <div class="crate-owner"><span>İsteyen</span><strong>{{ kalem.talimatVeren || '-' }}</strong><ng-container *ngTemplateOutlet="durumAksiyonlari; context: { $implicit: kalem }" /></div>
+                <div class="crate-row-actions"><button *appCanWrite="'ambalaj-kayit-duzenle'" type="button" title="Düzenle" (click)="kalemFormuAc($any(kalem.tur), kalem)"><i class="ri-pencil-line"></i></button><button *appCanWrite="'ambalaj-kayit-sil'" type="button" class="danger" title="Sil" (click)="kalemSil(kalem)"><i class="ri-delete-bin-line"></i></button></div>
               </article>
             } @empty { <div class="manual-empty">Bu üretim alanında kayıt bulunmuyor.</div> }
           </div>
         </section>
         }
 
-        <section class="report-strip">
-          <div><h3>{{ kuyrukBasligi() }} Üretim Formu</h3><p>Yalnız bu alandaki üretime alınmış sandıkları içerir.</p></div>
-          <button class="report-download" type="button" [disabled]="downloadingProjectId() !== null" [attr.aria-busy]="downloadingProjectId() !== null" (click)="planRaporuIndir()">@if (downloadingProjectId() !== null) { <i class="ri-loader-4-line spin"></i> PDF hazırlanıyor… } @else { <i class="ri-download-2-line"></i> PDF indir }</button>
-        </section>
+
       </div>
     }
   </aside>
@@ -527,8 +554,8 @@
     </div>
     <footer>
       <button type="button" class="modal-cancel" [disabled]="ambalajKarariSaving()" (click)="pdfUyarisiKapat()">İptal</button>
-      <button type="button" class="modal-exclude" [disabled]="ambalajKarariSaving()" (click)="pdfKarariUygula(false)"><i class="ri-forbid-line"></i> Ambalaj yapılmaz, PDF oluştur</button>
-      <button type="button" class="modal-include" [disabled]="ambalajKarariSaving()" (click)="pdfKarariUygula(true)"><i class="ri-checkbox-circle-line"></i> Üretime dahil et, PDF oluştur</button>
+      <button *appCanWrite="'ambalaj-haric-tut'" type="button" class="modal-exclude" [disabled]="ambalajKarariSaving()" (click)="pdfKarariUygula(false)"><i class="ri-forbid-line"></i> Ambalaj yapılmaz, PDF oluştur</button>
+      <button *appCanWrite="'ambalaj-dahil-et'" type="button" class="modal-include" [disabled]="ambalajKarariSaving()" (click)="pdfKarariUygula(true)"><i class="ri-checkbox-circle-line"></i> Üretime dahil et, PDF oluştur</button>
     </footer>
   </section>
 }

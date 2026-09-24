@@ -2,10 +2,24 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Subject, debounceTime, distinctUntilChanged, finalize, forkJoin, switchMap } from 'rxjs';
+import { EMPTY, Subject, debounceTime, distinctUntilChanged, finalize, forkJoin, of, switchMap } from 'rxjs';
 import { AmbalajService } from '../../core/services/ambalaj.service';
 import { FinansService } from '../../core/services/finans.service';
 import { ToastService } from '../../core/services/toast.service';
+import { PermissionService } from '../../core/services/permission.service';
+import { AMBALAJ_YETKI, FINANS_YETKI } from '../../core/constants/yetki-kodlari';
+import { FinansPanelComponent } from './finans-panel.component';
+import { FinansDagitimComponent } from './finans-dagitim.component';
+import { FinansKayitDetayComponent } from './finans-kayit-detay.component';
+import { FinansBelgelerListesiComponent } from './finans-belgeler-listesi.component';
+import { FinansSablonlarComponent } from './finans-sablonlar.component';
+import { FinansRaporlarComponent } from './finans-raporlar.component';
+import { FinansKategorilerComponent } from './finans-kategoriler.component';
+import { FinansProjeSeciciComponent } from './finans-proje-secici.component';
+import { FinansVarlikTuru } from '../../shared/models/finans-v2.model';
+import { ApiResult } from '../../shared/models/common.model';
+import { CanWriteDirective } from '../../shared/directives/can-write.directive';
+import { CanAccessDirective } from '../../shared/directives/can-access.directive';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
 import { ServerPagerComponent } from '../../shared/components/server-pager/server-pager.component';
 import {
@@ -14,15 +28,11 @@ import {
   FinansAylikGrupToplami,
   FinansDuzenliIs,
   FinansDuzenliIsKaydetRequest,
-  FinansFaturaOlusturRequest,
   FinansGider,
   FinansGiderKategori,
+  FinansGiderKalemi,
   FinansGiderKaydetRequest,
-  FinansIsKaydi,
   FinansOzelIsKaydetRequest,
-  FinansSiparis,
-  FinansSiparisDetay,
-  FinansSiparisOlusturRequest,
   FinansUrun,
   FinansUrunKaydetRequest,
   FinansParaToplami,
@@ -33,17 +43,20 @@ interface AylikGrup {
   ad: string;
   satirlar: FinansAylikIs[];
   eur: number;
+  usd: number;
   try: number;
 }
 
-type AnaSekme = 'akis' | 'giderler' | 'ayarlar';
+type AnaSekme = 'panel' | 'akis' | 'giderler' | 'ayarlar' | 'belgeler' | 'sablonlar' | 'raporlar' | 'kategoriler';
 type AyarGorunumu = 'duzenli' | 'tarifeler';
 type RaporFormati = 'pdf' | 'excel' | 'ayri';
 
 @Component({
   selector: 'app-finans-yonetimi',
   standalone: true,
-  imports: [BreadcrumbComponent, DatePipe, DecimalPipe, FormsModule, ServerPagerComponent],
+  imports: [BreadcrumbComponent, DatePipe, DecimalPipe, FormsModule, ServerPagerComponent,
+    FinansPanelComponent, FinansDagitimComponent, FinansKayitDetayComponent, FinansBelgelerListesiComponent, FinansSablonlarComponent,
+    CanWriteDirective, CanAccessDirective, FinansRaporlarComponent, FinansKategorilerComponent, FinansProjeSeciciComponent],
   templateUrl: './finans-aylik.component.html',
   styleUrl: './finans-aylik.component.scss',
 })
@@ -52,6 +65,11 @@ export class FinansYonetimiComponent implements OnInit {
   private ambalajService = inject(AmbalajService);
   private toast = inject(ToastService);
   private destroyRef = inject(DestroyRef);
+  readonly permissions = inject(PermissionService);
+  readonly izin = FINANS_YETKI;
+  readonly alanIzni = AMBALAJ_YETKI;
+  readonly detayHedef = signal<{tur: FinansVarlikTuru; id: number} | null>(null);
+  readonly dagitim = signal<{tur: 'Siparis' | 'Fatura'; ids: number[]; siparisId: number | null} | null>(null);
 
   private readonly aylikListeIstekleri = new Subject<void>();
   private readonly aylikAramaIstekleri = new Subject<string>();
@@ -76,7 +94,7 @@ export class FinansYonetimiComponent implements OnInit {
 
   loading = signal(true);
   aylikLoading = signal(false);
-  activeTab = signal<AnaSekme>('akis');
+  activeTab = signal<AnaSekme>('panel');
   ayarGorunumu = signal<AyarGorunumu>('duzenli');
   seciliDonem = signal(this.ayinIlkGunu(new Date()));
   aylikIsler = signal<FinansAylikIs[]>([]);
@@ -97,7 +115,6 @@ export class FinansYonetimiComponent implements OnInit {
   tarifeArama = signal('');
   iptalEdilenleriGoster = signal(false);
   acikGruplar = signal(new Set<string>(this.grupSirasi));
-  acikProjeler = signal(new Set<string>());
 
   aylikPageNumber = signal(1);
   aylikPageSize = signal(25);
@@ -153,16 +170,6 @@ export class FinansYonetimiComponent implements OnInit {
   ozelIsForm = this.bosOzelIsFormu();
   ozelRaporGrubu = 'Diğer';
 
-  siparisAcik = signal(false);
-  siparisKaydediliyor = signal(false);
-  siparisYukleniyor = signal(false);
-  siparisHatasi = signal('');
-  siparisSatiri = signal<FinansAylikIs | null>(null);
-  siparisKayitlari = signal<FinansIsKaydi[]>([]);
-  siparisForm = this.bosSiparisFormu();
-  siparisMiktarlari: Record<number, { adet: number; m3: number }> = {};
-
-  faturalandirilanSiparisId = signal<number | null>(null);
 
   giderAcik = signal(false);
   giderKaydediliyor = signal(false);
@@ -170,6 +177,15 @@ export class FinansYonetimiComponent implements OnInit {
   giderRaporIndiriliyor = signal<'pdf' | 'excel' | null>(null);
   duzenlenenGiderId = signal<number | null>(null);
   giderForm = this.bosGiderFormu();
+  giderKalemleri = signal<FinansGiderKalemi[]>([]);
+  giderKalemLoading = signal(false);
+  giderKalemHatasi = signal('');
+  giderEskiKalem = signal<{ id: number; ad: string } | null>(null);
+  giderEskiKategori = signal<{ id: number; ad: string } | null>(null);
+  private giderKalemIstekSurumu = 0;
+  giderProjeEtiketi = '';
+  ozelProjeEtiketi = '';
+  duzenliProjeEtiketi = '';
 
   duzenliIsAcik = signal(false);
   duzenliIsKaydediliyor = signal(false);
@@ -192,13 +208,12 @@ export class FinansYonetimiComponent implements OnInit {
   donemBasligi = computed(() => new Intl.DateTimeFormat('tr-TR', { month: 'long', year: 'numeric' }).format(this.seciliDonem()));
   aylikGruplar = computed<AylikGrup[]>(() => {
     const tumSatirlar = this.aylikIsler();
-    const anaProjeAnahtarlari = new Set(tumSatirlar.filter(satir => satir.isTuru === 1).map(satir => satir.projeBirimAnahtari));
-    const satirlar = tumSatirlar.filter(satir => !(anaProjeAnahtarlari.has(satir.projeBirimAnahtari)
-      && [2, 3, 4, 5, 9].includes(satir.isTuru)));
-    const sabitIsler = satirlar.filter(satir => ['Kira', 'Sevkiyat'].includes(satir.isGrubu));
-    const anaAmbalajlar = satirlar.filter(satir => satir.isTuru === 1
-      || ([2, 3, 4, 5, 9].includes(satir.isTuru) && !anaProjeAnahtarlari.has(satir.projeBirimAnahtari)));
-    const ekstraIsler = satirlar.filter(satir => satir.isTuru === 8 && !['Kira', 'Sevkiyat'].includes(satir.isGrubu));
+    // Her mali kalem kendi bakiyesiyle görünür. Sayfanın dışındaki proje kalemleri
+    // buradaki bir satırın altına saklanmaz veya tamamlanma hesabına katılmaz.
+    const satirlar = tumSatirlar;
+    const sabitIsler = satirlar.filter(satir => this.gorunumGrubu(satir.isGrubu) === 'Sabit İşler');
+    const anaAmbalajlar = satirlar.filter(satir => this.gorunumGrubu(satir.isGrubu) === 'Ana Ambalaj');
+    const ekstraIsler = satirlar.filter(satir => this.gorunumGrubu(satir.isGrubu) === 'Ekstra İşler');
     return [
       this.grupOlustur('Sabit İşler', sabitIsler),
       this.grupOlustur('Ana Ambalaj', anaAmbalajlar),
@@ -212,9 +227,10 @@ export class FinansYonetimiComponent implements OnInit {
   ngOnInit(): void {
     this.listeAkislariniKur();
     forkJoin({
-      kategoriler: this.service.giderKategorileri(),
-      icSandikSablonlari: this.ambalajService.getIcSandikSablonlari(),
-    }).subscribe(result => {
+      kategoriler: this.permissions.hasAccess(this.izin.Modul) && this.permissions.hasAccess(this.izin.GiderGoruntule) ? this.service.giderKategorileri() : of({ isSuccess: true, value: [] }),
+      icSandikSablonlari: this.permissions.hasAccess(AMBALAJ_YETKI.Listele) && this.permissions.hasAccess(AMBALAJ_YETKI.PlanGoruntule)
+        ? this.ambalajService.getIcSandikSablonlari() : of({ isSuccess: true, value: [] }),
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(result => {
       if (result.kategoriler.isSuccess) this.giderKategorileri.set((result.kategoriler.value ?? []).filter(kategori => kategori.aktif));
       if (result.icSandikSablonlari.isSuccess) this.icSandikSablonlari.set(result.icSandikSablonlari.value ?? []);
       this.loading.set(false);
@@ -223,12 +239,37 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   selectTab(tab: AnaSekme): void {
+    if (!this.permissions.hasAccess(this.izin.Modul)) return;
+    if (tab === 'akis' && !this.permissions.hasAccess(this.izin.KayitGoruntule) ||
+        tab === 'giderler' && !this.permissions.hasAccess(this.izin.GiderGoruntule) ||
+        tab === 'ayarlar' && !this.ayarOkuyabilir('duzenli') && !this.ayarOkuyabilir('tarifeler')) return;
     this.activeTab.set(tab);
+    if (tab === 'akis') this.aylikListeyiYukle();
     if (tab === 'giderler' && !this.giderlerYuklendi) {
       this.giderlerYuklendi = true;
       this.giderListeIstekleri.next();
     }
-    if (tab === 'ayarlar') this.ayarListesiniYukle();
+    if (tab === 'ayarlar') {
+      if (!this.permissions.hasAccess(this.izin.DuzenliIsYonet)) this.ayarGorunumu.set('tarifeler');
+      this.ayarListesiniYukle();
+    }
+  }
+  kategorileriYenile(): void {
+    if (!this.permissions.hasAccess(this.izin.GiderGoruntule)) return;
+    this.service.giderKategorileri().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(r => {
+      if (r.isSuccess) this.giderKategorileri.set((r.value ?? []).filter(x => x.aktif));
+    });
+  }
+  giderProjesiSec(proje: { projeId: number; projeNo: string; musteri: string } | null): void {
+    this.giderForm.projeId = proje?.projeId ?? null;
+    this.giderProjeEtiketi = proje ? `${proje.projeNo} · ${proje.musteri}` : '';
+  }
+  isProjesiSec(tur: 'ozel' | 'duzenli', proje: { projeId: number; projeNo: string; musteri: string } | null): void {
+    const form = tur === 'ozel' ? this.ozelIsForm : this.duzenliIsForm;
+    form.projeId = proje?.projeId ?? null;
+    if (proje?.musteri) form.musteri = proje.musteri;
+    const label = proje ? `${proje.projeNo} · ${proje.musteri}` : '';
+    if (tur === 'ozel') this.ozelProjeEtiketi = label; else this.duzenliProjeEtiketi = label;
   }
 
   donemDegistir(fark: number): void {
@@ -245,14 +286,11 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   donemiYukle(): void {
-    const tarih = this.seciliDonem();
-    this.service.duzenliIsDonemOlustur(this.tarihMetni(tarih)).subscribe(olusturma => {
-      if (!olusturma.isSuccess) this.toast.error(olusturma.error ?? 'Dönem oluşturulamadı.');
-      this.aylikListeyiYukle();
-    });
+    this.aylikListeyiYukle();
   }
 
   aylikListeyiYukle(): void {
+    if (!this.permissions.hasAccess(this.izin.KayitGoruntule)) return;
     this.aylikListeIstekleri.next();
   }
 
@@ -295,6 +333,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   ayarGorunumuDegistir(gorunum: AyarGorunumu): void {
+    if (!this.ayarOkuyabilir(gorunum)) return;
     this.ayarGorunumu.set(gorunum);
     this.ayarListesiniYukle();
   }
@@ -340,40 +379,8 @@ export class FinansYonetimiComponent implements OnInit {
     });
   }
 
-  projeAcik(projeBirimAnahtari: string): boolean { return this.acikProjeler().has(projeBirimAnahtari); }
-  projeDegistir(satir: FinansAylikIs, event: MouseEvent): void {
-    if (satir.isTuru !== 1 || (event.target as HTMLElement).closest('button')) return;
-    this.acikProjeler.update(mevcut => {
-      const sonraki = new Set(mevcut);
-      sonraki.has(satir.projeBirimAnahtari)
-        ? sonraki.delete(satir.projeBirimAnahtari)
-        : sonraki.add(satir.projeBirimAnahtari);
-      return sonraki;
-    });
-  }
-
-  projeAltKalemleri(satir: FinansAylikIs): FinansAylikIs[] {
-    return this.aylikIsler().filter(kalem => kalem.projeBirimAnahtari === satir.projeBirimAnahtari
-      && [2, 3, 4, 5, 9].includes(kalem.isTuru));
-  }
-
   satirDurumu(satir: FinansAylikIs): string {
-    if (satir.isTuru !== 1) return satir.durum;
-
-    const projeIsleri = this.aylikIsler().filter(kalem => kalem.projeBirimAnahtari === satir.projeBirimAnahtari
-      && [1, 2, 3, 4, 5, 9].includes(kalem.isTuru)
-      && !kalem.iptalEdildi
-      && kalem.miktar > 0.000001);
-    if (!projeIsleri.length) return satir.durum;
-
-    const siparisAcilanlar = projeIsleri.filter(kalem => kalem.siparisMiktari > 0.000001);
-    if (!siparisAcilanlar.length) return 'Sipariş Bekliyor';
-    if (projeIsleri.some(kalem => kalem.miktar - kalem.siparisMiktari > 0.000001)) return 'Kısmi Sipariş';
-
-    const faturalananlar = projeIsleri.filter(kalem => kalem.faturalananMiktar > 0.000001);
-    if (!faturalananlar.length) return 'Fatura Bekliyor';
-    if (projeIsleri.some(kalem => kalem.miktar - kalem.faturalananMiktar > 0.000001)) return 'Kısmi Tamamlandı';
-    return 'Tamamlandı';
+    return satir.durum;
   }
 
   raporFormunuAc(): void {
@@ -430,6 +437,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   aylikDegerDuzenle(satir: FinansAylikIs): void {
+    if (!this.aylikDegerDuzenlenebilir(satir)) return;
     this.aylikDegerSatiri.set(satir);
     this.aylikDeger = satir.tutarDuzenlenebilir ? satir.netTutar : satir.miktar;
     this.aylikDegerHatasi.set('');
@@ -438,6 +446,7 @@ export class FinansYonetimiComponent implements OnInit {
 
   aylikDegerKaydet(): void {
     const satir = this.aylikDegerSatiri();
+    if (!this.aylikDegerDuzenlenebilir(satir) || !Number.isFinite(this.aylikDeger) || this.aylikDegerKaydediliyor()) return;
     const deger = Number(this.aylikDeger);
     if (!satir?.ozelIsId || deger < 0 || (!satir.tutarDuzenlenebilir && deger === 0)) {
       this.aylikDegerHatasi.set('Sıfırdan büyük geçerli bir değer girin.');
@@ -447,6 +456,7 @@ export class FinansYonetimiComponent implements OnInit {
     this.aylikDegerKaydediliyor.set(true);
     this.service.ozelIsAylikDegerGuncelle(satir.ozelIsId, request).subscribe(result => {
       this.aylikDegerKaydediliyor.set(false);
+      if (this.onayaAlindi(result)) return;
       if (!result.isSuccess) {
         this.aylikDegerHatasi.set(result.error ?? 'Aylık değer kaydedilemedi.');
         return;
@@ -473,6 +483,7 @@ export class FinansYonetimiComponent implements OnInit {
     this.iptalKaydediliyor.set(true);
     this.service.ozelIsIptal(satir.ozelIsId, this.iptalAciklamasi.trim()).subscribe(result => {
       this.iptalKaydediliyor.set(false);
+      if (this.onayaAlindi(result)) return;
       if (!result.isSuccess) {
         this.iptalHatasi.set(result.error ?? 'İş iptal edilemedi.');
         return;
@@ -486,6 +497,7 @@ export class FinansYonetimiComponent implements OnInit {
   ozelIsGeriAl(satir: FinansAylikIs): void {
     if (!satir.ozelIsId) return;
     this.service.ozelIsGeriAl(satir.ozelIsId).subscribe(result => {
+      if (this.onayaAlindi(result)) return;
       if (!result.isSuccess) this.toast.error(result.error ?? 'İş geri alınamadı.');
       else {
         this.toast.success('İş yeniden aktifleştirildi.');
@@ -495,6 +507,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   yeniOzelIs(): void {
+    this.ozelProjeEtiketi = '';
     this.ozelIsForm = this.bosOzelIsFormu();
     this.ozelRaporGrubu = 'Diğer';
     this.ozelIsHatasi.set('');
@@ -522,7 +535,7 @@ export class FinansYonetimiComponent implements OnInit {
       isAdi: form.isAdi.trim(),
       isTuru: form.isTuru.trim(),
       raporGrubu,
-      musteri: this.finansMusterisi,
+      musteri: form.musteri.trim(),
       aciklama: this.temizle(form.aciklama),
       miktar: Number(form.miktar),
       birimFiyat: Number(form.birimFiyat),
@@ -531,6 +544,7 @@ export class FinansYonetimiComponent implements OnInit {
     this.ozelIsKaydediliyor.set(true);
     this.service.ozelIsOlustur(request).subscribe(result => {
       this.ozelIsKaydediliyor.set(false);
+      if (this.onayaAlindi(result)) return;
       if (!result.isSuccess) {
         this.ozelIsHatasi.set(result.error ?? 'Tek seferlik iş oluşturulamadı.');
         return;
@@ -542,103 +556,147 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   siparisFormunuAc(satir: FinansAylikIs): void {
-    if (!satir.isKaydiIds.length || satir.durum.toLocaleLowerCase('tr-TR').includes('miktar bekliyor')) return;
-    this.siparisSatiri.set(satir);
-    this.siparisForm = this.bosSiparisFormu();
-    this.siparisKayitlari.set([]);
-    this.siparisMiktarlari = {};
-    this.siparisHatasi.set('');
-    this.siparisAcik.set(true);
-    this.siparisYukleniyor.set(true);
-    this.service.isKayitlariSecim(satir.isKaydiIds).subscribe(result => {
-      this.siparisYukleniyor.set(false);
-      if (!result.isSuccess) {
-        this.siparisHatasi.set(result.error ?? 'İş kayıtları yüklenemedi.');
-        return;
-      }
-      this.siparisKayitlariniKur(result.value ?? []);
-    });
+    this.topluSiparisAc(satir.isKaydiIds);
   }
 
-  siparisKaydet(): void {
-    const kalemler = this.siparisKayitlari().map(kayit => ({
-      isKaydiId: kayit.id,
-      adet: Number(this.siparisMiktarlari[kayit.id]?.adet ?? 0),
-      m3: Number(this.siparisMiktarlari[kayit.id]?.m3 ?? 0),
-    }));
-    if (!this.siparisForm.poNumarasi.trim() || !this.siparisForm.siparisTarihi || !kalemler.length
-      || kalemler.some(kalem => kalem.adet <= 0 && kalem.m3 <= 0)) {
-      this.siparisHatasi.set('PO numarası, tarih ve sıfırdan büyük kalem miktarları zorunludur.');
-      return;
-    }
-    const request: FinansSiparisOlusturRequest = {
-      poNumarasi: this.siparisForm.poNumarasi.trim(),
-      siparisTarihi: this.siparisForm.siparisTarihi,
-      aciklama: this.temizle(this.siparisForm.aciklama),
-      kalemler,
-    };
-    this.siparisKaydediliyor.set(true);
-    this.service.siparisOlustur(request).subscribe(result => {
-      this.siparisKaydediliyor.set(false);
-      if (!result.isSuccess) {
-        this.siparisHatasi.set(result.error ?? 'Sipariş oluşturulamadı.');
-        return;
-      }
-      this.siparisAcik.set(false);
-      this.toast.success('Sipariş oluşturuldu.');
-      this.aylikListeyiYukle();
-    });
+  topluSiparisAc(ids: number[]): void {
+    if (!ids.length || !this.permissions.canWrite(this.izin.PoGir)) return;
+    this.detayHedef.set(null);
+    this.dagitim.set({tur: 'Siparis', ids, siparisId: null});
   }
 
-  satiriFaturalandir(satir: FinansAylikIs): void {
-    const poNumaralari = [...new Set(satir.poNumaralari.map(po => po.trim()).filter(Boolean))];
-    if (!poNumaralari.length) {
-      this.toast.error('Satırda faturalandırılabilecek bir PO numarası bulunmuyor.');
-      return;
-    }
-    this.faturalandirilanSiparisId.set(-1);
-    forkJoin(poNumaralari.map(poNumarasi => this.service.siparisler({
-      poNumarasi,
-      pageNumber: 1,
-      pageSize: 25,
-    }))).subscribe({
-      next: sonuclar => {
-        const bulunanSiparisler = sonuclar
-          .filter(sonuc => sonuc.isSuccess)
-          .flatMap(sonuc => sonuc.value?.items ?? [])
-          .filter(siparis => poNumaralari.some(po => po.localeCompare(siparis.poNumarasi, 'tr-TR', { sensitivity: 'base' }) === 0));
-        const siparisler = [...new Map(bulunanSiparisler.map(siparis => [siparis.id, siparis])).values()]
-          .sort((sol, sag) => Number(sag.kalanM3 > 0.000001) - Number(sol.kalanM3 > 0.000001));
-        if (!siparisler.length) {
-          this.faturalandirilanSiparisId.set(null);
-          this.toast.error('Satırın PO numarasıyla eşleşen sipariş bulunamadı.');
-          return;
-        }
-        this.faturalandirilabilirSiparisiBul(satir, siparisler);
-      },
-      error: () => {
-        this.faturalandirilanSiparisId.set(null);
-        this.toast.error('Sipariş bilgisi yüklenemedi.');
-      },
-    });
+  satiriFaturalandir(_satir: FinansAylikIs): void { this.faturaAc(null); }
+
+  faturaAc(siparisId: number | null): void {
+    if (!this.permissions.canWrite(this.izin.FaturaGir)) return;
+    this.detayHedef.set(null);
+    this.dagitim.set({tur: 'Fatura', ids: [], siparisId});
+  }
+
+  belgeKaydedildi(hedef: {tur: FinansVarlikTuru; id: number}): void {
+    this.dagitim.set(null); this.detayHedef.set(hedef); this.aylikListeyiYukle();
+  }
+
+  parasal(kod: string): boolean {
+    return this.permissions.hasAccess(this.izin.Modul) && this.permissions.hasAccess(this.izin.ParasalVeriGoruntule) && this.permissions.hasAccess(kod);
+  }
+
+  ayarOkuyabilir(gorunum: AyarGorunumu): boolean {
+    return this.permissions.hasAccess(this.izin.Modul) && this.permissions.hasAccess(gorunum === 'duzenli' ? this.izin.DuzenliIsYonet : this.izin.IsKutuphanesiYonet);
+  }
+
+  ayarYazabilir(gorunum: AyarGorunumu): boolean {
+    return this.ayarOkuyabilir(gorunum) && this.permissions.canWrite(gorunum === 'duzenli' ? this.izin.DuzenliIsYonet : this.izin.TarifeYonet);
+  }
+
+  miktarGorebilir(birim: string | undefined, isTuru?: number): boolean {
+    const m3 = birim === 'm³' || birim === 'm3' || isTuru === 9;
+    return !m3 || this.permissions.hasAccess(this.alanIzni.M3Goruntule) && (isTuru !== 9 || this.permissions.hasAccess(this.alanIzni.SarfGoruntule));
+  }
+
+  giderAlanlariniGorebilir(): boolean {
+    return this.parasal(this.izin.BirimFiyatGoruntule) && this.parasal(this.izin.TutarGoruntule) && this.permissions.hasAccess(this.izin.GiderGoruntule);
+  }
+
+  giderDuzenlenebilir(gider: FinansGider): boolean {
+    return this.permissions.canWrite(this.izin.GiderDuzenle) && this.giderAlanlariniGorebilir() &&
+      this.miktarGorebilir(gider.birim) && Number.isFinite(gider.miktar) && Number.isFinite(gider.birimFiyat) && Number.isFinite(gider.kdvOrani);
+  }
+
+  aylikDegerDuzenlenebilir(satir: FinansAylikIs | null): boolean {
+    if (!satir || !this.permissions.hasAccess(this.izin.Modul) || !this.permissions.canWrite(this.izin.FiyatlandirmaDegistir)) return false;
+    return satir.tutarDuzenlenebilir
+      ? this.parasal(this.izin.TutarGoruntule) && Number.isFinite(satir.netTutar)
+      : this.miktarGorebilir(satir.birim, satir.isTuru) && Number.isFinite(satir.miktar);
+  }
+
+  private onayaAlindi(result: ApiResult<unknown>): boolean {
+    if (result.statusCode !== 202) return false;
+    this.toast.info('İşlem onaya gönderildi; henüz uygulanmadı.');
+    return true;
   }
 
   yeniGider(): void {
     this.duzenlenenGiderId.set(null);
+    this.giderProjeEtiketi = '';
     this.giderForm = this.bosGiderFormu();
+    ++this.giderKalemIstekSurumu;
+    this.giderKalemleri.set([]); this.giderKalemLoading.set(false); this.giderKalemHatasi.set('');
+    this.giderEskiKalem.set(null); this.giderEskiKategori.set(null);
     this.giderHatasi.set('');
     this.giderAcik.set(true);
   }
 
   giderDuzenle(gider: FinansGider): void {
+    if (!this.giderDuzenlenebilir(gider)) {
+      this.toast.error('Gizlenmiş tutar veya miktar içeren gider düzenlenemez. Gerekli alan izinlerini kontrol edin.');
+      return;
+    }
+    this.giderProjeEtiketi = gider.projeNo;
     this.duzenlenenGiderId.set(gider.id);
-    this.giderForm = { tarih: gider.tarih.slice(0, 10), kategoriId: gider.kategoriId, altKategori: gider.altKategori ?? null, firmaVeyaKisi: gider.firmaVeyaKisi ?? null, aciklama: gider.aciklama, tutar: gider.tutar, paraBirimi: gider.paraBirimi, kdvDahil: gider.kdvDahil, kdvOrani: gider.kdvOrani, projeId: gider.projeId ?? null, isTuru: gider.isTuru ?? null };
+    this.giderForm = { tarih: gider.tarih.slice(0, 10), kategoriId: gider.kategoriId, giderKalemiId: gider.giderKalemiId ?? null, altKategori: gider.altKategori ?? null, firmaVeyaKisi: gider.firmaVeyaKisi ?? null, aciklama: gider.aciklama, tutar: gider.tutar, paraBirimi: gider.paraBirimi, kdvDahil: gider.kdvDahil, kdvOrani: gider.kdvOrani, projeId: gider.projeId ?? null, isTuru: gider.isTuru ?? null,
+      miktar: gider.miktar, birim: gider.birim, birimFiyat: gider.birimFiyat,
+      finansTarihi: (gider.finansTarihi ?? gider.tarih).slice(0, 10), finansDonemi: gider.finansDonemi,
+      belgeNo: gider.belgeNo ?? null, avansMi: gider.avansMi ?? false, mahsupEdilenAvansId: gider.mahsupEdilenAvansId ?? null };
     this.giderHatasi.set('');
+    this.giderEskiKategori.set(this.giderKategorileri().some(k => k.id === gider.kategoriId) ? null : { id: gider.kategoriId, ad: gider.kategori });
+    this.giderEskiKalem.set(gider.giderKalemiId ? { id: gider.giderKalemiId, ad: gider.giderKalemi ?? gider.altKategori ?? `Kalem #${gider.giderKalemiId}` } : null);
+    this.giderKalemleriniYukle();
     this.giderAcik.set(true);
   }
 
+  giderKategoriDegisti(kategoriId: number): void {
+    this.giderForm.kategoriId = kategoriId;
+    this.giderForm.giderKalemiId = null; this.giderForm.altKategori = null;
+    this.giderEskiKalem.set(null); this.giderEskiKategori.set(null);
+    this.giderKalemleriniYukle();
+  }
+
+  giderKalemiSecildi(id: number | null): void {
+    const kalem = this.giderKalemleri().find(k => k.id === id && k.aktif && k.kategoriId === this.giderForm.kategoriId);
+    this.giderForm.giderKalemiId = kalem?.id ?? null;
+    this.giderForm.altKategori = kalem?.ad ?? null;
+    this.giderEskiKalem.set(null);
+    // Yalnız yeni giderde ve açık kullanıcı seçiminde varsayılanları uygula.
+    // Mevcut gideri okumak fiyat/miktar/para birimi snapshot'ını yeniden yazmaz.
+    if (kalem && !this.duzenlenenGiderId()) {
+      this.giderForm.firmaVeyaKisi = kalem.varsayilanFirmaVeyaKisi ?? this.giderForm.firmaVeyaKisi;
+      this.giderForm.miktar = kalem.varsayilanMiktar ?? this.giderForm.miktar;
+      this.giderForm.birim = kalem.varsayilanBirim ?? this.giderForm.birim;
+      this.giderForm.birimFiyat = kalem.varsayilanBirimFiyat ?? this.giderForm.birimFiyat;
+      this.giderForm.paraBirimi = kalem.varsayilanParaBirimi ?? this.giderForm.paraBirimi;
+      this.giderForm.kdvOrani = kalem.varsayilanKdvOrani ?? this.giderForm.kdvOrani;
+      this.giderForm.kdvDahil = kalem.varsayilanKdvDahil ?? this.giderForm.kdvDahil;
+    }
+  }
+
+  private giderKalemleriniYukle(): void {
+    const version = ++this.giderKalemIstekSurumu;
+    const kategoriId = this.giderForm.kategoriId;
+    this.giderKalemleri.set([]); this.giderKalemHatasi.set('');
+    if (!kategoriId) { this.giderKalemLoading.set(false); return; }
+    this.giderKalemLoading.set(true);
+    this.service.giderKalemleri(kategoriId, true)
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => { if (version === this.giderKalemIstekSurumu) this.giderKalemLoading.set(false); }))
+      .subscribe({ next: r => {
+        if (version !== this.giderKalemIstekSurumu) return;
+        if (!r.isSuccess) { this.giderKalemHatasi.set(r.error ?? 'Gider kalemleri alınamadı.'); return; }
+        const items = (r.value ?? []).filter(k => k.aktif && k.kategoriId === kategoriId);
+        this.giderKalemleri.set(items);
+        if (items.some(k => k.id === this.giderForm.giderKalemiId)) this.giderEskiKalem.set(null);
+      }, error: () => { if (version === this.giderKalemIstekSurumu) this.giderKalemHatasi.set('Gider kalemleri alınamadı.'); } });
+  }
+
   giderKaydet(): void {
-    if (!this.giderForm.tarih || this.giderForm.kategoriId <= 0 || !this.giderForm.aciklama.trim() || this.giderForm.tutar <= 0) {
+    if (this.giderKaydediliyor() || this.giderKalemLoading() || !this.permissions.canWrite(this.duzenlenenGiderId() ? this.izin.GiderDuzenle : this.izin.GiderEkle)) return;
+    if (!this.permissions.hasAccess(this.izin.Modul) || this.duzenlenenGiderId() && (!this.giderAlanlariniGorebilir() || !this.miktarGorebilir(this.giderForm.birim))) return;
+    if (this.giderEskiKategori() || this.giderEskiKalem() || this.giderKalemHatasi()) {
+      this.giderHatasi.set('Aktif kategori/kalem seçin veya eski kalem bağlantısını açıkça kaldırın. Kalem listesi alınamadıysa yeniden deneyin.');
+      return;
+    }
+    if (!this.giderForm.tarih || this.giderForm.kategoriId <= 0 || !this.giderForm.aciklama.trim() ||
+        !Number.isFinite(this.giderForm.birimFiyat) || !Number.isFinite(this.giderForm.miktar) || !Number.isFinite(this.giderForm.kdvOrani) ||
+        this.giderForm.birimFiyat! < 0 || this.giderForm.miktar! <= 0 || this.giderForm.kdvOrani < 0 || this.giderForm.kdvOrani > 100) {
       this.giderHatasi.set('Tarih, kategori, açıklama ve sıfırdan büyük tutar zorunludur.');
       return;
     }
@@ -646,15 +704,15 @@ export class FinansYonetimiComponent implements OnInit {
     const request = { ...this.giderForm, aciklama: this.giderForm.aciklama.trim() };
     this.giderKaydediliyor.set(true);
     const operation = id ? this.service.giderGuncelle(id, request) : this.service.giderOlustur(request);
-    operation.subscribe(result => {
-      this.giderKaydediliyor.set(false);
+    operation.pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.giderKaydediliyor.set(false))).subscribe({ next: result => {
+      if (this.onayaAlindi(result)) return;
       if (!result.isSuccess) this.giderHatasi.set(result.error ?? 'Gider kaydedilemedi.');
       else {
         this.giderAcik.set(false);
         this.toast.success(id ? 'Gider güncellendi.' : 'Gider kaydedildi.');
         this.giderleriYenile();
       }
-    });
+    }, error: () => this.giderHatasi.set('Gider kaydedilemedi.') });
   }
 
   giderRaporuIndir(format: 'pdf' | 'excel'): void {
@@ -672,6 +730,8 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   yeniDuzenliIs(): void {
+    if (!this.ayarYazabilir('duzenli')) return;
+    this.duzenliProjeEtiketi = '';
     this.duzenlenenDuzenliIsId.set(null);
     this.duzenliIsForm = this.bosDuzenliIsFormu();
     this.duzenliIsHatasi.set('');
@@ -679,15 +739,19 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   duzenliIsDuzenle(is: FinansDuzenliIs): void {
+    if (!this.ayarYazabilir('duzenli') || !this.parasal(this.izin.BirimFiyatGoruntule) || !this.parasal(this.izin.TutarGoruntule) || !this.miktarGorebilir(is.birim) || !Number.isFinite(is.birimFiyat) || !Number.isFinite(is.kdvOrani) || !Number.isFinite(is.miktar)) return;
     this.duzenlenenDuzenliIsId.set(is.id);
-    this.duzenliIsForm = { projeId: null, isAdi: is.isAdi, isTuru: is.isTuru, musteri: this.finansMusterisi, aciklama: is.aciklama, tekrarSikligi: is.tekrarSikligi, baslangicTarihi: is.baslangicTarihi.slice(0, 10), bitisTarihi: is.bitisTarihi?.slice(0, 10) ?? null, olusturmaGunu: is.olusturmaGunu, miktar: is.miktar, birim: is.birim, birimFiyat: is.birimFiyat, paraBirimi: is.paraBirimi, kdvOrani: is.kdvOrani, aktif: is.aktif };
+    this.duzenliProjeEtiketi = '';
+    this.duzenliIsForm = { projeId: is.projeId ?? null, isAdi: is.isAdi, isTuru: is.isTuru, musteri: is.musteri, aciklama: is.aciklama, tekrarSikligi: is.tekrarSikligi, baslangicTarihi: is.baslangicTarihi.slice(0, 10), bitisTarihi: is.bitisTarihi?.slice(0, 10) ?? null, olusturmaGunu: is.olusturmaGunu, miktar: is.miktar, birim: is.birim, birimFiyat: is.birimFiyat, paraBirimi: is.paraBirimi, kdvOrani: is.kdvOrani, aktif: is.aktif, hesaplamaYontemi: is.hesaplamaYontemi, raporGrubu: is.raporGrubu };
     this.duzenliIsHatasi.set('');
     this.duzenliIsAcik.set(true);
   }
 
   duzenliIsKaydet(): void {
+    if (!this.ayarYazabilir('duzenli') || this.duzenliIsKaydediliyor()) return;
+    if (this.duzenlenenDuzenliIsId() && (!this.parasal(this.izin.BirimFiyatGoruntule) || !this.parasal(this.izin.TutarGoruntule) || !this.miktarGorebilir(this.duzenliIsForm.birim))) return;
     const form = this.duzenliIsForm;
-    if (!form.isAdi.trim() || !form.isTuru.trim() || !form.baslangicTarihi || form.olusturmaGunu < 1 || form.olusturmaGunu > 31 || form.miktar <= 0 || form.birimFiyat < 0 || form.kdvOrani < 0 || form.kdvOrani > 100) {
+    if (!form.isAdi.trim() || !form.isTuru.trim() || !form.baslangicTarihi || !Number.isFinite(form.miktar) || !Number.isFinite(form.birimFiyat) || !Number.isFinite(form.kdvOrani) || form.olusturmaGunu < 1 || form.olusturmaGunu > 31 || form.miktar <= 0 || form.birimFiyat < 0 || form.kdvOrani < 0 || form.kdvOrani > 100) {
       this.duzenliIsHatasi.set('İş adı, tür, tarih, gün, miktar, fiyat ve KDV alanlarını kontrol edin.');
       return;
     }
@@ -697,6 +761,7 @@ export class FinansYonetimiComponent implements OnInit {
     const operation = id ? this.service.duzenliIsGuncelle(id, request) : this.service.duzenliIsOlustur(request);
     operation.subscribe(result => {
       this.duzenliIsKaydediliyor.set(false);
+      if (this.onayaAlindi(result)) return;
       if (!result.isSuccess) this.duzenliIsHatasi.set(result.error ?? 'Düzenli iş kaydedilemedi.');
       else {
         this.duzenliIsAcik.set(false);
@@ -707,6 +772,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   yeniUrun(): void {
+    if (!this.ayarYazabilir('tarifeler')) return;
     this.duzenlenenUrunId.set(null);
     this.urunForm = this.bosUrunFormu();
     this.urunHatasi.set('');
@@ -714,6 +780,8 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   urunDuzenle(urun: FinansUrun): void {
+    if (!this.ayarYazabilir('tarifeler') || !this.parasal(this.izin.BirimFiyatGoruntule) || !this.parasal(this.izin.TutarGoruntule) || !Number.isFinite(urun.birimFiyat) || !Number.isFinite(urun.kdvOrani)) return;
+    if (urun.eslesmeler.some(e => e.sandikTipi === 'Katlanır Sandık') && !this.permissions.hasAccess(this.alanIzni.OlcuGoruntule)) return;
     const eslesme = urun.eslesmeler[0];
     this.duzenlenenUrunId.set(urun.id);
     this.urunForm = { kod: urun.kod, ad: urun.ad, fiyatlandirmaBirimi: urun.fiyatlandirmaBirimi, birimFiyat: urun.birimFiyat, paraBirimi: urun.paraBirimi, kdvOrani: urun.kdvOrani, aktif: urun.aktif, sira: urun.sira, isTuru: eslesme?.isTuru ?? 0, sandikAdi: eslesme?.sandikAdi ?? '', sandikTipi: eslesme?.sandikTipi ?? '', boy: eslesme?.boy ?? null, en: eslesme?.en ?? null, yukseklik: eslesme?.yukseklik ?? null, icSandikSablonId: eslesme?.icSandikSablonId ?? null };
@@ -722,8 +790,10 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   urunKaydet(): void {
+    if (!this.ayarYazabilir('tarifeler') || this.urunKaydediliyor()) return;
+    if (this.duzenlenenUrunId() && (!this.parasal(this.izin.BirimFiyatGoruntule) || !this.parasal(this.izin.TutarGoruntule) || this.urunForm.sandikTipi === 'Katlanır Sandık' && !this.permissions.hasAccess(this.alanIzni.OlcuGoruntule))) return;
     const form = this.urunForm;
-    if (!form.kod.trim() || !form.ad.trim() || form.birimFiyat < 0 || form.kdvOrani < 0 || form.kdvOrani > 100) {
+    if (!form.kod.trim() || !form.ad.trim() || !Number.isFinite(form.birimFiyat) || !Number.isFinite(form.kdvOrani) || form.birimFiyat < 0 || form.kdvOrani < 0 || form.kdvOrani > 100) {
       this.urunHatasi.set('Kod, ad, geçerli fiyat ve KDV zorunludur.');
       return;
     }
@@ -747,6 +817,7 @@ export class FinansYonetimiComponent implements OnInit {
     const operation = id ? this.service.urunGuncelle(id, request) : this.service.urunOlustur(request);
     operation.subscribe(result => {
       this.urunKaydediliyor.set(false);
+      if (this.onayaAlindi(result)) return;
       if (!result.isSuccess) this.urunHatasi.set(result.error ?? 'Tarife kaydedilemedi.');
       else {
         this.urunAcik.set(false);
@@ -757,6 +828,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   urunSil(urun: FinansUrun): void {
+    if (!this.ayarYazabilir('tarifeler')) return;
     if (!confirm(`${urun.kod} · ${urun.ad} tarifesini silmek istediğinize emin misiniz?\n\nSipariş geçmişinde kullanılmış tarifeler silinemez; düzenlenerek pasif duruma getirilebilir.`)) return;
     this.urunSiliniyorId.set(urun.id);
     this.service.urunSil(urun.id).subscribe(result => {
@@ -773,7 +845,7 @@ export class FinansYonetimiComponent implements OnInit {
   urunEslesmeMetni(urun: FinansUrun): string {
     return urun.eslesmeler.map(eslesme => {
       const tur = eslesme.sandikTipi ? ` · ${eslesme.sandikTipi}` : '';
-      const olcu = eslesme.sandikTipi === 'Katlanır Sandık' ? ` · ${eslesme.boy}×${eslesme.en}×${eslesme.yukseklik} mm` : '';
+      const olcu = eslesme.sandikTipi === 'Katlanır Sandık' && this.permissions.hasAccess(this.alanIzni.OlcuGoruntule) ? ` · ${eslesme.boy}×${eslesme.en}×${eslesme.yukseklik} mm` : '';
       const detay = eslesme.icSandikSablonId ? ` · ${this.icSandikSablonAdi(eslesme.icSandikSablonId)}` : eslesme.sandikAdi ? ` · ${eslesme.sandikAdi}` : '';
       return `${this.isTuruMetni(eslesme.isTuru)}${tur}${olcu}${detay}`;
     }).join(', ') || 'Manuel seçim';
@@ -807,66 +879,6 @@ export class FinansYonetimiComponent implements OnInit {
     return ({ 1: 'AMBALAJ', 2: 'İLAVE SANDIK', 3: 'İÇ SANDIK', 4: 'SAHA SANDIĞI', 5: 'YEDEK SANDIK', 6: 'TADİLAT', 7: 'DİĞER AMBALAJ', 8: 'ÖZEL İŞ', 9: 'SARF KERESTE' } as Record<number, string>)[isTuru] ?? 'DİĞER';
   }
 
-  private siparisKayitlariniKur(kayitlar: FinansIsKaydi[]): void {
-    this.siparisKayitlari.set(kayitlar);
-    this.siparisMiktarlari = Object.fromEntries(kayitlar.map(kayit => [kayit.id, { adet: kayit.siparisBekleyenAdet, m3: kayit.siparisBekleyenM3 }]));
-  }
-
-  private aylikKayitOlustur(satir: FinansAylikIs, id: number, index: number): FinansIsKaydi {
-    const m3 = satir.birim.toLocaleLowerCase('tr-TR').includes('m³') ? satir.miktar / satir.isKaydiIds.length : 0;
-    const adet = m3 ? 0 : satir.miktar / satir.isKaydiIds.length;
-    return { id, projeId: null, projeNo: satir.projeNo, musteri: this.finansMusterisi, sandikNo: `${satir.ozelIsId ?? 'AY'}-${index + 1}`, sandikAdi: satir.isAdi, sandikTipi: satir.sandikTipi, boy: satir.boy, en: satir.en, yukseklik: satir.yukseklik, icSandikSablonId: null, isTuru: satir.isTuru, adet, birimM3: 0, toplamM3: m3, siparisAdedi: 0, siparisM3: 0, siparisBekleyenAdet: adet, siparisBekleyenM3: m3, faturalananAdet: 0, faturalananM3: 0, poNumaralari: satir.poNumaralari, faturaNumaralari: satir.faturaNumaralari, kaynakAktif: true };
-  }
-
-  private faturalandirilabilirSiparisiBul(satir: FinansAylikIs, siparisler: FinansSiparis[]): void {
-    forkJoin(siparisler.map(siparis => this.service.siparisDetay(siparis.id))).subscribe({
-      next: detaylar => {
-        const adayIndex = detaylar.findIndex(detay => detay.isSuccess && detay.value?.kalemler.some(kalem =>
-          satir.isKaydiIds.includes(kalem.isKaydiId)
-          && (kalem.kalanAdet > 0.000001 || kalem.kalanM3 > 0.000001)));
-        if (adayIndex < 0) {
-          this.faturalandirilanSiparisId.set(null);
-          this.toast.error('Bu PO kayıtlarında fatura bekleyen kalem bulunmuyor.');
-          return;
-        }
-        const detay = detaylar[adayIndex].value;
-        if (!detay) {
-          this.faturalandirilanSiparisId.set(null);
-          this.toast.error('Sipariş detayları yüklenemedi.');
-          return;
-        }
-        this.siparisiFaturalandir(satir, siparisler[adayIndex], detay);
-      },
-      error: () => {
-        this.faturalandirilanSiparisId.set(null);
-        this.toast.error('Sipariş detayları yüklenemedi.');
-      },
-    });
-  }
-
-  private siparisiFaturalandir(satir: FinansAylikIs, siparis: FinansSiparis, detay: FinansSiparisDetay): void {
-    this.faturalandirilanSiparisId.set(siparis.id);
-    const kalemler = detay.kalemler
-        .filter(kalem => satir.isKaydiIds.includes(kalem.isKaydiId)
-          && (kalem.kalanAdet > 0.000001 || kalem.kalanM3 > 0.000001))
-        .map(kalem => ({ siparisKalemiId: kalem.id, adet: kalem.kalanAdet, m3: kalem.kalanM3 }));
-    const request: FinansFaturaOlusturRequest = {
-      siparisId: siparis.id,
-      faturaNumarasi: `İŞARETLİ-${siparis.kayitNo}`,
-      faturaTarihi: this.tarihMetni(new Date()),
-      aciklama: 'Aylık finans iş takibinden faturalandı olarak işaretlendi.',
-      kalemler,
-    };
-    this.service.faturaOlustur(request).subscribe(result => {
-      this.faturalandirilanSiparisId.set(null);
-      if (!result.isSuccess) {
-        this.toast.error(result.error ?? 'Fatura oluşturulamadı.');
-        return;
-      }
-      this.toast.success('Sipariş faturalandı olarak işaretlendi.');
-      this.aylikListeyiYukle();
-    });
-  }
 
   private grupAdi(deger: string): string {
     return deger.trim() || 'Diğer';
@@ -877,10 +889,11 @@ export class FinansYonetimiComponent implements OnInit {
       .filter(item => this.gorunumGrubu(item.grup) === ad)
       .reduce((toplam, item) => {
         if (item.paraBirimi === 'EUR') toplam.eur += item.toplamTutar;
+        if (item.paraBirimi === 'USD') toplam.usd += item.toplamTutar;
         if (item.paraBirimi === 'TRY') toplam.try += item.toplamTutar;
         return toplam;
-      }, { eur: 0, try: 0 });
-    return { ad, satirlar, eur: toplamlar.eur, try: toplamlar.try };
+      }, { eur: 0, usd: 0, try: 0 });
+    return { ad, satirlar, eur: toplamlar.eur, usd: toplamlar.usd, try: toplamlar.try };
   }
 
   private gorunumGrubu(grup: string): string {
@@ -896,6 +909,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   private ayarListesiniYukle(): void {
+    if (!this.ayarOkuyabilir(this.ayarGorunumu())) return;
     if (this.ayarGorunumu() === 'duzenli') {
       if (!this.duzenliIslerYuklendi) {
         this.duzenliIslerYuklendi = true;
@@ -927,6 +941,7 @@ export class FinansYonetimiComponent implements OnInit {
   private listeAkislariniKur(): void {
     this.aylikListeIstekleri.pipe(
       switchMap(() => {
+        if (!this.permissions.hasAccess(this.izin.Modul) || !this.permissions.hasAccess(this.izin.KayitGoruntule)) return EMPTY;
         const tarih = this.seciliDonem();
         this.aylikLoading.set(true);
         return this.service.aylikIsler(tarih.getFullYear(), tarih.getMonth() + 1, {
@@ -956,6 +971,7 @@ export class FinansYonetimiComponent implements OnInit {
 
     this.giderListeIstekleri.pipe(
       switchMap(() => {
+        if (!this.permissions.hasAccess(this.izin.Modul) || !this.permissions.hasAccess(this.izin.GiderGoruntule)) return EMPTY;
         this.giderLoading.set(true);
         return this.service.giderler({
           pageNumber: this.giderPageNumber(),
@@ -982,6 +998,7 @@ export class FinansYonetimiComponent implements OnInit {
 
     this.duzenliListeIstekleri.pipe(
       switchMap(() => {
+        if (!this.ayarOkuyabilir('duzenli')) return EMPTY;
         this.duzenliLoading.set(true);
         return this.service.duzenliIsler({
           pageNumber: this.duzenliPageNumber(),
@@ -1007,6 +1024,7 @@ export class FinansYonetimiComponent implements OnInit {
 
     this.urunListeIstekleri.pipe(
       switchMap(() => {
+        if (!this.ayarOkuyabilir('tarifeler')) return EMPTY;
         this.urunLoading.set(true);
         return this.service.urunler({
           pageNumber: this.urunPageNumber(),
@@ -1067,10 +1085,9 @@ export class FinansYonetimiComponent implements OnInit {
   private bosOzelIsFormu(): FinansOzelIsKaydetRequest {
     return { isTuru: '', musteri: this.finansMusterisi, projeId: null, isAdi: '', aciklama: null, miktar: 1, birim: 'Adet', isTarihi: this.tarihMetni(this.seciliDonem()), hesaplamaYontemi: 3, raporGrubu: 'Diğer', birimFiyat: 0, paraBirimi: 'EUR', kdvOrani: 20 };
   }
-  private bosSiparisFormu(): Omit<FinansSiparisOlusturRequest, 'kalemler'> { return { poNumarasi: '', siparisTarihi: this.tarihMetni(new Date()), aciklama: null }; }
-  private bosGiderFormu(): FinansGiderKaydetRequest { return { tarih: this.tarihMetni(new Date()), kategoriId: 0, altKategori: null, firmaVeyaKisi: null, aciklama: '', tutar: 0, paraBirimi: 'TRY', kdvDahil: false, kdvOrani: 20, projeId: null, isTuru: null }; }
+  private bosGiderFormu(): FinansGiderKaydetRequest { return { tarih: this.tarihMetni(new Date()), finansTarihi: this.tarihMetni(new Date()), miktar: 1, birim: 'Adet', birimFiyat: 0, belgeNo: null, avansMi: false, mahsupEdilenAvansId: null, kategoriId: 0, giderKalemiId: null, altKategori: null, firmaVeyaKisi: null, aciklama: '', tutar: 0, paraBirimi: 'TRY', kdvDahil: false, kdvOrani: 20, projeId: null, isTuru: null }; }
   private bosDuzenliIsFormu(): FinansDuzenliIsKaydetRequest { return { projeId: null, isAdi: '', isTuru: '', musteri: this.finansMusterisi, aciklama: null, tekrarSikligi: 'Aylık', baslangicTarihi: this.tarihMetni(new Date()), bitisTarihi: null, olusturmaGunu: 1, miktar: 1, birim: 'Hizmet', birimFiyat: 0, paraBirimi: 'EUR', kdvOrani: 20, aktif: true }; }
-  private bosUrunFormu() { return { kod: '', ad: '', fiyatlandirmaBirimi: 2 as 1 | 2, birimFiyat: 0, paraBirimi: 'EUR', kdvOrani: 20, aktif: true, sira: 0, isTuru: 0, sandikAdi: '', sandikTipi: '', boy: null as number | null, en: null as number | null, yukseklik: null as number | null, icSandikSablonId: null as number | null }; }
+  private bosUrunFormu() { return { kod: '', ad: '', fiyatlandirmaBirimi: 2 as 1 | 2 | 3 | 4, birimFiyat: 0, paraBirimi: 'EUR', kdvOrani: 20, aktif: true, sira: 0, isTuru: 0, sandikAdi: '', sandikTipi: '', boy: null as number | null, en: null as number | null, yukseklik: null as number | null, icSandikSablonId: null as number | null }; }
   private ayinIlkGunu(tarih: Date): Date { return new Date(tarih.getFullYear(), tarih.getMonth(), 1); }
   private tarihMetni(tarih: Date): string { return `${tarih.getFullYear()}-${String(tarih.getMonth() + 1).padStart(2, '0')}-${String(tarih.getDate()).padStart(2, '0')}`; }
   private temizle(value: string | null | undefined): string | null { const temiz = value?.trim(); return temiz || null; }

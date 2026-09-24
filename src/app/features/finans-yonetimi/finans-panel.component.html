@@ -1,0 +1,457 @@
+<section class="v2-section v2-management finance-dashboard">
+  <header class="v2-toolbar v2-page-heading">
+    <div class="v2-heading">
+      <span class="v2-heading-icon" aria-hidden="true"><i class="ri-dashboard-line"></i></span>
+      <div>
+        <h3>{{ t('PANEL_TITLE') }}</h3>
+        <p>{{ t('PANEL_HELP') }}</p>
+      </div>
+    </div>
+    <div class="v2-fields compact">
+      <label
+        >{{ t('START') }}<input type="date" [(ngModel)]="baslangic" (change)="filtrele()"
+      /></label>
+      <label>{{ t('AS_OF') }}<input type="date" [(ngModel)]="bitis" (change)="filtrele()" /></label>
+      <button
+        class="btn btn-outline-primary"
+        type="button"
+        (click)="yenile()"
+        [disabled]="loading()"
+      >
+        <i class="ri-refresh-line" aria-hidden="true"></i>
+        {{ t('REFRESH') }}
+      </button>
+    </div>
+  </header>
+  @if (kayitGorunur()) {
+    <nav class="v2-segmented dashboard-views" [attr.aria-label]="t('PANEL_VIEW')">
+      <button
+        type="button"
+        [class.active]="gorunum() === 'aylik'"
+        [attr.aria-pressed]="gorunum() === 'aylik'"
+        (click)="gorunumSec('aylik')"
+      >
+        <i class="ri-calendar-2-line" aria-hidden="true"></i>
+        {{ t('PANEL_PERIOD') }}
+      </button>
+      <button
+        type="button"
+        [class.active]="gorunum() === 'arama'"
+        [attr.aria-pressed]="gorunum() === 'arama'"
+        (click)="gorunumSec('arama')"
+      >
+        <i class="ri-search-2-line" aria-hidden="true"></i>
+        {{ t('PANEL_ALL_SEARCH') }}
+      </button>
+      <button
+        type="button"
+        [class.active]="gorunum() === 'bekleyen'"
+        [attr.aria-pressed]="gorunum() === 'bekleyen'"
+        (click)="gorunumSec('bekleyen')"
+      >
+        <i class="ri-time-line" aria-hidden="true"></i>
+        {{ t('PANEL_PENDING') }}
+      </button>
+    </nav>
+  }
+  @if ((!kayitGorunur() || gorunum() === 'aylik') && panel(); as p) {
+    <div class="dashboard-counts">
+      <article class="dashboard-stat stat-amber">
+        <i class="ri-time-line" aria-hidden="true"></i>
+        <div>
+          <span>{{ t('PENDING_ORDER') }}</span
+          ><strong>{{ p.siparisBekleyen }}</strong>
+        </div>
+      </article>
+      <article class="dashboard-stat stat-blue">
+        <i class="ri-pie-chart-line" aria-hidden="true"></i>
+        <div>
+          <span>{{ t('PARTIAL_ORDER') }}</span
+          ><strong>{{ p.kismiSiparis }}</strong>
+        </div>
+      </article>
+      <article class="dashboard-stat stat-purple">
+        <i class="ri-file-list-3-line" aria-hidden="true"></i>
+        <div>
+          <span>{{ t('FULL_ORDER') }}</span
+          ><strong>{{ p.siparisTam }}</strong>
+        </div>
+      </article>
+      <article class="dashboard-stat stat-blue">
+        <i class="ri-bill-line" aria-hidden="true"></i>
+        <div>
+          <span>{{ t('PARTIAL_INVOICE') }}</span
+          ><strong>{{ p.kismiFatura }}</strong>
+        </div>
+      </article>
+      <article class="dashboard-stat stat-green">
+        <i class="ri-checkbox-circle-line" aria-hidden="true"></i>
+        <div>
+          <span>{{ t('COMPLETED') }}</span
+          ><strong>{{ p.tamamlanan }}</strong>
+        </div>
+      </article>
+    </div>
+    <p class="v2-note dashboard-note">
+      <i class="ri-information-line" aria-hidden="true"></i>{{ t('PANEL_CARDS_NOTE') }}
+    </p>
+    <div class="v2-currency-grid">
+      @for (row of p.tutarlar; track row.paraBirimi) {
+        <article class="v2-card dashboard-currency">
+          <header class="dashboard-currency-heading">
+            <span class="dashboard-currency-icon" aria-hidden="true"
+              ><i class="ri-exchange-dollar-line"></i
+            ></span>
+            <div>
+              <span class="v2-eyebrow">{{ t('CURRENCY') }}</span>
+              <h4>{{ row.paraBirimi }}</h4>
+            </div>
+          </header>
+          <dl>
+            @if (parasal('finans-tutar-goruntule')) {
+              <dt>{{ t('PENDING_ORDER') }}</dt>
+              <dd>{{ row.siparisBekleyen | number: '1.2-2' }}</dd>
+              <dt>{{ t('PENDING_INVOICE') }}</dt>
+              <dd>{{ row.faturaBekleyen | number: '1.2-2' }}</dd>
+            }
+            @if (parasal('finans-gelir-goruntule')) {
+              <dt>{{ t('NET_INCOME') }}</dt>
+              <dd>{{ row.gelir | number: '1.2-2' }}</dd>
+              <dt>{{ t('PANEL_YEAR_INCOME') }}</dt>
+              <dd>{{ row.yilGelir | number: '1.2-2' }}</dd>
+            }
+            @if (parasal('finans-gider-goruntule')) {
+              <dt>{{ t('NET_EXPENSE') }}</dt>
+              <dd>{{ row.gider | number: '1.2-2' }}</dd>
+              <dt>{{ t('PANEL_YEAR_EXPENSE') }}</dt>
+              <dd>{{ row.yilGider | number: '1.2-2' }}</dd>
+            }
+            @if (parasal('finans-karlilik-goruntule')) {
+              <dt>{{ t('PANEL_ACTUAL_DIFFERENCE') }}</dt>
+              <dd
+                class="dashboard-key-value"
+                [class.is-negative]="row.fark != null && row.fark < 0"
+              >
+                {{ row.fark | number: '1.2-2' }}
+              </dd>
+              <dt>{{ t('PANEL_ESTIMATED_PROFIT') }}</dt>
+              <dd>{{ row.tahminiKar | number: '1.2-2' }}</dd>
+              <dt>{{ t('PANEL_PROFIT_RATE') }}</dt>
+              <dd>
+                {{
+                  row.karOrani == null
+                    ? t('NOT_APPLICABLE')
+                    : (row.karOrani | number: '1.2-2') + '%'
+                }}
+              </dd>
+            }
+          </dl>
+        </article>
+      }
+    </div>
+    @if (
+      parasal('finans-tutar-goruntule') ||
+      parasal('finans-gelir-goruntule') ||
+      parasal('finans-gider-goruntule')
+    ) {
+      <article class="v2-card dashboard-chart">
+        <div class="v2-card-heading dashboard-chart-heading">
+          <h4>
+            <i class="ri-bar-chart-box-line" aria-hidden="true"></i>{{ t('PANEL_CHARTS') }}
+            <span class="v2-version">{{ para() }}</span>
+          </h4>
+          <label>
+            <span class="v2-eyebrow">{{ t('PANEL_BREAKDOWN') }}</span>
+            <select
+              [attr.aria-label]="t('PANEL_BREAKDOWN')"
+              [ngModel]="grafik()"
+              (ngModelChange)="grafik.set($event)"
+            >
+              <option value="siparis">{{ t('PANEL_ORDER_CHART') }}</option>
+              <option value="fatura">{{ t('PANEL_INVOICE_CHART') }}</option>
+              <option value="aylik">{{ t('PANEL_MONTH_CHART') }}</option>
+              <option value="isTurleri">{{ t('PANEL_TYPE_CHART') }}</option>
+              <option value="giderTurleri">{{ t('PANEL_EXPENSE_CHART') }}</option>
+              <option value="projeler">{{ t('PANEL_PROJECT_CHART') }}</option>
+              <option value="ozelIsTurleri">{{ t('PANEL_CUSTOM_CHART') }}</option>
+            </select>
+          </label>
+        </div>
+        @if (series().length) {
+          <apx-chart
+            [series]="series()"
+            [chart]="chart"
+            [xaxis]="xaxis()"
+            [colors]="['#605dff', '#fd9b45']"
+          />
+        } @else {
+          <div class="v2-empty v2-empty-compact">
+            <i class="ri-bar-chart-line" aria-hidden="true"></i>
+            <p>{{ t('PANEL_CHART_EMPTY') }}</p>
+          </div>
+        }
+      </article>
+    }
+  }
+  @if (kayitGorunur()) {
+    <article class="v2-card v2-list-card dashboard-activity">
+      <div class="dashboard-filter-grid">
+        <label class="v2-search"
+          ><span>{{ t('SEARCH') }}</span
+          ><span class="dashboard-search-control"
+            ><i class="ri-search-line" aria-hidden="true"></i
+            ><input
+              type="search"
+              [(ngModel)]="arama"
+              (ngModelChange)="aramaDegisti()"
+              [placeholder]="
+                gorunum() === 'arama' ? t('PANEL_SEARCH_ALL_HINT') : t('PANEL_SEARCH_HINT')
+              " /></span
+        ></label>
+        <label
+          >{{ t('CURRENCY') }}
+          <select
+            [attr.aria-label]="t('CURRENCY')"
+            [ngModel]="para()"
+            (ngModelChange)="para.set($event); filtrele()"
+          >
+            <option value="EUR">EUR</option>
+            <option value="USD">USD</option>
+            <option value="TRY">TRY</option>
+          </select>
+        </label>
+        @if (gorunum() === 'aylik') {
+          <label
+            >{{ t('PANEL_ACTIVITY_TYPE') }}
+            <select
+              [attr.aria-label]="t('PANEL_ACTIVITY_TYPE')"
+              [(ngModel)]="tur"
+              (change)="filtrele()"
+            >
+              <option value="">{{ t('PANEL_ALL_ACTIVITY') }}</option>
+              <option value="IsKaydi">{{ t('PANEL_JOBS') }}</option>
+              <option value="Gider">{{ t('PANEL_EXPENSES') }}</option>
+              <option value="Siparis">{{ t('PANEL_ORDERS') }}</option>
+              <option value="Fatura">{{ t('INVOICES') }}</option>
+            </select>
+          </label>
+        }
+        <label
+          >{{ t('TYPE') }}
+          <select [attr.aria-label]="t('TYPE')" [(ngModel)]="isTuru" (change)="filtrele()">
+            <option value="">{{ t('PANEL_ALL_TYPES') }}</option>
+            @for (item of isTurleri; track item.id) {
+              <option [value]="item.id">{{ t(item.ad) }}</option>
+            }
+          </select>
+        </label>
+        <label
+          >{{ t('WORK_STATUS') }}
+          <select [attr.aria-label]="t('WORK_STATUS')" [(ngModel)]="durum" (change)="filtrele()">
+            <option value="">{{ t('PANEL_ALL_STATES') }}</option>
+            <option value="1">{{ t('PENDING_ORDER') }}</option>
+            <option value="2">{{ t('PARTIAL_ORDER') }}</option>
+            <option value="3">{{ t('FULL_ORDER') }}</option>
+            <option value="4">{{ t('PARTIAL_INVOICE') }}</option>
+            <option value="5">{{ t('FULL_INVOICE') }}</option>
+          </select>
+        </label>
+        @if (gorunum() === 'bekleyen') {
+          <label
+            >{{ t('PANEL_WAIT_DAYS') }}
+            <select
+              [attr.aria-label]="t('PANEL_WAIT_DAYS')"
+              [(ngModel)]="minimumGun"
+              (change)="filtrele()"
+            >
+              <option [ngValue]="15">15+ {{ t('DAY') }}</option>
+              <option [ngValue]="30">30+ {{ t('DAY') }}</option>
+              <option [ngValue]="60">60+ {{ t('DAY') }}</option>
+              <option [ngValue]="90">90+ {{ t('DAY') }}</option>
+            </select>
+          </label>
+        }
+        @if (permissions.canWrite('finans-po-gir') && secilenler().size) {
+          <button
+            class="btn btn-primary dashboard-selection"
+            type="button"
+            (click)="topluSiparis()"
+          >
+            <i class="ri-add-circle-line" aria-hidden="true"></i>
+            {{ t('PANEL_PO_SELECTION') }} ({{ secilenler().size }})
+          </button>
+        }
+      </div>
+      @if (gorunum() === 'arama') {
+        <p class="v2-note dashboard-note dashboard-list-note">
+          <i class="ri-information-line" aria-hidden="true"></i>{{ t('PANEL_ALL_SEARCH_NOTE') }}
+        </p>
+      }
+      @if (gorunum() === 'bekleyen') {
+        <p class="v2-note dashboard-note dashboard-list-note">
+          <i class="ri-information-line" aria-hidden="true"></i>{{ t('PANEL_AGE_NOTE') }}
+        </p>
+      }
+      @if (loading()) {
+        <div class="v2-empty" role="status">
+          <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span
+          >{{ t('PANEL_LOADING') }}
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table v2-table">
+            <thead>
+              <tr>
+                <th>{{ t('SELECTION') }}</th>
+                <th>{{ t('PROJECT_WORK') }}</th>
+                <th>{{ t('PANEL_FINANCE_DATE') }}</th>
+                <th>{{ t('STATUS') }}</th>
+                @if (parasal('finans-tutar-goruntule')) {
+                  <th>{{ t('AMOUNT') }}</th>
+                }
+                <th>{{ t('ACTION') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (gorunum() === 'aylik') {
+                @for (row of hareketler()?.items; track row.tur + row.id) {
+                  <tr>
+                    <td>
+                      @if (row.tur === 'IsKaydi' && permissions.canWrite('finans-po-gir')) {
+                        <input
+                          type="checkbox"
+                          [attr.aria-label]="row.ad + ' ' + t('SELECT')"
+                          [checked]="secilenler().has(row.id)"
+                          (change)="sec(row.id, $any($event.target).checked)"
+                        />
+                      }
+                    </td>
+                    <td>
+                      <strong>{{ row.projeNo }}</strong
+                      ><small>{{ row.ad }}</small>
+                    </td>
+                    <td>
+                      {{ row.finansTarihi | date: 'dd.MM.yyyy'
+                      }}<small
+                        >{{ t('PANEL_WORK_DATE') }} {{ row.isTarihi | date: 'dd.MM.yyyy' }}</small
+                      >
+                    </td>
+                    <td>
+                      <span class="v2-status">{{ row.durum }}</span>
+                    </td>
+                    @if (parasal('finans-tutar-goruntule')) {
+                      <td>{{ row.netTutar | number: '1.2-2' }} {{ row.paraBirimi }}</td>
+                    }
+                    <td>
+                      <button
+                        class="btn btn-outline-primary btn-sm"
+                        (click)="kayitAc.emit({ tur: row.tur, id: row.id })"
+                      >
+                        {{ t('DETAIL') }}
+                      </button>
+                    </td>
+                  </tr>
+                }
+              } @else if (gorunum() === 'arama') {
+                @for (row of sonuclar()?.items; track row.id) {
+                  <tr>
+                    <td>
+                      @if (permissions.canWrite('finans-po-gir')) {
+                        <input
+                          type="checkbox"
+                          [attr.aria-label]="row.projeNo + ' ' + t('SELECT')"
+                          [checked]="secilenler().has(row.id)"
+                          (change)="sec(row.id, $any($event.target).checked)"
+                        />
+                      }
+                    </td>
+                    <td>
+                      <strong>{{ row.projeNo }}</strong
+                      ><small>{{ row.isAdi || row.sandikAdi }} · {{ row.musteri }}</small
+                      ><small
+                        >PO: {{ row.poNumaralari.join(', ') || '—' }} · {{ t('INVOICE') }}:
+                        {{ row.faturaNumaralari.join(', ') || '—' }}</small
+                      >
+                    </td>
+                    <td>
+                      {{ row.finansTarihi | date: 'dd.MM.yyyy'
+                      }}<small>{{ row.finansDonemi | date: 'MM.yyyy' }}</small>
+                    </td>
+                    <td>
+                      <span class="v2-status" [class.is-active]="row.kaynakAktif">{{
+                        row.kaynakAktif ? t('PANEL_ACTIVE_SOURCE') : t('PANEL_INACTIVE_SOURCE')
+                      }}</span>
+                    </td>
+                    @if (parasal('finans-tutar-goruntule')) {
+                      <td>{{ row.netTutar | number: '1.2-2' }} {{ row.paraBirimi }}</td>
+                    }
+                    <td>
+                      <button
+                        class="btn btn-outline-primary btn-sm"
+                        (click)="kayitAc.emit({ tur: 'IsKaydi', id: row.id })"
+                      >
+                        {{ t('DETAIL') }}
+                      </button>
+                    </td>
+                  </tr>
+                }
+              } @else {
+                @for (
+                  row of bekleyenler()?.items;
+                  track row.asama + ':' + row.isKaydiId + ':' + row.siparisKalemiId
+                ) {
+                  <tr>
+                    <td>—</td>
+                    <td>
+                      <strong>{{ row.projeNo }}</strong
+                      ><small>{{ row.isAdi }} · {{ row.poNumarasi }}</small>
+                    </td>
+                    <td>{{ row.baslangic | date: 'dd.MM.yyyy' }}</td>
+                    <td>
+                      <span class="v2-status">{{ row.asama }} · {{ row.gun }} {{ t('DAY') }}</span>
+                    </td>
+                    @if (parasal('finans-tutar-goruntule')) {
+                      <td>{{ row.kalanNetTutar | number: '1.2-2' }} {{ row.paraBirimi }}</td>
+                    }
+                    <td>
+                      <button
+                        class="btn btn-outline-primary btn-sm"
+                        (click)="kayitAc.emit({ tur: 'IsKaydi', id: row.isKaydiId })"
+                      >
+                        {{ t('DETAIL') }}
+                      </button>
+                    </td>
+                  </tr>
+                }
+              }
+              @if (!pager()?.totalCount) {
+                <tr>
+                  <td [attr.colspan]="parasal('finans-tutar-goruntule') ? 6 : 5">
+                    <div class="v2-empty">
+                      <i class="ri-inbox-2-line" aria-hidden="true"></i>
+                      <p>{{ t('PANEL_EMPTY') }}</p>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (pager(); as page) {
+          <div class="v2-pager">
+            <app-server-pager
+              [pageNumber]="page.pageNumber"
+              [pageSize]="page.pageSize"
+              [totalCount]="page.totalCount"
+              [totalPages]="page.totalPages"
+              [hasPreviousPage]="page.hasPreviousPage"
+              [hasNextPage]="page.hasNextPage"
+              (pageChange)="sayfa($event)"
+              (pageSizeChange)="boyut($event)"
+            />
+          </div>
+        }
+      }
+    </article>
+  }
+</section>

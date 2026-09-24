@@ -1,4 +1,5 @@
 <!-- Breadcrumb -->
+<app-kullanici-yetki-editor *ngIf="permissionUser() as user" [user]="user" (closed)="permissionUser.set(null)"></app-kullanici-yetki-editor>
 <div class="breadcrumb-card">
   <h5>{{ 'USER.TITLE' | translate }}</h5>
   <ol class="breadcrumb">
@@ -24,7 +25,7 @@
         <i class="ri-notification-badge-line"></i>
         Bildirim Alıcıları
       </button>
-      <button class="btn-add" (click)="openAddModal()">
+      <button *ngIf="canManageNotifications() && canManagePermissions()" class="btn-add" (click)="openAddModal()">
         <i class="ri-user-add-line"></i>
         {{ 'USER.ADD_NEW' | translate }}
       </button>
@@ -98,10 +99,12 @@
           </td>
           <td>
             <div class="action-buttons">
-              <button class="btn-icon edit" (click)="openEditModal(k)" title="Düzenle">
+              <button *ngIf="canManagePermissions()" class="btn-icon" (click)="permissionUser.set(k)"
+                [title]="'PERMISSIONS.USER_TITLE' | translate"><i class="ri-shield-user-line"></i></button>
+              <button *ngIf="canManageNotifications()" class="btn-icon edit" (click)="openEditModal(k)" title="Düzenle">
                 <i class="ri-edit-line"></i>
               </button>
-              <button class="btn-icon key" (click)="openPasswordModal(k)" title="Şifre Değiştir">
+              <button *ngIf="canManageNotifications()" class="btn-icon key" (click)="openPasswordModal(k)" title="Şifre Değiştir">
                 <i class="ri-lock-password-line"></i>
               </button>
               <button
@@ -116,7 +119,7 @@
                     ? 'ri-loader-4-line spin'
                     : 'ri-shield-keyhole-line'"></i>
               </button>
-              <button class="btn-icon danger" (click)="deleteUser(k)" title="Sil">
+              <button *ngIf="canManageNotifications()" class="btn-icon danger" (click)="deleteUser(k)" title="Sil">
                 <i class="ri-delete-bin-line"></i>
               </button>
             </div>
@@ -211,7 +214,7 @@
       <div class="form-group">
         <label>{{ 'USER.ROLE' | translate }}</label>
         <select class="form-control"
-                [ngModel]="editData().rolId" (ngModelChange)="updateEditField('rolId', +$event)">
+                [disabled]="!canManagePermissions()" [ngModel]="editData().rolId" (ngModelChange)="updateEditField('rolId', +$event)">
           <option *ngFor="let r of roller()" [value]="r.id">{{ r.ad }}</option>
         </select>
       </div>

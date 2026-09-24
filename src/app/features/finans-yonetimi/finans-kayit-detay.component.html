@@ -1,0 +1,510 @@
+<div class="v2-modal-backdrop">
+  <section
+    class="v2-modal v2-finance-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="finans-detay-title"
+  >
+    <header class="v2-dialog-header">
+      <div class="v2-dialog-heading">
+        <span class="v2-dialog-icon"><i class="ri-file-list-3-line" aria-hidden="true"></i></span>
+        <div>
+          <h3 id="finans-detay-title">
+            {{
+              kayit()?.isAdi ||
+                kayit()?.sandikAdi ||
+                siparis()?.poNumarasi ||
+                fatura()?.faturaNumarasi ||
+                'Finans kaydı'
+            }}
+            <span class="v2-tag">{{ hedef().tur }} #{{ hedef().id }}</span>
+          </h3>
+          @if (kayit()?.projeNo || siparis()?.projeNo || fatura()?.projeNo || kayit()?.musteri) {
+            <p>
+              {{ kayit()?.projeNo || siparis()?.projeNo || fatura()?.projeNo }}
+              @if (kayit()?.musteri) {
+                · {{ kayit()?.musteri }}
+              }
+            </p>
+          }
+        </div>
+      </div>
+      <button
+        class="btn btn-light v2-dialog-close"
+        aria-label="Kapat"
+        (click)="kapat.emit()"
+        [disabled]="saving()"
+      >
+        <i class="ri-close-line" aria-hidden="true"></i>
+      </button>
+    </header>
+    <nav class="v2-tabs v2-dialog-tabs">
+      <button (click)="tab('bilgi')" [class.active]="sekme() === 'bilgi'">
+        <i class="ri-information-line" aria-hidden="true"></i>Bilgiler
+      </button>
+      @if (hedef().tur === 'IsKaydi' && fiyatDuzenlenebilir()) {
+        <button (click)="tab('fiyat')" [class.active]="sekme() === 'fiyat'">
+          <i class="ri-price-tag-3-line" aria-hidden="true"></i>Fiyatlandırma
+        </button>
+      }
+      @if (permissions.hasAccess(izin.BelgeIndir) || permissions.canWrite(izin.BelgeYukle)) {
+        <button (click)="tab('belge')" [class.active]="sekme() === 'belge'">
+          <i class="ri-file-pdf-2-line" aria-hidden="true"></i>PDF belgeleri
+        </button>
+      }
+      @if (permissions.hasAccess(izin.DenetimGor)) {
+        <button (click)="tab('gecmis')" [class.active]="sekme() === 'gecmis'">
+          <i class="ri-history-line" aria-hidden="true"></i>Değişiklik geçmişi
+        </button>
+      }
+      @if (permissions.canWrite(iptalIzni()) || permissions.canWrite(izin.KaliciSil)) {
+        <button (click)="tab('islemler')" [class.active]="sekme() === 'islemler'">
+          <i class="ri-shield-line" aria-hidden="true"></i>İptal / silme
+        </button>
+      }
+    </nav>
+    <div class="v2-dialog-body">
+      @if (hata()) {
+        <div class="v2-error" role="alert">
+          <i class="ri-error-warning-line" aria-hidden="true"></i>{{ hata() }}
+        </div>
+      }
+      @if (loading()) {
+        <div class="v2-empty" role="status">
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>Yükleniyor…
+        </div>
+      }
+      @if (sekme() === 'bilgi') {
+        @if (siparis() || fatura()) {
+          <article class="v2-card">
+            <h4 class="v2-dialog-card-title">
+              <i class="ri-file-text-line" aria-hidden="true"></i
+              >{{ siparis() ? 'Sipariş belgesi' : 'Fatura belgesi' }}
+            </h4>
+            <p>
+              {{ siparis()?.projeNo || fatura()?.projeNo }} · PO:
+              {{ siparis()?.poNumarasi || fatura()?.poNumarasi }}
+            </p>
+            <div class="v2-fields">
+              <label
+                >Belge numarası<input
+                  [(ngModel)]="belgeForm.numara"
+                  [disabled]="!belgeDuzenlemeIzni()"
+              /></label>
+              <label
+                >Belge tarihi<input
+                  type="date"
+                  [(ngModel)]="belgeForm.tarih"
+                  [disabled]="!belgeDuzenlemeIzni()"
+              /></label>
+            </div>
+            <label class="mt-3"
+              >Açıklama<textarea
+                [(ngModel)]="belgeForm.aciklama"
+                [disabled]="!belgeDuzenlemeIzni()"
+              ></textarea>
+            </label>
+            @if (parasal(izin.TutarGoruntule)) {
+              @if (belgeDuzenlemeIzni()) {
+                <label class="v2-check mt-3"
+                  ><input type="checkbox" [(ngModel)]="tutarlariDuzenle" />Kalemlerin net tutarını
+                  düzenle</label
+                >
+              }
+              <p class="v2-note">
+                Miktar ve üretim geçmişi değişmez. KDV, bakiyeler ve belge tavanları sunucuda
+                yeniden doğrulanır.
+              </p>
+              <div class="v2-dialog-table-wrap">
+                <table class="table v2-table">
+                  <thead>
+                    <tr>
+                      <th>Kalem / iş</th>
+                      <th>Net tutar</th>
+                      <th>Para birimi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (k of belgeKalemleri; track k.id) {
+                      <tr>
+                        <td>
+                          {{ k.ad }}<small>İş #{{ k.isKaydiId }}</small>
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            [(ngModel)]="k.netTutar"
+                            [disabled]="!tutarlariDuzenle || !belgeDuzenlemeIzni()"
+                          />
+                        </td>
+                        <td>{{ k.paraBirimi }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+            @if (belgeDuzenlemeIzni()) {
+              <label class="v2-dialog-reason"
+                >Değişiklik gerekçesi *<textarea
+                  [(ngModel)]="belgeForm.gerekce"
+                  maxlength="2000"
+                ></textarea>
+              </label>
+              <footer class="v2-dialog-footer">
+                <button class="btn btn-primary" [disabled]="saving()" (click)="belgeKaydet()">
+                  <i class="ri-save-3-line" aria-hidden="true"></i>Belgeyi güncelle
+                </button>
+              </footer>
+            }
+          </article>
+        }
+        @if (kayit(); as k) {
+          <div class="v2-card v2-record-summary">
+            <dl class="v2-dialog-definition">
+              <dt>Üretim tarihi</dt>
+              <dd>{{ k.uretimTarihi | date: 'dd.MM.yyyy' }}</dd>
+              <dt>Finans tarihi</dt>
+              <dd>{{ k.finansTarihi | date: 'dd.MM.yyyy' }}</dd>
+              <dt>Adet / cins</dt>
+              <dd>{{ k.adet }} · {{ k.sandikTipi }}</dd>
+              <dt>Kaynak bileşeni</dt>
+              <dd>{{ k.kaynakBileseni }}</dd>
+              @if (parasal(izin.TutarGoruntule)) {
+                <dt>İş net bedeli</dt>
+                <dd>{{ k.netTutar | number: '1.2-2' }} {{ k.paraBirimi }}</dd>
+                <dt>Sipariş bekleyen</dt>
+                <dd>{{ k.kalanSiparisNetTutar | number: '1.2-2' }} {{ k.paraBirimi }}</dd>
+                <dt>Fatura bekleyen</dt>
+                <dd>{{ k.kalanFaturaNetTutar | number: '1.2-2' }} {{ k.paraBirimi }}</dd>
+              }
+              <dt>PO numaraları</dt>
+              <dd>{{ k.poNumaralari.join(', ') || '—' }}</dd>
+              <dt>Faturalar</dt>
+              <dd>{{ k.faturaNumaralari.join(', ') || '—' }}</dd>
+            </dl>
+          </div>
+          @if (permissions.canWrite(izin.TarihDegistir)) {
+            <div class="v2-card">
+              <h4 class="v2-dialog-card-title">
+                <i class="ri-calendar-line" aria-hidden="true"></i>Finans tarihini değiştir
+              </h4>
+              <p>
+                Üretim tarihi ve fiyat snapshot'ı aynı kalır. Liste, rapor ve kartlar yeni finans
+                dönemini kullanır.
+              </p>
+              <div class="v2-fields">
+                <label>Finans tarihi<input type="date" [(ngModel)]="finansTarihi" /></label
+                ><label>Gerekçe<input [(ngModel)]="tarihNedeni" maxlength="2000" /></label>
+              </div>
+              <button
+                class="btn btn-outline-primary mt-3"
+                [disabled]="saving()"
+                (click)="tarihiKaydet()"
+              >
+                <i class="ri-check-line" aria-hidden="true"></i>Tarihi kaydet
+              </button>
+            </div>
+          }
+          @if (permissions.canWrite(izin.PoGir)) {
+            <button class="btn btn-primary" (click)="siparisAc.emit([k.id])">
+              <i class="ri-add-line" aria-hidden="true"></i>Bu işe PO oluştur
+            </button>
+          }
+        } @else {
+          <p class="v2-note">
+            Bu belgeye ait PDF sürümlerini, değişiklik geçmişini ve yetkili işlemleri ilgili
+            sekmelerden yönetebilirsiniz.
+          </p>
+        }
+        @if (hedef().tur === 'Siparis' && permissions.canWrite(izin.FaturaGir)) {
+          <button class="btn btn-primary" (click)="faturaAc.emit(hedef().id)">
+            <i class="ri-add-line" aria-hidden="true"></i>Bu PO'ya fatura oluştur
+          </button>
+        }
+      }
+      @if (sekme() === 'fiyat' && fiyatDuzenlenebilir()) {
+        <article class="v2-card v2-pricing-card">
+          <p class="v2-note v2-dialog-info">
+            Bu değerler finans kaydına aittir; üretim ölçüsünü/m³ hesabını değiştirmez. Bağlı
+            belgelerin snapshot'ı korunur.
+          </p>
+          <div class="v2-fields">
+            <label
+              >Yöntem<select [(ngModel)]="fiyat.fiyatlandirmaBirimi">
+                <option [ngValue]="1">Adet</option>
+                <option [ngValue]="2">m³</option>
+                <option [ngValue]="3">Sabit net bedel</option>
+                <option [ngValue]="4">Manuel net toplam</option>
+              </select></label
+            ><label
+              >Para birimi<select [(ngModel)]="fiyat.paraBirimi">
+                <option>EUR</option>
+                <option>USD</option>
+                <option>TRY</option>
+              </select></label
+            ><label
+              >Finans adedi<input
+                type="number"
+                min="0"
+                step="0.0001"
+                [(ngModel)]="fiyat.adet" /></label
+            ><label
+              >Finans birim m³<input
+                type="number"
+                min="0"
+                step="0.000001"
+                [(ngModel)]="fiyat.birimM3" /></label
+            ><label
+              >Birim fiyat<input
+                type="number"
+                min="0"
+                step="0.01"
+                [(ngModel)]="fiyat.birimFiyat" /></label
+            ><label
+              >KDV %<input type="number" min="0" max="100" [(ngModel)]="fiyat.kdvOrani"
+            /></label>
+            @if (fiyat.fiyatlandirmaBirimi === 4) {
+              <label
+                >Manuel net bedel<input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  [(ngModel)]="fiyat.manuelNetTutar"
+              /></label>
+            }
+            <label
+              >Şablon sürümü<select [(ngModel)]="secilenSablonSurumId" (change)="sablonSec()">
+                <option [ngValue]="null">Şablonsuz</option>
+                @for (s of sablonSecenekleri(); track s.surumId) {
+                  <option [ngValue]="s.surumId">{{ s.ad }} · v{{ s.surum }}</option>
+                }
+              </select></label
+            >
+            @for (a of secilenSablon()?.alanlar; track a.kod) {
+              <label
+                >{{ a.ad }} {{ a.zorunlu ? '*' : '' }}
+                @if (a.veriTuru === 'mantiksal') {
+                  <select [(ngModel)]="fiyat.alanDegerleri![a.kod]">
+                    <option value="">Seçin</option>
+                    <option value="true">Evet</option>
+                    <option value="false">Hayır</option>
+                  </select>
+                } @else {
+                  <input
+                    [type]="alanTipi(a.veriTuru)"
+                    [(ngModel)]="fiyat.alanDegerleri![a.kod]"
+                    [required]="a.zorunlu"
+                  />
+                }
+              </label>
+            }
+          </div>
+          <div class="v2-toolbar v2-dialog-section-heading">
+            <h4 class="v2-dialog-card-title">
+              <i class="ri-stack-line" aria-hidden="true"></i>Fiyat bileşenleri
+            </h4>
+            <button class="btn btn-outline-primary btn-sm" (click)="bilesenEkle()">
+              <i class="ri-add-line" aria-hidden="true"></i>Bileşen ekle
+            </button>
+          </div>
+          @for (b of fiyat.bilesenler; track $index) {
+            <div class="v2-fields v2-card v2-price-component">
+              <label>Ad<input [(ngModel)]="b.ad" /></label
+              ><label
+                >Yöntem<select [(ngModel)]="b.yontem">
+                  <option [ngValue]="1">Adet</option>
+                  <option [ngValue]="2">m³</option>
+                  <option [ngValue]="3">Sabit</option>
+                </select></label
+              ><label
+                >Miktar<input type="number" min="0" step="0.000001" [(ngModel)]="b.miktar" /></label
+              ><label
+                >Birim fiyat<input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  [(ngModel)]="b.birimFiyat" /></label
+              ><button class="btn btn-light v2-dialog-remove" (click)="bilesenSil($index)">
+                <i class="ri-delete-bin-line" aria-hidden="true"></i>Bileşeni kaldır
+              </button>
+            </div>
+          }
+          <label class="v2-dialog-reason"
+            >Değişiklik gerekçesi *<textarea
+              [(ngModel)]="fiyat.aciklama"
+              maxlength="2000"
+            ></textarea>
+          </label>
+          <footer class="v2-dialog-footer">
+            <button class="btn btn-primary" [disabled]="saving()" (click)="fiyatKaydet()">
+              <i class="ri-save-3-line" aria-hidden="true"></i>Fiyatlandırmayı kaydet
+            </button>
+          </footer>
+        </article>
+      }
+      @if (sekme() === 'belge') {
+        <p class="v2-note v2-dialog-info">
+          <i class="ri-information-line" aria-hidden="true"></i>Her yükleme yeni sürümdür. Önceki
+          belgeler korunur. En fazla 10 MB PDF.
+        </p>
+        @if (permissions.canWrite(izin.BelgeYukle)) {
+          <label class="v2-dialog-upload"
+            >PDF yükle<input
+              type="file"
+              accept="application/pdf,.pdf"
+              [disabled]="saving()"
+              (change)="yukleBelge($event)"
+          /></label>
+        }
+        <div class="v2-dialog-table-wrap">
+          <table class="table v2-table">
+            <thead>
+              <tr>
+                <th>Sürüm</th>
+                <th>Belge</th>
+                <th>Yükleyen / tarih</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (b of belgeler(); track b.id) {
+                <tr>
+                  <td>
+                    <span class="v2-tag">v{{ b.surum }}</span>
+                  </td>
+                  <td>
+                    {{ b.orijinalAd }}<small>{{ b.boyut | number }} bayt</small>
+                  </td>
+                  <td>
+                    {{ b.yukleyen }}<small>{{ b.yuklemeTarihi | date: 'dd.MM.yyyy HH:mm' }}</small>
+                  </td>
+                  <td class="v2-dialog-action-cell">
+                    @if (permissions.hasAccess(izin.BelgeIndir)) {
+                      <button class="btn btn-outline-primary btn-sm" (click)="belgeIndir(b)">
+                        <i class="ri-download-2-line" aria-hidden="true"></i>İndir
+                      </button>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="4">Henüz belge yok.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+      @if (sekme() === 'gecmis' && permissions.hasAccess(izin.DenetimGor)) {
+        <div class="v2-dialog-table-wrap v2-audit-table">
+          <table class="table v2-table">
+            <thead>
+              <tr>
+                <th>Zaman / kullanıcı</th>
+                <th>İşlem</th>
+                <th>Eski → Yeni</th>
+                <th>Gerekçe</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of denetim()?.items; track r.id) {
+                <tr>
+                  <td>
+                    {{ r.tarih | date: 'dd.MM.yyyy HH:mm' }}<small>{{ r.kullanici }}</small>
+                  </td>
+                  <td>
+                    {{ r.islem }}<small>{{ r.alanAdi }}</small>
+                  </td>
+                  <td>{{ r.eskiDeger ?? '—' }} → {{ r.yeniDeger ?? '—' }}</td>
+                  <td>{{ r.aciklama }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (denetim(); as p) {
+          <app-server-pager
+            [pageNumber]="p.pageNumber"
+            [pageSize]="p.pageSize"
+            [totalCount]="p.totalCount"
+            [totalPages]="p.totalPages"
+            [hasPreviousPage]="p.hasPreviousPage"
+            [hasNextPage]="p.hasNextPage"
+            (pageChange)="gecmisSayfa($event)"
+          />
+        }
+      }
+      @if (sekme() === 'islemler') {
+        @if (permissions.canWrite(iptalIzni())) {
+          <article class="v2-card">
+            <h4 class="v2-dialog-card-title">
+              <i class="ri-forbid-line" aria-hidden="true"></i>Kaydı iptal et
+            </h4>
+            <p>
+              Normal işlem iptaldir. Kayıt ve geçmiş korunur; bağlı belge kuralları sunucuda
+              doğrulanır.
+            </p>
+            <label class="v2-dialog-reason"
+              >İptal nedeni *<textarea [(ngModel)]="iptalNedeni" maxlength="2000"></textarea></label
+            ><button class="btn btn-outline-danger mt-3" (click)="iptal()" [disabled]="saving()">
+              <i class="ri-forbid-line" aria-hidden="true"></i>Gerekçeyle iptal et
+            </button>
+          </article>
+        }
+        @if (permissions.canWrite(izin.KaliciSil)) {
+          <article class="v2-card v2-danger">
+            <h4 class="v2-dialog-card-title">
+              <i class="ri-delete-bin-line" aria-hidden="true"></i>Kalıcı silme
+            </h4>
+            <p>Geri alınamaz. Bağlı kayıt varsa silme engellenir; audit izi korunur.</p>
+            <button
+              class="btn btn-outline-danger mt-3"
+              (click)="silOnizleme()"
+              [disabled]="saving()"
+            >
+              1. Bağımlılıkları incele
+            </button>
+            @if (preview(); as p) {
+              <p>{{ p.referans }}</p>
+              @for (b of p.bagimliliklar; track b.varlikTuru + b.id) {
+                <p>{{ b.varlikTuru }} #{{ b.id }} · {{ b.referans }}</p>
+              }
+              @for (e of p.engeller; track e) {
+                <div class="v2-error">{{ e }}</div>
+              }
+              @if (p.silinebilir && !ikinciAdim()) {
+                <button class="btn btn-outline-danger mt-3" (click)="ikinciAdim.set(true)">
+                  2. Son onaya ilerle
+                </button>
+              }
+              @if (p.silinebilir && ikinciAdim()) {
+                <div class="v2-error">
+                  {{ p.referans }} kalıcı silinecek. Kaynak senkronizasyonu bu kaydı yeniden
+                  oluşturmayacak.
+                </div>
+                <label
+                  >Kalıcı silme nedeni *<textarea
+                    [(ngModel)]="silmeNedeni"
+                    maxlength="2000"
+                  ></textarea></label
+                ><label class="v2-check mt-3"
+                  ><input type="checkbox" [(ngModel)]="ikinciOnay" />Kapsamı inceledim; geri
+                  alınamaz silmeyi onaylıyorum.</label
+                ><button
+                  class="btn btn-danger mt-3"
+                  [disabled]="!ikinciOnay || !silmeNedeni.trim() || saving()"
+                  (click)="sil()"
+                >
+                  Kalıcı sil
+                </button>
+              }
+            }
+          </article>
+        }
+      }
+    </div>
+  </section>
+</div>

@@ -1,4 +1,7 @@
 export interface AmbalajProjeOzetDto {
+  genelUretimDurumu?: UretimDurumId;
+  gerekliSandikAdedi?: number;
+  tamamlananSandikAdedi?: number;
   projeId: number;
   projeNo: string;
   fbNo?: string;
@@ -9,27 +12,27 @@ export interface AmbalajProjeOzetDto {
   olculuSandikSayisi: number;
   eksikOlculuSandikSayisi: number;
   eksikOlculuSandiklar: string[];
-  toplamHacimM3: number;
+  toplamHacimM3: number | null;
   firinPartiNo?: string;
   uretimeAlinanSandikAdedi: number;
   ilaveSandikSayisi: number;
   icSandikSayisi: number;
-  uretimHacimM3: number;
+  uretimHacimM3: number | null;
   projeSandiklariDurumId: UretimDurumId;
   ilaveSandiklarDurumId: UretimDurumId;
   icSandiklarDurumId: UretimDurumId;
   ilaveFirinPartiNo?: string;
   icSandikFirinPartiNo?: string;
   projeSandikSayisi: number;
-  projeSandiklariHacimM3: number;
-  ilaveSandiklarHacimM3: number;
-  icSandiklarHacimM3: number;
+  projeSandiklariHacimM3: number | null;
+  ilaveSandiklarHacimM3: number | null;
+  icSandiklarHacimM3: number | null;
 }
 
 export interface AmbalajPlanlamaProjeFiltreOzetiDto {
   projeSayisi: number;
   toplamSandikAdedi: number;
-  toplamHacimM3: number;
+  toplamHacimM3: number | null;
   eksikOlculuProjeSayisi: number;
 }
 
@@ -54,6 +57,9 @@ export interface AmbalajProjeListelemeRequest {
 }
 
 export interface AmbalajUretimPlanDto {
+  genelUretimDurumu?: UretimDurumId;
+  gerekliSandikAdedi?: number;
+  tamamlananSandikAdedi?: number;
   projeId: number;
   projeNo: string;
   fbNo?: string;
@@ -68,10 +74,12 @@ export interface AmbalajUretimPlanDto {
   icSandiklarDurumId: UretimDurumId;
   kalemler: AmbalajUretimKalemDto[];
   seciliSandikAdedi: number;
-  seciliHacimM3: number;
+  seciliHacimM3: number | null;
 }
 
 export interface AmbalajUretimKalemDto {
+  m3HesaplanabilirMi?: boolean;
+  uretimDurumu?: UretimDurumId;
   id: number;
   kaynakSandikId?: number;
   ustKalemId?: number;
@@ -83,18 +91,19 @@ export interface AmbalajUretimKalemDto {
   ad?: string;
   sandikTipi: SandikTipi;
   adet: number;
-  boy: number;
-  en: number;
-  yukseklik: number;
+  boy: number | null;
+  en: number | null;
+  yukseklik: number | null;
   kullanimAmaci?: string;
   talimatVeren?: string;
   aciklama?: string;
-  hacimM3: number;
+  hacimM3: number | null;
   ambalajaDahilMi: boolean | null;
   ambalajKarariOneriliyor: boolean;
 }
 
 export interface AmbalajKalemKaydetRequest {
+  gerekce?: string;
   tur: 1 | 2 | 3;
   ustKalemId?: number;
   ustKaynakSandikId?: number;
@@ -104,9 +113,9 @@ export interface AmbalajKalemKaydetRequest {
   ad?: string;
   sandikTipi: SandikTipi;
   adet: number;
-  boy: number;
-  en: number;
-  yukseklik: number;
+  boy: number | null;
+  en: number | null;
+  yukseklik: number | null;
   kullanimAmaci: string;
   talimatVeren: string;
   aciklama?: string;
@@ -116,17 +125,17 @@ export interface AmbalajIcSandikSablonDto {
   id: number;
   ad: string;
   sandikTipi: SandikTipi;
-  boy: number;
-  en: number;
-  yukseklik: number;
+  boy: number | null;
+  en: number | null;
+  yukseklik: number | null;
 }
 
 export interface AmbalajIcSandikSablonKaydetRequest {
   ad: string;
   sandikTipi: SandikTipi;
-  boy: number;
-  en: number;
-  yukseklik: number;
+  boy: number | null;
+  en: number | null;
+  yukseklik: number | null;
 }
 
 export interface AmbalajTalepEdenDto {
@@ -158,6 +167,9 @@ export interface AmbalajSandikSecenegiDto {
 }
 
 export interface AmbalajBagimsizSandikDto {
+  uretimDurumu?: UretimDurumId;
+  ambalajaDahilMi?: boolean;
+  m3HesaplanabilirMi?: boolean;
   id: number;
   tur: OzelSandikTur;
   turMetni: string;
@@ -176,27 +188,27 @@ export interface AmbalajBagimsizSandikDto {
   ad: string;
   sandikTipi: SandikTipi;
   adet: number;
-  boy: number;
-  en: number;
-  yukseklik: number;
+  boy: number | null;
+  en: number | null;
+  yukseklik: number | null;
   kullanimAmaci?: string;
   talimatVeren?: string;
   aciklama?: string;
-  hacimM3: number;
+  hacimM3: number | null;
 }
 
 export interface AmbalajBagimsizSandikTurOzetiDto {
   tur: OzelSandikTur;
   kayitSayisi: number;
   toplamSandikAdedi: number;
-  toplamHacimM3: number;
+  toplamHacimM3: number | null;
 }
 
 export interface AmbalajBagimsizSandikFiltreOzetiDto {
   kayitSayisi: number;
   toplamSandikAdedi: number;
   uretimeAlinanSandikAdedi: number;
-  toplamHacimM3: number;
+  toplamHacimM3: number | null;
   turOzetleri: AmbalajBagimsizSandikTurOzetiDto[];
 }
 
@@ -220,6 +232,7 @@ export interface AmbalajBagimsizSandikListelemeRequest {
 }
 
 export interface AmbalajOzelSandikKaydetRequest {
+  gerekce?: string;
   tur: OzelSandikTur;
   projeId: number;
   kaynakSandikId?: number;
@@ -230,9 +243,9 @@ export interface AmbalajOzelSandikKaydetRequest {
   ad?: string;
   sandikTipi: SandikTipi;
   adet: number;
-  boy: number;
-  en: number;
-  yukseklik: number;
+  boy: number | null;
+  en: number | null;
+  yukseklik: number | null;
   talimatVeren: string;
   aciklama?: string;
 }
