@@ -21,12 +21,6 @@
 
       <!-- Label -->
       <span class="node-label">{{ node.ad || (node.labelKey | translate) }}</span>
-      <span *ngIf="node.gerekenYetkiTipiId"
-            class="permission-type"
-            [class.permission-type-write]="node.gerekenYetkiTipiId === yetkiTipi.W">
-        {{ (node.gerekenYetkiTipiId === yetkiTipi.R
-            ? 'PERMISSIONS.READ_ACCESS' : 'PERMISSIONS.WRITE_ACCESS') | translate }}
-      </span>
       <small *ngIf="node.kritikMi" class="text-danger">{{ 'PERMISSIONS.CRITICAL' | translate }}</small>
     </div>
 

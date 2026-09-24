@@ -43,12 +43,14 @@ describe('MenuTreeComponent yetki göstergesi', () => {
     const read = render(YetkiTipi.R, YetkiTipi.R);
     expect(read.checkbox.indeterminate).toBeTrue();
     expect(read.checkbox.checked).toBeFalse();
-    expect(read.element.querySelector('.permission-type')?.textContent).toContain('Okuma');
+    expect(read.element.querySelector('.permission-type')).toBeNull();
+    expect(read.element.textContent).not.toContain('Okuma');
 
     const write = render(YetkiTipi.W, YetkiTipi.W);
     expect(write.checkbox.indeterminate).toBeFalse();
     expect(write.checkbox.checked).toBeTrue();
-    expect(write.element.querySelector('.permission-type')?.textContent).toContain('Yazma');
+    expect(write.element.querySelector('.permission-type')).toBeNull();
+    expect(write.element.textContent).not.toContain('Yazma');
   });
 
   it('işlem bazlı izni kapalı durumdan yalnızca tanımlı seviyeye açar', () => {
