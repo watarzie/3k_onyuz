@@ -20,6 +20,7 @@ import { CanWriteDirective } from '../../../shared/directives/can-write.directiv
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
 import { UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, UcKTopluSecimDto, ProjeDropdownDto, GridUrunDto, StokKaydiDto, CekiSatiriAnaVeriGuncelleDto, SahaTamamlamaIzDto } from '../../../shared/models/index';
 import { UcKDurum, GridSevkDurum, GridDurum } from '../../../core/constants/enums';
+import { YETKI } from '../../../core/constants/yetki-kodlari';
 
 interface KarsilamaTipi { id: number; value: string; label: string; color: string; bgClass: string; }
 
@@ -82,9 +83,9 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   panelError = signal('');
   panelUyari = signal('');
 
-  canEditCekiVerisi = computed(() => this.permissions.canWrite('ceki-verisi-duzenle'));
-  canDeleteCekiVerisi = computed(() => this.permissions.canWrite('ceki-verisi-sil'));
-  canSahaAktarimGeriAl = computed(() => this.permissions.canWrite('saha-aktarim-geri-al'));
+  canEditCekiVerisi = computed(() => this.permissions.canWrite(YETKI.SANDIK.CEKI_VERISI_DUZENLE));
+  canDeleteCekiVerisi = computed(() => this.permissions.canWrite(YETKI.SANDIK.CEKI_VERISI_SIL));
+  canSahaAktarimGeriAl = computed(() => this.permissions.canWrite(YETKI.SAHA.AKTARIM_GERI_AL));
 
   readonly birimSecenekleri = [
     { id: 1, label: 'Adet' },
@@ -220,17 +221,17 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   breadcrumb: { label: string; link?: string }[] = [];
 
   private get activeMenuKod(): string {
-    return this.route.snapshot.data?.['menuKod'] || '3k-modulu';
+    return this.route.snapshot.data?.['menuKod'] || YETKI.SANDIK.UCK_MODULU;
   }
 
   get manuelIcerikTekilAdi(): string {
-    return this.activeMenuKod === 'yedek-3k-modulu'
+    return this.activeMenuKod === YETKI.YEDEK.UCK_MODULU
       ? 'manuel yedek malzemesi'
       : 'manuel saha ürünü';
   }
 
   private get manuelIcerikCogulAdi(): string {
-    return this.activeMenuKod === 'yedek-3k-modulu'
+    return this.activeMenuKod === YETKI.YEDEK.UCK_MODULU
       ? 'Manuel yedek malzemeleri'
       : 'Manuel saha ürünleri';
   }
@@ -255,8 +256,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     this.projeId.set(id);
     this.sandikId.set(Number.isFinite(sandikIdParam) && sandikIdParam > 0 ? sandikIdParam : null);
     this.sandikNo.set(sNo);
-    const isSaha = this.activeMenuKod === 'saha-3k-modulu';
-    const isYedek = this.activeMenuKod === 'yedek-3k-modulu';
+    const isSaha = this.activeMenuKod === YETKI.SAHA.UCK_MODULU;
+    const isYedek = this.activeMenuKod === YETKI.YEDEK.UCK_MODULU;
     const parentLabel = isSaha ? 'Saha Yönetimi' : isYedek ? 'Yedek Yönetimi' : 'Sandık Yönetimi';
     const parentLink = isSaha ? '/saha-yonetimi' : isYedek ? '/yedek-yonetimi' : '/sandik-yonetimi';
     const uckLink = isSaha ? `/saha-yonetimi/uck/${id}` : isYedek ? `/yedek-yonetimi/uck/${id}` : `/uck/${id}`;
@@ -1709,8 +1710,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   // ===== Eksik Ürünler Raporu İndirme =====
   eksikUrunlerRaporuIndir() {
     this.toast.info('Rapor hazırlanıyor...');
-    const menuKod = this.activeMenuKod === 'yedek-3k-modulu' ? 'yedek-eksik-raporu' : 'eksik-raporu';
-    this.pdfService.eksikUrunlerPdf(this.projeId(), menuKod).subscribe({
+    this.pdfService.eksikUrunlerPdf(this.projeId()).subscribe({
       next: (blob) => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');

@@ -23,6 +23,7 @@ import {
   OnayGecmisiKapsami,
   OnayGecmisiListeFiltre,
 } from '../../shared/models';
+import { YETKI } from '../../core/constants/yetki-kodlari';
 
 type TarihFiltresi = 'tumu' | 'bugun' | 'son7Gun' | 'son30Gun' | 'ozel';
 
@@ -90,7 +91,7 @@ export class IslemOnayGecmisiComponent implements OnInit, OnDestroy {
     this.arama().trim().length > 0
   );
   readonly canOpenApprovalCenter = computed(() =>
-    this.permissions.hasAccess('islem-onay-merkezi') &&
+    this.permissions.hasAccess(YETKI.ONAY.MERKEZI) &&
     this.seciliKayit()?.aksiyonAktifMi === true
   );
 

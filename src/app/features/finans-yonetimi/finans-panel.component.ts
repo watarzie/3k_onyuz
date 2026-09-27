@@ -47,6 +47,7 @@ export class FinansPanelComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly toast = inject(ToastService);
   readonly permissions = inject(PermissionService);
+  readonly izin = FINANS_YETKI;
   readonly kayitGorunur = computed(() => this.permissions.hasAccess(FINANS_YETKI.KayitGoruntule));
   readonly kayitAc = output<{ tur: FinansVarlikTuru; id: number }>();
   readonly siparisAc = output<number[]>();
@@ -98,7 +99,7 @@ export class FinansPanelComponent implements OnInit {
   readonly series = computed<ApexAxisChartSeries>(() => {
     const grafik = this.grafik();
     if (grafik === 'siparis' || grafik === 'fatura') {
-      if (!this.parasal('finans-tutar-goruntule')) return [];
+      if (!this.parasal(FINANS_YETKI.TutarGoruntule)) return [];
       const p = this.panel()?.tutarlar.find((x) => x.paraBirimi === this.para());
       if (!p) return [];
       // Kartların sunucu toplamları kullanılır; mevcut sayfa mali otorite değildir.
@@ -114,9 +115,9 @@ export class FinansPanelComponent implements OnInit {
     }
     const rows = this.grafikVerileri();
     const result: ApexAxisChartSeries = [];
-    if (this.parasal('finans-gelir-goruntule') && rows.some((x) => x.gelir != null))
+    if (this.parasal(FINANS_YETKI.GelirGoruntule) && rows.some((x) => x.gelir != null))
       result.push({ name: this.t('NET_INCOME'), data: rows.map((x) => x.gelir) });
-    if (this.parasal('finans-gider-goruntule') && rows.some((x) => x.gider != null))
+    if (this.parasal(FINANS_YETKI.GiderGoruntule) && rows.some((x) => x.gider != null))
       result.push({ name: this.t('NET_EXPENSE'), data: rows.map((x) => x.gider) });
     return result;
   });
@@ -191,7 +192,7 @@ export class FinansPanelComponent implements OnInit {
   }
   parasal(alan: string): boolean {
     return (
-      this.permissions.hasAccess('finans-parasal-veri-goruntule') &&
+      this.permissions.hasAccess(FINANS_YETKI.ParasalVeriGoruntule) &&
       this.permissions.hasAccess(alan)
     );
   }

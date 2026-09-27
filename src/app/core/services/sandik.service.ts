@@ -29,8 +29,6 @@ import {
 @Injectable({ providedIn: 'root' })
 export class SandikService {
   private api = inject(BaseApiService);
-  private readonly cekiVerisiDuzenleOptions = { headers: { 'X-Menu-Kod': 'ceki-verisi-duzenle' } };
-  private readonly cekiVerisiSilOptions = { headers: { 'X-Menu-Kod': 'ceki-verisi-sil' } };
 
   // ===== Sorgular =====
 
@@ -63,12 +61,12 @@ export class SandikService {
   }
 
   cekiSatiriAnaVeriGuncelle(dto: CekiSatiriAnaVeriGuncelleDto): Observable<ApiResult<unknown>> {
-    return this.api.put<unknown>(API.SANDIK.CEKI_SATIRI_GUNCELLE, dto, this.cekiVerisiDuzenleOptions);
+    return this.api.put<unknown>(API.SANDIK.CEKI_SATIRI_GUNCELLE, dto);
   }
 
   cekiSatirlariSil(cekiSatiriIds: number[]): Observable<ApiResult<CekiSatirlariSilResultDto>> {
     const dto: CekiSatirlariSilDto = { cekiSatiriIds };
-    return this.api.post<CekiSatirlariSilResultDto>(API.SANDIK.CEKI_SATIRLARI_SIL, dto, this.cekiVerisiSilOptions);
+    return this.api.post<CekiSatirlariSilResultDto>(API.SANDIK.CEKI_SATIRLARI_SIL, dto);
   }
 
   ozellikGuncelle(dto: SandikOzellikGuncelleDto): Observable<ApiResult<unknown>> {

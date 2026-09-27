@@ -25,6 +25,7 @@ import {
   AmbalajGerceklesme,
   AmbalajGerceklesenRapor,
 } from '../../shared/models/ambalaj-yasam-dongusu.model';
+import { AMBALAJ_YETKI } from '../../core/constants/yetki-kodlari';
 
 @Component({
   selector: 'app-uretim-yasam-dongusu',
@@ -50,7 +51,8 @@ export class UretimYasamDongusuComponent {
   degisti = output<void>();
   private api = inject(AmbalajYasamDongusuService);
   private destroyRef = inject(DestroyRef);
-  readonly izin = inject(PermissionService);
+  readonly permissions = inject(PermissionService);
+  readonly izin = AMBALAJ_YETKI;
   private toast = inject(ToastService);
   private i18n = inject(TranslationService);
   private raporIstekleri = new Subject<void>();
@@ -70,9 +72,9 @@ export class UretimYasamDongusuComponent {
   });
   secimYetkili = computed(
     () =>
-      this.izin.canWrite('ambalaj-form-olustur') ||
-      this.izin.canWrite('ambalaj-form-yeniden-olustur') ||
-      this.izin.canWrite('ambalaj-plan-olustur'),
+      this.permissions.canWrite(AMBALAJ_YETKI.FormOlustur) ||
+      this.permissions.canWrite(AMBALAJ_YETKI.FormYenidenOlustur) ||
+      this.permissions.canWrite(AMBALAJ_YETKI.PlanOlustur),
   );
   private secimKapsami: string | null = null;
   private formKapsami: string | null = null;
@@ -151,7 +153,7 @@ export class UretimYasamDongusuComponent {
       );
       this.oncekiSatirlar = rows;
       this.secimKapsami = kapsam;
-      const formKapsami = (p || b) && this.izin.hasAccess('ambalaj-form-goruntule') ? kapsam : null;
+      const formKapsami = (p || b) && this.permissions.hasAccess(AMBALAJ_YETKI.FormGoruntule) ? kapsam : null;
       if (formKapsami !== this.formKapsami) {
         this.formlar.set([]);
         this.formKapsami = formKapsami;
@@ -228,7 +230,7 @@ export class UretimYasamDongusuComponent {
       .subscribe((r) => {
         if (!this.uygulandi(r)) return;
         this.toast.success(this.t('FORM_SAVED'));
-        if (this.izin.hasAccess('ambalaj-form-goruntule'))
+        if (this.permissions.hasAccess(AMBALAJ_YETKI.FormGoruntule))
           this.formIstekleri.next(bagimsiz ? { kayitId: bagimsiz.id } : { projeId: plan!.projeId });
         this.degisti.emit();
       });

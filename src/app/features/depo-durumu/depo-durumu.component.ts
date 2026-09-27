@@ -17,6 +17,7 @@ import { API } from '../../core/constants/api-endpoints';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
 import { ProjeDepoDagilimDto, ProjeDto, SandikDto, LookupItem } from '../../shared/models/index';
+import { YETKI } from '../../core/constants/yetki-kodlari';
 
 type DepoSummaryScope = 'global' | 'normal' | 'saha' | 'yedek';
 
@@ -142,7 +143,7 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
   savingDepo = signal(false);
 
   canWriteCurrentMenu = computed(() => {
-    const menuKod = this.route.snapshot.data?.['menuKod'] || 'depo-durumu';
+    const menuKod = this.route.snapshot.data?.['menuKod'] || YETKI.DEPO_DURUMU;
     return typeof menuKod === 'string' && this.permissionService.canWrite(menuKod);
   });
 

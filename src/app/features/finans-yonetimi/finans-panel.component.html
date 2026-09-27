@@ -108,25 +108,25 @@
             </div>
           </header>
           <dl>
-            @if (parasal('finans-tutar-goruntule')) {
+            @if (parasal(izin.TutarGoruntule)) {
               <dt>{{ t('PENDING_ORDER') }}</dt>
               <dd>{{ row.siparisBekleyen | number: '1.2-2' }}</dd>
               <dt>{{ t('PENDING_INVOICE') }}</dt>
               <dd>{{ row.faturaBekleyen | number: '1.2-2' }}</dd>
             }
-            @if (parasal('finans-gelir-goruntule')) {
+            @if (parasal(izin.GelirGoruntule)) {
               <dt>{{ t('NET_INCOME') }}</dt>
               <dd>{{ row.gelir | number: '1.2-2' }}</dd>
               <dt>{{ t('PANEL_YEAR_INCOME') }}</dt>
               <dd>{{ row.yilGelir | number: '1.2-2' }}</dd>
             }
-            @if (parasal('finans-gider-goruntule')) {
+            @if (parasal(izin.GiderGoruntule)) {
               <dt>{{ t('NET_EXPENSE') }}</dt>
               <dd>{{ row.gider | number: '1.2-2' }}</dd>
               <dt>{{ t('PANEL_YEAR_EXPENSE') }}</dt>
               <dd>{{ row.yilGider | number: '1.2-2' }}</dd>
             }
-            @if (parasal('finans-karlilik-goruntule')) {
+            @if (parasal(izin.KarlilikGoruntule)) {
               <dt>{{ t('PANEL_ACTUAL_DIFFERENCE') }}</dt>
               <dd
                 class="dashboard-key-value"
@@ -150,9 +150,9 @@
       }
     </div>
     @if (
-      parasal('finans-tutar-goruntule') ||
-      parasal('finans-gelir-goruntule') ||
-      parasal('finans-gider-goruntule')
+      parasal(izin.TutarGoruntule) ||
+      parasal(izin.GelirGoruntule) ||
+      parasal(izin.GiderGoruntule)
     ) {
       <article class="v2-card dashboard-chart">
         <div class="v2-card-heading dashboard-chart-heading">
@@ -271,7 +271,7 @@
             </select>
           </label>
         }
-        @if (permissions.canWrite('finans-po-gir') && secilenler().size) {
+        @if (permissions.canWrite(izin.PoGir) && secilenler().size) {
           <button
             class="btn btn-primary dashboard-selection"
             type="button"
@@ -306,7 +306,7 @@
                 <th>{{ t('PROJECT_WORK') }}</th>
                 <th>{{ t('PANEL_FINANCE_DATE') }}</th>
                 <th>{{ t('STATUS') }}</th>
-                @if (parasal('finans-tutar-goruntule')) {
+                @if (parasal(izin.TutarGoruntule)) {
                   <th>{{ t('AMOUNT') }}</th>
                 }
                 <th>{{ t('ACTION') }}</th>
@@ -317,7 +317,7 @@
                 @for (row of hareketler()?.items; track row.tur + row.id) {
                   <tr>
                     <td>
-                      @if (row.tur === 'IsKaydi' && permissions.canWrite('finans-po-gir')) {
+                      @if (row.tur === 'IsKaydi' && permissions.canWrite(izin.PoGir)) {
                         <input
                           type="checkbox"
                           [attr.aria-label]="row.ad + ' ' + t('SELECT')"
@@ -339,7 +339,7 @@
                     <td>
                       <span class="v2-status">{{ row.durum }}</span>
                     </td>
-                    @if (parasal('finans-tutar-goruntule')) {
+                    @if (parasal(izin.TutarGoruntule)) {
                       <td>{{ row.netTutar | number: '1.2-2' }} {{ row.paraBirimi }}</td>
                     }
                     <td>
@@ -356,7 +356,7 @@
                 @for (row of sonuclar()?.items; track row.id) {
                   <tr>
                     <td>
-                      @if (permissions.canWrite('finans-po-gir')) {
+                      @if (permissions.canWrite(izin.PoGir)) {
                         <input
                           type="checkbox"
                           [attr.aria-label]="row.projeNo + ' ' + t('SELECT')"
@@ -382,7 +382,7 @@
                         row.kaynakAktif ? t('PANEL_ACTIVE_SOURCE') : t('PANEL_INACTIVE_SOURCE')
                       }}</span>
                     </td>
-                    @if (parasal('finans-tutar-goruntule')) {
+                    @if (parasal(izin.TutarGoruntule)) {
                       <td>{{ row.netTutar | number: '1.2-2' }} {{ row.paraBirimi }}</td>
                     }
                     <td>
@@ -410,7 +410,7 @@
                     <td>
                       <span class="v2-status">{{ row.asama }} · {{ row.gun }} {{ t('DAY') }}</span>
                     </td>
-                    @if (parasal('finans-tutar-goruntule')) {
+                    @if (parasal(izin.TutarGoruntule)) {
                       <td>{{ row.kalanNetTutar | number: '1.2-2' }} {{ row.paraBirimi }}</td>
                     }
                     <td>
@@ -426,7 +426,7 @@
               }
               @if (!pager()?.totalCount) {
                 <tr>
-                  <td [attr.colspan]="parasal('finans-tutar-goruntule') ? 6 : 5">
+                  <td [attr.colspan]="parasal(izin.TutarGoruntule) ? 6 : 5">
                     <div class="v2-empty">
                       <i class="ri-inbox-2-line" aria-hidden="true"></i>
                       <p>{{ t('PANEL_EMPTY') }}</p>

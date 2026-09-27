@@ -298,7 +298,6 @@ export const API = {
     DEPO_LOKASYON_DELETE: (id: number) => `${BASE}/lookup/depo-lokasyon/${id}`,
   },
   ROL: {
-    SABLONLAR: `${BASE}/rol/sablonlar`,
     LIST: `${BASE}/rol/liste`,
     DETAY: (id: number) => `${BASE}/rol/${id}/detay`,
     CREATE: `${BASE}/rol/olustur`,

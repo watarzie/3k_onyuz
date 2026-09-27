@@ -43,7 +43,7 @@ describe('Finans paneli bağımsız kayıt izni', () => {
     expect(api.hareketler).not.toHaveBeenCalled();
     expect(api.genelArama).not.toHaveBeenCalled(); expect(api.yaslandirma).not.toHaveBeenCalled();
     expect(toast.error).not.toHaveBeenCalled();
-    expect(fixture.nativeElement.querySelector('.v2-counts').textContent).toContain('4');
+    expect(fixture.nativeElement.querySelector('.dashboard-counts').textContent).toContain('4');
     expect(fixture.nativeElement.querySelector('nav')).toBeNull();
     expect(fixture.nativeElement.querySelector('table')).toBeNull();
     fixture.componentInstance.gorunumSec('arama'); fixture.componentInstance.gorunumSec('bekleyen');
@@ -63,7 +63,7 @@ describe('Finans paneli bağımsız kayıt izni', () => {
     fixture.componentInstance.yenile(); fixture.detectChanges();
     expect(api.hareketler).toHaveBeenCalledTimes(1);
     expect(api.genelArama).toHaveBeenCalledTimes(1);
-    expect(fixture.nativeElement.querySelector('.v2-counts')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.dashboard-counts')).not.toBeNull();
   });
 
   it('dil değişiminde başlık ve grafik etiketlerini günceller', () => {

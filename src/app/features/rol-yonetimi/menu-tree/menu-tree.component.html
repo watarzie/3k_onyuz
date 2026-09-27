@@ -21,8 +21,7 @@
       <i *ngIf="node.icon" class="{{ node.icon }} node-icon"></i>
 
       <!-- Label -->
-      <span class="node-label">{{ node.ad || (node.labelKey | translate) }}</span>
-      <small *ngIf="node.kritikMi" class="text-danger">{{ 'PERMISSIONS.CRITICAL' | translate }}</small>
+      <span class="node-label">{{ node.labelKey | translate }}</span>
     </div>
 
     <!-- Recursive children -->

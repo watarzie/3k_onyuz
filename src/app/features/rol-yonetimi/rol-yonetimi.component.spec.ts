@@ -11,26 +11,24 @@ import { MenuTreeDto, RolDetayDto } from '../../shared/models';
 import { RolYonetimiComponent } from './rol-yonetimi.component';
 
 describe('RolYonetimiComponent yetki kaydı', () => {
-  it('eski W çocukları yüklemede göstermez ve kayıtta tekrar göndermez', () => {
-    const item = (id: number, permission: YetkiTipi, children: MenuTreeDto[] = [],
-      required?: YetkiTipi): MenuTreeDto => ({
-      id, kod: `izin-${id}`, labelKey: '', ad: `İzin ${id}`, icon: '', sira: id,
+  it('üst R altındaki W kayıtları yüklemede R gösterir ve kayıtta W göndermez', () => {
+    const item = (id: number, permission: YetkiTipi, children: MenuTreeDto[] = []): MenuTreeDto => ({
+      id, kod: `izin-${id}`, labelKey: '', icon: '', sira: id,
       yetkiTipiId: permission, yetkiTipiMetni: YetkiTipi[permission],
-      children, gerekenYetkiTipiId: required,
+      children,
     });
     const detail: RolDetayDto = {
       id: 7,
       ad: 'Test rolü',
       menuAgaci: [item(1, YetkiTipi.R, [
         item(2, YetkiTipi.W),
-        item(3, YetkiTipi.W, [], YetkiTipi.W),
+        item(3, YetkiTipi.W),
       ])],
     };
     const rolService = jasmine.createSpyObj<RolService>('RolService', [
-      'getRoller', 'getSablonlar', 'getRolDetay', 'rolGuncelle',
+      'getRoller', 'getRolDetay', 'rolGuncelle',
     ]);
     rolService.getRoller.and.returnValue(of([{ id: 7, ad: detail.ad }]));
-    rolService.getSablonlar.and.returnValue(of([]));
     rolService.getRolDetay.and.returnValue(of(detail));
     rolService.rolGuncelle.and.returnValue(of(detail));
     const notifyPermissionsChanged = jasmine.createSpy('notifyPermissionsChanged');
@@ -56,13 +54,13 @@ describe('RolYonetimiComponent yetki kaydı', () => {
     fixture.detectChanges();
 
     const children = component.selectedRole()!.menuAgaci[0].children;
-    expect(children.map(child => child.yetkiTipiId)).toEqual([YetkiTipi.R, YetkiTipi.N]);
+    expect(children.map(child => child.yetkiTipiId)).toEqual([YetkiTipi.R, YetkiTipi.R]);
     children[0].yetkiTipiId = YetkiTipi.W;
     children[1].yetkiTipiId = YetkiTipi.W;
     component.savePermissions();
 
     const sent = rolService.rolGuncelle.calls.mostRecent().args[0].yetkiler;
-    expect(sent.map(item => item.yetkiTipiId)).toEqual([YetkiTipi.R, YetkiTipi.R, YetkiTipi.N]);
+    expect(sent.map(item => item.yetkiTipiId)).toEqual([YetkiTipi.R, YetkiTipi.R, YetkiTipi.R]);
     expect(notifyPermissionsChanged).toHaveBeenCalled();
   });
 
@@ -71,7 +69,6 @@ describe('RolYonetimiComponent yetki kaydı', () => {
       id,
       kod: `izin-${id}`,
       labelKey: '',
-      ad: `İzin ${id}`,
       icon: '',
       sira: id,
       yetkiTipiId: permission,
@@ -88,10 +85,9 @@ describe('RolYonetimiComponent yetki kaydı', () => {
       ])],
     };
     const rolService = jasmine.createSpyObj<RolService>('RolService', [
-      'getRoller', 'getSablonlar', 'getRolDetay', 'rolGuncelle',
+      'getRoller', 'getRolDetay', 'rolGuncelle',
     ]);
     rolService.getRoller.and.returnValue(of([{ id: detail.id, ad: detail.ad }]));
-    rolService.getSablonlar.and.returnValue(of([]));
     rolService.getRolDetay.and.callFake(() => of(detail));
     rolService.rolGuncelle.and.callFake(request => {
       for (const node of [detail.menuAgaci[0], ...detail.menuAgaci[0].children]) {

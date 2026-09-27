@@ -13,174 +13,139 @@ describe('MenuTreeComponent yetki göstergesi', () => {
       imports: [MenuTreeComponent],
       providers: [{
         provide: TranslationService,
-        useValue: { translate: (key: string) => ({
-          'PERMISSIONS.READ_ACCESS': 'Okuma',
-          'PERMISSIONS.WRITE_ACCESS': 'Yazma',
-        })[key as 'PERMISSIONS.READ_ACCESS' | 'PERMISSIONS.WRITE_ACCESS'] ?? key },
+        useValue: { translate: (key: string) => ({ 'MENU.TEST_IZIN': 'Test izni' })[key as 'MENU.TEST_IZIN'] ?? key },
       }],
     });
   });
 
-  function render(yetkiTipiId: YetkiTipi, gerekenYetkiTipiId?: YetkiTipi) {
-    const node: MenuTreeDto = {
-      id: 1,
-      kod: 'test-izin',
-      labelKey: '',
-      ad: 'Test izni',
-      icon: '',
-      sira: 1,
-      yetkiTipiId,
-      yetkiTipiMetni: YetkiTipi[yetkiTipiId],
-      gerekenYetkiTipiId,
-      children: [],
-    };
-    const fixture = TestBed.createComponent(MenuTreeComponent);
-    fixture.componentInstance.nodes = [node];
-    fixture.detectChanges();
-    const element = fixture.nativeElement as HTMLElement;
-    const checkbox = element.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
-    return { fixture, element, checkbox, node };
-  }
-
-  function nested(permission: YetkiTipi, required?: YetkiTipi): MenuTreeDto {
+  function node(permission: YetkiTipi): MenuTreeDto {
     return {
       id: ++nextNodeId,
       kod: 'test-izin',
-      labelKey: '',
-      ad: 'Test izni',
+      labelKey: 'MENU.TEST_IZIN',
       icon: '',
       sira: 1,
       yetkiTipiId: permission,
       yetkiTipiMetni: YetkiTipi[permission],
-      gerekenYetkiTipiId: required,
       children: [],
     };
   }
 
-  it('okuma iznini tik değil çizgi, yazma iznini tik olarak gösterir', () => {
-    const read = render(YetkiTipi.R, YetkiTipi.R);
-    expect(read.checkbox.indeterminate).toBeTrue();
-    expect(read.checkbox.checked).toBeFalse();
-    expect(read.element.querySelector('.permission-type')).toBeNull();
-    expect(read.element.textContent).not.toContain('Okuma');
+  function render(...roots: MenuTreeDto[]) {
+    const fixture = TestBed.createComponent(MenuTreeComponent);
+    fixture.componentInstance.nodes = roots;
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    const checkboxes = element.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
+    const click = (index: number) => {
+      checkboxes[index].click();
+      fixture.detectChanges();
+    };
+    return { fixture, element, checkboxes, click };
+  }
 
-    const write = render(YetkiTipi.W, YetkiTipi.W);
-    expect(write.checkbox.indeterminate).toBeFalse();
-    expect(write.checkbox.checked).toBeTrue();
-    expect(write.element.querySelector('.permission-type')).toBeNull();
-    expect(write.element.textContent).not.toContain('Yazma');
+  it('okuma iznini çizgi, yazma iznini tik olarak gösterir; etiketi çevirir', () => {
+    const read = render(node(YetkiTipi.R));
+    expect(read.checkboxes[0].indeterminate).toBeTrue();
+    expect(read.checkboxes[0].checked).toBeFalse();
+    expect(read.element.textContent).toContain('Test izni');
+
+    const write = render(node(YetkiTipi.W));
+    expect(write.checkboxes[0].indeterminate).toBeFalse();
+    expect(write.checkboxes[0].checked).toBeTrue();
   });
 
-  it('işlem bazlı izni kapalı durumdan yalnızca tanımlı seviyeye açar', () => {
-    const read = render(YetkiTipi.N, YetkiTipi.R);
-    expect(read.checkbox.checked).toBeFalse();
-    expect(read.checkbox.indeterminate).toBeFalse();
+  it('kök düğüm N → R → W → N döngüsünü izler', () => {
+    const root = node(YetkiTipi.N);
+    const tree = render(root);
+    const seen: number[] = [];
+    for (let i = 0; i < 4; i++) {
+      tree.click(0);
+      seen.push(root.yetkiTipiId);
+    }
 
-    read.checkbox.click();
-    read.fixture.detectChanges();
-    expect(read.node.yetkiTipiId).toBe(YetkiTipi.R);
-    expect(read.checkbox.indeterminate).toBeTrue();
-
-    read.checkbox.click();
-    read.fixture.detectChanges();
-    expect(read.node.yetkiTipiId).toBe(YetkiTipi.N);
-    expect(read.checkbox.indeterminate).toBeFalse();
-    expect(read.checkbox.checked).toBeFalse();
+    expect(seen).toEqual([YetkiTipi.R, YetkiTipi.W, YetkiTipi.N, YetkiTipi.R]);
+    expect(tree.checkboxes[0].indeterminate).toBeTrue();
+    expect(tree.checkboxes[0].checked).toBeFalse();
   });
 
-  it('eski üç durumlu menü yetkisi döngüsünü değiştirmez', () => {
-    const menu = render(YetkiTipi.N);
-    menu.checkbox.click();
-    menu.fixture.detectChanges();
-    expect(menu.checkbox.indeterminate).toBeTrue();
-
-    menu.checkbox.click();
-    menu.fixture.detectChanges();
-    expect(menu.checkbox.checked).toBeTrue();
-
-    menu.checkbox.click();
-    menu.fixture.detectChanges();
-    expect(menu.checkbox.checked).toBeFalse();
-    expect(menu.checkbox.indeterminate).toBeFalse();
-
-    menu.checkbox.click();
-    menu.fixture.detectChanges();
-    expect(menu.node.yetkiTipiId).toBe(YetkiTipi.R);
-    menu.checkbox.click();
-    menu.fixture.detectChanges();
-    expect(menu.node.yetkiTipiId).toBe(YetkiTipi.W);
-    menu.checkbox.click();
-    menu.fixture.detectChanges();
-    expect(menu.node.yetkiTipiId).toBe(YetkiTipi.N);
-    expect(menu.checkbox.checked).toBeFalse();
-    expect(menu.checkbox.indeterminate).toBeFalse();
-  });
-
-  it('üst N yapıldığında torunları kapatır; tekrar R olunca eski W izinlerini açmaz', () => {
-    const root = nested(YetkiTipi.W);
-    const child = nested(YetkiTipi.W);
-    const grandchild = nested(YetkiTipi.W);
-    const action = nested(YetkiTipi.W, YetkiTipi.W);
+  it('üst N yapıldığında torunları kapatır; tekrar açılınca eski izinleri geri açmaz', () => {
+    const root = node(YetkiTipi.W);
+    const child = node(YetkiTipi.W);
+    const grandchild = node(YetkiTipi.W);
+    const action = node(YetkiTipi.W);
     root.children = [child, action];
     child.children = [grandchild];
     child.parent = root;
     action.parent = root;
     grandchild.parent = child;
+    const tree = render(root);
 
-    const fixture = TestBed.createComponent(MenuTreeComponent);
-    fixture.componentInstance.nodes = [root];
-    fixture.detectChanges();
-    const checkboxes = (fixture.nativeElement as HTMLElement)
-      .querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
-
-    checkboxes[0].click();
-    fixture.detectChanges();
+    tree.click(0);
     expect([root, child, grandchild, action].map(item => item.yetkiTipiId))
       .toEqual([YetkiTipi.N, YetkiTipi.N, YetkiTipi.N, YetkiTipi.N]);
-    expect(checkboxes[1].disabled).toBeTrue();
+    expect(tree.checkboxes[1].disabled).toBeTrue();
 
-    checkboxes[0].click();
-    fixture.detectChanges();
+    tree.click(0);
     expect(root.yetkiTipiId).toBe(YetkiTipi.R);
-    expect([child, grandchild, action].every(item => item.yetkiTipiId === YetkiTipi.N))
-      .toBeTrue();
-    expect(checkboxes[1].disabled).toBeFalse();
-    expect(checkboxes[3].disabled).toBeTrue();
+    expect([child, grandchild, action].every(item => item.yetkiTipiId === YetkiTipi.N)).toBeTrue();
+    expect(tree.checkboxes[1].disabled).toBeFalse();
+    expect(tree.checkboxes[2].disabled).toBeTrue();
+    expect(tree.checkboxes[3].disabled).toBeFalse();
 
-    checkboxes[0].click();
-    fixture.detectChanges();
+    tree.click(0);
     expect(root.yetkiTipiId).toBe(YetkiTipi.W);
-    expect([child, grandchild, action].every(item => item.yetkiTipiId === YetkiTipi.N))
-      .toBeTrue();
+    expect([child, grandchild, action].every(item => item.yetkiTipiId === YetkiTipi.N)).toBeTrue();
   });
 
-  it('üst R altında normal çocuk N ile R arasında kalır ve W işlemi açılamaz', () => {
-    const root = nested(YetkiTipi.R);
-    const child = nested(YetkiTipi.R);
-    const action = nested(YetkiTipi.N, YetkiTipi.W);
-    root.children = [child, action];
-    child.parent = root;
+  it('üst R altında ekran ve işlem düğümleri aynı şekilde N ile R arasında kalır', () => {
+    const root = node(YetkiTipi.R);
+    const screen = node(YetkiTipi.R);
+    const action = node(YetkiTipi.N);
+    root.children = [screen, action];
+    screen.parent = root;
     action.parent = root;
+    const tree = render(root);
 
+    tree.click(1);
+    expect(screen.yetkiTipiId).toBe(YetkiTipi.N);
+    expect(tree.checkboxes[1].checked).toBeFalse();
+    expect(tree.checkboxes[1].indeterminate).toBeFalse();
+    tree.click(1);
+    expect(screen.yetkiTipiId).toBe(YetkiTipi.R);
+
+    tree.click(2);
+    expect(action.yetkiTipiId).toBe(YetkiTipi.R);
+    tree.click(2);
+    expect(action.yetkiTipiId).toBe(YetkiTipi.N);
+  });
+
+  it('üst W altında alt düğüm W olabilir; üst kapatılınca alt düğüm de kapanır', () => {
+    const root = node(YetkiTipi.W);
+    const action = node(YetkiTipi.R);
+    root.children = [action];
+    action.parent = root;
+    const tree = render(root);
+
+    tree.click(1);
+    expect(action.yetkiTipiId).toBe(YetkiTipi.W);
+    expect(tree.checkboxes[1].checked).toBeTrue();
+
+    tree.click(0);
+    expect(root.yetkiTipiId).toBe(YetkiTipi.N);
+    expect(action.yetkiTipiId).toBe(YetkiTipi.N);
+    expect(tree.checkboxes[1].disabled).toBeTrue();
+  });
+
+  it('disabled girdisinde hiçbir düğüm değiştirilemez', () => {
+    const root = node(YetkiTipi.R);
     const fixture = TestBed.createComponent(MenuTreeComponent);
     fixture.componentInstance.nodes = [root];
+    fixture.componentInstance.disabled = true;
     fixture.detectChanges();
-    const checkboxes = (fixture.nativeElement as HTMLElement)
-      .querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
 
-    checkboxes[1].click();
-    fixture.detectChanges();
-    expect(child.yetkiTipiId).toBe(YetkiTipi.N);
-    expect(checkboxes[1].checked).toBeFalse();
-    expect(checkboxes[1].indeterminate).toBeFalse();
-    checkboxes[1].click();
-    fixture.detectChanges();
-    expect(child.yetkiTipiId).toBe(YetkiTipi.R);
-    checkboxes[1].click();
-    fixture.detectChanges();
-    expect(child.yetkiTipiId).toBe(YetkiTipi.N);
-    expect(checkboxes[2].disabled).toBeTrue();
-    fixture.componentInstance.onPermissionChange(action);
-    expect(action.yetkiTipiId).toBe(YetkiTipi.N);
+    fixture.componentInstance.onPermissionChange(root);
+    expect(root.yetkiTipiId).toBe(YetkiTipi.R);
+    expect((fixture.nativeElement as HTMLElement).querySelector('input')!.disabled).toBeTrue();
   });
 });

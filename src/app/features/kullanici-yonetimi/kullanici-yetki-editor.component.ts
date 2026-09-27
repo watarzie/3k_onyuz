@@ -8,6 +8,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { TranslationService } from '../../core/services/translation.service';
 import { KullaniciDto, KullaniciYetkiModel } from '../../shared/models';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
+import { YETKI } from '../../core/constants/yetki-kodlari';
 
 @Component({
   selector: 'app-kullanici-yetki-editor',
@@ -28,7 +29,7 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
           <table class="table table-sm align-middle" *ngIf="!loading() && !error()">
             <thead><tr><th>{{ 'PERMISSIONS.PERMISSION' | translate }}</th><th>{{ 'PERMISSIONS.ROLE_ACCESS' | translate }}</th><th>{{ 'PERMISSIONS.PERSONAL_DECISION' | translate }}</th></tr></thead>
             <tbody><tr *ngFor="let row of filtered()">
-              <td>{{ row.ad | translate }} <span *ngIf="row.kritik" class="badge text-bg-danger">{{ 'PERMISSIONS.CRITICAL' | translate }}</span><small class="d-block text-muted">{{ row.kod }}</small></td>
+              <td>{{ row.labelKey | translate }}<small class="d-block text-muted">{{ row.kod }}</small></td>
               <td>{{ row.rolYetkiTipiId === 3 ? 'W' : row.rolYetkiTipiId === 2 ? 'R' : 'N' }}</td>
               <td><select class="form-select form-select-sm" [ngModel]="decisionValue(row)" [disabled]="saving() || !canManage()" (ngModelChange)="setDecision(row.menuTanimiId, $event)">
                 <option value="inherit">{{ 'PERMISSIONS.INHERIT' | translate }}</option>
@@ -64,10 +65,11 @@ export class KullaniciYetkiEditorComponent implements OnChanges {
   loading = signal(false);
   saving = signal(false);
   error = signal('');
-  canManage = computed(() => this.permissions.canWrite('kullanicilar'));
+  canManage = computed(() => this.permissions.canWrite(YETKI.KULLANICILAR));
   filtered = computed(() => {
     const term = this.search().trim().toLocaleLowerCase('tr');
-    return this.rows().filter(row => !term || (row.ad + ' ' + row.kod).toLocaleLowerCase('tr').includes(term));
+    return this.rows().filter(row => !term ||
+      (this.translate.translate(row.labelKey) + ' ' + row.kod).toLocaleLowerCase('tr').includes(term));
   });
 
   ngOnChanges(): void {

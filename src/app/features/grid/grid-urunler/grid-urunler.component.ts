@@ -18,6 +18,7 @@ import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-ban
 import { GridUrunDto, GridDurumGuncelleDto, ProjeDropdownDto, CekiSatiriAnaVeriGuncelleDto, SahaTamamlamaIzDto } from '../../../shared/models/index';
 import { GridDurum, GridSevkDurum, SurecDurum, UcKDurum } from '../../../core/constants/enums';
 import { PermissionService } from '../../../core/services/permission.service';
+import { YETKI } from '../../../core/constants/yetki-kodlari';
 
 declare const pdfMake: any;
 
@@ -96,13 +97,13 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   panelError = signal('');
   panelUyari = signal('');
 
-  canEditCekiVerisi = computed(() => this.permissions.canWrite('ceki-verisi-duzenle'));
-  canDeleteCekiVerisi = computed(() => this.permissions.canWrite('ceki-verisi-sil'));
-  canSahaAktarimGeriAl = computed(() => this.permissions.canWrite('saha-aktarim-geri-al'));
+  canEditCekiVerisi = computed(() => this.permissions.canWrite(YETKI.SANDIK.CEKI_VERISI_DUZENLE));
+  canDeleteCekiVerisi = computed(() => this.permissions.canWrite(YETKI.SANDIK.CEKI_VERISI_SIL));
+  canSahaAktarimGeriAl = computed(() => this.permissions.canWrite(YETKI.SAHA.AKTARIM_GERI_AL));
   canSeeEksikRapor = computed(() =>
-    this.activeMenuKod === 'grid-modulu' &&
+    this.activeMenuKod === YETKI.SANDIK.GRID_MODULU &&
     this.mevcutProje()?.projeTipiId === 1 &&
-    this.permissions.hasAccess('eksik-raporu')
+    this.permissions.hasAccess(YETKI.SANDIK.EKSIK_RAPORU)
   );
   showEksikRaporMenu = signal(false);
   eksikRaporDownloading = signal<'pdf' | 'excel' | null>(null);
@@ -237,17 +238,17 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   breadcrumb: { label: string; link?: string }[] = [];
 
   private get activeMenuKod(): string {
-    return this.route.snapshot.data?.['menuKod'] || 'grid-modulu';
+    return this.route.snapshot.data?.['menuKod'] || YETKI.SANDIK.GRID_MODULU;
   }
 
   get manuelIcerikTekilAdi(): string {
-    return this.activeMenuKod === 'yedek-grid-modulu'
+    return this.activeMenuKod === YETKI.YEDEK.GRID_MODULU
       ? 'manuel yedek malzemesi'
       : 'manuel saha ürünü';
   }
 
   private get manuelIcerikCogulAdi(): string {
-    return this.activeMenuKod === 'yedek-grid-modulu'
+    return this.activeMenuKod === YETKI.YEDEK.GRID_MODULU
       ? 'Manuel yedek malzemeleri'
       : 'Manuel saha ürünleri';
   }
@@ -267,8 +268,8 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     this.projeId.set(id);
     const focusCekiSatiriId = Number(this.route.snapshot.queryParamMap.get('focusCekiSatiriId'));
     this.focusCekiSatiriId.set(Number.isInteger(focusCekiSatiriId) && focusCekiSatiriId > 0 ? focusCekiSatiriId : null);
-    const isSaha = this.activeMenuKod === 'saha-grid-modulu';
-    const isYedek = this.activeMenuKod === 'yedek-grid-modulu';
+    const isSaha = this.activeMenuKod === YETKI.SAHA.GRID_MODULU;
+    const isYedek = this.activeMenuKod === YETKI.YEDEK.GRID_MODULU;
     const parentLabel = isSaha ? 'Saha Yönetimi' : isYedek ? 'Yedek Yönetimi' : 'Sandık Yönetimi';
     const parentLink = isSaha ? '/saha-yonetimi' : isYedek ? '/yedek-yonetimi' : '/sandik-yonetimi';
     this.breadcrumb = [
@@ -1188,12 +1189,12 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   /** Menü bazlı kontrol - Kalite butonlarını görme yetkisi */
   get canKalite(): boolean {
-    return this.permissions.canWrite('kalite-modulu');
+    return this.permissions.canWrite(YETKI.SANDIK.KALITE_MODULU);
   }
 
   /** Menü bazlı kontrol - Süreç butonlarını görme yetkisi */
   get canSurec(): boolean {
-    return this.permissions.canWrite('surec-modulu');
+    return this.permissions.canWrite(YETKI.SANDIK.SUREC_MODULU);
   }
 
   get canGridWrite(): boolean {

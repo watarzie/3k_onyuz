@@ -23,6 +23,7 @@ import {
 } from '../../shared/models';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
 import { IslemOnayGecmisiComponent } from './islem-onay-gecmisi.component';
+import { YETKI } from '../../core/constants/yetki-kodlari';
 
 type TarihFiltresi = 'tumu' | 'bugun' | 'son7Gun' | 'son30Gun' | 'ozel';
 type BildirimMerkeziGorunumu = 'bildirimler' | 'onaylar';
@@ -508,24 +509,24 @@ export class BildirimMerkeziComponent implements OnInit, OnDestroy {
   }
 
   private getTargetMenuKod(path: string): string | null {
-    if (path === '/projeler/sevk-edilen' || path.startsWith('/projeler/sevk-edilen/')) return 'sevk-edilen';
-    if (path === '/projeler' || path.startsWith('/projeler/')) return 'aktif-projeler';
-    if (path === '/sandik-yonetimi' || path.startsWith('/sandik-yonetimi/')) return 'sandik-yonetimi';
-    if (path === '/grid-is-listesi' || path.startsWith('/grid-is-listesi/')) return 'grid-is-listesi';
-    if (path === '/grid' || path.startsWith('/grid/')) return 'grid-modulu';
-    if (path === '/uck-is-listesi' || path.startsWith('/uck-is-listesi/')) return '3k-is-listesi';
-    if (path === '/uck' || path.startsWith('/uck/')) return '3k-modulu';
-    if (path === '/depo-durumu' || path.startsWith('/depo-durumu/')) return 'depo-durumu';
-    if (path === '/onay-merkezi' || path.startsWith('/onay-merkezi/')) return 'islem-onay-merkezi';
-    if (path === '/stok' || path.startsWith('/stok/')) return 'stok';
-    if (path.startsWith('/saha-yonetimi/grid/')) return 'saha-grid-modulu';
-    if (path.startsWith('/saha-yonetimi/uck/')) return 'saha-3k-modulu';
-    if (path === '/saha-yonetimi' || path.startsWith('/saha-yonetimi/')) return 'saha-yonetimi';
-    if (path === '/yedek-yonetimi/grid' || path.startsWith('/yedek-yonetimi/grid/')) return 'yedek-grid-modulu';
-    if (path === '/yedek-yonetimi/uck' || path.startsWith('/yedek-yonetimi/uck/')) return 'yedek-3k-modulu';
-    if (path === '/yedek-yonetimi') return 'yedek-yonetimi';
-    if (path.startsWith('/yedek-yonetimi/')) return 'yedek-sandiklar';
-    if (path === '/hareket-gecmisi' || path.startsWith('/hareket-gecmisi/')) return 'hareket-gecmisi';
+    if (path === '/projeler/sevk-edilen' || path.startsWith('/projeler/sevk-edilen/')) return YETKI.PROJE.SEVK_EDILEN;
+    if (path === '/projeler' || path.startsWith('/projeler/')) return YETKI.PROJE.AKTIF_PROJELER;
+    if (path === '/sandik-yonetimi' || path.startsWith('/sandik-yonetimi/')) return YETKI.SANDIK.YONETIMI;
+    if (path === '/grid-is-listesi' || path.startsWith('/grid-is-listesi/')) return YETKI.SANDIK.GRID_IS_LISTESI;
+    if (path === '/grid' || path.startsWith('/grid/')) return YETKI.SANDIK.GRID_MODULU;
+    if (path === '/uck-is-listesi' || path.startsWith('/uck-is-listesi/')) return YETKI.SANDIK.UCK_IS_LISTESI;
+    if (path === '/uck' || path.startsWith('/uck/')) return YETKI.SANDIK.UCK_MODULU;
+    if (path === '/depo-durumu' || path.startsWith('/depo-durumu/')) return YETKI.DEPO_DURUMU;
+    if (path === '/onay-merkezi' || path.startsWith('/onay-merkezi/')) return YETKI.ONAY.MERKEZI;
+    if (path === '/stok' || path.startsWith('/stok/')) return YETKI.STOK.KOK;
+    if (path.startsWith('/saha-yonetimi/grid/')) return YETKI.SAHA.GRID_MODULU;
+    if (path.startsWith('/saha-yonetimi/uck/')) return YETKI.SAHA.UCK_MODULU;
+    if (path === '/saha-yonetimi' || path.startsWith('/saha-yonetimi/')) return YETKI.SAHA.YONETIMI;
+    if (path === '/yedek-yonetimi/grid' || path.startsWith('/yedek-yonetimi/grid/')) return YETKI.YEDEK.GRID_MODULU;
+    if (path === '/yedek-yonetimi/uck' || path.startsWith('/yedek-yonetimi/uck/')) return YETKI.YEDEK.UCK_MODULU;
+    if (path === '/yedek-yonetimi') return YETKI.YEDEK.YONETIMI;
+    if (path.startsWith('/yedek-yonetimi/')) return YETKI.YEDEK.SANDIKLAR;
+    if (path === '/hareket-gecmisi' || path.startsWith('/hareket-gecmisi/')) return YETKI.HAREKET_GECMISI;
     return null;
   }
 }

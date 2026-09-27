@@ -10,8 +10,8 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { RolDto, RolDetayDto, MenuTreeDto, RolYetkiItemDto, RolGuncelleRequest } from '../../shared/models';
 import { MenuTreeComponent } from './menu-tree/menu-tree.component';
 import { PermissionService } from '../../core/services/permission.service';
-import { RolSablonu } from '../../shared/models';
 import { normalizeMenuTree } from '../../core/services/menu-permission-tree';
+import { ADMIN_ROL_ID, YETKI } from '../../core/constants/yetki-kodlari';
 
 @Component({
   selector: 'app-rol-yonetimi',
@@ -23,9 +23,9 @@ import { normalizeMenuTree } from '../../core/services/menu-permission-tree';
 export class RolYonetimiComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
   private permissions = inject(PermissionService);
-  canManage = computed(() => this.permissions.canWrite('rol-yonetimi'));
-  templates = signal<RolSablonu[]>([]);
-  selectedTemplate = signal('');
+  canManage = computed(() => this.permissions.canWrite(YETKI.ROL_YONETIMI));
+  /** Sistem yöneticisi rolü kimliğiyle korunur; silinemez. */
+  readonly adminRolId = ADMIN_ROL_ID;
   private detailVersion = 0;
   private rolService = inject(RolService);
   private toast = inject(ToastService);
@@ -51,10 +51,6 @@ export class RolYonetimiComponent implements OnInit {
   });
   ngOnInit(): void {
     this.loadRoles();
-    this.rolService.getSablonlar().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: items => this.templates.set(items),
-      error: () => this.templates.set([]),
-    });
   }
 
   loadRoles(): void {
@@ -126,7 +122,6 @@ export class RolYonetimiComponent implements OnInit {
 
   openAddModal(): void {
     if (!this.canManage()) return;
-    this.selectedTemplate.set('');
     this.newRoleName.set('');
     this.showAddModal.set(true);
   }
@@ -140,7 +135,7 @@ export class RolYonetimiComponent implements OnInit {
     const name = this.newRoleName().trim();
     if (!name) return;
 
-    this.rolService.rolOlustur(name, this.selectedTemplate() || undefined).subscribe({
+    this.rolService.rolOlustur(name).subscribe({
       next: () => {
         this.toast.success(`"${name}" rolü başarıyla oluşturuldu.`);
         this.showAddModal.set(false);

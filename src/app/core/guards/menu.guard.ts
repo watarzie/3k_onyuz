@@ -2,6 +2,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router, UrlTree } from '@angular/router';
 import { PermissionService } from '../services/permission.service';
+import { YETKI } from '../constants/yetki-kodlari';
 
 /**
  * Route Guard — Backend'den gelen yetkili menü listesine göre erişimi kontrol eder.
@@ -20,7 +21,7 @@ export const menuGuard: CanActivateFn = async (route, state): Promise<boolean | 
 
   // Dashboard her zaman erişilebilir
   const menuKod = route.data?.['menuKod'] as string;
-  if (menuKod === 'dashboard') {
+  if (menuKod === YETKI.DASHBOARD) {
     return true;
   }
 

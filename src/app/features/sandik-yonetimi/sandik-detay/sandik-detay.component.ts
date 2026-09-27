@@ -18,6 +18,7 @@ import { SandikTopluTasiComponent } from './sandik-toplu-tasi.component';
 
 import { ConfirmService } from '../../../core/services/confirm.service';
 import { firstValueFrom } from 'rxjs';
+import { YETKI } from '../../../core/constants/yetki-kodlari';
 
 @Component({
   selector: 'app-sandik-detay',
@@ -107,19 +108,19 @@ export class SandikDetayComponent implements OnInit {
   isYedekYonetimi = signal(false);
   pageTitle = computed(() => {
     const menuKod = this.route.snapshot.data['menuKod'];
-    if (menuKod === 'saha-yonetimi' || menuKod === 'saha-sandiklar') return 'Saha Yönetimi';
-    if (menuKod === 'saha-3k-modulu') return 'Saha 3K Modülü';
-    if (menuKod === 'yedek-3k-modulu') return 'Yedek 3K Modülü';
-    if (menuKod === 'yedek-yonetimi' || menuKod === 'yedek-sandiklar') return 'Yedek Yönetimi';
-    if (menuKod === '3k-modulu') return '3K Modülü';
+    if (menuKod === YETKI.SAHA.YONETIMI || menuKod === YETKI.SAHA.SANDIKLAR) return 'Saha Yönetimi';
+    if (menuKod === YETKI.SAHA.UCK_MODULU) return 'Saha 3K Modülü';
+    if (menuKod === YETKI.YEDEK.UCK_MODULU) return 'Yedek 3K Modülü';
+    if (menuKod === YETKI.YEDEK.YONETIMI || menuKod === YETKI.YEDEK.SANDIKLAR) return 'Yedek Yönetimi';
+    if (menuKod === YETKI.SANDIK.UCK_MODULU) return '3K Modülü';
     return this.ts.translate('MENU.SANDIK_YONETIMI');
   });
   canWriteSandik = computed(() => {
-    const menuKod = this.route.snapshot.data['menuKod'] || 'sandik-yonetimi';
+    const menuKod = this.route.snapshot.data['menuKod'] || YETKI.SANDIK.YONETIMI;
     return this.permissionService.canWrite(menuKod);
   });
   canWriteSevk = computed(() => {
-    const menuKod = this.route.snapshot.data['menuKod'] || 'sandik-yonetimi';
+    const menuKod = this.route.snapshot.data['menuKod'] || YETKI.SANDIK.YONETIMI;
     return this.permissionService.canWrite(menuKod);
   });
 
@@ -217,16 +218,16 @@ export class SandikDetayComponent implements OnInit {
   ngOnInit() {
     const pId = Number(this.route.snapshot.paramMap.get('projeId'));
     const sId = Number(this.route.snapshot.paramMap.get('sandikId'));
-    const menuKod = this.route.snapshot.data['menuKod'] || 'sandik-yonetimi';
+    const menuKod = this.route.snapshot.data['menuKod'] || YETKI.SANDIK.YONETIMI;
     this.isSahaYedek.set(
-      menuKod === 'saha-yonetimi' || menuKod === 'saha-sandiklar' || menuKod === 'saha-3k-modulu' ||
-      menuKod === 'yedek-yonetimi' || menuKod === 'yedek-sandiklar' || menuKod === 'yedek-3k-modulu'
+      menuKod === YETKI.SAHA.YONETIMI || menuKod === YETKI.SAHA.SANDIKLAR || menuKod === YETKI.SAHA.UCK_MODULU ||
+      menuKod === YETKI.YEDEK.YONETIMI || menuKod === YETKI.YEDEK.SANDIKLAR || menuKod === YETKI.YEDEK.UCK_MODULU
     );
     this.isSahaYonetimi.set(
-      menuKod === 'saha-yonetimi' || menuKod === 'saha-sandiklar' || menuKod === 'saha-3k-modulu'
+      menuKod === YETKI.SAHA.YONETIMI || menuKod === YETKI.SAHA.SANDIKLAR || menuKod === YETKI.SAHA.UCK_MODULU
     );
     this.isYedekYonetimi.set(
-      menuKod === 'yedek-yonetimi' || menuKod === 'yedek-sandiklar' || menuKod === 'yedek-3k-modulu'
+      menuKod === YETKI.YEDEK.YONETIMI || menuKod === YETKI.YEDEK.SANDIKLAR || menuKod === YETKI.YEDEK.UCK_MODULU
     );
     
     this.projeId.set(pId);
@@ -283,20 +284,20 @@ export class SandikDetayComponent implements OnInit {
         let parentLink = `/sandik-yonetimi/${this.projeId()}`;
         
         const menuKod = this.route.snapshot.data['menuKod'];
-        if (menuKod === 'saha-yonetimi' || menuKod === 'saha-sandiklar') {
+        if (menuKod === YETKI.SAHA.YONETIMI || menuKod === YETKI.SAHA.SANDIKLAR) {
           parentLabel = 'Saha Yönetimi';
           parentLink = `/saha-yonetimi/${this.projeId()}`;
-        } else if (menuKod === 'yedek-yonetimi' || menuKod === 'yedek-sandiklar') {
+        } else if (menuKod === YETKI.YEDEK.YONETIMI || menuKod === YETKI.YEDEK.SANDIKLAR) {
           parentLabel = 'Yedek Yönetimi';
           parentLink = `/yedek-yonetimi/${this.projeId()}`;
-        } else if (menuKod === '3k-modulu') {
+        } else if (menuKod === YETKI.SANDIK.UCK_MODULU) {
           parentLabel = '3K Modülü';
           parentLink = `/uck/${this.projeId()}`;
         }
-        else if (menuKod === 'saha-3k-modulu') {
+        else if (menuKod === YETKI.SAHA.UCK_MODULU) {
           parentLabel = 'Saha 3K Modülü';
           parentLink = `/saha-yonetimi/uck/${this.projeId()}`;
-        } else if (menuKod === 'yedek-3k-modulu') {
+        } else if (menuKod === YETKI.YEDEK.UCK_MODULU) {
           parentLabel = 'Yedek 3K Modülü';
           parentLink = `/yedek-yonetimi/uck/${this.projeId()}`;
         }

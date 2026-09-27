@@ -15,7 +15,6 @@ import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultD
 @Injectable({ providedIn: 'root' })
 export class ProjeService {
   private api = inject(BaseApiService);
-  private menuOptions(menuKod: string) { return { headers: { 'X-Menu-Kod': menuKod } }; }
 
   // ===== Proje =====
 
@@ -63,19 +62,18 @@ export class ProjeService {
   }
 
   eksiklerdenSahaProjesiOlustur(dto: EksiklerdenSahaProjesiOlusturDto): Observable<ApiResult<ProjeDto>> {
-    return this.api.post<ProjeDto>(API.PROJE.EKSIKLERDEN_SAHA_OLUSTUR, dto, this.menuOptions('sahaya-aktar'));
+    return this.api.post<ProjeDto>(API.PROJE.EKSIKLERDEN_SAHA_OLUSTUR, dto);
   }
 
   sandiklardanSahaProjesiOlustur(dto: SandiklardanSahaProjesiOlusturDto): Observable<ApiResult<ProjeDto>> {
     return this.api.post<ProjeDto>(
       API.PROJE.SANDIKLARDAN_SAHA_OLUSTUR,
-      dto,
-      this.menuOptions('sahaya-aktar')
+      dto
     );
   }
 
   getSahaAktarimlari(projeId: number): Observable<ApiResult<SahaAktarimDto[]>> {
-    return this.api.get<SahaAktarimDto[]>(API.PROJE.SAHA_AKTARIMLARI(projeId), this.menuOptions('saha-aktarim-geri-al'));
+    return this.api.get<SahaAktarimDto[]>(API.PROJE.SAHA_AKTARIMLARI(projeId));
   }
 
   sahaAktarimGeriAl(sahaCekiSatiriId: number, aciklama?: string): Observable<ApiResult<boolean>> {
@@ -84,8 +82,7 @@ export class ProjeService {
       {
         sahaCekiSatiriId,
         aciklama: aciklama?.trim() || null
-      },
-      this.menuOptions('saha-aktarim-geri-al')
+      }
     );
   }
 
@@ -95,8 +92,7 @@ export class ProjeService {
       {
         sahaSandikId,
         aciklama: aciklama?.trim() || null
-      },
-      this.menuOptions('saha-aktarim-geri-al')
+      }
     );
   }
 
@@ -104,13 +100,13 @@ export class ProjeService {
     return this.api.put<boolean>(API.PROJE.SANDIK_KAPAT, { sandikId, kapali });
   }
 
-  sevkEt(projeId: number, sevkTarihi?: string, sandikIds?: number[], aciklama?: string, aracPlaka?: string, menuKod?: string): Observable<ApiResult<boolean>> {
+  sevkEt(projeId: number, sevkTarihi?: string, sandikIds?: number[], aciklama?: string, aracPlaka?: string): Observable<ApiResult<boolean>> {
     return this.api.post<boolean>(API.PROJE.SEVK_ET(projeId), {
       sevkTarihi: sevkTarihi || null,
       sandikIds: sandikIds ?? null,
       aciklama: aciklama?.trim() || null,
       aracPlaka: aracPlaka?.trim() || null,
-    }, menuKod ? this.menuOptions(menuKod) : undefined);
+    });
   }
 
   getSevkiyatlar(projeId: number): Observable<ApiResult<SevkiyatDto[]>> {
@@ -119,8 +115,7 @@ export class ProjeService {
 
   kilidiAc(
     projeId: number,
-    payload: { kilitAcmaTipiId: number; projeNo?: string | null; aciklama?: string | null },
-    menuKod?: string
+    payload: { kilitAcmaTipiId: number; projeNo?: string | null; aciklama?: string | null }
   ): Observable<ApiResult<boolean>> {
     return this.api.post<boolean>(
       API.PROJE.KILIDI_AC(projeId),
@@ -128,21 +123,19 @@ export class ProjeService {
         kilitAcmaTipiId: payload.kilitAcmaTipiId,
         projeNo: payload.projeNo?.trim() || null,
         aciklama: payload.aciklama?.trim() || null
-      },
-      menuKod ? this.menuOptions(menuKod) : undefined
+      }
     );
   }
 
-  sevkTarihiGuncelle(projeId: number, planlananSevkTarihi: string | null, menuKod?: string): Observable<ApiResult<boolean>> {
+  sevkTarihiGuncelle(projeId: number, planlananSevkTarihi: string | null): Observable<ApiResult<boolean>> {
     return this.api.put<boolean>(
       API.PROJE.SEVK_TARIHI_GUNCELLE,
-      { projeId, planlananSevkTarihi },
-      this.menuOptions(menuKod ?? 'planlanan-sevk-tarihi')
+      { projeId, planlananSevkTarihi }
     );
   }
 
-  projeSil(projeId: number, menuKod = 'proje-sil'): Observable<ApiResult<boolean>> {
-    return this.api.delete<boolean>(API.PROJE.DELETE(projeId), this.menuOptions(menuKod));
+  projeSil(projeId: number): Observable<ApiResult<boolean>> {
+    return this.api.delete<boolean>(API.PROJE.DELETE(projeId));
   }
 
   // ===== Sandık Sevk =====
@@ -180,8 +173,7 @@ export class ProjeService {
     formData.append('dosya', dosya);
     return this.api.postFormData<CekiYuklemeResultDto>(
       API.CEKI.YUKLE,
-      formData,
-      this.menuOptions('ceki-yukle')
+      formData
     );
   }
 
@@ -190,8 +182,7 @@ export class ProjeService {
     formData.append('dosya', dosya);
     return this.api.postFormData<CekiYuklemeResultDto>(
       API.CEKI.YEDEK_YUKLE,
-      formData,
-      this.menuOptions('yedek-ceki-yukle')
+      formData
     );
   }
 
@@ -200,8 +191,7 @@ export class ProjeService {
     formData.append('dosya', dosya);
     return this.api.postFormData<CekiRevizyonOnizlemeSonuc>(
       API.CEKI.REVIZYON_ONIZLE,
-      formData,
-      this.menuOptions('ceki-revizyon-yukle')
+      formData
     );
   }
 
@@ -210,8 +200,7 @@ export class ProjeService {
     formData.append('dosya', dosya);
     return this.api.postFormData<CekiRevizyonYuklemeYaniti>(
       API.CEKI.REVIZYON_YUKLE,
-      formData,
-      this.menuOptions('ceki-revizyon-yukle')
+      formData
     );
   }
 

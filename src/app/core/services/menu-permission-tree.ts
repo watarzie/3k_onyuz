@@ -1,24 +1,16 @@
 import { MenuTreeDto } from '../../shared/models';
 import { YetkiTipi } from '../constants/enums';
 
-/** A child can never have a stronger effective permission than its parent. */
-export function capMenuPermission(
-  own: number,
-  parent: number,
-  required?: number | null,
-): YetkiTipi {
+/**
+ * Backend YetkiAgaci ile aynı kural: alt düğüm üst düğümden güçlü olamaz (üst düğüm tavandır).
+ * Ekran, işlem ve alan kodları aynı N/R/W modeliyle değerlendirilir.
+ */
+export function capMenuPermission(own: number, parent: number): YetkiTipi {
   if (own < YetkiTipi.R || parent < YetkiTipi.R) return YetkiTipi.N;
-
-  // Action permissions are switches: a write-only action has no read state.
-  if (required === YetkiTipi.W) {
-    return own === YetkiTipi.W && parent === YetkiTipi.W ? YetkiTipi.W : YetkiTipi.N;
-  }
-  if (required === YetkiTipi.R) return YetkiTipi.R;
-
   return Math.min(own, parent) as YetkiTipi;
 }
 
-/** Normalize legacy grants without ever granting a previously denied child. */
+/** Ağacı üst tavan kuralına göre normalleştirir; daha önce kapalı bir alt düğümü asla açmaz. */
 export function normalizeMenuTree(
   nodes: MenuTreeDto[],
   removeUnauthorized = false,
@@ -26,11 +18,7 @@ export function normalizeMenuTree(
   const visit = (items: MenuTreeDto[], parentPermission: YetkiTipi): MenuTreeDto[] => {
     const result: MenuTreeDto[] = [];
     for (const node of items) {
-      const permission = capMenuPermission(
-        node.yetkiTipiId,
-        parentPermission,
-        node.gerekenYetkiTipiId,
-      );
+      const permission = capMenuPermission(node.yetkiTipiId, parentPermission);
       if (removeUnauthorized && permission === YetkiTipi.N) continue;
 
       const normalized: MenuTreeDto = {
@@ -39,7 +27,7 @@ export function normalizeMenuTree(
         yetkiTipiMetni: YetkiTipi[permission],
         children: visit(node.children ?? [], permission),
       };
-      // Role editor uses parent references; they must point into the normalized tree.
+      // Rol düzenleyici parent referansları kullanır; normalleştirilmiş ağaca işaret etmeli.
       delete normalized.parent;
       result.push(normalized);
     }

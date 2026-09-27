@@ -10,6 +10,7 @@ import { TranslationService } from '../../core/services/translation.service';
 import { BildirimDto, BildirimTipi } from '../../shared/models';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { ToggleService } from './toggle.service';
+import { YETKI } from '../../core/constants/yetki-kodlari';
 
 @Component({
   selector: 'app-header',
@@ -42,7 +43,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   private permissionUpdateSubscription?: Subscription;
 
   get canSeeApprovalQueue(): boolean {
-    return this.permissions.hasAccess('islem-onay-merkezi');
+    return this.permissions.hasAccess(YETKI.ONAY.MERKEZI);
   }
 
   constructor() {

@@ -13,6 +13,7 @@ import { SandikTipi, DepoLokasyon } from '../../../core/constants/enums';
 import { PdfService } from '../../../core/services/pdf.service';
 import { ConfirmService } from '../../../core/services/confirm.service';
 import { PermissionService } from '../../../core/services/permission.service';
+import { YETKI } from '../../../core/constants/yetki-kodlari';
 
 @Component({
   selector: 'app-sandik-listesi',
@@ -61,22 +62,22 @@ export class SandikListesiComponent implements OnInit {
   isSahaYonetimi = signal(false);
   isYedekYonetimi = signal(false);
   canWriteSandik = computed(() => {
-    const menuKod = this.route.snapshot.data['menuKod'] || 'sandik-yonetimi';
+    const menuKod = this.route.snapshot.data['menuKod'] || YETKI.SANDIK.YONETIMI;
     return this.permissionService.canWrite(menuKod);
   });
 
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('projeId'));
-    const menuKod = this.route.snapshot.data['menuKod'] || 'sandik-yonetimi';
+    const menuKod = this.route.snapshot.data['menuKod'] || YETKI.SANDIK.YONETIMI;
     this.projeId.set(id);
     
     let title = this.ts.translate('MENU.SANDIK_YONETIMI');
-    if (menuKod === 'saha-yonetimi' || menuKod === 'saha-sandiklar') {
+    if (menuKod === YETKI.SAHA.YONETIMI || menuKod === YETKI.SAHA.SANDIKLAR) {
       title = 'Saha Yönetimi';
       this.routePrefix.set('/saha-yonetimi');
       this.isSahaYedek.set(true);
       this.isSahaYonetimi.set(true);
-    } else if (menuKod === 'yedek-yonetimi' || menuKod === 'yedek-sandiklar') {
+    } else if (menuKod === YETKI.YEDEK.YONETIMI || menuKod === YETKI.YEDEK.SANDIKLAR) {
       title = 'Yedek Yönetimi';
       this.routePrefix.set('/yedek-yonetimi');
       this.isSahaYedek.set(true);
@@ -146,8 +147,7 @@ export class SandikListesiComponent implements OnInit {
 
   indirPdf(sandikId: number) {
     this.downloadingPdf.set(sandikId);
-    const menuKod = this.isSahaYonetimi() ? 'saha-raporu' : this.isYedekYonetimi() ? 'yedek-raporu' : undefined;
-    this.pdfService.sahaSandikPdf(sandikId, menuKod).subscribe({
+    this.pdfService.sahaSandikPdf(sandikId).subscribe({
       next: (blob) => {
         this.downloadingPdf.set(null);
         const url = window.URL.createObjectURL(blob);

@@ -1,4 +1,74 @@
-/** Backend YetkiKodlari ile bire bir işlem/alan kodları. Kök W alt izin vermez. */
+/**
+ * Backend 3K.Core/Constants/YetkiKodlari.cs ile bire bir menü/işlem/alan kodları.
+ * Bütün kodlar aynı N/R/W modeliyle değerlendirilir: R görüntüleme, W işlem.
+ * Üst düğüm alt düğümün tavanıdır; üst W alt izni kendiliğinden vermez.
+ */
+export const YETKI = {
+  DASHBOARD: 'dashboard',
+  DEPO_DURUMU: 'depo-durumu',
+  HAREKET_GECMISI: 'hareket-gecmisi',
+  KULLANICILAR: 'kullanicilar',
+  ROL_YONETIMI: 'rol-yonetimi',
+  PROJE: {
+    KOK: 'projeler',
+    AKTIF_PROJELER: 'aktif-projeler',
+    SEVK_EDILEN: 'sevk-edilen',
+    SEVK_ET: 'proje-sevk-et',
+    SIL: 'proje-sil',
+    CEKI_YUKLE: 'ceki-yukle',
+    PLANLANAN_SEVK_TARIHI: 'planlanan-sevk-tarihi',
+  },
+  SANDIK: {
+    YONETIMI: 'sandik-yonetimi',
+    GRID_MODULU: 'grid-modulu',
+    UCK_MODULU: '3k-modulu',
+    KALITE_MODULU: 'kalite-modulu',
+    SUREC_MODULU: 'surec-modulu',
+    EKSIK_RAPORU: 'eksik-raporu',
+    GERCEKLESEN_CEKI_RAPORU: 'gerceklesen-ceki-raporu',
+    CEKI_VERISI_DUZENLE: 'ceki-verisi-duzenle',
+    CEKI_VERISI_SIL: 'ceki-verisi-sil',
+    UCK_IS_LISTESI: '3k-is-listesi',
+    GRID_IS_LISTESI: 'grid-is-listesi',
+    CEKI_REVIZYON_YUKLE: 'ceki-revizyon-yukle',
+    UCK_SANDIK_DURUM_RAPORU: '3k-sandik-durum-raporu',
+    LOKASYON_ATAMA: 'sandik-lokasyon-atama',
+  },
+  STOK: { KOK: 'stok', SIL: 'stok-sil' },
+  SAHA: {
+    YONETIMI: 'saha-yonetimi',
+    GRID_MODULU: 'saha-grid-modulu',
+    UCK_MODULU: 'saha-3k-modulu',
+    RAPORU: 'saha-raporu',
+    SANDIKLAR: 'saha-sandiklar',
+    SEVK_ET: 'saha-sevk-et',
+    PROJE_SIL: 'saha-proje-sil',
+    SEVK_SONRASI_EKSIK_RAPORU: 'saha-sevk-sonrasi-eksik-raporu',
+    UCK_SANDIK_DURUM_RAPORU: 'saha-3k-sandik-durum-raporu',
+    GERCEKLESEN_CEKI_RAPORU: 'saha-gerceklesen-ceki-raporu',
+    SAHAYA_AKTAR: 'sahaya-aktar',
+    AKTARIM_GERI_AL: 'saha-aktarim-geri-al',
+  },
+  YEDEK: {
+    YONETIMI: 'yedek-yonetimi',
+    CEKI_YUKLE: 'yedek-ceki-yukle',
+    GRID_MODULU: 'yedek-grid-modulu',
+    UCK_MODULU: 'yedek-3k-modulu',
+    SANDIKLAR: 'yedek-sandiklar',
+    RAPORU: 'yedek-raporu',
+    EKSIK_RAPORU: 'yedek-eksik-raporu',
+    GERCEKLESEN_CEKI_RAPORU: 'yedek-gerceklesen-ceki-raporu',
+    UCK_SANDIK_DURUM_RAPORU: 'yedek-3k-sandik-durum-raporu',
+    SEVK_ET: 'yedek-sevk-et',
+    PROJE_SIL: 'yedek-proje-sil',
+    PLANLANAN_SEVK_TARIHI: 'yedek-planlanan-sevk-tarihi',
+  },
+  ONAY: { MERKEZI: 'islem-onay-merkezi', KURALLARI_YONET: 'onay-kurallari-yonet' },
+} as const;
+
+/** Sistem yöneticisi rolü kimliğiyle tanınır (backend SistemRolleri.AdminId). */
+export const ADMIN_ROL_ID = 1;
+
 export const AMBALAJ_YETKI = {
   Listele: 'ambalaj-uretim-listesi',
   KayitDuzenle: 'ambalaj-kayit-duzenle',
@@ -93,5 +163,4 @@ export const FINANS_YETKI = {
   SablonYonet: 'finans-sablon-yonet',
   DenetimGor: 'finans-denetim-gor',
   FiyatlandirmaDegistir: 'finans-fiyatlandirma-degistir',
-  FinansTarihiDegistir: 'finans-tarih-degistir',
 } as const;

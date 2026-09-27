@@ -21,6 +21,7 @@ import { OnayGecmisiDto } from '../../shared/models/onay-gecmisi.model';
 import { RolDto } from '../../shared/models/rol.model';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
 import { CekiRevizyonOnizlemeComponent } from '../../shared/components/ceki-revizyon-onizleme/ceki-revizyon-onizleme.component';
+import { YETKI } from '../../core/constants/yetki-kodlari';
 
 @Component({
   selector: 'app-onay-listesi',
@@ -41,8 +42,8 @@ export class OnayListesiComponent implements OnInit, OnDestroy {
   private loadRequest?: Subscription;
   private detailRequest?: Subscription;
 
-  public canWrite = computed(() => this.permissions.canWrite('islem-onay-merkezi'));
-  public canManageRules = computed(() => this.permissions.canWrite('onay-kurallari-yonet'));
+  public canWrite = computed(() => this.permissions.canWrite(YETKI.ONAY.MERKEZI));
+  public canManageRules = computed(() => this.permissions.canWrite(YETKI.ONAY.KURALLARI_YONET));
 
   bekleyenler = signal<OnayBekleyenIslemDto[]>([]);
   kurallar = signal<OnayKuraliDto[]>([]);

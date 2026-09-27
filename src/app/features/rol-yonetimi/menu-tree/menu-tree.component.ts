@@ -5,6 +5,10 @@ import { MenuTreeDto } from '../../../shared/models';
 import { YetkiTipi } from '../../../core/constants/enums';
 import { capMenuPermission } from '../../../core/services/menu-permission-tree';
 
+/**
+ * Rol izin ağacı. Bütün düğümler (ekran, işlem, alan) aynı N/R/W döngüsünü kullanır;
+ * alt düğüm üst düğümün seviyesini aşamaz.
+ */
 @Component({
   selector: 'app-menu-tree',
   standalone: true,
@@ -34,33 +38,22 @@ export class MenuTreeComponent {
 
   isPermissionDisabled(node: MenuTreeDto): boolean {
     const parentPermission = node.parent?.yetkiTipiId ?? YetkiTipi.W;
-    return this.disabled || parentPermission === YetkiTipi.N ||
-      (parentPermission === YetkiTipi.R && node.gerekenYetkiTipiId === YetkiTipi.W);
+    return this.disabled || parentPermission === YetkiTipi.N;
   }
 
-  /**
-   * Menü iznini parent sınırında döndürür; işlem izinlerini yalnız tanımlı seviyede açar.
-   */
   onPermissionChange(node: MenuTreeDto, checkbox?: HTMLInputElement): void {
     if (this.isPermissionDisabled(node)) return;
-    const parentPermission = node.parent?.yetkiTipiId ?? YetkiTipi.W;
-    if (node.gerekenYetkiTipiId) {
-      const next = node.yetkiTipiId === YetkiTipi.N ? node.gerekenYetkiTipiId : YetkiTipi.N;
-      this.setPermission(node, capMenuPermission(next, parentPermission, node.gerekenYetkiTipiId));
-    } else {
-      this.cyclePermission(node, parentPermission);
-    }
+    this.cyclePermission(node, node.parent?.yetkiTipiId ?? YetkiTipi.W);
     this.capChildren(node);
-    // A native click on an indeterminate checkbox changes `checked` even when
-    // Angular's [checked] expression remains false (R -> N). Restore the DOM
-    // state explicitly so the displayed permission always matches the model.
+    // Indeterminate bir checkbox'a tıklamak, Angular [checked] ifadesi false kalsa da
+    // DOM'daki `checked` değerini değiştirir (R -> N). Görünen durum modelle aynı kalmalı.
     if (checkbox) {
       checkbox.checked = node.yetkiTipiId === YetkiTipi.W;
       checkbox.indeterminate = node.yetkiTipiId === YetkiTipi.R;
     }
   }
 
-  /** Parent R altında N ↔ R, parent W altında N → R → W → N. */
+  /** Üst R altında N ↔ R, üst W altında N → R → W → N. */
   private cyclePermission(node: MenuTreeDto, parentPermission: number): void {
     if (node.yetkiTipiId === YetkiTipi.N) {
       this.setPermission(node, YetkiTipi.R);
@@ -76,13 +69,10 @@ export class MenuTreeComponent {
     node.yetkiTipiMetni = YetkiTipi[permission];
   }
 
-  /** Keep existing N decisions while capping every descendant after a parent change. */
+  /** Mevcut N kararlarını koruyarak üst değişikliğinden sonra bütün alt düğümleri sınırlar. */
   private capChildren(node: MenuTreeDto): void {
     for (const child of node.children ?? []) {
-      this.setPermission(
-        child,
-        capMenuPermission(child.yetkiTipiId, node.yetkiTipiId, child.gerekenYetkiTipiId),
-      );
+      this.setPermission(child, capMenuPermission(child.yetkiTipiId, node.yetkiTipiId));
       this.capChildren(child);
     }
   }

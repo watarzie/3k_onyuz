@@ -28,6 +28,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmService } from '../../../core/services/confirm.service';
 import { PdfService } from '../../../core/services/pdf.service';
 import { SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
+import { YETKI } from '../../../core/constants/yetki-kodlari';
 
 interface SahaAktarimGrubu {
   sahaSandikId: number | null;
@@ -95,50 +96,50 @@ export class ProjeListesiComponent implements OnInit {
    * Grid/3K buton gösterimi — Rol Yetki ekranından yönetilir.
    * MenuTanimi'deki "grid-modulu" ve "3k-modulu" kayıtlarına göre kontrol edilir.
    */
-  canSeeGrid = computed(() => this.permissions.hasAccess('grid-modulu'));
-  canSee3K = computed(() => this.permissions.hasAccess('3k-modulu'));
-  canSeeEksikRapor = computed(() => this.permissions.hasAccess('eksik-raporu'));
+  canSeeGrid = computed(() => this.permissions.hasAccess(YETKI.SANDIK.GRID_MODULU));
+  canSee3K = computed(() => this.permissions.hasAccess(YETKI.SANDIK.UCK_MODULU));
+  canSeeEksikRapor = computed(() => this.permissions.hasAccess(YETKI.SANDIK.EKSIK_RAPORU));
   canUseBulkEksikRapor = computed(() =>
     (this.isSandikYonetimi() && this.canSeeEksikRapor()) ||
     (this.isSahaYonetimi() && this.canSeeSahaSevkSonrasiEksikRapor()) ||
     (this.isYedekYonetimi() && this.canSeeYedekEksikRapor())
   );
-  canSeeGerceklesenRapor = computed(() => this.permissions.hasAccess('gerceklesen-ceki-raporu'));
-  canSee3KIsListesi = computed(() => this.isSandikYonetimi() && this.permissions.hasAccess('3k-is-listesi'));
-  canSeeGridIsListesi = computed(() => this.isSandikYonetimi() && this.permissions.hasAccess('grid-is-listesi'));
-  canUseEksikTamamlama = computed(() => this.permissions.canWrite('sahaya-aktar'));
-  canDeleteProject = computed(() => this.permissions.canWrite('proje-sil'));
-  canSevkEt = computed(() => this.permissions.canWrite('proje-sevk-et'));
-  canUploadCeki = computed(() => this.permissions.canWrite('ceki-yukle'));
-  canUpdatePlanlananSevkTarihi = computed(() => this.permissions.canWrite('planlanan-sevk-tarihi'));
-  canUpdateYedekPlanlananSevkTarihi = computed(() => this.permissions.canWrite('yedek-planlanan-sevk-tarihi'));
-  canSeeSahaGrid = computed(() => this.permissions.hasAccess('saha-grid-modulu'));
-  canSeeSaha3K = computed(() => this.permissions.hasAccess('saha-3k-modulu'));
-  canSeeSahaRapor = computed(() => this.permissions.hasAccess('saha-raporu'));
-  canSeeSahaSevkSonrasiEksikRapor = computed(() => this.permissions.hasAccess('saha-sevk-sonrasi-eksik-raporu'));
-  canSeeSahaGerceklesenRapor = computed(() => this.permissions.hasAccess('saha-gerceklesen-ceki-raporu'));
-  canSeeSahaSandiklar = computed(() => this.permissions.hasAccess('saha-sandiklar'));
-  canUploadYedekCeki = computed(() => this.permissions.canWrite('yedek-ceki-yukle'));
-  canSeeYedekGrid = computed(() => this.permissions.hasAccess('yedek-grid-modulu'));
-  canSeeYedek3K = computed(() => this.permissions.hasAccess('yedek-3k-modulu'));
-  canSeeYedekRapor = computed(() => this.permissions.hasAccess('yedek-raporu'));
-  canSeeYedekEksikRapor = computed(() => this.permissions.hasAccess('yedek-eksik-raporu'));
-  canSeeYedekGerceklesenRapor = computed(() => this.permissions.hasAccess('yedek-gerceklesen-ceki-raporu'));
-  canSeeYedekSandiklar = computed(() => this.permissions.hasAccess('yedek-sandiklar'));
-  canSevkEtYedek = computed(() => this.permissions.canWrite('yedek-sevk-et'));
-  canDeleteYedekProject = computed(() => this.permissions.canWrite('yedek-proje-sil'));
-  canManageSahaAktarimGeriAl = computed(() => this.permissions.hasAccess('saha-aktarim-geri-al'));
-  canWriteSahaAktarimGeriAl = computed(() => this.permissions.canWrite('saha-aktarim-geri-al'));
+  canSeeGerceklesenRapor = computed(() => this.permissions.hasAccess(YETKI.SANDIK.GERCEKLESEN_CEKI_RAPORU));
+  canSee3KIsListesi = computed(() => this.isSandikYonetimi() && this.permissions.hasAccess(YETKI.SANDIK.UCK_IS_LISTESI));
+  canSeeGridIsListesi = computed(() => this.isSandikYonetimi() && this.permissions.hasAccess(YETKI.SANDIK.GRID_IS_LISTESI));
+  canUseEksikTamamlama = computed(() => this.permissions.canWrite(YETKI.SAHA.SAHAYA_AKTAR));
+  canDeleteProject = computed(() => this.permissions.canWrite(YETKI.PROJE.SIL));
+  canSevkEt = computed(() => this.permissions.canWrite(YETKI.PROJE.SEVK_ET));
+  canUploadCeki = computed(() => this.permissions.canWrite(YETKI.PROJE.CEKI_YUKLE));
+  canUpdatePlanlananSevkTarihi = computed(() => this.permissions.canWrite(YETKI.PROJE.PLANLANAN_SEVK_TARIHI));
+  canUpdateYedekPlanlananSevkTarihi = computed(() => this.permissions.canWrite(YETKI.YEDEK.PLANLANAN_SEVK_TARIHI));
+  canSeeSahaGrid = computed(() => this.permissions.hasAccess(YETKI.SAHA.GRID_MODULU));
+  canSeeSaha3K = computed(() => this.permissions.hasAccess(YETKI.SAHA.UCK_MODULU));
+  canSeeSahaRapor = computed(() => this.permissions.hasAccess(YETKI.SAHA.RAPORU));
+  canSeeSahaSevkSonrasiEksikRapor = computed(() => this.permissions.hasAccess(YETKI.SAHA.SEVK_SONRASI_EKSIK_RAPORU));
+  canSeeSahaGerceklesenRapor = computed(() => this.permissions.hasAccess(YETKI.SAHA.GERCEKLESEN_CEKI_RAPORU));
+  canSeeSahaSandiklar = computed(() => this.permissions.hasAccess(YETKI.SAHA.SANDIKLAR));
+  canUploadYedekCeki = computed(() => this.permissions.canWrite(YETKI.YEDEK.CEKI_YUKLE));
+  canSeeYedekGrid = computed(() => this.permissions.hasAccess(YETKI.YEDEK.GRID_MODULU));
+  canSeeYedek3K = computed(() => this.permissions.hasAccess(YETKI.YEDEK.UCK_MODULU));
+  canSeeYedekRapor = computed(() => this.permissions.hasAccess(YETKI.YEDEK.RAPORU));
+  canSeeYedekEksikRapor = computed(() => this.permissions.hasAccess(YETKI.YEDEK.EKSIK_RAPORU));
+  canSeeYedekGerceklesenRapor = computed(() => this.permissions.hasAccess(YETKI.YEDEK.GERCEKLESEN_CEKI_RAPORU));
+  canSeeYedekSandiklar = computed(() => this.permissions.hasAccess(YETKI.YEDEK.SANDIKLAR));
+  canSevkEtYedek = computed(() => this.permissions.canWrite(YETKI.YEDEK.SEVK_ET));
+  canDeleteYedekProject = computed(() => this.permissions.canWrite(YETKI.YEDEK.PROJE_SIL));
+  canManageSahaAktarimGeriAl = computed(() => this.permissions.hasAccess(YETKI.SAHA.AKTARIM_GERI_AL));
+  canWriteSahaAktarimGeriAl = computed(() => this.permissions.canWrite(YETKI.SAHA.AKTARIM_GERI_AL));
   canSevkEtCurrent = computed(() =>
     this.isSahaYonetimi()
-      ? this.permissions.canWrite('saha-sevk-et')
+      ? this.permissions.canWrite(YETKI.SAHA.SEVK_ET)
       : this.isYedekYonetimi()
         ? this.canSevkEtYedek()
         : this.canSevkEt()
   );
   canDeleteProjectCurrent = computed(() =>
     this.isSahaYonetimi()
-      ? this.permissions.canWrite('saha-proje-sil')
+      ? this.permissions.canWrite(YETKI.SAHA.PROJE_SIL)
       : this.isYedekYonetimi()
         ? this.canDeleteYedekProject()
         : this.canDeleteProject()
@@ -184,7 +185,7 @@ export class ProjeListesiComponent implements OnInit {
     !this.isSevkEdilen() &&
     !this.isSahaYonetimi() &&
     !this.isYedekYonetimi() &&
-    this.permissions.canWrite('ceki-revizyon-yukle')
+    this.permissions.canWrite(YETKI.SANDIK.CEKI_REVIZYON_YUKLE)
   );
 
   projeler = signal<ProjeDto[]>([]);
@@ -346,11 +347,11 @@ export class ProjeListesiComponent implements OnInit {
 
   ngOnInit() {
     const menuKod = this.route.snapshot.data['menuKod'];
-    this.isSandikYonetimi.set(menuKod === 'sandik-yonetimi');
-    this.isSevkEdilen.set(menuKod === 'sevk-edilen');
-    this.isAktifProjeler.set(menuKod === 'aktif-projeler');
-    this.isSahaYonetimi.set(menuKod === 'saha-yonetimi');
-    this.isYedekYonetimi.set(menuKod === 'yedek-yonetimi');
+    this.isSandikYonetimi.set(menuKod === YETKI.SANDIK.YONETIMI);
+    this.isSevkEdilen.set(menuKod === YETKI.PROJE.SEVK_EDILEN);
+    this.isAktifProjeler.set(menuKod === YETKI.PROJE.AKTIF_PROJELER);
+    this.isSahaYonetimi.set(menuKod === YETKI.SAHA.YONETIMI);
+    this.isYedekYonetimi.set(menuKod === YETKI.YEDEK.YONETIMI);
     
     if (this.isSandikYonetimi()) {
       this.breadcrumb = [
@@ -540,10 +541,10 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   canSeeRevizyonGecmisi(proje: ProjeDto): boolean {
-    const menu = proje.projeTipiId === 2 ? 'saha-yonetimi'
-      : proje.projeTipiId === 3 ? 'yedek-yonetimi' : 'sandik-yonetimi';
-    return this.permissions.hasAccess(menu) || this.permissions.hasAccess('ceki-revizyon-yukle') ||
-      this.permissions.hasAccess('sevk-edilen');
+    const menu = proje.projeTipiId === 2 ? YETKI.SAHA.YONETIMI
+      : proje.projeTipiId === 3 ? YETKI.YEDEK.YONETIMI : YETKI.SANDIK.YONETIMI;
+    return this.permissions.hasAccess(menu) || this.permissions.hasAccess(YETKI.SANDIK.CEKI_REVIZYON_YUKLE) ||
+      this.permissions.hasAccess(YETKI.PROJE.SEVK_EDILEN);
   }
 
   canShowGerceklesenRapor(p: ProjeDto): boolean {
@@ -720,8 +721,7 @@ export class ProjeListesiComponent implements OnInit {
   indirSahaProjePdf(proje: ProjeDto) {
     this.downloadingPdf.set(proje.id);
     const tipStr = this.isYedekYonetimi() ? 'YedekRaporu' : 'SahaRaporu';
-    const menuKod = this.isYedekYonetimi() ? 'yedek-raporu' : 'saha-raporu';
-    this.pdfService.sahaProjePdf(proje.id, menuKod).subscribe({
+    this.pdfService.sahaProjePdf(proje.id).subscribe({
       next: (blob) => {
         this.downloadingPdf.set(null);
         const url = window.URL.createObjectURL(blob);
@@ -743,15 +743,10 @@ export class ProjeListesiComponent implements OnInit {
     this.closeReportMenu();
     this.downloadingEksikPdf.set(proje.id);
     const raporAdi = this.isSahaYonetimi() ? 'SevkSonrasiEksikRaporu' : 'EksikRaporu';
-    const menuKod = this.isSahaYonetimi()
-      ? 'saha-sevk-sonrasi-eksik-raporu'
-      : this.isYedekYonetimi()
-        ? 'yedek-eksik-raporu'
-        : 'eksik-raporu';
     const basariMesaji = this.isSahaYonetimi()
       ? 'Sevk sonrası eksik raporu indirildi.'
       : 'Eksik ürünler raporu indirildi.';
-    this.pdfService.eksikUrunlerPdf(proje.id, menuKod).subscribe({
+    this.pdfService.eksikUrunlerPdf(proje.id).subscribe({
       next: (blob) => {
         this.downloadingEksikPdf.set(null);
         const url = window.URL.createObjectURL(blob);
@@ -773,15 +768,10 @@ export class ProjeListesiComponent implements OnInit {
     this.closeReportMenu();
     this.downloadingEksikExcel.set(proje.id);
     const raporAdi = this.isSahaYonetimi() ? 'SevkSonrasiEksikRaporu' : 'EksikRaporu';
-    const menuKod = this.isSahaYonetimi()
-      ? 'saha-sevk-sonrasi-eksik-raporu'
-      : this.isYedekYonetimi()
-        ? 'yedek-eksik-raporu'
-        : 'eksik-raporu';
     const basariMesaji = this.isSahaYonetimi()
       ? 'Sevk sonrası eksik Excel raporu indirildi.'
       : 'Eksik ürünler Excel raporu indirildi.';
-    this.pdfService.eksikUrunlerExcel(proje.id, menuKod).subscribe({
+    this.pdfService.eksikUrunlerExcel(proje.id).subscribe({
       next: (blob) => {
         this.downloadingEksikExcel.set(null);
         const url = window.URL.createObjectURL(blob);
@@ -806,10 +796,7 @@ export class ProjeListesiComponent implements OnInit {
     this.downloadingGerceklesenPdf.set(proje.id);
     const request$ = this.isSahaYonetimi()
       ? this.pdfService.sahaGerceklesenCekiListesiPdf(proje.id)
-      : this.pdfService.gerceklesenCekiListesiPdf(
-          proje.id,
-          this.isYedekYonetimi() ? 'yedek-gerceklesen-ceki-raporu' : 'gerceklesen-ceki-raporu'
-        );
+      : this.pdfService.gerceklesenCekiListesiPdf(proje.id);
     request$.subscribe({
       next: (blob) => {
         this.downloadingGerceklesenPdf.set(null);
@@ -833,10 +820,7 @@ export class ProjeListesiComponent implements OnInit {
     this.downloadingGerceklesenExcel.set(proje.id);
     const request$ = this.isSahaYonetimi()
       ? this.pdfService.sahaGerceklesenCekiListesiExcel(proje.id)
-      : this.pdfService.gerceklesenCekiListesiExcel(
-          proje.id,
-          this.isYedekYonetimi() ? 'yedek-gerceklesen-ceki-raporu' : 'gerceklesen-ceki-raporu'
-        );
+      : this.pdfService.gerceklesenCekiListesiExcel(proje.id);
     request$.subscribe({
       next: (blob) => {
         this.downloadingGerceklesenExcel.set(null);
@@ -1150,8 +1134,7 @@ export class ProjeListesiComponent implements OnInit {
 
     this.projeService.sevkTarihiGuncelle(
       projeId,
-      tarih,
-      this.getPlanlananSevkTarihiMenuKod()
+      tarih
     ).subscribe({
       next: (res) => {
         this.sevkTarihiSaving.set(false);
@@ -1365,23 +1348,6 @@ export class ProjeListesiComponent implements OnInit {
 
   // ===== Proje Sevk (Kilitleme) İşlemleri =====
 
-  private getSevkMenuKod(): string {
-    if (this.isSahaYonetimi()) return 'saha-sevk-et';
-    if (this.isYedekYonetimi()) return 'yedek-sevk-et';
-    return 'proje-sevk-et';
-  }
-
-  private getPlanlananSevkTarihiMenuKod(): string {
-    return this.isYedekYonetimi()
-      ? 'yedek-planlanan-sevk-tarihi'
-      : 'planlanan-sevk-tarihi';
-  }
-
-  private getProjeSilMenuKod(): string {
-    if (this.isSahaYonetimi()) return 'saha-proje-sil';
-    if (this.isYedekYonetimi()) return 'yedek-proje-sil';
-    return 'proje-sil';
-  }
   openSevkEtModal(proje: ProjeDto) {
     this.sevkEtProje.set(proje);
     this.sevkEtTarihi.set(this.toDateTimeLocalInputValue());
@@ -1526,7 +1492,7 @@ export class ProjeListesiComponent implements OnInit {
     const tarih = this.toApiDateTime(this.sevkEtTarihi())!;
     const aciklama = this.sevkEtAciklama().trim() || undefined;
     const aracPlaka = this.sevkEtAracPlaka().trim() || undefined;
-    this.projeService.sevkEt(proje.id, tarih, this.selectedSevkSandikIds(), aciklama, aracPlaka, this.getSevkMenuKod()).subscribe({
+    this.projeService.sevkEt(proje.id, tarih, this.selectedSevkSandikIds(), aciklama, aracPlaka).subscribe({
       next: (res) => {
         this.sevkEtSaving.set(false);
         if (res.isSuccess) {
@@ -1575,8 +1541,7 @@ export class ProjeListesiComponent implements OnInit {
         kilitAcmaTipiId: this.kilitAcmaTipiId(),
         projeNo: proje.projeNo,
         aciklama
-      },
-      this.getSevkMenuKod()
+      }
     ).subscribe({
       next: (res) => {
         this.kilitAcSaving.set(false);
@@ -1609,7 +1574,7 @@ export class ProjeListesiComponent implements OnInit {
     });
 
     if (onay) {
-      this.projeService.projeSil(proje.id, this.getProjeSilMenuKod()).subscribe({
+      this.projeService.projeSil(proje.id).subscribe({
         next: (res) => {
           if (res.isSuccess) {
             this.toastService.success(`${proje.projeNo} projesi ve tüm verileri başarıyla silindi.`);

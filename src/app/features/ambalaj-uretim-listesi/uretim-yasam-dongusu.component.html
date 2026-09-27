@@ -21,7 +21,7 @@
               <th>{{ t('CRATE') }}</th>
               <th>{{ t('TYPE') }}</th>
               <th>{{ t('QUANTITY') }}</th>
-              @if (izin.hasAccess('ambalaj-m3-goruntule')) {
+              @if (permissions.hasAccess(izin.M3Goruntule)) {
                 <th>{{ t('NET') }}</th>
               }
               <th>{{ t('STATUS_ACTION') }}</th>
@@ -45,7 +45,7 @@
                 </td>
                 <td>{{ k.sandikTipi }}</td>
                 <td>{{ k.adet }}</td>
-                @if (izin.hasAccess('ambalaj-m3-goruntule')) {
+                @if (permissions.hasAccess(izin.M3Goruntule)) {
                   <td>
                     {{
                       k.m3HesaplanabilirMi === false
@@ -70,8 +70,8 @@
                     @if (
                       k.id > 0 &&
                       k.uretimDurumu === 2 &&
-                      izin.canWrite('ambalaj-uretimi-tamamla') &&
-                      izin.canWrite('ambalaj-durum-duzenle')
+                      permissions.canWrite(izin.UretimiTamamla) &&
+                      permissions.canWrite(izin.DurumDuzenle)
                     ) {
                       <button
                         type="button"
@@ -85,8 +85,8 @@
                     @if (
                       k.id > 0 &&
                       k.uretimDurumu === 2 &&
-                      izin.canWrite('ambalaj-durumu-geri-al') &&
-                      izin.canWrite('ambalaj-durum-duzenle')
+                      permissions.canWrite(izin.DurumuGeriAl) &&
+                      permissions.canWrite(izin.DurumDuzenle)
                     ) {
                       <button type="button" [disabled]="islemde()" (click)="durum(k.id, 1)">
                         {{ t('BACKWARD') }}
@@ -95,9 +95,9 @@
                     @if (
                       k.id > 0 &&
                       k.uretimDurumu === 3 &&
-                      izin.canWrite('ambalaj-uretimi-yeniden-ac') &&
-                      izin.canWrite('ambalaj-durumu-geri-al') &&
-                      izin.canWrite('ambalaj-durum-duzenle')
+                      permissions.canWrite(izin.UretimiYenidenAc) &&
+                      permissions.canWrite(izin.DurumuGeriAl) &&
+                      permissions.canWrite(izin.DurumDuzenle)
                     ) {
                       <button type="button" [disabled]="islemde()" (click)="durum(k.id, 2)">
                         {{ t('REOPEN') }}
@@ -117,12 +117,12 @@
         ><input [ngModel]="gerekce" (ngModelChange)="gerekceyiDegistir($event)" maxlength="1000"
       /></label>
       <div class="form-actions">
-        @if (izin.canWrite('ambalaj-form-yeniden-olustur')) {
+        @if (permissions.canWrite(izin.FormYenidenOlustur)) {
           <label class="regenerate-choice"
             ><input type="checkbox" [(ngModel)]="yeniden" /> {{ t('REGENERATE') }}</label
           >
         }
-        @if (izin.canWrite(yeniden ? 'ambalaj-form-yeniden-olustur' : 'ambalaj-form-olustur')) {
+        @if (permissions.canWrite(yeniden ? izin.FormYenidenOlustur : izin.FormOlustur)) {
           <button
             type="button"
             class="primary-action"
@@ -135,7 +135,7 @@
         }
       </div>
     </div>
-    @if (izin.hasAccess('ambalaj-form-goruntule')) {
+    @if (permissions.hasAccess(izin.FormGoruntule)) {
       <details class="form-history">
         <summary>
           <span><i class="ri-history-line"></i> {{ t('FORM_HISTORY') }}</span
@@ -156,12 +156,12 @@
                 }
               </div>
               <div class="history-downloads">
-                @if (izin.hasAccess('ambalaj-form-indir')) {
+                @if (permissions.hasAccess(izin.FormIndir)) {
                   <button type="button" (click)="formIndir(f.id, 'pdf')">
                     <i class="ri-file-pdf-2-line"></i> PDF
                   </button>
                 }
-                @if (izin.hasAccess('ambalaj-excel-indir')) {
+                @if (permissions.hasAccess(izin.ExcelIndir)) {
                   <button type="button" (click)="formIndir(f.id, 'xlsx')">
                     <i class="ri-file-excel-2-line"></i> Excel
                   </button>
@@ -176,7 +176,7 @@
     }
   </section>
 }
-@if (raporModu() && izin.hasAccess('ambalaj-rapor-goruntule')) {
+@if (raporModu() && permissions.hasAccess(izin.RaporGoruntule)) {
   <details class="card p-3 mb-3">
     <summary class="h5">{{ t('REPORT_TITLE') }}</summary>
     <div class="d-flex flex-wrap gap-2 align-items-end my-3">
@@ -187,10 +187,10 @@
       <button class="btn btn-primary" [disabled]="raporYukleniyor()" (click)="raporGetir()">
         {{ t('LOAD_REPORT') }}
       </button>
-      @if (izin.hasAccess('ambalaj-pdf-indir')) {
+      @if (permissions.hasAccess(izin.PdfIndir)) {
         <button class="btn btn-outline-primary" (click)="raporIndir('pdf')">PDF</button>
       }
-      @if (izin.hasAccess('ambalaj-excel-indir')) {
+      @if (permissions.hasAccess(izin.ExcelIndir)) {
         <button class="btn btn-outline-primary" (click)="raporIndir('xlsx')">Excel</button>
       }
     </div>
@@ -199,16 +199,16 @@
         {{ r.m3Tanimi }} Toplam {{ r.toplam.adet }} adet.
         @if (
           r.m3Gorunur &&
-          izin.hasAccess('ambalaj-m3-goruntule') &&
-          izin.hasAccess('ambalaj-m3-rapor-goruntule')
+          permissions.hasAccess(izin.M3Goruntule) &&
+          permissions.hasAccess(izin.M3RaporGoruntule)
         ) {
           Net {{ r.toplam.netM3 | number: '1.3-3' }} m³.
         }
         @if (
           r.sarfGorunur &&
-          izin.hasAccess('ambalaj-m3-goruntule') &&
-          izin.hasAccess('ambalaj-m3-rapor-goruntule') &&
-          izin.hasAccess('ambalaj-sarf-goruntule')
+          permissions.hasAccess(izin.M3Goruntule) &&
+          permissions.hasAccess(izin.M3RaporGoruntule) &&
+          permissions.hasAccess(izin.SarfGoruntule)
         ) {
           Sarf {{ r.toplam.sarfM3 | number: '1.3-3' }} m³; sarf dahil
           {{ r.toplam.sarfDahilM3 | number: '1.3-3' }} m³.
@@ -235,16 +235,16 @@
             <th>{{ t('QUANTITY') }}</th>
             @if (
               r.m3Gorunur &&
-              izin.hasAccess('ambalaj-m3-goruntule') &&
-              izin.hasAccess('ambalaj-m3-rapor-goruntule')
+              permissions.hasAccess(izin.M3Goruntule) &&
+              permissions.hasAccess(izin.M3RaporGoruntule)
             ) {
               <th>{{ t('NET') }}</th>
             }
             @if (
               r.sarfGorunur &&
-              izin.hasAccess('ambalaj-m3-goruntule') &&
-              izin.hasAccess('ambalaj-m3-rapor-goruntule') &&
-              izin.hasAccess('ambalaj-sarf-goruntule')
+              permissions.hasAccess(izin.M3Goruntule) &&
+              permissions.hasAccess(izin.M3RaporGoruntule) &&
+              permissions.hasAccess(izin.SarfGoruntule)
             ) {
               <th>{{ t('WASTE') }}</th>
               <th>{{ t('WITH_WASTE') }}</th>
@@ -258,16 +258,16 @@
               <td>{{ g.adet }}</td>
               @if (
                 r.m3Gorunur &&
-                izin.hasAccess('ambalaj-m3-goruntule') &&
-                izin.hasAccess('ambalaj-m3-rapor-goruntule')
+                permissions.hasAccess(izin.M3Goruntule) &&
+                permissions.hasAccess(izin.M3RaporGoruntule)
               ) {
                 <td>{{ g.netM3 === null ? t('NOT_APPLICABLE') : (g.netM3 | number: '1.3-3') }}</td>
               }
               @if (
                 r.sarfGorunur &&
-                izin.hasAccess('ambalaj-m3-goruntule') &&
-                izin.hasAccess('ambalaj-m3-rapor-goruntule') &&
-                izin.hasAccess('ambalaj-sarf-goruntule')
+                permissions.hasAccess(izin.M3Goruntule) &&
+                permissions.hasAccess(izin.M3RaporGoruntule) &&
+                permissions.hasAccess(izin.SarfGoruntule)
               ) {
                 <td>{{ g.sarfM3 | number: '1.3-3' }}</td>
                 <td>{{ g.sarfDahilM3 | number: '1.3-3' }}</td>
@@ -276,7 +276,7 @@
           }
         </tbody>
       </table>
-      @if (izin.canWrite('ambalaj-gerceklesme-duzelt')) {
+      @if (permissions.canWrite(izin.GerceklesmeDuzelt)) {
         <details>
           <summary>{{ t('DETAILS') }}</summary>
           @for (k of r.kayitlar; track k.id) {
@@ -289,9 +289,9 @@
                   k.m3HesaplanabilirMi &&
                   (!r.m3Gorunur ||
                     !r.sarfGorunur ||
-                    !izin.hasAccess('ambalaj-m3-goruntule') ||
-                    !izin.hasAccess('ambalaj-m3-rapor-goruntule') ||
-                    !izin.hasAccess('ambalaj-sarf-goruntule'))
+                    !permissions.hasAccess(izin.M3Goruntule) ||
+                    !permissions.hasAccess(izin.M3RaporGoruntule) ||
+                    !permissions.hasAccess(izin.SarfGoruntule))
                 "
                 (click)="duzelt(k)"
               >
@@ -314,9 +314,9 @@
         /></label>
         @if (
           k.m3HesaplanabilirMi &&
-          izin.hasAccess('ambalaj-m3-goruntule') &&
-          izin.hasAccess('ambalaj-m3-rapor-goruntule') &&
-          izin.hasAccess('ambalaj-sarf-goruntule')
+          permissions.hasAccess(izin.M3Goruntule) &&
+          permissions.hasAccess(izin.M3RaporGoruntule) &&
+          permissions.hasAccess(izin.SarfGoruntule)
         ) {
           <label
             >{{ t('NET')

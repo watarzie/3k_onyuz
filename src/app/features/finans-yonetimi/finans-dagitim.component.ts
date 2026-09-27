@@ -17,6 +17,7 @@ import {
 } from '../../shared/models/finans.model';
 import { ApiResult } from '../../shared/models/common.model';
 import { FinansVarlikTuru } from '../../shared/models/finans-v2.model';
+import { FINANS_YETKI } from '../../core/constants/yetki-kodlari';
 
 interface DagitimSatiri {
   id: number;
@@ -169,7 +170,7 @@ export class FinansDagitimComponent implements OnInit {
   }
   izinli(): boolean {
     return this.permissions.canWrite(
-      this.tur() === 'Siparis' ? 'finans-po-gir' : 'finans-fatura-gir',
+      this.tur() === 'Siparis' ? FINANS_YETKI.PoGir : FINANS_YETKI.FaturaGir,
     );
   }
   kaydet(): void {

@@ -36,6 +36,7 @@ import {
   SandikTipi,
   UretimDurumId,
 } from '../../shared/models';
+import { AMBALAJ_YETKI } from '../../core/constants/yetki-kodlari';
 
 @Component({
   selector: 'app-ambalaj-uretim-listesi',
@@ -46,7 +47,8 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AmbalajUretimListesiComponent implements OnInit {
-  readonly izin = inject(PermissionService);
+  readonly permissions = inject(PermissionService);
+  readonly izin = AMBALAJ_YETKI;
   private readonly translation = inject(TranslationService);
   t(key: string): string { return this.translation.translate(`URETIM_V2.${key}`); }
   kritikGerekce = '';

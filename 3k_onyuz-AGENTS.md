@@ -24,7 +24,7 @@ Bu dosya depo kökünde `AGENTS.md` olarak bulunmalıdır. Kalıcı geliştirme 
 
 - Standalone component ve `inject()` yaklaşımını sürdür. Yeni sayfaları mevcut `loadComponent` düzenine ekle; gerekçesiz NgModule veya farklı durum yönetimi altyapısı ekleme.
 - Ekran durumunu `signal`, türetilmiş değerleri `computed` ile yönet. HTTP, arama ve olay akışlarında RxJS kullan; uzun yaşayan abonelikleri component yaşam döngüsünde temizle. Arama/filtre isteklerinde eski yanıtın yeni seçimi ezmesini önle.
-- Proje/Grid/3K/sandık ekranlarının aktif servisleri `core/services` altındadır. `features` altındaki aynı adlı eski servisleri import etmeden kullanımını kontrol et. `LookupStore`, `CacheManager`, `BasePageComponent` dosyalarının bulunması bunların mevcut ekranlarda kullanıldığını göstermez.
+- API servisleri yalnız `core/services` altındadır; `features` altına paralel servis ekleme. `LookupStore`, `CacheManager`, `BasePageComponent` dosyalarının bulunması bunların mevcut ekranlarda kullanıldığını göstermez.
 - Büyük component’lere sorumluluk yığma. Tekrarlanan editör veya görünüm hesaplamasını uygun yardımcıya/bileşene ayır; kapsam dışı davranış değiştirme.
 
 ## HTTP ve veri sözleşmeleri
@@ -37,8 +37,10 @@ Bu dosya depo kökünde `AGENTS.md` olarak bulunmalıdır. Kalıcı geliştirme 
 
 ## Yetki, oturum ve olaylar
 
-- `PermissionService`, `authGuard`, `menuGuard`, route `menuKod` ve yazma kontrollerini birlikte koru. R/W ayrımını hem ekran hem işlem düğmelerinde uygula.
-- `X-Menu-Kod` işlem bağlamıdır; istemciden gönderilmesi yetki kanıtı değildir. Backend doğrulamasını kaldırma veya farklı menü kodu göndererek reddedilen işlemi çalıştırma.
+- `PermissionService`, `authGuard`, `menuGuard`, route `menuKod` ve yazma kontrollerini birlikte koru. R/W ayrımını hem ekran hem işlem düğmelerinde uygula; işlem düğmesi için `canWrite` kullan.
+- Yetki kodlarını `core/constants/yetki-kodlari.ts` sabitlerinden (`YETKI`, `AMBALAJ_YETKI`, `FINANS_YETKI`) al; literal yazma. Bileşende `PermissionService` alanı `permissions`, şablona açılan kod sabiti alanı `izin` adını taşır.
+- Menü ağacı sunucudan yalnız R/W düğümlerle gelir; istemci `normalizeMenuTree` ile aynı üst tavan kuralını uygular. Rol düzenleyicide bütün düğümler aynı N → R → W döngüsünü kullanır; etiketler `MENU.*` çeviri anahtarlarıdır.
+- İstemci ekran/menü bağlamı başlığı göndermez; gereken izni sunucu request ve kayıtlardan çözer. Ekranda gizleme yalnız kullanıcı deneyimidir, backend kontrolünün yerine geçmez.
 - Parola/2FA challenge akışı ile tam JWT oturumunu ayır. Challenge doğrulanmadan tam oturum kurma; giriş/2FA isteklerine eski bearer bağlamı taşıma. Token, OTP, recovery kodu veya gizli anahtarları loglama.
 - Oturum saklama, “beni hatırla”, zaman aşımı ve refresh değişikliklerini backend ile birlikte değerlendir. Refresh hatası, eşzamanlı istek ve logout durumlarını ele al; endpoint adından süresi dolmuş token’ın yenilenebileceğini varsayma.
 - Grid/3K/stok BroadcastChannel bildirimleri sekmeler arasındadır. Bildirim/onay SSE bağlantısının açılış, yeniden bağlanma ve kapanış yönetimini koru; gereksiz ikinci bağlantı kurma. Manifest bulunmasını service worker veya çevrimdışı destek kanıtı sayma.

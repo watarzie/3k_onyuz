@@ -81,16 +81,12 @@ export class GridService {
 
   /** Kalite durumunu güncelle (tekli/toplu) */
   kaliteDurumGuncelle(dto: KaliteDurumGuncelleDto): Observable<ApiResult<unknown>> {
-    return this.api.put<unknown>(API.GRID.KALITE_DURUM, dto, {
-      headers: { 'X-Menu-Kod': 'kalite-modulu' }
-    });
+    return this.api.put<unknown>(API.GRID.KALITE_DURUM, dto);
   }
 
   /** Süreç durumunu güncelle (tekli/toplu) */
   surecDurumGuncelle(dto: SurecDurumGuncelleDto): Observable<ApiResult<unknown>> {
-    return this.api.put<unknown>(API.GRID.SUREC_DURUM, dto, {
-      headers: { 'X-Menu-Kod': 'surec-modulu' }
-    });
+    return this.api.put<unknown>(API.GRID.SUREC_DURUM, dto);
   }
 
   /** Toplu Grid durum güncelleme (Tam Geldi / Grid Kapandı / İptal) */

@@ -14,6 +14,7 @@ import { SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { SandikDto, LookupResponse, ProjeDropdownDto } from '../../../shared/models/index';
+import { YETKI } from '../../../core/constants/yetki-kodlari';
 
 @Component({
   selector: 'app-uck-sandiklar',
@@ -39,11 +40,11 @@ export class UcKSandiklarComponent implements OnInit {
   private readonly sahaUzerindenSevkEdilmisSandikMesaji = 'Bu sandık saha projesi üzerinden sevk edildi. Geri alma işlemi kaynak sandıktan değil, ilgili saha sevkiyatından yapılmalıdır.';
 
   private get activeMenuKod(): string {
-    return this.route.snapshot.data?.['menuKod'] || '3k-modulu';
+    return this.route.snapshot.data?.['menuKod'] || YETKI.SANDIK.UCK_MODULU;
   }
 
-  isSahaContext = computed(() => this.activeMenuKod === 'saha-3k-modulu');
-  isYedekContext = computed(() => this.activeMenuKod === 'yedek-3k-modulu');
+  isSahaContext = computed(() => this.activeMenuKod === YETKI.SAHA.UCK_MODULU);
+  isYedekContext = computed(() => this.activeMenuKod === YETKI.YEDEK.UCK_MODULU);
   uckRoutePrefix = computed(() =>
     this.isSahaContext() ? '/saha-yonetimi/uck' : this.isYedekContext() ? '/yedek-yonetimi/uck' : '/uck'
   );
@@ -52,9 +53,9 @@ export class UcKSandiklarComponent implements OnInit {
   );
   canWriteSandik = computed(() => this.permissionService.canWrite(this.activeMenuKod));
   canWriteSevk = computed(() => this.permissionService.canWrite(this.activeMenuKod));
-  canAssignLocation = computed(() => this.permissionService.canWrite('sandik-lokasyon-atama'));
+  canAssignLocation = computed(() => this.permissionService.canWrite(YETKI.SANDIK.LOKASYON_ATAMA));
   canSandiklariSahayaAktar = computed(() =>
-    !this.isSahaContext() && !this.isYedekContext() && this.permissionService.canWrite('sahaya-aktar')
+    !this.isSahaContext() && !this.isYedekContext() && this.permissionService.canWrite(YETKI.SAHA.SAHAYA_AKTAR)
   );
   canUseSandikSelection = computed(() =>
     this.canWriteSandik() || this.canAssignLocation() || this.canSandiklariSahayaAktar()
@@ -425,7 +426,7 @@ export class UcKSandiklarComponent implements OnInit {
     if (this.downloadingSandikDurumRaporu()) return;
 
     this.downloadingSandikDurumRaporu.set(true);
-    this.pdfService.uckSandikDurumPdf(this.projeId(), this.sandikDurumRaporMenuKod()).subscribe({
+    this.pdfService.uckSandikDurumPdf(this.projeId()).subscribe({
       next: (blob) => {
         this.downloadingSandikDurumRaporu.set(false);
         const url = window.URL.createObjectURL(blob);
@@ -445,9 +446,9 @@ export class UcKSandiklarComponent implements OnInit {
   }
 
   private sandikDurumRaporMenuKod(): string {
-    if (this.isSahaContext()) return 'saha-3k-sandik-durum-raporu';
-    if (this.isYedekContext()) return 'yedek-3k-sandik-durum-raporu';
-    return '3k-sandik-durum-raporu';
+    if (this.isSahaContext()) return YETKI.SAHA.UCK_SANDIK_DURUM_RAPORU;
+    if (this.isYedekContext()) return YETKI.YEDEK.UCK_SANDIK_DURUM_RAPORU;
+    return YETKI.SANDIK.UCK_SANDIK_DURUM_RAPORU;
   }
 
   onSandikCardClick(event: Event, sandik: SandikDto) {

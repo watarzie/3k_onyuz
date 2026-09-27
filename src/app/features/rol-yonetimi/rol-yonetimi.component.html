@@ -39,7 +39,7 @@
             <span class="role-name">{{ role.ad }}</span>
             <div class="role-actions">
               <button class="btn-icon danger" (click)="deleteRole(role, $event)" title="Sil"
-                      *ngIf="role.ad !== 'Admin' && canManage()">
+                      *ngIf="role.id !== adminRolId && canManage()">
                 <i class="ri-delete-bin-line"></i>
               </button>
             </div>
@@ -126,11 +126,6 @@
       </button>
     </div>
     <div class="modal-body">
-      <label>{{ 'PERMISSIONS.TEMPLATE' | translate }}</label>
-      <select class="form-select mb-3" [ngModel]="selectedTemplate()" (ngModelChange)="selectedTemplate.set($event)">
-        <option value="">{{ 'PERMISSIONS.EMPTY_TEMPLATE' | translate }}</option>
-        <option *ngFor="let template of templates()" [value]="template.kod">{{ template.ad }}</option>
-      </select>
       <label>Rol Adı</label>
       <input type="text" class="form-control"
              [ngModel]="newRoleName()" (ngModelChange)="newRoleName.set($event)"

@@ -766,8 +766,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         nextPage,
         this.sandikDurumDetayPageSize,
         searchTerm
-      ),
-      { headers: { 'X-Menu-Kod': 'dashboard' } }
+      )
     ).subscribe({
       next: res => {
         if (requestSeq !== this.sandikDurumDetayRequestSeq) return;

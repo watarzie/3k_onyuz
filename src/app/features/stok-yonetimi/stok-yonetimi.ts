@@ -9,6 +9,7 @@ import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcru
 import { ProjeService } from '../../core/services/proje.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { ConfirmService } from '../../core/services/confirm.service';
+import { YETKI } from '../../core/constants/yetki-kodlari';
 
 @Component({
   selector: 'app-stok-yonetimi',
@@ -38,8 +39,8 @@ export class StokYonetimi implements OnInit {
   pageSize = signal<number>(15);
   totalCount = signal<number>(0);
   totalPages = signal<number>(0);
-  canWriteStock = computed(() => this.permissionService.canWrite('stok'));
-  canDeleteStock = computed(() => this.permissionService.canWrite('stok-sil'));
+  canWriteStock = computed(() => this.permissionService.canWrite(YETKI.STOK.KOK));
+  canDeleteStock = computed(() => this.permissionService.canWrite(YETKI.STOK.SIL));
 
   // Modal State
   isAddModalOpen = signal<boolean>(false);
