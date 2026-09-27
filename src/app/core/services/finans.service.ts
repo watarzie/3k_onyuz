@@ -7,8 +7,6 @@ import {
   FinansAylikDegerRequest,
   FinansAylikIs,
   FinansAylikSayfaliSonuc,
-  FinansDashboard,
-  FinansDonemOlusturSonuc,
   FinansDuzenliIs,
   FinansDuzenliIsListelemeRequest,
   FinansDuzenliIsKaydetRequest,
@@ -22,9 +20,7 @@ import {
   FinansGiderKaydetRequest,
   FinansIsKaydi,
   FinansListelemeRequest,
-  FinansOzelIs,
   FinansOzelIsKaydetRequest,
-  FinansProjeOzet,
   FinansSayfaliSonuc,
   FinansSiparis,
   FinansSiparisDetay,
@@ -136,27 +132,6 @@ export class FinansService {
     return this.api.post<void>(API.FINANS.IS_KAYDI_IPTAL(id), { aciklama });
   }
 
-  dashboard() {
-    return this.api.get<FinansDashboard>(API.FINANS.DASHBOARD);
-  }
-  projeler(request: FinansListelemeRequest = this.varsayilanListeleme()) {
-    return this.liste<FinansProjeOzet>(API.FINANS.PROJELER, request);
-  }
-  projeDetay(projeId: number): Observable<ApiResult<FinansIsKaydi[]>> {
-    return this.api
-      .get<FinansSayfaliSonuc<FinansIsKaydi>>(API.FINANS.PROJE(projeId))
-      .pipe(
-        map(
-          (result) =>
-            (result.isSuccess
-              ? { ...result, value: result.value?.items ?? [] }
-              : result) as ApiResult<FinansIsKaydi[]>,
-        ),
-      );
-  }
-  isKayitlari(projeNo: string, request: FinansListelemeRequest = this.varsayilanListeleme()) {
-    return this.liste<FinansIsKaydi>(API.FINANS.IS_KAYITLARI, { ...request, projeNo });
-  }
   isKayitlariSecim(ids: number[]) {
     return this.api.post<FinansIsKaydi[]>(API.FINANS.IS_KAYITLARI_SECIM, { ids });
   }
@@ -208,11 +183,8 @@ export class FinansService {
     const params = this.listelemeParametreleri(request).set('yil', yil).set('ay', ay);
     return this.api.get<FinansAylikSayfaliSonuc>(API.FINANS.AYLIK_ISLER, { params });
   }
-  ozelIsler(request: FinansListelemeRequest = this.varsayilanListeleme()) {
-    return this.liste<FinansOzelIs>(API.FINANS.OZEL_ISLER, request);
-  }
   ozelIsOlustur(request: FinansOzelIsKaydetRequest) {
-    return this.api.post<FinansOzelIs>(API.FINANS.OZEL_ISLER, request);
+    return this.api.post<FinansIsKaydi>(API.FINANS.OZEL_ISLER, request);
   }
   ozelIsAylikDegerGuncelle(id: number, request: FinansAylikDegerRequest) {
     return this.api.put<void>(API.FINANS.OZEL_IS_AYLIK_DEGER(id), request);
@@ -236,12 +208,6 @@ export class FinansService {
   }
   duzenliIsGuncelle(id: number, request: FinansDuzenliIsKaydetRequest) {
     return this.api.put<FinansDuzenliIs>(API.FINANS.DUZENLI_IS(id), request);
-  }
-  duzenliIsDonemOlustur(referansTarihi?: string) {
-    return this.api.post<FinansDonemOlusturSonuc>(
-      `${API.FINANS.DUZENLI_IS_DONEM_OLUSTUR}${referansTarihi ? `?referansTarihi=${referansTarihi}` : ''}`,
-      {},
-    );
   }
   giderler(request: FinansListelemeRequest = this.varsayilanListeleme()) {
     return this.liste<FinansGider>(API.FINANS.GIDERLER, request);

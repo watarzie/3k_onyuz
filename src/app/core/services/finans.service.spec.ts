@@ -23,12 +23,12 @@ describe('FinansService referans sözleşmesi', () => {
     service = TestBed.inject(FinansService);
   });
 
-  it('iş kayıtlarını proje numarası ve sayfalama parametreleriyle alır', () => {
-    service.isKayitlari('PA 682-40', { pageNumber: 2, pageSize: 25 }).subscribe();
+  it('genel aramayı proje numarası ve sayfalama parametreleriyle yapar', () => {
+    service.genelArama({ pageNumber: 2, pageSize: 25, projeNo: 'PA 682-40' }).subscribe();
 
     const [url, options] = api.get.calls.mostRecent().args;
     const params = (options as { params: HttpParams }).params;
-    expect(url).toContain('/api/finans/is-kayitlari');
+    expect(url).toContain('/api/finans/genel-arama');
     expect(params.get('projeNo')).toBe('PA 682-40');
     expect(params.get('pageNumber')).toBe('2');
     expect(params.get('pageSize')).toBe('25');

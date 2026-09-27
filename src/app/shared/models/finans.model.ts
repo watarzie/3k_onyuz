@@ -58,44 +58,6 @@ export interface FinansUrunListelemeRequest {
   tarifeTarihi?: string;
 }
 
-export interface FinansDashboard {
-  toplamIs: number;
-  toplamSandik: number;
-  toplamM3: number;
-  siparisBekleyen: number;
-  siparisAcik: number;
-  kismiSiparis: number;
-  faturaBekleyen: number;
-  faturalanan: number;
-  buAyOzelIs: number;
-  buAyGider: number;
-}
-
-export interface FinansProjeOzet {
-  projeId: number | null;
-  projeNo: string;
-  musteri: string;
-  toplamIsAdedi: number;
-  toplamSandikAdedi: number;
-  toplamM3: number;
-  siparisAcikM3: number;
-  siparisBekleyenM3: number;
-  faturalananM3: number;
-  faturaBekleyenM3: number;
-  sonUretimeAlmaTarihi: string;
-  genelDurum: string;
-  birimFiyat: number;
-  paraBirimi: string;
-  kdvOrani: number;
-  netTutar: number;
-  kdvTutari: number;
-  toplamTutar: number;
-  tarifeEksik: boolean;
-  poNumaralari: string[];
-  faturaNumaralari: string[];
-  faturaBekleyenSiparisId?: number;
-}
-
 export interface FinansSiparis {
   kalemler?: FinansSiparisKalemi[];
   createdDate?: string;
@@ -252,25 +214,6 @@ export interface FinansFatura {
   aciklama?: string;
 }
 
-export interface FinansOzelIs {
-  id: number;
-  kayitNo: string;
-  isTuru: string;
-  musteri: string;
-  isAdi: string;
-  miktar: number;
-  birim: string;
-  birimFiyat: number;
-  paraBirimi: string;
-  kdvOrani: number;
-  finansKaydiId: number | null;
-  isTarihi: string;
-  duzenliIsId: number | null;
-  poNumaralari: string[];
-  faturaNumaralari: string[];
-  faturaBekleyenSiparisId: number | null;
-}
-
 export interface FinansDuzenliIs {
   projeId?: number | null;
   hesaplamaYontemi?: 1 | 2 | 3 | 4 | 5;
@@ -310,12 +253,6 @@ export interface FinansDuzenliIsKaydetRequest {
   paraBirimi: string;
   kdvOrani: number;
   aktif: boolean;
-}
-
-export interface FinansDonemOlusturSonuc {
-  taranan: number;
-  olusturulan: number;
-  referansTarihi: string;
 }
 
 export interface FinansGider {
