@@ -811,7 +811,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
     const grup = this.planGrup();
     const seciliIds = plan.kalemler.filter(k => k.tur === grup && k.kaynakSandikId && k.ambalajaDahilMi !== false &&
       (formSecimi ? formSecimi.includes(k.id || -k.kaynakSandikId) : k.uretimeAlindi)).map(k => k.kaynakSandikId!);
-    this.ambalajService.planKaydet(plan.projeId, this.planFirinPartiNo(plan, grup), seciliIds, grup, this.planDurumId(plan, grup), this.kaynakProjeTipiId(), this.kritikGerekce)
+    this.ambalajService.planKaydet(plan.projeId, this.planFirinPartiNo(plan, grup), seciliIds, grup, this.kaynakProjeTipiId(), this.kritikGerekce)
       .pipe(finalize(() => this.planSaving.set(false)))
       .subscribe(result => {
         if (result.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
@@ -835,7 +835,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
         return;
       }
       const seciliIds = result.value.kalemler.filter(k => k.tur === grup && k.uretimeAlindi && k.kaynakSandikId).map(k => k.kaynakSandikId!);
-      this.ambalajService.planKaydet(proje.projeId, this.firinTaslaklari[this.taslakAnahtari(proje.projeId, grup)] ?? '', seciliIds, grup, this.projeDurumId(proje, grup), this.kaynakProjeTipiId(), this.kritikGerekce).subscribe(saveResult => {
+      this.ambalajService.planKaydet(proje.projeId, this.firinTaslaklari[this.taslakAnahtari(proje.projeId, grup)] ?? '', seciliIds, grup, this.kaynakProjeTipiId(), this.kritikGerekce).subscribe(saveResult => {
         if (saveResult.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
         if (saveResult.isSuccess) {
           this.toastService.success('Fırın parti numarası kaydedildi.');
@@ -843,23 +843,6 @@ export class AmbalajUretimListesiComponent implements OnInit {
         } else {
           this.toastService.error(saveResult.error ?? 'Fırın parti numarası kaydedilemedi.');
         }
-      });
-    });
-  }
-
-  durumDegistir(proje: AmbalajProjeOzetDto, durumId: UretimDurumId): void {
-    const grup = this.kuyrukGrubu();
-    this.ambalajService.getPlan(proje.projeId, this.kaynakProjeTipiId(), grup).subscribe(result => {
-        if (result.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
-      if (!result.isSuccess || !result.value) {
-        this.toastService.error(result.error ?? 'Proje planı yüklenemedi.');
-        return;
-      }
-      const seciliIds = result.value.kalemler.filter(k => k.tur === grup && k.uretimeAlindi && k.kaynakSandikId).map(k => k.kaynakSandikId!);
-      this.ambalajService.planKaydet(proje.projeId, this.projeFirinPartiNo(proje, grup), seciliIds, grup, durumId, this.kaynakProjeTipiId(), this.kritikGerekce).subscribe(saveResult => {
-        if (saveResult.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
-        if (saveResult.isSuccess) this.loadProjects();
-        else this.toastService.error(saveResult.error ?? 'Üretim durumu kaydedilemedi.');
       });
     });
   }

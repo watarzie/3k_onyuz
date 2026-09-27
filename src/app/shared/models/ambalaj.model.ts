@@ -138,11 +138,6 @@ export interface AmbalajIcSandikSablonKaydetRequest {
   yukseklik: number | null;
 }
 
-export interface AmbalajTalepEdenDto {
-  id: number;
-  ad: string;
-}
-
 export interface AmbalajKullaniciSecenegiDto {
   id: number;
   adSoyad: string;
