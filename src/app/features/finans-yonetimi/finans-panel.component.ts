@@ -49,6 +49,7 @@ export class FinansPanelComponent implements OnInit {
   readonly permissions = inject(PermissionService);
   readonly izin = FINANS_YETKI;
   readonly kayitGorunur = computed(() => this.permissions.hasAccess(FINANS_YETKI.KayitGoruntule));
+  readonly yaslandirmaGorunur = computed(() => this.permissions.hasAccess(FINANS_YETKI.RaporGoruntule));
   readonly kayitAc = output<{ tur: FinansVarlikTuru; id: number }>();
   readonly siparisAc = output<number[]>();
   private readonly refresh = new Subject<void>();
@@ -198,6 +199,7 @@ export class FinansPanelComponent implements OnInit {
   }
   gorunumSec(value: 'aylik' | 'arama' | 'bekleyen'): void {
     if (value !== 'aylik' && !this.kayitGorunur()) return;
+    if (value === 'bekleyen' && !this.yaslandirmaGorunur()) return;
     this.gorunum.set(value);
     this.arama = '';
     this.filtrele();

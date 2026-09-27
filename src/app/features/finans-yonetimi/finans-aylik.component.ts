@@ -16,6 +16,7 @@ import { FinansSablonlarComponent } from './finans-sablonlar.component';
 import { FinansRaporlarComponent } from './finans-raporlar.component';
 import { FinansKategorilerComponent } from './finans-kategoriler.component';
 import { FinansProjeSeciciComponent } from './finans-proje-secici.component';
+import { finansOzelIsiEklenebilir, finansRaporuIndirilebilir } from './finans-izinleri';
 import { FinansVarlikTuru } from '../../shared/models/finans-v2.model';
 import { ApiResult } from '../../shared/models/common.model';
 import { CanWriteDirective } from '../../shared/directives/can-write.directive';
@@ -582,11 +583,23 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   ayarOkuyabilir(gorunum: AyarGorunumu): boolean {
-    return this.permissions.hasAccess(this.izin.Modul) && this.permissions.hasAccess(gorunum === 'duzenli' ? this.izin.DuzenliIsYonet : this.izin.IsKutuphanesiYonet);
+    if (!this.permissions.hasAccess(this.izin.Modul)) return false;
+    // Ürün ve tarife listesi sunucuda birim fiyat görme iznini de ister.
+    return gorunum === 'duzenli'
+      ? this.permissions.hasAccess(this.izin.DuzenliIsYonet)
+      : this.permissions.hasAccess(this.izin.IsKutuphanesiYonet) && this.permissions.hasAccess(this.izin.BirimFiyatGoruntule);
   }
 
   ayarYazabilir(gorunum: AyarGorunumu): boolean {
-    return this.ayarOkuyabilir(gorunum) && this.permissions.canWrite(gorunum === 'duzenli' ? this.izin.DuzenliIsYonet : this.izin.TarifeYonet);
+    return this.ayarOkuyabilir(gorunum) && this.permissions.canWrite(gorunum === 'duzenli' ? this.izin.DuzenliIsYonet : this.izin.IsKutuphanesiYonet);
+  }
+
+  raporIndirilebilir(bicim: 'pdf' | 'excel'): boolean {
+    return finansRaporuIndirilebilir(this.permissions, bicim);
+  }
+
+  ozelIsEklenebilir(): boolean {
+    return finansOzelIsiEklenebilir(this.permissions);
   }
 
   miktarGorebilir(birim: string | undefined, isTuru?: number): boolean {

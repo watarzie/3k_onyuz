@@ -3,7 +3,7 @@ import { Component, DestroyRef, OnInit, inject, input, output, signal } from '@a
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, finalize } from 'rxjs';
-import { AMBALAJ_YETKI, FINANS_YETKI } from '../../core/constants/yetki-kodlari';
+import { FINANS_YETKI } from '../../core/constants/yetki-kodlari';
 import { FinansService } from '../../core/services/finans.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -23,6 +23,7 @@ import {
   FinansVarlikTuru,
 } from '../../shared/models/finans-v2.model';
 import { ServerPagerComponent } from '../../shared/components/server-pager/server-pager.component';
+import { finansBelgesiIndirilebilir, tumFinansAlanlariGorunur } from './finans-izinleri';
 
 @Component({
   selector: 'app-finans-kayit-detay',
@@ -94,18 +95,11 @@ export class FinansKayitDetayComponent implements OnInit {
     return (
       !!this.kayit() &&
       this.permissions.canWrite(this.izin.FiyatlandirmaDegistir) &&
-      [
-        this.izin.ParasalVeriGoruntule,
-        this.izin.BirimFiyatGoruntule,
-        this.izin.TutarGoruntule,
-        this.izin.GelirGoruntule,
-        this.izin.GiderGoruntule,
-        this.izin.KarlilikGoruntule,
-        AMBALAJ_YETKI.OlcuGoruntule,
-        AMBALAJ_YETKI.M3Goruntule,
-        AMBALAJ_YETKI.SarfGoruntule,
-      ].every((kod) => this.permissions.hasAccess(kod))
+      tumFinansAlanlariGorunur(this.permissions)
     );
+  }
+  belgeIndirilebilir(): boolean {
+    return finansBelgesiIndirilebilir(this.permissions);
   }
   yukle(): void {
     if (this.hedef().tur === 'Siparis') {
@@ -350,6 +344,7 @@ export class FinansKayitDetayComponent implements OnInit {
     this.fiyat.bilesenler = this.fiyat.bilesenler?.filter((_, i) => i !== index);
   }
   belgeleriYukle(): void {
+    if (!this.permissions.hasAccess(this.izin.BelgeIndir)) return;
     const h = this.hedef();
     this.service
       .belgeler(h.tur, h.id)

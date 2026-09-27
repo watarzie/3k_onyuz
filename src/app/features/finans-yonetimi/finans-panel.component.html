@@ -43,15 +43,17 @@
         <i class="ri-search-2-line" aria-hidden="true"></i>
         {{ t('PANEL_ALL_SEARCH') }}
       </button>
-      <button
-        type="button"
-        [class.active]="gorunum() === 'bekleyen'"
-        [attr.aria-pressed]="gorunum() === 'bekleyen'"
-        (click)="gorunumSec('bekleyen')"
-      >
-        <i class="ri-time-line" aria-hidden="true"></i>
-        {{ t('PANEL_PENDING') }}
-      </button>
+      @if (yaslandirmaGorunur()) {
+        <button
+          type="button"
+          [class.active]="gorunum() === 'bekleyen'"
+          [attr.aria-pressed]="gorunum() === 'bekleyen'"
+          (click)="gorunumSec('bekleyen')"
+        >
+          <i class="ri-time-line" aria-hidden="true"></i>
+          {{ t('PANEL_PENDING') }}
+        </button>
+      }
     </nav>
   }
   @if ((!kayitGorunur() || gorunum() === 'aylik') && panel(); as p) {

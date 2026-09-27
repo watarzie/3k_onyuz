@@ -382,7 +382,7 @@
                     {{ b.yukleyen }}<small>{{ b.yuklemeTarihi | date: 'dd.MM.yyyy HH:mm' }}</small>
                   </td>
                   <td class="v2-dialog-action-cell">
-                    @if (permissions.hasAccess(izin.BelgeIndir)) {
+                    @if (belgeIndirilebilir()) {
                       <button class="btn btn-outline-primary btn-sm" (click)="belgeIndir(b)">
                         <i class="ri-download-2-line" aria-hidden="true"></i>İndir
                       </button>

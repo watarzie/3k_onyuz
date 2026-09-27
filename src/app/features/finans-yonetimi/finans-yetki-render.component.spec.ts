@@ -40,7 +40,7 @@ describe('Finans aylık gerçek template negatif yetki kontrolleri', () => {
     expect(Array.from(el.querySelectorAll('.main-tabs button')).some(x => x.textContent?.includes('İş ve Tarife'))).toBeFalse();
   });
   it('yalnız tarife okuyan kullanıcı düzenli iş altsekmesini veya eski verisini göremez', () => {
-    reads.update(x => new Set([...x, FINANS_YETKI.IsKutuphanesiYonet]));
+    reads.update(x => new Set([...x, FINANS_YETKI.IsKutuphanesiYonet, FINANS_YETKI.BirimFiyatGoruntule]));
     const { fixture, c, el } = setup(); c.selectTab('ayarlar');
     c.duzenliIsler.set([{ id: 1, isAdi: 'KALAN-GIZLI-IS', aktif: true } as FinansDuzenliIs]);
     c.ayarGorunumu.set('duzenli'); fixture.detectChanges();

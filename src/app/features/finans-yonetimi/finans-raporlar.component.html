@@ -150,13 +150,13 @@
       <h4>{{ t('REPORT_OUTPUT') }}</h4>
       <p>{{ t('REPORT_OUTPUT_HELP') }}</p>
       <div class="v2-export-actions">
-        @if (permissions.hasAccess(izin.PdfAktar)) {
+        @if (indirilebilir('pdf')) {
           <button class="btn btn-primary" [disabled]="loading()" (click)="indir('pdf')">
             <i class="ri-file-pdf-2-line" aria-hidden="true"></i>{{ t('REPORT_PDF')
             }}<i class="ri-download-2-line" aria-hidden="true"></i>
           </button>
         }
-        @if (permissions.hasAccess(izin.ExcelAktar)) {
+        @if (indirilebilir('excel')) {
           <button class="btn btn-outline-primary" [disabled]="loading()" (click)="indir('excel')">
             <i class="ri-file-excel-2-line" aria-hidden="true"></i>{{ t('REPORT_EXCEL')
             }}<i class="ri-download-2-line" aria-hidden="true"></i>

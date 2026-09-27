@@ -25,15 +25,15 @@
       <i class="ri-settings-3-line" aria-hidden="true"></i>İş ve Tarife Tanımları
     </button>
     }
-    @if (permissions.hasAccess(izin.SiparisOperasyonGoruntule)) {<button type="button" [class.active]="activeTab() === 'belgeler'" (click)="selectTab('belgeler')"><i class="ri-file-list-3-line" aria-hidden="true"></i>PO ve Faturalar</button>}
-    @if (permissions.canWrite(izin.SablonYonet)) {<button type="button" [class.active]="activeTab() === 'sablonlar'" (click)="selectTab('sablonlar')"><i class="ri-layout-grid-line" aria-hidden="true"></i>İş Şablonları</button>}
+    @if (permissions.hasAccess(izin.SiparisOperasyonGoruntule) && permissions.hasAccess(izin.KayitGoruntule)) {<button type="button" [class.active]="activeTab() === 'belgeler'" (click)="selectTab('belgeler')"><i class="ri-file-list-3-line" aria-hidden="true"></i>PO ve Faturalar</button>}
+    @if (permissions.canWrite(izin.SablonYonet) && permissions.hasAccess(izin.KayitGoruntule)) {<button type="button" [class.active]="activeTab() === 'sablonlar'" (click)="selectTab('sablonlar')"><i class="ri-layout-grid-line" aria-hidden="true"></i>İş Şablonları</button>}
     @if (permissions.hasAccess(izin.RaporGoruntule)) {<button type="button" [class.active]="activeTab() === 'raporlar'" (click)="selectTab('raporlar')"><i class="ri-file-chart-line" aria-hidden="true"></i>Raporlar</button>}
     @if (permissions.canWrite(izin.GiderKutuphanesiYonet)) {<button type="button" [class.active]="activeTab() === 'kategoriler'" (click)="selectTab('kategoriler')"><i class="ri-folder-settings-line" aria-hidden="true"></i>Gider Kategorileri</button>}
   </nav>
 
   @if (activeTab() === 'panel') {<app-finans-panel (kayitAc)="detayHedef.set($event)" (siparisAc)="topluSiparisAc($event)" />}
-  @if (activeTab() === 'belgeler' && permissions.hasAccess(izin.SiparisOperasyonGoruntule)) {<app-finans-belgeler-listesi (detayAc)="detayHedef.set($event)" (faturaAc)="faturaAc($event)" />}
-  @if (activeTab() === 'sablonlar' && permissions.canWrite(izin.SablonYonet)) {<app-finans-sablonlar />}
+  @if (activeTab() === 'belgeler' && permissions.hasAccess(izin.SiparisOperasyonGoruntule) && permissions.hasAccess(izin.KayitGoruntule)) {<app-finans-belgeler-listesi (detayAc)="detayHedef.set($event)" (faturaAc)="faturaAc($event)" />}
+  @if (activeTab() === 'sablonlar' && permissions.canWrite(izin.SablonYonet) && permissions.hasAccess(izin.KayitGoruntule)) {<app-finans-sablonlar />}
   @if (activeTab() === 'raporlar' && permissions.hasAccess(izin.RaporGoruntule)) {<app-finans-raporlar />}
   @if (activeTab() === 'kategoriler' && permissions.canWrite(izin.GiderKutuphanesiYonet)) {<app-finans-kategoriler (degisti)="kategorileriYenile()" />}
 
@@ -65,12 +65,16 @@
             (ngModelChange)="iptalEdilenleriDegisti($event)"
           /><span>İptal edilenler</span></label
         >
-        <button *appCanAccess="[izin.RaporGoruntule]" type="button" class="btn btn-outline-primary" (click)="raporFormunuAc()">
-          <i class="ri-file-chart-line"></i>Rapor
-        </button>
-        <button *appCanWrite="izin.ManuelIsEkle" type="button" class="btn btn-primary" (click)="yeniOzelIs()">
-          <i class="ri-add-line"></i>Tek Seferlik İş
-        </button>
+        @if (raporIndirilebilir('pdf') || raporIndirilebilir('excel')) {
+          <button type="button" class="btn btn-outline-primary" (click)="raporFormunuAc()">
+            <i class="ri-file-chart-line"></i>Rapor
+          </button>
+        }
+        @if (ozelIsEklenebilir()) {
+          <button type="button" class="btn btn-primary" (click)="yeniOzelIs()">
+            <i class="ri-add-line"></i>Tek Seferlik İş
+          </button>
+        }
       </div>
     </header>
 
@@ -278,7 +282,7 @@
                               </button>
                             }
                             @if (satir.ozelIsId && satir.iptalEdildi) {
-                              <button *appCanWrite="izin.ManuelIsDuzenle" type="button" title="Geri al" (click)="ozelIsGeriAl(satir)">
+                              <button *appCanWrite="izin.IsIptal" type="button" title="Geri al" (click)="ozelIsGeriAl(satir)">
                                 <i class="ri-arrow-go-back-line"></i>
                               </button>
                             }
@@ -323,12 +327,16 @@
         </div>
       </div>
       <div class="toolbar-actions">
-        <button *appCanAccess="[izin.PdfAktar]" type="button" class="btn btn-outline-primary" [disabled]="giderRaporIndiriliyor() !== null" (click)="giderRaporuIndir('pdf')">
-          <i class="ri-file-pdf-2-line"></i>PDF
-        </button>
-        <button *appCanAccess="[izin.ExcelAktar]" type="button" class="btn btn-outline-primary" [disabled]="giderRaporIndiriliyor() !== null" (click)="giderRaporuIndir('excel')">
-          <i class="ri-file-excel-2-line"></i>Excel
-        </button>
+        @if (raporIndirilebilir('pdf')) {
+          <button type="button" class="btn btn-outline-primary" [disabled]="giderRaporIndiriliyor() !== null" (click)="giderRaporuIndir('pdf')">
+            <i class="ri-file-pdf-2-line"></i>PDF
+          </button>
+        }
+        @if (raporIndirilebilir('excel')) {
+          <button type="button" class="btn btn-outline-primary" [disabled]="giderRaporIndiriliyor() !== null" (click)="giderRaporuIndir('excel')">
+            <i class="ri-file-excel-2-line"></i>Excel
+          </button>
+        }
         <button *appCanWrite="izin.GiderEkle" type="button" class="btn btn-primary" (click)="yeniGider()">
           <i class="ri-add-line"></i>Yeni Gider
         </button>
@@ -549,10 +557,10 @@
                 </td>
                 <td>
                   <div class="row-actions">
-                    <button *appCanWrite="izin.TarifeYonet" type="button" title="Düzenle" (click)="urunDuzenle(urun)">
+                    <button *appCanWrite="izin.IsKutuphanesiYonet" type="button" title="Düzenle" (click)="urunDuzenle(urun)">
                       <i class="ri-edit-line"></i>
                     </button>
-                    <button *appCanWrite="izin.TarifeYonet"
+                    <button *appCanWrite="izin.IsKutuphanesiYonet"
                       type="button"
                       class="danger"
                       title="Sil"
@@ -615,9 +623,9 @@
         }
       </div>
         <div class="report-actions">
-          <button type="button" class="btn btn-danger" [disabled]="raporIndiriliyor() !== null" (click)="raporIndir('pdf')"><i class="ri-file-pdf-2-line"></i>Birleşik PDF</button>
-          <button type="button" class="btn btn-success" [disabled]="raporIndiriliyor() !== null" (click)="raporIndir('excel')"><i class="ri-file-excel-2-line"></i>Birleşik Excel</button>
-          <button type="button" class="btn btn-outline-primary" [disabled]="raporIndiriliyor() !== null" (click)="raporIndir('ayri')"><i class="ri-file-zip-line"></i>Ayrı ZIP</button>
+          @if (raporIndirilebilir('pdf')) {<button type="button" class="btn btn-danger" [disabled]="raporIndiriliyor() !== null" (click)="raporIndir('pdf')"><i class="ri-file-pdf-2-line"></i>Birleşik PDF</button>}
+          @if (raporIndirilebilir('excel')) {<button type="button" class="btn btn-success" [disabled]="raporIndiriliyor() !== null" (click)="raporIndir('excel')"><i class="ri-file-excel-2-line"></i>Birleşik Excel</button>}
+          @if (raporIndirilebilir('pdf')) {<button type="button" class="btn btn-outline-primary" [disabled]="raporIndiriliyor() !== null" (click)="raporIndir('ayri')"><i class="ri-file-zip-line"></i>Ayrı ZIP</button>}
         </div>
       </section>
       <section class="report-block">
@@ -631,8 +639,8 @@
           <label class="field wide"><span>Durum</span><select class="form-select" [(ngModel)]="siparisRaporDurum"><option value="">Tümü</option><option>Açılmadı</option><option>Kısmi Açıldı</option><option>Tam Açıldı</option><option>Fatura Yok</option><option>Kısmi Faturalandı</option><option>Faturalandı</option></select></label>
         </div>
         <div class="report-actions">
-          <button type="button" class="btn btn-danger" [disabled]="siparisRaporIndiriliyor() !== null" (click)="siparisDurumRaporuIndir('pdf')"><i class="ri-file-pdf-2-line"></i>Durum PDF</button>
-          <button type="button" class="btn btn-success" [disabled]="siparisRaporIndiriliyor() !== null" (click)="siparisDurumRaporuIndir('excel')"><i class="ri-file-excel-2-line"></i>Durum Excel</button>
+          @if (raporIndirilebilir('pdf')) {<button type="button" class="btn btn-danger" [disabled]="siparisRaporIndiriliyor() !== null" (click)="siparisDurumRaporuIndir('pdf')"><i class="ri-file-pdf-2-line"></i>Durum PDF</button>}
+          @if (raporIndirilebilir('excel')) {<button type="button" class="btn btn-success" [disabled]="siparisRaporIndiriliyor() !== null" (click)="siparisDurumRaporuIndir('excel')"><i class="ri-file-excel-2-line"></i>Durum Excel</button>}
         </div>
       </section>
     </div>
@@ -713,7 +721,7 @@
   </section>
 }
 
-@if (ozelIsAcik() && permissions.canWrite(izin.ManuelIsEkle)) {
+@if (ozelIsAcik() && ozelIsEklenebilir()) {
   <div class="modal-backdrop" (click)="ozelIsAcik.set(false)"></div>
   <section class="side-panel" role="dialog" aria-modal="true">
     <header>

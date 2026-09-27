@@ -8,6 +8,7 @@ import { FinansService } from '../../core/services/finans.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { ToastService } from '../../core/services/toast.service';
 import { FinansGiderKategori, FinansListelemeRequest } from '../../shared/models/finans.model';
+import { finansRaporuIndirilebilir } from './finans-izinleri';
 
 @Component({
   selector: 'app-finans-raporlar',
@@ -30,6 +31,9 @@ export class FinansRaporlarComponent implements OnInit {
   readonly kategoriler = signal<FinansGiderKategori[]>([]);
   tur = 'is';
   filtre: FinansListelemeRequest = { pageNumber: 1, pageSize: 25 };
+  indirilebilir(bicim: 'pdf' | 'excel'): boolean {
+    return finansRaporuIndirilebilir(this.permissions, bicim);
+  }
   filtreleriTemizle(): void {
     this.filtre = { pageNumber: 1, pageSize: 25 };
   }
