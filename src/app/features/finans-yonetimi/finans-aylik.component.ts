@@ -795,9 +795,9 @@ export class FinansYonetimiComponent implements OnInit {
   urunDuzenle(urun: FinansUrun): void {
     if (!this.ayarYazabilir('tarifeler') || !this.parasal(this.izin.BirimFiyatGoruntule) || !this.parasal(this.izin.TutarGoruntule) || !Number.isFinite(urun.birimFiyat) || !Number.isFinite(urun.kdvOrani)) return;
     if (urun.eslesmeler.some(e => e.sandikTipi === 'Katlanır Sandık') && !this.permissions.hasAccess(this.alanIzni.OlcuGoruntule)) return;
-    const eslesme = urun.eslesmeler[0];
+    const eslesme = urun.eslesmeler.find(e => e.aktif !== false) ?? urun.eslesmeler.at(-1);
     this.duzenlenenUrunId.set(urun.id);
-    this.urunForm = { kod: urun.kod, ad: urun.ad, fiyatlandirmaBirimi: urun.fiyatlandirmaBirimi, birimFiyat: urun.birimFiyat, paraBirimi: urun.paraBirimi, kdvOrani: urun.kdvOrani, aktif: urun.aktif, sira: urun.sira, isTuru: eslesme?.isTuru ?? 0, sandikAdi: eslesme?.sandikAdi ?? '', sandikTipi: eslesme?.sandikTipi ?? '', boy: eslesme?.boy ?? null, en: eslesme?.en ?? null, yukseklik: eslesme?.yukseklik ?? null, icSandikSablonId: eslesme?.icSandikSablonId ?? null };
+    this.urunForm = { kod: urun.kod, ad: urun.ad, fiyatlandirmaBirimi: urun.fiyatlandirmaBirimi, birimFiyat: urun.birimFiyat, paraBirimi: urun.paraBirimi, kdvOrani: urun.kdvOrani, aktif: urun.aktif, sira: urun.sira, eslesmeId: eslesme?.id ?? null, isTuru: eslesme?.isTuru ?? 0, sandikAdi: eslesme?.sandikAdi ?? '', sandikTipi: eslesme?.sandikTipi ?? '', boy: eslesme?.boy ?? null, en: eslesme?.en ?? null, yukseklik: eslesme?.yukseklik ?? null, icSandikSablonId: eslesme?.icSandikSablonId ?? null };
     this.urunHatasi.set('');
     this.urunAcik.set(true);
   }
@@ -825,7 +825,7 @@ export class FinansYonetimiComponent implements OnInit {
     const id = this.duzenlenenUrunId();
     const ozelSandik = [4, 5].includes(form.isTuru);
     const katlanir = ozelSandik && form.sandikTipi === 'Katlanır Sandık';
-    const request: FinansUrunKaydetRequest = { kod: form.kod.trim(), ad: form.ad.trim(), fiyatlandirmaBirimi: form.fiyatlandirmaBirimi, birimFiyat: Number(form.birimFiyat), paraBirimi: form.paraBirimi, kdvOrani: Number(form.kdvOrani), aktif: form.aktif, sira: form.sira, eslesmeler: form.isTuru ? [{ isTuru: form.isTuru, sandikAdi: form.isTuru === 3 || ozelSandik ? null : this.temizle(form.sandikAdi), icSandikSablonId: form.isTuru === 3 ? form.icSandikSablonId : null, sandikTipi: ozelSandik ? form.sandikTipi : null, boy: katlanir ? Number(form.boy) : null, en: katlanir ? Number(form.en) : null, yukseklik: katlanir ? Number(form.yukseklik) : null }] : [] };
+    const request: FinansUrunKaydetRequest = { kod: form.kod.trim(), ad: form.ad.trim(), fiyatlandirmaBirimi: form.fiyatlandirmaBirimi, birimFiyat: Number(form.birimFiyat), paraBirimi: form.paraBirimi, kdvOrani: Number(form.kdvOrani), aktif: form.aktif, sira: form.sira, eslesmeler: form.isTuru ? [{ id: form.eslesmeId, aktif: true, isTuru: form.isTuru, sandikAdi: form.isTuru === 3 || ozelSandik ? null : this.temizle(form.sandikAdi), icSandikSablonId: form.isTuru === 3 ? form.icSandikSablonId : null, sandikTipi: ozelSandik ? form.sandikTipi : null, boy: katlanir ? Number(form.boy) : null, en: katlanir ? Number(form.en) : null, yukseklik: katlanir ? Number(form.yukseklik) : null }] : [] };
     this.urunKaydediliyor.set(true);
     const operation = id ? this.service.urunGuncelle(id, request) : this.service.urunOlustur(request);
     operation.subscribe(result => {
@@ -846,6 +846,7 @@ export class FinansYonetimiComponent implements OnInit {
     this.urunSiliniyorId.set(urun.id);
     this.service.urunSil(urun.id).subscribe(result => {
       this.urunSiliniyorId.set(null);
+      if (this.onayaAlindi(result)) return;
       if (!result.isSuccess) {
         this.toast.error(result.error ?? 'Tarife silinemedi.');
         return;
@@ -856,7 +857,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   urunEslesmeMetni(urun: FinansUrun): string {
-    return urun.eslesmeler.map(eslesme => {
+    return urun.eslesmeler.filter(eslesme => eslesme.aktif !== false).map(eslesme => {
       const tur = eslesme.sandikTipi ? ` · ${eslesme.sandikTipi}` : '';
       const olcu = eslesme.sandikTipi === 'Katlanır Sandık' && this.permissions.hasAccess(this.alanIzni.OlcuGoruntule) ? ` · ${eslesme.boy}×${eslesme.en}×${eslesme.yukseklik} mm` : '';
       const detay = eslesme.icSandikSablonId ? ` · ${this.icSandikSablonAdi(eslesme.icSandikSablonId)}` : eslesme.sandikAdi ? ` · ${eslesme.sandikAdi}` : '';
@@ -1100,7 +1101,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
   private bosGiderFormu(): FinansGiderKaydetRequest { return { tarih: this.tarihMetni(new Date()), finansTarihi: this.tarihMetni(new Date()), miktar: 1, birim: 'Adet', birimFiyat: 0, belgeNo: null, avansMi: false, mahsupEdilenAvansId: null, kategoriId: 0, giderKalemiId: null, altKategori: null, firmaVeyaKisi: null, aciklama: '', tutar: 0, paraBirimi: 'TRY', kdvDahil: false, kdvOrani: 20, projeId: null, isTuru: null }; }
   private bosDuzenliIsFormu(): FinansDuzenliIsKaydetRequest { return { projeId: null, isAdi: '', isTuru: '', musteri: this.finansMusterisi, aciklama: null, tekrarSikligi: 'Aylık', baslangicTarihi: this.tarihMetni(new Date()), bitisTarihi: null, olusturmaGunu: 1, miktar: 1, birim: 'Hizmet', birimFiyat: 0, paraBirimi: 'EUR', kdvOrani: 20, aktif: true }; }
-  private bosUrunFormu() { return { kod: '', ad: '', fiyatlandirmaBirimi: 2 as 1 | 2 | 3 | 4, birimFiyat: 0, paraBirimi: 'EUR', kdvOrani: 20, aktif: true, sira: 0, isTuru: 0, sandikAdi: '', sandikTipi: '', boy: null as number | null, en: null as number | null, yukseklik: null as number | null, icSandikSablonId: null as number | null }; }
+  private bosUrunFormu() { return { kod: '', ad: '', fiyatlandirmaBirimi: 2 as 1 | 2 | 3 | 4, birimFiyat: 0, paraBirimi: 'EUR', kdvOrani: 20, aktif: true, sira: 0, eslesmeId: null as number | null, isTuru: 0, sandikAdi: '', sandikTipi: '', boy: null as number | null, en: null as number | null, yukseklik: null as number | null, icSandikSablonId: null as number | null }; }
   private ayinIlkGunu(tarih: Date): Date { return new Date(tarih.getFullYear(), tarih.getMonth(), 1); }
   private tarihMetni(tarih: Date): string { return `${tarih.getFullYear()}-${String(tarih.getMonth() + 1).padStart(2, '0')}-${String(tarih.getDate()).padStart(2, '0')}`; }
   private temizle(value: string | null | undefined): string | null { const temiz = value?.trim(); return temiz || null; }

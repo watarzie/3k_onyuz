@@ -365,7 +365,7 @@ export interface FinansUrunKaydetRequest {
   kdvOrani: number;
   aktif: boolean;
   sira: number;
-  eslesmeler: { isTuru: number; sandikAdi: string | null; icSandikSablonId?: number | null; sandikTipi?: string | null; boy?: number | null; en?: number | null; yukseklik?: number | null }[];
+  eslesmeler: { id?: number | null; aktif: boolean; isTuru: number; sandikAdi: string | null; icSandikSablonId?: number | null; sandikTipi?: string | null; boy?: number | null; en?: number | null; yukseklik?: number | null }[];
 }
 
 export interface FinansOzelIsKaydetRequest {
