@@ -13,7 +13,7 @@ import { PdfService } from '../../../core/services/pdf.service';
 import { SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
-import { SandikDto, LookupResponse, ProjeDropdownDto } from '../../../shared/models/index';
+import { SandikDto, LookupResponse, ProjeDropdownDto, onayaAlindi } from '../../../shared/models/index';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
 
 @Component({
@@ -315,7 +315,7 @@ export class UcKSandiklarComponent implements OnInit {
       next: (res) => {
         this.isSavingLokasyon.set(false);
         if (res.isSuccess) {
-          const queued = res.statusCode === 202 || this.isApprovalQueueResponse(res.value);
+          const queued = onayaAlindi(res);
           if (queued) {
             this.toast.info('Lokasyon atama talebi yetkili onayına gönderildi.');
           } else {
@@ -337,14 +337,6 @@ export class UcKSandiklarComponent implements OnInit {
         this.toast.error('Sunucu ile iletişim kurulamadı.');
       }
     });
-  }
-
-  private isApprovalQueueResponse(value: unknown): value is { statusCode: 202 } {
-    if (typeof value !== 'object' || value === null || !('statusCode' in value)) {
-      return false;
-    }
-
-    return (value as { statusCode?: unknown }).statusCode === 202;
   }
 
   getDurumLabel(durum: string): string {
@@ -507,7 +499,7 @@ export class UcKSandiklarComponent implements OnInit {
       next: (res) => {
         this.kilitAcSaving.set(false);
         if (res.isSuccess) {
-          const queued = (res.value as any)?.statusCode === 202;
+          const queued = onayaAlindi(res);
           this.toast.success(queued ? `Sandık "${sandik.sandikNo}" kilit açma talebi onaya gönderildi.` : `Sandık "${sandik.sandikNo}" kilidi açıldı.`);
           this.closeKilitAcModal();
           this.selectedSandikIds.set(new Set());

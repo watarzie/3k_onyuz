@@ -38,6 +38,7 @@ import {
   FinansUrunKaydetRequest,
   FinansParaToplami,
   AmbalajIcSandikSablonDto,
+  onayaAlindi,
 } from '../../shared/models';
 
 interface AylikGrup {
@@ -457,7 +458,7 @@ export class FinansYonetimiComponent implements OnInit {
     this.aylikDegerKaydediliyor.set(true);
     this.service.ozelIsAylikDegerGuncelle(satir.ozelIsId, request).subscribe(result => {
       this.aylikDegerKaydediliyor.set(false);
-      if (this.onayaAlindi(result)) return;
+      if (this.onayaAlindiysaBildir(result)) return;
       if (!result.isSuccess) {
         this.aylikDegerHatasi.set(result.error ?? 'Aylık değer kaydedilemedi.');
         return;
@@ -484,7 +485,7 @@ export class FinansYonetimiComponent implements OnInit {
     this.iptalKaydediliyor.set(true);
     this.service.ozelIsIptal(satir.ozelIsId, this.iptalAciklamasi.trim()).subscribe(result => {
       this.iptalKaydediliyor.set(false);
-      if (this.onayaAlindi(result)) return;
+      if (this.onayaAlindiysaBildir(result)) return;
       if (!result.isSuccess) {
         this.iptalHatasi.set(result.error ?? 'İş iptal edilemedi.');
         return;
@@ -498,7 +499,7 @@ export class FinansYonetimiComponent implements OnInit {
   ozelIsGeriAl(satir: FinansAylikIs): void {
     if (!satir.ozelIsId) return;
     this.service.ozelIsGeriAl(satir.ozelIsId).subscribe(result => {
-      if (this.onayaAlindi(result)) return;
+      if (this.onayaAlindiysaBildir(result)) return;
       if (!result.isSuccess) this.toast.error(result.error ?? 'İş geri alınamadı.');
       else {
         this.toast.success('İş yeniden aktifleştirildi.');
@@ -545,7 +546,7 @@ export class FinansYonetimiComponent implements OnInit {
     this.ozelIsKaydediliyor.set(true);
     this.service.ozelIsOlustur(request).subscribe(result => {
       this.ozelIsKaydediliyor.set(false);
-      if (this.onayaAlindi(result)) return;
+      if (this.onayaAlindiysaBildir(result)) return;
       if (!result.isSuccess) {
         this.ozelIsHatasi.set(result.error ?? 'Tek seferlik iş oluşturulamadı.');
         return;
@@ -623,8 +624,8 @@ export class FinansYonetimiComponent implements OnInit {
       : this.miktarGorebilir(satir.birim, satir.isTuru) && Number.isFinite(satir.miktar);
   }
 
-  private onayaAlindi(result: ApiResult<unknown>): boolean {
-    if (result.statusCode !== 202) return false;
+  private onayaAlindiysaBildir(result: ApiResult<unknown>): boolean {
+    if (!onayaAlindi(result)) return false;
     this.toast.info('İşlem onaya gönderildi; henüz uygulanmadı.');
     return true;
   }
@@ -718,7 +719,7 @@ export class FinansYonetimiComponent implements OnInit {
     this.giderKaydediliyor.set(true);
     const operation = id ? this.service.giderGuncelle(id, request) : this.service.giderOlustur(request);
     operation.pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.giderKaydediliyor.set(false))).subscribe({ next: result => {
-      if (this.onayaAlindi(result)) return;
+      if (this.onayaAlindiysaBildir(result)) return;
       if (!result.isSuccess) this.giderHatasi.set(result.error ?? 'Gider kaydedilemedi.');
       else {
         this.giderAcik.set(false);
@@ -774,7 +775,7 @@ export class FinansYonetimiComponent implements OnInit {
     const operation = id ? this.service.duzenliIsGuncelle(id, request) : this.service.duzenliIsOlustur(request);
     operation.subscribe(result => {
       this.duzenliIsKaydediliyor.set(false);
-      if (this.onayaAlindi(result)) return;
+      if (this.onayaAlindiysaBildir(result)) return;
       if (!result.isSuccess) this.duzenliIsHatasi.set(result.error ?? 'Düzenli iş kaydedilemedi.');
       else {
         this.duzenliIsAcik.set(false);
@@ -830,7 +831,7 @@ export class FinansYonetimiComponent implements OnInit {
     const operation = id ? this.service.urunGuncelle(id, request) : this.service.urunOlustur(request);
     operation.subscribe(result => {
       this.urunKaydediliyor.set(false);
-      if (this.onayaAlindi(result)) return;
+      if (this.onayaAlindiysaBildir(result)) return;
       if (!result.isSuccess) this.urunHatasi.set(result.error ?? 'Tarife kaydedilemedi.');
       else {
         this.urunAcik.set(false);
@@ -846,7 +847,7 @@ export class FinansYonetimiComponent implements OnInit {
     this.urunSiliniyorId.set(urun.id);
     this.service.urunSil(urun.id).subscribe(result => {
       this.urunSiliniyorId.set(null);
-      if (this.onayaAlindi(result)) return;
+      if (this.onayaAlindiysaBildir(result)) return;
       if (!result.isSuccess) {
         this.toast.error(result.error ?? 'Tarife silinemedi.');
         return;

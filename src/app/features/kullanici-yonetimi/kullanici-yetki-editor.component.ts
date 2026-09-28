@@ -6,7 +6,7 @@ import { KullaniciService } from '../../core/services/kullanici.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { ToastService } from '../../core/services/toast.service';
 import { TranslationService } from '../../core/services/translation.service';
-import { KullaniciDto, KullaniciYetkiModel } from '../../shared/models';
+import { KullaniciDto, KullaniciYetkiModel, onayaAlindi } from '../../shared/models';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { YETKI } from '../../core/constants/yetki-kodlari';
 
@@ -103,7 +103,7 @@ export class KullaniciYetkiEditorComponent implements OnChanges {
     this.service.updateYetkiler(this.user.id, this.rows().map(({ menuTanimiId, izinVerildi }) => ({ menuTanimiId, izinVerildi })))
       .pipe(takeUntilDestroyed(this.destroyRef)).subscribe(result => {
         this.saving.set(false);
-        if (!result.isSuccess || result.statusCode === 202) {
+        if (!result.isSuccess || onayaAlindi(result)) {
           this.toast.error(result.error || this.translate.translate('PERMISSIONS.SAVE_FAILED'));
           return;
         }

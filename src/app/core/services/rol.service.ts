@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { API } from '../constants/api-endpoints';
 import { BaseApiService } from './base-api.service';
-import { RolDto, RolDetayDto, RolGuncelleRequest, ApiResult } from '../../shared/models';
+import { RolDto, RolDetayDto, RolGuncelleRequest, ApiResult, onayaAlindi } from '../../shared/models';
 
 @Injectable({ providedIn: 'root' })
 export class RolService {
@@ -32,7 +32,7 @@ export class RolService {
   }
 
   private value<T>(result: ApiResult<T>): T {
-    if (!result.isSuccess || result.statusCode === 202 || result.value == null) {
+    if (!result.isSuccess || onayaAlindi(result) || result.value == null) {
       throw new Error(result.error || 'Rol işlemi tamamlanamadı.');
     }
     return result.value;

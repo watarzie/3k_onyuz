@@ -9,6 +9,7 @@ import { PermissionService } from '../../core/services/permission.service';
 import { FINANS_YETKI } from '../../core/constants/yetki-kodlari';
 import { FinansGiderKalemi, FinansGiderKategori } from '../../shared/models/finans.model';
 
+import { onayaAlindi } from '../../shared/models';
 @Component({
   selector: 'app-finans-kategoriler',
   standalone: true,
@@ -108,7 +109,7 @@ export class FinansKategorilerComponent implements OnInit {
       .subscribe({
         next: (r) => {
           if (!r.isSuccess) this.hata.set(r.error ?? 'Kategori kaydedilemedi.');
-          else if (r.statusCode === 202) this.toast.info('Kategori değişikliği onaya gönderildi.');
+          else if (onayaAlindi(r)) this.toast.info('Kategori değişikliği onaya gönderildi.');
           else {
             this.toast.success('Kategori kaydedildi.');
             this.id = undefined;
@@ -168,7 +169,7 @@ export class FinansKategorilerComponent implements OnInit {
       .subscribe({
         next: (r) => {
           if (!r.isSuccess) this.kalemHatasi.set(r.error ?? 'Kalem kaydedilemedi.');
-          else if (r.statusCode === 202) this.toast.info('Kalem değişikliği onaya gönderildi.');
+          else if (onayaAlindi(r)) this.toast.info('Kalem değişikliği onaya gönderildi.');
           else {
             this.toast.success('Kalem kaydedildi.');
             this.kalemId = undefined;

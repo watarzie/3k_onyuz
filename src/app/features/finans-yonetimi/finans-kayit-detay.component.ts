@@ -25,6 +25,7 @@ import {
 import { ServerPagerComponent } from '../../shared/components/server-pager/server-pager.component';
 import { finansBelgesiIndirilebilir, tumFinansAlanlariGorunur } from './finans-izinleri';
 
+import { onayaAlindi } from '../../shared/models';
 @Component({
   selector: 'app-finans-kayit-detay',
   standalone: true,
@@ -376,7 +377,7 @@ export class FinansKayitDetayComponent implements OnInit {
       )
       .subscribe((r) => {
         if (!r.isSuccess) this.hata.set(r.error ?? 'Belge yüklenemedi.');
-        else if (r.statusCode === 202) this.toast.info('Belge işlemi onaya gönderildi.');
+        else if (onayaAlindi(r)) this.toast.info('Belge işlemi onaya gönderildi.');
         else {
           this.toast.success('PDF yeni sürüm olarak kaydedildi.');
           this.belgeleriYukle();
@@ -486,7 +487,7 @@ export class FinansKayitDetayComponent implements OnInit {
           this.hata.set(r.error ?? 'İşlem uygulanamadı.');
           return;
         }
-        if (r.statusCode === 202) {
+        if (onayaAlindi(r)) {
           this.toast.info('İşlem onaya gönderildi; henüz uygulanmadı.');
           return;
         }

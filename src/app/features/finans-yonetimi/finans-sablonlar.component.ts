@@ -9,6 +9,7 @@ import { PermissionService } from '../../core/services/permission.service';
 import { FINANS_YETKI } from '../../core/constants/yetki-kodlari';
 import { FinansSablon, FinansSablonKaydet } from '../../shared/models/finans-v2.model';
 
+import { onayaAlindi } from '../../shared/models';
 @Component({
   selector: 'app-finans-sablonlar',
   standalone: true,
@@ -96,7 +97,7 @@ export class FinansSablonlarComponent implements OnInit {
           this.hata.set(r.error ?? 'Şablon kaydedilemedi.');
           return;
         }
-        if (r.statusCode === 202) {
+        if (onayaAlindi(r)) {
           this.toast.info('Şablon onaya gönderildi.');
           return;
         }

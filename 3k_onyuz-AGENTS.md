@@ -31,7 +31,7 @@ Bu dosya depo kökünde `AGENTS.md` olarak bulunmalıdır. Kalıcı geliştirme 
 
 - Endpoint’leri `core/constants/api-endpoints.ts`, ortam adresini `src/environments` üzerinden kullan. Component içinde yeni sabit sunucu adresi veya paralel HTTP katmanı oluşturma.
 - İş servislerinde mevcut `BaseApiService` düzenini izle. Normal başarılı yanıt DTO’su istemcide `ApiResult<T>` içine alınır; HTTP hataları çoğunlukla `isSuccess: false` değeri olarak yayınlanır. Yalnızca `subscribe.error` kontrolüne güvenme.
-- HTTP 202, işlemin uygulandığını değil onaya alındığını gösterebilir. Mevcut gövde içindeki `statusCode`, `value` ve çeki revizyonu sonuç tiplerini kontrol et; her başarılı HTTP yanıtında “tamamlandı” mesajı verme. Ortak wrapper değişirse tüm tüketicileri değerlendir.
+- HTTP 202, işlemin uygulandığını değil onaya alındığını gösterir. Algılamayı `shared/models` içindeki `onayaAlindi()` ile yap (sonuç ve gövdedeki `statusCode`); 202'de başarı mesajı, liste yenileme veya sonraki adım (ör. indirme) gibi uygulanmış sonuç akışını çalıştırma. Çeki revizyonu gibi özel yanıt tiplerini ayrıca kontrol et. Ortak wrapper değişirse tüm tüketicileri değerlendir.
 - DTO alan adları, nullable değerler, enum sayıları ve sayfalama biçimini backend ile eşleştir. Yeni kodda `any` yerine belirli tipler kullan; farklı liste yanıtlarını aynı biçimde varsayma.
 - PDF/Excel/ZIP indirmelerini `PdfService` ve Blob yardımcılarıyla sürdür. Endpoint, filtre, yetki, uzantı ve içerik türünü koru. Blob içindeki API hatasını ayrıştır; object URL’lerini serbest bırak. Sunucu raporunu gerekçesiz tarayıcı hesaplamasıyla değiştirme.
 

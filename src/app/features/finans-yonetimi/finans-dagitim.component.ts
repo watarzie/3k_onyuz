@@ -19,6 +19,7 @@ import { ApiResult } from '../../shared/models/common.model';
 import { FinansVarlikTuru } from '../../shared/models/finans-v2.model';
 import { FINANS_YETKI } from '../../core/constants/yetki-kodlari';
 
+import { onayaAlindi } from '../../shared/models';
 interface DagitimSatiri {
   id: number;
   referans: string;
@@ -238,7 +239,7 @@ export class FinansDagitimComponent implements OnInit {
           this.hata.set(result.error ?? this.t('ALLOC_SAVE_ERROR'));
           return;
         }
-        if (result.statusCode === 202) {
+        if (onayaAlindi(result)) {
           this.toast.info(this.t('APPROVAL_PENDING'));
           this.kapat.emit();
           return;

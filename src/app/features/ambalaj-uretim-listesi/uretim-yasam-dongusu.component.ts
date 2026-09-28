@@ -17,7 +17,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AmbalajYasamDongusuService } from '../../core/services/ambalaj-yasam-dongusu.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { ToastService } from '../../core/services/toast.service';
-import { AmbalajBagimsizSandikDto, AmbalajUretimPlanDto, ApiResult } from '../../shared/models';
+import { AmbalajBagimsizSandikDto, AmbalajUretimPlanDto, ApiResult, onayaAlindi } from '../../shared/models';
 import { TranslationService } from '../../core/services/translation.service';
 import {
   AmbalajFormOlusturRequest,
@@ -299,7 +299,7 @@ export class UretimYasamDongusuComponent {
       });
   }
   private uygulandi<T>(r: ApiResult<T>): boolean {
-    if (r.statusCode === 202) {
+    if (onayaAlindi(r)) {
       this.toast.info(this.t('PENDING'));
       return false;
     }

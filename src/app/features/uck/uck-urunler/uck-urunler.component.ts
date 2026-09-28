@@ -18,7 +18,7 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
-import { UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, UcKTopluSecimDto, ProjeDropdownDto, GridUrunDto, StokKaydiDto, CekiSatiriAnaVeriGuncelleDto, SahaTamamlamaIzDto } from '../../../shared/models/index';
+import { UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, UcKTopluSecimDto, ProjeDropdownDto, GridUrunDto, StokKaydiDto, CekiSatiriAnaVeriGuncelleDto, SahaTamamlamaIzDto, onayaAlindi } from '../../../shared/models/index';
 import { UcKDurum, GridSevkDurum, GridDurum } from '../../../core/constants/enums';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
 
@@ -1278,9 +1278,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.panelSaving.set(false);
         if (res.isSuccess) {
-          // Some backend APIs wrap the 202 inside the returned JSON object body
-          const returnedStatus = (res.value as any)?.statusCode;
-          if (res.statusCode === 202 || returnedStatus === 202) {
+          if (onayaAlindi(res)) {
             this.toast.info('İşleminiz yetkili onayına sunulmuştur.');
           } else {
             this.toast.success('3K durumu başarıyla güncellendi.');

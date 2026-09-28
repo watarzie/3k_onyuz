@@ -35,6 +35,8 @@ import {
   ProjeDropdownDto,
   SandikTipi,
   UretimDurumId,
+  ApiResult,
+  onayaAlindi,
 } from '../../shared/models';
 import { AMBALAJ_YETKI } from '../../core/constants/yetki-kodlari';
 
@@ -281,7 +283,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(result => {
-        if (result.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
+        if (this.onayaAlindiysaBildir(result)) return;
         if (!result.isSuccess || !result.value) {
           this.toastService.error(result.error ?? 'Ambalaj projeleri yüklenemedi.');
           return;
@@ -323,7 +325,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(result => {
-        if (result.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
+        if (this.onayaAlindiysaBildir(result)) return;
         if (!result.isSuccess || !result.value) {
           this.toastService.error(result.error ?? 'Özel sandıklar yüklenemedi.');
           return;
@@ -362,7 +364,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(result => {
-        if (result.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
+        if (this.onayaAlindiysaBildir(result)) return;
         if (result.isSuccess) {
           this.ozelProjeler.set(result.value ?? []);
           return;
@@ -453,7 +455,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
       ? this.ambalajService.bagimsizSandikGuncelle(this.editingBagimsizSandikId()!, request)
       : this.ambalajService.bagimsizSandikEkle(request);
     operation.pipe(finalize(() => this.bagimsizSaving.set(false))).subscribe(result => {
-        if (result.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
+        if (this.onayaAlindiysaBildir(result)) return;
       if (result.isSuccess) {
         this.toastService.success(this.editingBagimsizSandikId() ? 'Sandık güncellendi.' : 'Sandık eklendi.');
         this.bagimsizFormOpen.set(false);
@@ -507,7 +509,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
         if (yuklemeKimligi === this.ozelSandikYuklemeKimligi) this.ozelUstSandiklarLoading.set(false);
       }))
       .subscribe(result => {
-        if (result.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
+        if (this.onayaAlindiysaBildir(result)) return;
         if (yuklemeKimligi !== this.ozelSandikYuklemeKimligi) return;
         if (result.isSuccess) this.ozelUstSandiklar.set(result.value ?? []);
         else this.toastService.error(result.error ?? 'Projenin sandıkları yüklenemedi.');
@@ -618,7 +620,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
     this.ambalajService.getTalepEdenKullanicilar()
       .pipe(finalize(() => this.talepEdenKullanicilariLoading.set(false)))
       .subscribe(result => {
-        if (result.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
+        if (this.onayaAlindiysaBildir(result)) return;
         if (result.isSuccess) {
           this.talepEdenKullanicilari.set(result.value ?? []);
           this.talepEdenSeciminiKayitlaEslestir();
@@ -661,7 +663,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
   bagimsizSandikSil(sandik: AmbalajBagimsizSandikDto): void {
     if (!confirm(`${sandik.sandikNo} sandığını silmek istediğinize emin misiniz?`)) return;
     this.ambalajService.bagimsizSandikSil(sandik.id, this.kritikGerekce).subscribe(result => {
-        if (result.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
+        if (this.onayaAlindiysaBildir(result)) return;
       if (result.isSuccess) {
         this.toastService.success('Sandık silindi.');
         this.bagimsizSandiklariYukle();
@@ -748,7 +750,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
     this.ambalajService.getPlan(proje.projeId, this.kaynakProjeTipiId(), this.planGrup())
       .pipe(finalize(() => this.planLoading.set(false)))
       .subscribe(result => {
-        if (result.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
+        if (this.onayaAlindiysaBildir(result)) return;
         if (result.isSuccess && result.value) {
           this.plan.set(result.value);
           return;
@@ -793,7 +795,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
     this.ambalajService.ambalajKarariKaydet(kalem.kaynakSandikId, ambalajaDahilMi, this.kritikGerekce)
       .pipe(finalize(() => this.ambalajKarariSaving.set(false)))
       .subscribe(result => {
-        if (result.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
+        if (this.onayaAlindiysaBildir(result)) return;
         if (result.isSuccess && result.value) {
           this.plan.set(result.value);
           this.loadProjects();
@@ -814,7 +816,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
     this.ambalajService.planKaydet(plan.projeId, this.planFirinPartiNo(plan, grup), seciliIds, grup, this.kaynakProjeTipiId(), this.kritikGerekce)
       .pipe(finalize(() => this.planSaving.set(false)))
       .subscribe(result => {
-        if (result.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
+        if (this.onayaAlindiysaBildir(result)) return;
         if (result.isSuccess && result.value) {
           this.plan.set(result.value);
           this.firinTaslaklari[this.taslakAnahtari(plan.projeId, grup)] = this.planFirinPartiNo(result.value, grup);
@@ -829,14 +831,14 @@ export class AmbalajUretimListesiComponent implements OnInit {
   firinPartiKaydet(proje: AmbalajProjeOzetDto): void {
     const grup = this.kuyrukGrubu();
     this.ambalajService.getPlan(proje.projeId, this.kaynakProjeTipiId(), grup).subscribe(result => {
-        if (result.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
+        if (this.onayaAlindiysaBildir(result)) return;
       if (!result.isSuccess || !result.value) {
         this.toastService.error(result.error ?? 'Proje planı yüklenemedi.');
         return;
       }
       const seciliIds = result.value.kalemler.filter(k => k.tur === grup && k.uretimeAlindi && k.kaynakSandikId).map(k => k.kaynakSandikId!);
       this.ambalajService.planKaydet(proje.projeId, this.firinTaslaklari[this.taslakAnahtari(proje.projeId, grup)] ?? '', seciliIds, grup, this.kaynakProjeTipiId(), this.kritikGerekce).subscribe(saveResult => {
-        if (saveResult.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
+        if (this.onayaAlindiysaBildir(saveResult)) return;
         if (saveResult.isSuccess) {
           this.toastService.success('Fırın parti numarası kaydedildi.');
           this.loadProjects();
@@ -882,7 +884,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
       ? this.ambalajService.kalemGuncelle(this.editingKalemId()!, request)
       : this.ambalajService.kalemEkle(plan.projeId, request);
     operation.pipe(finalize(() => this.planSaving.set(false))).subscribe(result => {
-        if (result.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
+        if (this.onayaAlindiysaBildir(result)) return;
       if (result.isSuccess) {
         this.toastService.success(this.editingKalemId() ? 'Sandık güncellendi.' : 'Sandık eklendi.');
         this.kalemFormOpen.set(false);
@@ -896,7 +898,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
   kalemSil(kalem: AmbalajUretimKalemDto): void {
     if (!confirm(`${kalem.sandikNo} sandığını silmek istediğinize emin misiniz?`)) return;
     this.ambalajService.kalemSil(kalem.id, this.kritikGerekce).subscribe(result => {
-        if (result.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
+        if (this.onayaAlindiysaBildir(result)) return;
       if (result.isSuccess) {
         this.toastService.success('Sandık silindi.');
         this.planYenile(this.plan()!.projeId);
@@ -920,7 +922,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
 
   icSandikSablonlariniYukle(): void {
     this.ambalajService.getIcSandikSablonlari().subscribe(result => {
-        if (result.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
+        if (this.onayaAlindiysaBildir(result)) return;
       if (result.isSuccess) this.icSandikSablonlari.set(result.value ?? []);
       else this.toastService.error(result.error ?? 'İç sandık şablonları yüklenemedi.');
     });
@@ -961,7 +963,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
     this.ambalajService.icSandikSablonuEkle(this.sablonForm)
       .pipe(finalize(() => this.sablonSaving.set(false)))
       .subscribe(result => {
-        if (result.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
+        if (this.onayaAlindiysaBildir(result)) return;
         if (result.isSuccess) {
           this.toastService.success('İç sandık şablonu kaydedildi.');
           this.sablonForm = this.bosSablonFormu();
@@ -974,7 +976,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
   sablonSil(sablon: AmbalajIcSandikSablonDto): void {
     if (!confirm(`${sablon.ad} şablonunu silmek istediğinize emin misiniz?`)) return;
     this.ambalajService.icSandikSablonuSil(sablon.id).subscribe(result => {
-        if (result.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
+        if (this.onayaAlindiysaBildir(result)) return;
       if (result.isSuccess) {
         this.icSandikSablonlari.update(items => items.filter(item => item.id !== sablon.id));
         this.toastService.success('Şablon silindi.');
@@ -992,7 +994,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
 
     this.ambalajService.getPlan(proje.projeId, proje.projeTipiId, tur as AmbalajGrup | null ?? undefined)
       .subscribe(result => {
-        if (result.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
+        if (this.onayaAlindiysaBildir(result)) return;
         if (!result.isSuccess || !result.value) {
           this.downloadingProjectId.set(null);
           this.toastService.error(result.error ?? 'Ambalaj kararları kontrol edilemedi.');
@@ -1023,6 +1025,13 @@ export class AmbalajUretimListesiComponent implements OnInit {
             this.toastService.error(hata.error ?? 'Ambalaj kararları kaydedilemedi.');
             return;
           }
+          // Onaya alınan karar henüz uygulanmadı; form kararsız kalemlerle indirilmez.
+          if (results.some(result => onayaAlindi(result))) {
+            this.toastService.info('Ambalaj kararları onaya gönderildi; üretim formu onaydan sonra indirilebilir.');
+            this.pdfUyari.set(null);
+            this.loadProjects();
+            return;
+          }
           this.pdfUyari.set(null);
           this.loadProjects();
           this.downloadingProjectId.set(uyari.proje.projeId);
@@ -1030,6 +1039,13 @@ export class AmbalajUretimListesiComponent implements OnInit {
         },
         error: () => this.toastService.error('Ambalaj kararları kaydedilemedi.'),
       });
+  }
+
+  /** 202: istek onaya gönderildi, işlem henüz uygulanmadı; uygulanmış sonucun akışı çalıştırılmaz. */
+  private onayaAlindiysaBildir(sonuc: ApiResult<unknown>): boolean {
+    if (!onayaAlindi(sonuc)) return false;
+    this.toastService.info('İşlem onay bekliyor.');
+    return true;
   }
 
   pdfUyarisiKapat(): void {
@@ -1126,7 +1142,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
 
   private planYenile(projeId: number): void {
     this.ambalajService.getPlan(projeId, this.kaynakProjeTipiId(), this.planGrup()).subscribe(result => {
-        if (result.statusCode === 202) { this.toastService.info('İşlem onay bekliyor.'); return; }
+        if (this.onayaAlindiysaBildir(result)) return;
       if (result.isSuccess && result.value) this.plan.set(result.value);
       else this.toastService.error(result.error ?? 'Üretim planı yenilenemedi.');
     });

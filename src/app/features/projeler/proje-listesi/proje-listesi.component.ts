@@ -23,6 +23,7 @@ import {
   SahaAktarimDto,
   SandikDto,
   SevkiyatDto,
+  onayaAlindi,
 } from '../../../shared/models/index';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmService } from '../../../core/services/confirm.service';
@@ -1546,7 +1547,7 @@ export class ProjeListesiComponent implements OnInit {
       next: (res) => {
         this.kilitAcSaving.set(false);
         if (res.isSuccess) {
-          const queued = (res.value as any)?.statusCode === 202;
+          const queued = onayaAlindi(res);
           this.toastService.success(queued ? 'Kilit açma talebi onaya gönderildi.' : 'Proje kilidi başarıyla açıldı.');
           this.closeKilitAcModal();
           this.loadProjeler();
