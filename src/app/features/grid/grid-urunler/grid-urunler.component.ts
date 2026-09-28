@@ -8,7 +8,7 @@ import { GridService } from '../../../core/services/grid.service';
 import { SandikService } from '../../../core/services/sandik.service';
 import { ProjeService } from '../../../core/services/proje.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { ConfirmService } from '../../../core/services/confirm.service';
+import { ConfirmService, duzMetin } from '../../../core/services/confirm.service';
 import { PdfService } from '../../../core/services/pdf.service';
 
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
@@ -872,7 +872,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       || u.surecDurumId != null;
   }
 
-  durumSifirla(urun?: GridUrunDto) {
+  async durumSifirla(urun?: GridUrunDto) {
     const u = urun ?? this.panelUrun();
     if (!u) return;
     if (this.isSatirSevkKilidi(u)) {
@@ -881,8 +881,15 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (!confirm(`"${u.aciklama}" ürününün Grid durumunu sıfırlamak istediğinize emin misiniz?\n\nGrid alanlarıyla birlikte Kalite ve Süreç durumları da temizlenecek; ürün çeki yüklendiğindeki ham durumuna dönecektir.\n\nBu işlem geri alınamaz.`))
-      return;
+    const onay = await this.confirmService.ask({
+      title: 'Grid Durumunu Sıfırla',
+      message: `<strong>${duzMetin(u.aciklama)}</strong> ürününün Grid durumunu sıfırlamak istediğinize emin misiniz?<br><br>Grid alanlarıyla birlikte Kalite ve Süreç durumları da temizlenecek; ürün çeki yüklendiğindeki ham durumuna dönecektir.<br><br><small class="text-muted">Bu işlem geri alınamaz.</small>`,
+      confirmText: 'Evet, Sıfırla',
+      cancelText: 'Vazgeç',
+      type: 'danger'
+    });
+
+    if (!onay) return;
 
     this.panelSaving.set(true);
     this.panelError.set('');

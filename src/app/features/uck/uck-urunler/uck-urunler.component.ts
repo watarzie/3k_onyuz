@@ -10,7 +10,7 @@ import { ProjeService } from '../../../core/services/proje.service';
 import { GridService } from '../../../core/services/grid.service';
 import { StokService } from '../../../core/services/stok.service';
 import { SandikService } from '../../../core/services/sandik.service';
-import { ConfirmService } from '../../../core/services/confirm.service';
+import { ConfirmService, duzMetin } from '../../../core/services/confirm.service';
 import { PdfService } from '../../../core/services/pdf.service';
 import { PermissionService } from '../../../core/services/permission.service';
 
@@ -1315,12 +1315,19 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       || u.surecDurumId != null;
   }
 
-  durumSifirla(urun?: UcKUrunDto) {
+  async durumSifirla(urun?: UcKUrunDto) {
     const u = urun ?? this.panelUrun();
     if (!u) return;
 
-    if (!confirm(`"${u.aciklama}" ürününün 3K karşılama durumunu sıfırlamak istediğinize emin misiniz?\n\n3K alanları sıfırlanacak; ürünün toplam 3K hareketi başlangıç seviyesine dönerse Kalite ve Süreç durumları da temizlenecektir. Diğer sandıklarda devam eden hareketler varsa bu iki durum korunur.\n\nBu işlem geri alınamaz.`))
-      return;
+    const onay = await this.confirmService.ask({
+      title: '3K Durumunu Sıfırla',
+      message: `<strong>${duzMetin(u.aciklama)}</strong> ürününün 3K karşılama durumunu sıfırlamak istediğinize emin misiniz?<br><br>3K alanları sıfırlanacak; ürünün toplam 3K hareketi başlangıç seviyesine dönerse Kalite ve Süreç durumları da temizlenecektir. Diğer sandıklarda devam eden hareketler varsa bu iki durum korunur.<br><br><small class="text-muted">Bu işlem geri alınamaz.</small>`,
+      confirmText: 'Evet, Sıfırla',
+      cancelText: 'Vazgeç',
+      type: 'danger'
+    });
+
+    if (!onay) return;
 
     this.panelSaving.set(true);
     this.panelError.set('');

@@ -7,12 +7,14 @@ import { FinansService } from '../../core/services/finans.service';
 import { AmbalajService } from '../../core/services/ambalaj.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { ToastService } from '../../core/services/toast.service';
+import { ConfirmService } from '../../core/services/confirm.service';
 import { FINANS_YETKI } from '../../core/constants/yetki-kodlari';
 import { FinansUrun } from '../../shared/models/finans.model';
 
 describe('Finans ürün ve tarife kaydı', () => {
   let api: jasmine.SpyObj<FinansService>;
   let toast: jasmine.SpyObj<ToastService>;
+  let onay: jasmine.SpyObj<ConfirmService>;
   const okuma = new Set<string>([
     FINANS_YETKI.Modul,
     FINANS_YETKI.IsKutuphanesiYonet,
@@ -29,6 +31,8 @@ describe('Finans ürün ve tarife kaydı', () => {
     api.urunler.and.returnValue(of({ isSuccess: true, value: sayfa }));
     api.giderKategorileri.and.returnValue(of({ isSuccess: true, value: [] }));
     toast = jasmine.createSpyObj('ToastService', ['success', 'info', 'error']);
+    onay = jasmine.createSpyObj('ConfirmService', ['ask']);
+    onay.ask.and.resolveTo(true);
     TestBed.configureTestingModule({
       imports: [FinansYonetimiComponent],
       providers: [
@@ -36,6 +40,7 @@ describe('Finans ürün ve tarife kaydı', () => {
         { provide: FinansService, useValue: api },
         { provide: AmbalajService, useValue: {} },
         { provide: ToastService, useValue: toast },
+        { provide: ConfirmService, useValue: onay },
         {
           provide: PermissionService,
           useValue: { loaded: signal(true), hasAccess: (k: string) => okuma.has(k) || yazma.has(k), canWrite: (k: string) => yazma.has(k) },
@@ -65,14 +70,23 @@ describe('Finans ürün ve tarife kaydı', () => {
     expect(c.urunEslesmeMetni(urun)).not.toContain('Eski');
   });
 
-  it('onaya düşen silmeyi başarılı saymaz', () => {
+  it('onaya düşen silmeyi başarılı saymaz', async () => {
     api.urunSil.and.returnValue(of({ isSuccess: true, statusCode: 202 }));
-    spyOn(window, 'confirm').and.returnValue(true);
     const c = TestBed.createComponent(FinansYonetimiComponent).componentInstance;
 
-    c.urunSil(urun);
+    await c.urunSil(urun);
 
     expect(toast.info).toHaveBeenCalled();
     expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it('silme onaylanmazsa tarifeyi silmez', async () => {
+    onay.ask.and.resolveTo(false);
+    const c = TestBed.createComponent(FinansYonetimiComponent).componentInstance;
+
+    await c.urunSil({ ...urun, ad: 'Kapak <A>' });
+
+    expect(onay.ask.calls.mostRecent().args[0].message).toContain('Kapak &lt;A&gt;');
+    expect(api.urunSil).not.toHaveBeenCalled();
   });
 });

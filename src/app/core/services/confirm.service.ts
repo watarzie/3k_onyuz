@@ -2,10 +2,18 @@ import { Injectable, signal } from '@angular/core';
 
 export interface ConfirmOptions {
   title?: string;
+  /** HTML olarak işlenir; kullanıcıdan ya da sunucudan gelen metin duzMetin() ile eklenir. */
   message: string;
   confirmText?: string;
   cancelText?: string;
   type?: 'danger' | 'warning' | 'info' | 'success';
+}
+
+const HTML_KARSILIKLARI: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+
+/** Değeri onay mesajına düz metin olarak ekler: HTML özel karakterleri kaçışlanır, metin yazıldığı gibi görünür. */
+export function duzMetin(deger: string | number | null | undefined): string {
+  return String(deger ?? '').replace(/[&<>"']/g, karakter => HTML_KARSILIKLARI[karakter]);
 }
 
 /**

@@ -41,6 +41,7 @@ import {
   onayaAlindi,
 } from '../../shared/models';
 import { dosyayiKaydet } from '../../core/services/dosya-kaydet';
+import { ConfirmService, duzMetin } from '../../core/services/confirm.service';
 
 interface AylikGrup {
   ad: string;
@@ -67,6 +68,7 @@ export class FinansYonetimiComponent implements OnInit {
   private service = inject(FinansService);
   private ambalajService = inject(AmbalajService);
   private toast = inject(ToastService);
+  private confirmService = inject(ConfirmService);
   private destroyRef = inject(DestroyRef);
   readonly permissions = inject(PermissionService);
   readonly izin = FINANS_YETKI;
@@ -842,9 +844,16 @@ export class FinansYonetimiComponent implements OnInit {
     });
   }
 
-  urunSil(urun: FinansUrun): void {
+  async urunSil(urun: FinansUrun): Promise<void> {
     if (!this.ayarYazabilir('tarifeler')) return;
-    if (!confirm(`${urun.kod} · ${urun.ad} tarifesini silmek istediğinize emin misiniz?\n\nSipariş geçmişinde kullanılmış tarifeler silinemez; düzenlenerek pasif duruma getirilebilir.`)) return;
+    const onay = await this.confirmService.ask({
+      title: 'Tarifeyi Sil',
+      message: `<strong>${duzMetin(urun.kod)} · ${duzMetin(urun.ad)}</strong> tarifesini silmek istediğinize emin misiniz?<br><br><small class="text-muted">Sipariş geçmişinde kullanılmış tarifeler silinemez; düzenlenerek pasif duruma getirilebilir.</small>`,
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      type: 'danger'
+    });
+    if (!onay) return;
     this.urunSiliniyorId.set(urun.id);
     this.service.urunSil(urun.id).subscribe(result => {
       this.urunSiliniyorId.set(null);

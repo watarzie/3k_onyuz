@@ -40,6 +40,7 @@ import {
 } from '../../shared/models';
 import { AMBALAJ_YETKI } from '../../core/constants/yetki-kodlari';
 import { dosyayiKaydet } from '../../core/services/dosya-kaydet';
+import { ConfirmService, duzMetin } from '../../core/services/confirm.service';
 
 @Component({
   selector: 'app-ambalaj-uretim-listesi',
@@ -64,6 +65,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
   }
   private ambalajService = inject(AmbalajService);
   private toastService = inject(ToastService);
+  private confirmService = inject(ConfirmService);
   private projeService = inject(ProjeService);
   private destroyRef = inject(DestroyRef);
   private projeListeIstekleri = new Subject<boolean>();
@@ -661,10 +663,10 @@ export class AmbalajUretimListesiComponent implements OnInit {
     if (kullanici) this.ozelForm.talimatVeren = kullanici.adSoyad;
   }
 
-  bagimsizSandikSil(sandik: AmbalajBagimsizSandikDto): void {
-    if (!confirm(`${sandik.sandikNo} sandığını silmek istediğinize emin misiniz?`)) return;
+  async bagimsizSandikSil(sandik: AmbalajBagimsizSandikDto): Promise<void> {
+    if (!(await this.sandikSilmeOnayi(sandik.sandikNo))) return;
     this.ambalajService.bagimsizSandikSil(sandik.id, this.kritikGerekce).subscribe(result => {
-        if (this.onayaAlindiysaBildir(result)) return;
+      if (this.onayaAlindiysaBildir(result)) return;
       if (result.isSuccess) {
         this.toastService.success('Sandık silindi.');
         this.bagimsizSandiklariYukle();
@@ -886,10 +888,10 @@ export class AmbalajUretimListesiComponent implements OnInit {
     });
   }
 
-  kalemSil(kalem: AmbalajUretimKalemDto): void {
-    if (!confirm(`${kalem.sandikNo} sandığını silmek istediğinize emin misiniz?`)) return;
+  async kalemSil(kalem: AmbalajUretimKalemDto): Promise<void> {
+    if (!(await this.sandikSilmeOnayi(kalem.sandikNo))) return;
     this.ambalajService.kalemSil(kalem.id, this.kritikGerekce).subscribe(result => {
-        if (this.onayaAlindiysaBildir(result)) return;
+      if (this.onayaAlindiysaBildir(result)) return;
       if (result.isSuccess) {
         this.toastService.success('Sandık silindi.');
         this.planYenile(this.plan()!.projeId);
@@ -964,10 +966,17 @@ export class AmbalajUretimListesiComponent implements OnInit {
       });
   }
 
-  sablonSil(sablon: AmbalajIcSandikSablonDto): void {
-    if (!confirm(`${sablon.ad} şablonunu silmek istediğinize emin misiniz?`)) return;
+  async sablonSil(sablon: AmbalajIcSandikSablonDto): Promise<void> {
+    const onay = await this.confirmService.ask({
+      title: 'Şablonu Sil',
+      message: `<strong>${duzMetin(sablon.ad)}</strong> şablonunu silmek istediğinize emin misiniz?`,
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      type: 'danger'
+    });
+    if (!onay) return;
     this.ambalajService.icSandikSablonuSil(sablon.id).subscribe(result => {
-        if (this.onayaAlindiysaBildir(result)) return;
+      if (this.onayaAlindiysaBildir(result)) return;
       if (result.isSuccess) {
         this.icSandikSablonlari.update(items => items.filter(item => item.id !== sablon.id));
         this.toastService.success('Şablon silindi.');
@@ -1037,6 +1046,16 @@ export class AmbalajUretimListesiComponent implements OnInit {
     if (!onayaAlindi(sonuc)) return false;
     this.toastService.info('İşlem onay bekliyor.');
     return true;
+  }
+
+  private sandikSilmeOnayi(sandikNo: string): Promise<boolean> {
+    return this.confirmService.ask({
+      title: 'Sandığı Sil',
+      message: `<strong>${duzMetin(sandikNo)}</strong> sandığını silmek istediğinize emin misiniz?`,
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      type: 'danger'
+    });
   }
 
   pdfUyarisiKapat(): void {
