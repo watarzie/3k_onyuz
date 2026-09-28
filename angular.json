@@ -56,11 +56,8 @@
               "node_modules/remixicon/fonts/remixicon.css",
               "src/styles.scss"
             ],
-            "scripts": [
-              "node_modules/apexcharts/dist/apexcharts.min.js",
-              "node_modules/pdfmake/build/pdfmake.min.js",
-              "node_modules/pdfmake/build/vfs_fonts.js"
-            ]
+            "allowedCommonJsDependencies": ["pdfmake"],
+            "scripts": []
           },
           "configurations": {
             "production": {

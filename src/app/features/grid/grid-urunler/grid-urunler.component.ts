@@ -19,8 +19,8 @@ import { GridUrunDto, GridDurumGuncelleDto, ProjeDropdownDto, CekiSatiriAnaVeriG
 import { GridDurum, GridSevkDurum, SurecDurum, UcKDurum } from '../../../core/constants/enums';
 import { PermissionService } from '../../../core/services/permission.service';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
+import { pdfMakeYukle } from '../../../core/services/pdfmake-yukleyici';
 
-declare const pdfMake: any;
 
 interface AmbarTalepItem {
   cekiSatiriId: number;
@@ -1534,7 +1534,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     if (items.length === 0) this.closeAmbarTalepModal();
   }
 
-  generateAmbarTalepPdf() {
+  async generateAmbarTalepPdf(): Promise<void> {
     const items = this.ambarTalepItems();
     if (items.length === 0) return;
     this.ambarTalepGenerating.set(true);
@@ -1676,7 +1676,8 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       };
 
       const fileName = `Talep_Formu_${dateStr.replace(/\./g, '-')}_${timeStr.replace(':', '')}`;
-      pdfMake.createPdf(docDefinition).download(`${fileName}.pdf`);
+      const pdfMake = await pdfMakeYukle();
+      await pdfMake.createPdf(docDefinition).download(`${fileName}.pdf`);
       this.toast.success('Talep Formu PDF olarak indirildi.');
 
       // Seçili ürünlerin süreç durumunu talep kaynağına göre güncelle
