@@ -117,13 +117,6 @@ export interface UrunGuncelleDto {
   projeId: number;
 }
 
-export interface SandikDegistirDto {
-  cekiSatiriId: number;
-  yeniFiiliSandikNo: string;
-  projeId: number;
-  kullaniciId: number;
-}
-
 export interface SandikOzellikGuncelleDto {
   sandikId: number;
   sandikIsmi?: string;
@@ -133,40 +126,6 @@ export interface SandikOzellikGuncelleDto {
   netKg?: number;
   grossKg?: number;
   depoLokasyonId?: number;
-}
-
-export interface TeslimAlDto {
-  cekiSatiriId: number;
-  projeId: number;
-  gelenMiktar: number;
-  not?: string;
-}
-
-export interface TopluTeslimAlDto {
-  projeId: number;
-  urunler: { cekiSatiriId: number; gelenMiktar: number }[];
-  not?: string;
-}
-
-export interface UrunIptalDto {
-  cekiSatiriId: number;
-  projeId: number;
-  kullaniciId: number;
-}
-
-export interface EksikUrunDto {
-  cekiSatiriId: number;
-  siraNo: number;
-  barkodNo: string;
-  aciklama: string;
-  istenenAdet: number;
-  gelenMiktar: number;
-  eksikMiktar: number;
-  gridDurumuId: number;
-  gridDurumuMetni: string;
-  ucKDurumuId: number;
-  ucKDurumuMetni: string;
-  sandikNo: string;
 }
 
 export interface UrunTasiDto {

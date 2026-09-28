@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 
 const TOKEN_KEY = '3k_token';
-const LANG_KEY = '3k_lang';
 const REMEMBER_KEY = '3k_remember';
 
 // Eski key'ler — temizlenmesi gereken
@@ -11,7 +10,7 @@ const LEGACY_KEYS = ['3k_user', '3k_role', '3k_rolId'];
  * Oturum bilgilerini merkezi olarak yöneten servis.
  *
  * GÜVENLİK:
- * - Sadece JWT token ve dil tercihi saklanır.
+ * - Sadece JWT token ve "beni hatırla" tercihi saklanır; dil tercihini TranslationService yönetir.
  * - Kullanıcı bilgileri (rol, ad, email) JWT'den decode edilir.
  * - Hassas bilgiler localStorage'da SAKLANMAZ.
  *
@@ -55,15 +54,6 @@ export class SessionManager {
     return localStorage.getItem(REMEMBER_KEY) === 'true';
   }
 
-  // ===== Dil (güvenlik dışı) =====
-  setLang(lang: string): void {
-    localStorage.setItem(LANG_KEY, lang);
-  }
-
-  getLang(): string {
-    return localStorage.getItem(LANG_KEY) ?? 'tr';
-  }
-
   // ===== JWT Decode =====
 
   /**
@@ -88,19 +78,6 @@ export class SessionManager {
     } catch {
       return null;
     }
-  }
-
-  /** JWT'den RolId claim'ini okur */
-  getRolId(): number | null {
-    const payload = this.decodeToken();
-    if (!payload?.['RolId']) return null;
-    return parseInt(payload['RolId'], 10);
-  }
-
-  /** JWT'den rol adını okur */
-  getRole(): string | null {
-    const payload = this.decodeToken();
-    return payload?.['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ?? null;
   }
 
   /** JWT'den kullanıcı bilgilerini okur */
@@ -135,11 +112,6 @@ export class SessionManager {
     return new Date(parseInt(payload['exp'], 10) * 1000);
   }
 
-  /** Oturum geçerli mi? (token var + süresi dolmamış) */
-  isAuthenticated(): boolean {
-    return !!this.token && !this.isTokenExpired();
-  }
-
   /** Oturum bilgilerini temizle — eski key'ler dahil */
   clearAll(): void {
     localStorage.removeItem(TOKEN_KEY);
@@ -163,15 +135,5 @@ export class SessionManager {
       localStorage.setItem(REMEMBER_KEY, 'false');
     }
     sessionStorage.removeItem(TOKEN_KEY);
-  }
-
-  // ===== Eski API uyumluluğu (deprecated — no-op) =====
-  setUser(_user: unknown): void { /* JWT'den okunur */ }
-  setRole(_role: string): void { /* JWT'den okunur */ }
-  setRolId(_rolId: number): void { /* JWT'den okunur */ }
-
-  getSession<T>(key: string): T | null {
-    if (key === '3k_user') return this.getUser() as T | null;
-    return null;
   }
 }

@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiRevizyonApiResult, CekiRevizyonYuklemeYaniti, CekiRevizyonOnizlemeSonuc, CekiSatiriDto, ProjeDropdownDto, SevkiyatDto, EksiklerdenSahaProjesiOlusturDto, SandiklardanSahaProjesiOlusturDto, SahaAktarimDto, SahaSandikAktarimGeriAlResultDto } from '../../shared/models/index';
+import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiRevizyonApiResult, CekiRevizyonYuklemeYaniti, CekiRevizyonOnizlemeSonuc, ProjeDropdownDto, SevkiyatDto, EksiklerdenSahaProjesiOlusturDto, SandiklardanSahaProjesiOlusturDto, SahaAktarimDto, SahaSandikAktarimGeriAlResultDto } from '../../shared/models/index';
 
 /**
  * ProjeController (2 endpoint) + CekiController (2 endpoint):
@@ -138,17 +138,6 @@ export class ProjeService {
     return this.api.delete<boolean>(API.PROJE.DELETE(projeId));
   }
 
-  // ===== Sandık Sevk =====
-
-  sandikSevkEt(projeId: number, sandikId: number, aciklama?: string, aracPlaka?: string): Observable<ApiResult<boolean>> {
-    return this.api.post<boolean>(API.SANDIK.SEVK_ET, {
-      projeId,
-      sandikId,
-      aciklama: aciklama?.trim() || null,
-      aracPlaka: aracPlaka?.trim() || null,
-    });
-  }
-
   // ===== Saha/Yedek Malzeme =====
 
   sahaYedekMalzemeEkle(payload: {
@@ -202,9 +191,5 @@ export class ProjeService {
       API.CEKI.REVIZYON_YUKLE,
       formData
     );
-  }
-
-  getCekiSatirlari(cekiId: number): Observable<ApiResult<CekiSatiriDto[]>> {
-    return this.api.get<CekiSatiriDto[]>(API.CEKI.SATIRLAR(cekiId));
   }
 }

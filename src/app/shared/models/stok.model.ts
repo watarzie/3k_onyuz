@@ -24,11 +24,3 @@ export interface StokKaydiOlusturDto {
   kaynakProje?: string;
   stokGirisNedeni?: string;
 }
-
-export interface StokKarsilamaDto {
-  cekiSatiriId: number;
-  stokKaydiId: number;
-  miktar: number;
-  kullaniciId: number;
-  projeId: number;
-}

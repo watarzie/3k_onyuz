@@ -31,20 +31,6 @@ export interface LoginResultDto {
   kurtarmaKodlari?: string[] | null;
 }
 
-export interface TwoFactorSetupStartRequest {
-  challengeToken: string;
-}
-
-export interface TwoFactorCodeRequest {
-  challengeToken: string;
-  kod: string;
-}
-
-export interface TwoFactorRecoveryRequest {
-  challengeToken: string;
-  kurtarmaKodu: string;
-}
-
 export interface TwoFactorSetupDto {
   challengeToken: string;
   expiresInSeconds: number;

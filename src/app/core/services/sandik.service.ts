@@ -5,8 +5,7 @@ import { API } from '../constants/api-endpoints';
 import { SandikUrunleriTopluTasiDto } from '../../shared/models/sandik-toplu-tasima.model';
 import {
   ApiResult, SandikDto, SandikDetayDto, SandikEkleDto, ManuelUrunEkleDto,
-  UrunGuncelleDto, SandikDegistirDto, TeslimAlDto, TopluTeslimAlDto,
-  UrunIptalDto, StokKarsilamaDto, EksikUrunDto, UrunTasiDto, SandikOzellikGuncelleDto,
+  UrunGuncelleDto, UrunTasiDto, SandikOzellikGuncelleDto,
   CekiSatiriAnaVeriGuncelleDto, CekiSatirlariSilDto, CekiSatirlariSilResultDto,
   EksikUrunForSandikDto
 } from '../../shared/models/index';
@@ -40,20 +39,6 @@ export class SandikService {
     return this.api.get<SandikDetayDto>(API.SANDIK.ICERIK(sandikId));
   }
 
-  getEksikUrunler(projeId: number): Observable<ApiResult<EksikUrunDto[]>> {
-    return this.api.get<EksikUrunDto[]>(API.SANDIK.EKSIK_URUNLER(projeId));
-  }
-
-  // ===== 3K Teslim Alma =====
-
-  teslimAl(dto: TeslimAlDto): Observable<ApiResult<unknown>> {
-    return this.api.put<unknown>(API.SANDIK.TESLIM_AL, dto);
-  }
-
-  topluTeslimAl(dto: TopluTeslimAlDto): Observable<ApiResult<unknown>> {
-    return this.api.post<unknown>(API.SANDIK.TOPLU_TESLIM_AL, dto);
-  }
-
   // ===== Ürün / Sandık İşlemleri =====
 
   urunGuncelle(dto: UrunGuncelleDto): Observable<ApiResult<unknown>> {
@@ -73,14 +58,6 @@ export class SandikService {
     return this.api.put<unknown>(API.SANDIK.OZELLIK_GUNCELLE, dto);
   }
 
-  sandikDegistir(dto: SandikDegistirDto): Observable<ApiResult<unknown>> {
-    return this.api.put<unknown>(API.SANDIK.DEGISTIR, dto);
-  }
-
-  urunIptal(dto: UrunIptalDto): Observable<ApiResult<unknown>> {
-    return this.api.post<unknown>(API.SANDIK.IPTAL, dto);
-  }
-
   // ===== Ekleme =====
 
   sandikEkle(dto: SandikEkleDto): Observable<ApiResult<unknown>> {
@@ -91,15 +68,7 @@ export class SandikService {
     return this.api.post<unknown>(API.SANDIK.MANUEL_EKLE, dto);
   }
 
-  // ===== Stok / FB Karşılama =====
-
-  stoktanKarsila(dto: StokKarsilamaDto): Observable<ApiResult<unknown>> {
-    return this.api.post<unknown>(API.SANDIK.STOKTAN_KARSILA, dto);
-  }
-
-  fbdenKarsila(dto: unknown): Observable<ApiResult<unknown>> {
-    return this.api.post<unknown>(API.SANDIK.FBDEN_KARSILA, dto);
-  }
+  // ===== Kapatma, Sevk ve Taşıma =====
 
   kapat(sandikId: number, forceClose: boolean = false): Observable<any> {
     return this.api.post<any>(API.SANDIK.KAPAT, { sandikId, forceClose });

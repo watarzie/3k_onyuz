@@ -12,18 +12,6 @@ import { Observable } from 'rxjs';
 export class PdfService {
   private api = inject(BaseApiService);
 
-  indirPdf(projeId: number): Observable<Blob> {
-    return this.api.downloadFile(API.PDF.INDIR(projeId));
-  }
-
-  indirExcel(projeId: number): Observable<Blob> {
-    return this.api.downloadFile(API.PDF.EXCEL(projeId));
-  }
-
-  sahaSandikPdf(sandikId: number): Observable<Blob> {
-    return this.api.downloadFile(API.PDF.SAHA_SANDIK(sandikId));
-  }
-
   sahaProjePdf(projeId: number): Observable<Blob> {
     return this.api.downloadFile(API.PDF.SAHA_PROJE(projeId));
   }

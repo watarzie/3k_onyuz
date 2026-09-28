@@ -1,5 +1,3 @@
-export type FinansSekme = 'akis' | 'projeler' | 'siparisler' | 'faturalar' | 'ozel-isler' | 'duzenli-isler' | 'giderler' | 'urunler' | 'raporlar' | 'ayarlar';
-
 export type FinansFiyatlandirmaBirimi = 1 | 2 | 3 | 4;
 
 export interface FinansParaToplami {

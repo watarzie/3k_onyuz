@@ -11,11 +11,9 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { SandikDto } from '../../../shared/models/index';
 import { SandikTipi, DepoLokasyon, ProjeTipi } from '../../../core/constants/enums';
 import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
-import { PdfService } from '../../../core/services/pdf.service';
 import { ConfirmService, duzMetin } from '../../../core/services/confirm.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
-import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 
 @Component({
   selector: 'app-sandik-listesi',
@@ -30,7 +28,6 @@ export class SandikListesiComponent implements OnInit {
   private sandikService = inject(SandikService);
   private lookupService = inject(LookupService);
   private toast = inject(ToastService);
-  private pdfService = inject(PdfService);
   private confirmService = inject(ConfirmService);
   private permissionService = inject(PermissionService);
 
@@ -39,7 +36,6 @@ export class SandikListesiComponent implements OnInit {
   filteredSandiklar = signal<SandikDto[]>([]);
   loading = signal(true);
   searchTerm = signal('');
-  downloadingPdf = signal<number | null>(null);
 
   // Sandık Ekleme Modal
   showEkleModal = signal(false);
@@ -62,7 +58,6 @@ export class SandikListesiComponent implements OnInit {
   private readonly projeTipi = projeTipiBaglami(rotaProjeTipi(this.route.snapshot));
   readonly routePrefix = this.projeTipi.yonetimRotasi;
   readonly isSahaYedek = this.projeTipi.tip !== ProjeTipi.Normal;
-  readonly isYedekYonetimi = this.projeTipi.tip === ProjeTipi.Yedek;
   canWriteSandik = computed(() => {
     const menuKod = this.route.snapshot.data['menuKod'] || YETKI.SANDIK.YONETIMI;
     return this.permissionService.canWrite(menuKod);
@@ -131,21 +126,6 @@ export class SandikListesiComponent implements OnInit {
     return sandik.sahaUzerindenSevkEdildiMi
       ? 'Sevk Edildi (Saha)'
       : this.getDurumLabel(sandik.durumMetni);
-  }
-
-  indirPdf(sandikId: number) {
-    this.downloadingPdf.set(sandikId);
-    this.pdfService.sahaSandikPdf(sandikId).subscribe({
-      next: (blob) => {
-        this.downloadingPdf.set(null);
-        dosyayiKaydet(blob, `${this.isYedekYonetimi ? 'Yedek' : 'Saha'}SandikRaporu_${sandikId}.pdf`);
-        this.toast.success('Rapor başarıyla indirildi.');
-      },
-      error: () => {
-        this.downloadingPdf.set(null);
-        this.toast.error('Rapor indirilirken bir hata oluştu.');
-      }
-    });
   }
 
   // ===== Sandık Ekleme =====

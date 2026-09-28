@@ -115,17 +115,6 @@ export interface SahaSandikAktarimGeriAlResultDto {
   sandikBosaldiMi: boolean;
 }
 
-export interface ProjeTransferDto {
-  id: number;
-  kaynakProjeNo: string;
-  hedefProjeNo: string;
-  barkodNo: string;
-  miktar: number;
-  kullaniciAdi: string;
-  aciklama?: string;
-  tarih: string;
-}
-
 /** Dropdown'lar için hafif proje DTO — sadece Id/ProjeNo/Musteri */
 export interface SevkiyatSandikDto {
   sandikId: number;

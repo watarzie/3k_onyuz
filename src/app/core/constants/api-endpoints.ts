@@ -16,7 +16,6 @@ const BASE = environment.apiBaseUrl;
 export const API = {
   AUTH: {
     LOGIN: `${BASE}/auth/login`,
-    SEED_ADMIN: `${BASE}/auth/seed-admin`,
     REFRESH_TOKEN: `${BASE}/auth/refresh-token`,
     TWO_FACTOR_SETUP_START: `${BASE}/auth/2fa/setup/start`,
     TWO_FACTOR_SETUP_CONFIRM: `${BASE}/auth/2fa/setup/confirm`,
@@ -141,7 +140,6 @@ export const API = {
     YEDEK_YUKLE: `${BASE}/ceki/yedek-yukle`,
     REVIZYON_ONIZLE: `${BASE}/ceki/revizyon-onizle`,
     REVIZYON_YUKLE: `${BASE}/ceki/revizyon-yukle`,
-    SATIRLAR: (cekiId: number) => `${BASE}/ceki/${cekiId}/satirlar`,
   },
   SANDIK: {
     BY_PROJE: (projeId: number) => `${BASE}/sandik/${projeId}/sandiklar`,
@@ -152,20 +150,12 @@ export const API = {
     CEKI_SATIRI_GUNCELLE: `${BASE}/sandik/ceki-satiri-guncelle`,
     CEKI_SATIRLARI_SIL: `${BASE}/sandik/ceki-satirlari-sil`,
     OZELLIK_GUNCELLE: `${BASE}/sandik/ozellik-guncelle`,
-    DEGISTIR: `${BASE}/sandik/degistir`,
-    IPTAL: `${BASE}/sandik/iptal`,
-    STOKTAN_KARSILA: `${BASE}/sandik/stoktan-karsila`,
-    FBDEN_KARSILA: `${BASE}/sandik/fbden-karsila`,
-    TESLIM_AL: `${BASE}/sandik/teslim-al`,
-    TOPLU_TESLIM_AL: `${BASE}/sandik/toplu-teslim-al`,
-    EKSIK_URUNLER: (projeId: number) => `${BASE}/sandik/${projeId}/eksik-urunler`,
     KAPAT: `${BASE}/sandik/kapat`,
     TOPLU_KAPAT: `${BASE}/sandik/toplu-kapat`,
     LOKASYON_GUNCELLE: `${BASE}/sandik/lokasyon-guncelle`,
     URUN_TASI: `${BASE}/sandik/urun-tasi`,
     URUNLERI_TOPLU_TASI: `${BASE}/sandik/urunleri-toplu-tasi`,
     SAHA_YEDEK_MALZEME_EKLE: `${BASE}/sandik/saha-yedek-malzeme-ekle`,
-    SEVK_ET: `${BASE}/sandik/sevk-et`,
     KILIDI_AC: `${BASE}/sandik/kilidi-ac`,
     SEVKIYAT_DUZELTME_TAMAMLA: `${BASE}/sandik/sevkiyat-duzeltme-tamamla`,
     MANUEL_URUN_SIL: `${BASE}/sandik/manuel-urun-sil`,
@@ -196,7 +186,6 @@ export const API = {
   STOK: {
     LIST: `${BASE}/stok`,
     CREATE: `${BASE}/stok`,
-    KARSILA: `${BASE}/stok/karsila`,
     DELETE: (id: number) => `${BASE}/stok/${id}`,
   },
   ONAY: {
@@ -230,9 +219,6 @@ export const API = {
     TWO_FACTOR_RESET: (id: number) => `${BASE}/kullanici/${id}/2fa`,
   },
   PDF: {
-    INDIR: (projeId: number) => `${BASE}/pdf/${projeId}/indir`,
-    EXCEL: (projeId: number) => `${BASE}/pdf/${projeId}/excel`,
-    SAHA_SANDIK: (sandikId: number) => `${BASE}/pdf/saha-sandik/${sandikId}`,
     SAHA_PROJE: (projeId: number) => `${BASE}/pdf/saha-proje/${projeId}`,
     EKSIK_URUNLER: (projeId: number) => `${BASE}/pdf/eksik-urunler/${projeId}`,
     EKSIK_URUNLER_EXCEL: (projeId: number) => `${BASE}/pdf/eksik-urunler/${projeId}/excel`,

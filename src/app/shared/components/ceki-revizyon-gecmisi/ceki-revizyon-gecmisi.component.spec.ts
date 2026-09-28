@@ -17,7 +17,7 @@ describe('Revizyon geçmişi ekranı', () => {
     },
   });
   beforeEach(() => {
-    service = jasmine.createSpyObj<CekiRevizyonGecmisiService>('history', ['listele', 'detay', 'dosya', 'dosyaHatasi']);
+    service = jasmine.createSpyObj<CekiRevizyonGecmisiService>('history', ['listele', 'detay', 'dosya']);
     service.listele.and.returnValue(of(page([1])));
     TestBed.configureTestingModule({ imports: [CekiRevizyonGecmisiComponent], providers: [
       { provide: CekiRevizyonGecmisiService, useValue: service },
