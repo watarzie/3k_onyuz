@@ -18,6 +18,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
 import { ProjeDepoDagilimDto, ProjeDto, SandikDto, LookupItem } from '../../shared/models/index';
 import { YETKI } from '../../core/constants/yetki-kodlari';
+import { dosyayiKaydet } from '../../core/services/dosya-kaydet';
 
 type DepoSummaryScope = 'global' | 'normal' | 'saha' | 'yedek';
 
@@ -582,13 +583,8 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
     this.pdfService.depoSandikPdf(projeTipiId).subscribe({
       next: (blob) => {
         this.downloadingPdf.set(false);
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
         const tarih = new Date().toISOString().split('T')[0].replace(/-/g, '');
-        a.download = `DepoSandikRaporu_${this.getReportTypeLabel(projeTipiId)}_${tarih}.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        dosyayiKaydet(blob, `DepoSandikRaporu_${this.getReportTypeLabel(projeTipiId)}_${tarih}.pdf`);
       },
       error: () => {
         this.downloadingPdf.set(false);
@@ -607,13 +603,8 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
     this.pdfService.projeDepoSandikPdf(proje.id).subscribe({
       next: (blob) => {
         this.downloadingProjectPdf.set(null);
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
         const tarih = new Date().toISOString().split('T')[0].replace(/-/g, '');
-        a.download = `${this.sanitizeFilePart(proje.projeNo)}_DepoSandikRaporu_${tarih}.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        dosyayiKaydet(blob, `${this.sanitizeFilePart(proje.projeNo)}_DepoSandikRaporu_${tarih}.pdf`);
       },
       error: () => {
         this.downloadingProjectPdf.set(null);

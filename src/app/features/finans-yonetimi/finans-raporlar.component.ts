@@ -9,6 +9,7 @@ import { PermissionService } from '../../core/services/permission.service';
 import { ToastService } from '../../core/services/toast.service';
 import { FinansGiderKategori, FinansListelemeRequest } from '../../shared/models/finans.model';
 import { finansRaporuIndirilebilir } from './finans-izinleri';
+import { dosyayiKaydet } from '../../core/services/dosya-kaydet';
 
 @Component({
   selector: 'app-finans-raporlar',
@@ -69,12 +70,7 @@ export class FinansRaporlarComponent implements OnInit {
       )
       .subscribe({
         next: (blob) => {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `Finans_${this.tur}_Raporu.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
-          link.click();
-          URL.revokeObjectURL(url);
+          dosyayiKaydet(blob, `Finans_${this.tur}_Raporu.${format === 'pdf' ? 'pdf' : 'xlsx'}`);
         },
         error: async (error: unknown) =>
           this.toast.error(await this.service.downloadErrorMessage(error, this.t('REPORT_ERROR'))),

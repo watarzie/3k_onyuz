@@ -15,6 +15,7 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { SandikDto, LookupResponse, ProjeDropdownDto, onayaAlindi } from '../../../shared/models/index';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
+import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 
 @Component({
   selector: 'app-uck-sandiklar',
@@ -421,13 +422,8 @@ export class UcKSandiklarComponent implements OnInit {
     this.pdfService.uckSandikDurumPdf(this.projeId()).subscribe({
       next: (blob) => {
         this.downloadingSandikDurumRaporu.set(false);
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
         const projeNo = this.mevcutProje()?.projeNo ?? `Proje_${this.projeId()}`;
-        a.href = url;
-        a.download = `${projeNo}_SandikDurumRaporu.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        dosyayiKaydet(blob, `${projeNo}_SandikDurumRaporu.pdf`);
         this.toast.success('Sandık durum raporu indirildi.');
       },
       error: () => {

@@ -21,6 +21,7 @@ import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-ban
 import { UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, UcKTopluSecimDto, ProjeDropdownDto, GridUrunDto, StokKaydiDto, CekiSatiriAnaVeriGuncelleDto, SahaTamamlamaIzDto, onayaAlindi } from '../../../shared/models/index';
 import { UcKDurum, GridSevkDurum, GridDurum } from '../../../core/constants/enums';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
+import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 
 interface KarsilamaTipi { id: number; value: string; label: string; color: string; bgClass: string; }
 
@@ -1710,12 +1711,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     this.toast.info('Rapor hazırlanıyor...');
     this.pdfService.eksikUrunlerPdf(this.projeId()).subscribe({
       next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `EksikUrunlerRaporu_${this.projeId()}.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        dosyayiKaydet(blob, `EksikUrunlerRaporu_${this.projeId()}.pdf`);
         this.toast.success('Rapor indirildi.');
       },
       error: () => this.toast.error('Rapor indirilemedi.')

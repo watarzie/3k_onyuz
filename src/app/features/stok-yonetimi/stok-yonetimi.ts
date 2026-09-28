@@ -10,6 +10,7 @@ import { ProjeService } from '../../core/services/proje.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { ConfirmService } from '../../core/services/confirm.service';
 import { YETKI } from '../../core/constants/yetki-kodlari';
+import { dosyayiKaydet } from '../../core/services/dosya-kaydet';
 
 @Component({
   selector: 'app-stok-yonetimi',
@@ -256,13 +257,8 @@ export class StokYonetimi implements OnInit {
     this.pdfService.stokPdf().subscribe({
       next: (blob) => {
         this.downloadingPdf.set(false);
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
         const tarih = new Date().toISOString().split('T')[0].replace(/-/g, '');
-        a.download = `StokRaporu_${tarih}.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        dosyayiKaydet(blob, `StokRaporu_${tarih}.pdf`);
         this.toastService.success('Stok raporu indirildi.');
       },
       error: () => {

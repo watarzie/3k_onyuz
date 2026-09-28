@@ -20,6 +20,7 @@ import { GridDurum, GridSevkDurum, SurecDurum, UcKDurum } from '../../../core/co
 import { PermissionService } from '../../../core/services/permission.service';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
 import { pdfMakeYukle } from '../../../core/services/pdfmake-yukleyici';
+import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 
 
 interface AmbarTalepItem {
@@ -328,14 +329,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
 
   private downloadBlob(blob: Blob, fileName: string) {
-    const url = window.URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = fileName;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    window.setTimeout(() => window.URL.revokeObjectURL(url), 0);
+    dosyayiKaydet(blob, fileName);
   }
 
   private safeFileName(value: string): string {

@@ -40,6 +40,7 @@ import {
   AmbalajIcSandikSablonDto,
   onayaAlindi,
 } from '../../shared/models';
+import { dosyayiKaydet } from '../../core/services/dosya-kaydet';
 
 interface AylikGrup {
   ad: string;
@@ -404,7 +405,7 @@ export class FinansYonetimiComponent implements OnInit {
       next: blob => {
         this.raporIndiriliyor.set(null);
         const uzanti = format === 'pdf' ? 'pdf' : format === 'excel' ? 'xlsx' : 'zip';
-        this.dosyaIndir(blob, `Finans_Is_Takibi_${tarih.getFullYear()}_${String(tarih.getMonth() + 1).padStart(2, '0')}.${uzanti}`);
+        dosyayiKaydet(blob, `Finans_Is_Takibi_${tarih.getFullYear()}_${String(tarih.getMonth() + 1).padStart(2, '0')}.${uzanti}`);
       },
       error: () => {
         this.raporIndiriliyor.set(null);
@@ -429,7 +430,7 @@ export class FinansYonetimiComponent implements OnInit {
     this.service.siparisDurumRaporu(format, filtre).subscribe({
       next: blob => {
         this.siparisRaporIndiriliyor.set(null);
-        this.dosyaIndir(blob, `Finans_Siparis_Durum_Raporu.${format === 'pdf' ? 'pdf' : 'xlsx'}`);
+        dosyayiKaydet(blob, `Finans_Siparis_Durum_Raporu.${format === 'pdf' ? 'pdf' : 'xlsx'}`);
       },
       error: () => {
         this.siparisRaporIndiriliyor.set(null);
@@ -734,7 +735,7 @@ export class FinansYonetimiComponent implements OnInit {
     this.service.giderRaporu(format).subscribe({
       next: blob => {
         this.giderRaporIndiriliyor.set(null);
-        this.dosyaIndir(blob, `FinansGiderRaporu.${format === 'pdf' ? 'pdf' : 'xlsx'}`);
+        dosyayiKaydet(blob, `FinansGiderRaporu.${format === 'pdf' ? 'pdf' : 'xlsx'}`);
       },
       error: () => {
         this.giderRaporIndiriliyor.set(null);
@@ -1106,5 +1107,4 @@ export class FinansYonetimiComponent implements OnInit {
   private ayinIlkGunu(tarih: Date): Date { return new Date(tarih.getFullYear(), tarih.getMonth(), 1); }
   private tarihMetni(tarih: Date): string { return `${tarih.getFullYear()}-${String(tarih.getMonth() + 1).padStart(2, '0')}-${String(tarih.getDate()).padStart(2, '0')}`; }
   private temizle(value: string | null | undefined): string | null { const temiz = value?.trim(); return temiz || null; }
-  private dosyaIndir(blob: Blob, dosyaAdi: string): void { const url = URL.createObjectURL(blob); const baglanti = document.createElement('a'); baglanti.href = url; baglanti.download = dosyaAdi; baglanti.click(); URL.revokeObjectURL(url); }
 }

@@ -30,6 +30,7 @@ import { ConfirmService } from '../../../core/services/confirm.service';
 import { PdfService } from '../../../core/services/pdf.service';
 import { SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
+import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 
 interface SahaAktarimGrubu {
   sahaSandikId: number | null;
@@ -666,14 +667,7 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   private downloadBlobFile(blob: Blob, fileName: string) {
-    const url = window.URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = fileName;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    window.setTimeout(() => window.URL.revokeObjectURL(url), 0);
+    dosyayiKaydet(blob, fileName);
   }
 
   private todayFileStamp(): string {
@@ -725,12 +719,7 @@ export class ProjeListesiComponent implements OnInit {
     this.pdfService.sahaProjePdf(proje.id).subscribe({
       next: (blob) => {
         this.downloadingPdf.set(null);
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${proje.projeNo}_${tipStr}.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        dosyayiKaydet(blob, `${proje.projeNo}_${tipStr}.pdf`);
         this.toastService.success(`${tipStr} başarıyla indirildi.`);
       },
       error: () => {
@@ -750,12 +739,7 @@ export class ProjeListesiComponent implements OnInit {
     this.pdfService.eksikUrunlerPdf(proje.id).subscribe({
       next: (blob) => {
         this.downloadingEksikPdf.set(null);
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${proje.projeNo}_${raporAdi}.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        dosyayiKaydet(blob, `${proje.projeNo}_${raporAdi}.pdf`);
         this.toastService.success(basariMesaji);
       },
       error: () => {
@@ -775,12 +759,7 @@ export class ProjeListesiComponent implements OnInit {
     this.pdfService.eksikUrunlerExcel(proje.id).subscribe({
       next: (blob) => {
         this.downloadingEksikExcel.set(null);
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${proje.projeNo}_${raporAdi}.xlsx`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        dosyayiKaydet(blob, `${proje.projeNo}_${raporAdi}.xlsx`);
         this.toastService.success(basariMesaji);
       },
       error: () => {
@@ -801,12 +780,7 @@ export class ProjeListesiComponent implements OnInit {
     request$.subscribe({
       next: (blob) => {
         this.downloadingGerceklesenPdf.set(null);
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${proje.projeNo}_GerceklesenCekiListesi.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        dosyayiKaydet(blob, `${proje.projeNo}_GerceklesenCekiListesi.pdf`);
         this.toastService.success('Gerçekleşen çeki listesi raporu indirildi.');
       },
       error: () => {
@@ -825,12 +799,7 @@ export class ProjeListesiComponent implements OnInit {
     request$.subscribe({
       next: (blob) => {
         this.downloadingGerceklesenExcel.set(null);
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${proje.projeNo}_GerceklesenCekiListesi.xlsx`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        dosyayiKaydet(blob, `${proje.projeNo}_GerceklesenCekiListesi.xlsx`);
         this.toastService.success('Gerçekleşen çeki listesi Excel raporu indirildi.');
       },
       error: () => {

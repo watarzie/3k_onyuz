@@ -26,6 +26,7 @@ import { ServerPagerComponent } from '../../shared/components/server-pager/serve
 import { finansBelgesiIndirilebilir, tumFinansAlanlariGorunur } from './finans-izinleri';
 
 import { onayaAlindi } from '../../shared/models';
+import { dosyayiKaydet } from '../../core/services/dosya-kaydet';
 @Component({
   selector: 'app-finans-kayit-detay',
   standalone: true,
@@ -390,12 +391,7 @@ export class FinansKayitDetayComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (blob) => {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = belge.orijinalAd;
-          a.click();
-          URL.revokeObjectURL(url);
+          dosyayiKaydet(blob, belge.orijinalAd);
         },
         error: async (error: unknown) =>
           this.hata.set(

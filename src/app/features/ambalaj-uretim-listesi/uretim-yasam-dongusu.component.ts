@@ -26,6 +26,7 @@ import {
   AmbalajGerceklesenRapor,
 } from '../../shared/models/ambalaj-yasam-dongusu.model';
 import { AMBALAJ_YETKI } from '../../core/constants/yetki-kodlari';
+import { dosyayiKaydet } from '../../core/services/dosya-kaydet';
 
 @Component({
   selector: 'app-uretim-yasam-dongusu',
@@ -310,11 +311,6 @@ export class UretimYasamDongusuComponent {
     return true;
   }
   private indir(blob: Blob, name: string) {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = name;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 0);
+    dosyayiKaydet(blob, name);
   }
 }

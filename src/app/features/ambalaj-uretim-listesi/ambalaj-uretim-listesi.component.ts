@@ -39,6 +39,7 @@ import {
   onayaAlindi,
 } from '../../shared/models';
 import { AMBALAJ_YETKI } from '../../core/constants/yetki-kodlari';
+import { dosyayiKaydet } from '../../core/services/dosya-kaydet';
 
 @Component({
   selector: 'app-ambalaj-uretim-listesi',
@@ -682,12 +683,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
       .pipe(finalize(() => this.ozelRaporDownloading.set(null)))
       .subscribe({
         next: blob => {
-          const url = URL.createObjectURL(blob);
-          const baglanti = document.createElement('a');
-          baglanti.href = url;
-          baglanti.download = `${this.ozelTurMetni(tur).replaceAll(' ', '_')}_Raporu.pdf`;
-          baglanti.click();
-          URL.revokeObjectURL(url);
+          dosyayiKaydet(blob, `${this.ozelTurMetni(tur).replaceAll(' ', '_')}_Raporu.pdf`);
         },
         error: () => this.toastService.error('PDF raporu oluşturulamadı.'),
       });
@@ -705,12 +701,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
       .pipe(finalize(() => this.ozelUretimFormuDownloading.set(null)))
       .subscribe({
         next: blob => {
-          const url = URL.createObjectURL(blob);
-          const baglanti = document.createElement('a');
-          baglanti.href = url;
-          baglanti.download = `${sandik.projeNo || 'Proje'}_${this.ozelTurMetni(sandik.tur).replaceAll(' ', '_')}_UretimFormu.pdf`;
-          baglanti.click();
-          URL.revokeObjectURL(url);
+          dosyayiKaydet(blob, `${sandik.projeNo || 'Proje'}_${this.ozelTurMetni(sandik.tur).replaceAll(' ', '_')}_UretimFormu.pdf`);
         },
         error: () => this.toastService.error('Üretim formu oluşturulamadı.'),
       });
@@ -1057,13 +1048,8 @@ export class AmbalajUretimListesiComponent implements OnInit {
       .pipe(finalize(() => this.downloadingProjectId.set(null)))
       .subscribe({
         next: blob => {
-          const url = URL.createObjectURL(blob);
-          const anchor = document.createElement('a');
-          anchor.href = url;
           const turMetni = tur === 1 ? 'ProjeSandiklari' : tur === 2 ? 'IlaveSandiklar' : tur === 3 ? 'IcSandiklar' : 'TumSandiklar';
-          anchor.download = `${proje.fbNo || proje.projeNo}_${turMetni}_AmbalajUretimFormu.pdf`;
-          anchor.click();
-          URL.revokeObjectURL(url);
+          dosyayiKaydet(blob, `${proje.fbNo || proje.projeNo}_${turMetni}_AmbalajUretimFormu.pdf`);
         },
         error: error => this.toastService.error(error?.error?.message ?? 'Üretim formu oluşturulamadı.'),
       });

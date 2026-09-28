@@ -14,6 +14,7 @@ import { PdfService } from '../../../core/services/pdf.service';
 import { ConfirmService } from '../../../core/services/confirm.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
+import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 
 @Component({
   selector: 'app-sandik-listesi',
@@ -150,12 +151,7 @@ export class SandikListesiComponent implements OnInit {
     this.pdfService.sahaSandikPdf(sandikId).subscribe({
       next: (blob) => {
         this.downloadingPdf.set(null);
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${this.isYedekYonetimi() ? 'Yedek' : 'Saha'}SandikRaporu_${sandikId}.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        dosyayiKaydet(blob, `${this.isYedekYonetimi() ? 'Yedek' : 'Saha'}SandikRaporu_${sandikId}.pdf`);
         this.toast.success('Rapor başarıyla indirildi.');
       },
       error: () => {
