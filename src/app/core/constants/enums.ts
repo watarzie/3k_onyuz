@@ -6,6 +6,13 @@
  * ÖNEMLİ: Bu dosyadaki değerler veritabanı seed datası ile senkronize olmalıdır.
  */
 
+// ===== Proje Tipi =====
+export enum ProjeTipi {
+  Normal = 1,
+  Saha = 2,
+  Yedek = 3,
+}
+
 // ===== Proje Durumu =====
 export enum ProjeDurum {
   Hazirlaniyor = 1,

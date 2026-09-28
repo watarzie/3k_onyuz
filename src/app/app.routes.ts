@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 import { menuGuard } from './core/guards/menu.guard';
 import { AMBALAJ_YETKI, FINANS_YETKI, YETKI } from './core/constants/yetki-kodlari';
+import { ProjeTipi } from './core/constants/enums';
 
 export const routes: Routes = [
   // ======= Landing Page (public) =======
@@ -71,21 +72,21 @@ export const routes: Routes = [
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/projeler/proje-listesi/proje-listesi.component').then(m => m.ProjeListesiComponent),
-        data: { menuKod: YETKI.SANDIK.YONETIMI },
+        data: { menuKod: YETKI.SANDIK.YONETIMI, projeTipi: ProjeTipi.Normal },
       },
       {
         path: 'sandik-yonetimi/:projeId',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/sandik-yonetimi/sandik-listesi/sandik-listesi.component').then(m => m.SandikListesiComponent),
-        data: { menuKod: YETKI.SANDIK.YONETIMI },
+        data: { menuKod: YETKI.SANDIK.YONETIMI, projeTipi: ProjeTipi.Normal },
       },
       {
         path: 'sandik-yonetimi/:projeId/:sandikId',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/sandik-yonetimi/sandik-detay/sandik-detay.component').then(m => m.SandikDetayComponent),
-        data: { menuKod: YETKI.SANDIK.YONETIMI },
+        data: { menuKod: YETKI.SANDIK.YONETIMI, projeTipi: ProjeTipi.Normal },
       },
 
       // --- Grid & ÜçK ---
@@ -108,28 +109,28 @@ export const routes: Routes = [
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/grid/grid-urunler/grid-urunler.component').then(m => m.GridUrunlerComponent),
-        data: { menuKod: YETKI.SANDIK.GRID_MODULU },
+        data: { menuKod: YETKI.SANDIK.GRID_MODULU, projeTipi: ProjeTipi.Normal },
       },
       {
         path: 'uck/:projeId',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/uck/uck-sandiklar/uck-sandiklar.component').then(m => m.UcKSandiklarComponent),
-        data: { menuKod: YETKI.SANDIK.UCK_MODULU },
+        data: { menuKod: YETKI.SANDIK.UCK_MODULU, projeTipi: ProjeTipi.Normal },
       },
       {
         path: 'uck/sandik/:projeId/:sandikId',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/sandik-yonetimi/sandik-detay/sandik-detay.component').then(m => m.SandikDetayComponent),
-        data: { menuKod: YETKI.SANDIK.UCK_MODULU },
+        data: { menuKod: YETKI.SANDIK.UCK_MODULU, projeTipi: ProjeTipi.Normal },
       },
       {
         path: 'uck/:projeId/:sandikNo',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/uck/uck-urunler/uck-urunler.component').then(m => m.UcKUrunlerComponent),
-        data: { menuKod: YETKI.SANDIK.UCK_MODULU },
+        data: { menuKod: YETKI.SANDIK.UCK_MODULU, projeTipi: ProjeTipi.Normal },
       },
 
       // --- Depo ---
@@ -177,7 +178,7 @@ export const routes: Routes = [
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/projeler/proje-listesi/proje-listesi.component').then(m => m.ProjeListesiComponent),
-        data: { menuKod: YETKI.SAHA.YONETIMI },
+        data: { menuKod: YETKI.SAHA.YONETIMI, projeTipi: ProjeTipi.Saha },
       },
       {
         path: 'saha-yonetimi/eksik-olustur',
@@ -198,41 +199,42 @@ export const routes: Routes = [
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/grid/grid-urunler/grid-urunler.component').then(m => m.GridUrunlerComponent),
-        data: { menuKod: YETKI.SAHA.GRID_MODULU },
+        data: { menuKod: YETKI.SAHA.GRID_MODULU, projeTipi: ProjeTipi.Saha },
       },
       {
         path: 'saha-yonetimi/uck/:projeId',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/uck/uck-sandiklar/uck-sandiklar.component').then(m => m.UcKSandiklarComponent),
-        data: { menuKod: YETKI.SAHA.UCK_MODULU },
+        data: { menuKod: YETKI.SAHA.UCK_MODULU, projeTipi: ProjeTipi.Saha },
       },
       {
         path: 'saha-yonetimi/uck/sandik/:projeId/:sandikId',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/sandik-yonetimi/sandik-detay/sandik-detay.component').then(m => m.SandikDetayComponent),
-        data: { menuKod: YETKI.SAHA.UCK_MODULU },
+        data: { menuKod: YETKI.SAHA.UCK_MODULU, projeTipi: ProjeTipi.Saha },
       },
       {
         path: 'saha-yonetimi/uck/:projeId/:sandikNo',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/uck/uck-urunler/uck-urunler.component').then(m => m.UcKUrunlerComponent),
-        data: { menuKod: YETKI.SAHA.UCK_MODULU },
-      },      {
+        data: { menuKod: YETKI.SAHA.UCK_MODULU, projeTipi: ProjeTipi.Saha },
+      },
+      {
         path: 'saha-yonetimi/:projeId',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/sandik-yonetimi/sandik-listesi/sandik-listesi.component').then(m => m.SandikListesiComponent),
-        data: { menuKod: YETKI.SAHA.SANDIKLAR },
+        data: { menuKod: YETKI.SAHA.SANDIKLAR, projeTipi: ProjeTipi.Saha },
       },
       {
         path: 'saha-yonetimi/:projeId/:sandikId',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/sandik-yonetimi/sandik-detay/sandik-detay.component').then(m => m.SandikDetayComponent),
-        data: { menuKod: YETKI.SAHA.SANDIKLAR },
+        data: { menuKod: YETKI.SAHA.SANDIKLAR, projeTipi: ProjeTipi.Saha },
       },
 
       // --- Yedek Yönetimi ---
@@ -241,49 +243,49 @@ export const routes: Routes = [
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/projeler/proje-listesi/proje-listesi.component').then(m => m.ProjeListesiComponent),
-        data: { menuKod: YETKI.YEDEK.YONETIMI },
+        data: { menuKod: YETKI.YEDEK.YONETIMI, projeTipi: ProjeTipi.Yedek },
       },
       {
         path: 'yedek-yonetimi/grid/:projeId',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/grid/grid-urunler/grid-urunler.component').then(m => m.GridUrunlerComponent),
-        data: { menuKod: YETKI.YEDEK.GRID_MODULU },
+        data: { menuKod: YETKI.YEDEK.GRID_MODULU, projeTipi: ProjeTipi.Yedek },
       },
       {
         path: 'yedek-yonetimi/uck/:projeId',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/uck/uck-sandiklar/uck-sandiklar.component').then(m => m.UcKSandiklarComponent),
-        data: { menuKod: YETKI.YEDEK.UCK_MODULU },
+        data: { menuKod: YETKI.YEDEK.UCK_MODULU, projeTipi: ProjeTipi.Yedek },
       },
       {
         path: 'yedek-yonetimi/uck/sandik/:projeId/:sandikId',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/sandik-yonetimi/sandik-detay/sandik-detay.component').then(m => m.SandikDetayComponent),
-        data: { menuKod: YETKI.YEDEK.UCK_MODULU },
+        data: { menuKod: YETKI.YEDEK.UCK_MODULU, projeTipi: ProjeTipi.Yedek },
       },
       {
         path: 'yedek-yonetimi/uck/:projeId/:sandikNo',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/uck/uck-urunler/uck-urunler.component').then(m => m.UcKUrunlerComponent),
-        data: { menuKod: YETKI.YEDEK.UCK_MODULU },
+        data: { menuKod: YETKI.YEDEK.UCK_MODULU, projeTipi: ProjeTipi.Yedek },
       },
       {
         path: 'yedek-yonetimi/:projeId',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/sandik-yonetimi/sandik-listesi/sandik-listesi.component').then(m => m.SandikListesiComponent),
-        data: { menuKod: YETKI.YEDEK.SANDIKLAR },
+        data: { menuKod: YETKI.YEDEK.SANDIKLAR, projeTipi: ProjeTipi.Yedek },
       },
       {
         path: 'yedek-yonetimi/:projeId/:sandikId',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/sandik-yonetimi/sandik-detay/sandik-detay.component').then(m => m.SandikDetayComponent),
-        data: { menuKod: YETKI.YEDEK.SANDIKLAR },
+        data: { menuKod: YETKI.YEDEK.SANDIKLAR, projeTipi: ProjeTipi.Yedek },
       },
 
       // --- Ambalaj Üretim ---

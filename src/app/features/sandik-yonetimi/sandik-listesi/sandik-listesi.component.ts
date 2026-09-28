@@ -9,7 +9,8 @@ import { ToastService } from '../../../core/services/toast.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { SandikDto } from '../../../shared/models/index';
-import { SandikTipi, DepoLokasyon } from '../../../core/constants/enums';
+import { SandikTipi, DepoLokasyon, ProjeTipi } from '../../../core/constants/enums';
+import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { PdfService } from '../../../core/services/pdf.service';
 import { ConfirmService, duzMetin } from '../../../core/services/confirm.service';
 import { PermissionService } from '../../../core/services/permission.service';
@@ -58,10 +59,10 @@ export class SandikListesiComponent implements OnInit {
   sandikTipleri = signal<{id: number, deger: string}[]>([]);
 
   breadcrumb: { label: string; link?: string }[] = [];
-  routePrefix = signal('/sandik-yonetimi');
-  isSahaYedek = signal(false);
-  isSahaYonetimi = signal(false);
-  isYedekYonetimi = signal(false);
+  private readonly projeTipi = projeTipiBaglami(rotaProjeTipi(this.route.snapshot));
+  readonly routePrefix = this.projeTipi.yonetimRotasi;
+  readonly isSahaYedek = this.projeTipi.tip !== ProjeTipi.Normal;
+  readonly isYedekYonetimi = this.projeTipi.tip === ProjeTipi.Yedek;
   canWriteSandik = computed(() => {
     const menuKod = this.route.snapshot.data['menuKod'] || YETKI.SANDIK.YONETIMI;
     return this.permissionService.canWrite(menuKod);
@@ -69,25 +70,11 @@ export class SandikListesiComponent implements OnInit {
 
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('projeId'));
-    const menuKod = this.route.snapshot.data['menuKod'] || YETKI.SANDIK.YONETIMI;
     this.projeId.set(id);
-    
-    let title = this.ts.translate('MENU.SANDIK_YONETIMI');
-    if (menuKod === YETKI.SAHA.YONETIMI || menuKod === YETKI.SAHA.SANDIKLAR) {
-      title = 'Saha Yönetimi';
-      this.routePrefix.set('/saha-yonetimi');
-      this.isSahaYedek.set(true);
-      this.isSahaYonetimi.set(true);
-    } else if (menuKod === YETKI.YEDEK.YONETIMI || menuKod === YETKI.YEDEK.SANDIKLAR) {
-      title = 'Yedek Yönetimi';
-      this.routePrefix.set('/yedek-yonetimi');
-      this.isSahaYedek.set(true);
-      this.isYedekYonetimi.set(true);
-    }
 
     this.breadcrumb = [
       { label: this.ts.translate('MENU.DASHBOARD'), link: '/dashboard' },
-      { label: title },
+      { label: this.ts.translate(this.projeTipi.baslik.yonetim) },
     ];
     this.loadLookups();
     this.loadSandiklar();
@@ -151,7 +138,7 @@ export class SandikListesiComponent implements OnInit {
     this.pdfService.sahaSandikPdf(sandikId).subscribe({
       next: (blob) => {
         this.downloadingPdf.set(null);
-        dosyayiKaydet(blob, `${this.isYedekYonetimi() ? 'Yedek' : 'Saha'}SandikRaporu_${sandikId}.pdf`);
+        dosyayiKaydet(blob, `${this.isYedekYonetimi ? 'Yedek' : 'Saha'}SandikRaporu_${sandikId}.pdf`);
         this.toast.success('Rapor başarıyla indirildi.');
       },
       error: () => {

@@ -22,7 +22,7 @@
       }
       @if (canWriteSandik()) {
       <button class="btn btn-save d-flex align-items-center gap-2" (click)="openUrunEkleModal()" [disabled]="isSandikKilitli()">
-        <i class="ri-add-line"></i> {{ isSahaYedek() ? 'Malzeme Ekle' : 'Manuel Ürün Ekle' }}
+        <i class="ri-add-line"></i> {{ isSahaYedek ? 'Malzeme Ekle' : 'Manuel Ürün Ekle' }}
       </button>
       }
     </div>
@@ -343,11 +343,11 @@
     <div class="modal-overlay" (click)="closeUrunEkleModal()"></div>
     <div class="modal-container" style="max-width: 700px;">
       <div class="modal-header-custom">
-        <h5 class="fw-semibold mb-0"><i class="ri-add-circle-line me-2"></i>{{ isSahaYedek() ? 'Malzeme Ekle' : 'Manuel Ürün Ekle' }}</h5>
+        <h5 class="fw-semibold mb-0"><i class="ri-add-circle-line me-2"></i>{{ isSahaYedek ? 'Malzeme Ekle' : 'Manuel Ürün Ekle' }}</h5>
         <button class="btn btn-sm border-0" (click)="closeUrunEkleModal()"><i class="ri-close-line fs-5"></i></button>
       </div>
       <div class="modal-body-custom">
-        @if (isSahaYonetimi()) {
+        @if (isSahaYonetimi) {
           <div class="d-flex gap-2 mb-3">
             <button class="btn btn-sm" [ngClass]="eklemeMode() === 'manuel' ? 'btn-primary' : 'btn-outline-primary'" (click)="eklemeMode.set('manuel')">
               <i class="ri-edit-line me-1"></i>Manuel Giriş
@@ -361,15 +361,15 @@
         @if (eklemeMode() === 'manuel') {
           <div class="mb-3">
             <label class="form-label fw-semibold">Barkod No</label>
-            <input type="text" class="form-control" [ngModel]="yeniBarkod()" (ngModelChange)="yeniBarkod.set($event)" [placeholder]="isSahaYedek() ? 'İsteğe bağlı' : 'Boş bırakılırsa \'MANUEL\' atanır'" />
+            <input type="text" class="form-control" [ngModel]="yeniBarkod()" (ngModelChange)="yeniBarkod.set($event)" [placeholder]="isSahaYedek ? 'İsteğe bağlı' : 'Boş bırakılırsa \'MANUEL\' atanır'" />
           </div>
           <div class="mb-3">
-            <label class="form-label fw-semibold">{{ isSahaYedek() ? 'Malzeme İsmi' : 'Açıklama' }} <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" [ngModel]="yeniAciklama()" (ngModelChange)="yeniAciklama.set($event)" [placeholder]="isSahaYedek() ? 'Malzeme adı' : 'Ürün açıklaması'" />
+            <label class="form-label fw-semibold">{{ isSahaYedek ? 'Malzeme İsmi' : 'Açıklama' }} <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [ngModel]="yeniAciklama()" (ngModelChange)="yeniAciklama.set($event)" [placeholder]="isSahaYedek ? 'Malzeme adı' : 'Ürün açıklaması'" />
           </div>
           <div class="row g-3">
             <div class="col-6">
-              <label class="form-label fw-semibold">{{ isSahaYedek() ? 'Miktar' : 'Adet' }} <span class="text-danger">*</span></label>
+              <label class="form-label fw-semibold">{{ isSahaYedek ? 'Miktar' : 'Adet' }} <span class="text-danger">*</span></label>
               <input type="number" class="form-control" min="1" [ngModel]="yeniAdet()" (ngModelChange)="yeniAdet.set($event)" />
             </div>
             <div class="col-6">
@@ -388,7 +388,7 @@
               </select>
             </div>
           </div>
-          @if (!isSahaYedek()) {
+          @if (!isSahaYedek) {
             <div class="mb-3 mt-3">
               <label class="form-label fw-semibold">Ekleme Nedeni</label>
               <textarea class="form-control" rows="2" [ngModel]="yeniNeden()" (ngModelChange)="yeniNeden.set($event)" placeholder="Neden ekleniyor? (isteğe bağlı)"></textarea>

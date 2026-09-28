@@ -28,7 +28,8 @@ import {
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmService, duzMetin } from '../../../core/services/confirm.service';
 import { PdfService } from '../../../core/services/pdf.service';
-import { SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
+import { ProjeTipi, SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
+import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
 import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 
@@ -67,6 +68,11 @@ export class ProjeListesiComponent implements OnInit {
   private readonly sandikNoCollator = new Intl.Collator('tr', { numeric: true, sensitivity: 'base' });
   private readonly destroyRef = inject(DestroyRef);
   private projeListeIstekSurumu = 0;
+
+  /** Yönetim ekranlarında route'un proje tipi; aktif ve sevk edilen proje listelerinde null. */
+  private readonly rotaTipi = rotaProjeTipi(this.route.snapshot);
+  /** Tip izinlerinin bağlamı; proje listelerinde normal proje izinleri geçerlidir. */
+  private readonly projeTipi = projeTipiBaglami(this.rotaTipi);
 
   isSandikYonetimi = signal(false);
   isSevkEdilen = signal(false);
@@ -110,11 +116,8 @@ export class ProjeListesiComponent implements OnInit {
   canSee3KIsListesi = computed(() => this.isSandikYonetimi() && this.permissions.hasAccess(YETKI.SANDIK.UCK_IS_LISTESI));
   canSeeGridIsListesi = computed(() => this.isSandikYonetimi() && this.permissions.hasAccess(YETKI.SANDIK.GRID_IS_LISTESI));
   canUseEksikTamamlama = computed(() => this.permissions.canWrite(YETKI.SAHA.SAHAYA_AKTAR));
-  canDeleteProject = computed(() => this.permissions.canWrite(YETKI.PROJE.SIL));
   canSevkEt = computed(() => this.permissions.canWrite(YETKI.PROJE.SEVK_ET));
   canUploadCeki = computed(() => this.permissions.canWrite(YETKI.PROJE.CEKI_YUKLE));
-  canUpdatePlanlananSevkTarihi = computed(() => this.permissions.canWrite(YETKI.PROJE.PLANLANAN_SEVK_TARIHI));
-  canUpdateYedekPlanlananSevkTarihi = computed(() => this.permissions.canWrite(YETKI.YEDEK.PLANLANAN_SEVK_TARIHI));
   canSeeSahaGrid = computed(() => this.permissions.hasAccess(YETKI.SAHA.GRID_MODULU));
   canSeeSaha3K = computed(() => this.permissions.hasAccess(YETKI.SAHA.UCK_MODULU));
   canSeeSahaRapor = computed(() => this.permissions.hasAccess(YETKI.SAHA.RAPORU));
@@ -128,29 +131,12 @@ export class ProjeListesiComponent implements OnInit {
   canSeeYedekEksikRapor = computed(() => this.permissions.hasAccess(YETKI.YEDEK.EKSIK_RAPORU));
   canSeeYedekGerceklesenRapor = computed(() => this.permissions.hasAccess(YETKI.YEDEK.GERCEKLESEN_CEKI_RAPORU));
   canSeeYedekSandiklar = computed(() => this.permissions.hasAccess(YETKI.YEDEK.SANDIKLAR));
-  canSevkEtYedek = computed(() => this.permissions.canWrite(YETKI.YEDEK.SEVK_ET));
-  canDeleteYedekProject = computed(() => this.permissions.canWrite(YETKI.YEDEK.PROJE_SIL));
   canManageSahaAktarimGeriAl = computed(() => this.permissions.hasAccess(YETKI.SAHA.AKTARIM_GERI_AL));
   canWriteSahaAktarimGeriAl = computed(() => this.permissions.canWrite(YETKI.SAHA.AKTARIM_GERI_AL));
-  canSevkEtCurrent = computed(() =>
-    this.isSahaYonetimi()
-      ? this.permissions.canWrite(YETKI.SAHA.SEVK_ET)
-      : this.isYedekYonetimi()
-        ? this.canSevkEtYedek()
-        : this.canSevkEt()
-  );
-  canDeleteProjectCurrent = computed(() =>
-    this.isSahaYonetimi()
-      ? this.permissions.canWrite(YETKI.SAHA.PROJE_SIL)
-      : this.isYedekYonetimi()
-        ? this.canDeleteYedekProject()
-        : this.canDeleteProject()
-  );
+  canSevkEtCurrent = computed(() => this.permissions.canWrite(this.projeTipi.yetki.sevkEt));
+  canDeleteProjectCurrent = computed(() => this.permissions.canWrite(this.projeTipi.yetki.projeSil));
   canUpdatePlanlananSevkTarihiCurrent = computed(() =>
-    this.isYedekYonetimi()
-      ? this.canUpdateYedekPlanlananSevkTarihi()
-      : this.canUpdatePlanlananSevkTarihi()
-  );
+    this.permissions.canWrite(this.projeTipi.yetki.planlananSevkTarihi));
   hasSandikYonetimiActions = computed(() =>
     this.isSandikYonetimi() &&
     (this.canSeeGrid() || this.canSee3K() || this.canSeeEksikRapor() || this.canSevkEtCurrent() || this.canDeleteProjectCurrent())
@@ -349,35 +335,23 @@ export class ProjeListesiComponent implements OnInit {
 
   ngOnInit() {
     const menuKod = this.route.snapshot.data['menuKod'];
-    this.isSandikYonetimi.set(menuKod === YETKI.SANDIK.YONETIMI);
+    this.isSandikYonetimi.set(this.rotaTipi === ProjeTipi.Normal);
     this.isSevkEdilen.set(menuKod === YETKI.PROJE.SEVK_EDILEN);
     this.isAktifProjeler.set(menuKod === YETKI.PROJE.AKTIF_PROJELER);
-    this.isSahaYonetimi.set(menuKod === YETKI.SAHA.YONETIMI);
-    this.isYedekYonetimi.set(menuKod === YETKI.YEDEK.YONETIMI);
-    
-    if (this.isSandikYonetimi()) {
+    this.isSahaYonetimi.set(this.rotaTipi === ProjeTipi.Saha);
+    this.isYedekYonetimi.set(this.rotaTipi === ProjeTipi.Yedek);
+
+    if (this.rotaTipi !== null) {
       this.breadcrumb = [
         { label: 'Ana Kontrol Paneli', link: '/dashboard' },
-        { label: 'Sandık Yönetimi' },
+        { label: this.ts.translate(this.projeTipi.baslik.yonetim) },
       ];
-      this.routePrefix = '/sandik-yonetimi';
+      this.routePrefix = this.projeTipi.yonetimRotasi;
     } else if (this.isSevkEdilen()) {
       this.breadcrumb = [
         { label: 'Ana Kontrol Paneli', link: '/dashboard' },
         { label: 'Sevk Edilen Projeler' },
       ];
-    } else if (this.isSahaYonetimi()) {
-      this.breadcrumb = [
-        { label: 'Ana Kontrol Paneli', link: '/dashboard' },
-        { label: 'Saha Yönetimi' },
-      ];
-      this.routePrefix = '/saha-yonetimi';
-    } else if (this.isYedekYonetimi()) {
-      this.breadcrumb = [
-        { label: 'Ana Kontrol Paneli', link: '/dashboard' },
-        { label: 'Yedek Yönetimi' },
-      ];
-      this.routePrefix = '/yedek-yonetimi';
     }
     
     this.loadProjeler();
@@ -543,9 +517,8 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   canSeeRevizyonGecmisi(proje: ProjeDto): boolean {
-    const menu = proje.projeTipiId === 2 ? YETKI.SAHA.YONETIMI
-      : proje.projeTipiId === 3 ? YETKI.YEDEK.YONETIMI : YETKI.SANDIK.YONETIMI;
-    return this.permissions.hasAccess(menu) || this.permissions.hasAccess(YETKI.SANDIK.CEKI_REVIZYON_YUKLE) ||
+    return this.permissions.hasAccess(projeTipiBaglami(proje.projeTipiId).yetki.projeYonetimi) ||
+      this.permissions.hasAccess(YETKI.SANDIK.CEKI_REVIZYON_YUKLE) ||
       this.permissions.hasAccess(YETKI.PROJE.SEVK_EDILEN);
   }
 

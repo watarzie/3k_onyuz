@@ -123,7 +123,7 @@
         </div>
         }
 
-        <div [routerLink]="isSandikKilitli(s) ? null : [uckRoutePrefix(), projeId(), s.sandikNo]"
+        <div [routerLink]="isSandikKilitli(s) ? null : [uckRoutePrefix, projeId(), s.sandikNo]"
           [queryParams]="isSandikKilitli(s) ? null : { sandikId: s.id }" class="sandik-card h-100"
           [ngClass]="'s-' + s.durumMetni.toLowerCase()" [class.is-closed]="isSandikKapandi(s)" [class.is-shipped]="isSandikSevkEdildi(s)"
           [class.is-shipment-correction]="isSandikDuzeltmeyeAcik(s)" [class.is-field-transferred]="isSandikSahayaAktarildi(s)"
@@ -215,7 +215,7 @@
               </button>
               }
               @if (canWriteSandik()) {
-              <a [routerLink]="[uckSandikRoutePrefix(), projeId(), s.id]"
+              <a [routerLink]="[uckSandikRoutePrefix, projeId(), s.id]"
                 class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center flex-shrink-0"
                 (click)="$event.stopPropagation()"
                 style="width: 26px; height: 26px; padding: 0; font-size: 0.85rem; z-index: 2; position: relative;"

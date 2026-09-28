@@ -10,7 +10,8 @@ import { ToastService } from '../../../core/services/toast.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { LookupService } from '../../../core/services/lookup.service';
 import { PdfService } from '../../../core/services/pdf.service';
-import { SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
+import { ProjeTipi, SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
+import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { SandikDto, LookupResponse, ProjeDropdownDto, onayaAlindi } from '../../../shared/models/index';
@@ -40,28 +41,24 @@ export class UcKSandiklarComponent implements OnInit {
   private readonly sahayaAktarilmisSandikMesaji = 'Bu sandık sahaya aktarıldığı için normal proje tarafında işlem yapılamaz. Geri almak için saha aktarımını geri alın.';
   private readonly sahaUzerindenSevkEdilmisSandikMesaji = 'Bu sandık saha projesi üzerinden sevk edildi. Geri alma işlemi kaynak sandıktan değil, ilgili saha sevkiyatından yapılmalıdır.';
 
+  private readonly projeTipi = projeTipiBaglami(rotaProjeTipi(this.route.snapshot));
+
   private get activeMenuKod(): string {
     return this.route.snapshot.data?.['menuKod'] || YETKI.SANDIK.UCK_MODULU;
   }
 
-  isSahaContext = computed(() => this.activeMenuKod === YETKI.SAHA.UCK_MODULU);
-  isYedekContext = computed(() => this.activeMenuKod === YETKI.YEDEK.UCK_MODULU);
-  uckRoutePrefix = computed(() =>
-    this.isSahaContext() ? '/saha-yonetimi/uck' : this.isYedekContext() ? '/yedek-yonetimi/uck' : '/uck'
-  );
-  uckSandikRoutePrefix = computed(() =>
-    this.isSahaContext() ? '/saha-yonetimi/uck/sandik' : this.isYedekContext() ? '/yedek-yonetimi/uck/sandik' : '/uck/sandik'
-  );
+  readonly uckRoutePrefix = this.projeTipi.ucKRotasi;
+  readonly uckSandikRoutePrefix = `${this.projeTipi.ucKRotasi}/sandik`;
   canWriteSandik = computed(() => this.permissionService.canWrite(this.activeMenuKod));
   canWriteSevk = computed(() => this.permissionService.canWrite(this.activeMenuKod));
   canAssignLocation = computed(() => this.permissionService.canWrite(YETKI.SANDIK.LOKASYON_ATAMA));
   canSandiklariSahayaAktar = computed(() =>
-    !this.isSahaContext() && !this.isYedekContext() && this.permissionService.canWrite(YETKI.SAHA.SAHAYA_AKTAR)
+    this.projeTipi.tip === ProjeTipi.Normal && this.permissionService.canWrite(YETKI.SAHA.SAHAYA_AKTAR)
   );
   canUseSandikSelection = computed(() =>
     this.canWriteSandik() || this.canAssignLocation() || this.canSandiklariSahayaAktar()
   );
-  canSeeSandikDurumRaporu = computed(() => this.permissionService.hasAccess(this.sandikDurumRaporMenuKod()));
+  canSeeSandikDurumRaporu = computed(() => this.permissionService.hasAccess(this.projeTipi.yetki.ucKSandikDurumRaporu));
 
   projeId = signal(0);
   mevcutProje = signal<ProjeDropdownDto | null>(null);
@@ -145,14 +142,10 @@ export class UcKSandiklarComponent implements OnInit {
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('projeId'));
     this.projeId.set(id);
-    const isSaha = this.isSahaContext();
-    const isYedek = this.isYedekContext();
-    const parentLabel = isSaha ? 'Saha Yönetimi' : isYedek ? 'Yedek Yönetimi' : 'Sandık Yönetimi';
-    const parentLink = isSaha ? '/saha-yonetimi' : isYedek ? '/yedek-yonetimi' : '/sandik-yonetimi';
     this.breadcrumb = [
       { label: 'Ana Kontrol Paneli', link: '/dashboard' },
-      { label: parentLabel, link: parentLink },
-      { label: isSaha ? 'Saha 3K Modülü' : isYedek ? 'Yedek 3K Modülü' : '3K Modülü' },
+      { label: this.ts.translate(this.projeTipi.baslik.yonetim), link: this.projeTipi.yonetimRotasi },
+      { label: this.ts.translate(this.projeTipi.baslik.ucK) },
     ];
     this.loadProjeBilgisi();
     this.loadLookups();
@@ -431,12 +424,6 @@ export class UcKSandiklarComponent implements OnInit {
         this.toast.error('Sandık durum raporu indirilirken hata oluştu.');
       }
     });
-  }
-
-  private sandikDurumRaporMenuKod(): string {
-    if (this.isSahaContext()) return YETKI.SAHA.UCK_SANDIK_DURUM_RAPORU;
-    if (this.isYedekContext()) return YETKI.YEDEK.UCK_SANDIK_DURUM_RAPORU;
-    return YETKI.SANDIK.UCK_SANDIK_DURUM_RAPORU;
   }
 
   onSandikCardClick(event: Event, sandik: SandikDto) {

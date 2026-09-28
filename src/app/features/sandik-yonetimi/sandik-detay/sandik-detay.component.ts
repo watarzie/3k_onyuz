@@ -13,7 +13,8 @@ import { PermissionService } from '../../../core/services/permission.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { EksikUrunForSandikDto, SandikDetayDto, SandikIcerikDto, SandikDto } from '../../../shared/models/index';
-import { Birim } from '../../../core/constants/enums';
+import { Birim, ProjeTipi } from '../../../core/constants/enums';
+import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { SandikTopluTasiComponent } from './sandik-toplu-tasi.component';
 
 import { ConfirmService, duzMetin } from '../../../core/services/confirm.service';
@@ -103,18 +104,13 @@ export class SandikDetayComponent implements OnInit {
 
   breadcrumb: { label: string; link?: string }[] = [];
 
-  isSahaYedek = signal(false);
-  isSahaYonetimi = signal(false);
-  isYedekYonetimi = signal(false);
-  pageTitle = computed(() => {
-    const menuKod = this.route.snapshot.data['menuKod'];
-    if (menuKod === YETKI.SAHA.YONETIMI || menuKod === YETKI.SAHA.SANDIKLAR) return 'Saha Yönetimi';
-    if (menuKod === YETKI.SAHA.UCK_MODULU) return 'Saha 3K Modülü';
-    if (menuKod === YETKI.YEDEK.UCK_MODULU) return 'Yedek 3K Modülü';
-    if (menuKod === YETKI.YEDEK.YONETIMI || menuKod === YETKI.YEDEK.SANDIKLAR) return 'Yedek Yönetimi';
-    if (menuKod === YETKI.SANDIK.UCK_MODULU) return '3K Modülü';
-    return this.ts.translate('MENU.SANDIK_YONETIMI');
-  });
+  private readonly projeTipi = projeTipiBaglami(rotaProjeTipi(this.route.snapshot));
+  /** 3K modülünden açılan sandık detayı başlığını ve geri bağlantısını 3K ekranından alır. */
+  private readonly ucKModulunden = this.route.snapshot.data['menuKod'] === this.projeTipi.yetki.ucKModulu;
+  readonly isSahaYedek = this.projeTipi.tip !== ProjeTipi.Normal;
+  readonly isSahaYonetimi = this.projeTipi.tip === ProjeTipi.Saha;
+  pageTitle = computed(() =>
+    this.ts.translate(this.ucKModulunden ? this.projeTipi.baslik.ucK : this.projeTipi.baslik.yonetim));
   canWriteSandik = computed(() => {
     const menuKod = this.route.snapshot.data['menuKod'] || YETKI.SANDIK.YONETIMI;
     return this.permissionService.canWrite(menuKod);
@@ -218,18 +214,6 @@ export class SandikDetayComponent implements OnInit {
   ngOnInit() {
     const pId = Number(this.route.snapshot.paramMap.get('projeId'));
     const sId = Number(this.route.snapshot.paramMap.get('sandikId'));
-    const menuKod = this.route.snapshot.data['menuKod'] || YETKI.SANDIK.YONETIMI;
-    this.isSahaYedek.set(
-      menuKod === YETKI.SAHA.YONETIMI || menuKod === YETKI.SAHA.SANDIKLAR || menuKod === YETKI.SAHA.UCK_MODULU ||
-      menuKod === YETKI.YEDEK.YONETIMI || menuKod === YETKI.YEDEK.SANDIKLAR || menuKod === YETKI.YEDEK.UCK_MODULU
-    );
-    this.isSahaYonetimi.set(
-      menuKod === YETKI.SAHA.YONETIMI || menuKod === YETKI.SAHA.SANDIKLAR || menuKod === YETKI.SAHA.UCK_MODULU
-    );
-    this.isYedekYonetimi.set(
-      menuKod === YETKI.YEDEK.YONETIMI || menuKod === YETKI.YEDEK.SANDIKLAR || menuKod === YETKI.YEDEK.UCK_MODULU
-    );
-    
     this.projeId.set(pId);
     this.sandikId.set(sId);
     this.loadSandik();
@@ -280,31 +264,10 @@ export class SandikDetayComponent implements OnInit {
         const mevcutIdler = new Set(res.value.icerikler.map(item => item.id));
         this.seciliTasimaIcerikleri.update(ids => new Set([...ids].filter(id => mevcutIdler.has(id))));
         
-        let parentLabel = this.ts.translate('MENU.SANDIK_YONETIMI');
-        let parentLink = `/sandik-yonetimi/${this.projeId()}`;
-        
-        const menuKod = this.route.snapshot.data['menuKod'];
-        if (menuKod === YETKI.SAHA.YONETIMI || menuKod === YETKI.SAHA.SANDIKLAR) {
-          parentLabel = 'Saha Yönetimi';
-          parentLink = `/saha-yonetimi/${this.projeId()}`;
-        } else if (menuKod === YETKI.YEDEK.YONETIMI || menuKod === YETKI.YEDEK.SANDIKLAR) {
-          parentLabel = 'Yedek Yönetimi';
-          parentLink = `/yedek-yonetimi/${this.projeId()}`;
-        } else if (menuKod === YETKI.SANDIK.UCK_MODULU) {
-          parentLabel = '3K Modülü';
-          parentLink = `/uck/${this.projeId()}`;
-        }
-        else if (menuKod === YETKI.SAHA.UCK_MODULU) {
-          parentLabel = 'Saha 3K Modülü';
-          parentLink = `/saha-yonetimi/uck/${this.projeId()}`;
-        } else if (menuKod === YETKI.YEDEK.UCK_MODULU) {
-          parentLabel = 'Yedek 3K Modülü';
-          parentLink = `/yedek-yonetimi/uck/${this.projeId()}`;
-        }
-
+        const ustRota = this.ucKModulunden ? this.projeTipi.ucKRotasi : this.projeTipi.yonetimRotasi;
         this.breadcrumb = [
           { label: this.ts.translate('MENU.DASHBOARD'), link: '/dashboard' },
-          { label: parentLabel, link: parentLink },
+          { label: this.pageTitle(), link: `${ustRota}/${this.projeId()}` },
           { label: `${res.value.sandikNo}` },
         ];
       }
@@ -412,7 +375,7 @@ export class SandikDetayComponent implements OnInit {
     this.showUrunEkleModal.set(true);
 
     // Projeden seçim yalnızca Saha projelerinde eksik tamamlama üretir.
-    if (this.isSahaYonetimi()) {
+    if (this.isSahaYonetimi) {
       this.projeService.getProjeListesi(1, 1000, 1).subscribe(res => {
         if (res.isSuccess && res.value) {
           this.normalProjeler.set(res.value.items);
@@ -628,7 +591,7 @@ export class SandikDetayComponent implements OnInit {
     }
     this.urunEklemeSaving.set(true);
 
-    const isSahaYedek = this.isSahaYedek();
+    const isSahaYedek = this.isSahaYedek;
     const payload = {
       projeId: this.projeId(),
       sandikId: this.sandikId(),
@@ -865,7 +828,7 @@ export class SandikDetayComponent implements OnInit {
 
     if (onay) {
       // Saha/Yedek modunda her zaman sandikIcerikId ile sil
-      const useSandikIcerikId = this.isSahaYedek();
+      const useSandikIcerikId = this.isSahaYedek;
       const hasCeki = !useSandikIcerikId && item.cekiSatiriId && item.cekiSatiriId > 0;
       this.sandikService.manuelUrunSil(
         this.projeId(),

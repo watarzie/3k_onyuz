@@ -19,7 +19,8 @@ import { StatCardComponent } from '../../../shared/components/stat-card/stat-car
 import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
 import { UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, UcKTopluSecimDto, ProjeDropdownDto, GridUrunDto, StokKaydiDto, CekiSatiriAnaVeriGuncelleDto, SahaTamamlamaIzDto, onayaAlindi } from '../../../shared/models/index';
-import { UcKDurum, GridSevkDurum, GridDurum } from '../../../core/constants/enums';
+import { UcKDurum, GridSevkDurum, GridDurum, ProjeTipi } from '../../../core/constants/enums';
+import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
 import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 
@@ -221,18 +222,20 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   karsilamaTipleri = KARSILAMA_TIPLERI;
   breadcrumb: { label: string; link?: string }[] = [];
 
+  private readonly projeTipi = projeTipiBaglami(rotaProjeTipi(this.route.snapshot));
+
   private get activeMenuKod(): string {
     return this.route.snapshot.data?.['menuKod'] || YETKI.SANDIK.UCK_MODULU;
   }
 
   get manuelIcerikTekilAdi(): string {
-    return this.activeMenuKod === YETKI.YEDEK.UCK_MODULU
+    return this.projeTipi.tip === ProjeTipi.Yedek
       ? 'manuel yedek malzemesi'
       : 'manuel saha ürünü';
   }
 
   private get manuelIcerikCogulAdi(): string {
-    return this.activeMenuKod === YETKI.YEDEK.UCK_MODULU
+    return this.projeTipi.tip === ProjeTipi.Yedek
       ? 'Manuel yedek malzemeleri'
       : 'Manuel saha ürünleri';
   }
@@ -257,15 +260,11 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     this.projeId.set(id);
     this.sandikId.set(Number.isFinite(sandikIdParam) && sandikIdParam > 0 ? sandikIdParam : null);
     this.sandikNo.set(sNo);
-    const isSaha = this.activeMenuKod === YETKI.SAHA.UCK_MODULU;
-    const isYedek = this.activeMenuKod === YETKI.YEDEK.UCK_MODULU;
-    const parentLabel = isSaha ? 'Saha Yönetimi' : isYedek ? 'Yedek Yönetimi' : 'Sandık Yönetimi';
-    const parentLink = isSaha ? '/saha-yonetimi' : isYedek ? '/yedek-yonetimi' : '/sandik-yonetimi';
-    const uckLink = isSaha ? `/saha-yonetimi/uck/${id}` : isYedek ? `/yedek-yonetimi/uck/${id}` : `/uck/${id}`;
+    const projeTipi = this.projeTipi;
     this.breadcrumb = [
       { label: 'Ana Kontrol Paneli', link: '/dashboard' },
-      { label: parentLabel, link: parentLink },
-      { label: isYedek ? 'Yedek 3K Sandıklar' : '3K Sandıklar', link: uckLink },
+      { label: this.ts.translate(projeTipi.baslik.yonetim), link: projeTipi.yonetimRotasi },
+      { label: projeTipi.tip === ProjeTipi.Yedek ? 'Yedek 3K Sandıklar' : '3K Sandıklar', link: `${projeTipi.ucKRotasi}/${id}` },
       { label: sNo || '3K Ürünler' },
     ];
 

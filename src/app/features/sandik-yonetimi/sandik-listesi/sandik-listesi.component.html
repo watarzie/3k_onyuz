@@ -50,7 +50,7 @@
                 <td>{{ s.depoLokasyonMetni }}</td>
                 <td>
                   <div class="d-flex gap-2">
-                    <a [routerLink]="[routePrefix(), projeId(), s.id]" class="btn btn-sm btn-action">
+                    <a [routerLink]="[routePrefix, projeId(), s.id]" class="btn btn-sm btn-action">
                       <i class="ri-eye-line me-1"></i> Detay
                     </a>
                     @if (canWriteSandik() && s.silinebilirMi) {
@@ -91,7 +91,7 @@
           <input type="text" class="form-control" [ngModel]="yeniSandikIsmi()" (ngModelChange)="yeniSandikIsmi.set($event)" placeholder="Ör: Elektrik" />
         </div>
       </div>
-      @if (isSahaYedek()) {
+      @if (isSahaYedek) {
         <div class="mb-3">
           <label class="form-label fw-semibold">Sandık Tipi <span class="text-danger">*</span></label>
           <select class="form-select" [ngModel]="yeniTipId()" (ngModelChange)="yeniTipId.set(+$event)">
