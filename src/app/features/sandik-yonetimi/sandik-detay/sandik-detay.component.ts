@@ -376,7 +376,7 @@ export class SandikDetayComponent implements OnInit {
 
     // Projeden seçim yalnızca Saha projelerinde eksik tamamlama üretir.
     if (this.isSahaYonetimi) {
-      this.projeService.getProjeListesi(1, 1000, 1).subscribe(res => {
+      this.projeService.getProjeListesi(1, 1000, ProjeTipi.Normal).subscribe(res => {
         if (res.isSuccess && res.value) {
           this.normalProjeler.set(res.value.items);
           const mevcutProje = res.value.items.find(p => p.id === this.projeId());

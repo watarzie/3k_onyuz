@@ -244,10 +244,10 @@
                 @if (showProjeTipiFilter()) {
                   <td>
                     <span class="badge" [ngClass]="{
-                      'bg-primary-subtle text-primary': p.projeTipiId === 1,
-                      'bg-success-subtle text-success': p.projeTipiId === 2,
-                      'bg-info-subtle text-info': p.projeTipiId === 3
-                    }">{{ p.projeTipiId === 1 ? 'Normal' : (p.projeTipiId === 2 ? 'Saha' : 'Yedek') }}</span>
+                      'bg-primary-subtle text-primary': p.projeTipiId === ProjeTipi.Normal,
+                      'bg-success-subtle text-success': p.projeTipiId === ProjeTipi.Saha,
+                      'bg-info-subtle text-info': p.projeTipiId === ProjeTipi.Yedek
+                    }">{{ projeTipiMetni(p.projeTipiId) }}</span>
                   </td>
                 }
                 @if (isSandikMode()) {

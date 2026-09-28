@@ -3,6 +3,7 @@ import { DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { GridService } from '../../../core/services/grid.service';
+import { projeTipiBaglami } from '../../../core/constants/proje-tipi';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
 import { GridIsListesiDto, GridIsListesiItemDto } from '../../../shared/models';
@@ -201,9 +202,7 @@ export class GridIsListesiComponent implements OnInit {
   }
 
   goToLink(item: GridIsListesiItemDto): any[] {
-    if (item.projeTipiId === 2) return ['/saha-yonetimi/grid', item.projeId];
-    if (item.projeTipiId === 3) return ['/yedek-yonetimi/grid', item.projeId];
-    return ['/grid', item.projeId];
+    return [projeTipiBaglami(item.projeTipiId).gridRotasi, item.projeId];
   }
 
   goToQueryParams(item: GridIsListesiItemDto): { focusCekiSatiriId: number } {
@@ -237,9 +236,7 @@ export class GridIsListesiComponent implements OnInit {
   }
 
   projeTipiLabel(projeTipiId: number): string {
-    if (projeTipiId === 2) return 'Saha';
-    if (projeTipiId === 3) return 'Yedek';
-    return 'Normal';
+    return projeTipiBaglami(projeTipiId).ad;
   }
 
   private syncExpandedProjects(): void {

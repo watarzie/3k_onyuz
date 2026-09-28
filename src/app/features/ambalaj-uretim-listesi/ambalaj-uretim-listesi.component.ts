@@ -39,6 +39,7 @@ import {
   onayaAlindi,
 } from '../../shared/models';
 import { AMBALAJ_YETKI } from '../../core/constants/yetki-kodlari';
+import { projeTipiBaglami } from '../../core/constants/proje-tipi';
 import { dosyayiKaydet } from '../../core/services/dosya-kaydet';
 import { ConfirmService, duzMetin } from '../../core/services/confirm.service';
 
@@ -726,12 +727,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
   }
 
   projeYolu(proje: AmbalajProjeOzetDto): string[] {
-    const base = proje.projeTipiId === 2
-      ? '/saha-yonetimi'
-      : proje.projeTipiId === 3
-        ? '/yedek-yonetimi'
-        : '/sandik-yonetimi';
-    return [base, proje.projeId.toString()];
+    return [projeTipiBaglami(proje.projeTipiId).yonetimRotasi, proje.projeId.toString()];
   }
 
   planAc(proje: AmbalajProjeOzetDto): void {

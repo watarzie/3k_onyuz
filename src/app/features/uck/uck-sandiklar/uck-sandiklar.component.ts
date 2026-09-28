@@ -14,7 +14,7 @@ import { ProjeTipi, SevkiyatKilitAcmaTipi } from '../../../core/constants/enums'
 import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
-import { SandikDto, LookupResponse, ProjeDropdownDto, onayaAlindi } from '../../../shared/models/index';
+import { SandikDto, LookupResponse, ProjeDropdownDto, aktifSahaProjeleri, onayaAlindi } from '../../../shared/models/index';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
 import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 
@@ -752,7 +752,7 @@ export class UcKSandiklarComponent implements OnInit {
     const requestId = ++this.hedefSahaSearchRequest;
     this.hedefSahaProjeLoading.set(true);
     this.projeService.getProjeDropdownListesi({
-      projeTipiId: 2,
+      projeTipiId: ProjeTipi.Saha,
       searchTerm,
       isSevkEdilen: false,
       take: 50,
@@ -763,10 +763,7 @@ export class UcKSandiklarComponent implements OnInit {
 
         this.hedefSahaProjeLoading.set(false);
         if (res.isSuccess && res.value) {
-          this.hedefSahaProjeleri.set((res.value ?? [])
-            .filter(p => p.projeTipiId === 2)
-            .filter(p => p.durumId !== 5 && p.durumId !== 6)
-            .sort((a, b) => a.projeNo.localeCompare(b.projeNo, 'tr-TR')));
+          this.hedefSahaProjeleri.set(aktifSahaProjeleri(res.value ?? []));
         }
       },
       error: () => {

@@ -18,6 +18,8 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
 import { ProjeDepoDagilimDto, ProjeDto, SandikDto, LookupItem } from '../../shared/models/index';
 import { YETKI } from '../../core/constants/yetki-kodlari';
+import { ProjeTipi } from '../../core/constants/enums';
+import { projeTipiBaglami } from '../../core/constants/proje-tipi';
 import { dosyayiKaydet } from '../../core/services/dosya-kaydet';
 
 type DepoSummaryScope = 'global' | 'normal' | 'saha' | 'yedek';
@@ -52,6 +54,7 @@ interface DashboardOzetDto {
   styleUrl: './depo-durumu.component.scss',
 })
 export class DepoDurumuComponent implements OnInit, OnDestroy {
+  protected readonly ProjeTipi = ProjeTipi;
   ts = inject(TranslationService);
   private route = inject(ActivatedRoute);
   private projeService = inject(ProjeService);
@@ -433,7 +436,7 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
   }
 
   projeTipiMetni(projeTipiId: number): string {
-    return projeTipiId === 2 ? 'Saha' : projeTipiId === 3 ? 'Yedek' : 'Normal';
+    return projeTipiBaglami(projeTipiId).ad;
   }
 
   // --- Donut chart helpers ---

@@ -29,15 +29,15 @@
             <span class="report-menu-icon"><i class="ri-apps-2-line"></i></span>
             <span>Tüm Projeler</span>
           </button>
-          <button type="button" class="report-menu-item is-normal" (click)="indirDepoSandikPdf(1)" [disabled]="downloadingPdf()">
+          <button type="button" class="report-menu-item is-normal" (click)="indirDepoSandikPdf(ProjeTipi.Normal)" [disabled]="downloadingPdf()">
             <span class="report-menu-icon"><i class="ri-building-2-line"></i></span>
             <span>Normal Projeler</span>
           </button>
-          <button type="button" class="report-menu-item is-saha" (click)="indirDepoSandikPdf(2)" [disabled]="downloadingPdf()">
+          <button type="button" class="report-menu-item is-saha" (click)="indirDepoSandikPdf(ProjeTipi.Saha)" [disabled]="downloadingPdf()">
             <span class="report-menu-icon"><i class="ri-map-pin-line"></i></span>
             <span>Saha Projeleri</span>
           </button>
-          <button type="button" class="report-menu-item is-yedek" (click)="indirDepoSandikPdf(3)" [disabled]="downloadingPdf()">
+          <button type="button" class="report-menu-item is-yedek" (click)="indirDepoSandikPdf(ProjeTipi.Yedek)" [disabled]="downloadingPdf()">
             <span class="report-menu-icon"><i class="ri-archive-line"></i></span>
             <span>Yedek Projeleri</span>
           </button>
@@ -247,9 +247,9 @@
             <td class="fw-bold text-dark py-3">{{ p.projeNo }}</td>
             <td class="py-3">
               <span class="badge px-3 py-1 rounded-pill" [ngClass]="{
-                  'bg-info-subtle text-info': p.projeTipiId === 1,
-                  'bg-success-subtle text-success': p.projeTipiId === 2,
-                  'bg-warning-subtle text-warning': p.projeTipiId === 3
+                  'bg-info-subtle text-info': p.projeTipiId === ProjeTipi.Normal,
+                  'bg-success-subtle text-success': p.projeTipiId === ProjeTipi.Saha,
+                  'bg-warning-subtle text-warning': p.projeTipiId === ProjeTipi.Yedek
                 }">{{ projeTipiMetni(p.projeTipiId) }}</span>
             </td>
             <td class="text-center fw-semibold text-dark py-3">{{ p.depoSandikSayisi }}</td>

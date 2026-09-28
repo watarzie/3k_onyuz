@@ -79,12 +79,13 @@ export class ProjeListesiComponent implements OnInit {
   isAktifProjeler = signal(false);
   isSahaYonetimi = signal(false);
   isYedekYonetimi = signal(false);
+  protected readonly ProjeTipi = ProjeTipi;
   projeTipiFilter = signal<number | null>(null);
   readonly projeTipiFilterOptions: { label: string; value: number | null }[] = [
     { label: 'Tümü', value: null },
-    { label: 'Normal', value: 1 },
-    { label: 'Saha', value: 2 },
-    { label: 'Yedek', value: 3 },
+    { label: 'Normal', value: ProjeTipi.Normal },
+    { label: 'Saha', value: ProjeTipi.Saha },
+    { label: 'Yedek', value: ProjeTipi.Yedek },
   ];
 
   downloadingPdf = signal<number | null>(null);
@@ -383,14 +384,14 @@ export class ProjeListesiComponent implements OnInit {
       projeTipiId = this.projeTipiFilter() ?? undefined;
       isSevkEdilen = this.isSevkEdilen();
     } else if (this.isSahaYonetimi()) {
-      projeTipiId = 2;
+      projeTipiId = ProjeTipi.Saha;
     } else if (this.isYedekYonetimi()) {
-      projeTipiId = 3;
+      projeTipiId = ProjeTipi.Yedek;
     } else if (this.isSevkEdilen()) {
       isSevkEdilen = true; // Tum tipler, sadece sevk edilmis
     } else {
       // Aktif Projeler veya Sandik Yonetimi — Normal projeler, sevk edilmemis
-      projeTipiId = 1;
+      projeTipiId = ProjeTipi.Normal;
       isSevkEdilen = false;
     }
 
@@ -522,16 +523,20 @@ export class ProjeListesiComponent implements OnInit {
       this.permissions.hasAccess(YETKI.PROJE.SEVK_EDILEN);
   }
 
+  projeTipiMetni(projeTipiId: number): string {
+    return projeTipiBaglami(projeTipiId).ad;
+  }
+
   canShowGerceklesenRapor(p: ProjeDto): boolean {
     if (this.isSahaYonetimi()) {
-      return p.projeTipiId === 2 && this.canSeeSahaGerceklesenRapor() && this.hasSevkiyatGecmisi(p);
+      return p.projeTipiId === ProjeTipi.Saha && this.canSeeSahaGerceklesenRapor() && this.hasSevkiyatGecmisi(p);
     }
 
     if (this.isYedekYonetimi()) {
-      return p.projeTipiId === 3 && this.canSeeYedekGerceklesenRapor() && this.hasSevkiyatGecmisi(p);
+      return p.projeTipiId === ProjeTipi.Yedek && this.canSeeYedekGerceklesenRapor() && this.hasSevkiyatGecmisi(p);
     }
 
-    return this.isSevkEdilen() && p.projeTipiId === 1 && this.canSeeGerceklesenRapor();
+    return this.isSevkEdilen() && p.projeTipiId === ProjeTipi.Normal && this.canSeeGerceklesenRapor();
   }
   @HostListener('document:click')
   closeReportMenu() {
@@ -618,8 +623,8 @@ export class ProjeListesiComponent implements OnInit {
     this.bulkEksikRaporMenuPosition.set(null);
     this.bulkEksikRaporDownloading.set(format);
     const request$ = format === 'pdf'
-      ? this.pdfService.topluEksikUrunlerPdf(projeIds, this.isSahaYonetimi() ? 2 : this.isYedekYonetimi() ? 3 : 1)
-      : this.pdfService.topluEksikUrunlerExcel(projeIds, this.isSahaYonetimi() ? 2 : this.isYedekYonetimi() ? 3 : 1);
+      ? this.pdfService.topluEksikUrunlerPdf(projeIds, this.projeTipi.tip)
+      : this.pdfService.topluEksikUrunlerExcel(projeIds, this.projeTipi.tip);
 
     request$.subscribe({
       next: (blob) => {

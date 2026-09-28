@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
+import { ProjeTipi } from '../constants/enums';
 import { Observable } from 'rxjs';
 
 /**
@@ -36,11 +37,11 @@ export class PdfService {
   }
 
   /** projeTipi raporun kapsamıdır; sunucu her projenin gerçek tipini ayrıca doğrular. */
-  topluEksikUrunlerPdf(projeIds: number[], projeTipi: 1 | 2 | 3 = 1): Observable<Blob> {
+  topluEksikUrunlerPdf(projeIds: number[], projeTipi: ProjeTipi = ProjeTipi.Normal): Observable<Blob> {
     return this.api.downloadPostFile(API.PDF.TOPLU_EKSIK_URUNLER, { projeIds, projeTipi });
   }
 
-  topluEksikUrunlerExcel(projeIds: number[], projeTipi: 1 | 2 | 3 = 1): Observable<Blob> {
+  topluEksikUrunlerExcel(projeIds: number[], projeTipi: ProjeTipi = ProjeTipi.Normal): Observable<Blob> {
     return this.api.downloadPostFile(API.PDF.TOPLU_EKSIK_URUNLER_EXCEL, { projeIds, projeTipi });
   }
 
