@@ -11,7 +11,7 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { SandikDto } from '../../../shared/models/index';
 import { SandikTipi, DepoLokasyon } from '../../../core/constants/enums';
 import { PdfService } from '../../../core/services/pdf.service';
-import { ConfirmService } from '../../../core/services/confirm.service';
+import { ConfirmService, duzMetin } from '../../../core/services/confirm.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
 import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
@@ -230,7 +230,7 @@ export class SandikListesiComponent implements OnInit {
 
     const onay = await this.confirmService.ask({
       title: 'Sandık Sil',
-      message: `<strong>${s.sandikNo}</strong> numaralı sandığı silmek istediğinize emin misiniz?${silmeDetayi}<br><br><small class="text-muted">Bu işlem geri alınamaz.</small>`,
+      message: `<strong>${duzMetin(s.sandikNo)}</strong> numaralı sandığı silmek istediğinize emin misiniz?${silmeDetayi}<br><br><small class="text-muted">Bu işlem geri alınamaz.</small>`,
       confirmText: 'Evet, Sil',
       cancelText: 'Vazgeç',
       type: 'danger'

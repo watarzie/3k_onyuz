@@ -26,7 +26,7 @@ import {
   onayaAlindi,
 } from '../../../shared/models/index';
 import { ToastService } from '../../../core/services/toast.service';
-import { ConfirmService } from '../../../core/services/confirm.service';
+import { ConfirmService, duzMetin } from '../../../core/services/confirm.service';
 import { PdfService } from '../../../core/services/pdf.service';
 import { SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
@@ -1241,7 +1241,7 @@ export class ProjeListesiComponent implements OnInit {
 
     const onay = await this.confirmService.ask({
       title: 'Saha Aktarımını Geri Al',
-      message: `<strong>${aktarim.kaynakProjeNo}</strong> kaynak projesindeki <strong>#${aktarim.siraNo}</strong> satırının <strong>${this.formatAktarimMiktar(aktarim.miktar)} ${this.formatAktarimBirim(aktarim.birim)}</strong> saha aktarımı geri alınacak.<br>Ürün normal proje eksik takibine geri döner.`,
+      message: `<strong>${duzMetin(aktarim.kaynakProjeNo)}</strong> kaynak projesindeki <strong>#${aktarim.siraNo}</strong> satırının <strong>${this.formatAktarimMiktar(aktarim.miktar)} ${duzMetin(this.formatAktarimBirim(aktarim.birim))}</strong> saha aktarımı geri alınacak.<br>Ürün normal proje eksik takibine geri döner.`,
       confirmText: 'Geri Al',
       cancelText: 'Vazgeç',
       type: 'warning'
@@ -1282,7 +1282,7 @@ export class ProjeListesiComponent implements OnInit {
 
     const onay = await this.confirmService.ask({
       title: 'Sandıktaki Tüm Aktarımları Geri Al',
-      message: `<strong>Saha Sandığı ${grup.sahaSandikNo}</strong> içindeki <strong>${grup.aktarimlar.length} aktarım satırı</strong> (${this.formatAktarimGrupMiktar(grup)}) tek işlemde geri alınacak.<br>Ürünler kaynak normal projelerinin eksik takibine geri döner. İşlem sırasında herhangi bir satır geri alınamazsa hiçbir kayıt değiştirilmez.`,
+      message: `<strong>Saha Sandığı ${duzMetin(grup.sahaSandikNo)}</strong> içindeki <strong>${grup.aktarimlar.length} aktarım satırı</strong> (${duzMetin(this.formatAktarimGrupMiktar(grup))}) tek işlemde geri alınacak.<br>Ürünler kaynak normal projelerinin eksik takibine geri döner. İşlem sırasında herhangi bir satır geri alınamazsa hiçbir kayıt değiştirilmez.`,
       confirmText: 'Tümünü Geri Al',
       cancelText: 'Vazgeç',
       type: 'warning'
@@ -1536,7 +1536,7 @@ export class ProjeListesiComponent implements OnInit {
   async projeSil(proje: ProjeDto) {
     const onay = await this.confirmService.ask({
       title: 'Projeyi Sil',
-      message: `<strong>${proje.projeNo}</strong> numaralı projeyi silmek istediğinize emin misiniz?<br>
+      message: `<strong>${duzMetin(proje.projeNo)}</strong> numaralı projeyi silmek istediğinize emin misiniz?<br>
                 <span class="text-danger">Bu işlem geri alınamaz! Projeye ait tüm sandıklar, ürünler ve veriler silinecektir.</span>`,
       confirmText: 'Evet, Sil',
       cancelText: 'Vazgeç',

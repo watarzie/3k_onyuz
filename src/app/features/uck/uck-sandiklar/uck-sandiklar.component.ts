@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslationService } from '../../../core/services/translation.service';
 import { SandikService } from '../../../core/services/sandik.service';
 import { ProjeService } from '../../../core/services/proje.service';
-import { ConfirmService } from '../../../core/services/confirm.service';
+import { ConfirmService, duzMetin } from '../../../core/services/confirm.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { LookupService } from '../../../core/services/lookup.service';
@@ -525,7 +525,7 @@ export class UcKSandiklarComponent implements OnInit {
 
     const onay = await this.confirmService.ask({
       title: 'Düzeltmeyi Tamamla',
-      message: `<strong>${sandik.sandikNo}</strong> numaralı sandık tekrar kilitlenecek. Sevkiyat kaydı korunmaya devam edecek ve yeni sevkiyat oluşturulmayacak. Onaylıyor musunuz?`,
+      message: `<strong>${duzMetin(sandik.sandikNo)}</strong> numaralı sandık tekrar kilitlenecek. Sevkiyat kaydı korunmaya devam edecek ve yeni sevkiyat oluşturulmayacak. Onaylıyor musunuz?`,
       confirmText: 'Evet, Tamamla',
       cancelText: 'Vazgeç',
       type: 'success'
@@ -793,11 +793,11 @@ export class UcKSandiklarComponent implements OnInit {
   private generateMissingItemHtml(item: any): string {
     return `
       <div class="mb-3 border-bottom pb-2 ms-2 me-2">
-        <div class="fw-bold fs-6 text-dark">${item.siraNo} - ${item.barkod}</div>
-        <div class="text-secondary small mb-2">${item.aciklama}</div>
+        <div class="fw-bold fs-6 text-dark">${duzMetin(item.siraNo)} - ${duzMetin(item.barkod)}</div>
+        <div class="text-secondary small mb-2">${duzMetin(item.aciklama)}</div>
         <div>
-          <span class="badge bg-primary text-white me-2 px-2 py-1">Kalan: ${item.kalan}</span>
-          <span class="badge bg-danger text-white px-2 py-1">Durum: ${item.durumMetni}</span>
+          <span class="badge bg-primary text-white me-2 px-2 py-1">Kalan: ${duzMetin(item.kalan)}</span>
+          <span class="badge bg-danger text-white px-2 py-1">Durum: ${duzMetin(item.durumMetni)}</span>
         </div>
       </div>`;
   }
@@ -815,7 +815,7 @@ export class UcKSandiklarComponent implements OnInit {
           this.refreshSandiklar();
         } else if (res.hasMissingOrDefectiveItems) {
           const warningList = res.uyariDetaylari?.map((u: any) => `
-             <div class="text-dark fw-bold mb-2">Sandık ${u.sandikNo}</div>
+             <div class="text-dark fw-bold mb-2">Sandık ${duzMetin(u.sandikNo)}</div>
              <div class="mb-3">${u.urunHatalari.map((item: any) => this.generateMissingItemHtml(item)).join('')}</div>
            `).join('') || '';
 
@@ -838,7 +838,7 @@ export class UcKSandiklarComponent implements OnInit {
         const errorBody = err.error?.value ?? err.error;
         if (errorBody && errorBody.hasMissingOrDefectiveItems) {
           const warningList = errorBody.uyariDetaylari?.map((u: any) => `
-             <div class="text-dark fw-bold mb-2">Sandık ${u.sandikNo}</div>
+             <div class="text-dark fw-bold mb-2">Sandık ${duzMetin(u.sandikNo)}</div>
              <div class="mb-3">${u.urunHatalari.map((item: any) => this.generateMissingItemHtml(item)).join('')}</div>
            `).join('') || '';
 
@@ -916,7 +916,7 @@ export class UcKSandiklarComponent implements OnInit {
           const warningList = res.missingItemDetails?.map((item: any) => this.generateMissingItemHtml(item)).join('') || '';
           const warningConfirm = await this.confirmService.ask({
             title: 'Eksik / Hatalı Ürün Var',
-            message: `<div class="mb-3 text-dark">${res.message}</div><div class="text-start mb-0">${warningList}</div>`,
+            message: `<div class="mb-3 text-dark">${duzMetin(res.message)}</div><div class="text-start mb-0">${warningList}</div>`,
             confirmText: 'Yine de Kapat',
             cancelText: 'Vazgeç',
             type: 'info'
@@ -935,7 +935,7 @@ export class UcKSandiklarComponent implements OnInit {
           const warningList = (errorBody.missingItemDetails || []).map((item: any) => this.generateMissingItemHtml(item)).join('');
           const warningConfirm = await this.confirmService.ask({
             title: 'Eksik / Hatalı Ürün Var',
-            message: `<div class="mb-3 text-dark">${errorBody.message}</div><div class="text-start mb-0">${warningList}</div>`,
+            message: `<div class="mb-3 text-dark">${duzMetin(errorBody.message)}</div><div class="text-start mb-0">${warningList}</div>`,
             confirmText: 'Yine de Kapat',
             cancelText: 'Vazgeç',
             type: 'info'
@@ -1030,7 +1030,7 @@ export class UcKSandiklarComponent implements OnInit {
 
     const confirm = await this.confirmService.ask({
       title: 'Sandık Sil',
-      message: `<strong>${sandik.sandikNo}</strong> numaralı sandığı silmek istediğinize emin misiniz?${silmeDetayi}<br><br>
+      message: `<strong>${duzMetin(sandik.sandikNo)}</strong> numaralı sandığı silmek istediğinize emin misiniz?${silmeDetayi}<br><br>
                 <div class="alert alert-danger py-2 mb-0">
                   <i class="ri-alert-line me-1"></i> Bu işlem geri alınamaz.
                 </div>`,

@@ -8,7 +8,7 @@ import { StokKaydiDto, StokKaydiOlusturDto, ProjeDropdownDto } from '../../share
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
 import { ProjeService } from '../../core/services/proje.service';
 import { PermissionService } from '../../core/services/permission.service';
-import { ConfirmService } from '../../core/services/confirm.service';
+import { ConfirmService, duzMetin } from '../../core/services/confirm.service';
 import { YETKI } from '../../core/constants/yetki-kodlari';
 import { dosyayiKaydet } from '../../core/services/dosya-kaydet';
 
@@ -229,7 +229,7 @@ export class StokYonetimi implements OnInit {
 
     const onay = await this.confirmService.ask({
       title: 'Stok Kaydını Sil',
-      message: `<strong>${stok.malzemeAdi}</strong> stok kaydı silinecek.<br>Bu işlem geri alınamaz.`,
+      message: `<strong>${duzMetin(stok.malzemeAdi)}</strong> stok kaydı silinecek.<br>Bu işlem geri alınamaz.`,
       confirmText: 'Sil',
       cancelText: 'Vazgeç',
       type: 'danger'

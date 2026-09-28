@@ -560,7 +560,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
     const onay = await this.confirmService.ask({
       title: 'Saha Aktarımını Geri Al',
-      message: `${iz.sahaProjeNo} / Sandık ${iz.sahaSandikNo} içindeki ${this.formatMiktar(iz.miktar)} ${iz.birim} aktarım kaynak projeye geri dönecek. Devam edilsin mi?`,
+      message: `${duzMetin(iz.sahaProjeNo)} / Sandık ${duzMetin(iz.sahaSandikNo)} içindeki ${this.formatMiktar(iz.miktar)} ${duzMetin(iz.birim)} aktarım kaynak projeye geri dönecek. Devam edilsin mi?`,
       confirmText: 'Geri Al',
       cancelText: 'Vazgeç',
       type: 'warning'

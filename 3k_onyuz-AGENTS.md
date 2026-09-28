@@ -52,6 +52,7 @@ Bu dosya depo kökünde `AGENTS.md` olarak bulunmalıdır. Kalıcı geliştirme 
 - Sevk kilidi, aktif sevk partisi, yeniden sevk sınırı, geri gönderim, stok/projeden karşılama ve onay kurallarını koru. Backend’in uygunluk ve miktar alanlarını esas al; görüntülenen etiketten yeni iş kuralı türetme. UI doğrulaması backend kontrolünün yerine geçmez.
 - Ortak ekran değişikliğini normal, saha ve yedek route bağlamlarında değerlendir. Sunucuda sayfalanan listeleri yerel filtreyle eksiksiz sonuç gösteriyormuş gibi sunma.
 - Mevcut Bootstrap/SCSS, toast, confirm, breadcrumb, pager ve salt okunur bileşenlerini yeniden kullan. Tablo kaydırma, satır seçimi, işlem sonrası odak ve mobil görünümü koru.
+- Onayı tarayıcı `confirm()` ile değil `ConfirmService.ask()` ile sor. Modal mesajı HTML olarak işlenir; kullanıcıdan ya da sunucudan gelen metni (ad, açıklama, sandık/proje no, hata mesajı) mesaja `duzMetin()` ile ekle.
 - Dosyaları UTF-8 ve mevcut satır sonlarıyla koru; Türkçe karakterleri bozma. Yeni ortak kullanıcı metinlerini mevcut anahtar düzeniyle TR/EN sözlüklerine ekle. Çeviri için API enum değerlerini değiştirme. TypeScript strict ayarlarını gevşetme; `.editorconfig` içindeki iki boşluk girintisini ve Prettier tek tırnak/100 sütun tercihini izle.
 
 ## Doğrulama ve teslim

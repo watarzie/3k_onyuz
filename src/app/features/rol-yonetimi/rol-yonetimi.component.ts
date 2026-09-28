@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { RolService } from '../../core/services/rol.service';
 import { ToastService } from '../../core/services/toast.service';
-import { ConfirmService } from '../../core/services/confirm.service';
+import { ConfirmService, duzMetin } from '../../core/services/confirm.service';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { RolDto, RolDetayDto, MenuTreeDto, RolYetkiItemDto, RolGuncelleRequest } from '../../shared/models';
 import { MenuTreeComponent } from './menu-tree/menu-tree.component';
@@ -154,7 +154,7 @@ export class RolYonetimiComponent implements OnInit {
     if (!this.canManage()) return;
     const onay = await this.confirmSvc.ask({
       title: 'Rol Sil',
-      message: `"${role.ad}" rolünü silmek istediğinize emin misiniz?`,
+      message: `"${duzMetin(role.ad)}" rolünü silmek istediğinize emin misiniz?`,
       confirmText: 'Sil',
       type: 'danger',
     });

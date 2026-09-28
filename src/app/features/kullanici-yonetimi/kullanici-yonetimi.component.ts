@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
 import { KullaniciService } from '../../core/services/kullanici.service';
 import { RolService } from '../../core/services/rol.service';
 import { ToastService } from '../../core/services/toast.service';
-import { ConfirmService } from '../../core/services/confirm.service';
+import { ConfirmService, duzMetin } from '../../core/services/confirm.service';
 import { BildirimService } from '../../core/services/bildirim.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { TranslationService } from '../../core/services/translation.service';
@@ -241,7 +241,7 @@ export class KullaniciYonetimiComponent implements OnInit {
       title: this.translation.translate('USER.TWO_FACTOR_RESET_TITLE'),
       message: this.translation
         .translate('USER.TWO_FACTOR_RESET_CONFIRM')
-        .replace('{0}', kullanici.adSoyad),
+        .replace('{0}', duzMetin(kullanici.adSoyad)),
       confirmText: this.translation.translate('USER.TWO_FACTOR_RESET_ACTION'),
       cancelText: this.translation.translate('COMMON.CANCEL'),
       type: 'warning',
@@ -324,7 +324,7 @@ export class KullaniciYonetimiComponent implements OnInit {
   async deleteUser(k: KullaniciDto): Promise<void> {
     const onay = await this.confirmSvc.ask({
       title: 'Kullanıcı Sil',
-      message: `"${k.adSoyad}" kullanıcısını silmek istediğinize emin misiniz?`,
+      message: `"${duzMetin(k.adSoyad)}" kullanıcısını silmek istediğinize emin misiniz?`,
       confirmText: 'Sil',
       type: 'danger',
     });

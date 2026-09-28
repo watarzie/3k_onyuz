@@ -9,7 +9,7 @@ import { ProjeService } from '../../core/services/proje.service';
 import { LookupService } from '../../core/services/lookup.service';
 import { HareketGecmisiDto, ProjeDropdownDto, LookupItem } from '../../shared/models/index';
 import { ToastService } from '../../core/services/toast.service';
-import { ConfirmService } from '../../core/services/confirm.service';
+import { ConfirmService, duzMetin } from '../../core/services/confirm.service';
 
 @Component({
   selector: 'app-hareket-gecmisi',
@@ -219,7 +219,7 @@ export class HareketGecmisiComponent implements OnInit {
   showFullText(title: string, text: string) {
     this.confirmService.ask({
       title: title,
-      message: `<div class="text-start text-dark" style="max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;">${text}</div>`,
+      message: `<div class="text-start text-dark" style="max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;">${duzMetin(text)}</div>`,
       confirmText: 'Kapat',
       cancelText: '',
       type: 'info'

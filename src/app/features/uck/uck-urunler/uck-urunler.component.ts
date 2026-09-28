@@ -517,7 +517,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
     const onay = await this.confirmService.ask({
       title: 'Saha Aktarımını Geri Al',
-      message: `${iz.sahaProjeNo} / Sandık ${iz.sahaSandikNo} içindeki ${this.formatMiktar(iz.miktar)} ${iz.birim} aktarım kaynak projeye geri dönecek. Devam edilsin mi?`,
+      message: `${duzMetin(iz.sahaProjeNo)} / Sandık ${duzMetin(iz.sahaSandikNo)} içindeki ${this.formatMiktar(iz.miktar)} ${duzMetin(iz.birim)} aktarım kaynak projeye geri dönecek. Devam edilsin mi?`,
       confirmText: 'Geri Al',
       cancelText: 'Vazgeç',
       type: 'warning'
@@ -1738,7 +1738,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
     const onay = await this.confirmService.ask({
       title: 'Manuel Ürün Sil',
-      message: `<strong>${u.aciklama}</strong> ürününü silmek istediğinize emin misiniz?<br><br><small class="text-muted">Bu işlem geri alınamaz.</small>`,
+      message: `<strong>${duzMetin(u.aciklama)}</strong> ürününü silmek istediğinize emin misiniz?<br><br><small class="text-muted">Bu işlem geri alınamaz.</small>`,
       confirmText: 'Evet, Sil',
       cancelText: 'Vazgeç',
       type: 'danger'

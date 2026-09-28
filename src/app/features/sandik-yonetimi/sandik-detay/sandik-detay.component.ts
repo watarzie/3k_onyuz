@@ -16,7 +16,7 @@ import { EksikUrunForSandikDto, SandikDetayDto, SandikIcerikDto, SandikDto } fro
 import { Birim } from '../../../core/constants/enums';
 import { SandikTopluTasiComponent } from './sandik-toplu-tasi.component';
 
-import { ConfirmService } from '../../../core/services/confirm.service';
+import { ConfirmService, duzMetin } from '../../../core/services/confirm.service';
 import { firstValueFrom } from 'rxjs';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
 
@@ -170,7 +170,7 @@ export class SandikDetayComponent implements OnInit {
 
     const onay = await this.confirmService.ask({
       title: 'Düzeltmeyi Tamamla',
-      message: `<strong>${s.sandikNo}</strong> numaralı sandık tekrar kilitlenecek. Sevkiyat kaydı korunmaya devam edecek ve yeni sevkiyat oluşturulmayacak. Onaylıyor musunuz?`,
+      message: `<strong>${duzMetin(s.sandikNo)}</strong> numaralı sandık tekrar kilitlenecek. Sevkiyat kaydı korunmaya devam edecek ve yeni sevkiyat oluşturulmayacak. Onaylıyor musunuz?`,
       confirmText: 'Evet, Tamamla',
       cancelText: 'Vazgeç',
       type: 'success'
@@ -248,7 +248,7 @@ export class SandikDetayComponent implements OnInit {
 
     const onay = await this.confirmService.ask({
       title: 'Sandığı Kapat',
-      message: `<strong>${s.sandikNo}</strong> numaralı sandığı kapatmak istediğinize emin misiniz?<br><br>Bu işlem geri alınabilir.`,
+      message: `<strong>${duzMetin(s.sandikNo)}</strong> numaralı sandığı kapatmak istediğinize emin misiniz?<br><br>Bu işlem geri alınabilir.`,
       confirmText: 'Evet, Kapat',
       cancelText: 'Vazgeç',
       type: 'info'
@@ -857,7 +857,7 @@ export class SandikDetayComponent implements OnInit {
 
     const onay = await this.confirmService.ask({
       title: 'Manuel Ürün Sil',
-      message: `<strong>${item.aciklama}</strong> ürününü silmek istediğinize emin misiniz?<br><br><small class="text-muted">Bu işlem geri alınamaz.</small>`,
+      message: `<strong>${duzMetin(item.aciklama)}</strong> ürününü silmek istediğinize emin misiniz?<br><br><small class="text-muted">Bu işlem geri alınamaz.</small>`,
       confirmText: 'Evet, Sil',
       cancelText: 'Vazgeç',
       type: 'danger'
