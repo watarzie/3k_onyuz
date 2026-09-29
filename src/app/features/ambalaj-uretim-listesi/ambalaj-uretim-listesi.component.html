@@ -17,7 +17,7 @@
   <div class="row g-3 mb-4">
     <div class="col-xl-3 col-sm-6"><app-stat-card [value]="toplamProje()" [label]="bagimsizKuyruk() ? 'Sandık kaydı' : 'Üretim projesi'" icon="ri-folder-3-line" color="primary" /></div>
     <div class="col-xl-3 col-sm-6"><app-stat-card [value]="toplamSandik()" label="Planlanan sandık" icon="ri-archive-line" color="success" /></div>
-    <div *appCanAccess="[izin.M3Goruntule]" class="col-xl-3 col-sm-6 estimate-stat"><app-stat-card [value]="toplamHacim() === null ? '—' : (toplamHacim() | number:'1.3-3') + ' m³'" [label]="t('ESTIMATE_LABEL')" icon="ri-ruler-2-line" color="info" /><p class="estimate-help">{{ t('ESTIMATE_HELP') }}</p></div>
+    <div *appCanAccess="[izin.M3Goruntule]" class="col-xl-3 col-sm-6 estimate-stat"><app-stat-card [value]="toplamHacim() === null ? '—' : (toplamHacim() | number:'1.3-3') + ' m³'" [label]="bagimsizKuyruk() ? t('ESTIMATE_LABEL') : camOzetiEtiketi()" icon="ri-ruler-2-line" color="info" /><p class="estimate-help">{{ bagimsizKuyruk() ? t('ESTIMATE_HELP') : camOzetiAciklamasi() }}</p></div>
     <div class="col-xl-3 col-sm-6"><app-stat-card [value]="bagimsizKuyruk() ? '4 tür' : eksikProje() + ' proje'" [label]="bagimsizKuyruk() ? 'Kayıt türü' : 'Ölçüsü eksik'" icon="ri-error-warning-line" color="warning" /></div>
   </div>
 
@@ -37,6 +37,7 @@
         </div>
         <div class="segmented production-queues" role="tablist" aria-label="Üretim alanı">
           <button type="button" [class.active]="aktifKuyruk() === 'normal'" (click)="aktifKuyrukDegistir('normal')">Normal Projeler</button>
+          <button type="button" [class.active]="aktifKuyruk() === 'tamamlanan'" (click)="aktifKuyrukDegistir('tamamlanan')">Üretimi Tamamlanan</button>
           <button type="button" [class.active]="aktifKuyruk() === 'ozel'" (click)="aktifKuyrukDegistir('ozel')">Özel Sandıklar</button>
         </div>
       </div>
@@ -197,7 +198,7 @@
                   <div class="special-crate-details-grid">
                     <label><span>Sandık No</span><input maxlength="100" [(ngModel)]="ozelForm.sandikNo" name="bagimsizSandikNo" [readonly]="ozelForm.tur === 3" [placeholder]="ozelForm.tur === 3 ? 'Dış sandığa göre otomatik verilir' : 'Boşsa otomatik verilir'" /></label>
                     <label><span>Sandık Adı *</span><input maxlength="250" [(ngModel)]="ozelForm.ad" name="bagimsizAd" /></label>
-                    <label><span>Sandık Yapısı *</span><select [(ngModel)]="ozelForm.sandikTipi" name="bagimsizSandikTipi">@for (tip of ozelSandikTipleri; track tip) { <option [ngValue]="tip">{{ tip }}</option> }</select></label>
+                    <label><span>Sandık Yapısı *</span><select [(ngModel)]="ozelForm.sandikTipi" name="bagimsizSandikTipi">@for (tip of ozelYapiSecenekleri(); track tip) { <option [ngValue]="tip">{{ tip }}</option> }</select></label>
                     <label><span>Adet *</span><input type="number" min="1" [(ngModel)]="ozelForm.adet" name="bagimsizAdet" /></label>
                     <div class="special-crate-dimensions span-2">
                       <label *appCanAccess="[izin.OlcuGoruntule]"><span>Boy (mm) *</span><input type="number" min="1" [(ngModel)]="ozelForm.boy" name="bagimsizBoy" /></label>
@@ -307,7 +308,7 @@
           <tr><td colspan="9" class="empty-state">Projeler yükleniyor...</td></tr>
         } @else {
           @for (proje of projeler(); track proje.projeId) {
-            <tr>
+            <tr [class.completed-project]="aktifKuyruk() === 'tamamlanan'">
               <td><strong>{{ proje.projeNo }}</strong><small>{{ proje.fbNo || 'FB tanımsız' }}</small></td>
               <td>{{ proje.musteri }}</td>
               <td><span class="type-badge type-{{ proje.projeTipiId }}">{{ proje.projeTipiMetni }}</span></td>
@@ -334,15 +335,27 @@
                 }
               </td>
               <td class="actions">
-                <a class="icon-button" [routerLink]="projeYolu(proje)" title="Sandık ölçülerini aç" aria-label="Sandık ölçülerini aç">
-                  <i class="ri-ruler-line"></i>
-                </a>
                 <button *appCanAccess="[izin.PlanGoruntule, izin.ProjeDetayGoruntule]" type="button" class="plan-button" (click)="planAc(proje)">
                   <i class="ri-settings-3-line"></i> Üretim planı
                 </button>
-                <button *appCanAccess="[izin.FormIndir]" type="button" class="icon-button pdf-button" [title]="downloadingProjectId() === proje.projeId ? 'PDF hazırlanıyor' : 'Tüm üretim formunu indir'" [disabled]="downloadingProjectId() !== null" [attr.aria-busy]="downloadingProjectId() === proje.projeId" (click)="uretimFormuIndir(proje)">
-                  <i [class]="downloadingProjectId() === proje.projeId ? 'ri-loader-4-line spin' : 'ri-file-pdf-2-line'"></i>
-                </button>
+                <app-islemler-menusu>
+                  <a [routerLink]="projeYolu(proje)" title="Sandık ölçülerini aç">
+                    <i class="ri-ruler-line"></i><span>Sandık ölçüleri</span>
+                  </a>
+                  <button *appCanAccess="[izin.FormIndir]" type="button" [title]="downloadingProjectId() === proje.projeId ? 'PDF hazırlanıyor' : 'Tüm üretim formunu indir'" [disabled]="downloadingProjectId() !== null" [attr.aria-busy]="downloadingProjectId() === proje.projeId" (click)="uretimFormuIndir(proje)">
+                    <i [class]="downloadingProjectId() === proje.projeId ? 'ri-loader-4-line spin' : 'ri-file-pdf-2-line'"></i><span>Üretim formu (PDF)</span>
+                  </button>
+                  @if (projeTamamlanabilir(proje)) {
+                    <button type="button" title="Ambalaja dahil bütün sandıkların üretimini tamamla" [disabled]="projeDurumuKaydediliyor() !== null" (click)="projeyiTamamla(proje)">
+                      <i [class]="projeDurumuKaydediliyor() === proje.projeId ? 'ri-loader-4-line spin' : 'ri-check-double-line'"></i><span>Üretimi tamamla</span>
+                    </button>
+                  }
+                  @if (projeGeriAlinabilir()) {
+                    <button type="button" title="Tamamlanmayı geri al" [disabled]="projeDurumuKaydediliyor() !== null" (click)="projeGeriAlmaFormunuAc(proje)">
+                      <i class="ri-arrow-go-back-line"></i><span>Tamamlanmayı geri al</span>
+                    </button>
+                  }
+                </app-islemler-menusu>
               </td>
             </tr>
           } @empty {
@@ -389,28 +402,17 @@
         <ng-template #durumAksiyonlari let-kalem>
           <div class="production-row-state">
             <span class="production-status status-{{ kalem.uretimDurumu || 1 }}">{{ kalem.ambalajaDahilMi === false ? t('EXCLUDED') : kalem.uretimDurumu === 3 ? t('COMPLETED') : kalem.uretimDurumu === 2 ? t('IN_PROGRESS') : t('WAITING') }}</span>
-            <div class="production-row-actions">
-              @if (kalem.id > 0 && kalem.uretimDurumu === 2 && permissions.canWrite(izin.UretimiTamamla) && permissions.canWrite(izin.DurumDuzenle)) {
-                <button type="button" class="complete-action" [disabled]="yasam.islemde()" (click)="yasam.durum(kalem.id, 3)"><i class="ri-check-line"></i>{{ t('COMPLETE') }}</button>
-              }
-              @if (kalem.id > 0 && kalem.uretimDurumu === 2 && permissions.canWrite(izin.DurumuGeriAl) && permissions.canWrite(izin.DurumDuzenle)) {
-                <button type="button" [disabled]="yasam.islemde()" (click)="yasam.durum(kalem.id, 1)">{{ t('BACKWARD') }}</button>
-              }
-              @if (kalem.id > 0 && kalem.uretimDurumu === 3 && permissions.canWrite(izin.UretimiYenidenAc) && permissions.canWrite(izin.DurumuGeriAl) && permissions.canWrite(izin.DurumDuzenle)) {
-                <button type="button" [disabled]="yasam.islemde()" (click)="yasam.durum(kalem.id, 2)"><i class="ri-restart-line"></i>{{ t('REOPEN') }}</button>
-              }
-            </div>
           </div>
         </ng-template>
         <section class="plan-toolbar">
-          <label><span>Fırın Parti No</span><input type="text" [ngModel]="planFirinPartiNo(plan()!)" (ngModelChange)="firinPartiDegistir($event)" placeholder="Örn. FP-2026-041" /></label>
+          <label><span>Fırın Parti No</span><input type="text" [ngModel]="planFirinPartiNo(plan()!)" (ngModelChange)="firinPartiDegistir($event)" [readonly]="!permissions.canWrite(izin.PlanOlustur)" placeholder="Örn. FP-2026-041" /></label>
           <div class="drawer-status"><span class="toolbar-label">{{ t('GROUP_STATUS') }}</span><strong class="production-status status-{{ planDurumId(plan()!) }}">{{ durumMetni(planDurumId(plan()!)) }}</strong><small>{{ t('PROJECT_STATUS') }}: {{ durumMetni(plan()!.genelUretimDurumu || 1) }}</small></div>
           <button *appCanWrite="izin.PlanOlustur" class="primary-action" type="button" [title]="t('PLAN_SELECTION_HELP')" [disabled]="planSaving() || yasam.islemde()" (click)="planKaydet(yasam.secim())"><i class="ri-save-3-line"></i> {{ t(planSaving() ? 'SAVING' : 'PLAN_SAVE') }}</button>
         </section>
         <p class="plan-selection-help">{{ t('PLAN_SELECTION_HELP') }}</p>
 
-        <app-uretim-yasam-dongusu #yasam [plan]="plan()" [grup]="planGrup()" [entegre]="true"
-          [islemGerekcesi]="kritikGerekce" (gerekceDegisti)="kritikGerekce = $event" (degisti)="yasamDongusuDegisti()" />
+        <app-uretim-yasam-dongusu #yasam [plan]="plan()" [grup]="planGrup()" [entegre]="true" [formOncesi]="formOncesiPartiKaydi" (degisti)="yasamDongusuDegisti()" />
+        <p class="plan-selection-help">{{ t('COMPLETE_FROM_LIST_HELP') }}</p>
 
         <div class="plan-metrics">
           <div><span>{{ t('SELECTED') }}</span><strong>{{ yasam.seciliAdet() }} {{ t('CRATE') }}</strong></div>
@@ -556,6 +558,22 @@
       <button type="button" class="modal-cancel" [disabled]="ambalajKarariSaving()" (click)="pdfUyarisiKapat()">İptal</button>
       <button *appCanWrite="izin.HaricTut" type="button" class="modal-exclude" [disabled]="ambalajKarariSaving()" (click)="pdfKarariUygula(false)"><i class="ri-forbid-line"></i> Ambalaj yapılmaz, PDF oluştur</button>
       <button *appCanWrite="izin.DahilEt" type="button" class="modal-include" [disabled]="ambalajKarariSaving()" (click)="pdfKarariUygula(true)"><i class="ri-checkbox-circle-line"></i> Üretime dahil et, PDF oluştur</button>
+    </footer>
+  </section>
+}
+
+@if (geriAlinacakProje(); as proje) {
+  <div class="decision-modal-backdrop" (click)="geriAlinacakProje.set(null)"></div>
+  <section class="decision-modal" role="dialog" aria-modal="true" aria-labelledby="geri-al-baslik">
+    <header>
+      <span class="decision-modal-icon"><i class="ri-arrow-go-back-line"></i></span>
+      <div><h2 id="geri-al-baslik">Tamamlanmayı geri al</h2><p>{{ proje.fbNo || proje.projeNo }} · tamamlanan sandıklar "Üretimde" durumuna döner. Finans kalemi PO veya faturaya bağlı sandık varsa işlem engellenir.</p></div>
+      <button type="button" class="decision-modal-close" title="Kapat" [disabled]="projeDurumuKaydediliyor() !== null" (click)="geriAlinacakProje.set(null)"><i class="ri-close-line"></i></button>
+    </header>
+    <label class="d-block px-4">Gerekçe *<textarea class="form-control" rows="3" maxlength="1000" [(ngModel)]="geriAlGerekcesi"></textarea></label>
+    <footer>
+      <button type="button" class="modal-cancel" [disabled]="projeDurumuKaydediliyor() !== null" (click)="geriAlinacakProje.set(null)">Vazgeç</button>
+      <button type="button" class="modal-exclude" [disabled]="projeDurumuKaydediliyor() !== null || !geriAlGerekcesi.trim()" (click)="projeGeriAl()"><i class="ri-arrow-go-back-line"></i> Geri al</button>
     </footer>
   </section>
 }

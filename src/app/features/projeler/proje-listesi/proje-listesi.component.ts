@@ -12,6 +12,7 @@ import { SandikService } from '../../../core/services/sandik.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
+import { IslemlerMenusuComponent } from '../../../shared/components/islemler-menusu/islemler-menusu.component';
 import { CekiRevizyonOnizlemeComponent } from '../../../shared/components/ceki-revizyon-onizleme/ceki-revizyon-onizleme.component';
 import { CekiRevizyonGecmisiComponent } from '../../../shared/components/ceki-revizyon-gecmisi/ceki-revizyon-gecmisi.component';
 import {
@@ -50,7 +51,7 @@ interface RevisionIssueViewModel {
 @Component({
   selector: 'app-proje-listesi',
   standalone: true,
-  imports: [TranslatePipe, RouterLink, NgClass, StatusBadgeComponent, BreadcrumbComponent, CekiRevizyonOnizlemeComponent, CekiRevizyonGecmisiComponent, FormsModule, DatePipe],
+  imports: [TranslatePipe, RouterLink, NgClass, StatusBadgeComponent, BreadcrumbComponent, CekiRevizyonOnizlemeComponent, CekiRevizyonGecmisiComponent, FormsModule, DatePipe, IslemlerMenusuComponent],
   templateUrl: './proje-listesi.component.html',
   styleUrl: './proje-listesi.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -98,6 +99,8 @@ export class ProjeListesiComponent implements OnInit {
   reportMenuContext = signal<{ key: string; proje: ProjeDto; type: 'eksik' | 'gerceklesen' } | null>(null);
   bulkEksikRaporMenuPosition = signal<{ top: number; left: number } | null>(null);
   bulkEksikRaporDownloading = signal<'pdf' | 'excel' | null>(null);
+  /** G4: seçili projelerin talep formu Excel'i indiriliyor. */
+  topluTalepFormuIndiriliyor = signal(false);
   selectedEksikRaporProjeIds = signal<Set<number>>(new Set());
   revizyonGecmisiProje = signal<ProjeDto | null>(null);
 
@@ -113,6 +116,13 @@ export class ProjeListesiComponent implements OnInit {
     (this.isSahaYonetimi() && this.canSeeSahaSevkSonrasiEksikRapor()) ||
     (this.isYedekYonetimi() && this.canSeeYedekEksikRapor())
   );
+  /** G4: talep formu Grid verisidir; ekranın proje tipindeki Grid okuma izni gerekir (sunucu her projeyi ayrıca doğrular). */
+  canUseBulkTalepFormu = computed(() =>
+    (this.isSandikYonetimi() || this.isSahaYonetimi() || this.isYedekYonetimi()) &&
+    this.permissions.hasAccess(this.projeTipi.yetki.gridModulu)
+  );
+  /** Proje seçim sütunu: toplu eksik raporu veya toplu talep formu için. */
+  canUseBulkSecim = computed(() => this.canUseBulkEksikRapor() || this.canUseBulkTalepFormu());
   canSeeGerceklesenRapor = computed(() => this.permissions.hasAccess(YETKI.SANDIK.GERCEKLESEN_CEKI_RAPORU));
   canSee3KIsListesi = computed(() => this.isSandikYonetimi() && this.permissions.hasAccess(YETKI.SANDIK.UCK_IS_LISTESI));
   canSeeGridIsListesi = computed(() => this.isSandikYonetimi() && this.permissions.hasAccess(YETKI.SANDIK.GRID_IS_LISTESI));
@@ -384,9 +394,12 @@ export class ProjeListesiComponent implements OnInit {
       projeTipiId = this.projeTipiFilter() ?? undefined;
       isSevkEdilen = this.isSevkEdilen();
     } else if (this.isSahaYonetimi()) {
+      // G1 / S-11: tamamen sevk edilen saha/yedek projesi modül listesinden çıkar, Sevk Edilen'de görünür.
       projeTipiId = ProjeTipi.Saha;
+      isSevkEdilen = false;
     } else if (this.isYedekYonetimi()) {
       projeTipiId = ProjeTipi.Yedek;
+      isSevkEdilen = false;
     } else if (this.isSevkEdilen()) {
       isSevkEdilen = true; // Tum tipler, sadece sevk edilmis
     } else {
@@ -511,6 +524,7 @@ export class ProjeListesiComponent implements OnInit {
     if (this.isSandikYonetimi()) return this.hasSandikYonetimiActions();
 
     return this.canShowGerceklesenRapor(p) ||
+      (this.isSevkEdilen() && this.kilidiAcabilir(p)) ||
       (!this.isSandikMode() && this.hasSevkiyatGecmisi(p)) ||
       (!this.isSandikMode() && this.canSevkEt()) ||
       (!this.isSandikMode() && this.canUpdatePlanlananSevkTarihiCurrent()) ||
@@ -536,7 +550,25 @@ export class ProjeListesiComponent implements OnInit {
       return p.projeTipiId === ProjeTipi.Yedek && this.canSeeYedekGerceklesenRapor() && this.hasSevkiyatGecmisi(p);
     }
 
-    return this.isSevkEdilen() && p.projeTipiId === ProjeTipi.Normal && this.canSeeGerceklesenRapor();
+    // G1: Sevk Edilen listesi bütün tipleri gösterir; rapor izni satırın kendi proje tipine göre denetlenir.
+    return this.isSevkEdilen() && this.permissions.hasAccess(projeTipiBaglami(p.projeTipiId).yetki.gerceklesenCekiRaporu);
+  }
+
+  /**
+   * Sevkiyat kilidini açma: sunucudaki ProjectUnlock kuralıyla aynı — Sevk Edilen listesinde projenin gerçek tipinin
+   * proje yönetimi veya Sevk Edilen yazma izni; modül listelerinde ekranın sevk izni.
+   */
+  kilidiAcabilir(p: ProjeDto): boolean {
+    if (!p.fizikselSevkEdilmisSandikVarMi) return false;
+    if (this.isSevkEdilen())
+      return this.permissions.canWrite(projeTipiBaglami(p.projeTipiId).yetki.projeYonetimi) ||
+        this.permissions.canWrite(YETKI.PROJE.SEVK_EDILEN);
+    return this.canSevkEtCurrent();
+  }
+
+  /** Saha raporu uçları: saha modülünde veya Sevk Edilen listesindeki saha satırında. */
+  private sahaRaporuMu(proje: ProjeDto): boolean {
+    return this.isSahaYonetimi() || (this.isSevkEdilen() && proje.projeTipiId === ProjeTipi.Saha);
   }
   @HostListener('document:click')
   closeReportMenu() {
@@ -571,7 +603,7 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   toggleEksikRaporProjeSelection(projeId: number) {
-    if (!this.canUseBulkEksikRapor() || this.bulkEksikRaporDownloading() !== null) return;
+    if (!this.canUseBulkSecim() || this.bulkEksikRaporDownloading() !== null) return;
 
     const next = new Set(this.selectedEksikRaporProjeIds());
     if (next.has(projeId)) {
@@ -591,7 +623,7 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   toggleAllEksikRaporProjects() {
-    if (!this.canUseBulkEksikRapor() || this.bulkEksikRaporDownloading() !== null) return;
+    if (!this.canUseBulkSecim() || this.bulkEksikRaporDownloading() !== null) return;
 
     const projeler = this.projeler();
     if (projeler.length > 25) {
@@ -635,6 +667,28 @@ export class ProjeListesiComponent implements OnInit {
       error: async (error: unknown) => {
         this.bulkEksikRaporDownloading.set(null);
         this.toastService.error(await this.pdfService.downloadErrorMessage(error, 'Toplu eksik raporu indirilirken bir hata oluştu.'));
+      },
+    });
+  }
+
+  /** G4: seçili projelerin Grid eksiği olan ürünleri tek sayfalık talep formu Excel'i olarak indirilir. */
+  indirTopluTalepFormu() {
+    if (!this.canUseBulkTalepFormu() || this.topluTalepFormuIndiriliyor()) return;
+    const projeIds = Array.from(this.selectedEksikRaporProjeIds());
+    if (projeIds.length === 0) {
+      this.toastService.warning('Talep formu için en az bir proje seçmelisiniz.');
+      return;
+    }
+    this.topluTalepFormuIndiriliyor.set(true);
+    this.pdfService.topluTalepFormuExcel(projeIds, this.projeTipi.tip).subscribe({
+      next: (blob) => {
+        this.topluTalepFormuIndiriliyor.set(false);
+        this.downloadBlobFile(blob, `Talep_Formu_${this.todayFileStamp()}.xlsx`);
+        this.toastService.success(`${projeIds.length} projenin talep formu Excel olarak indirildi.`);
+      },
+      error: async (error: unknown) => {
+        this.topluTalepFormuIndiriliyor.set(false);
+        this.toastService.error(await this.pdfService.downloadErrorMessage(error, 'Talep formu indirilirken bir hata oluştu.'));
       },
     });
   }
@@ -752,7 +806,7 @@ export class ProjeListesiComponent implements OnInit {
   indirGerceklesenCekiListesiPdf(proje: ProjeDto) {
     this.closeReportMenu();
     this.downloadingGerceklesenPdf.set(proje.id);
-    const request$ = this.isSahaYonetimi()
+    const request$ = this.sahaRaporuMu(proje)
       ? this.pdfService.sahaGerceklesenCekiListesiPdf(proje.id)
       : this.pdfService.gerceklesenCekiListesiPdf(proje.id);
     request$.subscribe({
@@ -771,7 +825,7 @@ export class ProjeListesiComponent implements OnInit {
   indirGerceklesenCekiListesiExcel(proje: ProjeDto) {
     this.closeReportMenu();
     this.downloadingGerceklesenExcel.set(proje.id);
-    const request$ = this.isSahaYonetimi()
+    const request$ = this.sahaRaporuMu(proje)
       ? this.pdfService.sahaGerceklesenCekiListesiExcel(proje.id)
       : this.pdfService.gerceklesenCekiListesiExcel(proje.id);
     request$.subscribe({

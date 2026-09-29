@@ -2,7 +2,10 @@ import { AMBALAJ_YETKI, FINANS_YETKI } from '../../core/constants/yetki-kodlari'
 import {
   FINANS_TUM_ALAN_IZINLERI,
   finansBelgesiIndirilebilir,
+  finansFaturaGirilebilir,
+  finansOdemeKaydedilebilir,
   finansOzelIsiEklenebilir,
+  finansPoGirilebilir,
   finansRaporuIndirilebilir,
   tumFinansAlanlariGorunur,
 } from './finans-izinleri';
@@ -41,5 +44,22 @@ describe('Finans izinleri sunucu kurallarının aynası', () => {
     expect(
       finansOzelIsiEklenebilir(izinler([], [FINANS_YETKI.ManuelIsEkle, FINANS_YETKI.BirimFiyatDegistir])),
     ).toBeTrue();
+  });
+
+  it('PO ve fatura girişi yazma izniyle birlikte kayıt ve sipariş görüntüleme izinlerini ister', () => {
+    const okuma = [FINANS_YETKI.KayitGoruntule, FINANS_YETKI.SiparisOperasyonGoruntule];
+    expect(finansPoGirilebilir(izinler(okuma, [FINANS_YETKI.PoGir]))).toBeTrue();
+    expect(finansPoGirilebilir(izinler([FINANS_YETKI.KayitGoruntule], [FINANS_YETKI.PoGir]))).toBeFalse();
+    expect(finansPoGirilebilir(izinler(okuma))).toBeFalse();
+    expect(finansFaturaGirilebilir(izinler(okuma, [FINANS_YETKI.FaturaGir]))).toBeTrue();
+    expect(finansFaturaGirilebilir(izinler([FINANS_YETKI.SiparisOperasyonGoruntule], [FINANS_YETKI.FaturaGir]))).toBeFalse();
+  });
+
+  it('ödeme işareti ayrı ödeme yazma izniyle birlikte fatura okuma izinlerini ister (D3)', () => {
+    const okuma = [FINANS_YETKI.KayitGoruntule, FINANS_YETKI.SiparisOperasyonGoruntule];
+    expect(finansOdemeKaydedilebilir(izinler(okuma, [FINANS_YETKI.OdemeKaydet]))).toBeTrue();
+    expect(finansOdemeKaydedilebilir(izinler(okuma, [FINANS_YETKI.FaturaGir]))).toBeFalse();
+    expect(finansOdemeKaydedilebilir(izinler([...okuma, FINANS_YETKI.OdemeKaydet]))).toBeFalse();
+    expect(finansOdemeKaydedilebilir(izinler([FINANS_YETKI.KayitGoruntule], [FINANS_YETKI.OdemeKaydet]))).toBeFalse();
   });
 });

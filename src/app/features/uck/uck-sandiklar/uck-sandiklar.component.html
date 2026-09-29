@@ -419,6 +419,15 @@
       </div>
     </div>
     <div class="mb-3">
+      <label class="form-label fw-semibold">Sandık Tipi <span class="text-danger">*</span></label>
+      <select class="form-select" [ngModel]="ekTipId()" (ngModelChange)="ekTipId.set($event ? +$event : null)">
+        <option [ngValue]="null">Tip seçin</option>
+        @for (t of sandikTipleri(); track t.id) {
+        <option [ngValue]="t.id">{{ t.deger }}</option>
+        }
+      </select>
+    </div>
+    <div class="mb-3">
       <label class="form-label fw-semibold">Depo Lokasyonu</label>
       <select class="form-select" [ngModel]="ekLokasyonId()" (ngModelChange)="ekLokasyonId.set(+$event)">
         @for (l of sistemLokasyonlar(); track l.id) {

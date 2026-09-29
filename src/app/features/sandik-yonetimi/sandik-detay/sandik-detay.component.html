@@ -85,6 +85,16 @@
             <label class="form-label fw-semibold">Sandık İsmi</label>
             <input type="text" class="form-control" [ngModel]="ozellikSandikIsmi()" (ngModelChange)="ozellikSandikIsmi.set($event)" placeholder="Ör: Elektrik, Mekanik vb." />
           </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Sandık Tipi <span class="text-danger">*</span></label>
+            <select class="form-select" [ngModel]="ozellikTipId()" (ngModelChange)="ozellikTipId.set($event ? +$event : null)">
+              <option [ngValue]="null">Tip seçin</option>
+              @for (t of sandikTipleri(); track t.id) {
+                <option [ngValue]="t.id">{{ t.deger }}</option>
+              }
+            </select>
+            <small class="text-muted">Tip, Ambalaj üretim kaydındaki sandık cinsine aktarılır.</small>
+          </div>
           <div class="row g-3">
             <div class="col-4">
               <label class="form-label fw-semibold">Boy (mm)</label>

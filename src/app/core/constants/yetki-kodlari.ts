@@ -138,7 +138,8 @@ export const FINANS_YETKI = {
   KaliciSil: 'finans-kalici-sil',
   BelgeYukle: 'finans-belge-yukle',
   BelgeIndir: 'finans-belge-indir',
-  SablonYonet: 'finans-sablon-yonet',
   DenetimGor: 'finans-denetim-gor',
   FiyatlandirmaDegistir: 'finans-fiyatlandirma-degistir',
+  /** Faturayı ödendi/ödenmedi işaretleme (D3). */
+  OdemeKaydet: 'finans-odeme-kaydet',
 } as const;

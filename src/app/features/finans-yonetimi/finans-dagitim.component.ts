@@ -1,35 +1,64 @@
 import { TranslationService } from '../../core/services/translation.service';
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, DestroyRef, OnInit, inject, input, output, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, Subject, debounceTime, distinctUntilChanged, finalize, switchMap } from 'rxjs';
 import { FinansService } from '../../core/services/finans.service';
+import { FinansParaBirimiService } from '../../core/services/finans-para-birimi.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ServerPagerComponent } from '../../shared/components/server-pager/server-pager.component';
 import {
-  FinansIsKaydi,
   FinansSiparis,
   FinansFatura,
   FinansSayfaliSonuc,
   FinansSiparisDetay,
+  FinansSiparisGrubu,
+  FinansSiparisKalemi,
 } from '../../shared/models/finans.model';
 import { ApiResult } from '../../shared/models/common.model';
 import { FinansVarlikTuru } from '../../shared/models/finans-v2.model';
-import { FINANS_YETKI } from '../../core/constants/yetki-kodlari';
-
+import { FinansIsKategorisi } from '../../core/constants/enums';
 import { onayaAlindi } from '../../shared/models';
-interface DagitimSatiri {
-  id: number;
-  referans: string;
-  ad: string;
-  paraBirimi: string;
-  kalan: number | null;
-  netTutar: number;
-  secili: boolean;
+import {
+  FINANS_KATEGORILERI,
+  kategoriAnahtari,
+  siparisKarsilanmaAnahtari,
+  uretimKategorisi,
+} from './finans-etiketleri';
+import { finansFaturaGirilebilir, finansPoGirilebilir } from './finans-izinleri';
+
+/** PO'ya bağlanmak üzere seçilen proje × kategori / düzenli iş grubu ve girilen net tutar. */
+interface GrupSecimi {
+  grup: FinansSiparisGrubu;
+  tutar: number | null;
 }
 
+/** Faturada PO kalemleri proje × kategori grubunda gösterilir; sandıklar satır değildir. */
+export interface FaturaGrubu {
+  anahtar: string;
+  projeNo: string;
+  ad: string;
+  kategori: FinansIsKategorisi | null;
+  /** Düzenli işte faturalanan ay (YYYY-MM); düzenli işler aylık faturalandığı için her ay ayrı satırdır. */
+  donem: string | null;
+  paraBirimi: string;
+  siparisKalemiIds: number[];
+  siparisNetTutar: number | null;
+  faturalananNetTutar: number | null;
+  kalan: number | null;
+  secili: boolean;
+  tutar: number | null;
+}
+
+type PoHedefi = 'yeni' | 'mevcut';
+
+/**
+ * PO ve fatura girişi. PO doğrudan uygulamada girilir; belge yüklemesi gerekmez (PDF detaydan isteğe
+ * bağlı eklenir). PO tutarı proje × kategori grubuna girilir, sunucu grubun kalemlerine eskiden yeniye
+ * dağıtır. Mevcut aktif PO'ya yeni gruplar eklenebilir. Fatura, PO'nun proje × kategori gruplarına girilir.
+ */
 @Component({
   selector: 'app-finans-dagitim',
   standalone: true,
@@ -43,117 +72,208 @@ export class FinansDagitimComponent implements OnInit {
     return this.translation.translate(`FINANS_V2.${key}`);
   }
   readonly tur = input.required<'Siparis' | 'Fatura'>();
+  /** Açılışta seçili gelecek işler (aylık satır veya panelden). */
   readonly isKaydiIds = input<readonly number[]>([]);
+  /** Fatura için seçili PO; PO modunda verilirse işler bu mevcut PO'ya eklenir. */
   readonly siparisId = input<number | null>(null);
+  /** Grup seçicinin açılış dönemi (ör. aylık görünümün seçili ayı); verilmezse bütün dönemler. */
+  readonly donem = input<{ baslangic: string; bitis: string } | null>(null);
+  /** Yalnız bu düzenli işin dönemleri (düzenli işten PO açma). */
+  readonly duzenliIsId = input<number | null>(null);
+  /** Faturada aranacak PO numarası (satırdan açıldığında); tek tam eşleşme kendiliğinden seçilir. */
+  readonly poNumarasi = input<string>('');
   readonly kapat = output<void>();
   readonly kaydedildi = output<{ tur: FinansVarlikTuru; id: number }>();
   private readonly service = inject(FinansService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly toast = inject(ToastService);
   readonly permissions = inject(PermissionService);
+  readonly kategoriSecenekleri = FINANS_KATEGORILERI;
+  /** Para birimi seçenekleri tanım tablosundan gelir (F1). */
+  readonly paraBirimleri = inject(FinansParaBirimiService);
+  readonly kategoriAnahtari = kategoriAnahtari;
+  readonly siparisKarsilanmaAnahtari = siparisKarsilanmaAnahtari;
+  readonly uretimKategorisi = uretimKategorisi;
   readonly loading = signal(false);
   readonly saving = signal(false);
   readonly hata = signal('');
-  readonly satirlar = signal<DagitimSatiri[]>([]);
-  readonly siparisler = signal<FinansSayfaliSonuc<FinansSiparis> | null>(null);
-  readonly seciliPo = signal<FinansSiparisDetay | null>(null);
-  readonly poIstekleri = new Subject<void>();
-  private readonly poAramalari = new Subject<string>();
-  readonly detayIstekleri = new Subject<number>();
+
+  // Ortak belge alanları
   numara = '';
   tarih = this.bugun();
   aciklama = '';
+
+  // PO: yeni PO veya mevcut PO'ya ekleme
+  readonly hedef = signal<PoHedefi>('yeni');
+  readonly hedefPo = signal<FinansSiparis | null>(null);
+  readonly gruplar = signal<FinansSayfaliSonuc<FinansSiparisGrubu> | null>(null);
+  readonly secimler = signal(new Map<string, GrupSecimi>());
+  readonly secimListesi = computed(() => [...this.secimler().values()]);
+  readonly secimToplami = computed(() =>
+    this.secimListesi().reduce((toplam, secim) => toplam + (Number(secim.tutar) || 0), 0),
+  );
+  grupArama = '';
+  seciliKategoriler = new Set<FinansIsKategorisi>();
+  tumDonemler = true;
+  baslangic = '';
+  bitis = '';
   paraBirimi = '';
+  grupSayfasi = 1;
+  /** Açılış seçimi (satırdaki işler); kullanıcı "tüm işler"e geçince kaldırılır. */
+  readonly onSecim = signal<readonly number[]>([]);
+  private onSecimUygulandi = false;
+  private readonly grupIstekleri = new Subject<void>();
+  private readonly grupAramalari = new Subject<string>();
+
+  // PO arama (fatura veya mevcut PO'ya ekleme)
+  readonly siparisler = signal<FinansSayfaliSonuc<FinansSiparis> | null>(null);
+  readonly poIstekleri = new Subject<void>();
+  private readonly poAramalari = new Subject<string>();
   poArama = '';
   pageNumber = 1;
+  private poOtomatikSec = false;
+
+  // Fatura
+  /** Vade tarihi (D3): varsayılanı fatura tarihi + parametredeki vade günü; kullanıcı değiştirebilir. */
+  vadeTarihi = '';
+  private vadeElleDegisti = false;
+  readonly varsayilanVadeGunu = signal<number | null>(null);
+  readonly seciliPo = signal<FinansSiparisDetay | null>(null);
+  readonly faturaGruplari = signal<FaturaGrubu[]>([]);
+  readonly detayIstekleri = new Subject<number>();
 
   ngOnInit(): void {
-    this.poAramalari
-      .pipe(debounceTime(350), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        this.pageNumber = 1;
-        this.poIstekleri.next();
-      });
-    this.poIstekleri
-      .pipe(
-        switchMap(() => {
-          this.loading.set(true);
-          return this.service
-            .siparisler({
-              pageNumber: this.pageNumber,
-              pageSize: 15,
-              arama: this.poArama.trim() || undefined,
-              faturaBekleyen: true,
-            })
-            .pipe(finalize(() => this.loading.set(false)));
-        }),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe((result) => {
-        this.siparisler.set(result.isSuccess ? (result.value ?? null) : null);
-        if (!result.isSuccess) this.hata.set(result.error ?? this.t('ALLOC_PO_LIST_ERROR'));
-      });
-    this.detayIstekleri
-      .pipe(
-        switchMap((id) => {
-          this.loading.set(true);
-          this.satirlar.set([]);
-          this.hata.set('');
-          return this.service.siparisDetay(id).pipe(finalize(() => this.loading.set(false)));
-        }),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe((result) => {
-        if (!result.isSuccess || !result.value) {
-          this.hata.set(result.error ?? this.t('ALLOC_PO_DETAIL_ERROR'));
-          return;
-        }
-        this.seciliPo.set(result.value);
-        this.satirlar.set(
-          result.value.kalemler.map((row) => ({
-            id: row.id,
-            referans: row.sandikNo,
-            ad: row.sandikAdi,
-            paraBirimi: row.paraBirimi,
-            kalan: row.kalanFaturaNetTutar ?? null,
-            netTutar: 0,
-            secili: false,
-          })),
-        );
-        this.paraBirimi = this.satirlar()[0]?.paraBirimi ?? '';
-      });
+    this.paraBirimleri.yukle();
+    if (this.tur() === 'Fatura') this.vadeParametresiniYukle();
+    this.onSecim.set(this.isKaydiIds());
+    if (this.tur() === 'Fatura' && this.poNumarasi().trim()) {
+      this.poArama = this.poNumarasi().trim();
+      this.poOtomatikSec = true;
+    }
+    const donem = this.donem();
+    if (donem && !this.isKaydiIds().length && !this.duzenliIsId()) {
+      this.tumDonemler = false;
+      this.baslangic = donem.baslangic;
+      this.bitis = donem.bitis;
+    }
+    this.poAkisiniKur();
+    this.grupAkisiniKur();
+    this.detayAkisiniKur();
+    const po = this.siparisId();
     if (this.tur() === 'Siparis') {
-      this.loading.set(true);
-      this.service
-        .isKayitlariSecim([...this.isKaydiIds()])
-        .pipe(
-          finalize(() => this.loading.set(false)),
-          takeUntilDestroyed(this.destroyRef),
-        )
-        .subscribe((result) => {
-          if (!result.isSuccess) {
-            this.hata.set(result.error ?? this.t('ALLOC_WORK_ERROR'));
-            return;
-          }
-          this.isleriKur(result.value ?? []);
-        });
-    } else if (this.siparisId()) this.detayIstekleri.next(this.siparisId()!);
+      if (po) {
+        this.hedef.set('mevcut');
+        this.detayIstekleri.next(po);
+      } else this.grupIstekleri.next();
+    } else if (po) this.detayIstekleri.next(po);
     else this.poIstekleri.next();
   }
-  isleriKur(rows: FinansIsKaydi[]): void {
-    this.satirlar.set(
-      rows.map((row) => ({
-        id: row.id,
-        referans: `${row.projeNo} · ${row.sandikNo || ''}`,
-        ad: row.isAdi || row.sandikAdi,
-        paraBirimi: row.paraBirimi ?? '',
-        kalan: row.kalanSiparisNetTutar ?? null,
-        netTutar: 0,
-        secili: false,
-      })),
-    );
-    this.paraBirimi = this.satirlar()[0]?.paraBirimi ?? '';
+
+  izinli(): boolean {
+    return this.tur() === 'Siparis'
+      ? finansPoGirilebilir(this.permissions)
+      : finansFaturaGirilebilir(this.permissions);
   }
+
+  // ----- PO: hedef seçimi -----
+  hedefSec(hedef: PoHedefi): void {
+    if (this.hedef() === hedef || this.saving()) return;
+    this.hedef.set(hedef);
+    this.hata.set('');
+    this.hedefPo.set(null);
+    this.seciliPo.set(null);
+    if (hedef === 'mevcut') {
+      this.pageNumber = 1;
+      this.poIstekleri.next();
+    } else this.paraBirimiKilidiniKaldir();
+  }
+  mevcutPoSec(id: number): void {
+    this.detayIstekleri.next(id);
+  }
+  mevcutPoDegistir(): void {
+    this.hedefPo.set(null);
+    this.seciliPo.set(null);
+    this.paraBirimiKilidiniKaldir();
+    this.poIstekleri.next();
+  }
+
+  // ----- PO: grup seçici -----
+  kategoriSeciliMi(kategori: FinansIsKategorisi): boolean {
+    return this.seciliKategoriler.has(kategori);
+  }
+  kategoriDegistir(kategori: FinansIsKategorisi): void {
+    const sonraki = new Set(this.seciliKategoriler);
+    sonraki.has(kategori) ? sonraki.delete(kategori) : sonraki.add(kategori);
+    this.seciliKategoriler = sonraki;
+    this.gruplariFiltrele();
+  }
+  grupAra(): void {
+    this.grupAramalari.next(this.grupArama);
+  }
+  gruplariFiltrele(): void {
+    if (!this.tumDonemler && this.baslangic && this.bitis && this.baslangic > this.bitis) {
+      this.hata.set(this.t('DATE_RANGE_ERROR'));
+      return;
+    }
+    this.hata.set('');
+    this.grupSayfasi = 1;
+    this.grupIstekleri.next();
+  }
+  grupSayfa(sayfa: number): void {
+    this.grupSayfasi = sayfa;
+    this.grupIstekleri.next();
+  }
+  onSecimiKaldir(): void {
+    this.onSecim.set([]);
+    this.gruplariFiltrele();
+  }
+  grupSecili(grup: FinansSiparisGrubu): boolean {
+    return this.secimler().has(grup.anahtar);
+  }
+  /** Seçilebilir: kalan tutar görünür ve pozitif, para birimi PO'nun para birimiyle aynı. */
+  grupSecilebilir(grup: FinansSiparisGrubu): boolean {
+    return (
+      grup.kalanSiparisNetTutar != null &&
+      grup.kalanSiparisNetTutar > 0 &&
+      (!this.kilitliParaBirimi() || grup.paraBirimi === this.kilitliParaBirimi())
+    );
+  }
+  grupSecimiDegistir(grup: FinansSiparisGrubu, secili: boolean): void {
+    if (secili && !this.grupSecilebilir(grup)) return;
+    this.secimler.update((mevcut) => {
+      const sonraki = new Map(mevcut);
+      if (secili) sonraki.set(grup.anahtar, { grup, tutar: grup.kalanSiparisNetTutar });
+      else sonraki.delete(grup.anahtar);
+      return sonraki;
+    });
+  }
+  grupTutari(grup: FinansSiparisGrubu): number | null {
+    return this.secimler().get(grup.anahtar)?.tutar ?? null;
+  }
+  grupTutariDegisti(grup: FinansSiparisGrubu, tutar: number | null): void {
+    this.secimler.update((mevcut) => {
+      const secim = mevcut.get(grup.anahtar);
+      if (!secim) return mevcut;
+      const sonraki = new Map(mevcut);
+      sonraki.set(grup.anahtar, { ...secim, tutar });
+      return sonraki;
+    });
+  }
+  secimiKaldir(anahtar: string): void {
+    this.secimler.update((mevcut) => {
+      const sonraki = new Map(mevcut);
+      sonraki.delete(anahtar);
+      return sonraki;
+    });
+  }
+  /** Seçimin para birimi: mevcut PO'nun veya seçilen ilk grubun para birimi (PO-2: tek para birimi). */
+  kilitliParaBirimi(): string {
+    const po = this.hedefPo();
+    if (po) return po.paraBirimi || po.kalemler?.[0]?.paraBirimi || po.tutarlar[0]?.paraBirimi || '';
+    return this.secimListesi()[0]?.grup.paraBirimi ?? '';
+  }
+
+  // ----- Fatura: PO seçimi -----
   poAra(): void {
     this.poAramalari.next(this.poArama);
   }
@@ -166,69 +286,119 @@ export class FinansDagitimComponent implements OnInit {
   }
   poDegistir(): void {
     this.seciliPo.set(null);
-    this.satirlar.set([]);
+    this.faturaGruplari.set([]);
     this.poIstekleri.next();
   }
-  izinli(): boolean {
-    return this.permissions.canWrite(
-      this.tur() === 'Siparis' ? FINANS_YETKI.PoGir : FINANS_YETKI.FaturaGir,
-    );
+  /** Fatura tarihi değişince, kullanıcı vadeyi elle değiştirmediyse varsayılan vade yeniden hesaplanır. */
+  faturaTarihiDegisti(): void {
+    if (!this.vadeElleDegisti) this.vadeTarihi = this.varsayilanVade();
   }
+  vadeDegisti(): void {
+    this.vadeElleDegisti = true;
+  }
+  private vadeParametresiniYukle(): void {
+    this.service
+      .parametreler()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((r) => {
+        if (!r.isSuccess || !r.value) return;
+        this.varsayilanVadeGunu.set(r.value.varsayilanVadeGunu);
+        if (!this.vadeElleDegisti) this.vadeTarihi = this.varsayilanVade();
+      });
+  }
+  private varsayilanVade(): string {
+    const gun = this.varsayilanVadeGunu();
+    if (gun == null || !this.tarih) return '';
+    const [yil, ay, gunNo] = this.tarih.split('-').map(Number);
+    const vade = new Date(yil, ay - 1, gunNo + gun);
+    return `${vade.getFullYear()}-${String(vade.getMonth() + 1).padStart(2, '0')}-${String(vade.getDate()).padStart(2, '0')}`;
+  }
+
+  faturaGrubuDegisti(grup: FaturaGrubu, secili: boolean): void {
+    grup.secili = secili;
+    grup.tutar = secili ? grup.kalan : null;
+  }
+
   kaydet(): void {
     if (this.saving() || !this.izinli()) return;
-    const rows = this.satirlar().filter((row) => row.secili);
+    if (this.tur() === 'Siparis') this.siparisKaydet();
+    else this.faturaKaydet();
+  }
+
+  private siparisKaydet(): void {
+    const secimler = this.secimListesi();
+    const yeni = this.hedef() === 'yeni';
+    const po = this.hedefPo();
+    if (yeni ? !this.numara.trim() || !this.tarih : !po) {
+      this.hata.set(this.t(yeni ? 'ALLOC_VALIDATION' : 'ALLOC_SELECT_TARGET_PO'));
+      return;
+    }
+    if (!secimler.length || secimler.some((x) => !this.gecerliTutar(x.tutar, x.grup.kalanSiparisNetTutar))) {
+      this.hata.set(this.t('ALLOC_VALIDATION'));
+      return;
+    }
+    const paraBirimi = this.kilitliParaBirimi();
+    if (secimler.some((x) => x.grup.paraBirimi !== paraBirimi)) {
+      this.hata.set(this.t('ALLOC_CURRENCY_ERROR'));
+      return;
+    }
+    const gruplar = secimler.map((x) => ({ isKaydiIds: [...x.grup.isKaydiIds], netTutar: Number(x.tutar) }));
+    this.gonder(
+      yeni
+        ? this.service.siparisOlustur({
+            poNumarasi: this.numara.trim(),
+            siparisTarihi: this.tarih,
+            paraBirimi,
+            aciklama: this.aciklama.trim() || null,
+            kalemler: [],
+            gruplar,
+          })
+        : this.service.siparisKalemEkle(po!.id, { gruplar }),
+      'Siparis',
+    );
+  }
+
+  private faturaKaydet(): void {
+    const po = this.seciliPo();
+    if (!po) {
+      this.hata.set(this.t('ALLOC_SELECT_PO_ERROR'));
+      return;
+    }
+    const secili = this.faturaGruplari().filter((x) => x.secili);
     if (
       !this.numara.trim() ||
       !this.tarih ||
-      !rows.length ||
-      rows.some(
-        (row) =>
-          !Number.isFinite(row.netTutar) ||
-          row.netTutar <= 0 ||
-          row.kalan == null ||
-          row.netTutar > row.kalan,
-      )
+      !secili.length ||
+      secili.some((x) => !this.gecerliTutar(x.tutar, x.kalan))
     ) {
       this.hata.set(this.t('ALLOC_VALIDATION'));
       return;
     }
-    if (rows.some((row) => row.paraBirimi !== this.paraBirimi)) {
+    if (new Set(secili.map((x) => x.paraBirimi)).size > 1) {
       this.hata.set(this.t('ALLOC_CURRENCY_ERROR'));
       return;
     }
-    const po = this.seciliPo();
-    if (this.tur() === 'Fatura' && !po) {
-      this.hata.set(this.t('ALLOC_SELECT_PO_ERROR'));
+    if (this.vadeTarihi && this.vadeTarihi < this.tarih) {
+      this.hata.set(this.t('DUE_DATE_BEFORE_INVOICE'));
       return;
     }
+    this.gonder(
+      this.service.faturaOlustur({
+        siparisId: po.ozet.id,
+        faturaNumarasi: this.numara.trim(),
+        faturaTarihi: this.tarih,
+        vadeTarihi: this.vadeTarihi || null,
+        aciklama: this.aciklama.trim() || null,
+        kalemler: [],
+        gruplar: secili.map((x) => ({ siparisKalemiIds: [...x.siparisKalemiIds], netTutar: Number(x.tutar) })),
+      }),
+      'Fatura',
+    );
+  }
+
+  private gonder(request: Observable<ApiResult<FinansSiparis | FinansFatura>>, tur: FinansVarlikTuru): void {
     this.saving.set(true);
     this.hata.set('');
-    const request: Observable<ApiResult<FinansSiparis | FinansFatura>> =
-      this.tur() === 'Siparis'
-        ? this.service.siparisOlustur({
-            poNumarasi: this.numara.trim(),
-            siparisTarihi: this.tarih,
-            paraBirimi: this.paraBirimi,
-            aciklama: this.aciklama.trim() || null,
-            kalemler: rows.map((row) => ({
-              isKaydiId: row.id,
-              adet: 0,
-              m3: 0,
-              netTutar: Number(row.netTutar),
-            })),
-          })
-        : this.service.faturaOlustur({
-            siparisId: po!.ozet.id,
-            faturaNumarasi: this.numara.trim(),
-            faturaTarihi: this.tarih,
-            aciklama: this.aciklama.trim() || null,
-            kalemler: rows.map((row) => ({
-              siparisKalemiId: row.id,
-              adet: 0,
-              m3: 0,
-              netTutar: Number(row.netTutar),
-            })),
-          });
     request
       .pipe(
         finalize(() => this.saving.set(false)),
@@ -248,12 +418,189 @@ export class FinansDagitimComponent implements OnInit {
           this.hata.set(this.t('ALLOC_ID_ERROR'));
           return;
         }
-        this.toast.success(this.t('ALLOC_SAVED'));
-        this.kaydedildi.emit({ tur: this.tur(), id: result.value.id });
+        this.toast.success(this.t(tur === 'Siparis' ? 'ALLOC_PO_SAVED' : 'ALLOC_INVOICE_SAVED'));
+        this.kaydedildi.emit({ tur, id: result.value.id });
       });
   }
+
+  /** Pozitif, en fazla 2 ondalıklı ve kalan tutarı aşmayan tutar; kalan gizliyse (null) geçersiz. */
+  private gecerliTutar(tutar: number | null, kalan: number | null): boolean {
+    if (tutar == null || kalan == null) return false;
+    const deger = Number(tutar);
+    return (
+      Number.isFinite(deger) &&
+      deger > 0 &&
+      Math.abs(deger * 100 - Math.round(deger * 100)) < 1e-6 &&
+      deger <= kalan + 1e-9
+    );
+  }
+
+  private paraBirimiKilidiniKaldir(): void {
+    // Hedef PO değişince önceki PO'nun para birimine göre yapılan seçimler geçersizdir.
+    this.secimler.set(new Map());
+    this.paraBirimi = '';
+    this.gruplariFiltrele();
+  }
+
+  private poAkisiniKur(): void {
+    this.poAramalari
+      .pipe(debounceTime(350), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.pageNumber = 1;
+        this.poIstekleri.next();
+      });
+    this.poIstekleri
+      .pipe(
+        switchMap(() => {
+          this.loading.set(true);
+          return this.service
+            .siparisler({
+              pageNumber: this.pageNumber,
+              pageSize: 15,
+              arama: this.poArama.trim() || undefined,
+              // Fatura yalnız faturalanacak bakiyesi olan PO'lara girilir; kalem ekleme her aktif PO'ya yapılabilir.
+              faturaBekleyen: this.tur() === 'Fatura' ? true : undefined,
+            })
+            .pipe(finalize(() => this.loading.set(false)));
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((result) => {
+        this.siparisler.set(result.isSuccess ? (result.value ?? null) : null);
+        if (!result.isSuccess) this.hata.set(result.error ?? this.t('ALLOC_PO_LIST_ERROR'));
+        if (this.poOtomatikSec && result.isSuccess) {
+          this.poOtomatikSec = false;
+          const aranan = this.poNumarasi().trim().toLocaleUpperCase('tr-TR');
+          const eslesen = (result.value?.items ?? []).filter((po) => po.poNumarasi.toLocaleUpperCase('tr-TR') === aranan);
+          if (eslesen.length === 1) this.poSec(eslesen[0].id);
+        }
+      });
+  }
+
+  private grupAkisiniKur(): void {
+    this.grupAramalari
+      .pipe(debounceTime(350), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.gruplariFiltrele());
+    this.grupIstekleri
+      .pipe(
+        switchMap(() => {
+          this.loading.set(true);
+          const kilitli = this.kilitliParaBirimi();
+          return this.service
+            .siparisGruplari({
+              pageNumber: this.grupSayfasi,
+              pageSize: 20,
+              arama: this.grupArama.trim() || undefined,
+              kategoriler: [...this.seciliKategoriler],
+              baslangic: this.tumDonemler ? undefined : this.baslangic || undefined,
+              bitis: this.tumDonemler ? undefined : this.bitis || undefined,
+              paraBirimi: (this.hedefPo() ? kilitli : this.paraBirimi) || undefined,
+              isKaydiIds: [...this.onSecim()],
+              duzenliIsId: this.duzenliIsId() ?? undefined,
+              sadeceSiparisBekleyen: true,
+            })
+            .pipe(finalize(() => this.loading.set(false)));
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((result) => {
+        if (!result.isSuccess) {
+          this.gruplar.set(null);
+          this.hata.set(result.error ?? this.t('ALLOC_WORK_ERROR'));
+          return;
+        }
+        const sayfa = result.value ?? null;
+        this.gruplar.set(sayfa);
+        // Satırdan açıldığında o satırın grupları kalan tutarlarıyla seçili gelir (yalnız ilk yüklemede).
+        if (!this.onSecimUygulandi && this.onSecim().length && sayfa) {
+          this.onSecimUygulandi = true;
+          const secilebilir = sayfa.items.filter((grup) => this.grupSecilebilir(grup));
+          const paraBirimi = this.kilitliParaBirimi() || secilebilir[0]?.paraBirimi;
+          secilebilir
+            .filter((grup) => grup.paraBirimi === paraBirimi)
+            .forEach((grup) => this.grupSecimiDegistir(grup, true));
+        }
+      });
+  }
+
+  private detayAkisiniKur(): void {
+    this.detayIstekleri
+      .pipe(
+        switchMap((id) => {
+          this.loading.set(true);
+          this.faturaGruplari.set([]);
+          this.hata.set('');
+          return this.service.siparisDetay(id).pipe(finalize(() => this.loading.set(false)));
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((result) => {
+        if (!result.isSuccess || !result.value) {
+          this.hata.set(result.error ?? this.t('ALLOC_PO_DETAIL_ERROR'));
+          return;
+        }
+        if (this.tur() === 'Siparis') {
+          // Mevcut PO'ya ekleme: seçici PO'nun para birimine kilitlenir.
+          this.hedefPo.set({ ...result.value.ozet, kalemler: result.value.kalemler });
+          this.secimler.update((mevcut) => {
+            const paraBirimi = this.kilitliParaBirimi();
+            return new Map([...mevcut].filter(([, secim]) => secim.grup.paraBirimi === paraBirimi));
+          });
+          this.gruplariFiltrele();
+          return;
+        }
+        this.seciliPo.set(result.value);
+        this.faturaGruplari.set(faturaGruplariniOlustur(result.value.kalemler));
+      });
+  }
+
   private bugun(): string {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
+}
+
+/**
+ * PO kalemlerini proje × kategori × para birimi grubuna toplar; düzenli işler (ör. yıllık kira PO'su) aylık
+ * faturalandığı için iş × ay satırıdır. Gizli tutarlar (null) toplama katılmaz; gruptaki bir kalanın gizli olması
+ * grubun kalanını da gizli (null) yapar.
+ */
+export function faturaGruplariniOlustur(kalemler: readonly FinansSiparisKalemi[]): FaturaGrubu[] {
+  const gruplar = new Map<string, FaturaGrubu>();
+  for (const kalem of kalemler) {
+    const proje = kalem.projeId != null ? `P:${kalem.projeId}` : `M:${kalem.projeNo ?? ''}`;
+    const kategori = kalem.kategori ?? null;
+    const donem = kalem.duzenliIsId != null && kalem.finansTarihi ? kalem.finansTarihi.slice(0, 7) : null;
+    const anahtar =
+      kalem.duzenliIsId != null
+        ? `D:${kalem.duzenliIsId}:${donem ?? ''}:${kalem.paraBirimi}`
+        : kategori === FinansIsKategorisi.OzelIs
+          ? `O:${kalem.isKaydiId}:${kalem.paraBirimi}`
+          : `${proje}:${kategori ?? kalem.isTuru}:${kalem.paraBirimi}`;
+    const mevcut = gruplar.get(anahtar);
+    const grup: FaturaGrubu = mevcut ?? {
+      anahtar,
+      projeNo: kalem.projeNo ?? '',
+      ad: kalem.isAdi || kalem.sandikAdi || kalem.urunAdi,
+      kategori,
+      donem,
+      paraBirimi: kalem.paraBirimi,
+      siparisKalemiIds: [],
+      siparisNetTutar: 0,
+      faturalananNetTutar: 0,
+      kalan: 0,
+      secili: false,
+      tutar: null,
+    };
+    grup.siparisKalemiIds.push(kalem.id);
+    grup.siparisNetTutar = topla(grup.siparisNetTutar, kalem.netTutar);
+    grup.faturalananNetTutar = topla(grup.faturalananNetTutar, kalem.faturalananNetTutar ?? null);
+    grup.kalan = topla(grup.kalan, kalem.kalanFaturaNetTutar ?? null);
+    gruplar.set(anahtar, grup);
+  }
+  return [...gruplar.values()];
+}
+
+function topla(toplam: number | null, deger: number | null): number | null {
+  return toplam == null || deger == null ? null : Math.round((toplam + deger) * 100) / 100;
 }

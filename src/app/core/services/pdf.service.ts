@@ -33,6 +33,11 @@ export class PdfService {
     return this.api.downloadPostFile(API.PDF.TOPLU_EKSIK_URUNLER_EXCEL, { projeIds, projeTipi });
   }
 
+  /** G4: seçili projelerin Grid eksiği olan ürünleri tek sayfalık talep formu Excel'inde (salt okunur). */
+  topluTalepFormuExcel(projeIds: number[], projeTipi: ProjeTipi = ProjeTipi.Normal): Observable<Blob> {
+    return this.api.downloadPostFile(API.PDF.TOPLU_TALEP_FORMU_EXCEL, { projeIds, projeTipi });
+  }
+
   downloadErrorMessage(error: unknown, fallback: string): Promise<string> {
     return this.api.downloadErrorMessage(error, fallback);
   }

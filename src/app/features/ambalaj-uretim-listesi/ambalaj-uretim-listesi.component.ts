@@ -2,11 +2,12 @@ import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, OnInit, c
 import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { debounceTime, distinctUntilChanged, finalize, forkJoin, Subject, switchMap } from 'rxjs';
+import { debounceTime, distinctUntilChanged, finalize, forkJoin, map, Observable, of, Subject, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
 import { ServerPagerComponent } from '../../shared/components/server-pager/server-pager.component';
 import { StatCardComponent } from '../../shared/components/stat-card/stat-card.component';
+import { IslemlerMenusuComponent } from '../../shared/components/islemler-menusu/islemler-menusu.component';
 import { ToastService } from '../../core/services/toast.service';
 import { ProjeService } from '../../core/services/proje.service';
 import { AmbalajService } from '../../core/services/ambalaj.service';
@@ -46,7 +47,7 @@ import { ConfirmService, duzMetin } from '../../core/services/confirm.service';
 @Component({
   selector: 'app-ambalaj-uretim-listesi',
   standalone: true,
-  imports: [BreadcrumbComponent, DecimalPipe, NgTemplateOutlet, FormsModule, RouterLink, ServerPagerComponent, StatCardComponent, UretimYasamDongusuComponent, CanWriteDirective, CanAccessDirective],
+  imports: [BreadcrumbComponent, DecimalPipe, NgTemplateOutlet, FormsModule, RouterLink, ServerPagerComponent, StatCardComponent, UretimYasamDongusuComponent, CanWriteDirective, CanAccessDirective, IslemlerMenusuComponent],
   templateUrl: './ambalaj-uretim-listesi.component.html',
   styleUrl: './ambalaj-uretim-listesi.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -61,9 +62,44 @@ export class AmbalajUretimListesiComponent implements OnInit {
     const p = this.plan();
     this.loadProjects();
     if (p) this.ambalajService.getPlan(p.projeId, p.projeTipiId, this.planGrup()).subscribe(r => {
-      if (r.isSuccess && r.value) this.plan.set(r.value);
+      if (r.isSuccess && r.value) this.planYuklendi(r.value);
     });
   }
+  /** Sunucudan son yüklenen/kaydedilen plan; form öncesi kaydedilmemiş parti numarasını ayırt etmek için tutulur. */
+  private sunucuPlani: AmbalajUretimPlanDto | null = null;
+  /** Sunucudan gelen planı uygular ve kayıtlı hâl olarak saklar. */
+  planYuklendi(plan: AmbalajUretimPlanDto): void {
+    this.sunucuPlani = plan;
+    this.plan.set(plan);
+  }
+  /**
+   * Üretim formu öncesi adım (A2): fırın parti numarası değiştirilip plan kaydedilmediyse, planın kayıtlı seçimi
+   * değişmeden yalnız parti numarası kaydedilir. Form böylece "Planı kaydet" gerektirmeden güncel parti numarasıyla
+   * oluşur; kayıt onaya düşer veya başarısız olursa form oluşturulmaz.
+   */
+  readonly formOncesiPartiKaydi = (): Observable<boolean> => {
+    const plan = this.plan();
+    const kayitli = this.sunucuPlani;
+    const grup = this.planGrup();
+    if (!plan || !kayitli || kayitli.projeId !== plan.projeId) return of(true);
+    const partiNo = this.planFirinPartiNo(plan, grup).trim();
+    if (partiNo === this.planFirinPartiNo(kayitli, grup).trim()) return of(true);
+    const seciliIds = kayitli.kalemler
+      .filter(k => k.tur === grup && k.uretimeAlindi && k.kaynakSandikId)
+      .map(k => k.kaynakSandikId!);
+    return this.ambalajService
+      .planKaydet(plan.projeId, partiNo, seciliIds, grup, this.kaynakProjeTipiId(), this.kritikGerekce)
+      .pipe(map(result => {
+        if (this.onayaAlindiysaBildir(result)) return false;
+        if (result.isSuccess && result.value) {
+          this.sunucuPlani = result.value;
+          this.firinTaslaklari[this.taslakAnahtari(plan.projeId, grup)] = this.planFirinPartiNo(result.value, grup);
+          return true;
+        }
+        this.toastService.error(result.error ?? 'Fırın parti numarası kaydedilemedi; üretim formu oluşturulmadı.');
+        return false;
+      }));
+  };
   private ambalajService = inject(AmbalajService);
   private toastService = inject(ToastService);
   private confirmService = inject(ConfirmService);
@@ -130,6 +166,10 @@ export class AmbalajUretimListesiComponent implements OnInit {
   });
   ozelRaporDownloading = signal<OzelSandikTur | null>(null);
   ozelUretimFormuDownloading = signal<number | null>(null);
+  /** Proje bazlı tamamla/geri al işleminde olan proje. */
+  projeDurumuKaydediliyor = signal<number | null>(null);
+  geriAlinacakProje = signal<AmbalajProjeOzetDto | null>(null);
+  geriAlGerekcesi = '';
   bagimsizFormOpen = signal(false);
   editingBagimsizSandikId = signal<number | null>(null);
   ozelTurFiltresi = signal<OzelSandikTur | 0>(0);
@@ -282,6 +322,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
             pageNumber: this.projePageNumber(),
             pageSize: this.projePageSize(),
             includeSummary,
+            tamamlanan: kapsam.tamamlanan,
           }).pipe(finalize(() => this.loading.set(false)));
         }),
         takeUntilDestroyed(this.destroyRef),
@@ -377,12 +418,90 @@ export class AmbalajUretimListesiComponent implements OnInit {
       });
   }
 
-  private aktifProjeKapsami(): { projeTipiId: number; grup: AmbalajGrup } {
+  private aktifProjeKapsami(): { projeTipiId: number; grup: AmbalajGrup; tamamlanan?: boolean } {
     const kuyruk = this.aktifKuyruk();
     return {
       projeTipiId: kuyruk === 'saha' ? 2 : kuyruk === 'yedek' ? 3 : 1,
       grup: kuyruk === 'ilave' ? 2 : kuyruk === 'ic' ? 3 : 1,
+      // A3/A4: tamamlanan projeler kendi sekmesinde; Normal sekme ve çam özeti net kalan işi gösterir.
+      tamamlanan: kuyruk === 'tamamlanan' ? true : kuyruk === 'normal' ? false : undefined,
     };
+  }
+
+  /** A2: FB listesindeki "Tamamla"; projenin ambalaja dahil bütün sandıklarının üretimini tamamlar. */
+  projeTamamlanabilir(proje: AmbalajProjeOzetDto): boolean {
+    return this.aktifKuyruk() === 'normal'
+      && (proje.gerekliSandikAdedi ?? 0) > 0
+      && (proje.tamamlananSandikAdedi ?? 0) < (proje.gerekliSandikAdedi ?? 0)
+      && this.permissions.canWrite(AMBALAJ_YETKI.UretimiTamamla)
+      && this.permissions.canWrite(AMBALAJ_YETKI.DurumDuzenle);
+  }
+
+  /** A3: tamamlanan projenin geri alınması; finans kalemleri PO/faturaya bağlıysa sunucu engeller. */
+  projeGeriAlinabilir(): boolean {
+    return this.aktifKuyruk() === 'tamamlanan'
+      && this.permissions.canWrite(AMBALAJ_YETKI.DurumDuzenle)
+      && this.permissions.canWrite(AMBALAJ_YETKI.DurumuGeriAl)
+      && this.permissions.canWrite(AMBALAJ_YETKI.UretimiYenidenAc);
+  }
+
+  async projeyiTamamla(proje: AmbalajProjeOzetDto): Promise<void> {
+    if (!this.projeTamamlanabilir(proje) || this.projeDurumuKaydediliyor() !== null) return;
+    const onay = await this.confirmService.ask({
+      title: 'Proje Üretimini Tamamla',
+      message: `<strong>${duzMetin(proje.fbNo || proje.projeNo)}</strong> projesinin ambalaja dahil bütün sandıklarının üretimi tamamlanacak ve finans kalemleri oluşturulacak.<br><br><small class="text-muted">Üretime alınmamış veya ölçüsü eksik sandık varsa işlem yapılmaz.</small>`,
+      confirmText: 'Evet, Tamamla',
+      cancelText: 'Vazgeç',
+      type: 'info',
+    });
+    if (!onay) return;
+    this.projeDurumuDegistir(proje, true);
+  }
+
+  projeGeriAlmaFormunuAc(proje: AmbalajProjeOzetDto): void {
+    if (!this.projeGeriAlinabilir()) return;
+    this.geriAlGerekcesi = '';
+    this.geriAlinacakProje.set(proje);
+  }
+
+  projeGeriAl(): void {
+    const proje = this.geriAlinacakProje();
+    if (!proje || this.projeDurumuKaydediliyor() !== null) return;
+    if (!this.geriAlGerekcesi.trim()) {
+      this.toastService.warning('Geri alma için gerekçe giriniz.');
+      return;
+    }
+    this.projeDurumuDegistir(proje, false, this.geriAlGerekcesi);
+  }
+
+  private projeDurumuDegistir(proje: AmbalajProjeOzetDto, tamamla: boolean, gerekce?: string): void {
+    this.projeDurumuKaydediliyor.set(proje.projeId);
+    this.ambalajService.projeUretimDurumu(proje.projeId, tamamla, gerekce ?? this.kritikGerekce)
+      .pipe(finalize(() => this.projeDurumuKaydediliyor.set(null)))
+      .subscribe(result => {
+        if (this.onayaAlindiysaBildir(result)) {
+          this.geriAlinacakProje.set(null);
+          return;
+        }
+        if (!result.isSuccess) {
+          this.toastService.error(result.error ?? (tamamla ? 'Proje üretimi tamamlanamadı.' : 'Tamamlama geri alınamadı.'));
+          return;
+        }
+        this.toastService.success(tamamla
+          ? `${result.value?.degisenKayit ?? 0} sandığın üretimi tamamlandı; proje "Üretimi Tamamlanan" sekmesine taşındı.`
+          : `${result.value?.degisenKayit ?? 0} sandığın tamamlanması geri alındı.`);
+        this.geriAlinacakProje.set(null);
+        this.loadProjects();
+      });
+  }
+
+  /** Normal sekmede tamamlananlar düşülmüş net kalan ihtiyaç, tamamlanan sekmesinde tamamlanan projelerin çamı gösterilir. */
+  camOzetiEtiketi(): string {
+    return this.aktifKuyruk() === 'tamamlanan' ? this.t('COMPLETED_PINE_LABEL') : this.t('ESTIMATE_LABEL');
+  }
+
+  camOzetiAciklamasi(): string {
+    return this.aktifKuyruk() === 'tamamlanan' ? this.t('COMPLETED_PINE_HELP') : this.t('ESTIMATE_HELP');
   }
 
   bagimsizFormuAc(sandik?: AmbalajBagimsizSandikDto): void {
@@ -442,9 +561,14 @@ export class AmbalajUretimListesiComponent implements OnInit {
       this.toastService.warning('Kayıtlı bir iç sandık tipi seçin veya “Elle gir” seçeneğini işaretleyin.');
       return;
     }
+    // RR Q1 (A): ölçü görme izni olmayan kullanıcı mevcut kaydı (veya dönüştürülen kaynak sandığı) düzenlerken
+    // ölçüler maskelidir; sunucu kayıtlı ölçüleri korur, istemci ölçü doğrulamasını atlar.
+    const olcuKorunur = !this.permissions.hasAccess(AMBALAJ_YETKI.OlcuGoruntule)
+      && (!!this.editingBagimsizSandikId() || (this.ozelForm.tur === 2 && !!this.ozelForm.kaynakSandikId));
     if (!this.ozelForm.projeId || !this.ozelForm.ad?.trim() || !this.ozelForm.talimatVeren.trim()
       || (this.ozelForm.tur === 3 && !this.ozelForm.ustKaynakSandikId)
-      || this.ozelForm.adet <= 0 || (this.ozelForm.boy ?? 0) <= 0 || (this.ozelForm.en ?? 0) <= 0 || (this.ozelForm.yukseklik ?? 0) <= 0) {
+      || this.ozelForm.adet <= 0
+      || (!olcuKorunur && ((this.ozelForm.boy ?? 0) <= 0 || (this.ozelForm.en ?? 0) <= 0 || (this.ozelForm.yukseklik ?? 0) <= 0))) {
       this.toastService.warning('Proje, sandık adı, tipi, adet, ölçüler ve isteyen kişi zorunludur. İç sandıkta dış sandık da seçilmelidir.');
       return;
     }
@@ -452,6 +576,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
     this.bagimsizSaving.set(true);
     const request: AmbalajOzelSandikKaydetRequest = {
       ...this.ozelForm,
+      ...(olcuKorunur ? { boy: 0, en: 0, yukseklik: 0 } : {}),
       gerekce: this.kritikGerekce,
       kaynakSandikId: this.ozelForm.tur === 2 ? this.ozelForm.kaynakSandikId : undefined,
     };
@@ -534,6 +659,15 @@ export class AmbalajUretimListesiComponent implements OnInit {
     this.ozelForm.boy = sandik.boy ?? 0;
     this.ozelForm.en = sandik.en ?? 0;
     this.ozelForm.yukseklik = sandik.yukseklik ?? 0;
+    const kaynakTipi = this.sandikTipleri.find(tip => tip === sandik.sandikTipi);
+    if (kaynakTipi) this.ozelForm.sandikTipi = kaynakTipi;
+  }
+
+  /** Seçilen kaynak sandığın tipi; özel sandık yapısı listesinde yoksa (ör. Kafes) yine gösterilir. */
+  ozelYapiSecenekleri(): SandikTipi[] {
+    return this.ozelSandikTipleri.includes(this.ozelForm.sandikTipi)
+      ? this.ozelSandikTipleri
+      : [this.ozelForm.sandikTipi, ...this.ozelSandikTipleri];
   }
 
   ozelUstKaynakSandikDegisti(sandikId?: number): void {
@@ -735,13 +869,14 @@ export class AmbalajUretimListesiComponent implements OnInit {
     this.planOpen.set(true);
     this.planLoading.set(true);
     this.plan.set(null);
+    this.sunucuPlani = null;
     this.kalemFormOpen.set(false);
     this.ambalajService.getPlan(proje.projeId, this.kaynakProjeTipiId(), this.planGrup())
       .pipe(finalize(() => this.planLoading.set(false)))
       .subscribe(result => {
         if (this.onayaAlindiysaBildir(result)) return;
         if (result.isSuccess && result.value) {
-          this.plan.set(result.value);
+          this.planYuklendi(result.value);
           return;
         }
         this.toastService.error(result.error ?? 'Üretim planı yüklenemedi.');
@@ -751,6 +886,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
   planKapat(): void {
     this.planOpen.set(false);
     this.plan.set(null);
+    this.sunucuPlani = null;
     this.kalemFormOpen.set(false);
   }
 
@@ -786,7 +922,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
       .subscribe(result => {
         if (this.onayaAlindiysaBildir(result)) return;
         if (result.isSuccess && result.value) {
-          this.plan.set(result.value);
+          this.planYuklendi(result.value);
           this.loadProjects();
           this.toastService.success(ambalajaDahilMi ? 'Sandık ambalaja dahil edildi.' : 'Sandık ambalaj kapsamından çıkarıldı.');
           return;
@@ -807,7 +943,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
       .subscribe(result => {
         if (this.onayaAlindiysaBildir(result)) return;
         if (result.isSuccess && result.value) {
-          this.plan.set(result.value);
+          this.planYuklendi(result.value);
           this.firinTaslaklari[this.taslakAnahtari(plan.projeId, grup)] = this.planFirinPartiNo(result.value, grup);
           this.toastService.success('Üretim planı kaydedildi.');
           this.loadProjects();
@@ -862,13 +998,15 @@ export class AmbalajUretimListesiComponent implements OnInit {
   kalemKaydet(): void {
     const plan = this.plan();
     if (!plan) return;
-    if (!this.kalemForm.ad?.trim() || !this.kalemForm.talimatVeren.trim()
-      || this.kalemForm.adet <= 0 || (this.kalemForm.boy ?? 0) <= 0 || (this.kalemForm.en ?? 0) <= 0 || (this.kalemForm.yukseklik ?? 0) <= 0) {
+    // RR Q1 (A): ölçü izni olmadan mevcut kalem düzenlenirken kayıtlı ölçüler sunucuda korunur.
+    const olcuKorunur = !!this.editingKalemId() && !this.permissions.hasAccess(AMBALAJ_YETKI.OlcuGoruntule);
+    if (!this.kalemForm.ad?.trim() || !this.kalemForm.talimatVeren.trim() || this.kalemForm.adet <= 0
+      || (!olcuKorunur && ((this.kalemForm.boy ?? 0) <= 0 || (this.kalemForm.en ?? 0) <= 0 || (this.kalemForm.yukseklik ?? 0) <= 0))) {
       this.toastService.warning('Sandık adı, tipi, adet, ölçüler ve talimat veren zorunludur.');
       return;
     }
     this.planSaving.set(true);
-    const request = { ...this.kalemForm, gerekce: this.kritikGerekce };
+    const request = { ...this.kalemForm, ...(olcuKorunur ? { boy: 0, en: 0, yukseklik: 0 } : {}), gerekce: this.kritikGerekce };
     const operation = this.editingKalemId()
       ? this.ambalajService.kalemGuncelle(this.editingKalemId()!, request)
       : this.ambalajService.kalemEkle(plan.projeId, request);
@@ -1101,7 +1239,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
   }
 
   kuyrukBasligi(): string {
-    return ({ normal: 'Normal Projeler', ozel: 'Özel Sandıklar', saha: 'Saha Projeleri', yedek: 'Yedek Projeleri', ilave: 'İlave Sandıklar', ic: 'İç Sandıklar' } as const)[this.aktifKuyruk()];
+    return ({ normal: 'Normal Projeler', tamamlanan: 'Üretimi Tamamlanan', ozel: 'Özel Sandıklar', saha: 'Saha Projeleri', yedek: 'Yedek Projeleri', ilave: 'İlave Sandıklar', ic: 'İç Sandıklar' } as const)[this.aktifKuyruk()];
   }
 
   projeDurumId(proje: AmbalajProjeOzetDto, grup = this.kuyrukGrubu()): UretimDurumId {
@@ -1144,7 +1282,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
   private planYenile(projeId: number): void {
     this.ambalajService.getPlan(projeId, this.kaynakProjeTipiId(), this.planGrup()).subscribe(result => {
         if (this.onayaAlindiysaBildir(result)) return;
-      if (result.isSuccess && result.value) this.plan.set(result.value);
+      if (result.isSuccess && result.value) this.planYuklendi(result.value);
       else this.toastService.error(result.error ?? 'Üretim planı yenilenemedi.');
     });
   }

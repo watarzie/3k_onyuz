@@ -12,7 +12,7 @@
           <h3 id="dagitim-title">
             {{ tur() === 'Siparis' ? t('CREATE_PO') : t('CREATE_INVOICE') }}
           </h3>
-          <p>{{ t('ALLOC_HELP') }}</p>
+          <p>{{ tur() === 'Siparis' ? t('ALLOC_PO_HELP') : t('ALLOC_HELP') }}</p>
         </div>
       </div>
       <button
@@ -30,12 +30,291 @@
           <i class="ri-error-warning-line" aria-hidden="true"></i>{{ hata() }}
         </div>
       }
-      @if (loading()) {
-        <div class="v2-empty" role="status">
-          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span
-          >{{ t('RECORDS_LOADING') }}
+
+      @if (tur() === 'Siparis') {
+        <div class="v2-segmented v2-dialog-mode" role="group" [attr.aria-label]="t('ALLOC_PO_TARGET')">
+          <button
+            type="button"
+            [class.active]="hedef() === 'yeni'"
+            [attr.aria-pressed]="hedef() === 'yeni'"
+            [disabled]="saving()"
+            (click)="hedefSec('yeni')"
+          >
+            <i class="ri-add-circle-line" aria-hidden="true"></i>{{ t('ALLOC_NEW_PO') }}</button
+          ><button
+            type="button"
+            [class.active]="hedef() === 'mevcut'"
+            [attr.aria-pressed]="hedef() === 'mevcut'"
+            [disabled]="saving()"
+            (click)="hedefSec('mevcut')"
+          >
+            <i class="ri-folder-add-line" aria-hidden="true"></i>{{ t('ALLOC_EXISTING_PO') }}
+          </button>
         </div>
-      } @else if (tur() === 'Fatura' && !seciliPo()) {
+
+        @if (hedef() === 'yeni') {
+          <div class="v2-card v2-fields v2-dialog-document-fields">
+            <label
+              >{{ t('PO_NUMBER') }} *<input maxlength="100" [(ngModel)]="numara" /></label
+            ><label>{{ t('PO_DATE') }} *<input type="date" [(ngModel)]="tarih" /></label
+            ><label>{{ t('DESCRIPTION') }}<input maxlength="2000" [(ngModel)]="aciklama" /></label>
+          </div>
+        } @else if (hedefPo(); as po) {
+          <div class="v2-toolbar v2-dialog-context">
+            <span class="v2-tag">PO: {{ po.poNumarasi }}</span>
+            <span class="v2-tag">{{ po.siparisTarihi | date: 'dd.MM.yyyy' }}</span>
+            @if (kilitliParaBirimi()) {
+              <span class="v2-tag">{{ kilitliParaBirimi() }}</span>
+            }
+            @if (!siparisId()) {
+              <button class="btn btn-light btn-sm" type="button" (click)="mevcutPoDegistir()">
+                <i class="ri-exchange-line" aria-hidden="true"></i>{{ t('ALLOC_CHANGE_PO') }}
+              </button>
+            }
+          </div>
+        } @else {
+          <article class="v2-card v2-dialog-search">
+            <label
+              >{{ t('ALLOC_SEARCH_PO')
+              }}<input
+                type="search"
+                [placeholder]="t('ALLOC_SEARCH_HINT')"
+                [(ngModel)]="poArama"
+                (ngModelChange)="poAra()"
+            /></label>
+            <p class="v2-note">{{ t('ALLOC_EXISTING_PO_NOTE') }}</p>
+          </article>
+          <div class="v2-dialog-table-wrap">
+            <table class="table v2-table">
+              <thead>
+                <tr>
+                  <th>PO</th>
+                  <th>{{ t('PROJECT') }}</th>
+                  <th>{{ t('DATE') }}</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (po of siparisler()?.items; track po.id) {
+                  <tr>
+                    <td>
+                      <strong>{{ po.poNumarasi }}</strong
+                      ><small>{{ po.paraBirimi }}</small>
+                    </td>
+                    <td>{{ po.projeNo || '—' }}</td>
+                    <td>{{ po.siparisTarihi | date: 'dd.MM.yyyy' }}</td>
+                    <td class="v2-dialog-action-cell">
+                      <button class="btn btn-outline-primary btn-sm" type="button" (click)="mevcutPoSec(po.id)">
+                        <i class="ri-arrow-right-line" aria-hidden="true"></i>{{ t('SELECT') }}
+                      </button>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="4">{{ loading() ? t('RECORDS_LOADING') : t('ALLOC_NO_ACTIVE_PO') }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (siparisler(); as page) {
+            <app-server-pager
+              [pageNumber]="page.pageNumber"
+              [pageSize]="page.pageSize"
+              [totalCount]="page.totalCount"
+              [totalPages]="page.totalPages"
+              [hasPreviousPage]="page.hasPreviousPage"
+              [hasNextPage]="page.hasNextPage"
+              (pageChange)="poSayfa($event)"
+            />
+          }
+        }
+
+        @if (hedef() === 'yeni' || hedefPo()) {
+          <article class="v2-card v2-group-filters">
+            <div class="v2-chip-list" role="group" [attr.aria-label]="t('CATEGORY_FILTER')">
+              @for (k of kategoriSecenekleri; track k.deger) {
+                <button
+                  type="button"
+                  class="v2-chip"
+                  [class.active]="kategoriSeciliMi(k.deger)"
+                  [attr.aria-pressed]="kategoriSeciliMi(k.deger)"
+                  (click)="kategoriDegistir(k.deger)"
+                >
+                  {{ t(k.anahtar) }}
+                </button>
+              }
+            </div>
+            <div class="v2-fields">
+              <label
+                >{{ t('SEARCH')
+                }}<input
+                  type="search"
+                  [placeholder]="t('ALLOC_GROUP_SEARCH_HINT')"
+                  [(ngModel)]="grupArama"
+                  (ngModelChange)="grupAra()"
+              /></label>
+              @if (!hedefPo()) {
+                <label
+                  >{{ t('CURRENCY')
+                  }}<select [(ngModel)]="paraBirimi" (ngModelChange)="gruplariFiltrele()">
+                    <option value="">{{ t('ALL') }}</option>
+                    @for (p of paraBirimleri.secenekler(); track p) {
+                      <option [value]="p">{{ p }}</option>
+                    }
+                  </select></label
+                >
+              }
+              <label class="v2-check"
+                ><input type="checkbox" [(ngModel)]="tumDonemler" (ngModelChange)="gruplariFiltrele()" />{{
+                  t('ALLOC_ALL_PERIODS')
+                }}</label
+              >
+              @if (!tumDonemler) {
+                <label
+                  >{{ t('START') }}<input type="date" [(ngModel)]="baslangic" (change)="gruplariFiltrele()"
+                /></label>
+                <label>{{ t('END') }}<input type="date" [(ngModel)]="bitis" (change)="gruplariFiltrele()" /></label>
+              }
+            </div>
+            @if (onSecim().length) {
+              <p class="v2-note v2-dialog-info">
+                <i class="ri-filter-3-line" aria-hidden="true"></i>{{ t('ALLOC_PRESELECTED_NOTE') }}
+                <button class="btn btn-light btn-sm" type="button" (click)="onSecimiKaldir()">
+                  {{ t('ALLOC_SHOW_ALL_WORK') }}
+                </button>
+              </p>
+            }
+          </article>
+
+          <p class="v2-note v2-dialog-info">
+            <i class="ri-information-line" aria-hidden="true"></i>{{ t('ALLOC_GROUP_NOTE') }}
+          </p>
+          <div class="table-responsive v2-dialog-table-wrap v2-allocation-table">
+            <table class="table v2-table">
+              <thead>
+                <tr>
+                  <th class="v2-dialog-check-cell">{{ t('SELECT') }}</th>
+                  <th>{{ t('PROJECT_WORK') }}</th>
+                  <th>{{ t('DATE') }}</th>
+                  <th class="v2-dialog-number-cell">{{ t('ALLOC_WORK_VALUE') }}</th>
+                  <th class="v2-dialog-number-cell">{{ t('ALLOC_OPEN_BALANCE') }}</th>
+                  <th class="v2-dialog-number-cell">{{ t('ALLOC_PO_AMOUNT') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (grup of gruplar()?.items; track grup.anahtar) {
+                  <tr [class.v2-selected-row]="grupSecili(grup)">
+                    <td class="v2-dialog-check-cell">
+                      <input
+                        type="checkbox"
+                        [attr.aria-label]="grup.projeNo + ' ' + grup.ad + ' ' + t('ALLOC_ADD_ROW')"
+                        [ngModel]="grupSecili(grup)"
+                        (ngModelChange)="grupSecimiDegistir(grup, $event)"
+                        [disabled]="!grupSecili(grup) && !grupSecilebilir(grup)"
+                      />
+                    </td>
+                    <td>
+                      <strong>{{ grup.projeNo || grup.ad }}</strong>
+                      <small
+                        >{{ t(kategoriAnahtari(grup.kategori)) }}@if (grup.projeNo && !uretimKategorisi(grup.kategori)) {
+                          · {{ grup.ad }}
+                        }
+                        · {{ grup.kalemSayisi }} {{ t('ALLOC_ITEMS') }}
+                        @if (grup.ahsapM3) {
+                          · {{ t('WOOD_M3') }} {{ grup.ahsapM3 | number: '1.0-3' }}
+                        }
+                        @if (grup.kontraM3) {
+                          · {{ t('PLYWOOD_M3') }} {{ grup.kontraM3 | number: '1.0-3' }}
+                        }
+                      </small>
+                      <small>{{ t(siparisKarsilanmaAnahtari(grup.siparisKarsilanma)) }}@if (grup.fiyatBekleyenKalem) {
+                          · {{ grup.fiyatBekleyenKalem }} {{ t('ALLOC_PRICE_PENDING') }}
+                        }</small>
+                    </td>
+                    <td class="v2-nowrap">
+                      {{ grup.ilkTarih | date: 'dd.MM.yyyy' }}
+                      @if (grup.sonTarih !== grup.ilkTarih) {
+                        <small>{{ grup.sonTarih | date: 'dd.MM.yyyy' }}</small>
+                      }
+                    </td>
+                    <td class="v2-dialog-number-cell">
+                      {{ grup.netTutar == null ? t('UNAVAILABLE') : (grup.netTutar | number: '1.2-2') }}
+                      {{ grup.paraBirimi }}
+                    </td>
+                    <td class="v2-dialog-number-cell">
+                      {{
+                        grup.kalanSiparisNetTutar == null
+                          ? t('UNAVAILABLE')
+                          : (grup.kalanSiparisNetTutar | number: '1.2-2')
+                      }}
+                      {{ grup.paraBirimi }}
+                    </td>
+                    <td class="v2-dialog-amount-input">
+                      <input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        [max]="grup.kalanSiparisNetTutar"
+                        [disabled]="!grupSecili(grup)"
+                        [ngModel]="grupTutari(grup)"
+                        (ngModelChange)="grupTutariDegisti(grup, $event)"
+                        [attr.aria-label]="grup.projeNo + ' ' + grup.ad + ' ' + t('AMOUNT')"
+                      />
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="6">{{ loading() ? t('RECORDS_LOADING') : t('ALLOC_NO_GROUPS') }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (gruplar(); as page) {
+            <app-server-pager
+              [pageNumber]="page.pageNumber"
+              [pageSize]="page.pageSize"
+              [totalCount]="page.totalCount"
+              [totalPages]="page.totalPages"
+              [hasPreviousPage]="page.hasPreviousPage"
+              [hasNextPage]="page.hasNextPage"
+              (pageChange)="grupSayfa($event)"
+            />
+          }
+          @if (secimListesi().length) {
+            <article class="v2-card v2-selection-summary" aria-live="polite">
+              <h4 class="v2-dialog-card-title">
+                <i class="ri-checkbox-multiple-line" aria-hidden="true"></i>{{ t('ALLOC_SELECTED') }}
+                <span class="v2-tag">{{ secimListesi().length }}</span>
+              </h4>
+              <ul>
+                @for (secim of secimListesi(); track secim.grup.anahtar) {
+                  <li>
+                    <span
+                      >{{ secim.grup.projeNo || secim.grup.ad }} ·
+                      {{ secim.grup.projeNo ? t(kategoriAnahtari(secim.grup.kategori)) : '' }}</span
+                    >
+                    <strong>{{ secim.tutar | number: '1.2-2' }} {{ secim.grup.paraBirimi }}</strong>
+                    <button
+                      type="button"
+                      class="btn btn-light btn-sm"
+                      [attr.aria-label]="t('REMOVE')"
+                      (click)="secimiKaldir(secim.grup.anahtar)"
+                    >
+                      <i class="ri-close-line" aria-hidden="true"></i>
+                    </button>
+                  </li>
+                }
+              </ul>
+              <p>
+                {{ t('ALLOC_TOTAL') }}:
+                <strong>{{ secimToplami() | number: '1.2-2' }} {{ kilitliParaBirimi() }}</strong>
+              </p>
+            </article>
+          }
+        }
+      } @else if (!seciliPo()) {
         <article class="v2-card v2-dialog-search">
           <label
             >{{ t('ALLOC_SEARCH_PO')
@@ -66,7 +345,7 @@
                   <td>{{ po.projeNo }}</td>
                   <td>{{ po.siparisTarihi | date: 'dd.MM.yyyy' }}</td>
                   <td class="v2-dialog-action-cell">
-                    <button class="btn btn-outline-primary btn-sm" (click)="poSec(po.id)">
+                    <button class="btn btn-outline-primary btn-sm" type="button" (click)="poSec(po.id)">
                       <i class="ri-arrow-right-line" aria-hidden="true"></i
                       >{{ t('ALLOC_SELECT_ITEMS') }}
                     </button>
@@ -74,7 +353,7 @@
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="4">{{ t('ALLOC_NO_PO') }}</td>
+                  <td colspan="4">{{ loading() ? t('RECORDS_LOADING') : t('ALLOC_NO_PO') }}</td>
                 </tr>
               }
             </tbody>
@@ -91,30 +370,27 @@
             (pageChange)="poSayfa($event)"
           />
         }
-      } @else {
-        @if (seciliPo(); as po) {
-          <div class="v2-toolbar v2-dialog-context">
-            <span class="v2-tag">PO: {{ po.ozet.poNumarasi }}</span
-            ><button class="btn btn-light btn-sm" (click)="poDegistir()">
+      } @else if (seciliPo(); as po) {
+        <div class="v2-toolbar v2-dialog-context">
+          <span class="v2-tag">PO: {{ po.ozet.poNumarasi }}</span
+          >@if (!siparisId()) {
+            <button class="btn btn-light btn-sm" type="button" (click)="poDegistir()">
               <i class="ri-exchange-line" aria-hidden="true"></i>{{ t('ALLOC_CHANGE_PO') }}
             </button>
-          </div>
-        }
+          }
+        </div>
         <div class="v2-card v2-fields v2-dialog-document-fields">
           <label
-            >{{ tur() === 'Siparis' ? t('PO_NUMBER') : t('ALLOC_ACTUAL_INVOICE') }} *<input
-              maxlength="120"
-              [(ngModel)]="numara" /></label
-          ><label>{{ t('ALLOC_DOCUMENT_DATE') }} *<input type="date" [(ngModel)]="tarih" /></label
+            >{{ t('INVOICE_NUMBER') }} *<input maxlength="100" [(ngModel)]="numara" /></label
+          ><label>{{ t('INVOICE_DATE') }} *<input type="date" [(ngModel)]="tarih" (ngModelChange)="faturaTarihiDegisti()" /></label
           ><label
-            >{{ t('CURRENCY')
-            }}<select [(ngModel)]="paraBirimi">
-              <option>EUR</option>
-              <option>USD</option>
-              <option>TRY</option>
-            </select></label
+            >{{ t('DUE_DATE') }}<input type="date" [min]="tarih" [(ngModel)]="vadeTarihi" (ngModelChange)="vadeDegisti()"
+          /></label
           ><label>{{ t('DESCRIPTION') }}<input maxlength="2000" [(ngModel)]="aciklama" /></label>
         </div>
+        @if (varsayilanVadeGunu() != null) {
+          <p class="v2-note">{{ t('DUE_DATE_DEFAULT_HINT').replace('{0}', '' + varsayilanVadeGunu()) }}</p>
+        }
         <p class="v2-note v2-dialog-info">
           <i class="ri-information-line" aria-hidden="true"></i>{{ t('ALLOC_NOTE') }}
         </p>
@@ -124,63 +400,94 @@
               <tr>
                 <th class="v2-dialog-check-cell">{{ t('SELECT') }}</th>
                 <th>{{ t('PROJECT_WORK') }}</th>
+                <th class="v2-dialog-number-cell">{{ t('ALLOC_ORDERED') }}</th>
                 <th class="v2-dialog-number-cell">{{ t('ALLOC_OPEN_BALANCE') }}</th>
                 <th class="v2-dialog-number-cell">{{ t('ALLOC_DOCUMENT_AMOUNT') }}</th>
               </tr>
             </thead>
             <tbody>
-              @for (row of satirlar(); track row.id) {
-                <tr>
+              @for (grup of faturaGruplari(); track grup.anahtar) {
+                <tr [class.v2-selected-row]="grup.secili">
                   <td class="v2-dialog-check-cell">
                     <input
                       type="checkbox"
-                      [attr.aria-label]="row.ad + ' ' + t('ALLOC_ADD_ROW')"
-                      [(ngModel)]="row.secili"
-                      [disabled]="
-                        row.kalan == null || row.kalan <= 0 || row.paraBirimi !== paraBirimi
-                      "
+                      [attr.aria-label]="grup.projeNo + ' ' + grup.ad + ' ' + t('ALLOC_ADD_ROW')"
+                      [ngModel]="grup.secili"
+                      (ngModelChange)="faturaGrubuDegisti(grup, $event)"
+                      [disabled]="grup.kalan == null || grup.kalan <= 0"
                     />
                   </td>
                   <td>
-                    <strong>{{ row.referans }}</strong
-                    ><small>{{ row.ad }}</small>
+                    <strong>{{ grup.projeNo || grup.ad }}</strong
+                    ><small
+                      >{{ uretimKategorisi(grup.kategori) ? t(kategoriAnahtari(grup.kategori)) : grup.ad }}@if (grup.donem) {
+                        · {{ grup.donem }}
+                      }
+                      · {{ grup.siparisKalemiIds.length }} {{ t('ALLOC_ITEMS') }}</small
+                    >
                   </td>
                   <td class="v2-dialog-number-cell">
-                    {{ row.kalan == null ? t('UNAVAILABLE') : (row.kalan | number: '1.2-2') }}
-                    {{ row.paraBirimi }}
+                    {{
+                      grup.siparisNetTutar == null ? t('UNAVAILABLE') : (grup.siparisNetTutar | number: '1.2-2')
+                    }}
+                    {{ grup.paraBirimi }}
+                  </td>
+                  <td class="v2-dialog-number-cell">
+                    {{ grup.kalan == null ? t('UNAVAILABLE') : (grup.kalan | number: '1.2-2') }}
+                    {{ grup.paraBirimi }}
                   </td>
                   <td class="v2-dialog-amount-input">
                     <input
                       type="number"
                       min="0.01"
                       step="0.01"
-                      [max]="row.kalan"
-                      [disabled]="!row.secili"
-                      [(ngModel)]="row.netTutar"
-                      [attr.aria-label]="row.ad + ' ' + t('AMOUNT')"
+                      [max]="grup.kalan"
+                      [disabled]="!grup.secili"
+                      [(ngModel)]="grup.tutar"
+                      [attr.aria-label]="grup.projeNo + ' ' + grup.ad + ' ' + t('AMOUNT')"
                     />
                   </td>
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="4">{{ t('ALLOC_NO_RECORDS') }}</td>
+                  <td colspan="5">{{ t('ALLOC_NO_RECORDS') }}</td>
                 </tr>
               }
             </tbody>
           </table>
         </div>
-        <footer class="v2-dialog-footer">
-          <button class="btn btn-light" (click)="kapat.emit()" [disabled]="saving()">
-            {{ t('CANCEL') }}
-          </button>
-          @if (izinli()) {
-            <button class="btn btn-primary" (click)="kaydet()" [disabled]="saving() || loading()">
-              <i class="ri-save-3-line" aria-hidden="true"></i
-              >{{ saving() ? t('SAVING') : t('ALLOC_SAVE') }}
-            </button>
-          }
-        </footer>
       }
+
+      @if (loading()) {
+        <div class="v2-empty" role="status">
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span
+          >{{ t('RECORDS_LOADING') }}
+        </div>
+      }
+      <footer class="v2-dialog-footer">
+        <button class="btn btn-light" type="button" (click)="kapat.emit()" [disabled]="saving()">
+          {{ t('CANCEL') }}
+        </button>
+        @if (izinli()) {
+          <button
+            class="btn btn-primary"
+            type="button"
+            (click)="kaydet()"
+            [disabled]="saving() || loading() || (tur() === 'Fatura' && !seciliPo())"
+          >
+            <i class="ri-save-3-line" aria-hidden="true"></i
+            >{{
+              saving()
+                ? t('SAVING')
+                : tur() === 'Fatura'
+                  ? t('ALLOC_SAVE_INVOICE')
+                  : hedef() === 'mevcut'
+                    ? t('ALLOC_ADD_TO_PO')
+                    : t('ALLOC_SAVE_PO')
+            }}
+          </button>
+        }
+      </footer>
     </div>
   </section>
 </div>

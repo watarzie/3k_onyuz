@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { of, Subject, throwError } from 'rxjs';
+import { FinansOdemeDurumu, FinansSandikMalzemesi } from '../../core/constants/enums';
 import { AMBALAJ_YETKI, FINANS_YETKI } from '../../core/constants/yetki-kodlari';
 import { FinansService } from '../../core/services/finans.service';
 import { PermissionService } from '../../core/services/permission.service';
@@ -15,7 +16,7 @@ import {
 import {
   FinansBelge,
   FinansKaliciSilOnizleme,
-  FinansSablon,
+  FinansParaBirimi,
   FinansVarlikTuru,
 } from '../../shared/models/finans-v2.model';
 import { FinansKayitDetayComponent } from './finans-kayit-detay.component';
@@ -62,8 +63,6 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
     faturalananM3: 0,
     kalanM3: 1.5,
     durum: 1,
-    faturaDurumu: 1,
-    belgeli: false,
     tutarlar: [],
     kalemler: [line],
   };
@@ -84,7 +83,6 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
     sandikAdedi: 3,
     toplamM3: 1.5,
     durum: 1,
-    belgeli: false,
     kalemler: [
       {
         id: 801,
@@ -107,21 +105,11 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
     bagimliliklar: [],
     engeller: [],
   };
-  const oldTemplate: FinansSablon = {
-    id: 3,
-    kod: 'QA',
-    ad: 'Eski tanım',
-    aktif: true,
-    surumId: 30,
-    surum: 1,
-    alanlar: [{ kod: 'uzunluk', ad: 'Uzunluk', veriTuru: 'sayi', zorunlu: true }],
-  };
-  const latestTemplate: FinansSablon = {
-    ...oldTemplate,
-    surumId: 31,
-    surum: 2,
-    alanlar: [{ kod: 'renk', ad: 'Renk', veriTuru: 'metin', zorunlu: true }],
-  };
+  const paraBirimleri: FinansParaBirimi[] = [
+    { id: 1, kod: 'TRY', ad: 'Türk lirası', sembol: '₺', aktif: true, sira: 1 },
+    { id: 2, kod: 'EUR', ad: 'Euro', sembol: '€', aktif: true, sira: 2 },
+    { id: 3, kod: 'USD', ad: 'ABD doları', sembol: '$', aktif: false, sira: 3 },
+  ];
   const work: FinansIsKaydi = {
     id: 31,
     projeId: null,
@@ -148,11 +136,9 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
     kdvOrani: 20,
     netTutar: 1200,
     manuelNetTutar: 1200,
-    sablonSurumId: 30,
-    sablon: oldTemplate,
-    alanDegerleri: { uzunluk: '2.5' },
     bilesenler: [
-      { ad: 'İşçilik', yontem: 1, miktar: 2, birimFiyat: 500 },
+      { ad: 'Ahşap', yontem: 2, miktar: 0.5, birimFiyat: 400, malzeme: FinansSandikMalzemesi.Ahsap },
+      { ad: 'İşçilik', yontem: 1, miktar: 2, birimFiyat: 500, malzeme: FinansSandikMalzemesi.Kontra },
       { ad: 'Sabit', yontem: 3, miktar: 1, birimFiyat: 200 },
     ],
   };
@@ -166,8 +152,9 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
       'kaliciSilOnizleme',
       'kaliciSil',
       'isDetay',
-      'sablonlar',
       'fiyatlandir',
+      'faturaOdeme',
+      'paraBirimleri',
       'belgeIndir',
       'downloadErrorMessage',
     ]);
@@ -178,8 +165,9 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
     api.kaliciSilOnizleme.and.returnValue(of({ isSuccess: true, value: preview }));
     api.kaliciSil.and.returnValue(of({ isSuccess: true }));
     api.isDetay.and.returnValue(of({ isSuccess: true, value: work }));
-    api.sablonlar.and.returnValue(of({ isSuccess: true, value: [latestTemplate] }));
     api.fiyatlandir.and.returnValue(of({ isSuccess: true }));
+    api.faturaOdeme.and.returnValue(of({ isSuccess: true }));
+    api.paraBirimleri.and.returnValue(of({ isSuccess: true, value: paraBirimleri }));
     toast = jasmine.createSpyObj<ToastService>('ToastService', ['success', 'info']);
     permissions = jasmine.createSpyObj<PermissionService>('PermissionService', [
       'hasAccess',
@@ -227,49 +215,48 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
     expect(component.hata()).toBe('Belgeye erişim kaldırıldı.');
   });
 
-  it('fiyat formunda eski şablon sürümünü, bileşenleri ve manuel net bedeli aynen yeniden açar', () => {
+  it('fiyat formunda bileşenleri ve manuel net bedeli aynen yeniden açar; m³ dışı satırın malzemesini göndermez', () => {
     const { component } = setup('IsKaydi');
     component.tab('fiyat');
-    expect(component.secilenSablonSurumId).toBe(30);
-    expect(component.secilenSablon()?.surum).toBe(1);
-    expect(component.secilenSablon()?.alanlar[0].kod).toBe('uzunluk');
-    expect(component.sablonSecenekleri().map((x) => x.surumId)).toEqual([30, 31]);
     expect(component.fiyat.manuelNetTutar).toBe(1200);
     expect(component.fiyat.bilesenler).toEqual(work.bilesenler!);
-    expect(component.fiyat.alanDegerleri).toEqual({ uzunluk: '2.5' });
     component.fiyat.aciklama = 'Snapshot korunarak yeniden kayıt';
     component.fiyatKaydet();
     expect(api.fiyatlandir).toHaveBeenCalledOnceWith(
       31,
       jasmine.objectContaining({
-        sablonSurumId: 30,
         manuelNetTutar: 1200,
-        bilesenler: work.bilesenler,
-        alanDegerleri: { uzunluk: '2.5' },
+        bilesenler: [
+          { ad: 'Ahşap', yontem: 2, miktar: 0.5, birimFiyat: 400, malzeme: FinansSandikMalzemesi.Ahsap },
+          { ad: 'İşçilik', yontem: 1, miktar: 2, birimFiyat: 500, malzeme: null },
+          { ad: 'Sabit', yontem: 3, miktar: 1, birimFiyat: 200, malzeme: null },
+        ],
       }),
     );
   });
 
-  it('formdaki bileşen/alan düzenlemesi açılan değişmez snapshot nesnesini değiştirmez', () => {
+  it('bileşen özeti satır tutarlarını toplar ve m³ satırlarını malzemeye göre ayırır', () => {
     const { component } = setup('IsKaydi');
-    component.fiyat.bilesenler![0].birimFiyat = 900;
-    component.fiyat.alanDegerleri!['uzunluk'] = '9';
-    expect(component.kayit()?.bilesenler?.[0].birimFiyat).toBe(500);
-    expect(component.kayit()?.alanDegerleri?.['uzunluk']).toBe('2.5');
+    component.fiyat.bilesenler = [
+      ...work.bilesenler!,
+      { ad: 'Kontra', yontem: 2, miktar: 0.25, birimFiyat: 800, malzeme: FinansSandikMalzemesi.Kontra },
+      { ad: 'Sandığın malzemesi', yontem: 2, miktar: 0.1, birimFiyat: 100 },
+    ];
+    // Satırlar: 0,5×400 + 2×500 + 200 (sabit) + 0,25×800 + 0,1×100
+    expect(component.bilesenOzeti()).toEqual({ tutar: 1610, ahsapM3: 0.5, kontraM3: 0.25, malzemesizM3: 0.1 });
   });
 
-  it('şablon ancak kullanıcı açıkça yeni sürümü seçince değişir ve eski alanlar temizlenir', () => {
+  it('formdaki bileşen düzenlemesi açılan değişmez snapshot nesnesini değiştirmez', () => {
     const { component } = setup('IsKaydi');
-    component.tab('fiyat');
-    component.secilenSablonSurumId = 31;
-    component.sablonSec();
-    expect(component.fiyat.sablonSurumId).toBe(31);
-    expect(component.fiyat.alanDegerleri).toEqual({});
-    expect(component.secilenSablon()?.alanlar[0].kod).toBe('renk');
-    component.fiyat.aciklama = 'Yeni şablon sürümüne geçiş';
-    component.fiyatKaydet();
-    expect(api.fiyatlandir).not.toHaveBeenCalled();
-    expect(component.hata()).toContain('zorunlu alanlarını');
+    component.fiyat.bilesenler![0].birimFiyat = 900;
+    expect(component.kayit()?.bilesenler?.[0].birimFiyat).toBe(400);
+  });
+
+  it('para birimi seçenekleri tanım tablosundan gelir; kaydın pasif para birimi listede kalır', () => {
+    const { component } = setup('IsKaydi');
+    expect(api.paraBirimleri).toHaveBeenCalledTimes(1);
+    expect(component.paraBirimleri.secenekler('EUR')).toEqual(['TRY', 'EUR']);
+    expect(component.paraBirimleri.secenekler('USD')).toEqual(['TRY', 'EUR', 'USD']);
   });
 
   for (const denied of [
@@ -330,6 +317,7 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
     expect(api.faturaGuncelle).toHaveBeenCalledOnceWith(8, {
       faturaNumarasi: 'INV-8',
       faturaTarihi: '2026-09-19',
+      vadeTarihi: null,
       aciklama: '',
       gerekce: 'Kısmi tutar düzeltmesi',
       belgeMutabakatiniKoru: false,
@@ -344,6 +332,101 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
     const payload = api.faturaGuncelle.calls.mostRecent().args[1];
     expect(payload.belgeMutabakatiniKoru).toBeTrue();
     expect(payload.kalemler).toBeUndefined();
+  });
+
+  it('fatura revizyonunda vade tarihini gönderir; fatura tarihinden önceki vadeyi reddeder', () => {
+    api.faturaDetay.and.returnValue(of({ isSuccess: true, value: { ...invoice, vadeTarihi: '2026-11-18T00:00:00' } }));
+    const { component } = setup('Fatura');
+    expect(component.belgeForm.vade).toBe('2026-11-18');
+    component.belgeForm.gerekce = 'Vade düzeltmesi';
+    component.belgeForm.vade = '2026-09-01';
+    component.belgeKaydet();
+    expect(api.faturaGuncelle).not.toHaveBeenCalled();
+    expect(component.hata()).toBe(component.t('DUE_DATE_BEFORE_INVOICE'));
+    component.belgeForm.vade = '2026-12-01';
+    component.belgeKaydet();
+    expect(api.faturaGuncelle.calls.mostRecent().args[1].vadeTarihi).toBe('2026-12-01');
+  });
+
+  describe('ödeme işareti', () => {
+    const odenmemis: FinansFatura = { ...invoice, vadeTarihi: '2026-10-19T00:00:00', odendiMi: false, odemeDurumu: FinansOdemeDurumu.Bekliyor };
+    const odenmis: FinansFatura = {
+      ...invoice,
+      vadeTarihi: '2026-10-19T00:00:00',
+      odendiMi: true,
+      odemeTarihi: '2026-10-10T00:00:00',
+      odemeAciklamasi: 'Havale',
+      odemeDurumu: FinansOdemeDurumu.ZamanindaOdendi,
+    };
+
+    it('ödendi işaretini ödeme tarihi ve açıklamayla gönderir', () => {
+      api.faturaDetay.and.returnValue(of({ isSuccess: true, value: odenmemis }));
+      const { component } = setup('Fatura');
+      const changed = spyOn(component.degisti, 'emit');
+      expect(component.odemeForm.odendi).toBeFalse();
+      expect(component.odemeForm.tarih).toBe(component.bugun());
+      component.odemeForm = { odendi: true, tarih: '2026-09-25', aciklama: '  Banka havalesi  ' };
+      component.odemeKaydet();
+      expect(api.faturaOdeme).toHaveBeenCalledOnceWith(8, {
+        odendi: true,
+        odemeTarihi: '2026-09-25',
+        aciklama: 'Banka havalesi',
+      });
+      expect(changed).toHaveBeenCalledTimes(1);
+    });
+
+    it('gelecek tarihli ödemeyi göndermez', () => {
+      api.faturaDetay.and.returnValue(of({ isSuccess: true, value: odenmemis }));
+      const { component } = setup('Fatura');
+      component.odemeForm = { odendi: true, tarih: '2999-01-01', aciklama: '' };
+      component.odemeKaydet();
+      expect(api.faturaOdeme).not.toHaveBeenCalled();
+      expect(component.hata()).toBe(component.t('PAYMENT_DATE_ERROR'));
+    });
+
+    it('işaret kaldırma en az 5 karakterlik gerekçe ister ve ödeme tarihini göndermez', () => {
+      api.faturaDetay.and.returnValue(of({ isSuccess: true, value: odenmis }));
+      const { component } = setup('Fatura');
+      expect(component.odemeForm).toEqual({ odendi: true, tarih: '2026-10-10', aciklama: 'Havale' });
+      component.odemeForm.odendi = false;
+      component.odemeForm.aciklama = ' abc ';
+      component.odemeKaydet();
+      expect(api.faturaOdeme).not.toHaveBeenCalled();
+      expect(component.hata()).toBe(component.t('PAYMENT_UNMARK_REASON_ERROR'));
+      component.odemeForm.aciklama = 'Yanlış faturaya işlendi';
+      component.odemeKaydet();
+      expect(api.faturaOdeme).toHaveBeenCalledOnceWith(8, {
+        odendi: false,
+        odemeTarihi: null,
+        aciklama: 'Yanlış faturaya işlendi',
+      });
+    });
+
+    it('ödeme yazma izni yoksa veya fatura iptal edilmişse ödeme kaydı açılmaz', () => {
+      api.faturaDetay.and.returnValue(of({ isSuccess: true, value: odenmemis }));
+      permissions.canWrite.and.callFake((kod) => kod !== FINANS_YETKI.OdemeKaydet);
+      const { component } = setup('Fatura');
+      expect(component.odemeKaydedilebilir()).toBeFalse();
+      component.odemeForm = { odendi: true, tarih: '2026-09-25', aciklama: '' };
+      component.odemeKaydet();
+      expect(api.faturaOdeme).not.toHaveBeenCalled();
+
+      permissions.canWrite.and.returnValue(true);
+      component.fatura.set({ ...odenmemis, iptalEdildi: true, durum: 2 });
+      expect(component.odemeKaydedilebilir()).toBeFalse();
+    });
+
+    it('vade farkını kalan gün, gecikme ve ödeme zamanlamasıyla yazar', () => {
+      const { component } = setup('Fatura');
+      const metin = (f: Partial<FinansFatura>) => component.vadeFarkiMetni({ ...invoice, ...f });
+      expect(metin({ odendiMi: false, vadeFarkiGun: 0 })).toBe(component.t('DUE_TODAY'));
+      expect(metin({ odendiMi: false, vadeFarkiGun: 5 })).toBe(component.t('DUE_IN_DAYS').replace('{0}', '5'));
+      expect(metin({ odendiMi: false, vadeFarkiGun: -3 })).toBe(component.t('OVERDUE_DAYS').replace('{0}', '3'));
+      expect(metin({ odendiMi: true, vadeFarkiGun: -2 })).toBe(component.t('PAYMENT_PAID_ON_TIME'));
+      expect(metin({ odendiMi: true, vadeFarkiGun: 4 })).toBe(
+        component.t('PAYMENT_PAID_DAYS_LATE').replace('{0}', '4'),
+      );
+    });
   });
 
   for (const tur of ['Siparis', 'Fatura'] as const) {

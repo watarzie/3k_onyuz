@@ -7,6 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslationService } from '../../../core/services/translation.service';
 import { SandikService } from '../../../core/services/sandik.service';
 import { ProjeService } from '../../../core/services/proje.service';
+import { LookupService } from '../../../core/services/lookup.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { PermissionService } from '../../../core/services/permission.service';
@@ -37,6 +38,7 @@ export class SandikDetayComponent implements OnInit {
   private auth = inject(AuthService);
   private permissionService = inject(PermissionService);
   private confirmService = inject(ConfirmService);
+  private lookupService = inject(LookupService);
   private readonly destroyRef = inject(DestroyRef);
   private sandikLoadVersion = 0;
   private hedefLoadVersion = 0;
@@ -74,6 +76,9 @@ export class SandikDetayComponent implements OnInit {
   showOzellikModal = signal(false);
   ozellikSaving = signal(false);
   ozellikSandikIsmi = signal('');
+  /** Sandık tipi güncellemede zorunludur (G2); mevcut tip önceden doldurulur. */
+  ozellikTipId = signal<number | null>(null);
+  sandikTipleri = signal<{ id: number; deger: string }[]>([]);
   ozellikEn = signal<number | null>(null);
   ozellikBoy = signal<number | null>(null);
   ozellikYukseklik = signal<number | null>(null);
@@ -526,6 +531,12 @@ export class SandikDetayComponent implements OnInit {
     }
 
     this.ozellikSandikIsmi.set(s.ad ?? '');
+    this.ozellikTipId.set(s.tipId ?? null);
+    if (!this.sandikTipleri().length) {
+      this.lookupService.getLookups(['LookupSandikTipi'])
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(data => this.sandikTipleri.set(data['LookupSandikTipi'] ?? []));
+    }
     this.ozellikEn.set(s.en ?? null);
     this.ozellikBoy.set(s.boy ?? null);
     this.ozellikYukseklik.set(s.yukseklik ?? null);
@@ -546,10 +557,17 @@ export class SandikDetayComponent implements OnInit {
       return;
     }
 
+    const tipId = this.ozellikTipId();
+    if (!tipId) {
+      this.toast.error('Sandık tipi seçilmelidir.');
+      return;
+    }
+
     this.ozellikSaving.set(true);
     this.sandikService.ozellikGuncelle({
       sandikId: this.sandikId(),
       sandikIsmi: this.ozellikSandikIsmi().trim() || undefined,
+      tipId,
       en: this.ozellikEn() ?? undefined,
       boy: this.ozellikBoy() ?? undefined,
       yukseklik: this.ozellikYukseklik() ?? undefined,

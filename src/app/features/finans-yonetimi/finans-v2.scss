@@ -448,17 +448,6 @@ dd {
     padding: 6px;
     flex: 0 0 auto;
   }
-  .v2-remove {
-    color: #dc3545;
-  }
-  .v2-form-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 9px;
-    padding-top: 20px;
-    margin-top: 20px;
-    border-top: 1px solid var(--borderColor, #e5eaf1);
-  }
 }
 .v2-page-heading {
   margin-bottom: 24px;
@@ -512,6 +501,18 @@ dd {
   padding: 18px 20px;
   border-bottom: 1px solid var(--borderColor, #e5eaf1);
 }
+.v2-document-filter {
+  flex: 0 0 auto;
+  font-size: 12px;
+}
+.v2-document-filter select {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--borderColor, #e5eaf1);
+  border-radius: 8px;
+  background: var(--whiteColor, #fff);
+  font-size: 12px;
+}
 .v2-eyebrow {
   display: block;
   color: var(--v2-muted);
@@ -547,6 +548,14 @@ dd {
   color: #198754;
   background: #edf8f1;
 }
+.v2-status.is-warning {
+  color: #9a6700;
+  background: #fff6db;
+}
+.v2-status.is-danger {
+  color: #b42318;
+  background: #fdecea;
+}
 .v2-version {
   padding: 4px 8px;
   border: 1px solid #605dff25;
@@ -555,37 +564,6 @@ dd {
   background: var(--v2-soft);
   font-size: 11px;
   font-weight: 600;
-}
-.v2-template-layout.editing {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(420px, 1fr);
-  gap: 22px;
-  align-items: start;
-}
-.v2-field-heading {
-  margin-top: 26px;
-}
-.v2-switch-line {
-  margin-top: 18px;
-}
-.v2-field-definition {
-  display: grid;
-  grid-template-columns: 22px minmax(0, 1fr) 30px;
-  gap: 10px;
-  padding: 16px 12px;
-  margin-top: 12px;
-  border: 1px solid var(--borderColor, #e5eaf1);
-  border-radius: 9px;
-  background: var(--v2-soft);
-}
-.v2-field-number {
-  padding-top: 4px;
-  color: var(--v2-primary);
-  font-size: 12px;
-  font-weight: 700;
-}
-.v2-field-definition .v2-fields {
-  gap: 13px;
 }
 .v2-segmented {
   display: inline-flex;
@@ -839,11 +817,6 @@ dd {
   gap: 8px;
   color: var(--v2-primary);
 }
-@media (max-width: 1200px) {
-  .v2-template-layout.editing {
-    grid-template-columns: 1fr;
-  }
-}
 @media (max-width: 900px) {
   .v2-report-layout {
     grid-template-columns: 1fr;
@@ -908,11 +881,6 @@ dd {
     flex: 1;
     justify-content: center;
     padding: 9px;
-  }
-  .v2-field-definition {
-    grid-template-columns: 18px minmax(0, 1fr) 30px;
-    padding: 12px 8px;
-    gap: 6px;
   }
   .v2-export-actions {
     grid-template-columns: 1fr;

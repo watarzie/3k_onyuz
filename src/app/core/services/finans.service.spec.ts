@@ -3,19 +3,21 @@ import { HttpParams } from '@angular/common/http';
 import { of } from 'rxjs';
 import { BaseApiService } from './base-api.service';
 import { FinansService } from './finans.service';
+import { FinansIsKategorisi, FinansKarsilanma, FinansOdemeFiltresi } from '../constants/enums';
 
 describe('FinansService referans sözleşmesi', () => {
   let service: FinansService;
   let api: jasmine.SpyObj<BaseApiService>;
 
   beforeEach(() => {
-    api = jasmine.createSpyObj<BaseApiService>('BaseApiService', ['get', 'post', 'downloadFile']);
+    api = jasmine.createSpyObj<BaseApiService>('BaseApiService', ['get', 'post', 'put', 'downloadFile']);
     api.get.and.returnValue(of({ isSuccess: true, value: {
       items: [], toplamlar: [], pageNumber: 1, pageSize: 25, totalCount: 0, totalPages: 0,
       hasPreviousPage: false, hasNextPage: false,
     } }));
     api.downloadFile.and.returnValue(of(new Blob()));
     api.post.and.returnValue(of({ isSuccess: true, value: [] }));
+    api.put.and.returnValue(of({ isSuccess: true }));
     TestBed.configureTestingModule({ providers: [
       FinansService,
       { provide: BaseApiService, useValue: api },
@@ -128,5 +130,120 @@ describe('FinansService referans sözleşmesi', () => {
     expect(url).toContain('/api/finans/raporlar/aylik/ayri?yil=2026&ay=8');
     expect(url).toContain('gruplar=Ambalaj');
     expect(url).toContain('gruplar=%C3%96zel+%C4%B0%C5%9F');
+  });
+
+  it('PO grup seçicisini çoklu kategori, dönem ve iş kimlikleriyle sorgular', () => {
+    service.siparisGruplari({
+      pageNumber: 2, pageSize: 20, arama: ' PA727 ', kategoriler: [FinansIsKategorisi.SarfKereste, FinansIsKategorisi.Ilave],
+      baslangic: '2026-09-01', bitis: '2026-09-30', paraBirimi: 'EUR', isKaydiIds: [11, 12], duzenliIsId: 5,
+    }).subscribe();
+
+    const [url, options] = api.get.calls.mostRecent().args;
+    const params = (options as { params: HttpParams }).params;
+    expect(url).toContain('/api/finans/siparis-gruplari');
+    expect(params.getAll('kategoriler')).toEqual(['2', '3']);
+    expect(params.getAll('isKaydiIds')).toEqual(['11', '12']);
+    expect(params.get('arama')).toBe('PA727');
+    expect(params.get('baslangic')).toBe('2026-09-01');
+    expect(params.get('paraBirimi')).toBe('EUR');
+    expect(params.get('duzenliIsId')).toBe('5');
+    expect(params.get('sadeceSiparisBekleyen')).toBe('true');
+  });
+
+  it('mevcut PO kalem ekleme ve düzenli iş dönem üretimini kendi uçlarına gönderir', () => {
+    service.siparisKalemEkle(7, { gruplar: [{ isKaydiIds: [11], netTutar: 100 }] }).subscribe();
+    expect(api.post.calls.mostRecent().args).toEqual([
+      jasmine.stringMatching('/api/finans/siparisler/7/kalemler'), { gruplar: [{ isKaydiIds: [11], netTutar: 100 }] },
+    ]);
+    service.duzenliIsDonemUret(5, '2026-12-31').subscribe();
+    expect(api.post.calls.mostRecent().args).toEqual([
+      jasmine.stringMatching('/api/finans/duzenli-isler/5/donemler'), { bitisTarihi: '2026-12-31' },
+    ]);
+  });
+
+  it('sipariş durum raporunda durumu karşılanma değeri, iş grubunu kategori listesi olarak gönderir (RR Q5)', () => {
+    service.siparisDurumRaporu('excel', {
+      projeNo: ' PA1 ', kategoriler: [FinansIsKategorisi.Saha, FinansIsKategorisi.Yedek],
+      siparisKarsilanma: FinansKarsilanma.Yok, faturaKarsilanma: FinansKarsilanma.Kismi,
+    }).subscribe();
+
+    const url = api.downloadFile.calls.mostRecent().args[0] as string;
+    expect(url).toContain('/api/finans/raporlar/siparis-durumu/excel?');
+    expect(url).toContain('projeNo=PA1');
+    expect(url).toContain('kategoriler=5&kategoriler=6');
+    expect(url).toContain('siparisKarsilanma=0');
+    expect(url).toContain('faturaKarsilanma=1');
+    expect(url).not.toContain('durum=');
+    expect(url).not.toContain('isGrubu');
+  });
+
+  it('para birimi tanımlarını, vade parametrelerini ve ödeme işaretini kendi uçlarına gönderir (F1/D3)', () => {
+    service.paraBirimleri(true).subscribe();
+    const [url, options] = api.get.calls.mostRecent().args;
+    expect(url).toMatch(/\/api\/finans\/para-birimleri$/);
+    expect((options as { params: HttpParams }).params.get('sadeceAktif')).toBe('true');
+
+    const usd = { kod: 'USD', ad: 'ABD doları', sembol: '$', aktif: true, sira: 3 };
+    service.paraBirimiKaydet(usd).subscribe();
+    expect(api.post.calls.mostRecent().args).toEqual([jasmine.stringMatching(/\/api\/finans\/para-birimleri$/), usd]);
+    service.paraBirimiKaydet({ ...usd, aktif: false }, 3).subscribe();
+    expect(api.put.calls.mostRecent().args).toEqual([
+      jasmine.stringMatching(/\/api\/finans\/para-birimleri\/3$/), { ...usd, aktif: false },
+    ]);
+
+    service.parametreler().subscribe();
+    expect(api.get.calls.mostRecent().args[0]).toMatch(/\/api\/finans\/parametreler$/);
+    service.parametreleriKaydet({ varsayilanVadeGunu: 45, vadeUyariGunu: 5 }).subscribe();
+    expect(api.put.calls.mostRecent().args).toEqual([
+      jasmine.stringMatching(/\/api\/finans\/parametreler$/), { varsayilanVadeGunu: 45, vadeUyariGunu: 5 },
+    ]);
+
+    service.faturaOdeme(8, { odendi: true, odemeTarihi: '2026-09-20', aciklama: null }).subscribe();
+    expect(api.put.calls.mostRecent().args).toEqual([
+      jasmine.stringMatching('/api/finans/faturalar/8/odeme'), { odendi: true, odemeTarihi: '2026-09-20', aciklama: null },
+    ]);
+
+    service.vadeUyarilari(10).subscribe();
+    const [uyariUrl, uyariOptions] = api.get.calls.mostRecent().args;
+    expect(uyariUrl).toContain('/api/finans/vade-uyarilari');
+    expect((uyariOptions as { params: HttpParams }).params.get('enFazlaKalem')).toBe('10');
+  });
+
+  it('fatura listesi ve alacak raporu ödeme filtresini aynı sözleşmeyle gönderir', () => {
+    service.faturalar({ pageNumber: 1, pageSize: 25, odemeDurumu: FinansOdemeFiltresi.VadesiGecen }).subscribe();
+    expect((api.get.calls.mostRecent().args[1] as { params: HttpParams }).params.get('odemeDurumu')).toBe('3');
+
+    service.alacakRaporu('excel', {
+      pageNumber: 1, pageSize: 25, odemeDurumu: FinansOdemeFiltresi.Odenmedi, paraBirimi: 'USD',
+    }).subscribe();
+    const [url, options] = api.downloadFile.calls.mostRecent().args;
+    expect(url).toContain('/api/finans/raporlar/alacaklar/excel');
+    const params = (options as { params: HttpParams }).params;
+    expect(params.get('odemeDurumu')).toBe('1');
+    expect(params.get('paraBirimi')).toBe('USD');
+    service.alacakRaporu('pdf').subscribe();
+    expect(api.downloadFile.calls.mostRecent().args[0]).toContain('/api/finans/raporlar/alacaklar/pdf');
+  });
+
+  it('bekleme listesini referans tarihi, eşik ve aşamayla; ürün yeniden fiyatlamayı gerekçeyle ister', () => {
+    service.yaslandirma({ pageNumber: 1, pageSize: 25 }, '2026-09-29', 30, 'Fatura').subscribe();
+    const params = (api.get.calls.mostRecent().args[1] as { params: HttpParams }).params;
+    expect(params.get('referansTarihi')).toBe('2026-09-29');
+    expect(params.get('minimumGun')).toBe('30');
+    expect(params.get('asama')).toBe('Fatura');
+    service.yaslandirma({ pageNumber: 1, pageSize: 25 }, '2026-09-29', 15).subscribe();
+    expect((api.get.calls.mostRecent().args[1] as { params: HttpParams }).params.has('asama')).toBeFalse();
+
+    service.urunYenidenFiyatla(4, 'Tarife güncellendi').subscribe();
+    expect(api.post.calls.mostRecent().args).toEqual([
+      jasmine.stringMatching('/api/finans/urunler/4/yeniden-fiyatla'), { aciklama: 'Tarife güncellendi' },
+    ]);
+  });
+
+  it('liste filtresinde kategori ve karşılanma filtrelerini sunucu sözleşmesiyle gönderir', () => {
+    service.siparisler({ pageNumber: 1, pageSize: 25, kategoriler: [FinansIsKategorisi.AnaAmbalaj], siparisKarsilanma: FinansKarsilanma.Tam }).subscribe();
+    const params = (api.get.calls.mostRecent().args[1] as { params: HttpParams }).params;
+    expect(params.getAll('kategoriler')).toEqual(['1']);
+    expect(params.get('siparisKarsilanma')).toBe('2');
   });
 });

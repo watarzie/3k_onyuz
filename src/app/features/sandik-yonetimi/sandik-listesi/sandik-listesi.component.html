@@ -91,18 +91,15 @@
           <input type="text" class="form-control" [ngModel]="yeniSandikIsmi()" (ngModelChange)="yeniSandikIsmi.set($event)" placeholder="Ör: Elektrik" />
         </div>
       </div>
-      @if (isSahaYedek) {
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Sandık Tipi <span class="text-danger">*</span></label>
-          <select class="form-select" [ngModel]="yeniTipId()" (ngModelChange)="yeniTipId.set(+$event)">
-            @for (t of sandikTipleri(); track t.id) {
-              <!-- Ahşap Kapalı (1) ve Katlanır Sandık (2) vb. DB'den gelenler -->
-              <!-- Proje=1, Yedek=2, Saha=3 ama "Ahşap Kapalı=1, Katlanır Sandık=2" olarak db seeder ile değişti -->
-              <option [value]="t.id">{{ t.deger }}</option>
-            }
-          </select>
-        </div>
-      }
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Sandık Tipi <span class="text-danger">*</span></label>
+        <select class="form-select" [ngModel]="yeniTipId()" (ngModelChange)="yeniTipId.set($event ? +$event : null)">
+          <option [ngValue]="null">Tip seçin</option>
+          @for (t of sandikTipleri(); track t.id) {
+            <option [ngValue]="t.id">{{ t.deger }}</option>
+          }
+        </select>
+      </div>
       <div class="mb-3">
         <label class="form-label fw-semibold">Depo Lokasyonu</label>
         <select class="form-select" [ngModel]="yeniLokasyonId()" (ngModelChange)="yeniLokasyonId.set(+$event)">

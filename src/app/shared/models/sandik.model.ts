@@ -6,6 +6,9 @@ export interface SandikDto {
   ad?: string;
   durumId: number;
   durumMetni: string;
+  /** Sandık tipi (SandikTipi); Ambalaj senkronunda sandık cinsini belirler. */
+  tipId?: number;
+  tipMetni?: string;
   sevkiyatDuzeltmeAcikMi?: boolean;
   depoLokasyonId: number;
   depoLokasyonMetni: string;
@@ -29,6 +32,8 @@ export interface SandikDetayDto {
   ad?: string;
   durumId: number;
   durumMetni: string;
+  tipId?: number;
+  tipMetni?: string;
   sevkiyatDuzeltmeAcikMi?: boolean;
   depoLokasyonId: number;
   depoLokasyonMetni: string;
@@ -120,6 +125,8 @@ export interface UrunGuncelleDto {
 export interface SandikOzellikGuncelleDto {
   sandikId: number;
   sandikIsmi?: string;
+  /** Sandık tipi zorunludur (G2). */
+  tipId: number;
   en?: number;
   boy?: number;
   yukseklik?: number;

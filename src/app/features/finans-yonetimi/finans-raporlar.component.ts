@@ -5,10 +5,12 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { FINANS_YETKI } from '../../core/constants/yetki-kodlari';
 import { FinansService } from '../../core/services/finans.service';
+import { FinansParaBirimiService } from '../../core/services/finans-para-birimi.service';
+import { FinansOdemeFiltresi } from '../../core/constants/enums';
 import { PermissionService } from '../../core/services/permission.service';
 import { ToastService } from '../../core/services/toast.service';
 import { FinansGiderKategori, FinansListelemeRequest } from '../../shared/models/finans.model';
-import { finansRaporuIndirilebilir } from './finans-izinleri';
+import { finansRaporuIndirilebilir, finansSiparisFaturaOkunabilir } from './finans-izinleri';
 import { dosyayiKaydet } from '../../core/services/dosya-kaydet';
 
 @Component({
@@ -27,19 +29,26 @@ export class FinansRaporlarComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly toast = inject(ToastService);
   readonly permissions = inject(PermissionService);
+  readonly paraBirimleri = inject(FinansParaBirimiService);
   readonly izin = FINANS_YETKI;
+  readonly odemeFiltreleri = FinansOdemeFiltresi;
   readonly loading = signal(false);
   readonly kategoriler = signal<FinansGiderKategori[]>([]);
   tur = 'is';
   filtre: FinansListelemeRequest = { pageNumber: 1, pageSize: 25 };
   indirilebilir(bicim: 'pdf' | 'excel'): boolean {
-    return finansRaporuIndirilebilir(this.permissions, bicim);
+    return finansRaporuIndirilebilir(this.permissions, bicim) && (this.tur !== 'alacak' || this.alacakRaporuGorunur());
+  }
+  /** Alacak raporu faturalardan üretilir; fatura okuma izni de gerekir (RR Q6). */
+  alacakRaporuGorunur(): boolean {
+    return finansSiparisFaturaOkunabilir(this.permissions);
   }
   filtreleriTemizle(): void {
     this.filtre = { pageNumber: 1, pageSize: 25 };
   }
 
   ngOnInit(): void {
+    this.paraBirimleri.yukle();
     if (!this.permissions.hasAccess(this.izin.GiderGoruntule)) return;
     this.service
       .giderKategorileri()
@@ -60,6 +69,8 @@ export class FinansRaporlarComponent implements OnInit {
     const call =
       this.tur === 'gider'
         ? this.service.giderRaporu(format, this.filtre)
+        : this.tur === 'alacak'
+          ? this.service.alacakRaporu(format, this.filtre)
         : this.tur === 'is'
           ? this.service.isRaporu(format, this.filtre)
           : this.service.ozetRaporu(this.tur, format, this.filtre);

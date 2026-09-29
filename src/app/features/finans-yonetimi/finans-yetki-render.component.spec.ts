@@ -16,7 +16,11 @@ describe('Finans aylık gerçek template negatif yetki kontrolleri', () => {
   let api: jasmine.SpyObj<FinansService>;
   beforeEach(() => {
     reads.set(new Set([FINANS_YETKI.Modul])); writes.set(new Set());
-    api = jasmine.createSpyObj('FinansService', ['aylikIsler', 'duzenliIsler', 'urunler', 'giderKategorileri', 'giderKalemleri', 'giderGuncelle', 'giderOlustur']);
+    api = jasmine.createSpyObj('FinansService', ['aylikIsler', 'duzenliIsler', 'urunler', 'giderKategorileri', 'giderKalemleri', 'giderGuncelle', 'giderOlustur', 'paraBirimleri']);
+    api.paraBirimleri.and.returnValue(of({ isSuccess: true, value: [
+      { id: 1, kod: 'TRY', ad: 'Türk lirası', sembol: '₺', aktif: true, sira: 1 },
+      { id: 2, kod: 'EUR', ad: 'Euro', sembol: '€', aktif: true, sira: 2 },
+    ] }));
     const page = { items: [], toplamlar: [], pageNumber: 1, pageSize: 25, totalCount: 0, totalPages: 0, hasPreviousPage: false, hasNextPage: false };
     api.duzenliIsler.and.returnValue(of({ isSuccess: true, value: page }));
     api.urunler.and.returnValue(of({ isSuccess: true, value: page }));

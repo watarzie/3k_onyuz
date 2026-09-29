@@ -111,7 +111,8 @@ export class UcKSandiklarComponent implements OnInit {
   showSandikEkleModal = signal(false);
   ekSandikNo = signal('');
   ekSandikIsmi = signal('');
-  ekTipId = signal(1);
+  /** Sandık tipi zorunludur (G2); kullanıcı açıkça seçer. */
+  ekTipId = signal<number | null>(null);
   ekLokasyonId = signal(2);
   ekSaving = signal(false);
   ekBoy = signal<number | null>(null);
@@ -946,7 +947,7 @@ export class UcKSandiklarComponent implements OnInit {
     }, 0);
     this.ekSandikNo.set((maxNo + 1).toString());
     this.ekSandikIsmi.set('');
-    this.ekTipId.set(1);
+    this.ekTipId.set(null);
     this.ekLokasyonId.set(2);
     this.ekBoy.set(null);
     this.ekEn.set(null);
@@ -968,12 +969,17 @@ export class UcKSandiklarComponent implements OnInit {
       this.toast.error('Sandık numarası girilmelidir.');
       return;
     }
+    const tipId = this.ekTipId();
+    if (!tipId) {
+      this.toast.error('Sandık tipi seçilmelidir.');
+      return;
+    }
     this.ekSaving.set(true);
     this.sandikService.sandikEkle({
       projeId: this.projeId(),
       sandikNo: no,
       sandikIsmi: this.ekSandikIsmi().trim() || undefined,
-      tipId: this.ekTipId(),
+      tipId,
       depoLokasyonId: this.ekLokasyonId(),
       boy: this.ekBoy() || undefined,
       en: this.ekEn() || undefined,

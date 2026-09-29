@@ -44,3 +44,26 @@ export function finansOzelIsiEklenebilir(izinler: Izinler): boolean {
     izinler.canWrite(FINANS_YETKI.ManuelIsEkle) && izinler.canWrite(FINANS_YETKI.BirimFiyatDegistir)
   );
 }
+
+/** PO ve fatura kayıtlarını okumak: sunucu kayıt ve sipariş operasyonu görüntüleme izinlerini birlikte ister. */
+export function finansSiparisFaturaOkunabilir(izinler: Izinler): boolean {
+  return (
+    izinler.hasAccess(FINANS_YETKI.KayitGoruntule) &&
+    izinler.hasAccess(FINANS_YETKI.SiparisOperasyonGoruntule)
+  );
+}
+
+/** PO girmek veya PO'ya kalem eklemek: yazma izni ile PO grup seçicisini okuma izinleri. */
+export function finansPoGirilebilir(izinler: Izinler): boolean {
+  return izinler.canWrite(FINANS_YETKI.PoGir) && finansSiparisFaturaOkunabilir(izinler);
+}
+
+/** Ödeme işaretlemek (D3): yazma izni ile faturaları okuma izinleri. */
+export function finansOdemeKaydedilebilir(izinler: Izinler): boolean {
+  return izinler.canWrite(FINANS_YETKI.OdemeKaydet) && finansSiparisFaturaOkunabilir(izinler);
+}
+
+/** Fatura girmek: yazma izni ile faturalanacak PO ve kalemlerini okuma izinleri. */
+export function finansFaturaGirilebilir(izinler: Izinler): boolean {
+  return izinler.canWrite(FINANS_YETKI.FaturaGir) && finansSiparisFaturaOkunabilir(izinler);
+}

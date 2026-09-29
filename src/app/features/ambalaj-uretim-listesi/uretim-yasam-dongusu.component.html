@@ -112,67 +112,54 @@
       </div>
     }
     <div class="lifecycle-controls">
-      <label class="reason-field"
-        ><span>{{ t('REASON') }}</span
-        ><input [ngModel]="gerekce" (ngModelChange)="gerekceyiDegistir($event)" maxlength="1000"
+      @if (!entegre()) {
+        <label class="reason-field"
+          ><span>{{ t('REASON') }}</span
+          ><input [ngModel]="gerekce" (ngModelChange)="gerekceyiDegistir($event)" maxlength="1000"
+        /></label>
+      }
+      <label class="reason-field finance-date-field" [title]="t('FINANCE_DATE_HELP')"
+        ><span>{{ t('FINANCE_DATE') }}</span
+        ><input type="date" [(ngModel)]="finansTarihi"
       /></label>
       <div class="form-actions">
-        @if (permissions.canWrite(izin.FormYenidenOlustur)) {
-          <label class="regenerate-choice"
-            ><input type="checkbox" [(ngModel)]="yeniden" /> {{ t('REGENERATE') }}</label
-          >
-        }
-        @if (permissions.canWrite(yeniden ? izin.FormYenidenOlustur : izin.FormOlustur)) {
-          <button
-            type="button"
-            class="primary-action"
-            [disabled]="islemde() || !secim().length"
-            (click)="olustur()"
-          >
-            <i [class]="islemde() ? 'ri-loader-4-line spin' : 'ri-file-add-line'"></i
-            >{{ t(islemde() ? 'SAVING' : yeniden ? 'REGENERATE' : 'CREATE') }}
-          </button>
+        @if (permissions.canWrite(izin.FormOlustur) || permissions.canWrite(izin.FormYenidenOlustur)) {
+          @let bicimler = indirmeBicimleri();
+          @if (bicimler.length > 1) {
+            <!-- A2/D10: form oluşturulurken biçim sorulur; form o anki veriyle üretilip hemen indirilir. -->
+            <app-islemler-menusu
+              [etiket]="t(islemde() ? 'SAVING' : 'CREATE')"
+              [ikon]="islemde() ? 'ri-loader-4-line spin' : 'ri-file-add-line'"
+              [birincil]="true"
+              [disabled]="islemde() || !secim().length || !formYetkili()"
+            >
+              <button type="button" (click)="olustur('pdf')">
+                <i class="ri-file-pdf-2-line"></i><span>{{ t('CREATE_AS_PDF') }}</span>
+              </button>
+              <button type="button" (click)="olustur('xlsx')">
+                <i class="ri-file-excel-2-line"></i><span>{{ t('CREATE_AS_EXCEL') }}</span>
+              </button>
+            </app-islemler-menusu>
+          } @else {
+            <button
+              type="button"
+              class="primary-action"
+              [disabled]="islemde() || !secim().length || !formYetkili()"
+              (click)="olustur(bicimler[0])"
+            >
+              <i [class]="islemde() ? 'ri-loader-4-line spin' : 'ri-file-add-line'"></i
+              >{{ t(islemde() ? 'SAVING' : 'CREATE') }}
+            </button>
+          }
         }
       </div>
     </div>
-    @if (permissions.hasAccess(izin.FormGoruntule)) {
-      <details class="form-history">
-        <summary>
-          <span><i class="ri-history-line"></i> {{ t('FORM_HISTORY') }}</span
-          ><span class="history-count">{{ formlar().length }}</span
-          ><i class="ri-arrow-down-s-line"></i>
-        </summary>
-        <div class="history-items">
-          @for (f of formlar(); track f.id) {
-            <article class="history-item">
-              <div>
-                <strong>{{ t('VERSION') }} {{ f.surum }}</strong
-                ><small
-                  >{{ f.olusturmaTarihi | date: 'dd.MM.yyyy HH:mm' }} · {{ f.form.kalemler.length }}
-                  {{ t('ITEMS') }}</small
-                >
-                @if (f.aciklama) {
-                  <p>{{ f.aciklama }}</p>
-                }
-              </div>
-              <div class="history-downloads">
-                @if (permissions.hasAccess(izin.FormIndir)) {
-                  <button type="button" (click)="formIndir(f.id, 'pdf')">
-                    <i class="ri-file-pdf-2-line"></i> PDF
-                  </button>
-                }
-                @if (permissions.hasAccess(izin.ExcelIndir)) {
-                  <button type="button" (click)="formIndir(f.id, 'xlsx')">
-                    <i class="ri-file-excel-2-line"></i> Excel
-                  </button>
-                }
-              </div>
-            </article>
-          } @empty {
-            <p class="history-empty">{{ t('NO_FORMS') }}</p>
-          }
-        </div>
-      </details>
+    <p class="lifecycle-note">{{ t('FINANCE_DATE_HELP') }}</p>
+    @if (yenidenOlusturulacak()) {
+      <p class="lifecycle-note">
+        <i class="ri-refresh-line"></i>
+        {{ t(formYetkili() ? 'REGENERATE_NOTE' : 'REGENERATE_FORBIDDEN') }}
+      </p>
     }
   </section>
 }
@@ -218,6 +205,15 @@
         <p class="alert alert-warning">
           {{ r.tarihiBelirsizEskiKayitSayisi }} {{ t('LEGACY_WARNING') }}
         </p>
+      }
+      @if (camGrafigi(); as g) {
+        @if (permissions.hasAccess(izin.M3Goruntule) && permissions.hasAccess(izin.M3RaporGoruntule)) {
+          <div class="pine-chart">
+            <h4 class="h6">{{ t('PRODUCED_PINE_CHART') }}</h4>
+            <p class="lifecycle-note">{{ t('PRODUCED_PINE_HELP') }}</p>
+            <apx-chart [series]="g.series" [chart]="grafik" [xaxis]="g.xaxis" />
+          </div>
+        }
       }
       <label
         >{{ t('GROUPING')

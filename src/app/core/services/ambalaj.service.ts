@@ -15,6 +15,7 @@ import {
   AmbalajKalemKaydetRequest,
   AmbalajOzelSandikKaydetRequest,
   AmbalajProjeListelemeRequest,
+  AmbalajProjeUretimDurumuSonucDto,
   AmbalajPlanlamaProjeleriSayfasiDto,
   AmbalajSandikSecenegiDto,
   AmbalajUretimKalemDto,
@@ -41,8 +42,17 @@ export class AmbalajService {
     if (request.includeSummary !== undefined) {
       params = params.set('includeSummary', request.includeSummary);
     }
+    if (request.tamamlanan !== undefined) params = params.set('tamamlanan', request.tamamlanan);
 
     return this.api.get<AmbalajPlanlamaProjeleriSayfasiDto>(API.AMBALAJ.PROJELER, { params });
+  }
+
+  /** FB listesinden proje üretimini tamamlar (A2) veya tamamlanmayı geri alır (A3). */
+  projeUretimDurumu(projeId: number, tamamla: boolean, aciklama?: string): Observable<ApiResult<AmbalajProjeUretimDurumuSonucDto>> {
+    return this.api.put<AmbalajProjeUretimDurumuSonucDto>(API.AMBALAJ.PROJE_URETIM_DURUMU(projeId), {
+      tamamla,
+      ...(aciklama?.trim() ? { aciklama: aciklama.trim() } : {}),
+    });
   }
 
   getPlan(projeId: number, kaynakProjeTipiId?: number, grup?: AmbalajGrup): Observable<ApiResult<AmbalajUretimPlanDto>> {

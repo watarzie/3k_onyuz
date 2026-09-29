@@ -14,6 +14,7 @@ import {
 } from 'rxjs';
 import { NgApexchartsModule, ApexAxisChartSeries, ApexChart, ApexXAxis } from 'ng-apexcharts';
 import { FinansService } from '../../core/services/finans.service';
+import { FinansParaBirimiService } from '../../core/services/finans-para-birimi.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ServerPagerComponent } from '../../shared/components/server-pager/server-pager.component';
@@ -26,9 +27,12 @@ import {
   FinansPanel,
   FinansHareket,
   FinansBekleyen,
+  FinansBekleyenAsama,
   FinansVarlikTuru,
+  FinansYaslandirmaKovasi,
 } from '../../shared/models/finans-v2.model';
 import { FINANS_YETKI } from '../../core/constants/yetki-kodlari';
+import { finansSiparisFaturaOkunabilir } from './finans-izinleri';
 import { ApiResult } from '../../shared/models/common.model';
 
 @Component({
@@ -47,8 +51,21 @@ export class FinansPanelComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly toast = inject(ToastService);
   readonly permissions = inject(PermissionService);
+  private readonly paraBirimleri = inject(FinansParaBirimiService);
   readonly izin = FINANS_YETKI;
   readonly kayitGorunur = computed(() => this.permissions.hasAccess(FINANS_YETKI.KayitGoruntule));
+  /** Alacak kartları faturalardan türetildiği için fatura okuma izniyle gösterilir (RR Q6). */
+  readonly alacakGorunur = computed(() => finansSiparisFaturaOkunabilir(this.permissions));
+  /** Para birimi seçenekleri: panelin para birimleri (aktif tanımlar + verideki kodlar), yoksa tanım tablosu. */
+  readonly paraKodlari = computed(() => {
+    const paneldekiler = this.panel()?.tutarlar.map((x) => x.paraBirimi) ?? [];
+    return paneldekiler.length ? paneldekiler : this.paraBirimleri.aktifKodlar();
+  });
+  /** Hareket listesi panelin varsayılan görünümünde değildir (F4); istenirse açılır. */
+  readonly hareketlerAcik = signal(false);
+  /** Bekleme listesinde aşama filtresi (panel kovası tıklamasıyla gelir). */
+  readonly asama = signal<FinansBekleyenAsama | ''>('');
+  readonly yaslandirmaEsikleri = [15, 30, 60, 90];
   readonly yaslandirmaGorunur = computed(() => this.permissions.hasAccess(FINANS_YETKI.RaporGoruntule));
   readonly kayitAc = output<{ tur: FinansVarlikTuru; id: number }>();
   readonly siparisAc = output<number[]>();
@@ -63,7 +80,7 @@ export class FinansPanelComponent implements OnInit {
   readonly gorunum = signal<'aylik' | 'arama' | 'bekleyen'>('aylik');
   readonly para = signal('EUR');
   readonly grafik = signal<
-    'aylik' | 'isTurleri' | 'giderTurleri' | 'projeler' | 'ozelIsTurleri' | 'siparis' | 'fatura'
+    'aylik' | 'isTurleri' | 'giderTurleri' | 'projeler' | 'ozelIsTurleri' | 'beklenenTahsilat' | 'siparis' | 'fatura'
   >('aylik');
   baslangic = this.date(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   bitis = this.date(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0));
@@ -117,7 +134,10 @@ export class FinansPanelComponent implements OnInit {
     const rows = this.grafikVerileri();
     const result: ApexAxisChartSeries = [];
     if (this.parasal(FINANS_YETKI.GelirGoruntule) && rows.some((x) => x.gelir != null))
-      result.push({ name: this.t('NET_INCOME'), data: rows.map((x) => x.gelir) });
+      result.push({
+        name: grafik === 'beklenenTahsilat' ? this.t('PANEL_EXPECTED_COLLECTION') : this.t('NET_INCOME'),
+        data: rows.map((x) => x.gelir),
+      });
     if (this.parasal(FINANS_YETKI.GiderGoruntule) && rows.some((x) => x.gider != null))
       result.push({ name: this.t('NET_EXPENSE'), data: rows.map((x) => x.gider) });
     return result;
@@ -162,9 +182,9 @@ export class FinansPanelComponent implements OnInit {
             return this.service.genelArama(request).pipe(finalize(() => this.loading.set(false)));
           if (this.gorunum() === 'bekleyen')
             return this.service
-              .yaslandirma(request, this.bitis, this.minimumGun)
+              .yaslandirma(request, this.bugun(), this.minimumGun, this.asama() || undefined)
               .pipe(finalize(() => this.loading.set(false)));
-          const liste = this.kayitGorunur()
+          const liste = this.kayitGorunur() && this.hareketlerAcik()
             ? this.service.hareketler(
                 { ...request, baslangic: this.baslangic, bitis: this.bitis },
                 this.tur || undefined,
@@ -179,6 +199,8 @@ export class FinansPanelComponent implements OnInit {
       .subscribe((result) => {
         if ('panel' in result) {
           this.panel.set(result.panel.isSuccess ? (result.panel.value ?? null) : null);
+          const kodlar = this.paraKodlari();
+          if (kodlar.length && !kodlar.includes(this.para())) this.para.set(kodlar[0]);
           this.hareketler.set(result.liste.isSuccess ? (result.liste.value ?? null) : null);
           if (!result.panel.isSuccess || !result.liste.isSuccess)
             this.toast.error(
@@ -202,7 +224,27 @@ export class FinansPanelComponent implements OnInit {
     if (value === 'bekleyen' && !this.yaslandirmaGorunur()) return;
     this.gorunum.set(value);
     this.arama = '';
+    if (value !== 'bekleyen') this.asama.set('');
     this.filtrele();
+  }
+  /** Panel kovası (R1 §5): kovanın aşaması ve eşiğiyle filtrelenmiş bekleme listesini açar. */
+  kovaAc(kova: FinansYaslandirmaKovasi): void {
+    if (!this.kayitGorunur() || !this.yaslandirmaGorunur()) return;
+    this.gorunum.set('bekleyen');
+    this.asama.set(kova.asama);
+    this.minimumGun = kova.minGun;
+    this.arama = '';
+    this.filtrele();
+  }
+  kova(asama: FinansBekleyenAsama, minGun: number): FinansYaslandirmaKovasi | undefined {
+    return this.panel()?.yaslandirma?.find((x) => x.asama === asama && x.minGun === minGun);
+  }
+  hareketleriAcKapat(): void {
+    this.hareketlerAcik.update((acik) => !acik);
+    this.yenile();
+  }
+  private bugun(): string {
+    return this.date(new Date());
   }
   aramaDegisti(): void {
     this.search.next(this.arama);

@@ -28,20 +28,38 @@
               <option value="proje-maliyet">{{ t('REPORT_COST') }}</option>
               <option value="siparis-bekleyen">{{ t('REPORT_PENDING_ORDER') }}</option>
               <option value="fatura-bekleyen">{{ t('REPORT_PENDING_INVOICE') }}</option>
+              @if (alacakRaporuGorunur()) {
+                <option value="alacak">{{ t('REPORT_RECEIVABLES') }}</option>
+              }
             </select></label
           >
+          @if (tur === 'alacak') {
+            <label
+              >{{ t('PAYMENT_FILTER')
+              }}<select [(ngModel)]="filtre.odemeDurumu">
+                <option [ngValue]="undefined">{{ t('PAYMENT_ALL') }}</option>
+                <option [ngValue]="odemeFiltreleri.Odenmedi">{{ t('PAYMENT_UNPAID') }}</option>
+                <option [ngValue]="odemeFiltreleri.VadesiYaklasan">{{ t('PAYMENT_DUE_SOON') }}</option>
+                <option [ngValue]="odemeFiltreleri.VadesiGecen">{{ t('PAYMENT_OVERDUE') }}</option>
+                <option [ngValue]="odemeFiltreleri.Odendi">{{ t('PAYMENT_PAID_FILTER') }}</option>
+              </select></label
+            >
+          }
           <label
             >{{ t('CURRENCY')
             }}<select [(ngModel)]="filtre.paraBirimi">
               <option [ngValue]="undefined">{{ t('REPORT_ALL_CURRENCIES') }}</option>
-              <option>EUR</option>
-              <option>USD</option>
-              <option>TRY</option>
+              @for (kod of paraBirimleri.secenekler(filtre.paraBirimi); track kod) {
+                <option [ngValue]="kod">{{ kod }}</option>
+              }
             </select></label
           >
           <label>{{ t('START') }}<input type="date" [(ngModel)]="filtre.baslangic" /></label>
           <label>{{ t('END') }}<input type="date" [(ngModel)]="filtre.bitis" /></label>
         </div>
+        @if (tur === 'alacak') {
+          <p class="v2-note">{{ t('REPORT_RECEIVABLES_NOTE') }}</p>
+        }
         <div class="v2-fields v2-report-search">
           <label
             >{{ t('PROJECT_NUMBER')

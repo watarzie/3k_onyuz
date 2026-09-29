@@ -94,6 +94,105 @@
         </div>
       </article>
     </div>
+    @if (p.projeDurumlari; as pd) {
+      <article class="v2-card dashboard-project-status">
+        <header class="dashboard-project-heading">
+          <h4><i class="ri-building-2-line" aria-hidden="true"></i>{{ t('PANEL_PROJECT_STATUS') }}</h4>
+          <span
+            >{{ pd.toplamProje }} {{ t('PANEL_PROJECTS') }} · {{ t('COMPLETED') }} {{ pd.tamamlanan }}@if (pd.fiyatBekleyen) {
+              · {{ t('PANEL_PRICE_PENDING_PROJECTS') }} {{ pd.fiyatBekleyen }}
+            }</span
+          >
+        </header>
+        <div class="dashboard-project-grid">
+          <div>
+            <span>PO</span>
+            <dl>
+              <dt>{{ t('NO_ORDER') }}</dt>
+              <dd>{{ pd.siparisYok }}</dd>
+              <dt>{{ t('PARTIAL_ORDER') }}</dt>
+              <dd>{{ pd.siparisKismi }}</dd>
+              <dt>{{ t('FULL_ORDER') }}</dt>
+              <dd>{{ pd.siparisTam }}</dd>
+            </dl>
+          </div>
+          <div>
+            <span>{{ t('INVOICE') }}</span>
+            <dl>
+              <dt>{{ t('NO_INVOICE') }}</dt>
+              <dd>{{ pd.faturaYok }}</dd>
+              <dt>{{ t('PARTIAL_INVOICE') }}</dt>
+              <dd>{{ pd.faturaKismi }}</dd>
+              <dt>{{ t('FULL_INVOICE') }}</dt>
+              <dd>{{ pd.faturaTam }}</dd>
+            </dl>
+          </div>
+        </div>
+        <p class="v2-note">{{ t('PANEL_PROJECT_STATUS_NOTE') }}</p>
+      </article>
+    }
+    @if (p.yaslandirma?.length) {
+      <article class="v2-card dashboard-aging">
+        <header class="dashboard-project-heading">
+          <h4><i class="ri-hourglass-2-line" aria-hidden="true"></i>{{ t('PANEL_AGING') }}</h4>
+          <span>{{ t('PANEL_AGING_NOTE') }}</span>
+        </header>
+        <div class="dashboard-aging-grid">
+          @for (asamaAdi of ['Sipariş', 'Fatura']; track asamaAdi) {
+            <div class="dashboard-aging-row">
+              <span class="dashboard-aging-label">{{ asamaAdi === 'Sipariş' ? t('PENDING_ORDER') : t('PENDING_INVOICE') }}</span>
+              @for (esik of yaslandirmaEsikleri; track esik) {
+                @if (kova($any(asamaAdi), esik); as k) {
+                  <button
+                    type="button"
+                    class="dashboard-aging-bucket"
+                    [class.is-empty]="!k.adet"
+                    [class.is-old]="esik >= 60 && k.adet > 0"
+                    [disabled]="!kayitGorunur() || !yaslandirmaGorunur() || !k.adet"
+                    (click)="kovaAc(k)"
+                  >
+                    <span>{{ esik }}+ {{ t('DAY') }}</span>
+                    <strong>{{ k.adet }}</strong>
+                    @if (parasal(izin.TutarGoruntule)) {
+                      @for (tutar of k.tutarlar; track tutar.paraBirimi) {
+                        <small>{{ tutar.netTutar | number: '1.2-2' }} {{ tutar.paraBirimi }}</small>
+                      }
+                    }
+                  </button>
+                }
+              }
+            </div>
+          }
+        </div>
+      </article>
+    }
+    @if (alacakGorunur() && p.alacaklar?.length) {
+      <article class="v2-card dashboard-receivables">
+        <header class="dashboard-project-heading">
+          <h4><i class="ri-hand-coin-line" aria-hidden="true"></i>{{ t('PANEL_RECEIVABLES') }}</h4>
+          <span>{{ t('PANEL_RECEIVABLES_NOTE').replace('{0}', '' + p.vadeUyariGunu) }}</span>
+        </header>
+        <div class="v2-currency-grid">
+          @for (alacak of p.alacaklar; track alacak.paraBirimi) {
+            <div class="dashboard-receivable">
+              <h5>{{ alacak.paraBirimi }}</h5>
+              <dl>
+                <dt>{{ t('PAYMENT_UNPAID') }}</dt>
+                <dd>{{ alacak.bekleyenAdet }}@if (parasal(izin.TutarGoruntule)) { · {{ alacak.bekleyenTutar | number: '1.2-2' }}}</dd>
+                <dt>{{ t('PAYMENT_OVERDUE') }}</dt>
+                <dd [class.text-danger]="alacak.vadesiGecenAdet > 0">{{ alacak.vadesiGecenAdet }}@if (parasal(izin.TutarGoruntule)) { · {{ alacak.vadesiGecenTutar | number: '1.2-2' }}}</dd>
+                <dt>{{ t('PAYMENT_DUE_SOON') }}</dt>
+                <dd>{{ alacak.yaklasanAdet }}@if (parasal(izin.TutarGoruntule)) { · {{ alacak.yaklasanTutar | number: '1.2-2' }}}</dd>
+                <dt>{{ t('PANEL_PAID_IN_PERIOD') }}</dt>
+                <dd>{{ alacak.zamanindaOdenenAdet + alacak.gecOdenenAdet }}@if (parasal(izin.TutarGoruntule)) { · {{ alacak.odenenTutar | number: '1.2-2' }}}</dd>
+                <dt>{{ t('PANEL_PAID_ON_TIME_LATE') }}</dt>
+                <dd>{{ alacak.zamanindaOdenenAdet }} / {{ alacak.gecOdenenAdet }}</dd>
+              </dl>
+            </div>
+          }
+        </div>
+      </article>
+    }
     <p class="v2-note dashboard-note">
       <i class="ri-information-line" aria-hidden="true"></i>{{ t('PANEL_CARDS_NOTE') }}
     </p>
@@ -163,6 +262,14 @@
             <span class="v2-version">{{ para() }}</span>
           </h4>
           <label>
+            <span class="v2-eyebrow">{{ t('CURRENCY') }}</span>
+            <select [attr.aria-label]="t('CURRENCY')" [ngModel]="para()" (ngModelChange)="para.set($event)">
+              @for (kod of paraKodlari(); track kod) {
+                <option [value]="kod">{{ kod }}</option>
+              }
+            </select>
+          </label>
+          <label>
             <span class="v2-eyebrow">{{ t('PANEL_BREAKDOWN') }}</span>
             <select
               [attr.aria-label]="t('PANEL_BREAKDOWN')"
@@ -176,6 +283,9 @@
               <option value="giderTurleri">{{ t('PANEL_EXPENSE_CHART') }}</option>
               <option value="projeler">{{ t('PANEL_PROJECT_CHART') }}</option>
               <option value="ozelIsTurleri">{{ t('PANEL_CUSTOM_CHART') }}</option>
+              @if (alacakGorunur()) {
+                <option value="beklenenTahsilat">{{ t('PANEL_COLLECTION_CHART') }}</option>
+              }
             </select>
           </label>
         </div>
@@ -195,7 +305,15 @@
       </article>
     }
   }
-  @if (kayitGorunur()) {
+  @if (kayitGorunur() && gorunum() === 'aylik') {
+    <div class="dashboard-activity-toggle">
+      <button type="button" class="btn btn-light btn-sm" [attr.aria-expanded]="hareketlerAcik()" (click)="hareketleriAcKapat()">
+        <i [class]="hareketlerAcik() ? 'ri-arrow-up-s-line' : 'ri-list-check-2'" aria-hidden="true"></i>
+        {{ hareketlerAcik() ? t('PANEL_HIDE_ACTIVITY') : t('PANEL_SHOW_ACTIVITY') }}
+      </button>
+    </div>
+  }
+  @if (kayitGorunur() && (gorunum() !== 'aylik' || hareketlerAcik())) {
     <article class="v2-card v2-list-card dashboard-activity">
       <div class="dashboard-filter-grid">
         <label class="v2-search"
@@ -217,9 +335,9 @@
             [ngModel]="para()"
             (ngModelChange)="para.set($event); filtrele()"
           >
-            <option value="EUR">EUR</option>
-            <option value="USD">USD</option>
-            <option value="TRY">TRY</option>
+            @for (kod of paraKodlari(); track kod) {
+              <option [value]="kod">{{ kod }}</option>
+            }
           </select>
         </label>
         @if (gorunum() === 'aylik') {
@@ -259,6 +377,14 @@
           </select>
         </label>
         @if (gorunum() === 'bekleyen') {
+          <label
+            >{{ t('PANEL_WAIT_STAGE') }}
+            <select [attr.aria-label]="t('PANEL_WAIT_STAGE')" [ngModel]="asama()" (ngModelChange)="asama.set($event); filtrele()">
+              <option value="">{{ t('PANEL_ALL_STATES') }}</option>
+              <option value="Sipariş">{{ t('PENDING_ORDER') }}</option>
+              <option value="Fatura">{{ t('PENDING_INVOICE') }}</option>
+            </select>
+          </label>
           <label
             >{{ t('PANEL_WAIT_DAYS') }}
             <select

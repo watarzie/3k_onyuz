@@ -112,6 +112,19 @@
             [class.open]="bulkEksikRaporMenuPosition() !== null"></i>
         </button>
       }
+      @if (canUseBulkTalepFormu()) {
+        <button type="button" class="btn btn-sm btn-outline-success"
+          [disabled]="selectedEksikRaporCount() === 0 || topluTalepFormuIndiriliyor()"
+          (click)="indirTopluTalepFormu()"
+          title="Seçilen projelerde Grid eksiği olan ürünleri tek sayfalık talep formu Excel'ine aktar">
+          @if (topluTalepFormuIndiriliyor()) {
+            <span class="spinner-border spinner-border-sm"></span>
+          } @else {
+            <i class="ri-file-excel-2-line"></i>
+          }
+          <span>Talep Formu Excel ({{ selectedEksikRaporCount() }})</span>
+        </button>
+      }
       @if (canSee3KIsListesi()) {
         <a routerLink="/uck-is-listesi" class="btn btn-sm btn-3k-work-list">
           <i class="ri-list-check-3-line"></i>
@@ -186,7 +199,7 @@
         <table class="table table-hover align-middle mb-0">
           <thead>
             <tr>
-              @if (canUseBulkEksikRapor()) {
+              @if (canUseBulkSecim()) {
                 <th class="bulk-report-select-column">
                   <input type="checkbox" class="form-check-input"
                     aria-label="Bu sayfadaki projeleri rapor için seç"
@@ -221,7 +234,7 @@
           <tbody>
             @for (p of projeler(); track p.id) {
               <tr>
-                @if (canUseBulkEksikRapor()) {
+                @if (canUseBulkSecim()) {
                   <td class="bulk-report-select-column">
                     <input type="checkbox" class="form-check-input"
                       [checked]="isEksikRaporProjeSelected(p.id)"
@@ -298,7 +311,7 @@
                 </td>
                 @if (shouldShowActions(p)) {
                   <td>
-                    <div class="d-flex gap-1 flex-wrap">
+                    <app-islemler-menusu>
                       @if (canSeeRevizyonGecmisi(p)) {
                         <button type="button" class="btn btn-sm btn-outline-primary" (click)="revizyonGecmisiProje.set(p)"><i class="ri-history-line me-1"></i>{{ 'REV_HISTORY.TITLE' | translate }}</button>
                       }
@@ -420,15 +433,20 @@
                         }
                       }
                       
+                      @if (isSevkEdilen() && kilidiAcabilir(p)) {
+                        <button class="btn btn-sm btn-outline-primary" (click)="openKilitAcModal(p)">
+                          <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
+                        </button>
+                      }
                       @if ((canSevkEtCurrent() || canUpdatePlanlananSevkTarihiCurrent()) && (!isSandikMode() || isSahaYonetimi() || isYedekYonetimi())) {
                         @if (p.durumMetni === 'SevkEdildi' || p.durumMetni === 'Sevk Edildi') {
-                          @if (canSevkEtCurrent() && p.fizikselSevkEdilmisSandikVarMi) {
+                          @if (!isSevkEdilen() && kilidiAcabilir(p)) {
                             <button class="btn btn-sm btn-outline-primary" (click)="openKilitAcModal(p)">
                               <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
                             </button>
                           }
                         } @else {
-                          @if (canSevkEtCurrent() && p.fizikselSevkEdilmisSandikVarMi && hasSevkiyatGecmisi(p)) {
+                          @if (!isSevkEdilen() && kilidiAcabilir(p) && hasSevkiyatGecmisi(p)) {
                             <button class="btn btn-sm btn-outline-primary" (click)="openKilitAcModal(p)">
                               <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
                             </button>
@@ -449,10 +467,10 @@
 
                       @if (canDeleteProjectCurrent()) {
                         <button class="btn btn-sm btn-outline-danger" (click)="projeSil(p)" title="Projeyi Sil">
-                          <i class="ri-delete-bin-line"></i>
+                          <i class="ri-delete-bin-line me-1"></i>Projeyi Sil
                         </button>
                       }
-                    </div>
+                    </app-islemler-menusu>
                   </td>
                 }
               </tr>

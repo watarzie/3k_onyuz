@@ -23,6 +23,8 @@ export interface ProjeTipiBaglami {
     readonly projeSil: string;
     readonly planlananSevkTarihi: string;
     readonly ucKSandikDurumRaporu: string;
+    readonly gridModulu: string;
+    readonly gerceklesenCekiRaporu: string;
   };
 }
 
@@ -41,6 +43,8 @@ export const PROJE_TIPI_BAGLAMLARI: Readonly<Record<ProjeTipi, ProjeTipiBaglami>
       projeSil: YETKI.PROJE.SIL,
       planlananSevkTarihi: YETKI.PROJE.PLANLANAN_SEVK_TARIHI,
       ucKSandikDurumRaporu: YETKI.SANDIK.UCK_SANDIK_DURUM_RAPORU,
+      gridModulu: YETKI.SANDIK.GRID_MODULU,
+      gerceklesenCekiRaporu: YETKI.SANDIK.GERCEKLESEN_CEKI_RAPORU,
     },
   },
   [ProjeTipi.Saha]: {
@@ -58,6 +62,8 @@ export const PROJE_TIPI_BAGLAMLARI: Readonly<Record<ProjeTipi, ProjeTipiBaglami>
       // Saha projeleri planlanan sevk tarihini normal projelerle aynı izinle değiştirir.
       planlananSevkTarihi: YETKI.PROJE.PLANLANAN_SEVK_TARIHI,
       ucKSandikDurumRaporu: YETKI.SAHA.UCK_SANDIK_DURUM_RAPORU,
+      gridModulu: YETKI.SAHA.GRID_MODULU,
+      gerceklesenCekiRaporu: YETKI.SAHA.GERCEKLESEN_CEKI_RAPORU,
     },
   },
   [ProjeTipi.Yedek]: {
@@ -74,6 +80,8 @@ export const PROJE_TIPI_BAGLAMLARI: Readonly<Record<ProjeTipi, ProjeTipiBaglami>
       projeSil: YETKI.YEDEK.PROJE_SIL,
       planlananSevkTarihi: YETKI.YEDEK.PLANLANAN_SEVK_TARIHI,
       ucKSandikDurumRaporu: YETKI.YEDEK.UCK_SANDIK_DURUM_RAPORU,
+      gridModulu: YETKI.YEDEK.GRID_MODULU,
+      gerceklesenCekiRaporu: YETKI.YEDEK.GERCEKLESEN_CEKI_RAPORU,
     },
   },
 };

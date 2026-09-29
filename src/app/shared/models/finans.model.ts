@@ -1,3 +1,5 @@
+import { FinansIsKategorisi, FinansKarsilanma, FinansOdemeDurumu, FinansOdemeFiltresi } from '../../core/constants/enums';
+
 export type FinansFiyatlandirmaBirimi = 1 | 2 | 3 | 4;
 
 export interface FinansParaToplami {
@@ -39,6 +41,13 @@ export interface FinansListelemeRequest {
   firma?: string;
   sandikCinsi?: string;
   giderKategoriId?: number;
+  faturalamaBekleyen?: boolean;
+  siparisKarsilanma?: FinansKarsilanma;
+  faturaKarsilanma?: FinansKarsilanma;
+  /** Çoklu kategori filtresi; sunucuya `kategoriler=1&kategoriler=3` olarak gider. */
+  kategoriler?: FinansIsKategorisi[];
+  /** Fatura listesi ödeme/vade filtresi (D3). */
+  odemeDurumu?: FinansOdemeFiltresi;
 }
 
 export interface FinansDuzenliIsListelemeRequest {
@@ -56,6 +65,19 @@ export interface FinansUrunListelemeRequest {
   tarifeTarihi?: string;
 }
 
+/** Sunucudaki FinansSiparisDurumu: 1 Açık, 2 Kısmi faturalandı, 3 Faturalandı, 4 İptal edildi. */
+export type FinansSiparisDurumu = 1 | 2 | 3 | 4;
+
+/** PO'nun tek para birimindeki sipariş, faturalanan, gider ve net sonucu (tutarlar çevrilmez). */
+export interface FinansPoNet {
+  paraBirimi: string;
+  siparisNetTutar: number | null;
+  faturalananNetTutar: number | null;
+  gider: number | null;
+  net: number | null;
+  tahminiKar: number | null;
+}
+
 export interface FinansSiparis {
   kalemler?: FinansSiparisKalemi[];
   createdDate?: string;
@@ -68,14 +90,21 @@ export interface FinansSiparis {
   isTurleri: string[];
   siparisTarihi: string;
   sandikAdedi: number;
-  toplamM3: number;
-  faturalananM3: number;
-  kalanM3: number;
-  durum: number;
-  faturaDurumu: number;
-  belgeli: boolean;
+  toplamM3: number | null;
+  faturalananM3: number | null;
+  kalanM3: number | null;
+  durum: FinansSiparisDurumu;
   aciklama?: string;
+  paraBirimi?: string | null;
   tutarlar: FinansParaToplami[];
+  /** Aktif faturalardaki faturalanan tutarlar (para birimi bazında). */
+  faturalananTutarlar?: FinansParaToplami[];
+  /** PO ile ilişkilendirilmiş giderler (para birimi bazında). */
+  giderler?: FinansParaToplami[];
+  netler?: FinansPoNet[];
+  faturaNumaralari?: string[];
+  iptalEdildi?: boolean;
+  iptalAciklamasi?: string | null;
 }
 
 export interface FinansSiparisKalemi {
@@ -83,6 +112,19 @@ export interface FinansSiparisKalemi {
   faturalananNetTutar?: number | null;
   id: number;
   isKaydiId: number;
+  projeId?: number | null;
+  projeNo?: string;
+  musteri?: string;
+  isAdi?: string;
+  kategori?: FinansIsKategorisi;
+  duzenliIsId?: number | null;
+  finansTarihi?: string;
+  /** İşin bütün PO'lar için toplam net bedeli. */
+  isBedeli?: number | null;
+  /** İşin henüz hiçbir PO'ya bağlanmamış net tutarı. */
+  kalanSiparisNetTutar?: number | null;
+  tutarBazli?: boolean;
+  finansUrunId?: number | null;
   sandikNo: string;
   sandikAdi: string;
   isTuru: number;
@@ -120,15 +162,21 @@ export interface FinansFaturaOlusturRequest {
   faturaTarihi: string;
   aciklama: string | null;
   kalemler: { siparisKalemiId: number; adet: number; m3: number; netTutar?: number }[];
+  /** PO'nun proje × kategori grubuna girilen fatura net tutarı; sunucu grubun kalemlerine dağıtır. */
+  gruplar?: FinansFaturaGrupKalemi[];
   paraBirimi?: string;
   belgeNetTutar?: number;
+  /** Boşsa sunucu fatura tarihi + varsayılan vade günü uygular (D3). */
+  vadeTarihi?: string | null;
+}
+
+export interface FinansFaturaGrupKalemi {
+  siparisKalemiIds: number[];
+  netTutar: number;
 }
 
 export interface FinansIsKaydi {
-  sablonSurumId?: number | null;
-  sablon?: import('./finans-v2.model').FinansSablon | null;
   manuelNetTutar?: number | null;
-  alanDegerleri?: Record<string, string | null> | null;
   bilesenler?: import('./finans-v2.model').FinansFiyatBileseni[] | null;
   isAdi?: string;
   aciklama?: string | null;
@@ -148,6 +196,8 @@ export interface FinansIsKaydi {
   kalanFaturaNetTutar?: number | null;
   durum?: number;
   iptalEdildi?: boolean;
+  kategori?: FinansIsKategorisi;
+  duzenliIsId?: number | null;
   id: number;
   projeId: number | null;
   projeNo: string;
@@ -163,6 +213,9 @@ export interface FinansIsKaydi {
   adet: number;
   birimM3: number;
   toplamM3: number;
+  /** Ahşap ve kontra/katlanır m³ payı (F11); m³ izni yoksa sunucudan null gelir. */
+  ahsapM3?: number | null;
+  kontraM3?: number | null;
   siparisAdedi: number;
   siparisM3: number;
   siparisBekleyenAdet: number;
@@ -185,6 +238,13 @@ export interface FinansDagitimRequest {
   kdvOrani?: number | null;
 }
 
+/** Proje × kategori (veya düzenli iş) grubuna girilen PO tutarı; sunucu grubun kalemlerine dağıtır. */
+export interface FinansSiparisGrupDagitimi {
+  isKaydiIds: number[];
+  netTutar: number;
+}
+
+/** Doğrudan girilen PO; belge yüklemesi gerektirmez, PDF sonradan isteğe bağlı eklenir. */
 export interface FinansSiparisOlusturRequest {
   paraBirimi?: string;
   belgeNetTutar?: number;
@@ -192,6 +252,58 @@ export interface FinansSiparisOlusturRequest {
   siparisTarihi: string;
   aciklama: string | null;
   kalemler: FinansDagitimRequest[];
+  gruplar?: FinansSiparisGrupDagitimi[];
+}
+
+/** Mevcut aktif PO'ya yeni iş kalemi veya aynı işe ek tutar bağlama isteği. */
+export interface FinansSiparisKalemEkleRequest {
+  kalemler?: FinansDagitimRequest[];
+  gruplar?: FinansSiparisGrupDagitimi[];
+}
+
+/** PO açma ekranındaki proje × kategori / düzenli iş seçicisinin filtresi. */
+export interface FinansSiparisGrupFiltre {
+  pageNumber: number;
+  pageSize: number;
+  arama?: string;
+  kategoriler?: FinansIsKategorisi[];
+  baslangic?: string;
+  bitis?: string;
+  paraBirimi?: string;
+  projeId?: number;
+  isKaydiIds?: number[];
+  sadeceSiparisBekleyen?: boolean;
+  /** Yalnız bu düzenli işin dönemleri. */
+  duzenliIsId?: number;
+}
+
+/**
+ * PO'ya bağlanabilecek grup: üretim işleri proje × kategori × para birimi, düzenli işler iş × para birimi,
+ * özel işler tek iş olarak gruplanır. `isKaydiIds` sunucunun dağıtım sırasıdır.
+ */
+export interface FinansSiparisGrubu {
+  anahtar: string;
+  projeId: number | null;
+  projeNo: string;
+  musteri: string;
+  kategori: FinansIsKategorisi;
+  isTuru: number;
+  duzenliIsId: number | null;
+  ad: string;
+  paraBirimi: string;
+  ilkTarih: string;
+  sonTarih: string;
+  kalemSayisi: number;
+  isKaydiIds: number[];
+  netTutar: number | null;
+  siparisNetTutar: number | null;
+  kalanSiparisNetTutar: number | null;
+  faturalananNetTutar: number | null;
+  ahsapM3: number | null;
+  kontraM3: number | null;
+  siparisKarsilanma: FinansKarsilanma;
+  faturaKarsilanma: FinansKarsilanma;
+  fiyatBekleyenKalem: number;
 }
 
 export interface FinansFatura {
@@ -206,10 +318,19 @@ export interface FinansFatura {
   projeNo: string;
   isTurleri: string[];
   sandikAdedi: number;
-  toplamM3: number;
+  toplamM3: number | null;
+  /** Sunucudaki FinansFaturaDurumu: 1 Aktif, 2 İptal edildi. */
   durum: number;
-  belgeli: boolean;
   aciklama?: string;
+  iptalEdildi?: boolean;
+  /** Vade ve tahsilat (D3): ödeme dışarıdan gelir, kullanıcı ödendi olarak işaretler. */
+  vadeTarihi?: string;
+  odendiMi?: boolean;
+  odemeTarihi?: string | null;
+  odemeAciklamasi?: string | null;
+  odemeDurumu?: FinansOdemeDurumu;
+  /** Ödenmemişte vadeye kalan gün (negatif: gecikme); ödenende vadeden kaç gün sonra ödendiği. */
+  vadeFarkiGun?: number;
 }
 
 export interface FinansDuzenliIs {
@@ -254,6 +375,9 @@ export interface FinansDuzenliIsKaydetRequest {
 }
 
 export interface FinansGider {
+  /** Giderin ilişkilendirildiği PO; PO net sonucuna katılır. */
+  finansSiparisId?: number | null;
+  poNumarasi?: string | null;
   giderKalemiId?: number | null;
   giderKalemi?: string | null;
   miktar?: number;
@@ -307,6 +431,7 @@ export interface FinansGiderKalemi {
 }
 
 export interface FinansGiderKaydetRequest {
+  finansSiparisId?: number | null;
   giderKalemiId?: number | null;
   miktar?: number;
   birim?: string;
@@ -341,6 +466,16 @@ export interface FinansUrunEslesmesi {
   aktif?: boolean;
 }
 
+/** Tarife sürümü; fiyat değişikliği eski sürümü kapatıp yenisini açar, geçmiş değişmez. */
+export interface FinansTarifeSurumu {
+  id: number;
+  gecerlilikBaslangici: string;
+  gecerlilikBitisi: string;
+  birimFiyat: number | null;
+  paraBirimi: string;
+  kdvOrani: number | null;
+}
+
 export interface FinansUrun {
   id: number;
   kod: string;
@@ -352,6 +487,11 @@ export interface FinansUrun {
   aktif: boolean;
   sira: number;
   eslesmeler: FinansUrunEslesmesi[];
+  /** Bugün geçerli tarife sürümünün başlangıç ve bitişi. */
+  guncelGecerlilikBaslangici?: string | null;
+  guncelGecerlilikBitisi?: string | null;
+  /** Aktif tarife sürümleri (eski → yeni). */
+  tarifeler?: FinansTarifeSurumu[];
 }
 
 export interface FinansUrunKaydetRequest {
@@ -361,6 +501,8 @@ export interface FinansUrunKaydetRequest {
   birimFiyat: number;
   paraBirimi: string;
   kdvOrani: number;
+  /** Yeni fiyatın geçerli olacağı ilk gün; boşsa bugün. */
+  gecerlilikBaslangici?: string | null;
   aktif: boolean;
   sira: number;
   eslesmeler: { id?: number | null; aktif: boolean; isTuru: number; sandikAdi: string | null; icSandikSablonId?: number | null; sandikTipi?: string | null; boy?: number | null; en?: number | null; yukseklik?: number | null }[];
@@ -421,6 +563,38 @@ export interface FinansAylikIs {
   tutarDuzenlenebilir: boolean;
   iptalEdildi: boolean;
   iptalAciklamasi: string | null;
+  kategori?: FinansIsKategorisi;
+  siparisKarsilanma?: FinansKarsilanma;
+  faturaKarsilanma?: FinansKarsilanma;
+  ahsapM3?: number | null;
+  kontraM3?: number | null;
+  kalanSiparisNetTutar?: number | null;
+  kalanFaturaNetTutar?: number | null;
+}
+
+/** Projenin tek para birimindeki net bedel, siparişe bağlanan ve faturalanan net tutarı. */
+export interface FinansProjeTutari {
+  paraBirimi: string;
+  netTutar: number | null;
+  siparisNetTutar: number | null;
+  faturalananNetTutar: number | null;
+}
+
+/** Aylık görünümde projenin bütün aktif kalemlerinden türetilen birleşik sipariş/fatura durumu (F7). */
+export interface FinansAylikProjeOzeti {
+  projeBirimAnahtari: string;
+  projeId: number | null;
+  projeNo: string;
+  musteri: string;
+  siparisKarsilanma: FinansKarsilanma;
+  faturaKarsilanma: FinansKarsilanma;
+  /** Sunucudaki FinansIsDurumu: 1 Sipariş bekliyor … 5 Faturalandı. */
+  durum: number;
+  gerekliKalem: number;
+  fiyatBekleyenKalem: number;
+  ahsapM3: number | null;
+  kontraM3: number | null;
+  tutarlar: FinansProjeTutari[];
 }
 
 export interface FinansFaturaKalemi {
@@ -432,6 +606,9 @@ export interface FinansFaturaKalemi {
   toplamTutar: number | null;
   paraBirimi: string;
   tutarBazli: boolean;
+  projeNo?: string;
+  isAdi?: string;
+  kategori?: FinansIsKategorisi;
 }
 
 export interface FinansSiparisGuncelleRequest {
@@ -447,6 +624,7 @@ export interface FinansFaturaGuncelleRequest {
   faturaTarihi: string;
   aciklama: string;
   gerekce: string;
+  vadeTarihi?: string | null;
   belgeMutabakatiniKoru?: boolean;
   kalemler?: { siparisKalemiId: number; adet: number; m3: number; netTutar: number }[];
 }
@@ -472,6 +650,8 @@ export interface FinansAylikGrupToplami {
 
 export interface FinansAylikSayfaliSonuc {
   items: FinansAylikIs[];
+  /** Sayfadaki proje birimlerinin (özel işler hariç) birleşik sipariş/fatura durumu. */
+  projeler?: FinansAylikProjeOzeti[];
   finansOzeti: FinansAylikFinansOzeti[];
   grupToplamlari: FinansAylikGrupToplami[];
   pageNumber: number;
@@ -485,4 +665,12 @@ export interface FinansAylikSayfaliSonuc {
 export interface FinansAylikDegerRequest {
   miktar?: number;
   netBirimFiyat?: number;
+}
+
+/** Düzenli iş dönem üretimi sonucu. */
+export interface FinansDonemOlusturSonuc {
+  taranan: number;
+  olusturulan: number;
+  referansTarihi: string;
+  hatalar?: string[];
 }

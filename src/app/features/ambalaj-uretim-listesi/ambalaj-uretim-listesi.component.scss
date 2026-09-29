@@ -1719,3 +1719,13 @@ td small,
     flex-direction: column;
   }
 }
+
+/* A3: tamamlanan projeler yeşil satır */
+table tbody tr.completed-project > td {
+  border-color: #c5e7d2;
+  background: #e8f7ee;
+  color: #14532d;
+}
+table tbody tr.completed-project:hover > td {
+  background: #dcf3e5;
+}

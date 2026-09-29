@@ -179,6 +179,147 @@
     position: relative;
   }
 
+  .dashboard-aging,
+.dashboard-receivables {
+  margin-bottom: 16px;
+}
+.dashboard-aging-grid {
+  display: grid;
+  gap: 10px;
+}
+.dashboard-aging-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) repeat(4, minmax(110px, 1fr));
+  gap: 8px;
+  align-items: stretch;
+}
+.dashboard-aging-label {
+  align-self: center;
+  font-weight: 600;
+  font-size: 12px;
+}
+.dashboard-aging-bucket {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  text-align: left;
+  font-size: 12px;
+
+  strong {
+    font-size: 18px;
+  }
+  small {
+    color: #64748b;
+  }
+  &:not(:disabled):hover {
+    border-color: var(--v2-primary, #605dff);
+  }
+  &.is-empty {
+    opacity: 0.6;
+  }
+  &.is-old {
+    border-color: #f3b7b0;
+    background: #fff5f4;
+  }
+}
+.dashboard-receivable {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+
+  h5 {
+    margin: 0 0 6px;
+    font-size: 14px;
+  }
+  dl {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 10px;
+    margin: 0;
+    font-size: 12px;
+  }
+  dd {
+    margin: 0;
+    text-align: right;
+    font-weight: 600;
+  }
+}
+.dashboard-activity-toggle {
+  display: flex;
+  justify-content: flex-end;
+  margin: 8px 0;
+}
+@media (max-width: 768px) {
+  .dashboard-aging-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.dashboard-project-status {
+    margin-top: 14px;
+  }
+  .dashboard-project-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    h4 {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 0;
+      font-size: 14px;
+    }
+    span {
+      color: var(--v2-muted);
+      font-size: 12px;
+    }
+  }
+  .dashboard-project-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+
+    > div {
+      padding: 12px 14px;
+      border: 1px solid var(--borderColor, #e5eaf1);
+      border-radius: 10px;
+    }
+    > div > span {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--v2-muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+    dl {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 4px 10px;
+      margin: 0;
+    }
+    dt {
+      grid-row: 1;
+      color: var(--v2-muted);
+      font-size: 11px;
+      font-weight: 600;
+    }
+    dd {
+      grid-row: 2;
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+    }
+  }
+
   .dashboard-selection {
     grid-column: 1 / -1;
     justify-self: end;

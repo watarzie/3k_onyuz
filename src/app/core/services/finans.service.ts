@@ -10,6 +10,7 @@ import {
   FinansDuzenliIs,
   FinansDuzenliIsListelemeRequest,
   FinansDuzenliIsKaydetRequest,
+  FinansDonemOlusturSonuc,
   FinansFatura,
   FinansFaturaOlusturRequest,
   FinansFaturaGuncelleRequest,
@@ -24,6 +25,9 @@ import {
   FinansSayfaliSonuc,
   FinansSiparis,
   FinansSiparisDetay,
+  FinansSiparisGrubu,
+  FinansSiparisGrupFiltre,
+  FinansSiparisKalemEkleRequest,
   FinansSiparisOlusturRequest,
   FinansUrun,
   FinansUrunListelemeRequest,
@@ -35,14 +39,20 @@ import {
   FinansHareket,
   FinansBekleyen,
   FinansFiyatlandirma,
-  FinansSablon,
-  FinansSablonKaydet,
   FinansKaliciSil,
   FinansKaliciSilOnizleme,
   FinansBelge,
   FinansVarlikTuru,
   FinansDegisiklik,
+  FinansBekleyenAsama,
+  FinansOdemeKaydet,
+  FinansParaBirimi,
+  FinansParaBirimiKaydet,
+  FinansParametreler,
+  FinansVadeUyarilari,
+  FinansYenidenFiyatlamaSonuc,
 } from '../../shared/models/finans-v2.model';
+import { FinansIsKategorisi, FinansKarsilanma } from '../constants/enums';
 
 @Injectable({ providedIn: 'root' })
 export class FinansService {
@@ -63,12 +73,13 @@ export class FinansService {
   genelArama(request: FinansListelemeRequest) {
     return this.liste<FinansIsKaydi>(API.FINANS.GENEL_ARAMA, request);
   }
-  yaslandirma(request: FinansListelemeRequest, referansTarihi: string, minimumGun: number) {
-    return this.api.get<FinansSayfaliSonuc<FinansBekleyen>>(API.FINANS.YASLANDIRMA, {
-      params: this.listelemeParametreleri(request)
-        .set('referansTarihi', referansTarihi)
-        .set('minimumGun', minimumGun),
-    });
+  /** Bekleme listesi; asama verilirse yalnız sipariş ya da fatura bekleyen kalemler (panel kovası tıklaması). */
+  yaslandirma(request: FinansListelemeRequest, referansTarihi: string, minimumGun: number, asama?: FinansBekleyenAsama) {
+    let params = this.listelemeParametreleri(request)
+      .set('referansTarihi', referansTarihi)
+      .set('minimumGun', minimumGun);
+    if (asama) params = params.set('asama', asama);
+    return this.api.get<FinansSayfaliSonuc<FinansBekleyen>>(API.FINANS.YASLANDIRMA, { params });
   }
   isDetay(id: number) {
     return this.api.get<FinansIsKaydi>(API.FINANS.IS_KAYDI(id));
@@ -79,13 +90,36 @@ export class FinansService {
   fiyatlandir(id: number, request: FinansFiyatlandirma) {
     return this.api.post<void>(API.FINANS.FIYATLANDIRMA(id), request);
   }
-  sablonlar() {
-    return this.api.get<FinansSablon[]>(API.FINANS.SABLONLAR);
+  /** Para birimi tanımları (F1); seçim listeleri yalnız aktif olanları kullanır. */
+  paraBirimleri(sadeceAktif = false) {
+    return this.api.get<FinansParaBirimi[]>(API.FINANS.PARA_BIRIMLERI, {
+      params: new HttpParams().set('sadeceAktif', sadeceAktif),
+    });
   }
-  sablonKaydet(request: FinansSablonKaydet, id?: number) {
+  paraBirimiKaydet(request: FinansParaBirimiKaydet, id?: number) {
     return id
-      ? this.api.put<FinansSablon>(API.FINANS.SABLON(id), request)
-      : this.api.post<FinansSablon>(API.FINANS.SABLONLAR, request);
+      ? this.api.put<FinansParaBirimi>(API.FINANS.PARA_BIRIMI(id), request)
+      : this.api.post<FinansParaBirimi>(API.FINANS.PARA_BIRIMLERI, request);
+  }
+  /** Vade parametreleri (D3): varsayılan vade günü ve vade uyarısı penceresi. */
+  parametreler() {
+    return this.api.get<FinansParametreler>(API.FINANS.PARAMETRELER);
+  }
+  parametreleriKaydet(request: FinansParametreler) {
+    return this.api.put<FinansParametreler>(API.FINANS.PARAMETRELER, request);
+  }
+  /** Faturayı ödendi/ödenmedi işaretler; işaretin kaldırılması gerekçe ister. */
+  faturaOdeme(id: number, request: FinansOdemeKaydet) {
+    return this.api.put<FinansFatura>(API.FINANS.FATURA_ODEME(id), request);
+  }
+  vadeUyarilari(enFazlaKalem = 20) {
+    return this.api.get<FinansVadeUyarilari>(API.FINANS.VADE_UYARILARI, {
+      params: new HttpParams().set('enFazlaKalem', enFazlaKalem),
+    });
+  }
+  /** D4: ürüne bağlı, PO'suz açık kalemleri finans tarihlerinde geçerli tarifeyle yeniden fiyatlar. */
+  urunYenidenFiyatla(id: number, aciklama: string) {
+    return this.api.post<FinansYenidenFiyatlamaSonuc>(API.FINANS.URUN_YENIDEN_FIYATLA(id), { aciklama });
   }
   kaliciSilOnizleme(varlikTuru: FinansVarlikTuru, id: number) {
     return this.api.get<FinansKaliciSilOnizleme>(API.FINANS.KALICI_SIL_ONIZLEME, {
@@ -140,6 +174,26 @@ export class FinansService {
   }
   siparisOlustur(request: FinansSiparisOlusturRequest) {
     return this.api.post<FinansSiparis>(API.FINANS.SIPARISLER, request);
+  }
+  /** Mevcut aktif PO'ya yeni iş kalemi veya aynı işe ek tutar bağlar. */
+  siparisKalemEkle(id: number, request: FinansSiparisKalemEkleRequest) {
+    return this.api.post<FinansSiparis>(API.FINANS.SIPARIS_KALEMLER(id), request);
+  }
+  /** PO açma ekranı: proje × kategori / düzenli iş grupları (sunucu sayfalaması). */
+  siparisGruplari(filtre: FinansSiparisGrupFiltre) {
+    let params = new HttpParams()
+      .set('pageNumber', filtre.pageNumber)
+      .set('pageSize', filtre.pageSize)
+      .set('sadeceSiparisBekleyen', filtre.sadeceSiparisBekleyen ?? true);
+    if (filtre.arama?.trim()) params = params.set('arama', filtre.arama.trim());
+    if (filtre.baslangic) params = params.set('baslangic', filtre.baslangic);
+    if (filtre.bitis) params = params.set('bitis', filtre.bitis);
+    if (filtre.paraBirimi) params = params.set('paraBirimi', filtre.paraBirimi);
+    if (filtre.projeId) params = params.set('projeId', filtre.projeId);
+    if (filtre.duzenliIsId) params = params.set('duzenliIsId', filtre.duzenliIsId);
+    (filtre.kategoriler ?? []).forEach((kategori) => (params = params.append('kategoriler', kategori)));
+    (filtre.isKaydiIds ?? []).forEach((id) => (params = params.append('isKaydiIds', id)));
+    return this.api.get<FinansSayfaliSonuc<FinansSiparisGrubu>>(API.FINANS.SIPARIS_GRUPLARI, { params });
   }
   siparisDetay(id: number): Observable<ApiResult<FinansSiparisDetay>> {
     // API doğrudan FinansSiparisModel döndürür; özet sarmalaması istemci adaptörüdür.
@@ -208,6 +262,10 @@ export class FinansService {
   }
   duzenliIsGuncelle(id: number, request: FinansDuzenliIsKaydetRequest) {
     return this.api.put<FinansDuzenliIs>(API.FINANS.DUZENLI_IS(id), request);
+  }
+  /** Düzenli işin verilen tarihe kadarki eksik aylarını üretir; aynı ay ikinci kez üretilmez. */
+  duzenliIsDonemUret(id: number, bitisTarihi: string) {
+    return this.api.post<FinansDonemOlusturSonuc>(API.FINANS.DUZENLI_IS_DONEMLER(id), { bitisTarihi });
   }
   giderler(request: FinansListelemeRequest = this.varsayilanListeleme()) {
     return this.liste<FinansGider>(API.FINANS.GIDERLER, request);
@@ -295,23 +353,38 @@ export class FinansService {
       params: this.listelemeParametreleri(request),
     });
   }
+  /**
+   * Sipariş durum raporu: satırlar seçilen sipariş/fatura karşılanmasındaki iş kalemleridir.
+   * Durumlar sunucudaki karşılanma değerleriyle, iş grubu kategori listesiyle gönderilir.
+   */
   siparisDurumRaporu(
     format: 'pdf' | 'excel',
     filtre: {
       baslangic?: string;
       bitis?: string;
       projeNo?: string;
-      isGrubu?: string;
-      durum?: string;
+      kategoriler?: FinansIsKategorisi[];
+      siparisKarsilanma?: FinansKarsilanma;
+      faturaKarsilanma?: FinansKarsilanma;
     },
   ) {
     const params = new URLSearchParams();
-    Object.entries(filtre).forEach(([anahtar, deger]) => {
-      if (deger) params.set(anahtar, deger);
-    });
+    if (filtre.baslangic) params.set('baslangic', filtre.baslangic);
+    if (filtre.bitis) params.set('bitis', filtre.bitis);
+    if (filtre.projeNo?.trim()) params.set('projeNo', filtre.projeNo.trim());
+    (filtre.kategoriler ?? []).forEach((kategori) => params.append('kategoriler', String(kategori)));
+    if (filtre.siparisKarsilanma !== undefined) params.set('siparisKarsilanma', String(filtre.siparisKarsilanma));
+    if (filtre.faturaKarsilanma !== undefined) params.set('faturaKarsilanma', String(filtre.faturaKarsilanma));
     const endpoint =
       format === 'pdf' ? API.FINANS.SIPARIS_DURUM_RAPOR_PDF : API.FINANS.SIPARIS_DURUM_RAPOR_EXCEL;
-    return this.api.downloadFile(`${endpoint}?${params}`);
+    const sorgu = params.toString();
+    return this.api.downloadFile(sorgu ? `${endpoint}?${sorgu}` : endpoint);
+  }
+  /** Alacak (vade/tahsilat) raporu: fatura listesiyle aynı filtreler. */
+  alacakRaporu(format: 'pdf' | 'excel', request: FinansListelemeRequest = this.varsayilanListeleme()) {
+    return this.api.downloadFile(format === 'pdf' ? API.FINANS.ALACAK_RAPOR_PDF : API.FINANS.ALACAK_RAPOR_EXCEL, {
+      params: this.listelemeParametreleri(request),
+    });
   }
   aylikRapor(format: 'pdf' | 'excel' | 'ayri', yil: number, ay: number, gruplar: string[]) {
     const params = new URLSearchParams({ yil: String(yil), ay: String(ay) });
@@ -356,10 +429,15 @@ export class FinansService {
       'firma',
       'sandikCinsi',
       'giderKategoriId',
+      'faturalamaBekleyen',
+      'siparisKarsilanma',
+      'faturaKarsilanma',
+      'odemeDurumu',
     ] as const) {
       const value = request[key];
       if (value !== undefined && value !== '') params = params.set(key, value);
     }
+    (request.kategoriler ?? []).forEach((kategori) => (params = params.append('kategoriler', kategori)));
     if (request.iptalEdilenleriDahilEt !== undefined) {
       params = params.set('iptalEdilenleriDahilEt', request.iptalEdilenleriDahilEt);
     }

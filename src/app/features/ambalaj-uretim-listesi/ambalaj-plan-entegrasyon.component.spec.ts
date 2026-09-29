@@ -86,6 +86,7 @@ describe('Üretim planı tek temalı seçim akışı', () => {
     lifecycle = jasmine.createSpyObj('AmbalajYasamDongusuService', [
       'formlar',
       'formOlustur',
+      'formIndir',
       'durum',
     ]);
     lifecycle.formlar.and.returnValue(of({ isSuccess: true, value: [] }));
@@ -132,13 +133,16 @@ describe('Üretim planı tek temalı seçim akışı', () => {
     };
   }
 
-  it('ham kopya yerine yalnız eski temalı sandık tablosunu ve compact geçmişi gösterir', () => {
+  it('ham kopya yerine yalnız sandık tablosunu gösterir; plan içinde sürüm geçmişi ve gerekçe alanı yoktur (A2)', () => {
     const { drawer } = render();
     expect(drawer.querySelectorAll('table').length).toBe(1);
     expect(drawer.querySelectorAll('.crate-table tbody tr').length).toBe(2);
     expect(drawer.querySelector('.lifecycle-panel .lifecycle-table')).toBeNull();
-    expect(drawer.querySelector('.form-history')).not.toBeNull();
+    expect(drawer.querySelector('.form-history')).toBeNull();
+    expect(drawer.querySelector('.regenerate-choice')).toBeNull();
     expect(drawer.querySelector('.drawer-status select')).toBeNull();
+    const alanlar = Array.from(drawer.querySelectorAll('.lifecycle-controls .reason-field input')) as HTMLInputElement[];
+    expect(alanlar.map((x) => x.type)).toEqual(['date']);
   });
 
   it('tek checkbox seçimini hem plan kaydına hem forma aktarır; 202 durum değiştirmez', () => {
@@ -162,11 +166,48 @@ describe('Üretim planı tek temalı seçim akışı', () => {
     ).toBeTrue();
   });
 
-  it('satır tamamlaması lifecycle endpointine gider ve ayrı izin yoksa buton yoktur', () => {
-    const { drawer } = render();
-    (drawer.querySelector('.complete-action') as HTMLButtonElement).click();
-    expect(lifecycle.durum).toHaveBeenCalledWith(11, 3, '');
+  it('kaydedilmemiş parti numarası form öncesi planın kayıtlı seçimiyle kaydedilir; değişmemişse plan kaydı yapılmaz (A2)', () => {
+    const { component } = render();
+    component.planYuklendi(structuredClone(plan));
+    let devam: boolean | undefined;
+    component.formOncesiPartiKaydi().subscribe((x) => (devam = x));
+    expect(devam).toBeTrue();
     expect(plans.planKaydet).not.toHaveBeenCalled();
+
+    component.firinPartiDegistir(' FP-9 ');
+    plans.planKaydet.and.returnValue(of({ isSuccess: true, value: { ...structuredClone(plan), firinPartiNo: 'FP-9' } }));
+    devam = undefined;
+    component.formOncesiPartiKaydi().subscribe((x) => (devam = x));
+    expect(devam).toBeTrue();
+    const [projeId, partiNo, seciliIds, grup] = plans.planKaydet.calls.mostRecent().args;
+    expect([projeId, partiNo, seciliIds, grup]).toEqual([1, 'FP-9', [41], 1]);
+
+    plans.planKaydet.calls.reset();
+    component.formOncesiPartiKaydi().subscribe((x) => (devam = x));
+    expect(plans.planKaydet).not.toHaveBeenCalled();
+  });
+
+  it('parti kaydı onaya düşerse form oluşturulmaz; parti değişmemişse form plan kaydı olmadan oluşturulur (A2)', () => {
+    const { component, child, fixture } = render();
+    component.planYuklendi(structuredClone(plan));
+    fixture.detectChanges();
+    component.firinPartiDegistir('FP-9');
+    child.olustur();
+    expect(plans.planKaydet).toHaveBeenCalledTimes(1);
+    expect(lifecycle.formOlustur).not.toHaveBeenCalled();
+
+    component.planYuklendi(structuredClone(plan));
+    child.olustur();
+    expect(plans.planKaydet).toHaveBeenCalledTimes(1);
+    expect(lifecycle.formOlustur).toHaveBeenCalledTimes(1);
+  });
+
+  it('plan çekmecesinde sandık bazlı tamamla/bekleyene al/yeniden aç düğmesi yoktur; tamamlama FB listesindedir (A2)', () => {
+    const { drawer } = render();
+    expect(drawer.querySelector('.complete-action')).toBeNull();
+    expect(drawer.querySelector('.production-row-actions')).toBeNull();
+    expect(drawer.querySelectorAll('.production-status').length).toBeGreaterThan(0);
+    expect(lifecycle.durum).not.toHaveBeenCalled();
   });
 
   it('manuel kutuyu form seçimi diye açıklar; plan kaydı kaynak IDs gönderir ve yerel form seçimini korur', () => {

@@ -41,7 +41,8 @@ export class SandikListesiComponent implements OnInit {
   showEkleModal = signal(false);
   yeniSandikNo = signal('');
   yeniSandikIsmi = signal('');
-  yeniTipId = signal(SandikTipi.AhsapKapali);
+  /** Sandık tipi her proje türünde zorunludur (G2); kullanıcı açıkça seçer. */
+  yeniTipId = signal<SandikTipi | null>(null);
   yeniLokasyonId = signal(DepoLokasyon.UcK);
   eklemeSaving = signal(false);
   yeniEn = signal<number | null>(null);
@@ -137,7 +138,7 @@ export class SandikListesiComponent implements OnInit {
     }, 0);
     this.yeniSandikNo.set((maxNo + 1).toString());
     this.yeniSandikIsmi.set('');
-    this.yeniTipId.set(SandikTipi.AhsapKapali);
+    this.yeniTipId.set(null);
     this.yeniLokasyonId.set(DepoLokasyon.UcK);
     this.yeniEn.set(null);
     this.yeniBoy.set(null);
@@ -157,12 +158,17 @@ export class SandikListesiComponent implements OnInit {
       this.toast.error('Sandık numarası girilmelidir.');
       return;
     }
+    const tipId = this.yeniTipId();
+    if (!tipId) {
+      this.toast.error('Sandık tipi seçilmelidir.');
+      return;
+    }
     this.eklemeSaving.set(true);
     this.sandikService.sandikEkle({
       projeId: this.projeId(),
       sandikNo: no,
       sandikIsmi: this.yeniSandikIsmi().trim() || undefined,
-      tipId: this.yeniTipId(),
+      tipId,
       depoLokasyonId: this.yeniLokasyonId(),
       en: this.yeniEn() ?? undefined,
       boy: this.yeniBoy() ?? undefined,

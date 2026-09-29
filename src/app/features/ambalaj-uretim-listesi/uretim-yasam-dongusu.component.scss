@@ -91,16 +91,6 @@
   justify-content: flex-end;
   gap: 12px;
 }
-.regenerate-choice {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  max-width: 165px;
-  margin: 0;
-  color: var(--bodyColor, #64748b);
-  font-size: 11px;
-  line-height: 1.4;
-}
 input[type='checkbox'] {
   width: 17px;
   height: 17px;
@@ -136,73 +126,11 @@ input:disabled {
 .primary-action:hover:not(:disabled) {
   filter: brightness(0.96);
 }
-.form-history {
-  margin-top: 16px;
-  border-top: 1px solid var(--borderColor, #e5e7eb);
-}
-.form-history > summary {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 0 0;
-  color: var(--bodyColor, #64748b);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  list-style: none;
-}
-.form-history > summary::-webkit-details-marker {
-  display: none;
-}
-.form-history > summary > span:first-child {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.history-count {
-  margin-left: auto;
-  min-width: 24px;
-  padding: 2px 7px;
-  border-radius: 5px;
-  background: #f3f4f8;
-  text-align: center;
-}
-.form-history[open] > summary > i {
-  transform: rotate(180deg);
-}
-.history-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 12px 0;
-  border-bottom: 1px solid #edf0f5;
-}
-.history-item:last-child {
-  border-bottom: 0;
-  padding-bottom: 0;
-}
-.history-item strong,
-.history-item small {
-  display: block;
-}
-.history-item strong {
-  font-size: 12px;
-}
-.history-item small,
-.history-item p,
-.history-empty {
-  margin: 4px 0 0;
-  color: var(--bodyColor, #64748b);
-  font-size: 11px;
-}
-.history-downloads,
 .row-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
 }
-.history-downloads button,
 .row-actions button {
   display: inline-flex;
   align-items: center;
@@ -214,12 +142,6 @@ input:disabled {
   background: #fff;
   color: var(--primaryColor, #605dff);
   font-size: 11px;
-}
-.history-downloads button:hover {
-  background: #f6f5ff;
-}
-.history-empty {
-  padding: 12px 0 0;
 }
 .lifecycle-table-wrap {
   overflow-x: auto;
@@ -313,7 +235,20 @@ input:disabled {
   .reason-field {
     flex-basis: auto;
   }
-  .regenerate-choice {
-    max-width: none;
-  }
+}
+
+/* A6: isteğe bağlı finans tarihi; A5: üretilen çam grafiği */
+.finance-date-field {
+  flex: 0 1 190px;
+}
+.lifecycle-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  color: var(--bodyColor, #64748b);
+  font-size: 11px;
+}
+.pine-chart {
+  margin: 12px 0;
 }

@@ -10,7 +10,11 @@ describe('Finans raporu indirme ve çeviri', () => {
   let api: jasmine.SpyObj<FinansService>;
   let toast: jasmine.SpyObj<ToastService>;
   beforeEach(() => {
-    api = jasmine.createSpyObj('FinansService', ['giderKategorileri', 'isRaporu', 'downloadErrorMessage']);
+    api = jasmine.createSpyObj('FinansService', ['giderKategorileri', 'isRaporu', 'downloadErrorMessage', 'paraBirimleri']);
+    api.paraBirimleri.and.returnValue(of({ isSuccess: true, value: [
+      { id: 1, kod: 'TRY', ad: 'Türk lirası', sembol: '₺', aktif: true, sira: 1 },
+      { id: 2, kod: 'EUR', ad: 'Euro', sembol: '€', aktif: true, sira: 2 },
+    ] }));
     toast = jasmine.createSpyObj('ToastService', ['error']);
     api.giderKategorileri.and.returnValue(of({ isSuccess: true, value: [] }));
     TestBed.configureTestingModule({ imports: [FinansRaporlarComponent], providers: [

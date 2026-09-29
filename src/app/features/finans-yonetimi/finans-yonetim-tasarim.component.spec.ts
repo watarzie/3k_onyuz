@@ -1,29 +1,34 @@
 import { signal } from '@angular/core';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { of, Subject } from 'rxjs';
+import { FinansOdemeFiltresi } from '../../core/constants/enums';
 import { FinansService } from '../../core/services/finans.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { ToastService } from '../../core/services/toast.service';
 import { TranslationService } from '../../core/services/translation.service';
 import { ApiResult } from '../../shared/models/common.model';
-import { FinansSablon } from '../../shared/models/finans-v2.model';
 import { FinansFatura, FinansSayfaliSonuc, FinansSiparis } from '../../shared/models/finans.model';
 import { FinansBelgelerListesiComponent } from './finans-belgeler-listesi.component';
 import { FinansRaporlarComponent } from './finans-raporlar.component';
-import { FinansSablonlarComponent } from './finans-sablonlar.component';
 
 describe('Finans yönetim tasarımı — mevcut iş akışları', () => {
   let api: jasmine.SpyObj<FinansService>;
   let toast: jasmine.SpyObj<ToastService>;
   const write = signal(true);
-  const template: FinansSablon = {
-    id: 3,
-    kod: 'MONTAJ',
-    ad: 'Montaj',
-    aktif: true,
-    surumId: 7,
-    surum: 2,
-    alanlar: [{ kod: 'saat', ad: 'Süre', veriTuru: 'sayi', zorunlu: true }],
+  const fatura: FinansFatura = {
+    id: 8,
+    kayitNo: 'F8',
+    faturaNumarasi: 'INV-8',
+    faturaTarihi: '2026-09-01T00:00:00',
+    poNumarasi: 'PO-7',
+    projeNo: 'PROJE-A',
+    isTurleri: [],
+    sandikAdedi: 1,
+    toplamM3: null,
+    durum: 1,
+    vadeTarihi: '2026-09-15T00:00:00',
+    odendiMi: false,
+    vadeFarkiGun: -14,
   };
   function page<T>(items: T[]): FinansSayfaliSonuc<T> {
     return {
@@ -40,20 +45,20 @@ describe('Finans yönetim tasarımı — mevcut iş akışları', () => {
   beforeEach(() => {
     write.set(true);
     api = jasmine.createSpyObj('FinansService', [
-      'sablonlar',
-      'sablonKaydet',
       'siparisler',
       'faturalar',
+      'faturaOdeme',
       'giderKategorileri',
+      'paraBirimleri',
     ]);
     toast = jasmine.createSpyObj('ToastService', ['success', 'info', 'error']);
-    api.sablonlar.and.returnValue(of({ isSuccess: true, value: [template] }));
-    api.sablonKaydet.and.returnValue(of({ isSuccess: true, statusCode: 202 }));
+    api.faturaOdeme.and.returnValue(of({ isSuccess: true }));
+    api.paraBirimleri.and.returnValue(of({ isSuccess: true, value: [] }));
     api.siparisler.and.returnValue(of({ isSuccess: true, value: page<FinansSiparis>([]) }));
     api.faturalar.and.returnValue(of({ isSuccess: true, value: page<FinansFatura>([]) }));
     api.giderKategorileri.and.returnValue(of({ isSuccess: true, value: [] }));
     TestBed.configureTestingModule({
-      imports: [FinansSablonlarComponent, FinansBelgelerListesiComponent, FinansRaporlarComponent],
+      imports: [FinansBelgelerListesiComponent, FinansRaporlarComponent],
       providers: [
         { provide: FinansService, useValue: api },
         { provide: ToastService, useValue: toast },
@@ -64,62 +69,6 @@ describe('Finans yönetim tasarımı — mevcut iş akışları', () => {
         { provide: TranslationService, useValue: { translate: (key: string) => key } },
       ],
     });
-  });
-
-  it('şablon araması tam listeyi filtreler; yeni sürüm editörü kaynak alanı değiştirmez ve 202 açık kalır', () => {
-    const fixture = TestBed.createComponent(FinansSablonlarComponent);
-    fixture.detectChanges();
-    const c = fixture.componentInstance;
-    c.arama.set('montaj');
-    expect(c.gorunenSablonlar()).toEqual([template]);
-    c.arama.set('başka');
-    expect(c.gorunenSablonlar()).toEqual([]);
-    c.duzenle(template);
-    c.form.alanlar[0].ad = 'Yeni süre';
-    c.kaydet();
-    fixture.detectChanges();
-    expect(template.alanlar[0].ad).toBe('Süre');
-    expect(api.sablonKaydet).toHaveBeenCalledOnceWith(
-      jasmine.objectContaining({
-        kod: 'MONTAJ',
-        alanlar: [{ kod: 'saat', ad: 'Yeni süre', veriTuru: 'sayi', zorunlu: true }],
-      }),
-      3,
-    );
-    expect(c.acik()).toBeTrue();
-    expect(c.saving()).toBeFalse();
-    expect(fixture.nativeElement.querySelector('.v2-editor-card')).not.toBeNull();
-    expect(toast.info).toHaveBeenCalled();
-    expect(toast.success).not.toHaveBeenCalled();
-    expect(api.sablonlar).toHaveBeenCalledTimes(1);
-  });
-
-  it('canlı yazma izni kaldırılınca şablon editörü DOMdan kalkar ve kaydet gönderilmez', () => {
-    const fixture = TestBed.createComponent(FinansSablonlarComponent);
-    fixture.detectChanges();
-    const c = fixture.componentInstance;
-    c.duzenle(template);
-    fixture.detectChanges();
-    write.set(false);
-    fixture.detectChanges();
-    c.kaydet();
-    expect(fixture.nativeElement.querySelector('.v2-editor-card')).toBeNull();
-    expect(api.sablonKaydet).not.toHaveBeenCalled();
-  });
-
-  it('şablon yükleme ve hata durumu boş listeyle karıştırılmaz', () => {
-    const result = new Subject<ApiResult<FinansSablon[]>>();
-    api.sablonlar.and.returnValue(result);
-    const fixture = TestBed.createComponent(FinansSablonlarComponent);
-    fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('[role="status"]')).not.toBeNull();
-    result.next({ isSuccess: false, error: 'Erişim reddedildi' });
-    result.complete();
-    fixture.detectChanges();
-    expect(fixture.componentInstance.loading()).toBeFalse();
-    expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain(
-      'Erişim reddedildi',
-    );
   });
 
   it('belge sekmesi faturaya geçerken sayfayı sıfırlar, sunucu sayfa boyutunu korur', () => {
@@ -165,6 +114,74 @@ describe('Finans yönetim tasarımı — mevcut iş akışları', () => {
     expect(c.liste()?.totalCount).toBe(0);
     expect(c.loading()).toBeFalse();
   }));
+
+  it('vade uyarısından açılan fatura listesi ödeme filtresini sunucuya gönderir; PO listesine geçince bırakır', () => {
+    const fixture = TestBed.createComponent(FinansBelgelerListesiComponent);
+    fixture.componentRef.setInput('baslangicTuru', 'Fatura');
+    fixture.componentRef.setInput('baslangicOdemeFiltresi', FinansOdemeFiltresi.VadesiGecen);
+    fixture.detectChanges();
+    expect(api.faturalar).toHaveBeenCalledOnceWith({
+      pageNumber: 1,
+      pageSize: 25,
+      arama: undefined,
+      odemeDurumu: FinansOdemeFiltresi.VadesiGecen,
+    });
+    fixture.componentInstance.turSec('Siparis');
+    expect(api.siparisler.calls.mostRecent().args[0]).toEqual({ pageNumber: 1, pageSize: 25, arama: undefined });
+  });
+
+  it('hızlı ödeme paneli: işaretlemede geçerli tarih, kaldırmada gerekçe ister; kayıttan sonra listeyi yeniler', () => {
+    api.faturalar.and.returnValue(of({ isSuccess: true, value: page<FinansFatura>([fatura]) }));
+    const fixture = TestBed.createComponent(FinansBelgelerListesiComponent);
+    fixture.componentRef.setInput('baslangicTuru', 'Fatura');
+    fixture.detectChanges();
+    const c = fixture.componentInstance;
+    c.odemePaneliniAc(fatura);
+    expect(c.odemeForm).toEqual({ odendi: true, tarih: c.bugun(), aciklama: '' });
+    c.odemeForm.tarih = '2999-01-01';
+    c.odemeKaydet();
+    expect(api.faturaOdeme).not.toHaveBeenCalled();
+    expect(c.odemeHatasi()).toBe('FINANS_V2.PAYMENT_DATE_ERROR');
+    c.odemeForm.tarih = '2026-09-20';
+    c.odemeKaydet();
+    expect(api.faturaOdeme).toHaveBeenCalledOnceWith(8, { odendi: true, odemeTarihi: '2026-09-20', aciklama: null });
+    expect(c.odemeFatura()).toBeNull();
+    expect(toast.success).toHaveBeenCalledOnceWith('FINANS_V2.PAYMENT_SAVED');
+    expect(api.faturalar).toHaveBeenCalledTimes(2);
+
+    c.odemePaneliniAc({ ...fatura, odendiMi: true });
+    expect(c.odemeForm.odendi).toBeFalse();
+    c.odemeForm.aciklama = 'kısa';
+    c.odemeKaydet();
+    expect(c.odemeHatasi()).toBe('FINANS_V2.PAYMENT_UNMARK_REASON_ERROR');
+    expect(api.faturaOdeme).toHaveBeenCalledTimes(1);
+  });
+
+  it('ödeme yazma izni yoksa hızlı ödeme paneli açılmaz; 202 yanıtı onay bilgisini gösterir', () => {
+    const fixture = TestBed.createComponent(FinansBelgelerListesiComponent);
+    fixture.detectChanges();
+    const c = fixture.componentInstance;
+    write.set(false);
+    c.odemePaneliniAc(fatura);
+    expect(c.odemeFatura()).toBeNull();
+
+    write.set(true);
+    api.faturaOdeme.and.returnValue(of({ isSuccess: true, statusCode: 202 }));
+    c.odemePaneliniAc(fatura);
+    c.odemeForm.tarih = '2026-09-20';
+    c.odemeKaydet();
+    expect(toast.info).toHaveBeenCalledOnceWith('FINANS_V2.APPROVAL_QUEUED');
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it('vade metni kalan günü, gecikmeyi ve geç ödemeyi ayırır', () => {
+    const fixture = TestBed.createComponent(FinansBelgelerListesiComponent);
+    const c = fixture.componentInstance;
+    expect(c.vadeMetni({ ...fatura, vadeFarkiGun: -14 })).toBe('FINANS_V2.OVERDUE_DAYS');
+    expect(c.vadeMetni({ ...fatura, vadeFarkiGun: 0 })).toBe('FINANS_V2.DUE_TODAY');
+    expect(c.vadeMetni({ ...fatura, odendiMi: true, vadeFarkiGun: -1 })).toBe('');
+    expect(c.vadeMetni({ ...fatura, odendiMi: true, vadeFarkiGun: 3 })).toBe('FINANS_V2.PAYMENT_PAID_DAYS_LATE');
+  });
 
   it('kapalı gelişmiş rapor filtreleri modeli korur; temizleme seçili rapor türünü değiştirmez', () => {
     const fixture = TestBed.createComponent(FinansRaporlarComponent);
