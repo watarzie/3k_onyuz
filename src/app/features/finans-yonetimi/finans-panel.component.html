@@ -16,8 +16,12 @@
         }
       </div>
       @if (donem() === 'ozel') {
-        <label class="filter-field"><span>{{ t('START') }}</span><input type="date" [(ngModel)]="baslangic" (change)="yenile()" /></label>
-        <label class="filter-field"><span>{{ t('END') }}</span><input type="date" [(ngModel)]="bitis" (change)="yenile()" /></label>
+        <div class="filter-date-range">
+          <i class="ri-calendar-line" aria-hidden="true"></i>
+          <input type="date" [attr.aria-label]="t('START')" [(ngModel)]="baslangic" [max]="bitis" (change)="yenile()" />
+          <i class="ri-arrow-right-line filter-date-sep" aria-hidden="true"></i>
+          <input type="date" [attr.aria-label]="t('END')" [(ngModel)]="bitis" [min]="baslangic" (change)="yenile()" />
+        </div>
       }
       <button class="btn btn-light btn-sm" type="button" [title]="t('REFRESH')" [attr.aria-label]="t('REFRESH')" (click)="yenile()" [disabled]="loading()">
         <i class="ri-refresh-line" [class.spin]="loading()" aria-hidden="true"></i>

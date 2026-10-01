@@ -46,7 +46,7 @@ describe('Finans aylık görünüm PO/fatura akışı', () => {
   beforeEach(() => {
     reads.set(new Set([FINANS_YETKI.Modul, FINANS_YETKI.KayitGoruntule, FINANS_YETKI.SiparisOperasyonGoruntule]));
     writes.set(new Set([FINANS_YETKI.PoGir, FINANS_YETKI.FaturaGir]));
-    api = jasmine.createSpyObj('FinansService', ['aylikIsler', 'giderKategorileri', 'giderKalemleri', 'giderGuncelle', 'giderler', 'paraBirimleri', 'vadeUyarilari', 'faturalar', 'ozelIsAylikDegerGuncelle']);
+    api = jasmine.createSpyObj('FinansService', ['aylikIsler', 'giderKategorileri', 'giderKalemleri', 'giderGuncelle', 'giderler', 'paraBirimleri', 'vadeUyarilari', 'faturalar', 'ozelIsAylikDegerGuncelle', 'genelArama']);
     api.ozelIsAylikDegerGuncelle.and.returnValue(of({ isSuccess: true }));
     api.vadeUyarilari.and.returnValue(of({ isSuccess: true, value: { vadeUyariGunu: 7, vadesiGecenAdet: 0, yaklasanAdet: 0, kalemler: [] } }));
     api.paraBirimleri.and.returnValue(of({ isSuccess: true, value: [
@@ -94,6 +94,23 @@ describe('Finans aylık görünüm PO/fatura akışı', () => {
 
     writes.set(new Set([FINANS_YETKI.FiyatlandirmaDegistir]));
     expect(c.aylikTarifeDuzenlenebilir(satir)).toBeFalse();
+  });
+
+  it('kategori satırında sandıklar isteğe bağlı açılır; proje kalemleri bir kez yüklenir', () => {
+    api.genelArama.and.returnValue(of({ isSuccess: true, value: { pageNumber: 1, pageSize: 250, totalCount: 3, totalPages: 1, hasPreviousPage: false, hasNextPage: false, items: [
+      { id: 12, projeNo: 'PA727-03', sandikNo: '2', poNumaralari: [], faturaNumaralari: [] },
+      { id: 11, projeNo: 'PA727-03', sandikNo: '1', poNumaralari: [], faturaNumaralari: [] },
+      { id: 13, projeNo: 'PA727-03', sandikNo: '3', poNumaralari: [], faturaNumaralari: [] },
+    ] as never, toplamlar: [] } }));
+    const { c } = setup();
+    expect(c.sandiklarAcik(ana)).toBeFalse();
+    c.sandiklariAcKapat(ana);
+    expect(api.genelArama).toHaveBeenCalledOnceWith({ pageNumber: 1, pageSize: 250, projeNo: 'PA727-03' });
+    expect(c.kategoriSandiklari(ana).map((k) => k.sandikNo)).toEqual(['1', '2']);
+    c.sandiklariAcKapat(ana);
+    c.sandiklariAcKapat(sarf);
+    expect(api.genelArama).toHaveBeenCalledTimes(1);
+    expect(c.kategoriSandiklari(sarf).map((k) => k.id)).toEqual([13]);
   });
 
   it('vade uyarısı fatura okuyana gösterilir; uyarıdan vadesi geçen faturaların listesi açılır (D3)', () => {

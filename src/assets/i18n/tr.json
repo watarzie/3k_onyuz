@@ -343,7 +343,13 @@
     "PANEL_PERIOD_YIL": "Bu yıl",
     "PANEL_PERIOD_AY": "Bu ay",
     "PANEL_PERIOD_OZEL": "Özel aralık",
-    "ALLOC_DATE_RANGE": "Tarih aralığı"
+    "ALLOC_DATE_RANGE": "Tarih aralığı",
+    "PANEL_PERIOD_GECEN_AY": "Geçen ay",
+    "ALLOC_BLOCK_INVOICED": "Tamamen faturalandı ({0}); faturalanacak tutar kalmadı.",
+    "ALLOC_BLOCK_ORDERED": "Tamamı siparişe bağlandı ({0}); açık bakiye yok.",
+    "ALLOC_BLOCK_HIDDEN": "Tutarı görme izniniz olmadığı için seçilemez.",
+    "ALLOC_BLOCK_CURRENCY": "PO {0} para biriminde; bu satır {1}. Bir PO tek para birimindedir.",
+    "ALLOC_ALL_INVOICED": "Bu PO'nun bütün kalemleri faturalandı; yeni fatura girilecek tutar yok."
   },
   "URETIM_V2": {
     "MANUAL_FORM_SELECTION": "Form seçimi",

@@ -13,6 +13,18 @@ import { ServerPagerComponent } from '../../shared/components/server-pager/serve
 import { ApiResult } from '../../shared/models/common.model';
 import { FinansIsKaydi, FinansListelemeRequest, FinansSayfaliSonuc } from '../../shared/models/finans.model';
 import { FinansBekleyen, FinansBekleyenAsama, FinansVarlikTuru } from '../../shared/models/finans-v2.model';
+import { kategoriAnahtari } from './finans-etiketleri';
+
+/** Arama sonuçlarının proje başlığı: kalemler isteğe bağlı açılır. */
+export interface FinansAramaProjeGrubu {
+  projeNo: string;
+  musteri: string;
+  kalemler: FinansIsKaydi[];
+  toplamlar: { paraBirimi: string; net: number }[];
+  ilkTarih: string;
+  sonTarih: string;
+  kategoriSayisi: number;
+}
 
 export type FinansKayitAramaGorunumu = 'arama' | 'bekleyen';
 
@@ -58,13 +70,77 @@ export class FinansKayitAramaComponent implements OnInit {
   readonly secilenler = signal(new Set<number>());
   readonly bekleyenGorunur = computed(() => this.permissions.hasAccess(FINANS_YETKI.RaporGoruntule));
   readonly pager = computed(() => (this.gorunum() === 'arama' ? this.sonuclar() : this.bekleyenler()));
+  readonly kategoriAnahtari = kategoriAnahtari;
+  /** Sayfadaki kalemler proje başlıkları altında; sıra sunucunun döndürdüğü sıradır. */
+  readonly projeGruplari = computed<FinansAramaProjeGrubu[]>(() => {
+    const gruplar = new Map<string, FinansIsKaydi[]>();
+    for (const kalem of this.sonuclar()?.items ?? []) {
+      const anahtar = kalem.projeNo || '—';
+      gruplar.set(anahtar, [...(gruplar.get(anahtar) ?? []), kalem]);
+    }
+    // Sandıklar numaraya göre küçükten büyüğe (1, 2, …, 10); aynı sandığın kategorileri kategori sırasıyla.
+    const sandikSirasi = (a: FinansIsKaydi, b: FinansIsKaydi) =>
+      (a.sandikNo ?? '').localeCompare(b.sandikNo ?? '', 'tr-TR', { numeric: true }) ||
+      (a.kategori ?? 99) - (b.kategori ?? 99) ||
+      a.id - b.id;
+    return [...gruplar.entries()].map(([projeNo, sirasiz]) => {
+      const kalemler = [...sirasiz].sort(sandikSirasi);
+      const toplam = new Map<string, number>();
+      for (const k of kalemler)
+        if (k.netTutar != null && k.paraBirimi) toplam.set(k.paraBirimi, (toplam.get(k.paraBirimi) ?? 0) + k.netTutar);
+      const tarihler = kalemler.map((k) => k.finansTarihi ?? '').filter(Boolean).sort();
+      return {
+        projeNo,
+        musteri: kalemler[0].musteri,
+        kalemler,
+        toplamlar: [...toplam.entries()].map(([paraBirimi, net]) => ({ paraBirimi, net })),
+        ilkTarih: tarihler[0] ?? '',
+        sonTarih: tarihler[tarihler.length - 1] ?? '',
+        kategoriSayisi: new Set(kalemler.map((k) => k.kategori)).size,
+      };
+    });
+  });
+  readonly acikProjeler = signal(new Set<string>());
+  projeAcik(projeNo: string): boolean {
+    return this.acikProjeler().has(projeNo);
+  }
+  projeAcKapat(projeNo: string): void {
+    this.acikProjeler.update((x) => {
+      const y = new Set(x);
+      if (y.has(projeNo)) y.delete(projeNo);
+      else y.add(projeNo);
+      return y;
+    });
+  }
+  tumunuAcKapat(): void {
+    const hepsi = this.projeGruplari().map((g) => g.projeNo);
+    this.acikProjeler.set(hepsi.every((p) => this.acikProjeler().has(p)) ? new Set() : new Set(hepsi));
+  }
+  tumuAcik(): boolean {
+    const gruplar = this.projeGruplari();
+    return gruplar.length > 0 && gruplar.every((g) => this.acikProjeler().has(g.projeNo));
+  }
+  /** Proje başlığındaki seçim projenin bu sayfadaki bütün kalemlerini PO için seçer/bırakır. */
+  projeSecili(grup: FinansAramaProjeGrubu): boolean {
+    return grup.kalemler.every((k) => this.secilenler().has(k.id));
+  }
+  projeSec(grup: FinansAramaProjeGrubu, checked: boolean): void {
+    this.secilenler.update((old) => {
+      const next = new Set(old);
+      for (const k of grup.kalemler) {
+        if (checked) next.add(k.id);
+        else next.delete(k.id);
+      }
+      return next;
+    });
+  }
   arama = '';
   para = '';
   isTuru = '';
   durum = '';
   minimumGun = 15;
   pageNumber = 1;
-  pageSize = 25;
+  pageSize = 100;
   readonly isTurleri = [
     { id: 1, ad: 'MAIN_PACKAGING' },
     { id: 9, ad: 'WASTE_TIMBER' },

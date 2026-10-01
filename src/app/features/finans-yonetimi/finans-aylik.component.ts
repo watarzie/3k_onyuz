@@ -46,6 +46,7 @@ import {
   FinansAylikDegerRequest,
   FinansAylikIs,
   FinansAylikProjeOzeti,
+  FinansIsKaydi,
   FinansAylikFinansOzeti,
   FinansAylikGrupToplami,
   FinansDuzenliIs,
@@ -528,6 +529,45 @@ export class FinansYonetimiComponent implements OnInit {
     this.urunPageSize.set(pageSize);
     this.urunPageNumber.set(1);
     this.urunListeIstekleri.next();
+  }
+
+  /** Kategori satırının sandık kırılımı: isteğe bağlı açılır; proje kalemleri bir kez yüklenip önbellekte tutulur. */
+  readonly acikSandiklar = signal(new Set<string>());
+  readonly sandikYukleniyor = signal(new Set<string>());
+  private readonly projeKalemleri = signal(new Map<string, FinansIsKaydi[]>());
+  private sandikAnahtari(satir: FinansAylikIs): string {
+    return satir.projeNo + ':' + satir.isKaydiIds.join(',');
+  }
+  sandiklarAcik(satir: FinansAylikIs): boolean {
+    return this.acikSandiklar().has(this.sandikAnahtari(satir));
+  }
+  sandiklariAcKapat(satir: FinansAylikIs): void {
+    const anahtar = this.sandikAnahtari(satir);
+    this.acikSandiklar.update(mevcut => {
+      const sonraki = new Set(mevcut);
+      if (sonraki.has(anahtar)) sonraki.delete(anahtar); else sonraki.add(anahtar);
+      return sonraki;
+    });
+    const projeNo = satir.projeNo;
+    if (!this.sandiklarAcik(satir) || this.projeKalemleri().has(projeNo) || this.sandikYukleniyor().has(projeNo)) return;
+    this.sandikYukleniyor.update(x => new Set(x).add(projeNo));
+    this.service.genelArama({ pageNumber: 1, pageSize: 250, projeNo })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(result => {
+        this.sandikYukleniyor.update(x => { const y = new Set(x); y.delete(projeNo); return y; });
+        if (!result.isSuccess) {
+          this.toast.error(result.error ?? 'Sandıklar yüklenemedi.');
+          return;
+        }
+        this.projeKalemleri.update(x => new Map(x).set(projeNo, result.value?.items ?? []));
+      });
+  }
+  /** Satırın (proje × kategori) iş kayıtları, sandık numarasına göre sıralı. */
+  kategoriSandiklari(satir: FinansAylikIs): FinansIsKaydi[] {
+    const ids = new Set(satir.isKaydiIds);
+    return (this.projeKalemleri().get(satir.projeNo) ?? [])
+      .filter(k => ids.has(k.id))
+      .sort((a, b) => (a.sandikNo ?? '').localeCompare(b.sandikNo ?? '', 'tr-TR', { numeric: true }));
   }
 
   projeAcik(anahtar: string): boolean { return this.acikProjeler().has(anahtar); }

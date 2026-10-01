@@ -593,29 +593,6 @@ dd {
   border-radius: 12px;
   background: var(--v2-soft, #f7f7ff);
 }
-.filter-search {
-  position: relative;
-  display: flex;
-  flex: 1 1 260px;
-  align-items: center;
-  margin: 0;
-  i {
-    position: absolute;
-    left: 12px;
-    color: var(--v2-muted, #64748b);
-    font-size: 16px;
-    pointer-events: none;
-  }
-  input {
-    width: 100%;
-    height: 40px;
-    padding: 0 12px 0 36px;
-    border: 1px solid var(--borderColor, #e5eaf1);
-    border-radius: 10px;
-    background: var(--whiteColor, #fff);
-    font-size: 13px;
-  }
-}
 .filter-field {
   display: flex;
   flex: 0 1 180px;
@@ -640,7 +617,85 @@ dd {
     font-size: 13px;
   }
 }
-.filter-search input:focus,
+.filter-field.filter-grow {
+  flex: 1 1 280px;
+}
+.filter-field.filter-auto {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+.filter-input {
+  position: relative;
+  display: block;
+  i {
+    position: absolute;
+    top: 50%;
+    left: 12px;
+    color: var(--v2-muted, #64748b);
+    font-size: 16px;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+  input {
+    padding-left: 36px !important;
+  }
+}
+.filter-field .v2-segmented {
+  height: 40px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--whiteColor, #fff);
+  button {
+    padding: 6px 12px;
+  }
+}
+// Tarih aralığı: başlangıç ve bitiş tek çerçevede, araya ok; seçim listesiyle aynı yükseklikte.
+.filter-date-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--borderColor, #e5eaf1);
+  border-radius: 10px;
+  background: var(--whiteColor, #fff);
+  &:focus-within {
+    border-color: var(--v2-primary, #605dff);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--v2-primary, #605dff) 14%, transparent);
+  }
+  > i {
+    color: var(--v2-muted, #64748b);
+    font-size: 15px;
+  }
+  .filter-date-sep {
+    font-size: 13px;
+  }
+  input[type='date'] {
+    width: 132px;
+    height: 34px;
+    padding: 0 4px;
+    border: 0 !important;
+    background: transparent;
+    font-size: 13px;
+    box-shadow: none !important;
+    outline: 0;
+  }
+}
+.filter-row {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--borderColor, #e5eaf1);
+}
+.filter-row-label {
+  color: var(--v2-muted, #64748b);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
 .filter-field select:focus,
 .filter-field input:focus {
   border-color: var(--v2-primary, #605dff);
@@ -675,6 +730,43 @@ dd {
 }
 .select-column {
   width: 44px;
+}
+// Proje başlığı ve açılan kalem satırları (Tüm dönemlerde ara).
+.project-group-row > td {
+  background: var(--whiteColor, #fff);
+  font-weight: 500;
+}
+.project-group-row.expanded > td {
+  background: var(--v2-soft, #f7f7ff);
+}
+.project-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  i {
+    color: var(--v2-primary, #605dff);
+    font-size: 18px;
+  }
+  span {
+    display: flex;
+    flex-direction: column;
+  }
+  small {
+    color: var(--v2-muted, #64748b);
+    font-size: 11px;
+    font-weight: 400;
+  }
+}
+.project-item-row > td:nth-child(2) {
+  padding-left: 46px;
+}
+.project-item-row > td {
+  font-size: 12.5px;
 }
 .v2-list-card > .filter-bar {
   margin: 0 20px 16px;

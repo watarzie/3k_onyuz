@@ -210,6 +210,12 @@
                 @if (satir.sandikAdedi) {
                   <small>{{ satir.sandikAdedi }} sandık@if (satir.ahsapM3) { · Ahşap {{ satir.ahsapM3 | number: '1.0-3' }} m³ }@if (satir.kontraM3) { · Kontra {{ satir.kontraM3 | number: '1.0-3' }} m³ }</small>
                 }
+                @if (satir.projeNo && satir.isKaydiIds.length) {
+                  <button type="button" class="crate-toggle" [attr.aria-expanded]="sandiklarAcik(satir)" (click)="sandiklariAcKapat(satir)">
+                    <i [class]="sandiklarAcik(satir) ? 'ri-arrow-up-s-line' : 'ri-archive-line'" aria-hidden="true"></i>
+                    {{ sandiklarAcik(satir) ? 'Sandıkları gizle' : 'Sandıklar (' + satir.isKaydiIds.length + ')' }}
+                  </button>
+                }
               </div>
             } @else {
               <div class="work-name">
@@ -308,6 +314,51 @@
             </app-islemler-menusu>
           </td>
         </tr>
+        @if (projeli && sandiklarAcik(satir)) {
+          <tr class="crate-breakdown-row">
+            <td colspan="20">
+              @if (sandikYukleniyor().has(satir.projeNo)) {
+                <div class="crate-breakdown-empty"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Sandıklar yükleniyor…</div>
+              } @else {
+                @let sandiklar = kategoriSandiklari(satir);
+                @if (sandiklar.length) {
+                  <table class="crate-breakdown">
+                    <thead>
+                      <tr>
+                        <th>Sandık</th>
+                        <th>Finans tarihi</th>
+                        <th>Miktar</th>
+                        @if (parasal(izin.TutarGoruntule)) {
+                          <th class="text-end">Net</th>
+                        }
+                        <th>PO / Fatura</th>
+                        <th class="text-end">İşlem</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (k of sandiklar; track k.id) {
+                        <tr [class.cancelled]="k.iptalEdildi">
+                          <td><strong>{{ k.sandikNo || '—' }}</strong> <small>{{ k.sandikAdi || k.isAdi }}@if (k.sandikTipi) { · {{ k.sandikTipi }} }</small></td>
+                          <td>{{ k.finansTarihi | date: 'dd.MM.yyyy' }}</td>
+                          <td>{{ k.adet | number: '1.0-3' }} adet@if (k.toplamM3) { · {{ k.toplamM3 | number: '1.0-3' }} m³ }</td>
+                          @if (parasal(izin.TutarGoruntule)) {
+                            <td class="text-end">{{ k.netTutar | number: '1.2-2' }} {{ k.paraBirimi }}</td>
+                          }
+                          <td><small>PO: {{ k.poNumaralari.join(', ') || '—' }} · Fatura: {{ k.faturaNumaralari.join(', ') || '—' }}</small></td>
+                          <td class="text-end">
+                            <button type="button" class="btn btn-outline-primary btn-sm" (click)="detayHedef.set({ tur: 'IsKaydi', id: k.id })">Detay</button>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                } @else {
+                  <div class="crate-breakdown-empty">Bu kategoride listelenecek sandık bulunamadı.</div>
+                }
+              }
+            </td>
+          </tr>
+        }
       </ng-template>
 
       <div class="group-list">

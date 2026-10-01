@@ -117,6 +117,22 @@ export class FinansDagitimComponent implements OnInit {
   tumDonemler = true;
   baslangic = '';
   bitis = '';
+  /** Dönem seçimi: hazır dönemler veya özel aralık; özel aralık tek bir başlangıç → bitiş alanında girilir. */
+  donemSecimi: 'tum' | 'ay' | 'gecenAy' | 'yil' | 'ozel' = 'tum';
+  donemSecimiDegisti(secim: 'tum' | 'ay' | 'gecenAy' | 'yil' | 'ozel'): void {
+    this.donemSecimi = secim;
+    const bugun = new Date();
+    const gun = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const yil = bugun.getFullYear();
+    const ay = bugun.getMonth();
+    this.tumDonemler = secim === 'tum';
+    if (secim === 'ay') [this.baslangic, this.bitis] = [gun(new Date(yil, ay, 1)), gun(new Date(yil, ay + 1, 0))];
+    else if (secim === 'gecenAy') [this.baslangic, this.bitis] = [gun(new Date(yil, ay - 1, 1)), gun(new Date(yil, ay, 0))];
+    else if (secim === 'yil') [this.baslangic, this.bitis] = [gun(new Date(yil, 0, 1)), gun(new Date(yil, 11, 31))];
+    else if (secim === 'ozel' && (!this.baslangic || !this.bitis))
+      [this.baslangic, this.bitis] = [gun(new Date(yil, ay, 1)), gun(new Date(yil, ay + 1, 0))];
+    this.gruplariFiltrele();
+  }
   paraBirimi = '';
   grupSayfasi = 1;
   /** Açılış seçimi (satırdaki işler); kullanıcı "tüm işler"e geçince kaldırılır. */
@@ -153,6 +169,7 @@ export class FinansDagitimComponent implements OnInit {
     const donem = this.donem();
     if (donem && !this.isKaydiIds().length && !this.duzenliIsId()) {
       this.tumDonemler = false;
+      this.donemSecimi = 'ozel';
       this.baslangic = donem.baslangic;
       this.bitis = donem.bitis;
     }
@@ -229,6 +246,31 @@ export class FinansDagitimComponent implements OnInit {
   }
   grupSecili(grup: FinansSiparisGrubu): boolean {
     return this.secimler().has(grup.anahtar);
+  }
+  /** Seçilemeyen PO grubunun kullanıcıya gösterilen nedeni; seçilebilirse null. */
+  grupEngeli(grup: FinansSiparisGrubu): string | null {
+    if (this.grupSecilebilir(grup)) return null;
+    if (grup.kalanSiparisNetTutar == null) return this.t('ALLOC_BLOCK_HIDDEN');
+    if (grup.kalanSiparisNetTutar <= 0)
+      return this.t('ALLOC_BLOCK_ORDERED').replace('{0}', this.tutarMetni(grup.siparisNetTutar, grup.paraBirimi));
+    return this.t('ALLOC_BLOCK_CURRENCY').replace('{0}', this.kilitliParaBirimi()).replace('{1}', grup.paraBirimi);
+  }
+  /** Seçilemeyen fatura grubunun nedeni: tamamen faturalandı veya tutar gizli. */
+  faturaGrubuEngeli(grup: FaturaGrubu): string | null {
+    if (grup.kalan == null) return this.t('ALLOC_BLOCK_HIDDEN');
+    if (grup.kalan <= 0)
+      return this.t('ALLOC_BLOCK_INVOICED').replace('{0}', this.tutarMetni(grup.faturalananNetTutar, grup.paraBirimi));
+    return null;
+  }
+  /** PO'nun bütün satırları faturalanmışsa yeni fatura girilecek tutar yoktur. */
+  tumuFaturalandi(): boolean {
+    const gruplar = this.faturaGruplari();
+    return gruplar.length > 0 && gruplar.every((g) => g.kalan != null && g.kalan <= 0);
+  }
+  private tutarMetni(tutar: number | null, paraBirimi: string): string {
+    return tutar == null
+      ? paraBirimi
+      : `${tutar.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${paraBirimi}`;
   }
   /** Seçilebilir: kalan tutar görünür ve pozitif, para birimi PO'nun para birimiyle aynı. */
   grupSecilebilir(grup: FinansSiparisGrubu): boolean {

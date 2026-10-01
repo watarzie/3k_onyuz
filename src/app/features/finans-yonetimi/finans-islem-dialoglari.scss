@@ -490,8 +490,37 @@
   .v2-dialog-mode {
     margin-bottom: 16px;
   }
+  .v2-blocked-row > td {
+    color: var(--bodyColor, #64748b);
+    background: #fafbfc;
+  }
+  .v2-block-reason {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 6px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: #ecfdf3;
+    color: #067647;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .v2-warning-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 14px;
+    padding: 10px 14px;
+    border: 1px solid #abefc6;
+    border-radius: 10px;
+    background: #ecfdf3;
+    color: #067647;
+    font-size: 13px;
+    font-weight: 600;
+  }
   .v2-group-filters .filter-bar {
-    margin-top: 14px;
+    margin: 0;
   }
   .v2-chip-list {
     display: flex;

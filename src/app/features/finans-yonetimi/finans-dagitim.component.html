@@ -131,24 +131,27 @@
         }
 
         @if (hedef() === 'yeni' || hedefPo()) {
-          <article class="v2-card v2-group-filters">
-            <div class="v2-chip-list" role="group" [attr.aria-label]="t('CATEGORY_FILTER')">
-              @for (k of kategoriSecenekleri; track k.deger) {
-                <button
-                  type="button"
-                  class="v2-chip"
-                  [class.active]="kategoriSeciliMi(k.deger)"
-                  [attr.aria-pressed]="kategoriSeciliMi(k.deger)"
-                  (click)="kategoriDegistir(k.deger)"
-                >
-                  {{ t(k.anahtar) }}
-                </button>
-              }
-            </div>
+          <article class="v2-group-filters">
             <div class="filter-bar">
-              <label class="filter-search">
-                <i class="ri-search-line" aria-hidden="true"></i>
-                <input type="search" [attr.aria-label]="t('SEARCH')" [placeholder]="t('ALLOC_GROUP_SEARCH_HINT')" [(ngModel)]="grupArama" (ngModelChange)="grupAra()" />
+              <div class="filter-row">
+                <span class="filter-row-label">{{ t('CATEGORY_FILTER') }}</span>
+                <div class="v2-chip-list" role="group" [attr.aria-label]="t('CATEGORY_FILTER')">
+                  @for (k of kategoriSecenekleri; track k.deger) {
+                    <button
+                      type="button"
+                      class="v2-chip"
+                      [class.active]="kategoriSeciliMi(k.deger)"
+                      [attr.aria-pressed]="kategoriSeciliMi(k.deger)"
+                      (click)="kategoriDegistir(k.deger)"
+                    >
+                      {{ t(k.anahtar) }}
+                    </button>
+                  }
+                </div>
+              </div>
+              <label class="filter-field filter-grow">
+                <span>{{ t('SEARCH') }}</span>
+                <span class="filter-input"><i class="ri-search-line" aria-hidden="true"></i><input type="search" [attr.aria-label]="t('SEARCH')" [placeholder]="t('ALLOC_GROUP_SEARCH_HINT')" [(ngModel)]="grupArama" (ngModelChange)="grupAra()" /></span>
               </label>
               @if (!hedefPo()) {
                 <label class="filter-field">
@@ -161,20 +164,26 @@
                   </select>
                 </label>
               }
-              <div class="filter-field">
+              <label class="filter-field">
                 <span>{{ t('PANEL_PERIOD') }}</span>
-                <div class="v2-segmented" role="group" [attr.aria-label]="t('PANEL_PERIOD')">
-                  <button type="button" [class.active]="tumDonemler" [attr.aria-pressed]="tumDonemler" (click)="tumDonemler = true; gruplariFiltrele()">
-                    {{ t('PANEL_PERIOD_TUM') }}
-                  </button>
-                  <button type="button" [class.active]="!tumDonemler" [attr.aria-pressed]="!tumDonemler" (click)="tumDonemler = false; gruplariFiltrele()">
-                    {{ t('ALLOC_DATE_RANGE') }}
-                  </button>
+                <select [ngModel]="donemSecimi" (ngModelChange)="donemSecimiDegisti($event)">
+                  <option value="tum">{{ t('PANEL_PERIOD_TUM') }}</option>
+                  <option value="ay">{{ t('PANEL_PERIOD_AY') }}</option>
+                  <option value="gecenAy">{{ t('PANEL_PERIOD_GECEN_AY') }}</option>
+                  <option value="yil">{{ t('PANEL_PERIOD_YIL') }}</option>
+                  <option value="ozel">{{ t('PANEL_PERIOD_OZEL') }}</option>
+                </select>
+              </label>
+              @if (donemSecimi === 'ozel') {
+                <div class="filter-field filter-auto">
+                  <span>{{ t('ALLOC_DATE_RANGE') }}</span>
+                  <div class="filter-date-range">
+                    <i class="ri-calendar-line" aria-hidden="true"></i>
+                    <input type="date" [attr.aria-label]="t('START')" [(ngModel)]="baslangic" [max]="bitis" (change)="gruplariFiltrele()" />
+                    <i class="ri-arrow-right-line filter-date-sep" aria-hidden="true"></i>
+                    <input type="date" [attr.aria-label]="t('END')" [(ngModel)]="bitis" [min]="baslangic" (change)="gruplariFiltrele()" />
+                  </div>
                 </div>
-              </div>
-              @if (!tumDonemler) {
-                <label class="filter-field"><span>{{ t('START') }}</span><input type="date" [(ngModel)]="baslangic" (change)="gruplariFiltrele()" /></label>
-                <label class="filter-field"><span>{{ t('END') }}</span><input type="date" [(ngModel)]="bitis" (change)="gruplariFiltrele()" /></label>
               }
             </div>
             @if (onSecim().length) {
@@ -204,8 +213,9 @@
               </thead>
               <tbody>
                 @for (grup of gruplar()?.items; track grup.anahtar) {
-                  <tr [class.v2-selected-row]="grupSecili(grup)">
-                    <td class="v2-dialog-check-cell">
+                  @let engel = grupSecili(grup) ? null : grupEngeli(grup);
+                  <tr [class.v2-selected-row]="grupSecili(grup)" [class.v2-blocked-row]="engel">
+                    <td class="v2-dialog-check-cell" [title]="engel ?? ''">
                       <input
                         type="checkbox"
                         [attr.aria-label]="grup.projeNo + ' ' + grup.ad + ' ' + t('ALLOC_ADD_ROW')"
@@ -231,6 +241,9 @@
                       <small>{{ t(siparisKarsilanmaAnahtari(grup.siparisKarsilanma)) }}@if (grup.fiyatBekleyenKalem) {
                           · {{ grup.fiyatBekleyenKalem }} {{ t('ALLOC_PRICE_PENDING') }}
                         }</small>
+                      @if (engel) {
+                        <span class="v2-block-reason"><i class="ri-information-line" aria-hidden="true"></i>{{ engel }}</span>
+                      }
                     </td>
                     <td class="v2-nowrap">
                       {{ grup.ilkTarih | date: 'dd.MM.yyyy' }}
@@ -394,6 +407,11 @@
         <p class="v2-note v2-dialog-info">
           <i class="ri-information-line" aria-hidden="true"></i>{{ t('ALLOC_NOTE') }}
         </p>
+        @if (tumuFaturalandi()) {
+          <div class="v2-warning-banner" role="status">
+            <i class="ri-checkbox-circle-line" aria-hidden="true"></i>{{ t('ALLOC_ALL_INVOICED') }}
+          </div>
+        }
         <div class="table-responsive v2-dialog-table-wrap v2-allocation-table">
           <table class="table v2-table">
             <thead>
@@ -407,8 +425,9 @@
             </thead>
             <tbody>
               @for (grup of faturaGruplari(); track grup.anahtar) {
-                <tr [class.v2-selected-row]="grup.secili">
-                  <td class="v2-dialog-check-cell">
+                @let engel = faturaGrubuEngeli(grup);
+                <tr [class.v2-selected-row]="grup.secili" [class.v2-blocked-row]="engel">
+                  <td class="v2-dialog-check-cell" [title]="engel ?? ''">
                     <input
                       type="checkbox"
                       [attr.aria-label]="grup.projeNo + ' ' + grup.ad + ' ' + t('ALLOC_ADD_ROW')"
@@ -425,6 +444,9 @@
                       }
                       · {{ grup.siparisKalemiIds.length }} {{ t('ALLOC_ITEMS') }}</small
                     >
+                    @if (engel) {
+                      <span class="v2-block-reason"><i class="ri-checkbox-circle-line" aria-hidden="true"></i>{{ engel }}</span>
+                    }
                   </td>
                   <td class="v2-dialog-number-cell">
                     {{

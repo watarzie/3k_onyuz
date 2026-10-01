@@ -173,6 +173,25 @@ describe('Finans PO ve fatura girişi', () => {
     expect(component.secimListesi().length).toBe(1);
   });
 
+  it('seçilemeyen satır nedenini kullanıcıya yazar: tamamen faturalandı, gizli tutar, farklı para birimi', () => {
+    const { component, fixture } = setup('Fatura', { po: 7 });
+    const [faturaGrubu] = component.faturaGruplari();
+    expect(component.faturaGrubuEngeli(faturaGrubu)).toBeNull();
+    expect(component.tumuFaturalandi()).toBeFalse();
+    component.faturaGruplari.set([{ ...faturaGrubu, kalan: 0, faturalananNetTutar: 5748.12 }]);
+    fixture.detectChanges();
+    expect(component.tumuFaturalandi()).toBeTrue();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.v2-block-reason')!.textContent).toContain('5.748,12 EUR');
+    expect(el.querySelector('.v2-warning-banner')).not.toBeNull();
+    expect(component.faturaGrubuEngeli({ ...faturaGrubu, kalan: null })).toBe(component.t('ALLOC_BLOCK_HIDDEN'));
+
+    const po = setup().component;
+    const usd = grup({ anahtar: 'P:2:1:USD', projeNo: 'PA1', paraBirimi: 'USD', isKaydiIds: [31] });
+    expect(po.grupEngeli(usd)).toContain('USD');
+    expect(po.grupEngeli(grup({ anahtar: 'X', kalanSiparisNetTutar: 0, siparisNetTutar: 100 }))).toContain('100,00');
+  });
+
   it('mevcut PO seçilince işler aynı PO numarasına kalem olarak eklenir', () => {
     const { component } = setup('Siparis', { po: 7, ids: [] });
     expect(component.hedef()).toBe('mevcut');

@@ -39,9 +39,9 @@
       </div>
     </div>
     <div class="filter-bar">
-      <label class="filter-search">
-        <i class="ri-search-line" aria-hidden="true"></i>
-        <input type="search" [attr.aria-label]="t('SEARCH')" [placeholder]="t('DOC_SEARCH_HINT')" [(ngModel)]="arama" (ngModelChange)="ara()" />
+      <label class="filter-field filter-grow">
+        <span>{{ t('SEARCH') }}</span>
+        <span class="filter-input"><i class="ri-search-line" aria-hidden="true"></i><input type="search" [attr.aria-label]="t('SEARCH')" [placeholder]="t('DOC_SEARCH_HINT')" [(ngModel)]="arama" (ngModelChange)="ara()" /></span>
       </label>
       @if (tur === 'Siparis') {
         <label class="filter-field">

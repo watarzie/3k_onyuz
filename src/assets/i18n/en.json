@@ -343,7 +343,13 @@
     "PANEL_PERIOD_YIL": "This year",
     "PANEL_PERIOD_AY": "This month",
     "PANEL_PERIOD_OZEL": "Custom range",
-    "ALLOC_DATE_RANGE": "Date range"
+    "ALLOC_DATE_RANGE": "Date range",
+    "PANEL_PERIOD_GECEN_AY": "Last month",
+    "ALLOC_BLOCK_INVOICED": "Fully invoiced ({0}); nothing left to invoice.",
+    "ALLOC_BLOCK_ORDERED": "Fully ordered ({0}); no open balance.",
+    "ALLOC_BLOCK_HIDDEN": "Cannot be selected because you cannot see its amount.",
+    "ALLOC_BLOCK_CURRENCY": "The PO is in {0}; this row is {1}. A PO has a single currency.",
+    "ALLOC_ALL_INVOICED": "Every line of this PO has been invoiced; there is no amount left to invoice."
   },
   "URETIM_V2": {
     "MANUAL_FORM_SELECTION": "Form selection",
