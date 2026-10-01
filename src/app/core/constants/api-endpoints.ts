@@ -108,6 +108,7 @@ export const API = {
     GIDER_IPTAL: (giderId: number) => `${BASE}/finans/giderler/${giderId}/iptal`,
     GIDER_KATEGORILERI: `${BASE}/finans/gider-kategorileri`,
     OZET_RAPOR: (tur: string, format: string) => `${BASE}/finans/raporlar/ozet/${tur}/${format}`,
+    RAPOR_ONIZLEME: (tur: string) => `${BASE}/finans/raporlar/onizleme/${tur}`,
     GIDER_KUTUPHANE_KATEGORILERI: `${BASE}/finans/gider-kutuphanesi/kategoriler`,
     GIDER_KATEGORISI: (kategoriId: number) => `${BASE}/finans/gider-kategorileri/${kategoriId}`,
     GIDER_KALEMLERI: `${BASE}/finans/gider-kalemleri`,

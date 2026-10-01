@@ -47,6 +47,7 @@ import {
   FinansBekleyenAsama,
   FinansOdemeKaydet,
   FinansParaBirimi,
+  FinansRaporOnizleme,
   FinansParaBirimiKaydet,
   FinansParametreler,
   FinansVadeUyarilari,
@@ -379,6 +380,12 @@ export class FinansService {
       format === 'pdf' ? API.FINANS.SIPARIS_DURUM_RAPOR_PDF : API.FINANS.SIPARIS_DURUM_RAPOR_EXCEL;
     const sorgu = params.toString();
     return this.api.downloadFile(sorgu ? `${endpoint}?${sorgu}` : endpoint);
+  }
+  /** Rapor önizlemesi: dosyayla aynı başlık, sütunlar ve ilk satırlar (sunucuda aynı üreticiden). */
+  raporOnizleme(tur: string, request: FinansListelemeRequest = this.varsayilanListeleme()) {
+    return this.api.get<FinansRaporOnizleme>(API.FINANS.RAPOR_ONIZLEME(tur), {
+      params: this.listelemeParametreleri(request),
+    });
   }
   /** Alacak (vade/tahsilat) raporu: fatura listesiyle aynı filtreler. */
   alacakRaporu(format: 'pdf' | 'excel', request: FinansListelemeRequest = this.varsayilanListeleme()) {

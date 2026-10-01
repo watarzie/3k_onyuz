@@ -145,36 +145,36 @@
                 </button>
               }
             </div>
-            <div class="v2-fields">
-              <label
-                >{{ t('SEARCH')
-                }}<input
-                  type="search"
-                  [placeholder]="t('ALLOC_GROUP_SEARCH_HINT')"
-                  [(ngModel)]="grupArama"
-                  (ngModelChange)="grupAra()"
-              /></label>
+            <div class="filter-bar">
+              <label class="filter-search">
+                <i class="ri-search-line" aria-hidden="true"></i>
+                <input type="search" [attr.aria-label]="t('SEARCH')" [placeholder]="t('ALLOC_GROUP_SEARCH_HINT')" [(ngModel)]="grupArama" (ngModelChange)="grupAra()" />
+              </label>
               @if (!hedefPo()) {
-                <label
-                  >{{ t('CURRENCY')
-                  }}<select [(ngModel)]="paraBirimi" (ngModelChange)="gruplariFiltrele()">
+                <label class="filter-field">
+                  <span>{{ t('CURRENCY') }}</span>
+                  <select [(ngModel)]="paraBirimi" (ngModelChange)="gruplariFiltrele()">
                     <option value="">{{ t('ALL') }}</option>
                     @for (p of paraBirimleri.secenekler(); track p) {
                       <option [value]="p">{{ p }}</option>
                     }
-                  </select></label
-                >
+                  </select>
+                </label>
               }
-              <label class="v2-check"
-                ><input type="checkbox" [(ngModel)]="tumDonemler" (ngModelChange)="gruplariFiltrele()" />{{
-                  t('ALLOC_ALL_PERIODS')
-                }}</label
-              >
+              <div class="filter-field">
+                <span>{{ t('PANEL_PERIOD') }}</span>
+                <div class="v2-segmented" role="group" [attr.aria-label]="t('PANEL_PERIOD')">
+                  <button type="button" [class.active]="tumDonemler" [attr.aria-pressed]="tumDonemler" (click)="tumDonemler = true; gruplariFiltrele()">
+                    {{ t('PANEL_PERIOD_TUM') }}
+                  </button>
+                  <button type="button" [class.active]="!tumDonemler" [attr.aria-pressed]="!tumDonemler" (click)="tumDonemler = false; gruplariFiltrele()">
+                    {{ t('ALLOC_DATE_RANGE') }}
+                  </button>
+                </div>
+              </div>
               @if (!tumDonemler) {
-                <label
-                  >{{ t('START') }}<input type="date" [(ngModel)]="baslangic" (change)="gruplariFiltrele()"
-                /></label>
-                <label>{{ t('END') }}<input type="date" [(ngModel)]="bitis" (change)="gruplariFiltrele()" /></label>
+                <label class="filter-field"><span>{{ t('START') }}</span><input type="date" [(ngModel)]="baslangic" (change)="gruplariFiltrele()" /></label>
+                <label class="filter-field"><span>{{ t('END') }}</span><input type="date" [(ngModel)]="bitis" (change)="gruplariFiltrele()" /></label>
               }
             </div>
             @if (onSecim().length) {

@@ -2,9 +2,7 @@
   display: block;
 }
 
-.estimate-stat { display: flex; flex-direction: column; }
-.estimate-stat app-stat-card { height: auto; flex: 1; }
-.estimate-help { margin: 6px 4px 0; color: var(--bodyColor, #64748b); font-size: 11px; line-height: 1.5; }
+.status-filter { width: fit-content; margin: 0 0 14px; }
 .plan-selection-help { margin: 12px 24px 0; color: var(--bodyColor, #64748b); font-size: 11px; line-height: 1.6; }
 .plan-toolbar .drawer-status { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
 .toolbar-label { color: var(--bodyColor, #64748b); font-size: 11px; font-weight: 600; text-transform: uppercase; }

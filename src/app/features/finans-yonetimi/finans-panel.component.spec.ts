@@ -41,36 +41,31 @@ describe('Finans paneli bağımsız kayıt izni', () => {
   });
   afterEach(() => TestBed.inject(TranslationService).switchLanguage('tr'));
 
-  it('yalnız modül izniyle kartları açar; kayıt isteği, sekmesi ve tablosu oluşturmaz', () => {
+  it('varsayılan tüm dönemlerin özetini açar; sekme, kalem listesi ve kayıt isteği yoktur', () => {
+    kayitIzni.set(true);
     const fixture = TestBed.createComponent(FinansPanelComponent); fixture.detectChanges();
     expect(api.panel).toHaveBeenCalledTimes(1);
+    const yil = new Date().getFullYear();
+    expect(api.panel).toHaveBeenCalledWith(`${yil - 9}-01-01`, `${yil}-12-31`);
     expect(api.hareketler).not.toHaveBeenCalled();
     expect(api.genelArama).not.toHaveBeenCalled(); expect(api.yaslandirma).not.toHaveBeenCalled();
     expect(toast.error).not.toHaveBeenCalled();
     expect(fixture.nativeElement.querySelector('.dashboard-counts').textContent).toContain('4');
     expect(fixture.nativeElement.querySelector('nav')).toBeNull();
     expect(fixture.nativeElement.querySelector('table')).toBeNull();
-    fixture.componentInstance.gorunumSec('arama'); fixture.componentInstance.gorunumSec('bekleyen');
-    expect(fixture.componentInstance.gorunum()).toBe('aylik');
-    expect(api.genelArama).not.toHaveBeenCalled(); expect(api.yaslandirma).not.toHaveBeenCalled();
   });
 
-  it('hareket listesi varsayılan kapalıdır; açılınca getirir, kayıt izni kalkınca gizler ve yeniden istek atmaz', () => {
-    kayitIzni.set(true);
+  it('dönem seçimi panel aralığını değiştirir; özel aralık tarih alanlarını açar ve kendiliğinden yenilemez', () => {
     const fixture = TestBed.createComponent(FinansPanelComponent); fixture.detectChanges();
-    expect(api.hareketler).not.toHaveBeenCalled();
-    expect(fixture.nativeElement.querySelector('table')).toBeNull();
-    fixture.componentInstance.hareketleriAcKapat(); fixture.detectChanges();
-    expect(api.hareketler).toHaveBeenCalledTimes(1);
-    expect(fixture.nativeElement.querySelector('table')).not.toBeNull();
-    fixture.componentInstance.gorunumSec('arama');
-    expect(api.genelArama).toHaveBeenCalledTimes(1);
-    kayitIzni.set(false); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('table')).toBeNull();
-    fixture.componentInstance.yenile(); fixture.detectChanges();
-    expect(api.hareketler).toHaveBeenCalledTimes(1);
-    expect(api.genelArama).toHaveBeenCalledTimes(1);
-    expect(fixture.nativeElement.querySelector('.dashboard-counts')).not.toBeNull();
+    const c = fixture.componentInstance;
+    const bugun = new Date();
+    const ay = String(bugun.getMonth() + 1).padStart(2, '0');
+    const sonGun = new Date(bugun.getFullYear(), bugun.getMonth() + 1, 0).getDate();
+    c.donemSec('ay');
+    expect(api.panel).toHaveBeenCalledWith(`${bugun.getFullYear()}-${ay}-01`, `${bugun.getFullYear()}-${ay}-${sonGun}`);
+    c.donemSec('ozel'); fixture.detectChanges();
+    expect(api.panel).toHaveBeenCalledTimes(2);
+    expect(fixture.nativeElement.querySelectorAll('.period-filter input[type="date"]').length).toBe(2);
   });
 
   it('alacak kartları fatura okuma izniyle görünür; tutarlar yalnız tutar izniyle yazılır', () => {
@@ -94,7 +89,7 @@ describe('Finans paneli bağımsız kayıt izni', () => {
     expect(degerler().slice(0, 4).every((x) => x.includes(' · '))).toBeTrue();
   });
 
-  it('yaşlandırma kovası bekleme listesini kovanın aşaması ve eşiğiyle bugünden açar; boş kova tıklanamaz', () => {
+  it('yaşlandırma kovası bekleme listesini İş Takibinde kovanın aşaması ve eşiğiyle açtırır; boş kova tıklanamaz', () => {
     api.panel.and.returnValue(of({ isSuccess: true, value: { ...panelVerisi, yaslandirma: [
       { asama: 'Sipariş', minGun: 15, adet: 2, tutarlar: [] },
       { asama: 'Sipariş', minGun: 30, adet: 1, tutarlar: [] },
@@ -106,15 +101,10 @@ describe('Finans paneli bağımsız kayıt izni', () => {
     const kovalar = fixture.nativeElement.querySelectorAll('.dashboard-aging-bucket') as NodeListOf<HTMLButtonElement>;
     expect(kovalar.length).toBe(3);
     expect(kovalar[2].disabled).toBeTrue();
-    kovalar[1].click(); fixture.detectChanges();
-    expect(fixture.componentInstance.gorunum()).toBe('bekleyen');
-    const [, referansTarihi, minimumGun, asama] = api.yaslandirma.calls.mostRecent().args;
-    const bugun = new Date();
-    expect(referansTarihi).toBe(
-      `${bugun.getFullYear()}-${String(bugun.getMonth() + 1).padStart(2, '0')}-${String(bugun.getDate()).padStart(2, '0')}`,
-    );
-    expect(minimumGun).toBe(30);
-    expect(asama).toBe('Sipariş');
+    const acilan = spyOn(fixture.componentInstance.bekleyenAc, 'emit');
+    kovalar[1].click();
+    expect(acilan).toHaveBeenCalledOnceWith({ asama: 'Sipariş', minimumGun: 30 });
+    expect(api.yaslandirma).not.toHaveBeenCalled();
   });
 
   it('dil değişiminde başlık ve grafik etiketlerini günceller', () => {

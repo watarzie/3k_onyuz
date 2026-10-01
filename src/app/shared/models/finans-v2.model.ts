@@ -104,6 +104,13 @@ export interface FinansOdemeKaydet {
   aciklama: string | null;
 }
 /** Para birimi tanımı (F1); yeni para birimi kartlarda, grafiklerde, filtrelerde ve raporlarda görünür. */
+/** Rapor önizlemesi: indirilecek dosyanın başlığı, sütunları, ilk satırları ve toplam satır sayısı. */
+export interface FinansRaporOnizleme {
+  baslik: string;
+  sutunlar: string[];
+  satirlar: string[][];
+  toplamSatir: number;
+}
 export interface FinansParaBirimi {
   id: number;
   kod: string;

@@ -37,43 +37,36 @@
           <i class="ri-bill-line" aria-hidden="true"></i>{{ t('INVOICES') }}
         </button>
       </div>
+    </div>
+    <div class="filter-bar">
+      <label class="filter-search">
+        <i class="ri-search-line" aria-hidden="true"></i>
+        <input type="search" [attr.aria-label]="t('SEARCH')" [placeholder]="t('DOC_SEARCH_HINT')" [(ngModel)]="arama" (ngModelChange)="ara()" />
+      </label>
       @if (tur === 'Siparis') {
-        <label class="v2-document-filter"
-          ><span class="visually-hidden">{{ t('STATUS') }}</span
-          ><select [(ngModel)]="siparisDurumu" (ngModelChange)="filtrele()">
+        <label class="filter-field">
+          <span>{{ t('STATUS') }}</span>
+          <select [(ngModel)]="siparisDurumu" (ngModelChange)="filtrele()">
             <option [ngValue]="null">{{ t('PANEL_ALL_STATES') }}</option>
             <option [ngValue]="1">{{ t('PO_OPEN') }}</option>
             <option [ngValue]="2">{{ t('PO_PARTIAL') }}</option>
             <option [ngValue]="3">{{ t('PO_INVOICED') }}</option>
-          </select></label
-        >
+          </select>
+        </label>
       }
       @if (tur === 'Fatura') {
-        <label class="v2-document-filter"
-          ><span class="visually-hidden">{{ t('PAYMENT_FILTER') }}</span
-          ><select [(ngModel)]="odemeDurumu" (ngModelChange)="filtrele()">
+        <label class="filter-field">
+          <span>{{ t('PAYMENT_FILTER') }}</span>
+          <select [(ngModel)]="odemeDurumu" (ngModelChange)="filtrele()">
             <option [ngValue]="null">{{ t('PAYMENT_ALL') }}</option>
             <option [ngValue]="odemeFiltreleri.Odenmedi">{{ t('PAYMENT_UNPAID') }}</option>
             <option [ngValue]="odemeFiltreleri.VadesiYaklasan">{{ t('PAYMENT_DUE_SOON') }}</option>
             <option [ngValue]="odemeFiltreleri.VadesiGecen">{{ t('PAYMENT_OVERDUE') }}</option>
             <option [ngValue]="odemeFiltreleri.Odendi">{{ t('PAYMENT_PAID_FILTER') }}</option>
-          </select></label
-        >
+          </select>
+        </label>
       }
-      <label class="v2-check v2-document-filter"
-        ><input type="checkbox" [(ngModel)]="iptalEdilenler" (ngModelChange)="filtrele()" />{{
-          t('REPORT_INCLUDE_CANCELLED')
-        }}</label
-      >
-      <label class="v2-search v2-document-search"
-        ><span class="visually-hidden">{{ t('SEARCH') }}</span
-        ><i class="ri-search-line" aria-hidden="true"></i
-        ><input
-          type="search"
-          [placeholder]="t('DOC_SEARCH_HINT')"
-          [(ngModel)]="arama"
-          (ngModelChange)="ara()"
-      /></label>
+      <label class="filter-check"><input type="checkbox" [(ngModel)]="iptalEdilenler" (ngModelChange)="filtrele()" />{{ t('REPORT_INCLUDE_CANCELLED') }}</label>
     </div>
     @if (hata()) {
       <div class="v2-error v2-inset" role="alert">

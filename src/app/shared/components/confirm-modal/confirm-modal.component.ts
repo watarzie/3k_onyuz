@@ -31,6 +31,14 @@ import { NgClass } from '@angular/common';
         </div>
         <div class="confirm-body">
           <div [innerHTML]="confirm.options().message"></div>
+          @if (confirm.options().reason; as reason) {
+            <label class="confirm-reason">
+              <span>{{ reason.label }}</span>
+              <textarea rows="2" maxlength="1000" [value]="confirm.reasonValue()"
+                (input)="confirm.reasonValue.set($any($event.target).value)"></textarea>
+              @if (reason.hint) { <small>{{ reason.hint }}</small> }
+            </label>
+          }
         </div>
         <div class="confirm-footer">
           @if (confirm.options().cancelText) {
@@ -46,6 +54,15 @@ import { NgClass } from '@angular/common';
     }
   `,
   styles: [`
+    .confirm-reason {
+      display: flex; flex-direction: column; gap: 4px;
+      margin-top: 14px; font-size: 12px; font-weight: 600; color: #475569;
+      textarea {
+        width: 100%; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px;
+        font-size: 13px; font-weight: 400; resize: vertical;
+      }
+      small { font-weight: 400; color: #94a3b8; }
+    }
     .confirm-overlay {
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.45);

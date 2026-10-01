@@ -10,7 +10,7 @@ describe('Finans raporu indirme ve çeviri', () => {
   let api: jasmine.SpyObj<FinansService>;
   let toast: jasmine.SpyObj<ToastService>;
   beforeEach(() => {
-    api = jasmine.createSpyObj('FinansService', ['giderKategorileri', 'isRaporu', 'downloadErrorMessage', 'paraBirimleri']);
+    api = jasmine.createSpyObj('FinansService', ['giderKategorileri', 'isRaporu', 'downloadErrorMessage', 'paraBirimleri', 'raporOnizleme']);
     api.paraBirimleri.and.returnValue(of({ isSuccess: true, value: [
       { id: 1, kod: 'TRY', ad: 'Türk lirası', sembol: '₺', aktif: true, sira: 1 },
       { id: 2, kod: 'EUR', ad: 'Euro', sembol: '€', aktif: true, sira: 2 },
@@ -43,5 +43,24 @@ describe('Finans raporu indirme ve çeviri', () => {
     const reportSelect = fixture.nativeElement.querySelector('select') as HTMLSelectElement;
     expect(reportSelect.options[0].value).toBe('is');
     expect(reportSelect.options[0].textContent).toBe('Work / project / PO / invoice');
+  });
+
+  it('önizleme seçili tür ve filtreyle dosyanın satırlarını gösterir; tür veya filtre değişince yenilenmesini ister', () => {
+    api.raporOnizleme.and.returnValue(of({ isSuccess: true, value: {
+      baslik: 'Finans İşleri Raporu', sutunlar: ['Proje No', 'Net'], satirlar: [['PA-2', '2.500,00']], toplamSatir: 120,
+    } }));
+    const fixture = TestBed.createComponent(FinansRaporlarComponent); fixture.detectChanges();
+    const c = fixture.componentInstance;
+    const el = fixture.nativeElement as HTMLElement;
+    c.filtre.projeNo = 'PA-2';
+    c.onizle(); fixture.detectChanges();
+    expect(api.raporOnizleme).toHaveBeenCalledOnceWith('is', jasmine.objectContaining({ projeNo: 'PA-2' }));
+    expect(el.querySelector('.v2-preview-table tbody td')!.textContent).toBe('PA-2');
+    expect(el.querySelector('.v2-report-preview')!.textContent).toContain('120 satır');
+    expect(el.querySelector('.v2-preview-stale')).toBeNull();
+    c.tur = 'gider'; fixture.detectChanges();
+    expect(el.querySelector('.v2-preview-stale')).not.toBeNull();
+    c.tur = 'is'; c.filtre.projeNo = 'PA-3'; fixture.detectChanges();
+    expect(el.querySelector('.v2-preview-stale')).not.toBeNull();
   });
 });

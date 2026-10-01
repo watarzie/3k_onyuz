@@ -80,7 +80,7 @@
     @if (permissions.canWrite(izin.GiderKutuphanesiYonet)) {<button type="button" [class.active]="activeTab() === 'kategoriler'" (click)="selectTab('kategoriler')"><i class="ri-folder-settings-line" aria-hidden="true"></i>Gider Kategorileri</button>}
   </nav>
 
-  @if (activeTab() === 'panel') {<app-finans-panel (kayitAc)="detayHedef.set($event)" (siparisAc)="topluSiparisAc($event)" />}
+  @if (activeTab() === 'panel') {<app-finans-panel (bekleyenAc)="bekleyenleriAc($event)" />}
   @if (activeTab() === 'belgeler' && permissions.hasAccess(izin.SiparisOperasyonGoruntule) && permissions.hasAccess(izin.KayitGoruntule)) {
     @for (gorunum of [belgeGorunumu()]; track gorunum.anahtar) {
       <app-finans-belgeler-listesi [baslangicTuru]="gorunum.tur" [baslangicOdemeFiltresi]="gorunum.odeme" (detayAc)="detayHedef.set($event)" (faturaAc)="faturaAc($event)" (siparisAc)="poFormunuAc($event)" />
@@ -93,8 +93,22 @@
     <div class="finance-workspace monthly-workspace">
     <div class="workspace-heading">
       <span class="workspace-icon"><i class="ri-calendar-check-line" aria-hidden="true"></i></span>
-      <div><h3>Finans İş Takibi</h3><p>{{ donemBasligi() }}</p></div>
+      <div><h3>Finans İş Takibi</h3><p>{{ akisGorunumu() === 'aylik' ? donemBasligi() : 'Bütün dönemlerdeki kalemler' }}</p></div>
+      <nav class="v2-segmented workspace-views" aria-label="İş takibi görünümü">
+        <button type="button" [class.active]="akisGorunumu() === 'aylik'" [attr.aria-pressed]="akisGorunumu() === 'aylik'" (click)="akisGorunumu.set('aylik')">
+          <i class="ri-calendar-line" aria-hidden="true"></i>Aylık görünüm
+        </button>
+        <button type="button" [class.active]="akisGorunumu() === 'kayitlar' && kayitAramaAcilisi().gorunum === 'arama'" (click)="kayitAramasiniAc('arama')">
+          <i class="ri-search-2-line" aria-hidden="true"></i>Tüm dönemlerde ara
+        </button>
+        @if (permissions.hasAccess(izin.RaporGoruntule)) {
+          <button type="button" [class.active]="akisGorunumu() === 'kayitlar' && kayitAramaAcilisi().gorunum === 'bekleyen'" (click)="kayitAramasiniAc('bekleyen')">
+            <i class="ri-time-line" aria-hidden="true"></i>Bekleyen işler
+          </button>
+        }
+      </nav>
     </div>
+    @if (akisGorunumu() === 'aylik') {
     <div class="finance-surface monthly-overview">
     <header class="monthly-toolbar">
       <div class="month-selector">
@@ -260,7 +274,7 @@
                 !satir.iptalEdildi && aylikDegerDuzenlenebilir(satir)
               ) {
                 <button *appCanWrite="izin.FiyatlandirmaDegistir" type="button" (click)="aylikDegerDuzenle(satir)">
-                  <i class="ri-edit-line"></i><span>Aylık değeri düzenle</span>
+                  <i class="ri-edit-line"></i><span>Miktar / tarifeyi düzenle</span>
                 </button>
               }
               @if (
@@ -496,6 +510,11 @@
         (pageChange)="aylikSayfaDegisti($event)"
         (pageSizeChange)="aylikSayfaBoyutuDegisti($event)"
       />
+    }
+    } @else {
+      @for (acilis of [kayitAramaAcilisi()]; track acilis.anahtar) {
+        <app-finans-kayit-arama [acilis]="acilis" (kayitAc)="detayHedef.set($event)" (siparisAc)="topluSiparisAc($event)" />
+      }
     }
     </div>
   }
@@ -858,7 +877,7 @@
   <section class="side-panel compact" role="dialog" aria-modal="true">
     <header>
       <div>
-        <h3><i class="ri-edit-box-line" aria-hidden="true"></i>Aylık Değeri Düzenle</h3>
+        <h3><i class="ri-edit-box-line" aria-hidden="true"></i>Miktar ve Tarife</h3>
         <small>{{ aylikDegerSatiri()?.isAdi }}</small>
       </div>
       <button type="button" title="Kapat" (click)="aylikDegerAcik.set(false)">
@@ -866,10 +885,22 @@
       </button>
     </header>
     <div class="panel-body">
-      <label class="field"
-        ><span>{{ aylikDegerSatiri()?.tutarDuzenlenebilir ? 'Net tutar' : 'Miktar' }}</span
-        ><input class="form-control" type="number" min="0" step="0.01" [(ngModel)]="aylikDeger"
-      /></label>
+      @let degerSatiri = aylikDegerSatiri()!;
+      @if (aylikMiktarDuzenlenebilir(degerSatiri)) {
+        <label class="field"
+          ><span>Miktar ({{ degerSatiri.birim }})</span
+          ><input class="form-control" type="number" min="0" step="0.01" [(ngModel)]="aylikMiktar"
+        /></label>
+      }
+      @if (aylikTarifeDuzenlenebilir(degerSatiri)) {
+        <label class="field"
+          ><span>Tarife (birim fiyat, {{ degerSatiri.paraBirimi }})</span
+          ><input class="form-control" type="number" min="0" step="0.01" [(ngModel)]="aylikTarife"
+        /></label>
+        @if (aylikNetOnizleme(degerSatiri); as net) {
+          <p class="text-muted small mb-0">Yeni net tutar: {{ net | number: '1.2-2' }} {{ degerSatiri.paraBirimi }}</p>
+        }
+      }
       @if (aylikDegerHatasi()) {
         <div class="form-error">{{ aylikDegerHatasi() }}</div>
       }

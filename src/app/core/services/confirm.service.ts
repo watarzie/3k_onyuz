@@ -7,6 +7,8 @@ export interface ConfirmOptions {
   confirmText?: string;
   cancelText?: string;
   type?: 'danger' | 'warning' | 'info' | 'success';
+  /** Verilirse pencerede gerekçe alanı gösterilir (askWithReason). */
+  reason?: { label: string; hint?: string };
 }
 
 const HTML_KARSILIKLARI: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -30,16 +32,30 @@ export function duzMetin(deger: string | number | null | undefined): string {
 export class ConfirmService {
   readonly visible = signal(false);
   readonly options = signal<ConfirmOptions>({ message: '' });
+  /** Gerekçe alanının değeri (askWithReason). */
+  readonly reasonValue = signal('');
 
   private resolveFn?: (value: boolean) => void;
 
+  /**
+   * Onay ve gerekçeyi birlikte ister: onaylanırsa kırpılmış gerekçe (boş olabilir), vazgeçilirse null döner.
+   * Gerekçenin zorunlu olup olmadığına sunucu karar verir (ör. formlu kayıtta kritik değişiklik).
+   */
+  async askWithReason(opts: ConfirmOptions & { reason: { label: string; hint?: string } }): Promise<string | null> {
+    this.reasonValue.set('');
+    const onay = await this.ask(opts);
+    return onay ? this.reasonValue().trim() : null;
+  }
+
   ask(opts: ConfirmOptions): Promise<boolean> {
+    if (!opts.reason) this.reasonValue.set('');
     this.options.set({
       title: opts.title ?? 'Onay',
       message: opts.message,
       confirmText: opts.confirmText ?? 'Evet',
       cancelText: opts.cancelText ?? 'İptal',
       type: opts.type ?? 'danger',
+      reason: opts.reason,
     });
     this.visible.set(true);
     return new Promise<boolean>((resolve) => {

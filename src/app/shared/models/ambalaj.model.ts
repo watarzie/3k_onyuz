@@ -56,6 +56,8 @@ export interface AmbalajProjeListelemeRequest {
   includeSummary?: boolean;
   /** true: yalnız üretimi tamamlanan projeler; false: tamamlananlar hariç (net kalan ihtiyaç); boş: hepsi. */
   tamamlanan?: boolean;
+  /** Proje geneli üretim durumu: 1 üretim bekliyor, 2 üretimde; boş: hepsi. */
+  uretimDurumu?: 1 | 2;
 }
 
 /** Proje bazlı toplu tamamlama veya geri alma sonucu. */

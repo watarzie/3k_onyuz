@@ -306,17 +306,24 @@
       gap: 4px 10px;
       margin: 0;
     }
+    // Her etiket-değer çifti kendi sütununda; değer etiketin hemen altında ve aynı hizada.
+    dl > div {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+      text-align: left;
+    }
     dt {
-      grid-row: 1;
       color: var(--v2-muted);
       font-size: 11px;
       font-weight: 600;
     }
     dd {
-      grid-row: 2;
       margin: 0;
       font-size: 20px;
       font-weight: 700;
+      text-align: left;
     }
   }
 

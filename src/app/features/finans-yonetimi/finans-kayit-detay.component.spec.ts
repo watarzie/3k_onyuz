@@ -14,7 +14,6 @@ import {
   FinansSiparisKalemi,
 } from '../../shared/models/finans.model';
 import {
-  FinansBelge,
   FinansKaliciSilOnizleme,
   FinansParaBirimi,
   FinansVarlikTuru,
@@ -155,7 +154,6 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
       'fiyatlandir',
       'faturaOdeme',
       'paraBirimleri',
-      'belgeIndir',
       'downloadErrorMessage',
     ]);
     api.siparisDetay.and.returnValue(of({ isSuccess: true, value: detail }));
@@ -201,19 +199,6 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
     component.ikinciOnay = true;
     component.silmeNedeni = '  Yinelenmiş test kaydı  ';
   }
-
-  it('belge indirme hatasını Blob ayrıştırıcısından gelen sunucu mesajıyla gösterir', async () => {
-    const failure = {
-      error: new Blob(['{"message":"Belgeye erişim kaldırıldı."}'], { type: 'application/json' }),
-    };
-    api.belgeIndir.and.returnValue(throwError(() => failure));
-    api.downloadErrorMessage.and.resolveTo('Belgeye erişim kaldırıldı.');
-    const { component, fixture } = setup();
-    component.belgeIndir({ id: 51, orijinalAd: 'test.pdf' } as FinansBelge);
-    await fixture.whenStable();
-    expect(api.downloadErrorMessage).toHaveBeenCalledWith(failure, jasmine.any(String));
-    expect(component.hata()).toBe('Belgeye erişim kaldırıldı.');
-  });
 
   it('fiyat formunda bileşenleri ve manuel net bedeli aynen yeniden açar; m³ dışı satırın malzemesini göndermez', () => {
     const { component } = setup('IsKaydi');

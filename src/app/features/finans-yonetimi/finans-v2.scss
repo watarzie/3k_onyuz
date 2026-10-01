@@ -565,6 +565,120 @@ dd {
   font-size: 11px;
   font-weight: 600;
 }
+// Ortak filtre çubuğu: arama kutusu, etiketli seçimler ve sağa yaslı işlemler tek satırda, dar ekranda sarılır.
+.record-search {
+  --v2-primary: var(--primaryColor, #605dff);
+  --v2-soft: color-mix(in srgb, var(--v2-primary) 7%, var(--whiteColor, #fff));
+  --v2-muted: var(--bodyColor, #64748b);
+}
+.record-search-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-bottom: 14px;
+  .v2-note {
+    margin: 0;
+  }
+}
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--borderColor, #e5eaf1);
+  border-radius: 12px;
+  background: var(--v2-soft, #f7f7ff);
+}
+.filter-search {
+  position: relative;
+  display: flex;
+  flex: 1 1 260px;
+  align-items: center;
+  margin: 0;
+  i {
+    position: absolute;
+    left: 12px;
+    color: var(--v2-muted, #64748b);
+    font-size: 16px;
+    pointer-events: none;
+  }
+  input {
+    width: 100%;
+    height: 40px;
+    padding: 0 12px 0 36px;
+    border: 1px solid var(--borderColor, #e5eaf1);
+    border-radius: 10px;
+    background: var(--whiteColor, #fff);
+    font-size: 13px;
+  }
+}
+.filter-field {
+  display: flex;
+  flex: 0 1 180px;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 140px;
+  margin: 0;
+  > span {
+    color: var(--v2-muted, #64748b);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  select,
+  input {
+    width: 100%;
+    height: 40px;
+    padding: 0 10px;
+    border: 1px solid var(--borderColor, #e5eaf1);
+    border-radius: 10px;
+    background: var(--whiteColor, #fff);
+    font-size: 13px;
+  }
+}
+.filter-search input:focus,
+.filter-field select:focus,
+.filter-field input:focus {
+  border-color: var(--v2-primary, #605dff);
+  outline: 0;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--v2-primary, #605dff) 14%, transparent);
+}
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.filter-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  margin: 0;
+  color: var(--blackColor, #1f2937);
+  font-size: 13px;
+  font-weight: 500;
+}
+// Panel dönem seçimi: hazır dönemler ve özel aralık.
+.period-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  .filter-field {
+    flex-basis: 150px;
+  }
+}
+.select-column {
+  width: 44px;
+}
+.v2-list-card > .filter-bar {
+  margin: 0 20px 16px;
+}
 .v2-segmented {
   display: inline-flex;
   flex: 0 0 auto;
@@ -810,6 +924,34 @@ dd {
   margin: 0;
   font-size: 11px;
   line-height: 1.7;
+}
+.v2-report-preview {
+  margin-top: 16px;
+}
+.v2-preview-stale {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #b45309;
+}
+.v2-preview-wrap {
+  max-height: 440px;
+  overflow: auto;
+  border: 1px solid var(--borderColor, #e5eaf1);
+  border-radius: 8px;
+}
+.v2-preview-table {
+  margin: 0;
+  th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    white-space: nowrap;
+  }
+  td {
+    font-size: 12px;
+    white-space: nowrap;
+  }
 }
 .v2-loading-message {
   display: flex;

@@ -57,7 +57,8 @@ export class AmbalajUretimListesiComponent implements OnInit {
   readonly izin = AMBALAJ_YETKI;
   private readonly translation = inject(TranslationService);
   t(key: string): string { return this.translation.translate(`URETIM_V2.${key}`); }
-  kritikGerekce = '';
+  /** Özel sandık/kalem düzenleme formunun gerekçesi; yalnız forma alınmış kayıttaki kritik değişiklikte zorunludur. */
+  formGerekcesi = '';
   yasamDongusuDegisti(): void {
     const p = this.plan();
     this.loadProjects();
@@ -88,7 +89,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
       .filter(k => k.tur === grup && k.uretimeAlindi && k.kaynakSandikId)
       .map(k => k.kaynakSandikId!);
     return this.ambalajService
-      .planKaydet(plan.projeId, partiNo, seciliIds, grup, this.kaynakProjeTipiId(), this.kritikGerekce)
+      .planKaydet(plan.projeId, partiNo, seciliIds, grup, this.kaynakProjeTipiId(), '')
       .pipe(map(result => {
         if (this.onayaAlindiysaBildir(result)) return false;
         if (result.isSuccess && result.value) {
@@ -323,6 +324,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
             pageSize: this.projePageSize(),
             includeSummary,
             tamamlanan: kapsam.tamamlanan,
+            uretimDurumu: kapsam.uretimDurumu,
           }).pipe(finalize(() => this.loading.set(false)));
         }),
         takeUntilDestroyed(this.destroyRef),
@@ -418,13 +420,25 @@ export class AmbalajUretimListesiComponent implements OnInit {
       });
   }
 
-  private aktifProjeKapsami(): { projeTipiId: number; grup: AmbalajGrup; tamamlanan?: boolean } {
+  /** Normal Projeler sekmesinde proje geneli üretim durumu filtresi: 0 hepsi, 1 üretim bekliyor, 2 üretimde. */
+  uretimDurumuFiltresi = signal<0 | 1 | 2>(0);
+
+  uretimDurumuFiltresiDegistir(durum: 0 | 1 | 2): void {
+    if (this.uretimDurumuFiltresi() === durum) return;
+    this.uretimDurumuFiltresi.set(durum);
+    this.projePageNumber.set(1);
+    this.loadProjects();
+  }
+
+  private aktifProjeKapsami(): { projeTipiId: number; grup: AmbalajGrup; tamamlanan?: boolean; uretimDurumu?: 1 | 2 } {
     const kuyruk = this.aktifKuyruk();
+    const durum = this.uretimDurumuFiltresi();
     return {
       projeTipiId: kuyruk === 'saha' ? 2 : kuyruk === 'yedek' ? 3 : 1,
       grup: kuyruk === 'ilave' ? 2 : kuyruk === 'ic' ? 3 : 1,
       // A3/A4: tamamlanan projeler kendi sekmesinde; Normal sekme ve çam özeti net kalan işi gösterir.
       tamamlanan: kuyruk === 'tamamlanan' ? true : kuyruk === 'normal' ? false : undefined,
+      uretimDurumu: kuyruk === 'normal' && durum !== 0 ? durum : undefined,
     };
   }
 
@@ -447,15 +461,16 @@ export class AmbalajUretimListesiComponent implements OnInit {
 
   async projeyiTamamla(proje: AmbalajProjeOzetDto): Promise<void> {
     if (!this.projeTamamlanabilir(proje) || this.projeDurumuKaydediliyor() !== null) return;
-    const onay = await this.confirmService.ask({
+    const gerekce = await this.confirmService.askWithReason({
+      reason: { label: 'Açıklama (isteğe bağlı)', hint: 'Kritik değişiklik sayılan durumlarda zorunludur.' },
       title: 'Proje Üretimini Tamamla',
       message: `<strong>${duzMetin(proje.fbNo || proje.projeNo)}</strong> projesinin ambalaja dahil bütün sandıklarının üretimi tamamlanacak ve finans kalemleri oluşturulacak.<br><br><small class="text-muted">Üretime alınmamış veya ölçüsü eksik sandık varsa işlem yapılmaz.</small>`,
       confirmText: 'Evet, Tamamla',
       cancelText: 'Vazgeç',
       type: 'info',
     });
-    if (!onay) return;
-    this.projeDurumuDegistir(proje, true);
+    if (gerekce === null) return;
+    this.projeDurumuDegistir(proje, true, gerekce);
   }
 
   projeGeriAlmaFormunuAc(proje: AmbalajProjeOzetDto): void {
@@ -476,7 +491,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
 
   private projeDurumuDegistir(proje: AmbalajProjeOzetDto, tamamla: boolean, gerekce?: string): void {
     this.projeDurumuKaydediliyor.set(proje.projeId);
-    this.ambalajService.projeUretimDurumu(proje.projeId, tamamla, gerekce ?? this.kritikGerekce)
+    this.ambalajService.projeUretimDurumu(proje.projeId, tamamla, gerekce ?? '')
       .pipe(finalize(() => this.projeDurumuKaydediliyor.set(null)))
       .subscribe(result => {
         if (this.onayaAlindiysaBildir(result)) {
@@ -510,6 +525,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
       this.talepEdenKullanicilariniYukle();
     }
     this.editingBagimsizSandikId.set(sandik?.id ?? null);
+    this.formGerekcesi = '';
     this.secilenOzelSablonId = sandik?.icSandikSablonId;
     this.secilenBilgiKaynakSandikId.set(sandik?.tur === 2 ? sandik.kaynakSandikId : undefined);
     this.secilenTalepEdenKullaniciId.set(undefined);
@@ -577,7 +593,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
     const request: AmbalajOzelSandikKaydetRequest = {
       ...this.ozelForm,
       ...(olcuKorunur ? { boy: 0, en: 0, yukseklik: 0 } : {}),
-      gerekce: this.kritikGerekce,
+      gerekce: this.formGerekcesi.trim(),
       kaynakSandikId: this.ozelForm.tur === 2 ? this.ozelForm.kaynakSandikId : undefined,
     };
     const operation = this.editingBagimsizSandikId()
@@ -799,8 +815,9 @@ export class AmbalajUretimListesiComponent implements OnInit {
   }
 
   async bagimsizSandikSil(sandik: AmbalajBagimsizSandikDto): Promise<void> {
-    if (!(await this.sandikSilmeOnayi(sandik.sandikNo))) return;
-    this.ambalajService.bagimsizSandikSil(sandik.id, this.kritikGerekce).subscribe(result => {
+    const gerekce = await this.sandikSilmeOnayi(sandik.sandikNo);
+    if (gerekce === null) return;
+    this.ambalajService.bagimsizSandikSil(sandik.id, gerekce).subscribe(result => {
       if (this.onayaAlindiysaBildir(result)) return;
       if (result.isSuccess) {
         this.toastService.success('Sandık silindi.');
@@ -917,7 +934,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
   ambalajKarariKaydet(kalem: AmbalajUretimKalemDto, ambalajaDahilMi: boolean): void {
     if (!kalem.kaynakSandikId) return;
     this.ambalajKarariSaving.set(true);
-    this.ambalajService.ambalajKarariKaydet(kalem.kaynakSandikId, ambalajaDahilMi, this.kritikGerekce)
+    this.ambalajService.ambalajKarariKaydet(kalem.kaynakSandikId, ambalajaDahilMi, '')
       .pipe(finalize(() => this.ambalajKarariSaving.set(false)))
       .subscribe(result => {
         if (this.onayaAlindiysaBildir(result)) return;
@@ -938,7 +955,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
     const grup = this.planGrup();
     const seciliIds = plan.kalemler.filter(k => k.tur === grup && k.kaynakSandikId && k.ambalajaDahilMi !== false &&
       (formSecimi ? formSecimi.includes(k.id || -k.kaynakSandikId) : k.uretimeAlindi)).map(k => k.kaynakSandikId!);
-    this.ambalajService.planKaydet(plan.projeId, this.planFirinPartiNo(plan, grup), seciliIds, grup, this.kaynakProjeTipiId(), this.kritikGerekce)
+    this.ambalajService.planKaydet(plan.projeId, this.planFirinPartiNo(plan, grup), seciliIds, grup, this.kaynakProjeTipiId(), '')
       .pipe(finalize(() => this.planSaving.set(false)))
       .subscribe(result => {
         if (this.onayaAlindiysaBildir(result)) return;
@@ -962,7 +979,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
         return;
       }
       const seciliIds = result.value.kalemler.filter(k => k.tur === grup && k.uretimeAlindi && k.kaynakSandikId).map(k => k.kaynakSandikId!);
-      this.ambalajService.planKaydet(proje.projeId, this.firinTaslaklari[this.taslakAnahtari(proje.projeId, grup)] ?? '', seciliIds, grup, this.kaynakProjeTipiId(), this.kritikGerekce).subscribe(saveResult => {
+      this.ambalajService.planKaydet(proje.projeId, this.firinTaslaklari[this.taslakAnahtari(proje.projeId, grup)] ?? '', seciliIds, grup, this.kaynakProjeTipiId(), '').subscribe(saveResult => {
         if (this.onayaAlindiysaBildir(saveResult)) return;
         if (saveResult.isSuccess) {
           this.toastService.success('Fırın parti numarası kaydedildi.');
@@ -992,6 +1009,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
       talimatVeren: kalem.talimatVeren ?? '',
       aciklama: kalem.aciklama,
     } : this.bosKalemFormu(tur);
+    this.formGerekcesi = '';
     this.kalemFormOpen.set(true);
   }
 
@@ -1006,7 +1024,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
       return;
     }
     this.planSaving.set(true);
-    const request = { ...this.kalemForm, ...(olcuKorunur ? { boy: 0, en: 0, yukseklik: 0 } : {}), gerekce: this.kritikGerekce };
+    const request = { ...this.kalemForm, ...(olcuKorunur ? { boy: 0, en: 0, yukseklik: 0 } : {}), gerekce: this.formGerekcesi.trim() };
     const operation = this.editingKalemId()
       ? this.ambalajService.kalemGuncelle(this.editingKalemId()!, request)
       : this.ambalajService.kalemEkle(plan.projeId, request);
@@ -1023,8 +1041,9 @@ export class AmbalajUretimListesiComponent implements OnInit {
   }
 
   async kalemSil(kalem: AmbalajUretimKalemDto): Promise<void> {
-    if (!(await this.sandikSilmeOnayi(kalem.sandikNo))) return;
-    this.ambalajService.kalemSil(kalem.id, this.kritikGerekce).subscribe(result => {
+    const gerekce = await this.sandikSilmeOnayi(kalem.sandikNo);
+    if (gerekce === null) return;
+    this.ambalajService.kalemSil(kalem.id, gerekce).subscribe(result => {
       if (this.onayaAlindiysaBildir(result)) return;
       if (result.isSuccess) {
         this.toastService.success('Sandık silindi.');
@@ -1150,7 +1169,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
     const uyari = this.pdfUyari();
     if (!uyari) return;
     this.ambalajKarariSaving.set(true);
-    forkJoin(uyari.kalemler.map(kalem => this.ambalajService.ambalajKarariKaydet(kalem.kaynakSandikId!, ambalajaDahilMi, this.kritikGerekce)))
+    forkJoin(uyari.kalemler.map(kalem => this.ambalajService.ambalajKarariKaydet(kalem.kaynakSandikId!, ambalajaDahilMi, '')))
       .pipe(finalize(() => this.ambalajKarariSaving.set(false)))
       .subscribe({
         next: results => {
@@ -1182,8 +1201,10 @@ export class AmbalajUretimListesiComponent implements OnInit {
     return true;
   }
 
-  private sandikSilmeOnayi(sandikNo: string): Promise<boolean> {
-    return this.confirmService.ask({
+  /** Silme onayı; onaylanırsa gerekçe (boş olabilir), vazgeçilirse null döner. */
+  private sandikSilmeOnayi(sandikNo: string): Promise<string | null> {
+    return this.confirmService.askWithReason({
+      reason: { label: 'Silme gerekçesi', hint: 'Forma alınmış sandıkta zorunludur; geçmişe yazılır.' },
       title: 'Sandığı Sil',
       message: `<strong>${duzMetin(sandikNo)}</strong> sandığını silmek istediğinize emin misiniz?`,
       confirmText: 'Evet, Sil',

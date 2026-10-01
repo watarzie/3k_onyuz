@@ -113,6 +113,10 @@
 }
 .finance-workspace { padding: 26px; }
 .workspace-heading { display: flex; align-items: center; gap: 14px; min-width: 0; margin-bottom: 22px; }
+.workspace-views { display: inline-flex; gap: 4px; margin-left: auto; padding: 4px; border: 1px solid var(--finance-border); border-radius: 10px; background: var(--finance-soft); }
+.workspace-views button { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border: 0; border-radius: 7px; background: transparent; color: var(--bodyColor); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.workspace-views button.active { background: var(--whiteColor); color: var(--finance-primary); box-shadow: 0 2px 5px #172b4d12; }
+@media (max-width: 900px) { .workspace-heading { flex-wrap: wrap; } .workspace-views { margin-left: 0; overflow-x: auto; max-width: 100%; } }
 .workspace-heading .workspace-icon { display: grid; place-items: center; flex: 0 0 auto; width: 46px; height: 46px; border-radius: 12px; color: var(--finance-primary); background: var(--finance-soft); font-size: 22px; }
 .workspace-heading h3 { margin: 0; color: var(--blackColor); font-size: 18px; font-weight: 650; line-height: 1.4; }
 .workspace-heading p, .workspace-heading > div > span { display: block; margin: 5px 0 0; color: var(--bodyColor); font-size: 12px; line-height: 1.6; }

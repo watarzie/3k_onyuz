@@ -9,15 +9,11 @@
       <span>Yenile</span>
     </button>
   </header>
-  <app-uretim-yasam-dongusu [raporModu]="true" />
-  <label class="d-block mb-3">Kritik değişiklik / silme gerekçesi
-    <input class="form-control" [(ngModel)]="kritikGerekce" maxlength="1000" placeholder="Geçmişe yazılacak gerekçe" />
-  </label>
 
   <div class="row g-3 mb-4">
     <div class="col-xl-3 col-sm-6"><app-stat-card [value]="toplamProje()" [label]="bagimsizKuyruk() ? 'Sandık kaydı' : 'Üretim projesi'" icon="ri-folder-3-line" color="primary" /></div>
     <div class="col-xl-3 col-sm-6"><app-stat-card [value]="toplamSandik()" label="Planlanan sandık" icon="ri-archive-line" color="success" /></div>
-    <div *appCanAccess="[izin.M3Goruntule]" class="col-xl-3 col-sm-6 estimate-stat"><app-stat-card [value]="toplamHacim() === null ? '—' : (toplamHacim() | number:'1.3-3') + ' m³'" [label]="bagimsizKuyruk() ? t('ESTIMATE_LABEL') : camOzetiEtiketi()" icon="ri-ruler-2-line" color="info" /><p class="estimate-help">{{ bagimsizKuyruk() ? t('ESTIMATE_HELP') : camOzetiAciklamasi() }}</p></div>
+    <div *appCanAccess="[izin.M3Goruntule]" class="col-xl-3 col-sm-6"><app-stat-card [value]="toplamHacim() === null ? '—' : (toplamHacim() | number:'1.3-3') + ' m³'" [label]="bagimsizKuyruk() ? t('ESTIMATE_LABEL') : camOzetiEtiketi()" [hint]="bagimsizKuyruk() ? t('ESTIMATE_HELP') : camOzetiAciklamasi()" icon="ri-ruler-2-line" color="info" /></div>
     <div class="col-xl-3 col-sm-6"><app-stat-card [value]="bagimsizKuyruk() ? '4 tür' : eksikProje() + ' proje'" [label]="bagimsizKuyruk() ? 'Kayıt türü' : 'Ölçüsü eksik'" icon="ri-error-warning-line" color="warning" /></div>
   </div>
 
@@ -41,6 +37,13 @@
           <button type="button" [class.active]="aktifKuyruk() === 'ozel'" (click)="aktifKuyrukDegistir('ozel')">Özel Sandıklar</button>
         </div>
       </div>
+      @if (aktifKuyruk() === 'normal') {
+        <div class="segmented status-filter" role="group" aria-label="Üretim durumu filtresi">
+          <button type="button" [class.active]="uretimDurumuFiltresi() === 0" (click)="uretimDurumuFiltresiDegistir(0)">Tümü</button>
+          <button type="button" [class.active]="uretimDurumuFiltresi() === 1" (click)="uretimDurumuFiltresiDegistir(1)">Üretim bekliyor</button>
+          <button type="button" [class.active]="uretimDurumuFiltresi() === 2" (click)="uretimDurumuFiltresiDegistir(2)">Üretimde</button>
+        </div>
+      }
 
       @if (bagimsizKuyruk()) {
         <section class="plan-section independent-section">
@@ -242,6 +245,9 @@
                   <span><i [class]="ozelForm.projeId ? 'ri-cursor-line' : 'ri-folder-open-line'"></i></span>
                   <div><strong>{{ ozelForm.projeId ? 'Bilgi kaynağını seçin' : 'Önce bir proje seçin' }}</strong><small>{{ ozelForm.projeId ? 'Projeden sandık/şablon seçtiğinizde bilgiler otomatik gelir; isterseniz “Elle gir” seçeneğini kullanabilirsiniz.' : 'Proje seçildikten sonra bir sonraki adım otomatik olarak açılacaktır.' }}</small></div>
                 </div>
+              }
+              @if (editingBagimsizSandikId()) {
+                <label class="span-2 change-reason"><span>Değişiklik gerekçesi</span><input maxlength="1000" [(ngModel)]="formGerekcesi" name="bagimsizGerekce" placeholder="Forma alınmış sandıkta kritik değişiklik için zorunludur" /></label>
               }
               <div class="form-actions special-crate-actions"><button type="button" [disabled]="bagimsizSaving()" (click)="bagimsizFormOpen.set(false)">Vazgeç</button><button class="primary-action" type="submit" [disabled]="bagimsizSaving() || !ozelDetayFormuGoster()">@if (bagimsizSaving()) { <i class="ri-loader-4-line spin"></i> Kaydediliyor } @else { <i class="ri-check-line"></i> Kaydet }</button></div>
             </form>
@@ -517,6 +523,9 @@
               <label><span>Kim Tarafından İstendi *</span><input [(ngModel)]="kalemForm.talimatVeren" name="talimatVeren" /></label>
               <label class="span-2"><span>Açıklama</span><textarea rows="2" [(ngModel)]="kalemForm.aciklama" name="aciklama"></textarea></label>
               <label class="check-field"><input type="checkbox" [(ngModel)]="kalemForm.uretimeAlindi" name="uretimeAlindi" /> Hemen üretime al</label>
+              @if (editingKalemId()) {
+                <label class="span-2"><span>Değişiklik gerekçesi</span><input maxlength="1000" [(ngModel)]="formGerekcesi" name="kalemGerekce" placeholder="Forma alınmış sandıkta kritik değişiklik için zorunludur" /></label>
+              }
               <div class="form-actions"><button type="button" (click)="kalemFormOpen.set(false)">Vazgeç</button><button class="primary-action" type="submit" [disabled]="planSaving()"><i class="ri-check-line"></i> Kaydet</button></div>
             </form>
           }

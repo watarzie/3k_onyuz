@@ -10,7 +10,8 @@ import { FinansOdemeFiltresi } from '../../core/constants/enums';
 import { PermissionService } from '../../core/services/permission.service';
 import { ToastService } from '../../core/services/toast.service';
 import { FinansGiderKategori, FinansListelemeRequest } from '../../shared/models/finans.model';
-import { finansRaporuIndirilebilir, finansSiparisFaturaOkunabilir } from './finans-izinleri';
+import { FinansRaporOnizleme } from '../../shared/models/finans-v2.model';
+import { finansRaporuIndirilebilir, finansSiparisFaturaOkunabilir, tumFinansAlanlariGorunur } from './finans-izinleri';
 import { dosyayiKaydet } from '../../core/services/dosya-kaydet';
 
 @Component({
@@ -45,6 +46,46 @@ export class FinansRaporlarComponent implements OnInit {
   }
   filtreleriTemizle(): void {
     this.filtre = { pageNumber: 1, pageSize: 25 };
+  }
+
+  /** Önizleme: seçili rapor türü ve filtrelerle dosyada yer alacak satırlar (ilk 50). */
+  readonly onizleme = signal<FinansRaporOnizleme | null>(null);
+  readonly onizlemeYukleniyor = signal(false);
+  private onizlemeImzasi = '';
+  /** Rapor dosyasının okuma izinleri (biçim izni hariç). */
+  onizlemeGorulebilir(): boolean {
+    return this.permissions.hasAccess(this.izin.RaporGoruntule) && tumFinansAlanlariGorunur(this.permissions) &&
+      (this.tur !== 'alacak' || this.alacakRaporuGorunur());
+  }
+  /** Önizlemeden sonra rapor türü veya filtre değiştiyse gösterilen satırlar indirilecek dosyayı yansıtmaz. */
+  onizlemeEski(): boolean {
+    return !!this.onizleme() && this.onizlemeImzasi !== this.imza();
+  }
+  private imza(): string {
+    return JSON.stringify([this.tur, this.filtre]);
+  }
+  onizle(): void {
+    if (this.onizlemeYukleniyor() || !this.onizlemeGorulebilir()) return;
+    if (this.filtre.baslangic && this.filtre.bitis && this.filtre.baslangic > this.filtre.bitis) {
+      this.toast.error(this.t('REPORT_DATES_ERROR'));
+      return;
+    }
+    const imza = this.imza();
+    this.onizlemeYukleniyor.set(true);
+    this.service
+      .raporOnizleme(this.tur, this.filtre)
+      .pipe(
+        finalize(() => this.onizlemeYukleniyor.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((r) => {
+        if (!r.isSuccess || !r.value) {
+          this.toast.error(r.error ?? this.t('REPORT_PREVIEW_ERROR'));
+          return;
+        }
+        this.onizlemeImzasi = imza;
+        this.onizleme.set(r.value);
+      });
   }
 
   ngOnInit(): void {

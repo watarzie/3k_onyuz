@@ -43,6 +43,7 @@ export class AmbalajService {
       params = params.set('includeSummary', request.includeSummary);
     }
     if (request.tamamlanan !== undefined) params = params.set('tamamlanan', request.tamamlanan);
+    if (request.uretimDurumu) params = params.set('uretimDurumu', request.uretimDurumu);
 
     return this.api.get<AmbalajPlanlamaProjeleriSayfasiDto>(API.AMBALAJ.PROJELER, { params });
   }

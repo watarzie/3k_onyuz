@@ -13,6 +13,21 @@ describe('ConfirmService', () => {
     expect(await vazgecilen).toBeFalse();
     expect(servis.visible()).toBeFalse();
   });
+
+  it('gerekçeli onayda kırpılmış gerekçeyi, vazgeçmede null döndürür; yeni pencere eski gerekçeyi taşımaz', async () => {
+    const servis = new ConfirmService();
+    const reason = { label: 'Silme gerekçesi' };
+    const onaylanan = servis.askWithReason({ message: 'Silinsin mi?', reason });
+    expect(servis.options().reason).toEqual(reason);
+    servis.reasonValue.set('  Yanlış kayıt  ');
+    servis.confirm();
+    expect(await onaylanan).toBe('Yanlış kayıt');
+
+    const vazgecilen = servis.askWithReason({ message: 'Silinsin mi?', reason });
+    expect(servis.reasonValue()).toBe('');
+    servis.cancel();
+    expect(await vazgecilen).toBeNull();
+  });
 });
 
 describe('duzMetin', () => {

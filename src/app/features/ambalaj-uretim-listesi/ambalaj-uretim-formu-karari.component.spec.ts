@@ -59,7 +59,7 @@ describe('Üretim formu indirilmeden önce verilen ambalaj kararı', () => {
 
     component.pdfKarariUygula(true);
 
-    expect(ambalaj.ambalajKarariKaydet).toHaveBeenCalledWith(41, true, component.kritikGerekce);
+    expect(ambalaj.ambalajKarariKaydet).toHaveBeenCalledWith(41, true, '');
     expect(ambalaj.uretimFormuIndir).toHaveBeenCalledWith(7, 1);
   });
 });

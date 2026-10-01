@@ -16,7 +16,6 @@ import {
   FinansFatura,
 } from '../../shared/models/finans.model';
 import {
-  FinansBelge,
   FinansDegisiklik,
   FinansFiyatBileseni,
   FinansFiyatlandirma,
@@ -25,7 +24,6 @@ import {
 } from '../../shared/models/finans-v2.model';
 import { ServerPagerComponent } from '../../shared/components/server-pager/server-pager.component';
 import {
-  finansBelgesiIndirilebilir,
   finansFaturaGirilebilir,
   finansOdemeKaydedilebilir,
   finansPoGirilebilir,
@@ -42,7 +40,6 @@ import { TranslationService } from '../../core/services/translation.service';
 import { FinansIsKategorisi, FinansSandikMalzemesi } from '../../core/constants/enums';
 
 import { onayaAlindi } from '../../shared/models';
-import { dosyayiKaydet } from '../../core/services/dosya-kaydet';
 @Component({
   selector: 'app-finans-kayit-detay',
   standalone: true,
@@ -74,7 +71,6 @@ export class FinansKayitDetayComponent implements OnInit {
   readonly izin = FINANS_YETKI;
   readonly malzeme = FinansSandikMalzemesi;
   readonly kayit = signal<FinansIsKaydi | null>(null);
-  readonly belgeler = signal<FinansBelge[]>([]);
   readonly siparis = signal<FinansSiparis | null>(null);
   readonly fatura = signal<FinansFatura | null>(null);
   belgeForm = { numara: '', tarih: '', aciklama: '', gerekce: '', vade: '' };
@@ -102,7 +98,7 @@ export class FinansKayitDetayComponent implements OnInit {
   readonly loading = signal(false);
   readonly saving = signal(false);
   readonly hata = signal('');
-  readonly sekme = signal<'bilgi' | 'fiyat' | 'belge' | 'gecmis' | 'islemler'>('bilgi');
+  readonly sekme = signal<'bilgi' | 'fiyat' | 'gecmis' | 'islemler'>('bilgi');
   readonly ikinciAdim = signal(false);
   finansTarihi = '';
   tarihNedeni = '';
@@ -136,9 +132,6 @@ export class FinansKayitDetayComponent implements OnInit {
       this.permissions.canWrite(this.izin.FiyatlandirmaDegistir) &&
       tumFinansAlanlariGorunur(this.permissions)
     );
-  }
-  belgeIndirilebilir(): boolean {
-    return finansBelgesiIndirilebilir(this.permissions);
   }
   yukle(): void {
     if (this.hedef().tur === 'Siparis') {
@@ -378,10 +371,9 @@ export class FinansKayitDetayComponent implements OnInit {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
-  tab(value: 'bilgi' | 'fiyat' | 'belge' | 'gecmis' | 'islemler'): void {
+  tab(value: 'bilgi' | 'fiyat' | 'gecmis' | 'islemler'): void {
     this.sekme.set(value);
     this.hata.set('');
-    if (value === 'belge') this.belgeleriYukle();
     if (value === 'gecmis') this.gecmisSayfa(1);
   }
   tarihiKaydet(): void {
@@ -439,63 +431,6 @@ export class FinansKayitDetayComponent implements OnInit {
       else ozet.malzemesizM3 += m3;
     }
     return ozet;
-  }
-  belgeleriYukle(): void {
-    if (!this.permissions.hasAccess(this.izin.BelgeIndir)) return;
-    const h = this.hedef();
-    this.service
-      .belgeler(h.tur, h.id)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((r) => {
-        if (r.isSuccess) this.belgeler.set(r.value ?? []);
-        else this.hata.set(r.error ?? 'Belgeler yüklenemedi.');
-      });
-  }
-  yukleBelge(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.pdf') || file.size > 10 * 1024 * 1024) {
-      this.hata.set('En fazla 10 MB PDF seçin. Dosya içeriği sunucuda da doğrulanır.');
-      input.value = '';
-      return;
-    }
-    const h = this.hedef();
-    this.saving.set(true);
-    this.service
-      .belgeYukle(h.tur, h.id, file)
-      .pipe(
-        finalize(() => {
-          this.saving.set(false);
-          input.value = '';
-        }),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe((r) => {
-        if (!r.isSuccess) this.hata.set(r.error ?? 'Belge yüklenemedi.');
-        else if (onayaAlindi(r)) this.toast.info('Belge işlemi onaya gönderildi.');
-        else {
-          this.toast.success('PDF yeni sürüm olarak kaydedildi.');
-          this.belgeleriYukle();
-        }
-      });
-  }
-  belgeIndir(belge: FinansBelge): void {
-    this.service
-      .belgeIndir(belge.id)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (blob) => {
-          dosyayiKaydet(blob, belge.orijinalAd);
-        },
-        error: async (error: unknown) =>
-          this.hata.set(
-            await this.service.downloadErrorMessage(
-              error,
-              'Belge indirilemedi veya indirme yetkiniz kaldırıldı.',
-            ),
-          ),
-      });
   }
   gecmisSayfa(page: number): void {
     const h = this.hedef();

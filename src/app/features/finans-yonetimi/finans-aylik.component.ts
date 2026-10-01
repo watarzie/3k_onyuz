@@ -9,6 +9,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { AMBALAJ_YETKI, FINANS_YETKI } from '../../core/constants/yetki-kodlari';
 import { FinansPanelComponent } from './finans-panel.component';
+import { FinansKayitAramaAcilisi, FinansKayitAramaComponent, FinansKayitAramaGorunumu } from './finans-kayit-arama.component';
 import { FinansDagitimComponent } from './finans-dagitim.component';
 import { FinansKayitDetayComponent } from './finans-kayit-detay.component';
 import { FinansBelgelerListesiComponent } from './finans-belgeler-listesi.component';
@@ -33,7 +34,7 @@ import {
 } from './finans-etiketleri';
 import { TranslationService } from '../../core/services/translation.service';
 import { FinansIsKategorisi, FinansKarsilanma, FinansOdemeFiltresi } from '../../core/constants/enums';
-import { FinansVadeUyarilari, FinansVarlikTuru } from '../../shared/models/finans-v2.model';
+import { FinansBekleyenAsama, FinansVadeUyarilari, FinansVarlikTuru } from '../../shared/models/finans-v2.model';
 import { FinansParaBirimiService } from '../../core/services/finans-para-birimi.service';
 import { ApiResult } from '../../shared/models/common.model';
 import { CanWriteDirective } from '../../shared/directives/can-write.directive';
@@ -42,6 +43,7 @@ import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcru
 import { ServerPagerComponent } from '../../shared/components/server-pager/server-pager.component';
 import { IslemlerMenusuComponent } from '../../shared/components/islemler-menusu/islemler-menusu.component';
 import {
+  FinansAylikDegerRequest,
   FinansAylikIs,
   FinansAylikProjeOzeti,
   FinansAylikFinansOzeti,
@@ -98,7 +100,7 @@ type RaporFormati = 'pdf' | 'excel' | 'ayri';
   selector: 'app-finans-yonetimi',
   standalone: true,
   imports: [BreadcrumbComponent, DatePipe, DecimalPipe, NgTemplateOutlet, FormsModule, ServerPagerComponent,
-    FinansPanelComponent, FinansDagitimComponent, FinansKayitDetayComponent, FinansBelgelerListesiComponent,
+    FinansPanelComponent, FinansKayitAramaComponent, FinansDagitimComponent, FinansKayitDetayComponent, FinansBelgelerListesiComponent,
     CanWriteDirective, CanAccessDirective, FinansRaporlarComponent, FinansKategorilerComponent, FinansProjeSeciciComponent,
     FinansParametrelerComponent, FinansProjeDetayComponent, IslemlerMenusuComponent],
   templateUrl: './finans-aylik.component.html',
@@ -171,6 +173,21 @@ export class FinansYonetimiComponent implements OnInit {
   loading = signal(true);
   aylikLoading = signal(false);
   activeTab = signal<AnaSekme>('panel');
+  /** Finans İş Takibi: aylık görünüm veya bütün dönemlerdeki kalem listesi (arama / bekleyen işler). */
+  readonly akisGorunumu = signal<'aylik' | 'kayitlar'>('aylik');
+  readonly kayitAramaAcilisi = signal<FinansKayitAramaAcilisi>({ anahtar: 0, gorunum: 'arama' });
+
+  kayitAramasiniAc(gorunum: FinansKayitAramaGorunumu): void {
+    this.kayitAramaAcilisi.update((x) => ({ anahtar: x.anahtar + 1, gorunum }));
+    this.akisGorunumu.set('kayitlar');
+  }
+
+  /** Kontrol panelindeki yaşlandırma kovası: bekleyen işler İş Takibi'nde kovanın aşaması ve eşiğiyle açılır. */
+  bekleyenleriAc(kova: { asama: FinansBekleyenAsama; minimumGun: number }): void {
+    this.kayitAramaAcilisi.update((x) => ({ anahtar: x.anahtar + 1, gorunum: 'bekleyen', ...kova }));
+    this.akisGorunumu.set('kayitlar');
+    this.selectTab('akis');
+  }
   ayarGorunumu = signal<AyarGorunumu>('duzenli');
   seciliDonem = signal(this.ayinIlkGunu(new Date()));
   aylikIsler = signal<FinansAylikIs[]>([]);
@@ -236,7 +253,9 @@ export class FinansYonetimiComponent implements OnInit {
 
   aylikDegerAcik = signal(false);
   aylikDegerSatiri = signal<FinansAylikIs | null>(null);
-  aylikDeger = 0;
+  /** Aylık değer penceresi: bu ayın miktarı ve tarifesi (birim fiyat); yalnız değişen değer gönderilir. */
+  aylikMiktar: number | null = null;
+  aylikTarife: number | null = null;
   aylikDegerHatasi = signal('');
   aylikDegerKaydediliyor = signal(false);
 
@@ -606,20 +625,36 @@ export class FinansYonetimiComponent implements OnInit {
   aylikDegerDuzenle(satir: FinansAylikIs): void {
     if (!this.aylikDegerDuzenlenebilir(satir)) return;
     this.aylikDegerSatiri.set(satir);
-    this.aylikDeger = satir.tutarDuzenlenebilir ? satir.netTutar : satir.miktar;
+    this.aylikMiktar = this.aylikMiktarDuzenlenebilir(satir) ? satir.miktar : null;
+    this.aylikTarife = this.aylikTarifeDuzenlenebilir(satir) ? satir.birimFiyat : null;
     this.aylikDegerHatasi.set('');
     this.aylikDegerAcik.set(true);
   }
 
   aylikDegerKaydet(): void {
     const satir = this.aylikDegerSatiri();
-    if (!this.aylikDegerDuzenlenebilir(satir) || !Number.isFinite(this.aylikDeger) || this.aylikDegerKaydediliyor()) return;
-    const deger = Number(this.aylikDeger);
-    if (!satir?.ozelIsId || deger < 0 || (!satir.tutarDuzenlenebilir && deger === 0)) {
-      this.aylikDegerHatasi.set('Sıfırdan büyük geçerli bir değer girin.');
+    if (!satir?.ozelIsId || !this.aylikDegerDuzenlenebilir(satir) || this.aylikDegerKaydediliyor()) return;
+    const request: FinansAylikDegerRequest = {};
+    if (this.aylikMiktarDuzenlenebilir(satir) && Number(this.aylikMiktar) !== satir.miktar) {
+      const miktar = Number(this.aylikMiktar);
+      if (!Number.isFinite(miktar) || miktar <= 0) {
+        this.aylikDegerHatasi.set('Miktar sıfırdan büyük olmalıdır.');
+        return;
+      }
+      request.miktar = miktar;
+    }
+    if (this.aylikTarifeDuzenlenebilir(satir) && Number(this.aylikTarife) !== satir.birimFiyat) {
+      const tarife = Number(this.aylikTarife);
+      if (!Number.isFinite(tarife) || tarife < 0) {
+        this.aylikDegerHatasi.set('Tarife sıfır veya daha büyük olmalıdır.');
+        return;
+      }
+      request.netBirimFiyat = tarife;
+    }
+    if (request.miktar === undefined && request.netBirimFiyat === undefined) {
+      this.aylikDegerAcik.set(false);
       return;
     }
-    const request = satir.tutarDuzenlenebilir ? { netBirimFiyat: deger } : { miktar: deger };
     this.aylikDegerKaydediliyor.set(true);
     this.service.ozelIsAylikDegerGuncelle(satir.ozelIsId, request).subscribe(result => {
       this.aylikDegerKaydediliyor.set(false);
@@ -877,9 +912,25 @@ export class FinansYonetimiComponent implements OnInit {
 
   aylikDegerDuzenlenebilir(satir: FinansAylikIs | null): boolean {
     if (!satir || !this.permissions.hasAccess(this.izin.Modul) || !this.permissions.canWrite(this.izin.FiyatlandirmaDegistir)) return false;
-    return satir.tutarDuzenlenebilir
-      ? this.parasal(this.izin.TutarGoruntule) && Number.isFinite(satir.netTutar)
-      : this.miktarGorebilir(satir.birim, satir.isTuru) && Number.isFinite(satir.miktar);
+    return this.aylikMiktarDuzenlenebilir(satir) || this.aylikTarifeDuzenlenebilir(satir);
+  }
+
+  /** Bu ayın miktarı: sunucu izin verdiyse ve miktar görülebiliyorsa. */
+  aylikMiktarDuzenlenebilir(satir: FinansAylikIs | null): boolean {
+    return !!satir && satir.miktarDuzenlenebilir && this.miktarGorebilir(satir.birim, satir.isTuru) && Number.isFinite(satir.miktar);
+  }
+
+  /** Bu ayın tarifesi (birim fiyat): görme ve birim fiyat değiştirme izniyle (sunucu kuralının aynası). */
+  aylikTarifeDuzenlenebilir(satir: FinansAylikIs | null): boolean {
+    return !!satir && satir.tutarDuzenlenebilir && this.parasal(this.izin.BirimFiyatGoruntule) &&
+      this.permissions.canWrite(this.izin.BirimFiyatDegistir) && Number.isFinite(satir.birimFiyat);
+  }
+
+  /** Penceredeki değerlerle yeni net tutar önizlemesi. */
+  aylikNetOnizleme(satir: FinansAylikIs): number | null {
+    const miktar = this.aylikMiktarDuzenlenebilir(satir) ? Number(this.aylikMiktar) : satir.miktar;
+    const tarife = this.aylikTarifeDuzenlenebilir(satir) ? Number(this.aylikTarife) : satir.birimFiyat;
+    return Number.isFinite(miktar) && Number.isFinite(tarife) ? Math.round(miktar * tarife * 100) / 100 : null;
   }
 
   private onayaAlindiysaBildir(result: ApiResult<unknown>): boolean {

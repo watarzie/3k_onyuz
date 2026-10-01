@@ -35,8 +35,9 @@ describe('Ambalaj FB listesinden proje tamamlama ve Üretimi Tamamlanan sekmesi'
     api.getProjeSandikSecenekleri.and.returnValue(of({ isSuccess: true, value: [
       { id: 61, sandikNo: '6', ad: 'Kaynak', boy: 1000, en: 800, yukseklik: 600, sandikTipi: 'Ahşap Kapalı' },
     ] }));
-    confirm = jasmine.createSpyObj('ConfirmService', ['ask']);
+    confirm = jasmine.createSpyObj('ConfirmService', ['ask', 'askWithReason']);
     confirm.ask.and.returnValue(Promise.resolve(true));
+    confirm.askWithReason.and.returnValue(Promise.resolve(''));
     TestBed.configureTestingModule({
       imports: [AmbalajUretimListesiComponent],
       providers: [
@@ -68,6 +69,17 @@ describe('Ambalaj FB listesinden proje tamamlama ve Üretimi Tamamlanan sekmesi'
     );
   }
 
+  it('Normal sekmede üretim durumu filtresi sunucuya gider; tamamlanan sekmesinde gönderilmez', () => {
+    const { c } = setup();
+    expect(api.getProjeler.calls.mostRecent().args[0]?.uretimDurumu).toBeUndefined();
+    c.uretimDurumuFiltresiDegistir(1);
+    expect(api.getProjeler.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({ tamamlanan: false, uretimDurumu: 1, pageNumber: 1 }));
+    c.uretimDurumuFiltresiDegistir(2);
+    expect(api.getProjeler.calls.mostRecent().args[0]?.uretimDurumu).toBe(2);
+    c.aktifKuyrukDegistir('tamamlanan');
+    expect(api.getProjeler.calls.mostRecent().args[0]?.uretimDurumu).toBeUndefined();
+  });
+
   it('Normal sekme tamamlananları hariç tutar, Üretimi Tamamlanan sekmesi yalnız onları ister (A3/A4)', () => {
     const { c } = setup();
     expect(api.getProjeler.calls.mostRecent().args[0]?.tamamlanan).toBeFalse();
@@ -83,7 +95,7 @@ describe('Ambalaj FB listesinden proje tamamlama ve Üretimi Tamamlanan sekmesi'
     buton!.click();
     flushMicrotasks();
     fixture.detectChanges();
-    expect(confirm.ask).toHaveBeenCalled();
+    expect(confirm.askWithReason).toHaveBeenCalled();
     expect(api.projeUretimDurumu).toHaveBeenCalledWith(7, true, '');
     expect(c.projeTamamlanabilir({ ...proje, tamamlananSandikAdedi: 3 })).toBeFalse();
     allowed.delete('ambalaj-uretimi-tamamla');

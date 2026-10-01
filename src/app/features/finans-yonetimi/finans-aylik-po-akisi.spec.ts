@@ -46,7 +46,8 @@ describe('Finans aylık görünüm PO/fatura akışı', () => {
   beforeEach(() => {
     reads.set(new Set([FINANS_YETKI.Modul, FINANS_YETKI.KayitGoruntule, FINANS_YETKI.SiparisOperasyonGoruntule]));
     writes.set(new Set([FINANS_YETKI.PoGir, FINANS_YETKI.FaturaGir]));
-    api = jasmine.createSpyObj('FinansService', ['aylikIsler', 'giderKategorileri', 'giderKalemleri', 'giderGuncelle', 'giderler', 'paraBirimleri', 'vadeUyarilari', 'faturalar']);
+    api = jasmine.createSpyObj('FinansService', ['aylikIsler', 'giderKategorileri', 'giderKalemleri', 'giderGuncelle', 'giderler', 'paraBirimleri', 'vadeUyarilari', 'faturalar', 'ozelIsAylikDegerGuncelle']);
+    api.ozelIsAylikDegerGuncelle.and.returnValue(of({ isSuccess: true }));
     api.vadeUyarilari.and.returnValue(of({ isSuccess: true, value: { vadeUyariGunu: 7, vadesiGecenAdet: 0, yaklasanAdet: 0, kalemler: [] } }));
     api.paraBirimleri.and.returnValue(of({ isSuccess: true, value: [
       { id: 1, kod: 'TRY', ad: 'Türk lirası', sembol: '₺', aktif: true, sira: 1 },
@@ -77,6 +78,23 @@ describe('Finans aylık görünüm PO/fatura akışı', () => {
     fixture.detectChanges();
     return { fixture, c, el: fixture.nativeElement as HTMLElement };
   }
+
+  it('özel/düzenli işte bu ayın miktarı ve tarifesi birlikte düzenlenir; yalnız değişen değer gönderilir', () => {
+    reads.set(new Set([...reads(), FINANS_YETKI.ParasalVeriGoruntule, FINANS_YETKI.BirimFiyatGoruntule, FINANS_YETKI.TutarGoruntule]));
+    writes.set(new Set([...writes(), FINANS_YETKI.FiyatlandirmaDegistir, FINANS_YETKI.BirimFiyatDegistir]));
+    const { c } = setup();
+    const satir = { ...kira, birim: 'Hizmet', miktar: 1, birimFiyat: 360000, miktarDuzenlenebilir: true, tutarDuzenlenebilir: true };
+    c.aylikDegerDuzenle(satir);
+    expect(c.aylikTarifeDuzenlenebilir(satir)).toBeTrue();
+    expect(c.aylikTarife).toBe(360000);
+    c.aylikTarife = 380000;
+    expect(c.aylikNetOnizleme(satir)).toBe(380000);
+    c.aylikDegerKaydet();
+    expect(api.ozelIsAylikDegerGuncelle).toHaveBeenCalledOnceWith(50, { netBirimFiyat: 380000 });
+
+    writes.set(new Set([FINANS_YETKI.FiyatlandirmaDegistir]));
+    expect(c.aylikTarifeDuzenlenebilir(satir)).toBeFalse();
+  });
 
   it('vade uyarısı fatura okuyana gösterilir; uyarıdan vadesi geçen faturaların listesi açılır (D3)', () => {
     api.vadeUyarilari.and.returnValue(of({ isSuccess: true, value: { vadeUyariGunu: 7, vadesiGecenAdet: 2, yaklasanAdet: 1, kalemler: [] } }));

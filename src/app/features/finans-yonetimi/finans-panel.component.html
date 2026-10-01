@@ -7,56 +7,24 @@
         <p>{{ t('PANEL_HELP') }}</p>
       </div>
     </div>
-    <div class="v2-fields compact">
-      <label
-        >{{ t('START') }}<input type="date" [(ngModel)]="baslangic" (change)="filtrele()"
-      /></label>
-      <label>{{ t('AS_OF') }}<input type="date" [(ngModel)]="bitis" (change)="filtrele()" /></label>
-      <button
-        class="btn btn-outline-primary"
-        type="button"
-        (click)="yenile()"
-        [disabled]="loading()"
-      >
-        <i class="ri-refresh-line" aria-hidden="true"></i>
-        {{ t('REFRESH') }}
+    <div class="period-filter">
+      <div class="v2-segmented" role="group" [attr.aria-label]="t('PANEL_PERIOD')">
+        @for (secenek of ['tum', 'yil', 'ay', 'ozel']; track secenek) {
+          <button type="button" [class.active]="donem() === secenek" [attr.aria-pressed]="donem() === secenek" (click)="donemSec($any(secenek))">
+            {{ t('PANEL_PERIOD_' + secenek.toUpperCase()) }}
+          </button>
+        }
+      </div>
+      @if (donem() === 'ozel') {
+        <label class="filter-field"><span>{{ t('START') }}</span><input type="date" [(ngModel)]="baslangic" (change)="yenile()" /></label>
+        <label class="filter-field"><span>{{ t('END') }}</span><input type="date" [(ngModel)]="bitis" (change)="yenile()" /></label>
+      }
+      <button class="btn btn-light btn-sm" type="button" [title]="t('REFRESH')" [attr.aria-label]="t('REFRESH')" (click)="yenile()" [disabled]="loading()">
+        <i class="ri-refresh-line" [class.spin]="loading()" aria-hidden="true"></i>
       </button>
     </div>
   </header>
-  @if (kayitGorunur()) {
-    <nav class="v2-segmented dashboard-views" [attr.aria-label]="t('PANEL_VIEW')">
-      <button
-        type="button"
-        [class.active]="gorunum() === 'aylik'"
-        [attr.aria-pressed]="gorunum() === 'aylik'"
-        (click)="gorunumSec('aylik')"
-      >
-        <i class="ri-calendar-2-line" aria-hidden="true"></i>
-        {{ t('PANEL_PERIOD') }}
-      </button>
-      <button
-        type="button"
-        [class.active]="gorunum() === 'arama'"
-        [attr.aria-pressed]="gorunum() === 'arama'"
-        (click)="gorunumSec('arama')"
-      >
-        <i class="ri-search-2-line" aria-hidden="true"></i>
-        {{ t('PANEL_ALL_SEARCH') }}
-      </button>
-      @if (yaslandirmaGorunur()) {
-        <button
-          type="button"
-          [class.active]="gorunum() === 'bekleyen'"
-          [attr.aria-pressed]="gorunum() === 'bekleyen'"
-          (click)="gorunumSec('bekleyen')"
-        >
-          <i class="ri-time-line" aria-hidden="true"></i>
-          {{ t('PANEL_PENDING') }}
-        </button>
-      }
-    </nav>
-  }
-  @if ((!kayitGorunur() || gorunum() === 'aylik') && panel(); as p) {
+  @if (panel(); as p) {
     <div class="dashboard-counts">
       <article class="dashboard-stat stat-amber">
         <i class="ri-time-line" aria-hidden="true"></i>
@@ -108,23 +76,35 @@
           <div>
             <span>PO</span>
             <dl>
-              <dt>{{ t('NO_ORDER') }}</dt>
-              <dd>{{ pd.siparisYok }}</dd>
-              <dt>{{ t('PARTIAL_ORDER') }}</dt>
-              <dd>{{ pd.siparisKismi }}</dd>
-              <dt>{{ t('FULL_ORDER') }}</dt>
-              <dd>{{ pd.siparisTam }}</dd>
+              <div>
+                <dt>{{ t('NO_ORDER') }}</dt>
+                <dd>{{ pd.siparisYok }}</dd>
+              </div>
+              <div>
+                <dt>{{ t('PARTIAL_ORDER') }}</dt>
+                <dd>{{ pd.siparisKismi }}</dd>
+              </div>
+              <div>
+                <dt>{{ t('FULL_ORDER') }}</dt>
+                <dd>{{ pd.siparisTam }}</dd>
+              </div>
             </dl>
           </div>
           <div>
             <span>{{ t('INVOICE') }}</span>
             <dl>
-              <dt>{{ t('NO_INVOICE') }}</dt>
-              <dd>{{ pd.faturaYok }}</dd>
-              <dt>{{ t('PARTIAL_INVOICE') }}</dt>
-              <dd>{{ pd.faturaKismi }}</dd>
-              <dt>{{ t('FULL_INVOICE') }}</dt>
-              <dd>{{ pd.faturaTam }}</dd>
+              <div>
+                <dt>{{ t('NO_INVOICE') }}</dt>
+                <dd>{{ pd.faturaYok }}</dd>
+              </div>
+              <div>
+                <dt>{{ t('PARTIAL_INVOICE') }}</dt>
+                <dd>{{ pd.faturaKismi }}</dd>
+              </div>
+              <div>
+                <dt>{{ t('FULL_INVOICE') }}</dt>
+                <dd>{{ pd.faturaTam }}</dd>
+              </div>
             </dl>
           </div>
         </div>
@@ -304,282 +284,5 @@
         }
       </article>
     }
-  }
-  @if (kayitGorunur() && gorunum() === 'aylik') {
-    <div class="dashboard-activity-toggle">
-      <button type="button" class="btn btn-light btn-sm" [attr.aria-expanded]="hareketlerAcik()" (click)="hareketleriAcKapat()">
-        <i [class]="hareketlerAcik() ? 'ri-arrow-up-s-line' : 'ri-list-check-2'" aria-hidden="true"></i>
-        {{ hareketlerAcik() ? t('PANEL_HIDE_ACTIVITY') : t('PANEL_SHOW_ACTIVITY') }}
-      </button>
-    </div>
-  }
-  @if (kayitGorunur() && (gorunum() !== 'aylik' || hareketlerAcik())) {
-    <article class="v2-card v2-list-card dashboard-activity">
-      <div class="dashboard-filter-grid">
-        <label class="v2-search"
-          ><span>{{ t('SEARCH') }}</span
-          ><span class="dashboard-search-control"
-            ><i class="ri-search-line" aria-hidden="true"></i
-            ><input
-              type="search"
-              [(ngModel)]="arama"
-              (ngModelChange)="aramaDegisti()"
-              [placeholder]="
-                gorunum() === 'arama' ? t('PANEL_SEARCH_ALL_HINT') : t('PANEL_SEARCH_HINT')
-              " /></span
-        ></label>
-        <label
-          >{{ t('CURRENCY') }}
-          <select
-            [attr.aria-label]="t('CURRENCY')"
-            [ngModel]="para()"
-            (ngModelChange)="para.set($event); filtrele()"
-          >
-            @for (kod of paraKodlari(); track kod) {
-              <option [value]="kod">{{ kod }}</option>
-            }
-          </select>
-        </label>
-        @if (gorunum() === 'aylik') {
-          <label
-            >{{ t('PANEL_ACTIVITY_TYPE') }}
-            <select
-              [attr.aria-label]="t('PANEL_ACTIVITY_TYPE')"
-              [(ngModel)]="tur"
-              (change)="filtrele()"
-            >
-              <option value="">{{ t('PANEL_ALL_ACTIVITY') }}</option>
-              <option value="IsKaydi">{{ t('PANEL_JOBS') }}</option>
-              <option value="Gider">{{ t('PANEL_EXPENSES') }}</option>
-              <option value="Siparis">{{ t('PANEL_ORDERS') }}</option>
-              <option value="Fatura">{{ t('INVOICES') }}</option>
-            </select>
-          </label>
-        }
-        <label
-          >{{ t('TYPE') }}
-          <select [attr.aria-label]="t('TYPE')" [(ngModel)]="isTuru" (change)="filtrele()">
-            <option value="">{{ t('PANEL_ALL_TYPES') }}</option>
-            @for (item of isTurleri; track item.id) {
-              <option [value]="item.id">{{ t(item.ad) }}</option>
-            }
-          </select>
-        </label>
-        <label
-          >{{ t('WORK_STATUS') }}
-          <select [attr.aria-label]="t('WORK_STATUS')" [(ngModel)]="durum" (change)="filtrele()">
-            <option value="">{{ t('PANEL_ALL_STATES') }}</option>
-            <option value="1">{{ t('PENDING_ORDER') }}</option>
-            <option value="2">{{ t('PARTIAL_ORDER') }}</option>
-            <option value="3">{{ t('FULL_ORDER') }}</option>
-            <option value="4">{{ t('PARTIAL_INVOICE') }}</option>
-            <option value="5">{{ t('FULL_INVOICE') }}</option>
-          </select>
-        </label>
-        @if (gorunum() === 'bekleyen') {
-          <label
-            >{{ t('PANEL_WAIT_STAGE') }}
-            <select [attr.aria-label]="t('PANEL_WAIT_STAGE')" [ngModel]="asama()" (ngModelChange)="asama.set($event); filtrele()">
-              <option value="">{{ t('PANEL_ALL_STATES') }}</option>
-              <option value="Sipariş">{{ t('PENDING_ORDER') }}</option>
-              <option value="Fatura">{{ t('PENDING_INVOICE') }}</option>
-            </select>
-          </label>
-          <label
-            >{{ t('PANEL_WAIT_DAYS') }}
-            <select
-              [attr.aria-label]="t('PANEL_WAIT_DAYS')"
-              [(ngModel)]="minimumGun"
-              (change)="filtrele()"
-            >
-              <option [ngValue]="15">15+ {{ t('DAY') }}</option>
-              <option [ngValue]="30">30+ {{ t('DAY') }}</option>
-              <option [ngValue]="60">60+ {{ t('DAY') }}</option>
-              <option [ngValue]="90">90+ {{ t('DAY') }}</option>
-            </select>
-          </label>
-        }
-        @if (permissions.canWrite(izin.PoGir) && secilenler().size) {
-          <button
-            class="btn btn-primary dashboard-selection"
-            type="button"
-            (click)="topluSiparis()"
-          >
-            <i class="ri-add-circle-line" aria-hidden="true"></i>
-            {{ t('PANEL_PO_SELECTION') }} ({{ secilenler().size }})
-          </button>
-        }
-      </div>
-      @if (gorunum() === 'arama') {
-        <p class="v2-note dashboard-note dashboard-list-note">
-          <i class="ri-information-line" aria-hidden="true"></i>{{ t('PANEL_ALL_SEARCH_NOTE') }}
-        </p>
-      }
-      @if (gorunum() === 'bekleyen') {
-        <p class="v2-note dashboard-note dashboard-list-note">
-          <i class="ri-information-line" aria-hidden="true"></i>{{ t('PANEL_AGE_NOTE') }}
-        </p>
-      }
-      @if (loading()) {
-        <div class="v2-empty" role="status">
-          <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span
-          >{{ t('PANEL_LOADING') }}
-        </div>
-      } @else {
-        <div class="table-responsive">
-          <table class="table v2-table">
-            <thead>
-              <tr>
-                <th>{{ t('SELECTION') }}</th>
-                <th>{{ t('PROJECT_WORK') }}</th>
-                <th>{{ t('PANEL_FINANCE_DATE') }}</th>
-                <th>{{ t('STATUS') }}</th>
-                @if (parasal(izin.TutarGoruntule)) {
-                  <th>{{ t('AMOUNT') }}</th>
-                }
-                <th>{{ t('ACTION') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              @if (gorunum() === 'aylik') {
-                @for (row of hareketler()?.items; track row.tur + row.id) {
-                  <tr>
-                    <td>
-                      @if (row.tur === 'IsKaydi' && permissions.canWrite(izin.PoGir)) {
-                        <input
-                          type="checkbox"
-                          [attr.aria-label]="row.ad + ' ' + t('SELECT')"
-                          [checked]="secilenler().has(row.id)"
-                          (change)="sec(row.id, $any($event.target).checked)"
-                        />
-                      }
-                    </td>
-                    <td>
-                      <strong>{{ row.projeNo }}</strong
-                      ><small>{{ row.ad }}</small>
-                    </td>
-                    <td>
-                      {{ row.finansTarihi | date: 'dd.MM.yyyy'
-                      }}<small
-                        >{{ t('PANEL_WORK_DATE') }} {{ row.isTarihi | date: 'dd.MM.yyyy' }}</small
-                      >
-                    </td>
-                    <td>
-                      <span class="v2-status">{{ row.durum }}</span>
-                    </td>
-                    @if (parasal(izin.TutarGoruntule)) {
-                      <td>{{ row.netTutar | number: '1.2-2' }} {{ row.paraBirimi }}</td>
-                    }
-                    <td>
-                      <button
-                        class="btn btn-outline-primary btn-sm"
-                        (click)="kayitAc.emit({ tur: row.tur, id: row.id })"
-                      >
-                        {{ t('DETAIL') }}
-                      </button>
-                    </td>
-                  </tr>
-                }
-              } @else if (gorunum() === 'arama') {
-                @for (row of sonuclar()?.items; track row.id) {
-                  <tr>
-                    <td>
-                      @if (permissions.canWrite(izin.PoGir)) {
-                        <input
-                          type="checkbox"
-                          [attr.aria-label]="row.projeNo + ' ' + t('SELECT')"
-                          [checked]="secilenler().has(row.id)"
-                          (change)="sec(row.id, $any($event.target).checked)"
-                        />
-                      }
-                    </td>
-                    <td>
-                      <strong>{{ row.projeNo }}</strong
-                      ><small>{{ row.isAdi || row.sandikAdi }} · {{ row.musteri }}</small
-                      ><small
-                        >PO: {{ row.poNumaralari.join(', ') || '—' }} · {{ t('INVOICE') }}:
-                        {{ row.faturaNumaralari.join(', ') || '—' }}</small
-                      >
-                    </td>
-                    <td>
-                      {{ row.finansTarihi | date: 'dd.MM.yyyy'
-                      }}<small>{{ row.finansDonemi | date: 'MM.yyyy' }}</small>
-                    </td>
-                    <td>
-                      <span class="v2-status" [class.is-active]="row.kaynakAktif">{{
-                        row.kaynakAktif ? t('PANEL_ACTIVE_SOURCE') : t('PANEL_INACTIVE_SOURCE')
-                      }}</span>
-                    </td>
-                    @if (parasal(izin.TutarGoruntule)) {
-                      <td>{{ row.netTutar | number: '1.2-2' }} {{ row.paraBirimi }}</td>
-                    }
-                    <td>
-                      <button
-                        class="btn btn-outline-primary btn-sm"
-                        (click)="kayitAc.emit({ tur: 'IsKaydi', id: row.id })"
-                      >
-                        {{ t('DETAIL') }}
-                      </button>
-                    </td>
-                  </tr>
-                }
-              } @else {
-                @for (
-                  row of bekleyenler()?.items;
-                  track row.asama + ':' + row.isKaydiId + ':' + row.siparisKalemiId
-                ) {
-                  <tr>
-                    <td>—</td>
-                    <td>
-                      <strong>{{ row.projeNo }}</strong
-                      ><small>{{ row.isAdi }} · {{ row.poNumarasi }}</small>
-                    </td>
-                    <td>{{ row.baslangic | date: 'dd.MM.yyyy' }}</td>
-                    <td>
-                      <span class="v2-status">{{ row.asama }} · {{ row.gun }} {{ t('DAY') }}</span>
-                    </td>
-                    @if (parasal(izin.TutarGoruntule)) {
-                      <td>{{ row.kalanNetTutar | number: '1.2-2' }} {{ row.paraBirimi }}</td>
-                    }
-                    <td>
-                      <button
-                        class="btn btn-outline-primary btn-sm"
-                        (click)="kayitAc.emit({ tur: 'IsKaydi', id: row.isKaydiId })"
-                      >
-                        {{ t('DETAIL') }}
-                      </button>
-                    </td>
-                  </tr>
-                }
-              }
-              @if (!pager()?.totalCount) {
-                <tr>
-                  <td [attr.colspan]="parasal(izin.TutarGoruntule) ? 6 : 5">
-                    <div class="v2-empty">
-                      <i class="ri-inbox-2-line" aria-hidden="true"></i>
-                      <p>{{ t('PANEL_EMPTY') }}</p>
-                    </div>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-        @if (pager(); as page) {
-          <div class="v2-pager">
-            <app-server-pager
-              [pageNumber]="page.pageNumber"
-              [pageSize]="page.pageSize"
-              [totalCount]="page.totalCount"
-              [totalPages]="page.totalPages"
-              [hasPreviousPage]="page.hasPreviousPage"
-              [hasNextPage]="page.hasNextPage"
-              (pageChange)="sayfa($event)"
-              (pageSizeChange)="boyut($event)"
-            />
-          </div>
-        }
-      }
-    </article>
   }
 </section>

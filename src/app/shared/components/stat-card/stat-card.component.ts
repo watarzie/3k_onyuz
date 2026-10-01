@@ -19,7 +19,9 @@ import { NgClass } from '@angular/common';
         } @else {
           <div>
             <h3 class="mb-0 fw-bold">{{ value() }}</h3>
-            <span class="stat-label">{{ label() }}</span>
+            <span class="stat-label">{{ label() }}@if (hint()) {
+                <i class="ri-information-line stat-hint" [title]="hint()" [attr.aria-label]="hint()"></i>
+              }</span>
           </div>
         }
       </div>
@@ -46,6 +48,7 @@ import { NgClass } from '@angular/common';
       font-size: 22px;
       flex: 0 0 50px;
     }
+    .stat-hint { margin-left: 4px; font-size: 13px; cursor: help; opacity: .9; }
     .stat-label {
       display: block;
       font-size: 13px;
@@ -108,6 +111,8 @@ export class StatCardComponent {
   icon = input<string>('ri-folder-line');
   color = input<'primary' | 'success' | 'info' | 'danger' | 'warning' | 'secondary'>('primary');
   loading = input(false);
+  /** Kartın içinde bilgi simgesiyle gösterilen açıklama; kart boyutunu değiştirmez. */
+  hint = input('');
 
   colorClass = () => `card-${this.color()}`;
 }

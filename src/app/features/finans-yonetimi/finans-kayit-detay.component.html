@@ -47,11 +47,6 @@
           <i class="ri-price-tag-3-line" aria-hidden="true"></i>Fiyatlandırma
         </button>
       }
-      @if (permissions.hasAccess(izin.BelgeIndir) || permissions.canWrite(izin.BelgeYukle)) {
-        <button (click)="tab('belge')" [class.active]="sekme() === 'belge'">
-          <i class="ri-file-pdf-2-line" aria-hidden="true"></i>PDF belgeleri
-        </button>
-      }
       @if (permissions.hasAccess(izin.DenetimGor)) {
         <button (click)="tab('gecmis')" [class.active]="sekme() === 'gecmis'">
           <i class="ri-history-line" aria-hidden="true"></i>Değişiklik geçmişi
@@ -330,7 +325,7 @@
           }
         } @else {
           <p class="v2-note">
-            Bu belgeye ait PDF sürümlerini, değişiklik geçmişini ve yetkili işlemleri ilgili
+            Bu belgenin değişiklik geçmişini ve yetkili işlemleri ilgili
             sekmelerden yönetebilirsiniz.
           </p>
         }
@@ -461,59 +456,6 @@
             </button>
           </footer>
         </article>
-      }
-      @if (sekme() === 'belge') {
-        <p class="v2-note v2-dialog-info">
-          <i class="ri-information-line" aria-hidden="true"></i>Her yükleme yeni sürümdür. Önceki
-          belgeler korunur. En fazla 10 MB PDF.
-        </p>
-        @if (permissions.canWrite(izin.BelgeYukle)) {
-          <label class="v2-dialog-upload"
-            >PDF yükle<input
-              type="file"
-              accept="application/pdf,.pdf"
-              [disabled]="saving()"
-              (change)="yukleBelge($event)"
-          /></label>
-        }
-        <div class="v2-dialog-table-wrap">
-          <table class="table v2-table">
-            <thead>
-              <tr>
-                <th>Sürüm</th>
-                <th>Belge</th>
-                <th>Yükleyen / tarih</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (b of belgeler(); track b.id) {
-                <tr>
-                  <td>
-                    <span class="v2-tag">v{{ b.surum }}</span>
-                  </td>
-                  <td>
-                    {{ b.orijinalAd }}<small>{{ b.boyut | number }} bayt</small>
-                  </td>
-                  <td>
-                    {{ b.yukleyen }}<small>{{ b.yuklemeTarihi | date: 'dd.MM.yyyy HH:mm' }}</small>
-                  </td>
-                  <td class="v2-dialog-action-cell">
-                    @if (belgeIndirilebilir()) {
-                      <button class="btn btn-outline-primary btn-sm" (click)="belgeIndir(b)">
-                        <i class="ri-download-2-line" aria-hidden="true"></i>İndir
-                      </button>
-                    }
-                  </td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="4">Henüz belge yok.</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
       }
       @if (sekme() === 'gecmis' && permissions.hasAccess(izin.DenetimGor)) {
         <div class="v2-dialog-table-wrap v2-audit-table">

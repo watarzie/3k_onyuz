@@ -160,6 +160,56 @@
           >
         </div>
       </details>
+      @if (onizlemeGorulebilir()) {
+        <article class="v2-card v2-report-preview">
+          <header class="v2-card-heading v2-toolbar">
+            <h4><i class="ri-eye-line" aria-hidden="true"></i>{{ t('REPORT_PREVIEW') }}</h4>
+            <button class="btn btn-outline-primary btn-sm" [disabled]="onizlemeYukleniyor()" (click)="onizle()">
+              <i [class]="onizlemeYukleniyor() ? 'ri-loader-4-line spin' : 'ri-eye-line'" aria-hidden="true"></i
+              >{{ t(onizleme() ? 'REPORT_PREVIEW_REFRESH' : 'REPORT_PREVIEW_SHOW') }}
+            </button>
+          </header>
+          @if (onizleme(); as o) {
+            @if (onizlemeEski()) {
+              <p class="v2-note v2-preview-stale" role="status">
+                <i class="ri-error-warning-line" aria-hidden="true"></i>{{ t('REPORT_PREVIEW_STALE') }}
+              </p>
+            }
+            <p class="v2-note">
+              <strong>{{ o.baslik }}</strong> · {{ t('REPORT_PREVIEW_COUNT').replace('{0}', '' + o.toplamSatir) }}
+              @if (o.toplamSatir > o.satirlar.length) {
+                · {{ t('REPORT_PREVIEW_LIMIT').replace('{0}', '' + o.satirlar.length) }}
+              }
+            </p>
+            @if (o.satirlar.length) {
+              <div class="v2-preview-wrap">
+                <table class="table v2-table v2-preview-table">
+                  <thead>
+                    <tr>
+                      @for (sutun of o.sutunlar; track $index) {
+                        <th>{{ sutun }}</th>
+                      }
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (satir of o.satirlar; track $index) {
+                      <tr>
+                        @for (deger of satir; track $index) {
+                          <td>{{ deger }}</td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="v2-empty">{{ t('REPORT_PREVIEW_EMPTY') }}</div>
+            }
+          } @else {
+            <p class="v2-note">{{ t('REPORT_PREVIEW_HELP') }}</p>
+          }
+        </article>
+      }
     </div>
     <aside class="v2-card v2-export-card">
       <span class="v2-export-icon"
