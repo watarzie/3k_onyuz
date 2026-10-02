@@ -272,11 +272,6 @@
   }
 }
 
-.kilit-ac-modal {
-  border-radius: 12px;
-  overflow: hidden;
-}
-
 .kilit-ac-options {
   display: grid;
   gap: 10px;
@@ -458,45 +453,6 @@
 }
 
 // ===== Modals =====
-.modal-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1050;
-  backdrop-filter: blur(2px);
-}
-.toplu-sevk-modal {
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.sahaya-aktar-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 1055;
-  width: min(620px, calc(100vw - 32px));
-  max-height: min(760px, calc(100vh - 32px));
-  box-shadow: 0 18px 48px rgba(15, 23, 42, .22);
-  display: flex;
-  flex-direction: column;
-
-  .modal-header {
-    border-radius: 12px 12px 0 0;
-    flex: 0 0 auto;
-  }
-
-  .modal-body {
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-
-  .modal-footer {
-    flex: 0 0 auto;
-  }
-}
-
 .sahaya-aktar-summary {
   display: flex;
   align-items: center;
@@ -686,8 +642,4 @@
     grid-template-columns: 1fr;
   }
 
-  .sahaya-aktar-modal {
-    width: calc(100vw - 20px);
-    max-height: calc(100vh - 20px);
-  }
 }

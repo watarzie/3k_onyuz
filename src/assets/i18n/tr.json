@@ -761,6 +761,9 @@
     "SERVER_CONNECTION_ERROR": "Sunucuya bağlanılamıyor. Lütfen internet bağlantınızı kontrol edin.",
     "SESSION_EXPIRED": "Oturumunuz sona erdi. Lütfen tekrar giriş yapın."
   },
+  "AUTH_SHOWCASE": {
+    "WELCOME": "Devam etmek için hesabınıza giriş yapın"
+  },
   "AUTH_2FA": {
     "LOGIN_CARD_LABEL": "3K güvenli giriş",
     "TOGGLE_PASSWORD": "Şifre görünürlüğünü değiştir",

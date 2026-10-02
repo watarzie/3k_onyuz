@@ -34,6 +34,19 @@ export class CekiRevizyonGecmisiComponent {
 
   constructor() { effect(() => this.load(this.projeId(), 1)); }
 
+  /** Durum hapının tonu: uygulandı yeşil, bekleyen turuncu, süren mavi, ret/başarısız kırmızı. */
+  durumTonu(durum: string): string {
+    switch (durum) {
+      case 'Uygulandi': return 'success';
+      case 'OnayBekliyor': return 'warning';
+      case 'Onaylandi':
+      case 'Uygulaniyor': return 'info';
+      case 'Reddedildi':
+      case 'Basarisiz': return 'danger';
+      default: return 'neutral';
+    }
+  }
+
   load(projeId: number, page: number): void {
     const version = ++this.requestVersion;
     ++this.detailVersion;

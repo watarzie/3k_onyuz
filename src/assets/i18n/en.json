@@ -761,6 +761,9 @@
     "SERVER_CONNECTION_ERROR": "Cannot connect to server. Please check your internet connection.",
     "SESSION_EXPIRED": "Your session has expired. Please sign in again."
   },
+  "AUTH_SHOWCASE": {
+    "WELCOME": "Sign in to your account to continue"
+  },
   "AUTH_2FA": {
     "LOGIN_CARD_LABEL": "3K secure sign-in",
     "TOGGLE_PASSWORD": "Toggle password visibility",
