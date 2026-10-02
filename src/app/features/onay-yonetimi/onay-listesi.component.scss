@@ -370,149 +370,436 @@
   }
 }
 
-.approval-rules-shell {
-  .modal-dialog {
-    max-width: 860px;
-  }
-
-  .modal-content {
-    border: 0;
-    border-radius: 10px;
-    box-shadow: 0 24px 70px rgba(15, 23, 42, .2);
-    overflow: hidden;
-  }
-
-  .modal-body {
-    max-height: 72vh;
-    overflow-y: auto;
-  }
+// ===== Dinamik onay kuralları penceresi (tz-modal) =====
+// Üstte özet + arama/filtre, gövdede kural kartları: durum ikonu, etiket, anahtar ve onaycı rol çipleri.
+.rules-modal {
+  width: min(940px, calc(100vw - 32px));
+  height: min(820px, calc(100vh - 32px));
 }
 
-.rules-list {
+.rules-toolbar {
   display: grid;
-  gap: .75rem;
+  gap: 14px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--borderColor);
+  background: #fafbfc;
 }
 
-.approval-rule-card {
+.rules-stats {
   display: grid;
-  gap: .85rem;
-  padding: 1rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 9px;
-  background: #fff;
-  transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
-
-  &:hover {
-    border-color: #bfdbfe;
-    box-shadow: 0 12px 32px rgba(15, 23, 42, .06);
-  }
-
-  &.is-saving {
-    opacity: .72;
-    cursor: wait;
-  }
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.approval-rule-card__main {
+.rules-stat {
+  --ton: #475569;
   display: flex;
   align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  border: 1px solid var(--borderColor);
+  border-radius: 12px;
+  background: #fff;
+
+  &[data-ton='primary'] { --ton: var(--primaryColor); }
+  &[data-ton='muted'] { --ton: #64748b; }
+  &[data-ton='locked'] { --ton: #7c3aed; }
+
+  strong {
+    display: block;
+    color: var(--blackColor);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+  small {
+    color: var(--bodyColor);
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+}
+
+.rules-stat__icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ton) 11%, #fff);
+  color: var(--ton);
+  font-size: 17px;
+}
+
+.rules-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 10px;
 
-  .form-switch .form-check-input {
-    width: 2.65rem;
-    height: 1.35rem;
-    cursor: pointer;
+  .tz-segmented button {
+    padding: 6px 12px;
+  }
+}
 
-    &:disabled {
-      cursor: not-allowed;
-      opacity: .55;
+.rules-search {
+  flex: 0 1 auto;
+  width: min(380px, 100%);
+
+  .form-control {
+    min-height: 38px;
+    border: 1px solid var(--borderColor);
+    border-radius: 10px;
+    font-size: 13px;
+
+    &:focus {
+      border-color: var(--primaryColor);
+      box-shadow: 0 0 0 3px rgba(96, 93, 255, .12);
     }
   }
 }
 
-.rule-info {
+// Liste dikey akar ve kayar; kartlar küçülmez (sabit yükseklikli pencerede içerikleri kesilmesin).
+.rules-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  background: #f6f7f9;
+}
+
+// Kural kartı: onay açıkken solda mor şerit, her zaman onaydaysa koyu mor; kapalıyken gri.
+// Şerit iç gölgeyle çizilir; kartta overflow kesmesi yoktur.
+.rule-card {
+  --rule-ton: #94a3b8;
+  display: grid;
+  flex: 0 0 auto;
+  gap: 14px;
+  padding: 16px 18px 16px 22px;
+  border: 1px solid var(--borderColor);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: inset 4px 0 0 var(--rule-ton);
+  transition: border-color .16s ease, box-shadow .16s ease, opacity .16s ease;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--rule-ton) 35%, var(--borderColor));
+    box-shadow: inset 4px 0 0 var(--rule-ton), 0 10px 28px -18px rgba(15, 23, 42, .35);
+  }
+  &.is-on { --rule-ton: var(--primaryColor); }
+  &.is-locked { --rule-ton: #7c3aed; }
+  &.is-saving {
+    opacity: .75;
+    cursor: progress;
+  }
+}
+
+.rule-card__head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.rule-card__icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--rule-ton) 12%, #fff);
+  color: var(--rule-ton);
+  font-size: 19px;
+}
+
+.rule-card__title {
+  flex: 1 1 auto;
   min-width: 0;
 
   h6 {
     margin: 0;
-    color: #1f2937;
-    font-size: .98rem;
-    font-weight: 750;
+    color: var(--blackColor);
+    font-size: 15px;
+    font-weight: 700;
   }
 }
 
-.rule-meta {
+.rule-card__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: .45rem;
-  margin-top: .35rem;
-  color: #64748b;
-  font-size: .78rem;
+  align-items: center;
+  gap: 6px;
+  margin-top: 5px;
+
+  code {
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .02em;
+  }
 }
 
-.always-approval-badge {
+.rule-badge {
   display: inline-flex;
   align-items: center;
-  padding: .15rem .45rem;
+  gap: 4px;
+  padding: 2px 9px;
   border-radius: 999px;
-  background: #eef2ff;
-  color: #4f46e5;
+  font-size: 11.5px;
   font-weight: 700;
+
+  i { font-size: 13px; }
+  &--on { background: color-mix(in srgb, var(--primaryColor) 10%, #fff); color: var(--primaryColor); }
+  &--locked { background: #f3e8ff; color: #6d28d9; }
+  &--off { background: #f1f5f9; color: #64748b; }
 }
 
-.approval-roles {
+.rule-card__saving {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--bodyColor);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+// Anahtar: açıkken kuralın renginde; kilitli kural açık ama soluk ve tıklanamaz.
+.rule-switch {
+  position: relative;
+  flex: 0 0 auto;
+  margin: 0;
+  cursor: pointer;
+
+  input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: inherit;
+  }
+  input:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.rule-switch__track {
+  display: block;
+  width: 46px;
+  height: 26px;
+  padding: 3px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  transition: background-color .18s ease, box-shadow .18s ease;
+}
+
+.rule-switch__thumb {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .25);
+  transition: transform .18s cubic-bezier(.2, .7, .2, 1);
+}
+
+.rule-switch input:checked + .rule-switch__track {
+  background: var(--rule-ton);
+  .rule-switch__thumb { transform: translateX(20px); }
+}
+.rule-switch input:focus-visible + .rule-switch__track {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 25%, transparent);
+}
+.rule-switch input:disabled + .rule-switch__track {
+  opacity: .6;
+}
+
+.rule-card__roles {
   display: grid;
-  gap: .45rem;
-  padding-top: .8rem;
-  border-top: 1px dashed #dbe3ef;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px dashed #e2e8f0;
 }
 
-.approval-roles__label {
-  color: #64748b;
-  font-size: .73rem;
-  font-weight: 800;
-  letter-spacing: .02em;
-  text-transform: uppercase;
-}
-
-.approval-roles__list {
+.rule-card__roles-head {
   display: flex;
   flex-wrap: wrap;
-  gap: .45rem;
+  align-items: center;
+  gap: 8px;
+
+  > span {
+    color: #475569;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+  em {
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 11.5px;
+    font-style: normal;
+    font-weight: 700;
+  }
+  small {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    color: #94a3b8;
+    font-size: 11.5px;
+  }
 }
 
+.role-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+// Rol çipi: seçili rol dolu ve tikli; seçili olmayan kesik kenarlı, artı simgeli.
 .role-chip {
   display: inline-flex;
   align-items: center;
-  gap: .35rem;
-  min-height: 30px;
-  padding: .28rem .65rem;
-  border: 1px solid #d8e0ea;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px 0 8px;
+  border: 1px dashed #cbd5e1;
   border-radius: 999px;
-  background: #f8fafc;
+  background: #fff;
   color: #475569;
-  font-size: .8rem;
-  font-weight: 700;
-  transition: border-color .16s ease, background-color .16s ease, color .16s ease, transform .16s ease;
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: border-color .15s ease, background-color .15s ease, color .15s ease, box-shadow .15s ease;
 
+  i {
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: #94a3b8;
+    font-size: 13px;
+    transition: background-color .15s ease, color .15s ease;
+  }
   &:hover:not(:disabled) {
-    border-color: #93c5fd;
-    background: #eff6ff;
-    color: #2563eb;
-    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--primaryColor) 45%, transparent);
+    color: var(--primaryColor);
+    i { background: color-mix(in srgb, var(--primaryColor) 12%, #fff); color: var(--primaryColor); }
   }
-
   &.active {
-    border-color: #22c55e;
-    background: #ecfdf5;
-    color: #047857;
+    border-style: solid;
+    border-color: color-mix(in srgb, var(--primaryColor) 40%, transparent);
+    background: color-mix(in srgb, var(--primaryColor) 8%, #fff);
+    color: var(--primaryColor);
+    box-shadow: 0 2px 8px -4px rgba(96, 93, 255, .45);
+    i { background: var(--primaryColor); color: #fff; }
   }
-
   &:disabled {
-    cursor: wait;
+    cursor: progress;
     opacity: .7;
   }
+}
+
+// Onay kapalıyken rol seçimi geçerli kalır ama ikinci planda görünür.
+.rule-card:not(.is-on) .role-chips {
+  opacity: .62;
+  transition: opacity .15s ease;
+}
+.rule-card:not(.is-on):hover .role-chips {
+  opacity: 1;
+}
+
+.rules-muted {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #94a3b8;
+  font-size: 12.5px;
+}
+
+.rule-card--skeleton {
+  --rule-ton: #e2e8f0;
+  gap: 10px;
+
+  span {
+    display: block;
+    height: 12px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #eef1f5, #f8f9fb, #eef1f5);
+    background-size: 220% 100%;
+    animation: rules-shimmer 1.2s ease-in-out infinite;
+  }
+  span:nth-child(1) { width: 38%; height: 16px; }
+  span:nth-child(2) { width: 22%; }
+  span:nth-child(3) { width: 82%; height: 28px; border-radius: 10px; }
+}
+@keyframes rules-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.rules-empty {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 48px 16px;
+  color: var(--bodyColor);
+  text-align: center;
+
+  i { margin-bottom: 4px; color: #94a3b8; font-size: 30px; }
+  strong { color: var(--blackColor); font-size: 14px; }
+  span { font-size: 12.5px; }
+}
+
+.rules-footer {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rules-footer__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--bodyColor);
+  font-size: 12.5px;
+
+  i { color: #1e8a3a; font-size: 15px; }
+}
+
+@media (max-width: 767.98px) {
+  .rules-modal { height: calc(100vh - 32px); }
+  .rules-toolbar { padding: 14px 16px; }
+  .rules-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rules-search { width: 100%; }
+  .rules-filter .tz-segmented { width: 100%; }
+  .rules-filter .tz-segmented button { flex: 1 1 0; justify-content: center; }
+  .rules-body { padding: 14px 16px; }
+  .rule-card { padding: 14px 14px 14px 18px; }
+  .rules-toolbar { gap: 10px; }
+  .rule-card__head { flex-wrap: wrap; }
+  .rule-card__title { flex-basis: calc(100% - 120px); }
+  .rule-card__roles-head small { margin-left: 0; }
+}
+
+// Kısa ekranda (yatay telefon, küçük dizüstü) özet kartları gizlenir; liste için yer kalır.
+@media (max-height: 640px) {
+  .rules-stats { display: none; }
+  .rules-toolbar { padding-block: 12px; }
+}
+
+@media (max-width: 420px) {
+  .rules-stat { padding: 8px 10px; }
+  .rules-stat__icon { width: 30px; height: 30px; font-size: 15px; }
+  .rules-footer__hint { display: none; }
 }
 
 .reject-modal-shell {
@@ -813,9 +1100,5 @@
 
   .reject-modal__footer {
     grid-template-columns: 1fr;
-  }
-
-  .approval-rule-card__main {
-    align-items: flex-start;
   }
 }

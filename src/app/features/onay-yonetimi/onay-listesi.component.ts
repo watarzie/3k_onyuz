@@ -51,6 +51,25 @@ export class OnayListesiComponent implements OnInit, OnDestroy {
   updatingKuralKodlari = signal<Set<string>>(new Set());
   loading = signal<boolean>(true);
   showKurallarModal = signal<boolean>(false);
+  /** Kural penceresinde yalnız görünümü süzer; kurallar ve kayıt akışı değişmez. */
+  kuralAramasi = signal('');
+  kuralFiltresi = signal<'tumu' | 'onayda' | 'kapali'>('tumu');
+  readonly kuralOzeti = computed(() => {
+    const kurallar = this.kurallar();
+    return {
+      toplam: kurallar.length,
+      onayda: kurallar.filter(k => k.onayGerektirirMi).length,
+      kapali: kurallar.filter(k => !k.onayGerektirirMi).length,
+      sabit: kurallar.filter(k => !k.onayGerektirirMiDegistirilebilir).length,
+    };
+  });
+  readonly gorunenKurallar = computed(() => {
+    const aranan = this.kuralAramasi().trim().toLocaleLowerCase('tr');
+    const filtre = this.kuralFiltresi();
+    return this.kurallar().filter(k =>
+      (filtre === 'tumu' || (filtre === 'onayda') === k.onayGerektirirMi) &&
+      (!aranan || `${k.islemAdi} ${k.islemKodu}`.toLocaleLowerCase('tr').includes(aranan)));
+  });
   onayModalIslem = signal<OnayBekleyenIslemDto | null>(null);
   onayModalDetay = signal<OnayGecmisiDto | null>(null);
   onayModalDetayLoading = signal<boolean>(false);
@@ -169,6 +188,11 @@ export class OnayListesiComponent implements OnInit, OnDestroy {
     return this.updatingKuralKodlari().has(this.kuralKey(kural));
   }
 
+  /** Listede bulunan rollerden seçili olanların sayısı. */
+  seciliRolSayisi(kural: OnayKuraliDto): number {
+    return this.roller().filter(rol => this.rolSeciliMi(kural, rol.id)).length;
+  }
+
   rolSeciliMi(kural: OnayKuraliDto, rolId: number): boolean {
     return (kural.yetkiliRolIdleri ?? []).includes(rolId);
   }
@@ -232,6 +256,8 @@ export class OnayListesiComponent implements OnInit, OnDestroy {
   openSettingsModal() {
     if (!this.canManageRules()) return;
 
+    this.kuralAramasi.set('');
+    this.kuralFiltresi.set('tumu');
     this.loadKurallar();
     this.loadRoller();
     this.showKurallarModal.set(true);
