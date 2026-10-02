@@ -52,6 +52,14 @@ export interface FinansPanelDilim {
   renk: string;
 }
 
+/** Grafik serisi: göstergede kalıcı anahtar, ekrandaki ad, sabit renk ve veri. */
+export interface FinansPanelSeri {
+  anahtar: string;
+  ad: string;
+  renk: string;
+  data: (number | null)[];
+}
+
 export type FinansPanelGrafikGorunumu = 'adet' | 'tutar' | 'dagilim';
 type FinansPanelGrafik =
   | 'aylik'
@@ -264,15 +272,18 @@ export class FinansPanelComponent implements OnInit {
       ? []
       : (this.panel()?.[grafik] ?? []).filter((x) => x.paraBirimi === this.para());
   });
-  readonly series = computed<ApexAxisChartSeries>(() => {
+  /** Seçili görünümün bütün serileri; renk seriye bağlıdır, bir seri gizlenince diğerlerinin rengi kaymaz. */
+  readonly grafikSerileri = computed<FinansPanelSeri[]>(() => {
     if (this.grafikGorunumu() === 'adet') {
       const aylar = this.panel()?.aylikSayilar ?? [];
       if (!aylar.length) return [];
-      const seriler: ApexAxisChartSeries = [{ name: this.t('PANEL_KPI_ITEMS'), data: aylar.map((x) => x.isKaydi) }];
+      const seriler: FinansPanelSeri[] = [
+        { anahtar: 'is', ad: this.t('PANEL_KPI_ITEMS'), renk: '#605dff', data: aylar.map((x) => x.isKaydi) },
+      ];
       if (this.alacakGorunur())
         seriler.push(
-          { name: this.t('PANEL_KPI_PO'), data: aylar.map((x) => x.po) },
-          { name: this.t('PANEL_KPI_INVOICES'), data: aylar.map((x) => x.fatura) },
+          { anahtar: 'po', ad: this.t('PANEL_KPI_PO'), renk: '#3584fc', data: aylar.map((x) => x.po) },
+          { anahtar: 'fatura', ad: this.t('PANEL_KPI_INVOICES'), renk: '#25b003', data: aylar.map((x) => x.fatura) },
         );
       return seriler;
     }
@@ -284,21 +295,37 @@ export class FinansPanelComponent implements OnInit {
       // Kartların sunucu toplamları kullanılır; mevcut sayfa mali otorite değildir.
       return [
         {
-          name: `${this.t('AMOUNT')} (${this.para()})`,
+          anahtar: 'tutar',
+          ad: `${this.t('AMOUNT')} (${this.para()})`,
+          renk: '#605dff',
           data: grafik === 'siparis' ? [p.siparisBekleyen, p.siparisNetTutar] : [p.faturaBekleyen, p.gelir],
         },
       ];
     }
     const rows = this.grafikVerileri();
-    const result: ApexAxisChartSeries = [];
+    const result: FinansPanelSeri[] = [];
     if (this.parasal(FINANS_YETKI.GelirGoruntule) && rows.some((x) => x.gelir != null))
       result.push({
-        name: grafik === 'beklenenTahsilat' ? this.t('PANEL_EXPECTED_COLLECTION') : this.t('NET_INCOME'),
+        anahtar: 'gelir',
+        ad: grafik === 'beklenenTahsilat' ? this.t('PANEL_EXPECTED_COLLECTION') : this.t('NET_INCOME'),
+        renk: '#605dff',
         data: rows.map((x) => x.gelir),
       });
     if (this.parasal(FINANS_YETKI.GiderGoruntule) && rows.some((x) => x.gider != null))
-      result.push({ name: this.t('NET_EXPENSE'), data: rows.map((x) => x.gider) });
+      result.push({ anahtar: 'gider', ad: this.t('NET_EXPENSE'), renk: '#fd9b45', data: rows.map((x) => x.gider) });
     return result;
+  });
+  /**
+   * Göstergede kapatılan seriler. Gösterge ApexCharts'ın değil bizimdir: ApexCharts 5.10 gizlenen seriyi
+   * yeniden gösterdiğinde gösterge öğesini sönük bırakıyordu (seri çizilse de). Seri burada süzülür; yalnız
+   * seri değiştiği için grafik yeniden kurulmaz, mevcut grafikte güncellenir.
+   */
+  readonly gizliSeriler = signal<ReadonlySet<string>>(new Set());
+  readonly series = computed<ApexAxisChartSeries>(() => {
+    const gizli = this.gizliSeriler();
+    const tumu = this.grafikSerileri();
+    const gorunen = tumu.filter((x) => !gizli.has(x.anahtar));
+    return (gorunen.length ? gorunen : tumu).map((x) => ({ name: x.ad, data: x.data, color: x.renk }));
   });
   readonly xaxis = computed<ApexXAxis>(() => {
     const ortak: ApexXAxis = {
@@ -333,9 +360,6 @@ export class FinansPanelComponent implements OnInit {
     zoom: { enabled: false },
     animations: { enabled: false },
   }));
-  readonly renkler = computed(() =>
-    this.grafikGorunumu() === 'adet' ? ['#605dff', '#3584fc', '#25b003'] : ['#605dff', '#fd9b45'],
-  );
   readonly stroke = computed<ApexStroke>(() =>
     this.grafikGorunumu() === 'adet' ? { curve: 'smooth', width: 2.5 } : { show: true, width: 2, colors: ['transparent'] },
   );
@@ -366,14 +390,7 @@ export class FinansPanelComponent implements OnInit {
     },
   }));
   readonly grid: ApexGrid = { borderColor: '#eceef2', strokeDashArray: 4, padding: { left: 8, right: 8 } };
-  readonly legend: ApexLegend = {
-    position: 'top',
-    horizontalAlign: 'left',
-    fontSize: '12px',
-    labels: { colors: '#64748b' },
-    markers: { size: 5, offsetX: -2 },
-    itemMargin: { horizontal: 10 },
-  };
+  readonly legend: ApexLegend = { show: false };
   readonly dataLabels: ApexDataLabels = { enabled: false };
   readonly plotOptions: ApexPlotOptions = { bar: { borderRadius: 4, columnWidth: '46%' } };
 
@@ -414,8 +431,20 @@ export class FinansPanelComponent implements OnInit {
   /** Grafik görünümü: tutar aylık gelir/gider kırılımını, dağılım ilk açılışta iş türü kırılımını seçer. */
   grafikGorunumuSec(gorunum: FinansPanelGrafikGorunumu): void {
     this.grafikGorunumu.set(gorunum);
+    this.gizliSeriler.set(new Set());
     if (gorunum === 'tutar') this.grafik.set('aylik');
     else if (gorunum === 'dagilim' && this.grafik() === 'aylik') this.grafik.set('isTurleri');
+  }
+  seriGizli(anahtar: string): boolean {
+    return this.gizliSeriler().has(anahtar);
+  }
+  /** Gösterge düğmesi seriyi gizler/gösterir; son görünen seri gizlenmez, grafik boş kalmaz. */
+  seriAcKapat(anahtar: string): void {
+    const gizli = new Set(this.gizliSeriler());
+    if (gizli.has(anahtar)) gizli.delete(anahtar);
+    else if (this.series().length > 1) gizli.add(anahtar);
+    else return;
+    this.gizliSeriler.set(gizli);
   }
   grafikAcKapat(): void {
     const acik = !this.grafikAcik();

@@ -4,6 +4,7 @@ import {
   DestroyRef,
   ElementRef,
   HostListener,
+  NgZone,
   ViewEncapsulation,
   afterEveryRender,
   inject,
@@ -74,10 +75,12 @@ export class IslemlerMenusuComponent implements AfterViewInit {
     });
     // Sayfa veya herhangi bir kapsayıcı (çekmece, tablo) kaydırılınca sabit konumlu panel tetikleyiciden ayrılır;
     // panelin kendi kaydırması dışında menü kapanır. Kaydırma kabarcıklanmadığı için yakalama aşaması dinlenir.
+    // Dinleyici zone dışındadır: tablodaki her satırın menüsü her kaydırma olayında sayfa denetimi başlatmaz;
+    // menü açıkken kapanınca sinyal değişikliği görünümü kendisi yeniler.
     const kaydirildi = (event: Event) => {
       if (this.acik() && !this.panel().nativeElement.contains(event.target as Node)) this.acik.set(false);
     };
-    document.addEventListener('scroll', kaydirildi, true);
+    inject(NgZone).runOutsideAngular(() => document.addEventListener('scroll', kaydirildi, { capture: true, passive: true }));
     inject(DestroyRef).onDestroy(() => document.removeEventListener('scroll', kaydirildi, true));
   }
 

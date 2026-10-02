@@ -1,5 +1,4 @@
 <!-- Breadcrumb -->
-<app-kullanici-yetki-editor *ngIf="permissionUser() as user" [user]="user" (closed)="permissionUser.set(null)"></app-kullanici-yetki-editor>
 <div class="breadcrumb-card">
   <h5>{{ 'USER.TITLE' | translate }}</h5>
   <ol class="breadcrumb">
@@ -99,8 +98,6 @@
           </td>
           <td>
             <div class="action-buttons">
-              <button *ngIf="canManagePermissions()" class="btn-icon" (click)="permissionUser.set(k)"
-                [title]="'PERMISSIONS.USER_TITLE' | translate"><i class="ri-shield-user-line"></i></button>
               <button *ngIf="canManageNotifications()" class="btn-icon edit" (click)="openEditModal(k)" title="Düzenle">
                 <i class="ri-edit-line"></i>
               </button>

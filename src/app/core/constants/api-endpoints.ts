@@ -220,7 +220,6 @@ export const API = {
     BY_PROJE: (projeId: number) => `${BASE}/hareketgecmisi/${projeId}/gecmis`,
   },
   KULLANICI: {
-    YETKILER: (id: number) => `${BASE}/kullanici/${id}/yetkiler`,
     LIST: `${BASE}/kullanici/liste`,
     CREATE: `${BASE}/kullanici/olustur`,
     UPDATE: `${BASE}/kullanici/guncelle`,

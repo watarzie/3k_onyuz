@@ -438,19 +438,7 @@
     "FULL_ACCESS": "Yazma yetkisi",
     "READ_ONLY": "Sadece okuma",
     "NO_ACCESS": "Yetkisiz",
-    "PERMISSION_TYPE_HELP": "Ekran, işlem ve alan izinleri aynı şekilde çalışır: alt izin üst izninin seviyesini aşamaz; üst iznin yazma olması alt izinleri kendiliğinden açmaz.",
-    "USER_TITLE": "Kullanıcıya özel izinler",
-    "PRIORITY_HELP": "Öncelik: kişisel ret → kişisel izin → rol → varsayılan ret. Rolden devral kişisel kararı kaldırır.",
-    "SEARCH": "İzin ara",
-    "PERMISSION": "İzin",
-    "ROLE_ACCESS": "Rol izni",
-    "PERSONAL_DECISION": "Kişisel karar",
-    "INHERIT": "Rolden devral",
-    "ALLOW": "Açık izin",
-    "DENY": "Açık ret",
-    "LOAD_FAILED": "İzinler yüklenemedi.",
-    "SAVE_FAILED": "İzinler kaydedilemedi.",
-    "SAVED": "İzinler kaydedildi."
+    "PERMISSION_TYPE_HELP": "Ekran, işlem ve alan izinleri aynı şekilde çalışır: alt izin üst izninin seviyesini aşamaz; üst iznin yazma olması alt izinleri kendiliğinden açmaz."
   },
   "BULK_CRATE_MOVE": {
     "TITLE": "Seçili ürünleri başka sandığa taşı",
@@ -810,6 +798,7 @@
     "DASHBOARD": "Ana Kontrol Paneli",
     "SAVE": "Kaydet",
     "CANCEL": "İptal",
+    "CLOSE": "Kapat",
     "EDIT": "Düzenle",
     "DELETE": "Sil",
     "NO_DATA": "Veri bulunamadı",

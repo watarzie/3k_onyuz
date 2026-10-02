@@ -229,6 +229,14 @@ table tr.bulk-selected td { background: #f0f3ff; }
   color: #fff; border: none; font-weight: 600; border-radius: 8px;
 }
 
+// Satır işlemleri: etiketli küçük düğmeler sağa hizalı; sil yalnız ikon.
+.row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  white-space: nowrap;
+}
+
 // ===== Projeden seçim tablosu (malzeme ekleme penceresi) =====
 .pick-info {
   display: flex;

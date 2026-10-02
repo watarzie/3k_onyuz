@@ -1267,6 +1267,11 @@ export class AmbalajUretimListesiComponent implements OnInit {
     return grup === 1 ? proje.projeSandiklariDurumId : grup === 2 ? proje.ilaveSandiklarDurumId : proje.icSandiklarDurumId;
   }
 
+  /** Fırın parti taslağı kayıtlı değerden farklıysa kaydet düğmesi vurgulanır (yalnız görsel ipucu). */
+  firinPartiDegisti(proje: AmbalajProjeOzetDto): boolean {
+    return (this.firinTaslaklari[this.taslakAnahtari(proje.projeId)] ?? '').trim() !== this.projeFirinPartiNo(proje).trim();
+  }
+
   projeFirinPartiNo(proje: AmbalajProjeOzetDto, grup = this.kuyrukGrubu()): string {
     return (grup === 1 ? proje.firinPartiNo : grup === 2 ? proje.ilaveFirinPartiNo : proje.icSandikFirinPartiNo) ?? '';
   }

@@ -157,7 +157,7 @@
             <button type="button" class="tz-btn tz-btn--sm" (click)="tasimaSeciminiTemizle()">{{ 'BULK_CRATE_MOVE.CLEAR' | translate }}</button>
           }
           <button type="button" class="tz-btn tz-btn--sm" (click)="openTopluTasiModal()" [disabled]="!topluTasimaUrunleri().length || isSandikTasimayaKilitli()">
-            <i class="ri-swap-line tz-ico-info"></i>{{ 'BULK_CRATE_MOVE.ACTION' | translate }}
+            <i class="ri-arrow-left-right-line tz-ico-info"></i>{{ 'BULK_CRATE_MOVE.ACTION' | translate }}
           </button>
         </div>
       }
@@ -176,7 +176,7 @@
               <th>Eksik</th>
               <th>Durum</th>
               @if (canWriteSandik()) {
-                <th>İşlem</th>
+                <th class="text-end">İşlem</th>
               }
             </tr>
           </thead>
@@ -227,12 +227,12 @@
                 <td><app-status-badge [status]="item.durumMetni" [label]="getDurumLabel(item.durumMetni)" /></td>
                 @if (canWriteSandik()) {
                   <td>
-                    <div class="d-flex gap-1" (click)="$event.stopPropagation()">
-                      <button type="button" class="tz-btn tz-btn--icon" (click)="selectUrun(item)" title="Düzenle" aria-label="Düzenle">
-                        <i class="ri-edit-line"></i>
+                    <div class="row-actions" (click)="$event.stopPropagation()">
+                      <button type="button" class="tz-btn tz-btn--sm" (click)="selectUrun(item)" title="Konulan miktarı ve ürün bilgisini düzenle">
+                        <i class="ri-edit-line tz-ico-primary"></i>Düzenle
                       </button>
-                      <button type="button" class="tz-btn tz-btn--icon" (click)="openTasiModal(item)" title="Sandık Taşı" aria-label="Sandık Taşı" [disabled]="isSandikTasimayaKilitli()">
-                        <i class="ri-swap-line"></i>
+                      <button type="button" class="tz-btn tz-btn--sm" (click)="openTasiModal(item)" title="Ürünü başka sandığa taşı" [disabled]="isSandikTasimayaKilitli()">
+                        <i class="ri-arrow-left-right-line tz-ico-info"></i>Taşı
                       </button>
                       @if (item.manuelSilinebilirMi === true) {
                         <button type="button" class="tz-btn tz-btn--icon tz-btn--danger-hover" (click)="manuelUrunSil(item)" title="Manuel ürünü sil" aria-label="Manuel ürünü sil" [disabled]="isSandikKilitli()">
@@ -303,8 +303,8 @@
 
           <hr />
           <div class="d-flex gap-2">
-            <button class="btn btn-outline-info flex-grow-1" (click)="openTasiModal(selectedUrun()!)" [disabled]="isSandikTasimayaKilitli()">
-              <i class="ri-swap-line me-1"></i> Sandık Taşı
+            <button type="button" class="tz-btn flex-grow-1" (click)="openTasiModal(selectedUrun()!)" [disabled]="isSandikTasimayaKilitli()">
+              <i class="ri-arrow-left-right-line tz-ico-info"></i>Başka Sandığa Taşı
             </button>
           </div>
         }
@@ -323,7 +323,7 @@
     <div class="tz-modal-backdrop" (click)="closeTasiModal()"></div>
     <div class="tz-modal" data-ton="info" role="dialog" aria-modal="true" aria-labelledby="tasi-baslik">
       <div class="tz-modal__header">
-        <span class="tz-modal__icon" aria-hidden="true"><i class="ri-swap-line"></i></span>
+        <span class="tz-modal__icon" aria-hidden="true"><i class="ri-arrow-left-right-line"></i></span>
         <div class="tz-modal__title">
           <h5 id="tasi-baslik">Ürün Taşı</h5>
           <p>Ürünü projedeki başka bir sandığa taşıyın.</p>
@@ -359,7 +359,7 @@
       <div class="tz-modal__footer">
         <button type="button" class="tz-btn" (click)="closeTasiModal()">Vazgeç</button>
         <button type="button" class="tz-btn tz-btn--primary" (click)="urunTasi()" [disabled]="tasiSaving()">
-          @if (tasiSaving()) { <span class="spinner-border spinner-border-sm"></span> } @else { <i class="ri-swap-line"></i> }
+          @if (tasiSaving()) { <span class="spinner-border spinner-border-sm"></span> } @else { <i class="ri-arrow-left-right-line"></i> }
           Taşı
         </button>
       </div>

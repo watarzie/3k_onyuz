@@ -161,31 +161,6 @@
   background: var(--paper);
 }
 
-.segmented {
-  display: inline-flex;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  overflow: hidden;
-}
-
-.segmented button {
-  min-height: 36px;
-  padding: 0 14px;
-  border: 0;
-  border-right: 1px solid var(--line);
-  background: var(--paper);
-  color: var(--muted);
-}
-
-.segmented button:last-child {
-  border-right: 0;
-}
-
-.segmented button.active {
-  background: var(--ink);
-  color: #fff;
-}
-
 .production-queues {
   flex-wrap: wrap;
 }
@@ -415,10 +390,6 @@ td small {
   }
 }
 
-.batch-editor { display: flex; align-items: center; gap: 5px; }
-.batch-editor input { width: 124px; height: 34px; padding: 0 9px; border: 1px solid var(--line); border-radius: 4px; }
-.save-batch { width: 34px; height: 34px; color: #1f6842; }
-.plan-button { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 11px; border: 1px solid #9eb7ca; border-radius: 5px; background: #f1f6f9; color: #244f6b; white-space: nowrap; }
 .pdf-button { color: var(--accent); }
 
 .drawer-backdrop { position: fixed; inset: 0; z-index: 1040; background: rgba(15, 23, 42, .45); backdrop-filter: blur(2px); animation: fade-in 160ms ease-out; }
@@ -652,8 +623,7 @@ td small {
 .crate-form select,
 .crate-form textarea,
 .report-strip select,
-.status-select,
-.batch-editor input {
+.status-select {
   min-height: 38px;
   border: 1px solid var(--borderColor);
   border-radius: 8px;
@@ -673,8 +643,7 @@ td small {
 .crate-form select:focus,
 .crate-form textarea:focus,
 .report-strip select:focus,
-.status-select:focus,
-.batch-editor input:focus {
+.status-select:focus {
   border-color: var(--primaryColor);
   outline: 0;
   box-shadow: none;
@@ -686,35 +655,48 @@ td small {
   cursor: pointer;
 }
 
+// Sekmeler (kuyruk, durum ve tür filtreleri): gri ray üstünde beyaz etkin hap — Trezo segmented.
 .segmented {
+  display: inline-flex;
+  align-items: center;
   gap: 4px;
   padding: 4px;
   border: 1px solid var(--borderColor);
-  border-radius: 9px;
-  background: var(--module-table-head);
-  overflow: visible;
+  border-radius: 11px;
+  background: #f8fafc;
 }
 
 .segmented button {
-  min-height: 30px;
-  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 13px;
   border: 0;
-  border-radius: 7px;
+  border-radius: 8px;
   background: transparent;
-  color: var(--module-text-soft);
-  font-size: 12px;
-  font-weight: 700;
+  color: var(--bodyColor);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color .15s ease, color .15s ease, box-shadow .15s ease;
+}
+
+.segmented button i {
+  font-size: 15px;
+  line-height: 1;
 }
 
 .segmented button:hover:not(.active) {
-  background: #eef2ff;
-  color: #334155;
+  background: rgba(255, 255, 255, .7);
+  color: var(--blackColor);
 }
 
 .segmented button.active {
-  background: var(--primaryColor);
-  color: #fff;
-  box-shadow: 0 2px 7px rgba(96, 93, 255, .22);
+  background: #fff;
+  color: var(--primaryColor);
+  box-shadow: 0 2px 6px rgba(23, 43, 77, .08), 0 0 0 1px rgba(96, 93, 255, .14);
 }
 
 .production-queues button {
@@ -747,7 +729,6 @@ td small {
 .add-actions button,
 .form-actions > button,
 .crate-row-actions button,
-.plan-button,
 .icon-button,
 .report-button,
 .primary-action,
@@ -761,7 +742,6 @@ td small {
 .add-actions button,
 .selection-actions button,
 .form-actions > button,
-.plan-button,
 .icon-button {
   border-color: var(--borderColor);
   background: #fff;
@@ -771,7 +751,6 @@ td small {
 .add-actions button:hover,
 .selection-actions button:hover,
 .form-actions > button:hover,
-.plan-button:hover,
 .icon-button:hover {
   border-color: var(--module-primary-border);
   background: var(--module-primary-soft);
@@ -1037,8 +1016,8 @@ td small,
 @media (max-width: 560px) {
   .summary-card { min-height: 84px; padding: 15px 16px; }
   .production-card .card-body { padding: 16px; }
-  .segmented { width: 100%; }
-  .segmented button { flex: 1; min-width: 0; }
+  .segmented { width: 100%; flex-wrap: wrap; }
+  .segmented button { flex: 1 1 auto; }
   .special-report-grid { gap: 8px; }
 }
 
@@ -1732,3 +1711,90 @@ table tbody tr.completed-project > td {
 table tbody tr.completed-project:hover > td {
   background: #dcf3e5;
 }
+
+// ===== Liste düğmeleri (Trezo) =====
+.list-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+// Özel sandık satırında durum metninin altındaki yaşam döngüsü düğmesi.
+.lifecycle-open {
+  display: flex;
+  width: fit-content;
+  margin-top: 6px;
+}
+
+// Fırın parti no: simge + giriş + bitişik kaydet düğmesi tek alan. Taslak kayıtlı değerden farklıysa
+// kaydet düğmesi dolu renge geçer; kullanıcı kaydetmediği bir değişikliği satırda görür.
+.batch-field {
+  display: flex;
+  align-items: center;
+  width: 178px;
+  height: 36px;
+  padding: 0 3px 0 10px;
+  border: 1px solid var(--borderColor);
+  border-radius: 9px;
+  background: #fff;
+  transition: border-color .15s ease, box-shadow .15s ease;
+
+  &:focus-within {
+    border-color: var(--primaryColor);
+    box-shadow: 0 0 0 3px rgba(96, 93, 255, .12);
+  }
+  input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0 8px;
+    border: 0;
+    background: transparent;
+    color: var(--blackColor);
+    font-size: 13px;
+    font-weight: 600;
+    outline: 0;
+    &::placeholder { color: #a0aec0; font-weight: 500; }
+  }
+}
+.batch-field__icon {
+  color: #e8890c;
+  font-size: 15px;
+}
+.batch-field__save {
+  display: inline-grid;
+  flex: 0 0 28px;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: #f1f5f9;
+  color: #94a3b8;
+  font-size: 16px;
+  transition: background-color .15s ease, color .15s ease, box-shadow .15s ease;
+
+  &:hover {
+    background: #e8f7ee;
+    color: #1e8a3a;
+  }
+}
+.batch-field.is-dirty {
+  border-color: color-mix(in srgb, var(--primaryColor) 45%, transparent);
+  .batch-field__save {
+    background: var(--primaryColor);
+    color: #fff;
+    box-shadow: 0 4px 10px -4px rgba(96, 93, 255, .7);
+  }
+}
+
+// Ölçü durumu: yumuşak zeminli rozet.
+.status-ready,
+.status-missing {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+.status-ready { background: #ecfdf3; color: #15803d; }
+.status-missing { background: #fff7e6; color: #b45309; }

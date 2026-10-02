@@ -40,12 +40,3 @@ export interface RolGuncelleRequest {
   ad: string;
   yetkiler: RolYetkiItemDto[];
 }
-
-export interface KullaniciYetkiModel {
-  menuTanimiId: number;
-  kod: string;
-  labelKey: string;
-  rolYetkiTipiId: number;
-  etkinYetkiTipiId: number;
-  izinVerildi: boolean | null;
-}

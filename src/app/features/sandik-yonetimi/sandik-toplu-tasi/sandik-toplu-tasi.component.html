@@ -2,7 +2,7 @@
 <section class="bulk-modal" role="dialog" aria-modal="true" aria-labelledby="bulk-move-title" (keydown.escape)="close()" tabindex="-1">
   <header>
     <div>
-      <h5 id="bulk-move-title"><i class="ri-swap-line me-2"></i>{{ 'BULK_CRATE_MOVE.TITLE' | translate }}</h5>
+      <h5 id="bulk-move-title"><i class="ri-arrow-left-right-line me-2"></i>{{ 'BULK_CRATE_MOVE.TITLE' | translate }}</h5>
       <small class="text-muted">{{ kaynakSandikNo() }} <i class="ri-arrow-right-line mx-2"></i>{{ seciliHedef()?.sandikNo || ('BULK_CRATE_MOVE.CHOOSE_TARGET' | translate) }}</small>
     </div>
     <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="saving()" (click)="close()" [attr.aria-label]="'ACTIONS.CANCEL' | translate"><i class="ri-close-line"></i></button>

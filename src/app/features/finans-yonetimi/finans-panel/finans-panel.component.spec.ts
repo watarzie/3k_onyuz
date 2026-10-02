@@ -150,6 +150,40 @@ describe('Finans paneli bağımsız kayıt izni', () => {
     localStorage.removeItem('3k_finans_panel_grafik');
   });
 
+  it('grafik göstergesi seriyi gizleyip yeniden gösterir; düğme durumu seriyle aynı kalır, son seri gizlenmez', () => {
+    localStorage.removeItem('3k_finans_panel_grafik');
+    api.panel.and.returnValue(of({ isSuccess: true, value: { ...panelVerisi, aylikSayilar: [
+      { ay: '2026-08', isKaydi: 4, po: 2, fatura: 1 },
+      { ay: '2026-09', isKaydi: 6, po: 3, fatura: 5 },
+    ] } }));
+    kayitIzni.set(true);
+    ekIzinler.set([FINANS_YETKI.SiparisOperasyonGoruntule]);
+    const fixture = TestBed.createComponent(FinansPanelComponent); fixture.detectChanges();
+    const c = fixture.componentInstance;
+    const dugmeler = () => Array.from(fixture.nativeElement.querySelectorAll('.chart-legend__item')) as HTMLButtonElement[];
+    const kapali = () => dugmeler().map((x) => x.classList.contains('is-off'));
+    expect(dugmeler().length).toBe(3);
+    expect(c.series().map((x) => x.color)).toEqual(['#605dff', '#3584fc', '#25b003']);
+
+    dugmeler()[2].click(); fixture.detectChanges();
+    expect(c.series().length).toBe(2);
+    expect(kapali()).toEqual([false, false, true]);
+    expect(c.series().map((x) => x.color)).toEqual(['#605dff', '#3584fc']);
+
+    dugmeler()[2].click(); fixture.detectChanges();
+    expect(c.series().map((x) => x.data)).toEqual([[4, 6], [2, 3], [1, 5]]);
+    expect(kapali()).toEqual([false, false, false]);
+
+    dugmeler()[1].click(); dugmeler()[2].click(); fixture.detectChanges();
+    expect(dugmeler()[0].disabled).toBeTrue();
+    c.seriAcKapat('is'); fixture.detectChanges();
+    expect(c.series().length).toBe(1);
+
+    c.grafikGorunumuSec('adet'); fixture.detectChanges();
+    expect(kapali()).toEqual([false, false, false]);
+    localStorage.removeItem('3k_finans_panel_grafik');
+  });
+
   it('bekleyen iş yoksa bekleme kartı kova yerine sakin bir durum gösterir', () => {
     api.panel.and.returnValue(of({ isSuccess: true, value: { ...panelVerisi, yaslandirma: [
       { asama: 'Sipariş', minGun: 15, adet: 0, tutarlar: [] },

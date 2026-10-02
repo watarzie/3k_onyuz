@@ -4,8 +4,8 @@
       <h2 class="fw-bold mb-1">Ambalaj Üretim Listesi</h2>
       <app-breadcrumb [items]="[{ label: 'Üretim' }, { label: 'Ambalaj' }]" />
     </div>
-    <button type="button" class="btn btn-outline-primary refresh-button" title="Listeyi yenile" aria-label="Listeyi yenile" (click)="aktifListeyiYenile()">
-      <i class="ri-refresh-line" [class.spin]="aktifListeLoading()"></i>
+    <button type="button" class="tz-btn refresh-button" title="Listeyi yenile" aria-label="Listeyi yenile" (click)="aktifListeyiYenile()">
+      <i class="ri-refresh-line tz-ico-primary" [class.spin]="aktifListeLoading()"></i>
       <span>Yenile</span>
     </button>
   </header>
@@ -32,16 +32,16 @@
           <input type="search" [placeholder]="bagimsizKuyruk() ? 'Sandık no, ad veya isteyen ara' : 'Proje, FB veya müşteri ara'" [ngModel]="searchTerm()" (ngModelChange)="aramaDegisti($event)" />
         </div>
         <div class="segmented production-queues" role="tablist" aria-label="Üretim alanı">
-          <button type="button" [class.active]="aktifKuyruk() === 'normal'" (click)="aktifKuyrukDegistir('normal')">Normal Projeler</button>
-          <button type="button" [class.active]="aktifKuyruk() === 'tamamlanan'" (click)="aktifKuyrukDegistir('tamamlanan')">Üretimi Tamamlanan</button>
-          <button type="button" [class.active]="aktifKuyruk() === 'ozel'" (click)="aktifKuyrukDegistir('ozel')">Özel Sandıklar</button>
+          <button type="button" [class.active]="aktifKuyruk() === 'normal'" (click)="aktifKuyrukDegistir('normal')"><i class="ri-folder-3-line" aria-hidden="true"></i>Normal Projeler</button>
+          <button type="button" [class.active]="aktifKuyruk() === 'tamamlanan'" (click)="aktifKuyrukDegistir('tamamlanan')"><i class="ri-checkbox-circle-line" aria-hidden="true"></i>Üretimi Tamamlanan</button>
+          <button type="button" [class.active]="aktifKuyruk() === 'ozel'" (click)="aktifKuyrukDegistir('ozel')"><i class="ri-archive-stack-line" aria-hidden="true"></i>Özel Sandıklar</button>
         </div>
       </div>
       @if (aktifKuyruk() === 'normal') {
         <div class="segmented status-filter" role="group" aria-label="Üretim durumu filtresi">
-          <button type="button" [class.active]="uretimDurumuFiltresi() === 0" (click)="uretimDurumuFiltresiDegistir(0)">Tümü</button>
-          <button type="button" [class.active]="uretimDurumuFiltresi() === 1" (click)="uretimDurumuFiltresiDegistir(1)">Üretim bekliyor</button>
-          <button type="button" [class.active]="uretimDurumuFiltresi() === 2" (click)="uretimDurumuFiltresiDegistir(2)">Üretimde</button>
+          <button type="button" [class.active]="uretimDurumuFiltresi() === 0" (click)="uretimDurumuFiltresiDegistir(0)"><i class="ri-apps-2-line" aria-hidden="true"></i>Tümü</button>
+          <button type="button" [class.active]="uretimDurumuFiltresi() === 1" (click)="uretimDurumuFiltresiDegistir(1)"><i class="ri-time-line" aria-hidden="true"></i>Üretim bekliyor</button>
+          <button type="button" [class.active]="uretimDurumuFiltresi() === 2" (click)="uretimDurumuFiltresiDegistir(2)"><i class="ri-hammer-line" aria-hidden="true"></i>Üretimde</button>
         </div>
       }
 
@@ -52,9 +52,9 @@
               <h3>Saha, Yedek, İlave ve İç Sandıklar</h3>
               <p>Kaynak projeler ve dış sandıklar yalnızca bağlantı seçimi için kullanılır.</p>
             </div>
-            <div class="add-actions">
-              <button type="button" class="secondary-add" (click)="sablonFormOpen.set(!sablonFormOpen())"><i class="ri-bookmark-line"></i> İç sandık tipi</button>
-              <button *appCanWrite="izin.KayitEkle" type="button" (click)="bagimsizFormuAc()"><i class="ri-add-line"></i> Sandık ekle</button>
+            <div class="list-actions">
+              <button type="button" class="tz-btn" (click)="sablonFormOpen.set(!sablonFormOpen())"><i class="ri-bookmark-line tz-ico-primary"></i>İç sandık tipi</button>
+              <button *appCanWrite="izin.KayitEkle" type="button" class="tz-btn tz-btn--primary" (click)="bagimsizFormuAc()"><i class="ri-add-line"></i>Sandık ekle</button>
             </div>
           </div>
 
@@ -263,13 +263,13 @@
                   @for (sandik of bagimsizSandiklar(); track sandik.id) {
                     <tr [class.selected]="sandik.uretimeAlindi">
                       <td><strong>{{ sandik.turMetni }} · {{ sandik.sandikNo }}</strong><small>{{ sandik.ad }}</small></td>
-                      <td><div class="project-form-action"><strong>{{ sandik.projeNo || 'Proje seçilmemiş' }}</strong>@if (sandik.projeId) { <button *appCanAccess="[izin.FormIndir]" type="button" class="icon-button pdf-button" [title]="ozelUretimFormuDownloading() === sandik.id ? 'PDF hazırlanıyor' : 'Bu proje için üretim formu al'" [disabled]="ozelUretimFormuDownloading() !== null" [attr.aria-busy]="ozelUretimFormuDownloading() === sandik.id" (click)="ozelUretimFormuIndir(sandik)"><i [class]="ozelUretimFormuDownloading() === sandik.id ? 'ri-loader-4-line spin' : 'ri-file-pdf-2-line'"></i></button> }</div><small>{{ sandik.ustSandikNo ? sandik.ustSandikNo + ' · ' + (sandik.ustSandikAdi || '') : sandik.kaynakSandikNo ? sandik.kaynakSandikNo + ' · ' + (sandik.kaynakSandikAdi || '') : sandik.musteri || '-' }}</small></td>
+                      <td><div class="project-form-action"><strong>{{ sandik.projeNo || 'Proje seçilmemiş' }}</strong>@if (sandik.projeId) { <button *appCanAccess="[izin.FormIndir]" type="button" class="tz-btn tz-btn--icon" [title]="ozelUretimFormuDownloading() === sandik.id ? 'PDF hazırlanıyor' : 'Bu proje için üretim formu al'" [disabled]="ozelUretimFormuDownloading() !== null" [attr.aria-busy]="ozelUretimFormuDownloading() === sandik.id" (click)="ozelUretimFormuIndir(sandik)"><i [class]="ozelUretimFormuDownloading() === sandik.id ? 'ri-loader-4-line spin' : 'ri-file-pdf-2-line tz-ico-danger'"></i></button> }</div><small>{{ sandik.ustSandikNo ? sandik.ustSandikNo + ' · ' + (sandik.ustSandikAdi || '') : sandik.kaynakSandikNo ? sandik.kaynakSandikNo + ' · ' + (sandik.kaynakSandikAdi || '') : sandik.musteri || '-' }}</small></td>
                       <td>{{ sandik.sandikTipi }}</td><td>{{ sandik.adet }}</td>
                       <td><span *appCanAccess="[izin.OlcuGoruntule]">{{ sandik.boy }} × {{ sandik.en }} × {{ sandik.yukseklik }}</span></td>
                       <td><span *appCanAccess="[izin.M3Goruntule]">{{ sandik.m3HesaplanabilirMi === false ? 'Hesaplanmaz' : sandik.hacimM3 === null ? '—' : (sandik.hacimM3 | number:'1.3-3') + ' m³' }}</span></td>
                       <td>{{ sandik.talimatVeren || '-' }}</td>
-                      <td>{{ durumMetni(sandik.uretimDurumu || 1) }}<button class="btn btn-sm btn-outline-primary" (click)="bagimsizYasam.set(sandik)">Üretim işlemleri</button></td>
-                      <td class="actions-cell"><div class="actions"><button *appCanWrite="izin.KayitDuzenle" type="button" class="icon-button" title="Düzenle" (click)="bagimsizFormuAc(sandik)"><i class="ri-pencil-line"></i></button><button *appCanWrite="izin.KayitSil" type="button" class="icon-button danger" title="Sil" (click)="bagimsizSandikSil(sandik)"><i class="ri-delete-bin-line"></i></button></div></td>
+                      <td><strong>{{ durumMetni(sandik.uretimDurumu || 1) }}</strong><button type="button" class="tz-btn tz-btn--sm lifecycle-open" (click)="bagimsizYasam.set(sandik)"><i class="ri-route-line tz-ico-primary"></i>Üretim işlemleri</button></td>
+                      <td class="actions-cell"><div class="actions"><button *appCanWrite="izin.KayitDuzenle" type="button" class="tz-btn tz-btn--sm" title="Özel sandığı düzenle" (click)="bagimsizFormuAc(sandik)"><i class="ri-edit-line tz-ico-primary"></i>Düzenle</button><button *appCanWrite="izin.KayitSil" type="button" class="tz-btn tz-btn--icon tz-btn--danger-hover" title="Sil" aria-label="Sil" (click)="bagimsizSandikSil(sandik)"><i class="ri-delete-bin-line"></i></button></div></td>
                     </tr>
                   } @empty { <tr><td colspan="9" class="empty-state">Bu filtrede özel sandık bulunamadı.</td></tr> }
                 }
@@ -326,9 +326,10 @@
                 <small>{{ proje.tamamlananSandikAdedi || 0 }} / {{ proje.gerekliSandikAdedi || 0 }} gerekli sandık tamamlandı</small>
               </td>
               <td>
-                <div class="batch-editor">
+                <div class="batch-field" [class.is-dirty]="firinPartiDegisti(proje)">
+                  <i class="ri-fire-line batch-field__icon" aria-hidden="true"></i>
                   <input type="text" [(ngModel)]="firinTaslaklari[taslakAnahtari(proje.projeId)]" placeholder="Parti no" aria-label="Fırın parti numarası" />
-                  <button *appCanWrite="izin.PlanOlustur" type="button" class="icon-button save-batch" title="Fırın parti numarasını kaydet" (click)="firinPartiKaydet(proje)"><i class="ri-save-3-line"></i></button>
+                  <button *appCanWrite="izin.PlanOlustur" type="button" class="batch-field__save" [title]="firinPartiDegisti(proje) ? 'Değişikliği kaydet' : 'Fırın parti numarasını kaydet'" aria-label="Fırın parti numarasını kaydet" (click)="firinPartiKaydet(proje)"><i class="ri-check-line"></i></button>
                 </div>
               </td>
               <td>
@@ -342,8 +343,8 @@
               </td>
               <td class="actions-cell">
                 <div class="actions">
-                  <button *appCanAccess="[izin.PlanGoruntule, izin.ProjeDetayGoruntule]" type="button" class="plan-button" (click)="planAc(proje)">
-                    <i class="ri-settings-3-line"></i> Üretim planı
+                  <button *appCanAccess="[izin.PlanGoruntule, izin.ProjeDetayGoruntule]" type="button" class="tz-btn tz-btn--sm" title="Üretim planını aç" (click)="planAc(proje)">
+                    <i class="ri-file-list-3-line tz-ico-primary"></i>Üretim planı
                   </button>
                   <app-islemler-menusu>
                     <a [routerLink]="projeYolu(proje)" title="Sandık ölçülerini aç">

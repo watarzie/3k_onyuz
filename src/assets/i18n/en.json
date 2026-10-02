@@ -438,19 +438,7 @@
     "FULL_ACCESS": "Write access",
     "READ_ONLY": "Read only",
     "NO_ACCESS": "No access",
-    "PERMISSION_TYPE_HELP": "Screen, action and field permissions work the same way: a child cannot exceed its parent's level, and write access on a parent does not grant its children automatically.",
-    "USER_TITLE": "User permissions",
-    "PRIORITY_HELP": "Priority: personal deny → personal allow → role → deny by default. Inherit removes the personal decision.",
-    "SEARCH": "Search permissions",
-    "PERMISSION": "Permission",
-    "ROLE_ACCESS": "Role access",
-    "PERSONAL_DECISION": "Personal decision",
-    "INHERIT": "Inherit role",
-    "ALLOW": "Allow",
-    "DENY": "Deny",
-    "LOAD_FAILED": "Could not load permissions.",
-    "SAVE_FAILED": "Could not save permissions.",
-    "SAVED": "Permissions saved."
+    "PERMISSION_TYPE_HELP": "Screen, action and field permissions work the same way: a child cannot exceed its parent's level, and write access on a parent does not grant its children automatically."
   },
   "BULK_CRATE_MOVE": {
     "TITLE": "Move selected contents to another crate",
@@ -810,6 +798,7 @@
     "DASHBOARD": "Dashboard",
     "SAVE": "Save",
     "CANCEL": "Cancel",
+    "CLOSE": "Close",
     "EDIT": "Edit",
     "DELETE": "Delete",
     "NO_DATA": "No data found",

@@ -1,5 +1,5 @@
 import { DatePipe, NgClass } from '@angular/common';
-import { Component, computed, effect, HostListener, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, effect, HostListener, inject, NgZone, OnDestroy, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
@@ -47,6 +47,15 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   constructor() {
+    // Kaydırma Angular zone'u dışında dinlenir: her kaydırma olayı bütün sayfada değişiklik denetimi başlatmaz.
+    // Yalnız eşik geçilince sinyal değişir ve başlık yeniden çizilir.
+    const kaydirildi = () => {
+      const yapiskan = window.scrollY >= 50;
+      if (yapiskan !== this.isSticky()) this.isSticky.set(yapiskan);
+    };
+    inject(NgZone).runOutsideAngular(() => window.addEventListener('scroll', kaydirildi, { passive: true }));
+    inject(DestroyRef).onDestroy(() => window.removeEventListener('scroll', kaydirildi));
+
     effect(() => {
       if (this.canSeeApprovalQueue) {
         this.fetchApprovalCount();
@@ -130,11 +139,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   logout(): void {
     this.auth.logout();
-  }
-
-  @HostListener('window:scroll')
-  onScroll(): void {
-    this.isSticky.set(window.scrollY >= 50);
   }
 
   @HostListener('document:click', ['$event'])

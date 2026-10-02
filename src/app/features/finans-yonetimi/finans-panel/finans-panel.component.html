@@ -107,12 +107,28 @@
               </div>
             }
             @if (series().length) {
+              @if (grafikSerileri().length > 1) {
+                <div class="chart-legend" role="group" [attr.aria-label]="t('PANEL_CHARTS')">
+                  @for (s of grafikSerileri(); track s.anahtar) {
+                    <button
+                      type="button"
+                      class="chart-legend__item"
+                      [class.is-off]="seriGizli(s.anahtar)"
+                      [style.--seri]="s.renk"
+                      [attr.aria-pressed]="!seriGizli(s.anahtar)"
+                      [disabled]="!seriGizli(s.anahtar) && series().length === 1"
+                      (click)="seriAcKapat(s.anahtar)"
+                    >
+                      <span class="chart-legend__dot" aria-hidden="true"></span>{{ s.ad }}
+                    </button>
+                  }
+                </div>
+              }
               <apx-chart
                 [series]="series()"
                 [chart]="chart()"
                 [xaxis]="xaxis()"
                 [yaxis]="yaxis()"
-                [colors]="renkler()"
                 [stroke]="stroke()"
                 [fill]="fill()"
                 [grid]="grid"
