@@ -130,6 +130,8 @@
           }
         </article>
 
+        <app-finans-panel-detay [panel]="p" (kayitAc)="kayitAc.emit($event)" />
+
         @if (tutarGorunur()) {
           <article class="dash-card dashboard-currency">
             <header class="dash-card-head">

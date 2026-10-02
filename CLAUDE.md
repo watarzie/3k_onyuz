@@ -122,8 +122,10 @@ t(key: string): string {
 
 ### Hazır tasarım kalıpları (yeni ekranda bunları örnek al)
 
-- **Liste sayfası**: `page-title-area` (h2 + `app-breadcrumb`, sağda beyaz/primary düğmeler) → beyaz kart (başlık + ikon + açıklama solda, gri zeminli arama kutusu sağda) → `#f8fafc` başlıklı tablo, hover `#fafbff` → altta `app-server-pager`. Örnekler: `stok-yonetimi/`, `onay-yonetimi/`.
+- Sunucu enum adlarını (`AnaAmbalaj`, `OzelIs`) ekranda gösterme; `ortak/finans-etiketleri.ts` eşlemeleriyle (`kategoriAnahtari`, `isTuruAdiAnahtari`, `isDurumuAnahtari`) çeviri anahtarına çevir.
+- **Liste sayfası**: `page-title-area` (h2 + `app-breadcrumb`, sağda beyaz/primary düğmeler) → beyaz kart (başlık + ikon + açıklama solda, gri zeminli arama kutusu sağda) → `#f8fafc` başlıklı tablo, hover `#fafbff` → altta `app-server-pager`. Örnekler: `stok-yonetimi/`, `onay-yonetimi/`, `hareket-gecmisi/`.
 - **Gösterge paneli**: Trezo finans panosu düzeni; üstte KPI kartları (etiket, büyük sayı, sağda yuvarlak renkli ikon, altta durum rozetleri), solda geniş sütunda grafik/tablolar, sağda dar sütunda durum kartları. Örnek: `finans-yonetimi/finans-panel/`.
+- **Detaya inme (drill-down)**: özet → satır → en alt kayıt; kullanıcıyı boğmamak için ilk 8 satır + "Tümünü göster", satır açılınca alt veriler bir kez yüklenir ve önbelleklenir, en alt kayıttan detay penceresi açılır. Örnek: `finans-yonetimi/finans-panel-detay/` (proje → sandık/kalem → kayıt detayı).
 - **Araç çubuğu**: bütün düğmeler aynı beyaz, ince kenarlı dilde; anlam rengi (PDF kırmızı, Excel yeşil, 3K yeşil, Grid turuncu) yalnız simgede. Seçime bağlı toplu işlemler seçili sayı rozetiyle tek grupta. Örnek: `projeler/proje-listesi/` (`toolbar-btn`, `toolbar-group`).
 - **Durum gösterimi**: renkli nokta + yumuşak zeminli hap (`Aktif` yeşil, `Bekliyor` turuncu, `Tükendi` kırmızı); boş durumlar halkalı ikon + başlık + tek cümle.
 - İşlemler menüsü öğeleri düz menü satırıdır; menü içindeki bir düğmeye gradyan/dolgu verme.

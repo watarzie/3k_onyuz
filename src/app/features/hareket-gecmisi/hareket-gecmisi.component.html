@@ -1,157 +1,147 @@
-<div
-  class="row align-items-center mb-4 history-toolbar"
-  [class.dropdown-open]="projeDropdownOpen()">
-  <div class="col-sm-4">
-    <div class="d-flex align-items-center gap-3 history-header-left">
-      <h5 class="mb-0">Hareket Geçmişi (Log)</h5>
-      
-      <div class="project-filter">
-        <div class="project-combobox" [class.open]="projeDropdownOpen()" (click)="$event.stopPropagation()">
-          <button type="button" class="project-combobox-toggle" (click)="toggleProjeDropdown()">
-            <span>{{ selectedProjeLabel() }}</span>
-            <i class="ri-arrow-down-s-line"></i>
-          </button>
+<div class="history-page">
+  <div class="page-title-area mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <h2 class="fw-bold mb-1">Hareket Geçmişi</h2>
+        <app-breadcrumb [items]="breadcrumb"></app-breadcrumb>
+      </div>
+    </div>
+  </div>
 
-          @if (projeDropdownOpen()) {
-            <div class="project-combobox-menu">
-              <div class="project-combobox-search">
-                <i class="ri-search-line"></i>
-                <input
-                  type="text"
-                  class="form-control form-control-sm"
-                  placeholder="Proje adı/no ara..."
-                  autocomplete="off"
-                  [ngModel]="projeSearchTerm()"
-                  (ngModelChange)="projeSearchTerm.set($event)"
-                  (keydown.escape)="closeProjeDropdown()" />
-              </div>
+  <section class="history-card" [class.dropdown-open]="projeDropdownOpen()">
+    <header class="history-card__head">
+      <div class="project-combobox" [class.open]="projeDropdownOpen()" (click)="$event.stopPropagation()">
+        <button type="button" class="project-combobox-toggle" (click)="toggleProjeDropdown()" [attr.aria-expanded]="projeDropdownOpen()">
+          <span class="project-combobox-icon" aria-hidden="true"><i class="ri-folder-3-line"></i></span>
+          <span class="project-combobox-text">
+            <small>Proje</small>
+            <strong>{{ selectedProjeLabel() }}</strong>
+          </span>
+          <i class="ri-arrow-down-s-line project-combobox-chevron" aria-hidden="true"></i>
+        </button>
 
-              <div class="project-combobox-options">
-                @if (filteredProjeler().length === 0) {
-                  <div class="project-combobox-empty">Proje bulunamadı</div>
-                } @else {
-                  @for (p of filteredProjeler(); track p.id) {
-                    <button
-                      type="button"
-                      class="project-combobox-option"
-                      [class.active]="selectedProjeId() === p.id"
-                      (click)="selectProje(p.id)">
-                      <span>{{ p.projeNo }}</span>
-                      <small>{{ p.musteri || '-' }}</small>
-                    </button>
-                  }
-                }
-              </div>
+        @if (projeDropdownOpen()) {
+          <div class="project-combobox-menu">
+            <div class="project-combobox-search">
+              <i class="ri-search-line" aria-hidden="true"></i>
+              <input
+                type="text"
+                placeholder="Proje adı/no ara..."
+                autocomplete="off"
+                aria-label="Proje ara"
+                [ngModel]="projeSearchTerm()"
+                (ngModelChange)="projeSearchTerm.set($event)"
+                (keydown.escape)="closeProjeDropdown()" />
             </div>
-          }
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-sm-8 text-sm-end mt-3 mt-sm-0">
-    <div class="d-flex justify-content-sm-end gap-2">
-      <div class="filter-box">
-        <select class="form-select form-select-sm" [ngModel]="selectedIslemTipiId()" (ngModelChange)="onIslemTipiChange($event)" style="min-width: 160px;">
-          <option [ngValue]="null">Tüm İşlemler</option>
-          @for (tip of islemTipleri(); track tip.id) {
-            <option [ngValue]="tip.anahtar">{{ tip.deger }}</option>
-          }
-        </select>
-      </div>
-      <div class="search-box">
-        <i class="ri-search-line"></i>
-        <input type="text" class="form-control form-control-sm" placeholder="İşlem, kullanıcı veya referans ara..." (input)="onSearchInput($event)">
-      </div>
-    </div>
-  </div>
-</div>
 
-<div class="card bg-white border-0 rounded-3 mb-4 shadow-sm history-log-card">
-  <div class="card-body p-0">
-    
+            <div class="project-combobox-options">
+              @if (filteredProjeler().length === 0) {
+                <div class="project-combobox-empty">Proje bulunamadı</div>
+              } @else {
+                @for (p of filteredProjeler(); track p.id) {
+                  <button
+                    type="button"
+                    class="project-combobox-option"
+                    [class.active]="selectedProjeId() === p.id"
+                    (click)="selectProje(p.id)">
+                    <span>{{ p.projeNo }}</span>
+                    <small>{{ p.musteri || '-' }}</small>
+                    @if (selectedProjeId() === p.id) {
+                      <i class="ri-check-line" aria-hidden="true"></i>
+                    }
+                  </button>
+                }
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="history-filters">
+        <label class="history-select">
+          <i class="ri-filter-3-line" aria-hidden="true"></i>
+          <select aria-label="İşlem tipi" [ngModel]="selectedIslemTipiId()" (ngModelChange)="onIslemTipiChange($event)">
+            <option [ngValue]="null">Tüm işlemler</option>
+            @for (tip of islemTipleri(); track tip.id) {
+              <option [ngValue]="tip.anahtar">{{ tip.deger }}</option>
+            }
+          </select>
+        </label>
+        <label class="history-search">
+          <i class="ri-search-line" aria-hidden="true"></i>
+          <input type="search" placeholder="İşlem, kullanıcı veya referans ara..." aria-label="Hareketlerde ara" (input)="onSearchInput($event)" />
+        </label>
+      </div>
+    </header>
+
     @if (loading()) {
-      <div class="text-center p-5">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Yükleniyor...</span>
-        </div>
-        <p class="mt-2 text-muted">Geçmiş yükleniyor...</p>
+      <div class="history-state" role="status">
+        <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>
+        <span>Geçmiş yükleniyor...</span>
+      </div>
+    } @else if (hareketler().length === 0) {
+      <div class="history-empty">
+        <span class="history-empty__icon" aria-hidden="true"><i class="ri-history-line"></i></span>
+        <h4>Hareket bulunamadı</h4>
+        <p>Bu proje için henüz bir hareket yok veya arama kriterine uyan kayıt bulunmuyor.</p>
       </div>
     } @else {
       <div class="table-responsive">
-        <table class="table table-hover table-nowrap align-middle mb-0">
-          <thead class="table-light">
+        <table class="history-table">
+          <thead>
             <tr>
-              <th scope="col" style="width: 150px;">TARİH</th>
-              <th scope="col">KULLANICI</th>
-              <th scope="col">İŞLEM TİPİ</th>
-              <th scope="col">REFERANS</th>
-              <th scope="col" style="width: 250px;">DEĞİŞİM (Eski &rarr; Yeni)</th>
-              <th scope="col">AÇIKLAMA</th>
+              <th>Tarih</th>
+              <th>Kullanıcı</th>
+              <th>İşlem</th>
+              <th>Referans</th>
+              <th>Değişim</th>
+              <th>Açıklama</th>
             </tr>
           </thead>
           <tbody>
             @for (h of hareketler(); track h.id) {
               <tr>
-                <td class="text-muted">
-                  <div class="d-flex flex-column">
-                    <span class="fw-medium text-dark">{{ h.tarih | date:'dd.MM.yyyy' }}</span>
-                    <small style="font-size: 11px;">{{ h.tarih | date:'HH:mm:ss' }}</small>
+                <td class="history-date">
+                  <strong>{{ h.tarih | date: 'dd.MM.yyyy' }}</strong>
+                  <small>{{ h.tarih | date: 'HH:mm:ss' }}</small>
+                </td>
+                <td>
+                  <div class="history-user">
+                    <span class="history-avatar" aria-hidden="true">{{ h.kullaniciAdi ? h.kullaniciAdi.charAt(0).toLocaleUpperCase('tr-TR') : '?' }}</span>
+                    <span>{{ h.kullaniciAdi || '—' }}</span>
                   </div>
                 </td>
                 <td>
-                  <div class="d-flex align-items-center gap-2">
-                    <div class="avatar-sm rounded-circle bg-primary-transparent text-primary d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 12px; font-weight: 600;">
-                      {{ h.kullaniciAdi ? h.kullaniciAdi.charAt(0).toUpperCase() : '?' }}
-                    </div>
-                    <span class="fw-medium">{{ h.kullaniciAdi }}</span>
-                  </div>
-                </td>
-                <td>
-                  <span class="badge" [ngClass]="getBadgeClass(h.islemTipiMetni || h.islem)">
-                    {{ h.islemTipiMetni || h.islem }}
+                  <span class="history-pill" [attr.data-ton]="getBadgeClass(h.islemTipiMetni || h.islem)">
+                    <span class="history-pill__dot" aria-hidden="true"></span>{{ h.islemTipiMetni || h.islem }}
                   </span>
                 </td>
                 <td>
-                  @if (h.referansTipi && h.referansId) {
-                    <div class="d-flex flex-column">
-                      <span style="font-size: 11px;" class="text-muted text-uppercase">{{ h.referansTipi }}</span>
-                      <span class="fw-medium">{{ h.referansId }}</span>
+                  @if (h.referansTipi) {
+                    <div class="history-ref">
+                      <small>{{ h.referansTipi }}</small>
+                      <strong>{{ h.referansId || '—' }}</strong>
                     </div>
                   } @else {
-                    <span class="text-muted">-</span>
+                    <span class="history-muted">—</span>
                   }
                 </td>
                 <td>
                   @if (h.eskiDeger || h.yeniDeger) {
-                    <div class="d-flex align-items-center gap-2" style="font-size: 13px;">
-                      @if (h.eskiDeger) {
-                        <span class="text-danger bg-danger-transparent px-2 py-1 rounded" style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" [title]="h.eskiDeger">{{ h.eskiDeger }}</span>
-                      } @else {
-                        <span class="text-muted">-</span>
-                      }
-                      
-                      <i class="ri-arrow-right-line text-muted"></i>
-                      
-                      @if (h.yeniDeger) {
-                        <span class="text-success bg-success-transparent px-2 py-1 rounded" style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" [title]="h.yeniDeger">{{ h.yeniDeger }}</span>
-                      } @else {
-                        <span class="text-muted">-</span>
-                      }
+                    <div class="history-change">
+                      <span class="history-chip is-old" [class.is-empty]="!h.eskiDeger" [title]="h.eskiDeger || ''">{{ h.eskiDeger || 'boş' }}</span>
+                      <i class="ri-arrow-right-line" aria-hidden="true"></i>
+                      <span class="history-chip is-new" [class.is-empty]="!h.yeniDeger" [title]="h.yeniDeger || ''">{{ h.yeniDeger || 'boş' }}</span>
                     </div>
                   } @else {
-                    <span class="text-muted">-</span>
+                    <span class="history-muted">—</span>
                   }
                 </td>
                 <td>
-                  <div class="d-flex align-items-center gap-2">
-                    <span class="text-muted d-inline-block" style="max-width: 200px; overflow: hidden; white-space: nowrap; text-overflow: clip;" [title]="h.aciklama || ''">
-                      {{ h.aciklama || '-' }}
-                    </span>
+                  <div class="history-desc">
+                    <span [title]="h.aciklama || ''">{{ h.aciklama || '—' }}</span>
                     @if (h.aciklama && h.aciklama.length > 30) {
-                      <button class="btn btn-sm btn-light border p-0 d-flex align-items-center justify-content-center text-muted" 
-                              style="width: 24px; height: 24px; border-radius: 4px;" 
-                              (click)="showFullText('Açıklama Detayı', h.aciklama)"
-                              title="Tümünü Gör">
+                      <button type="button" class="history-icon-btn" (click)="showFullText('Açıklama Detayı', h.aciklama)" title="Tümünü gör" aria-label="Açıklamanın tamamını gör">
                         <i class="ri-eye-line"></i>
                       </button>
                     }
@@ -159,54 +149,22 @@
                 </td>
               </tr>
             }
-            @if (hareketler().length === 0 && !loading()) {
-              <tr>
-                <td colspan="6" class="text-center py-4 text-muted">
-                  Bu proje için henüz bir hareket bulunmuyor veya arama kriterine uyan kayıt yok.
-                </td>
-              </tr>
-            }
           </tbody>
         </table>
       </div>
-
-      @if (!loading() && totalCount() > 0) {
-        <div class="card-footer bg-white border-top border-light px-4 py-3 rounded-bottom-3">
-          <div class="d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3">
-            <div class="d-flex align-items-center gap-2">
-              <span class="text-muted small">Sayfa başına kayıt:</span>
-              <select class="form-select form-select-sm" style="width: auto;" [ngModel]="pageSize()" (ngModelChange)="onPageSizeChange(+$event)">
-                @for (size of pageSizeOptions; track size) {
-                  <option [value]="size">{{ size }}</option>
-                }
-              </select>
-              <span class="text-muted small ms-2">
-                Toplam <strong class="text-dark">{{ totalCount() }}</strong> kayıttan
-                <strong class="text-dark">{{ (currentPage() - 1) * pageSize() + (hareketler().length > 0 ? 1 : 0) }}</strong> -
-                <strong class="text-dark">{{ mathMin(currentPage() * pageSize(), totalCount()) }}</strong> arası gösteriliyor.
-              </span>
-            </div>
-            @if (totalPages() > 1) {
-              <nav aria-label="Page navigation">
-                <ul class="pagination pagination-sm mb-0">
-                  <li class="page-item" [class.disabled]="currentPage() === 1">
-                    <a class="page-link" href="javascript:void(0)" (click)="changePage(currentPage() - 1)">Önceki</a>
-                  </li>
-                  
-                  <li class="page-item active">
-                    <span class="page-link">{{ currentPage() }} / {{ totalPages() }}</span>
-                  </li>
-                  
-                  <li class="page-item" [class.disabled]="currentPage() === totalPages()">
-                    <a class="page-link" href="javascript:void(0)" (click)="changePage(currentPage() + 1)">Sonraki</a>
-                  </li>
-                </ul>
-              </nav>
-            }
-          </div>
-        </div>
-      }
+      <div class="history-card__foot">
+        <app-server-pager
+          [pageNumber]="currentPage()"
+          [pageSize]="pageSize()"
+          [totalCount]="totalCount()"
+          [totalPages]="totalPages()"
+          [hasPreviousPage]="currentPage() > 1"
+          [hasNextPage]="currentPage() < totalPages()"
+          [pageSizeOptions]="pageSizeOptions"
+          (pageChange)="changePage($event)"
+          (pageSizeChange)="onPageSizeChange($event)"
+        />
+      </div>
     }
-
-  </div>
+  </section>
 </div>

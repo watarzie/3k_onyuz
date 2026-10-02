@@ -25,10 +25,13 @@ import { ToastService } from '../../../core/services/toast.service';
 import {
   FinansPanel,
   FinansBekleyenAsama,
+  FinansVarlikTuru,
   FinansYaslandirmaKovasi,
 } from '../../../shared/models/finans-v2.model';
 import { FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
 import { finansSiparisFaturaOkunabilir } from '../ortak/finans-izinleri';
+import { isTuruAdiAnahtari } from '../ortak/finans-etiketleri';
+import { FinansPanelDetayComponent } from '../finans-panel-detay/finans-panel-detay.component';
 
 /** Üst sıradaki genel durum kartı; alt satırdaki rozetler kartın kırılımıdır. */
 export interface FinansPanelKpi {
@@ -65,7 +68,7 @@ const GRAFIK_TERCIHI = '3k_finans_panel_grafik';
 @Component({
   selector: 'app-finans-panel',
   standalone: true,
-  imports: [FormsModule, DecimalPipe, NgApexchartsModule],
+  imports: [FormsModule, DecimalPipe, NgApexchartsModule, FinansPanelDetayComponent],
   templateUrl: './finans-panel.component.html',
   styleUrls: ['../ortak/finans-v2.scss', './finans-panel.component.scss'],
 })
@@ -92,6 +95,8 @@ export class FinansPanelComponent implements OnInit {
   readonly yaslandirmaGorunur = computed(() => this.permissions.hasAccess(FINANS_YETKI.RaporGoruntule));
   /** Yaşlandırma kovası tıklanınca kalem listesi Finans İş Takibi'nde açılır. */
   readonly bekleyenAc = output<{ asama: FinansBekleyenAsama; minimumGun: number }>();
+  /** Detay dökümünde bir kalem seçilince kayıt detayı finans sayfasında açılır. */
+  readonly kayitAc = output<{ tur: FinansVarlikTuru; id: number }>();
   private readonly refresh = new Subject<void>();
   readonly loading = signal(false);
   readonly panel = signal<FinansPanel | null>(null);
@@ -244,6 +249,10 @@ export class FinansPanelComponent implements OnInit {
         year: '2-digit',
       }),
   );
+  private isTuruEtiketi(ad: string): string {
+    const anahtar = isTuruAdiAnahtari(ad);
+    return anahtar ? this.t(anahtar) : ad;
+  }
   private ayEtiketi(ay: string): string {
     const [yil, no] = ay.split('-').map(Number);
     return yil && no ? this.ayBicimi().format(new Date(yil, no - 1, 1)) : ay;
@@ -307,7 +316,13 @@ export class FinansPanelComponent implements OnInit {
           ? [this.t('PENDING_ORDER'), this.t('PANEL_ORDERED')]
           : grafik === 'fatura'
             ? [this.t('PENDING_INVOICE'), this.t('PANEL_INVOICED')]
-            : this.grafikVerileri().map((x) => (grafik === 'aylik' || grafik === 'beklenenTahsilat' ? this.ayEtiketi(x.grup) : x.grup)),
+            : this.grafikVerileri().map((x) =>
+                grafik === 'aylik' || grafik === 'beklenenTahsilat'
+                  ? this.ayEtiketi(x.grup)
+                  : grafik === 'isTurleri'
+                    ? this.isTuruEtiketi(x.grup)
+                    : x.grup,
+              ),
     };
   });
   readonly chart = computed<ApexChart>(() => ({

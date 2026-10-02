@@ -25,6 +25,22 @@ export function kategoriAnahtari(kategori: FinansIsKategorisi | null | undefined
   return FINANS_KATEGORILERI.find((x) => x.deger === kategori)?.anahtar ?? 'OTHER';
 }
 
+/** Sunucudaki FinansIsTuru adı (panel grafiği grubu) → çeviri anahtarı; bilinmeyen ad olduğu gibi kalır. */
+const IS_TURU_ANAHTARLARI: Record<string, string> = {
+  AnaAmbalaj: 'MAIN_PACKAGING',
+  IlaveSandik: 'ADDITIONAL',
+  IcSandik: 'INNER_CRATE',
+  SahaSandigi: 'SITE',
+  YedekSandik: 'SPARE',
+  Tadilat: 'REPAIR',
+  DigerAmbalaj: 'OTHER_PACKAGING',
+  OzelIs: 'SPECIAL_JOB',
+  SarfKereste: 'WASTE_TIMBER',
+};
+export function isTuruAdiAnahtari(ad: string): string | null {
+  return IS_TURU_ANAHTARLARI[ad] ?? null;
+}
+
 export function siparisKarsilanmaAnahtari(karsilanma: FinansKarsilanma | null | undefined): string {
   return karsilanma === FinansKarsilanma.Tam
     ? 'FULL_ORDER'

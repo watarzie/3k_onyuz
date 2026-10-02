@@ -80,7 +80,7 @@
     @if (permissions.canWrite(izin.GiderKutuphanesiYonet)) {<button type="button" [class.active]="activeTab() === 'kategoriler'" (click)="selectTab('kategoriler')"><i class="ri-folder-settings-line" aria-hidden="true"></i>Gider Kategorileri</button>}
   </nav>
 
-  @if (activeTab() === 'panel') {<app-finans-panel (bekleyenAc)="bekleyenleriAc($event)" />}
+  @if (activeTab() === 'panel') {<app-finans-panel (bekleyenAc)="bekleyenleriAc($event)" (kayitAc)="detayHedef.set($event)" />}
   @if (activeTab() === 'belgeler' && permissions.hasAccess(izin.SiparisOperasyonGoruntule) && permissions.hasAccess(izin.KayitGoruntule)) {
     @for (gorunum of [belgeGorunumu()]; track gorunum.anahtar) {
       <app-finans-belgeler-listesi [baslangicTuru]="gorunum.tur" [baslangicOdemeFiltresi]="gorunum.odeme" (detayAc)="detayHedef.set($event)" (faturaAc)="faturaAc($event)" (siparisAc)="poFormunuAc($event)" />

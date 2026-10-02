@@ -1,4 +1,4 @@
-import { FinansOdemeDurumu, FinansSandikMalzemesi } from '../../core/constants/enums';
+import { FinansIsKategorisi, FinansKarsilanma, FinansOdemeDurumu, FinansSandikMalzemesi } from '../../core/constants/enums';
 import { FinansFiyatlandirmaBirimi, FinansParaToplami } from './finans.model';
 
 export type FinansVarlikTuru = 'IsKaydi' | 'Siparis' | 'Fatura' | 'Gider';
@@ -58,6 +58,10 @@ export interface FinansPanel {
   sayilar?: FinansPanelSayilari | null;
   /** Ay bazında iş kalemi, PO ve fatura sayıları; ilk veri ayından dönem sonuna kesintisizdir. */
   aylikSayilar?: FinansPanelAylikSayi[] | null;
+  /** Detay dökümü: proje × para birimi (tutarlar yetkiye göre null olabilir). */
+  projeOzetleri?: FinansPanelProjeOzeti[] | null;
+  /** Detay dökümü: kategori × para birimi. */
+  kategoriOzetleri?: FinansPanelKategoriOzeti[] | null;
   siparisBekleyen: number;
   kismiSiparis: number;
   siparisTam: number;
@@ -76,6 +80,29 @@ export interface FinansPanelSayilari {
   odenmemisFatura: number;
   vadesiGecenFatura: number;
   giderKaydi: number;
+}
+export interface FinansPanelProjeOzeti {
+  projeNo: string;
+  musteri: string;
+  paraBirimi: string;
+  isKaydi: number;
+  isBedeli: number | null;
+  siparisNetTutar: number | null;
+  faturalananNetTutar: number | null;
+  kalanSiparisNetTutar: number | null;
+  kalanFaturaNetTutar: number | null;
+  gider: number | null;
+  siparis: FinansKarsilanma;
+  fatura: FinansKarsilanma;
+}
+export interface FinansPanelKategoriOzeti {
+  kategori: FinansIsKategorisi;
+  paraBirimi: string;
+  isKaydi: number;
+  proje: number;
+  isBedeli: number | null;
+  siparisNetTutar: number | null;
+  faturalananNetTutar: number | null;
 }
 export interface FinansPanelAylikSayi {
   ay: string;
