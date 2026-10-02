@@ -56,59 +56,6 @@ textarea {
   min-width: 0;
 }
 
-.btn-new-sandik {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  min-height: 32px;
-  padding: 6px 12px 6px 8px;
-  border: 1px solid #C7E7D2;
-  border-radius: 8px;
-  background: linear-gradient(180deg, #FFFFFF 0%, #F7FCF9 100%);
-  color: #057A55;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
-  transition: border-color .18s ease, background .18s ease, box-shadow .18s ease, transform .18s ease, color .18s ease;
-
-  i {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 6px;
-    background: #22A765;
-    color: #FFFFFF;
-    font-size: 13px;
-    line-height: 1;
-    box-shadow: 0 3px 8px rgba(34, 167, 101, .14);
-  }
-
-  &:hover,
-  &:focus {
-    border-color: #8ED9AA;
-    background: linear-gradient(180deg, #FFFFFF 0%, #EFFAF4 100%);
-    color: #046C4E;
-    box-shadow: 0 5px 14px rgba(34, 167, 101, .08);
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 6px rgba(22, 163, 74, .10);
-  }
-
-  &:disabled {
-    opacity: .62;
-    transform: none;
-    box-shadow: none;
-    cursor: not-allowed;
-  }
-}
-
 a {
   transition: var(--transition);
   color: var(--blackColor);
@@ -173,6 +120,139 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
 
   .project-context-value {
     white-space: normal;
+  }
+}
+
+// ===== Trezo düğme sistemi (bütün sayfalar) =====
+// Beyaz, ince kenarlı düğme; anlam rengi yalnız simgede (tz-ico-*). Birincil işlem tz-btn--primary ile dolu.
+// Seçime bağlı toplu işlemler tz-btn-group içinde seçili sayı rozetiyle toplanır.
+.tz-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid var(--borderColor);
+  border-radius: 10px;
+  background: var(--whiteColor);
+  color: var(--blackColor);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease, color .15s ease, box-shadow .15s ease;
+
+  > i {
+    font-size: 16px;
+    line-height: 1;
+  }
+  &:hover:not(:disabled),
+  &:focus-visible {
+    border-color: color-mix(in srgb, var(--primaryColor) 35%, transparent);
+    color: var(--primaryColor);
+    box-shadow: 0 4px 12px -8px rgba(96, 93, 255, .55);
+  }
+  &:disabled,
+  &.disabled {
+    opacity: .5;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+  &.dropdown-toggle::after {
+    margin-left: 2px;
+    color: #94a3b8;
+  }
+
+  &--primary {
+    border-color: var(--primaryColor);
+    background: var(--primaryColor);
+    color: #fff;
+    &:hover:not(:disabled),
+    &:focus-visible {
+      border-color: var(--primaryColor);
+      background: color-mix(in srgb, var(--primaryColor) 88%, #000);
+      color: #fff;
+    }
+    &.dropdown-toggle::after { color: rgba(255, 255, 255, .8); }
+  }
+  &--sm {
+    min-height: 32px;
+    padding: 0 11px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    > i { font-size: 15px; }
+  }
+  &--icon {
+    width: 32px;
+    min-height: 32px;
+    padding: 0;
+    border-radius: 8px;
+    color: var(--bodyColor);
+    > i { font-size: 15px; }
+  }
+  &--danger-hover:hover:not(:disabled) {
+    border-color: #ffd5ce;
+    background: #fff1ef;
+    color: #d92d20;
+  }
+}
+.tz-ico-primary { color: var(--primaryColor); }
+.tz-ico-danger { color: #e5372a; }
+.tz-ico-success { color: #1e8a3a; }
+.tz-ico-warning { color: #e8890c; }
+.tz-ico-info { color: #0e8fb5; }
+.tz-ico-dark { color: #334155; }
+
+.tz-btn-group {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px 3px 3px 10px;
+  border: 1px dashed #d5dbe5;
+  border-radius: 12px;
+  background: #f8fafc;
+  transition: border-color .15s ease, background .15s ease;
+
+  &.has-selection {
+    border-style: solid;
+    border-color: color-mix(in srgb, var(--primaryColor) 30%, transparent);
+    background: color-mix(in srgb, var(--primaryColor) 5%, #fff);
+  }
+  .tz-btn {
+    min-height: 32px;
+    padding: 0 11px;
+    border-radius: 8px;
+    font-size: 12.5px;
+  }
+}
+.tz-btn-group__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 4px;
+  color: var(--bodyColor);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tz-btn-group__count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 11.5px;
+  font-weight: 700;
+  .has-selection & {
+    background: var(--primaryColor);
+    color: #fff;
   }
 }
 

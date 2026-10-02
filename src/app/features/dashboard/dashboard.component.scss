@@ -1,13 +1,21 @@
 .page-title-area h2 { font-size: 22px; color: var(--blackColor); }
 
 // ===== Dashboard Card =====
+.dashboard-subtitle {
+  margin: 0 0 6px;
+  color: var(--bodyColor);
+  font-size: 13px;
+}
 .dash-card {
   background: var(--whiteColor);
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--borderColor);
   overflow: hidden;
-  transition: box-shadow .2s;
-  &:hover { box-shadow: 0 4px 24px rgba(0,0,0,.06); }
+  transition: box-shadow .2s, border-color .2s;
+  &:hover {
+    border-color: color-mix(in srgb, var(--primaryColor) 16%, var(--borderColor));
+    box-shadow: 0 10px 28px -20px rgba(23, 43, 77, .4);
+  }
 }
 .dash-card-header {
   padding: 16px 20px;
@@ -17,7 +25,28 @@
   gap: 12px;
   flex-wrap: wrap;
   border-bottom: 1px solid #f1f5f9;
-  h5, h6 { margin: 0; }
+  h5, h6 {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    color: var(--blackColor);
+    font-weight: 700 !important;
+  }
+  h5 { font-size: 16px; }
+  h6 { font-size: 15px; }
+  // Başlık simgesi: rengini (text-primary/danger/success) koruyan yumuşak kare çip.
+  h5 > i,
+  h6 > i {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    margin-right: 10px !important;
+    border-radius: 9px;
+    background: color-mix(in srgb, currentColor 11%, #fff);
+    font-size: 16px;
+  }
 }
 .dash-card-body { padding: 16px 20px; }
 .dash-card-footer {
@@ -197,17 +226,21 @@ table {
 
 // ===== Proje Tipi Özeti =====
 .type-filter-all {
-  border: 1px solid #dbeafe;
-  background: #eff6ff;
-  color: #2563eb;
+  border: 1px solid var(--borderColor);
+  background: var(--whiteColor);
+  color: var(--bodyColor);
   border-radius: 999px;
   font-weight: 700;
-  padding: 6px 12px;
+  padding: 6px 13px;
 
+  &:hover {
+    color: var(--primaryColor);
+    border-color: color-mix(in srgb, var(--primaryColor) 35%, transparent);
+  }
   &.active {
-    background: #2563eb;
+    background: var(--primaryColor);
     color: #fff;
-    border-color: #2563eb;
+    border-color: var(--primaryColor);
   }
 }
 
@@ -458,10 +491,13 @@ table {
     font-weight: 800;
     line-height: 1;
 
+    &:hover:not(.active) {
+      color: var(--primaryColor);
+    }
     &.active {
-      border-color: #2563eb;
-      background: #eff6ff;
-      color: #2563eb;
+      border-color: color-mix(in srgb, var(--primaryColor) 40%, transparent);
+      background: color-mix(in srgb, var(--primaryColor) 8%, #fff);
+      color: var(--primaryColor);
     }
   }
 }
@@ -493,10 +529,13 @@ table {
     font-weight: 800;
     line-height: 1;
 
+    &:hover:not(.active) {
+      color: var(--primaryColor);
+    }
     &.active {
-      border-color: #2563eb;
-      background: #eff6ff;
-      color: #2563eb;
+      border-color: color-mix(in srgb, var(--primaryColor) 40%, transparent);
+      background: color-mix(in srgb, var(--primaryColor) 8%, #fff);
+      color: var(--primaryColor);
     }
   }
 }

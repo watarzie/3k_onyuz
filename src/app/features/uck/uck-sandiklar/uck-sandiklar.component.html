@@ -11,18 +11,18 @@
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
       @if (canSeeSandikDurumRaporu()) {
-      <button class="btn btn-outline-primary d-flex align-items-center gap-2" (click)="indirSandikDurumRaporu()" [disabled]="downloadingSandikDurumRaporu()">
+      <button type="button" class="tz-btn" (click)="indirSandikDurumRaporu()" [disabled]="downloadingSandikDurumRaporu()">
         @if (downloadingSandikDurumRaporu()) {
           <span class="spinner-border spinner-border-sm"></span>
         } @else {
-          <i class="ri-file-list-3-line"></i>
+          <i class="ri-file-list-3-line tz-ico-primary"></i>
         }
         Sandık Durum Raporu
       </button>
       }
       @if (canWriteSandik()) {
-      <button class="btn btn-new-sandik" (click)="openSandikEkleModal()">
-        <i class="ri-add-circle-line"></i> Yeni Sandık Ekle
+      <button type="button" class="tz-btn tz-btn--primary" (click)="openSandikEkleModal()">
+        <i class="ri-add-line"></i>Yeni Sandık Ekle
       </button>
       }
     </div>
@@ -58,38 +58,34 @@
 
       <!-- Toplu İşlem Butonları -->
       @if (canUseSandikSelection() && filtered().length > 0) {
-      <div class="border-start ms-2 ps-3 d-flex align-items-center gap-2">
-        <div class="form-check m-0 d-flex align-items-center gap-1">
-          <input class="form-check-input" type="checkbox" id="selectAll" [checked]="isAllSelected()"
+      <div class="tz-btn-group ms-2" role="group" aria-label="Seçili sandıklar için toplu işlemler" [class.has-selection]="selectedSandikIds().size > 0">
+        <label class="tz-btn-group__label select-all-label" for="selectAll">
+          <input class="form-check-input m-0" type="checkbox" id="selectAll" [checked]="isAllSelected()"
             (change)="toggleAll()">
-          <label class="form-check-label fs-14 fw-medium text-muted" for="selectAll" style="cursor:pointer">Tümünü
-            Seç</label>
-        </div>
-
-        @if (selectedSandikIds().size > 0) {
+          Tümünü seç
+          <span class="tz-btn-group__count">{{ selectedSandikIds().size }}</span>
+        </label>
         @if (canSandiklariSahayaAktar()) {
-        <button class="btn btn-sm btn-saha-transfer d-flex align-items-center gap-1"
+        <button type="button" class="tz-btn"
           (click)="seciliSandiklariSahayaAktar()"
-          [disabled]="sahayaAktarSaving()">
+          [disabled]="sahayaAktarSaving() || selectedSandikIds().size === 0">
           @if (sahayaAktarSaving()) {
           <span class="spinner-border spinner-border-sm"></span>
           } @else {
-          <i class="ri-tools-line"></i>
+          <i class="ri-tools-line tz-ico-success"></i>
           }
-          Sahaya Aktar ({{selectedSandikIds().size}})
+          Sahaya Aktar
         </button>
         }
         @if (canWriteSandik()) {
-        <button class="btn btn-sm btn-success d-flex align-items-center gap-1" (click)="topluHazirYap()">
-          <i class="ri-lock-line"></i> Seçilenleri ({{selectedSandikIds().size}}) Kapat
+        <button type="button" class="tz-btn" [disabled]="selectedSandikIds().size === 0" (click)="topluHazirYap()">
+          <i class="ri-lock-line tz-ico-success"></i>Seçilenleri Kapat
         </button>
         }
         @if (canAssignLocation()) {
-        <button class="btn btn-sm btn-info text-white d-flex align-items-center gap-1 ms-1"
-          style="background-color: var(--bs-info); border-color: var(--bs-info);" (click)="topluLokasyonAtaModal()">
-          <i class="ri-map-pin-add-line"></i> Toplu Lokasyon Belirle
+        <button type="button" class="tz-btn" [disabled]="selectedSandikIds().size === 0" (click)="topluLokasyonAtaModal()">
+          <i class="ri-map-pin-add-line tz-ico-info"></i>Toplu Lokasyon
         </button>
-        }
         }
       </div>
       }
@@ -134,11 +130,11 @@
             <div class="d-flex align-items-center">
               <span class="sandik-no ms-3">{{ getDisplayNo(s.sandikNo) }}</span>
               @if (canWriteSandik() && !isSandikKilitli(s)) {
-              <button class="btn btn-sm ms-2"
-                [ngClass]="s.durumMetni === 'Kapandı' ? 'btn-outline-warning' : 'btn-outline-success'"
+              <button type="button" class="card-state-btn ms-2"
+                [class.is-undo]="s.durumMetni === 'Kapandı'"
                 (click)="toggleSandikDurum($event, s)"
-                style="padding: 0.1rem 0.4rem; font-size: 0.75rem; z-index: 2; position: relative;"
                 title="Tekli Kapatma">
+                <i [class]="s.durumMetni === 'Kapandı' ? 'ri-arrow-go-back-line' : 'ri-lock-line'" aria-hidden="true"></i>
                 {{ s.durumMetni === 'Kapandı' ? 'Geri Al' : 'Kapat' }}
               </button>
               }
@@ -207,19 +203,17 @@
             @if (((canAssignLocation() && !isSandikSevkEdildi(s)) || canWriteSandik()) && !isSandikKilitli(s)) {
             <div class="d-flex gap-1 ms-auto mt-1 flex-shrink-0">
               @if (canAssignLocation() && !isSandikSevkEdildi(s)) {
-              <button class="btn btn-sm btn-outline-info d-flex align-items-center justify-content-center flex-shrink-0"
+              <button type="button" class="card-mini-btn"
                 (click)="openLokasyonModal($event, s)"
-                style="width: 26px; height: 26px; padding: 0; font-size: 0.85rem; z-index: 2; position: relative;"
-                title="Lokasyon Ekle/Değiştir">
+                title="Lokasyon Ekle/Değiştir" aria-label="Lokasyon Ekle/Değiştir">
                 <i class="ri-map-pin-add-line"></i>
               </button>
               }
               @if (canWriteSandik()) {
               <a [routerLink]="[uckSandikRoutePrefix, projeId(), s.id]"
-                class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center flex-shrink-0"
+                class="card-mini-btn"
                 (click)="$event.stopPropagation()"
-                style="width: 26px; height: 26px; padding: 0; font-size: 0.85rem; z-index: 2; position: relative;"
-                title="Sandık İçerik Yönetimi">
+                title="Sandık İçerik Yönetimi" aria-label="Sandık İçerik Yönetimi">
                 <i class="ri-settings-3-line"></i>
               </a>
               }

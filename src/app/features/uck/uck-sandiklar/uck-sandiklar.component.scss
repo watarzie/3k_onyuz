@@ -13,30 +13,56 @@
   i { left: 12px; color: var(--bodyColor); }
 }
 
-.btn-saha-transfer {
-  background: #ECFDF5;
-  border: 1px solid #A7F3D0;
-  color: #047857;
+// Kart içi küçük düğmeler: tekli kapatma ve alt satırdaki lokasyon / içerik yönetimi.
+.card-state-btn {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid #c9ecd3;
+  border-radius: 6px;
+  background: #f3fbf5;
+  color: #1e8a3a;
+  font-size: 11px;
   font-weight: 700;
-
-  &:hover,
-  &:focus {
-    background: #D1FAE5;
-    border-color: #6EE7B7;
-    color: #065F46;
-    box-shadow: 0 4px 12px rgba(4, 120, 87, .12);
+  transition: background .15s ease, border-color .15s ease;
+  i { font-size: 12px; }
+  &:hover { background: #e3f6e8; border-color: #9fdcb1; }
+  &.is-undo {
+    border-color: #fde2c4;
+    background: #fff8ef;
+    color: #c2410c;
+    &:hover { background: #ffedd9; }
   }
-
-  &:disabled {
-    opacity: .7;
-    cursor: wait;
+}
+.card-mini-btn {
+  position: relative;
+  z-index: 2;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--borderColor);
+  border-radius: 8px;
+  background: var(--whiteColor);
+  color: var(--bodyColor);
+  font-size: 14px;
+  text-decoration: none;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+  &:hover {
+    border-color: color-mix(in srgb, var(--primaryColor) 35%, transparent);
+    background: color-mix(in srgb, var(--primaryColor) 8%, #fff);
+    color: var(--primaryColor);
   }
-
-  .spinner-border {
-    width: .75rem;
-    height: .75rem;
-    border-width: .12em;
-  }
+}
+.select-all-label {
+  cursor: pointer;
+  .form-check-input { width: 15px; height: 15px; cursor: pointer; }
 }
 
 // ===== Empty =====

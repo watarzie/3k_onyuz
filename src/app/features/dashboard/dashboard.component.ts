@@ -261,6 +261,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   dashboardSummaryLoading = computed(() => this.loadingOzet());
   dashboardDepoChartLoading = computed(() => this.loadingOzet() || this.loadingDepoLokasyonlari());
 
+  /** Başlık altındaki tarih satırı, ör. "2 Ekim 2026 Cuma". */
+  readonly bugunMetni = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' }).format(new Date());
+
   breadcrumb = [
     { label: 'Ana Kontrol Paneli' },
   ];

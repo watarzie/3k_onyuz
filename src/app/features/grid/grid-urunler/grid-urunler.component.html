@@ -11,16 +11,73 @@
     </div>
     <div class="page-actions d-flex align-items-center gap-2 flex-wrap">
       <app-readonly-banner />
+      @if (canSelectRows) {
+      <div class="tz-btn-group" role="group" aria-label="Seçili ürünler için toplu işlemler" [class.has-selection]="hasSelection">
+        <span class="tz-btn-group__label" title="Bu işlemler tabloda seçili ürünlere uygulanır">
+          <span class="tz-btn-group__count">{{ selectedRowKeys().size }}</span>seçili
+        </span>
+        @if (canDeleteCekiVerisi()) {
+        <button type="button" class="tz-btn tz-btn--danger-hover" [disabled]="!hasSelection" (click)="deleteSelectedCekiSatirlari()">
+          <i class="ri-delete-bin-line tz-ico-danger"></i>Çeki Sil
+        </button>
+        }
+        <!-- Toplu İşlemler Dropdown -->
+        <div *appCanWrite class="dropdown" id="gridTopluIslemlerDropdown"
+          [class.show]="showTopluIslemlerMenu()">
+          <button class="tz-btn dropdown-toggle" [disabled]="!hasSelection" type="button"
+            (click)="showTopluIslemlerMenu.set(!showTopluIslemlerMenu())">
+            <i class="ri-stack-line tz-ico-primary"></i>Toplu İşlemler
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-lg" [class.show]="showTopluIslemlerMenu()">
+            <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('tamGeldi')">
+              <i class="ri-checkbox-circle-line me-2 text-success"></i>Toplu Tam Geldi
+            </a></li>
+            <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluSevk()">
+              <i class="ri-truck-line me-2 text-primary"></i>Toplu Sevk
+            </a></li>
+            <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('gridKapandi')">
+              <i class="ri-lock-line me-2" style="color:#37474F"></i>Toplu Grid Kapandı
+            </a></li>
+            <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('iptal')">
+              <i class="ri-close-circle-line me-2 text-warning"></i>Toplu İptal
+            </a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('geriAl')">
+              <i class="ri-arrow-go-back-line me-2"></i>Toplu Geri Al
+            </a></li>
+          </ul>
+        </div>
+        @if (canKalite) {
+        <button type="button" class="tz-btn" [disabled]="!hasSelection" (click)="openKaliteModal()">
+          <i class="ri-shield-check-line tz-ico-warning"></i>Kalite
+        </button>
+        }
+        @if (canSurec) {
+        <button type="button" class="tz-btn"
+                [disabled]="!hasSelection || selectedSurecTamamlandiCount() > 0"
+                [title]="selectedSurecTamamlandiCount() > 0 ? 'Tamamlanan süreçler güncellenemez.' : ''"
+                (click)="openSurecModal()">
+          <i class="ri-settings-3-line tz-ico-info"></i>Süreç
+        </button>
+        <button type="button" class="tz-btn"
+                [disabled]="!hasSelection || selectedSurecTamamlandiCount() > 0"
+                [title]="selectedSurecTamamlandiCount() > 0 ? 'Tamamlanan süreçler için talep kaynağı değiştirilemez.' : ''"
+                (click)="openAmbarTalepModal()">
+          <i class="ri-file-list-3-line tz-ico-dark"></i>Talep Formu
+        </button>
+        }
+      </div>
+      }
       @if (canSeeEksikRapor()) {
       <div class="dropdown eksik-report-dropdown" [class.show]="showEksikRaporMenu()"
         (click)="$event.stopPropagation()">
-        <button type="button" class="btn btn-outline-danger dropdown-toggle"
+        <button type="button" class="tz-btn dropdown-toggle"
           [disabled]="eksikRaporDownloading() !== null"
           (click)="toggleEksikRaporMenu()">
           @if (eksikRaporDownloading() !== null) {
-            <span class="spinner-border spinner-border-sm me-1"></span>
+            <span class="spinner-border spinner-border-sm"></span>
           } @else {
-            <i class="ri-file-warning-line me-1"></i>
+            <i class="ri-file-warning-line tz-ico-danger"></i>
           }
           Eksik Raporu
         </button>
@@ -36,59 +93,9 @@
         </div>
       </div>
       }
-      @if (canDeleteCekiVerisi()) {
-      <button class="btn btn-outline-danger" [disabled]="!hasSelection" (click)="deleteSelectedCekiSatirlari()">
-        <i class="ri-delete-bin-line me-1"></i>Çeki Sil ({{ selectedRowKeys().size }})
+      <button *appCanWrite type="button" class="tz-btn tz-btn--primary" (click)="openManuelEkleModal()">
+        <i class="ri-add-line"></i>Manuel Ürün Ekle
       </button>
-      }
-      <button *appCanWrite class="btn btn-primary" (click)="openManuelEkleModal()">
-        <i class="ri-add-line me-2"></i>Manuel Ürün Ekle
-      </button>
-      <!-- Toplu İşlemler Dropdown -->
-      <div *appCanWrite class="dropdown" id="gridTopluIslemlerDropdown"
-        [class.show]="showTopluIslemlerMenu()">
-        <button class="btn btn-dark dropdown-toggle" [disabled]="!hasSelection" type="button"
-          (click)="showTopluIslemlerMenu.set(!showTopluIslemlerMenu())">
-          <i class="ri-stack-line me-1"></i>Toplu İşlemler ({{ selectedRowKeys().size }})
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end shadow-lg" [class.show]="showTopluIslemlerMenu()">
-          <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('tamGeldi')">
-            <i class="ri-checkbox-circle-line me-2 text-success"></i>Toplu Tam Geldi
-          </a></li>
-          <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluSevk()">
-            <i class="ri-truck-line me-2 text-primary"></i>Toplu Sevk
-          </a></li>
-          <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('gridKapandi')">
-            <i class="ri-lock-line me-2" style="color:#37474F"></i>Toplu Grid Kapandı
-          </a></li>
-          <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('iptal')">
-            <i class="ri-close-circle-line me-2 text-warning"></i>Toplu İptal
-          </a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item text-danger" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('geriAl')">
-            <i class="ri-arrow-go-back-line me-2"></i>Toplu Geri Al
-          </a></li>
-        </ul>
-      </div>
-      @if (canKalite) {
-      <button class="btn btn-outline-warning" [disabled]="!hasSelection" (click)="openKaliteModal()">
-        <i class="ri-shield-check-line me-1"></i>Kalite ({{ selectedRowKeys().size }})
-      </button>
-      }
-      @if (canSurec) {
-      <button class="btn btn-outline-info"
-              [disabled]="!hasSelection || selectedSurecTamamlandiCount() > 0"
-              [title]="selectedSurecTamamlandiCount() > 0 ? 'Tamamlanan süreçler güncellenemez.' : ''"
-              (click)="openSurecModal()">
-        <i class="ri-settings-3-line me-1"></i>Süreç ({{ selectedRowKeys().size }})
-      </button>
-      <button class="btn btn-ambar-talep"
-              [disabled]="!hasSelection || selectedSurecTamamlandiCount() > 0"
-              [title]="selectedSurecTamamlandiCount() > 0 ? 'Tamamlanan süreçler için talep kaynağı değiştirilemez.' : ''"
-              (click)="openAmbarTalepModal()">
-        <i class="ri-file-list-3-line me-1"></i>Talep Formu
-      </button>
-      }
     </div>
   </div>
 </div>

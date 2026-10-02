@@ -5,8 +5,8 @@
       <app-breadcrumb [items]="breadcrumb" />
     </div>
     @if (canWriteSandik()) {
-    <button class="btn btn-new-sandik" (click)="openEkleModal()">
-      <i class="ri-add-circle-line"></i> Yeni Sandık Ekle
+    <button type="button" class="tz-btn tz-btn--primary" (click)="openEkleModal()">
+      <i class="ri-add-line"></i>Yeni Sandık Ekle
     </button>
     }
   </div>
