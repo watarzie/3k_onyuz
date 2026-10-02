@@ -16,7 +16,7 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { EksikUrunForSandikDto, SandikDetayDto, SandikIcerikDto, SandikDto } from '../../../shared/models/index';
 import { Birim, ProjeTipi } from '../../../core/constants/enums';
 import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
-import { SandikTopluTasiComponent } from './sandik-toplu-tasi.component';
+import { SandikTopluTasiComponent } from '../sandik-toplu-tasi/sandik-toplu-tasi.component';
 
 import { ConfirmService, duzMetin } from '../../../core/services/confirm.service';
 import { firstValueFrom } from 'rxjs';

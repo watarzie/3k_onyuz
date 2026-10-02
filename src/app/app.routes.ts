@@ -155,12 +155,12 @@ export const routes: Routes = [
       {
         path: 'bildirimler/:id',
         loadComponent: () =>
-          import('./features/bildirim-merkezi/bildirim-merkezi.component').then(m => m.BildirimMerkeziComponent),
+          import('./features/bildirim-merkezi/bildirim-merkezi/bildirim-merkezi.component').then(m => m.BildirimMerkeziComponent),
       },
       {
         path: 'bildirimler',
         loadComponent: () =>
-          import('./features/bildirim-merkezi/bildirim-merkezi.component').then(m => m.BildirimMerkeziComponent),
+          import('./features/bildirim-merkezi/bildirim-merkezi/bildirim-merkezi.component').then(m => m.BildirimMerkeziComponent),
       },
 
       // --- Stok ---
@@ -168,7 +168,7 @@ export const routes: Routes = [
         path: 'stok',
         canActivate: [menuGuard],
         loadComponent: () =>
-          import('./features/stok-yonetimi/stok-yonetimi').then(m => m.StokYonetimi),
+          import('./features/stok-yonetimi/stok-yonetimi.component').then(m => m.StokYonetimiComponent),
         data: { menuKod: YETKI.STOK.KOK },
       },
 
@@ -293,7 +293,7 @@ export const routes: Routes = [
         path: 'ambalaj-uretim-listesi',
         canActivate: [menuGuard],
         loadComponent: () =>
-          import('./features/ambalaj-uretim-listesi/ambalaj-uretim-listesi.component').then(m => m.AmbalajUretimListesiComponent),
+          import('./features/ambalaj-yonetimi/ambalaj-uretim-listesi/ambalaj-uretim-listesi.component').then(m => m.AmbalajUretimListesiComponent),
         data: { menuKod: AMBALAJ_YETKI.Listele, title: 'Ambalaj Üretim Listesi' },
       },
 
@@ -302,7 +302,7 @@ export const routes: Routes = [
         path: 'finans-yonetimi',
         canActivate: [menuGuard],
         loadComponent: () =>
-          import('./features/finans-yonetimi/finans-aylik.component').then(m => m.FinansYonetimiComponent),
+          import('./features/finans-yonetimi/finans-aylik/finans-aylik.component').then(m => m.FinansYonetimiComponent),
         data: { menuKod: FINANS_YETKI.Modul, title: 'Finans ve Sipariş Takibi' },
       },
 
@@ -321,7 +321,7 @@ export const routes: Routes = [
         path: 'kullanicilar',
         canActivate: [menuGuard],
         loadComponent: () =>
-          import('./features/kullanici-yonetimi/kullanici-yonetimi.component').then(m => m.KullaniciYonetimiComponent),
+          import('./features/kullanici-yonetimi/kullanici-yonetimi/kullanici-yonetimi.component').then(m => m.KullaniciYonetimiComponent),
         data: { menuKod: YETKI.KULLANICILAR },
       },
 
@@ -330,7 +330,7 @@ export const routes: Routes = [
         path: 'rol-yonetimi',
         canActivate: [menuGuard],
         loadComponent: () =>
-          import('./features/rol-yonetimi/rol-yonetimi.component').then(m => m.RolYonetimiComponent),
+          import('./features/rol-yonetimi/rol-yonetimi/rol-yonetimi.component').then(m => m.RolYonetimiComponent),
         data: { menuKod: YETKI.ROL_YONETIMI },
       },
 

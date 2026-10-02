@@ -3,7 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { HeaderComponent } from '../header/header.component';
-import { ToggleService } from '../header/toggle.service';
+import { ToggleService } from '../../core/services/toggle.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { ToastComponent } from '../../shared/components/toast/toast.component';
 import { SessionTimeoutService } from '../../core/services/session-timeout.service';

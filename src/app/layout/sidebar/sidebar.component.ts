@@ -1,7 +1,7 @@
 import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NgClass } from '@angular/common';
-import { ToggleService } from '../header/toggle.service';
+import { ToggleService } from '../../core/services/toggle.service';
 import { TranslationService } from '../../core/services/translation.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { YetkiTipi } from '../../core/constants/enums';

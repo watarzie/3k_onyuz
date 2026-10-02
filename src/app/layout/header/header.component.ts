@@ -9,7 +9,7 @@ import { PermissionService } from '../../core/services/permission.service';
 import { TranslationService } from '../../core/services/translation.service';
 import { BildirimDto, BildirimTipi } from '../../shared/models';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
-import { ToggleService } from './toggle.service';
+import { ToggleService } from '../../core/services/toggle.service';
 import { YETKI } from '../../core/constants/yetki-kodlari';
 
 @Component({
