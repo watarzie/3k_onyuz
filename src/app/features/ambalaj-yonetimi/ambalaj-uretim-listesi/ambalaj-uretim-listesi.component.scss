@@ -314,6 +314,11 @@ td small {
   width: 245px;
 }
 
+// Düğmeler hücrenin içindeki sarmalayıcıda dizilir; hücre tablo hücresi olarak kalır ki satır yüksekliğini
+// ve hover zeminini paylaşsın (td'ye flex verilince hücre satırdan kopup kayıyordu).
+.actions-cell {
+  white-space: nowrap;
+}
 .actions {
   display: flex;
   align-items: center;

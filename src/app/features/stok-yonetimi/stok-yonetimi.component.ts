@@ -6,6 +6,7 @@ import { StokService } from '../../core/services/stok.service';
 import { PdfService } from '../../core/services/pdf.service';
 import { StokKaydiDto, StokKaydiOlusturDto, ProjeDropdownDto } from '../../shared/models/index';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
+import { ServerPagerComponent } from '../../shared/components/server-pager/server-pager.component';
 import { ProjeService } from '../../core/services/proje.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { ConfirmService, duzMetin } from '../../core/services/confirm.service';
@@ -15,7 +16,7 @@ import { dosyayiKaydet } from '../../core/services/dosya-kaydet';
 @Component({
   selector: 'app-stok-yonetimi',
   standalone: true,
-  imports: [CommonModule, FormsModule, BreadcrumbComponent],
+  imports: [CommonModule, FormsModule, BreadcrumbComponent, ServerPagerComponent],
   templateUrl: './stok-yonetimi.component.html',
   styleUrls: ['./stok-yonetimi.component.scss']
 })
@@ -113,9 +114,8 @@ export class StokYonetimiComponent implements OnInit {
     }
   }
 
-  onPageSizeChange(event: Event) {
-    const newSize = parseInt((event.target as HTMLSelectElement).value, 10);
-    this.pageSize.set(newSize);
+  sayfaBoyutuDegisti(boyut: number) {
+    this.pageSize.set(boyut);
     this.currentPage.set(1);
     this.loadStoklar();
   }

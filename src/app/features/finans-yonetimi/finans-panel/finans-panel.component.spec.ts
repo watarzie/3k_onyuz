@@ -107,9 +107,63 @@ describe('Finans paneli bağımsız kayıt izni', () => {
     expect(api.yaslandirma).not.toHaveBeenCalled();
   });
 
+  it('genel durum kartları iş kalemi, PO ve fatura sayılarını gösterir; PO/fatura kartları fatura okuma izniyle açılır', () => {
+    api.panel.and.returnValue(of({ isSuccess: true, value: { ...panelVerisi, sayilar: {
+      isKaydi: 10, proje: 3, po: 6, acikPo: 2, kismiFaturaliPo: 1, kapaliPo: 3,
+      fatura: 9, odenenFatura: 7, odenmemisFatura: 2, vadesiGecenFatura: 1, giderKaydi: 4,
+    } } }));
+    kayitIzni.set(true);
+    const fixture = TestBed.createComponent(FinansPanelComponent); fixture.detectChanges();
+    const kartlar = () => Array.from(fixture.nativeElement.querySelectorAll('.kpi-card') as NodeListOf<HTMLElement>)
+      .map((x) => x.getAttribute('data-kpi'));
+    expect(kartlar()).toEqual(['is', 'gider']);
+    expect(fixture.nativeElement.querySelector('[data-kpi="is"] .kpi-value').textContent.trim()).toBe('10');
+    expect(fixture.nativeElement.querySelector('[data-kpi="is"]').textContent).toContain('3 proje');
+
+    ekIzinler.set([FINANS_YETKI.SiparisOperasyonGoruntule]); fixture.detectChanges();
+    expect(kartlar()).toEqual(['is', 'po', 'fatura', 'gider']);
+    const po = fixture.nativeElement.querySelector('[data-kpi="po"]') as HTMLElement;
+    expect(po.querySelector('.kpi-value')!.textContent!.trim()).toBe('6');
+    expect(po.textContent).toContain('2 açık');
+    expect(fixture.nativeElement.querySelector('[data-kpi="fatura"]').textContent).toContain('7 ödendi');
+  });
+
+  it('dönemsel grafik varsayılan olarak aylık adetleri çizer; gizleme tercihi hatırlanır', () => {
+    localStorage.removeItem('3k_finans_panel_grafik');
+    api.panel.and.returnValue(of({ isSuccess: true, value: { ...panelVerisi, aylikSayilar: [
+      { ay: '2026-08', isKaydi: 4, po: 2, fatura: 1 },
+      { ay: '2026-09', isKaydi: 6, po: 3, fatura: 5 },
+    ] } }));
+    kayitIzni.set(true);
+    const fixture = TestBed.createComponent(FinansPanelComponent); fixture.detectChanges();
+    const c = fixture.componentInstance;
+    expect(c.series().map((x) => x.name)).toEqual(['İş kalemi']);
+    expect(c.series()[0].data).toEqual([4, 6]);
+    ekIzinler.set([FINANS_YETKI.SiparisOperasyonGoruntule]);
+    expect(c.series().map((x) => x.data)).toEqual([[4, 6], [2, 3], [1, 5]]);
+    expect(c.chart().type).toBe('area');
+
+    c.grafikAcKapat(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('apx-chart')).toBeNull();
+    expect(localStorage.getItem('3k_finans_panel_grafik')).toBe('0');
+    expect(TestBed.createComponent(FinansPanelComponent).componentInstance.grafikAcik()).toBeFalse();
+    localStorage.removeItem('3k_finans_panel_grafik');
+  });
+
+  it('bekleyen iş yoksa bekleme kartı kova yerine sakin bir durum gösterir', () => {
+    api.panel.and.returnValue(of({ isSuccess: true, value: { ...panelVerisi, yaslandirma: [
+      { asama: 'Sipariş', minGun: 15, adet: 0, tutarlar: [] },
+      { asama: 'Fatura', minGun: 15, adet: 0, tutarlar: [] },
+    ] } }));
+    const fixture = TestBed.createComponent(FinansPanelComponent); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('.dashboard-aging-bucket').length).toBe(0);
+    expect(fixture.nativeElement.querySelector('.dashboard-aging').textContent).toContain('15 günden uzun bekleyen iş yok.');
+  });
+
   it('dil değişiminde başlık ve grafik etiketlerini günceller', () => {
     const fixture = TestBed.createComponent(FinansPanelComponent); fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('h3').textContent).toBe('Finans kontrol paneli');
+    fixture.componentInstance.grafikGorunumuSec('dagilim');
     fixture.componentInstance.grafik.set('siparis');
     TestBed.inject(TranslationService).switchLanguage('en'); fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('h3').textContent).toBe('Finance dashboard');

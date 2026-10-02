@@ -269,7 +269,7 @@
                       <td><span *appCanAccess="[izin.M3Goruntule]">{{ sandik.m3HesaplanabilirMi === false ? 'Hesaplanmaz' : sandik.hacimM3 === null ? '—' : (sandik.hacimM3 | number:'1.3-3') + ' m³' }}</span></td>
                       <td>{{ sandik.talimatVeren || '-' }}</td>
                       <td>{{ durumMetni(sandik.uretimDurumu || 1) }}<button class="btn btn-sm btn-outline-primary" (click)="bagimsizYasam.set(sandik)">Üretim işlemleri</button></td>
-                      <td class="actions"><button *appCanWrite="izin.KayitDuzenle" type="button" class="icon-button" title="Düzenle" (click)="bagimsizFormuAc(sandik)"><i class="ri-pencil-line"></i></button><button *appCanWrite="izin.KayitSil" type="button" class="icon-button danger" title="Sil" (click)="bagimsizSandikSil(sandik)"><i class="ri-delete-bin-line"></i></button></td>
+                      <td class="actions-cell"><div class="actions"><button *appCanWrite="izin.KayitDuzenle" type="button" class="icon-button" title="Düzenle" (click)="bagimsizFormuAc(sandik)"><i class="ri-pencil-line"></i></button><button *appCanWrite="izin.KayitSil" type="button" class="icon-button danger" title="Sil" (click)="bagimsizSandikSil(sandik)"><i class="ri-delete-bin-line"></i></button></div></td>
                     </tr>
                   } @empty { <tr><td colspan="9" class="empty-state">Bu filtrede özel sandık bulunamadı.</td></tr> }
                 }
@@ -340,28 +340,30 @@
                   </span>
                 }
               </td>
-              <td class="actions">
-                <button *appCanAccess="[izin.PlanGoruntule, izin.ProjeDetayGoruntule]" type="button" class="plan-button" (click)="planAc(proje)">
-                  <i class="ri-settings-3-line"></i> Üretim planı
-                </button>
-                <app-islemler-menusu>
-                  <a [routerLink]="projeYolu(proje)" title="Sandık ölçülerini aç">
-                    <i class="ri-ruler-line"></i><span>Sandık ölçüleri</span>
-                  </a>
-                  <button *appCanAccess="[izin.FormIndir]" type="button" [title]="downloadingProjectId() === proje.projeId ? 'PDF hazırlanıyor' : 'Tüm üretim formunu indir'" [disabled]="downloadingProjectId() !== null" [attr.aria-busy]="downloadingProjectId() === proje.projeId" (click)="uretimFormuIndir(proje)">
-                    <i [class]="downloadingProjectId() === proje.projeId ? 'ri-loader-4-line spin' : 'ri-file-pdf-2-line'"></i><span>Üretim formu (PDF)</span>
+              <td class="actions-cell">
+                <div class="actions">
+                  <button *appCanAccess="[izin.PlanGoruntule, izin.ProjeDetayGoruntule]" type="button" class="plan-button" (click)="planAc(proje)">
+                    <i class="ri-settings-3-line"></i> Üretim planı
                   </button>
-                  @if (projeTamamlanabilir(proje)) {
-                    <button type="button" title="Ambalaja dahil bütün sandıkların üretimini tamamla" [disabled]="projeDurumuKaydediliyor() !== null" (click)="projeyiTamamla(proje)">
-                      <i [class]="projeDurumuKaydediliyor() === proje.projeId ? 'ri-loader-4-line spin' : 'ri-check-double-line'"></i><span>Üretimi tamamla</span>
+                  <app-islemler-menusu>
+                    <a [routerLink]="projeYolu(proje)" title="Sandık ölçülerini aç">
+                      <i class="ri-ruler-line"></i><span>Sandık ölçüleri</span>
+                    </a>
+                    <button *appCanAccess="[izin.FormIndir]" type="button" [title]="downloadingProjectId() === proje.projeId ? 'PDF hazırlanıyor' : 'Tüm üretim formunu indir'" [disabled]="downloadingProjectId() !== null" [attr.aria-busy]="downloadingProjectId() === proje.projeId" (click)="uretimFormuIndir(proje)">
+                      <i [class]="downloadingProjectId() === proje.projeId ? 'ri-loader-4-line spin' : 'ri-file-pdf-2-line'"></i><span>Üretim formu (PDF)</span>
                     </button>
-                  }
-                  @if (projeGeriAlinabilir()) {
-                    <button type="button" title="Tamamlanmayı geri al" [disabled]="projeDurumuKaydediliyor() !== null" (click)="projeGeriAlmaFormunuAc(proje)">
-                      <i class="ri-arrow-go-back-line"></i><span>Tamamlanmayı geri al</span>
-                    </button>
-                  }
-                </app-islemler-menusu>
+                    @if (projeTamamlanabilir(proje)) {
+                      <button type="button" title="Ambalaja dahil bütün sandıkların üretimini tamamla" [disabled]="projeDurumuKaydediliyor() !== null" (click)="projeyiTamamla(proje)">
+                        <i [class]="projeDurumuKaydediliyor() === proje.projeId ? 'ri-loader-4-line spin' : 'ri-check-double-line'"></i><span>Üretimi tamamla</span>
+                      </button>
+                    }
+                    @if (projeGeriAlinabilir()) {
+                      <button type="button" title="Tamamlanmayı geri al" [disabled]="projeDurumuKaydediliyor() !== null" (click)="projeGeriAlmaFormunuAc(proje)">
+                        <i class="ri-arrow-go-back-line"></i><span>Tamamlanmayı geri al</span>
+                      </button>
+                    }
+                  </app-islemler-menusu>
+                </div>
               </td>
             </tr>
           } @empty {

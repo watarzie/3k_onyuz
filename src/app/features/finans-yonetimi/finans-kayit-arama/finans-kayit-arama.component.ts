@@ -45,7 +45,7 @@ export interface FinansKayitAramaAcilisi {
   standalone: true,
   imports: [FormsModule, DatePipe, DecimalPipe, ServerPagerComponent],
   templateUrl: './finans-kayit-arama.component.html',
-  styleUrls: ['../ortak/finans-v2.scss', '../finans-panel/finans-panel.component.scss'],
+  styleUrl: '../ortak/finans-v2.scss',
 })
 export class FinansKayitAramaComponent implements OnInit {
   private readonly translation = inject(TranslationService);

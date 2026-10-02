@@ -4,7 +4,20 @@ import { Component, DestroyRef, OnInit, computed, inject, output, signal } from 
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, finalize, switchMap } from 'rxjs';
-import { NgApexchartsModule, ApexAxisChartSeries, ApexChart, ApexXAxis } from 'ng-apexcharts';
+import {
+  NgApexchartsModule,
+  ApexAxisChartSeries,
+  ApexChart,
+  ApexDataLabels,
+  ApexFill,
+  ApexGrid,
+  ApexLegend,
+  ApexPlotOptions,
+  ApexStroke,
+  ApexTooltip,
+  ApexXAxis,
+  ApexYAxis,
+} from 'ng-apexcharts';
 import { FinansService } from '../../../core/services/finans.service';
 import { FinansParaBirimiService } from '../../../core/services/finans-para-birimi.service';
 import { PermissionService } from '../../../core/services/permission.service';
@@ -16,6 +29,38 @@ import {
 } from '../../../shared/models/finans-v2.model';
 import { FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
 import { finansSiparisFaturaOkunabilir } from '../ortak/finans-izinleri';
+
+/** Üst sıradaki genel durum kartı; alt satırdaki rozetler kartın kırılımıdır. */
+export interface FinansPanelKpi {
+  anahtar: string;
+  etiket: string;
+  deger: number;
+  ikon: string;
+  ton: 'primary' | 'info' | 'success' | 'warning' | 'danger';
+  rozetler: { metin: string; ton: 'neutral' | 'success' | 'warning' | 'danger' | 'info' }[];
+}
+
+/** İş kalemi durum çubuğunun bir dilimi. */
+export interface FinansPanelDilim {
+  anahtar: string;
+  etiket: string;
+  adet: number;
+  oran: number;
+  renk: string;
+}
+
+export type FinansPanelGrafikGorunumu = 'adet' | 'tutar' | 'dagilim';
+type FinansPanelGrafik =
+  | 'aylik'
+  | 'isTurleri'
+  | 'giderTurleri'
+  | 'projeler'
+  | 'ozelIsTurleri'
+  | 'beklenenTahsilat'
+  | 'siparis'
+  | 'fatura';
+
+const GRAFIK_TERCIHI = '3k_finans_panel_grafik';
 
 @Component({
   selector: 'app-finans-panel',
@@ -36,7 +81,7 @@ export class FinansPanelComponent implements OnInit {
   private readonly paraBirimleri = inject(FinansParaBirimiService);
   readonly izin = FINANS_YETKI;
   readonly kayitGorunur = computed(() => this.permissions.hasAccess(FINANS_YETKI.KayitGoruntule));
-  /** Alacak kartları faturalardan türetildiği için fatura okuma izniyle gösterilir (RR Q6). */
+  /** PO, fatura ve alacak bilgileri faturalardan türetildiği için fatura okuma izniyle gösterilir (RR Q6). */
   readonly alacakGorunur = computed(() => finansSiparisFaturaOkunabilir(this.permissions));
   /** Para birimi seçenekleri: panelin para birimleri (aktif tanımlar + verideki kodlar), yoksa tanım tablosu. */
   readonly paraKodlari = computed(() => {
@@ -51,22 +96,159 @@ export class FinansPanelComponent implements OnInit {
   readonly loading = signal(false);
   readonly panel = signal<FinansPanel | null>(null);
   readonly para = signal('EUR');
-  readonly grafik = signal<
-    'aylik' | 'isTurleri' | 'giderTurleri' | 'projeler' | 'ozelIsTurleri' | 'beklenenTahsilat' | 'siparis' | 'fatura'
-  >('aylik');
+  readonly grafik = signal<FinansPanelGrafik>('aylik');
+  /** Grafik kartı: adet (iş/PO/fatura), tutar (aylık gelir/gider) veya dağılım (seçilen kırılım). */
+  readonly grafikGorunumu = signal<FinansPanelGrafikGorunumu>('adet');
+  /** Dönem grafiği isteğe bağlıdır; kullanıcının aç/kapat tercihi bu tarayıcıda hatırlanır. */
+  readonly grafikAcik = signal(this.grafikTercihi());
   /**
    * Panel varsayılan olarak bütün dönemlerin genel özetini gösterir; isteğe bağlı dönem filtresi uygulanır.
    * "Tüm dönemler" sunucunun izin verdiği en geniş aralıktır (bu yılın sonundan geriye on yıl).
    */
   readonly donem = signal<'tum' | 'yil' | 'ay' | 'ozel'>('tum');
+  readonly donemler = ['tum', 'yil', 'ay', 'ozel'] as const;
   baslangic = '';
   bitis = '';
-  readonly chart: ApexChart = {
-    type: 'bar',
-    height: 270,
-    toolbar: { show: false },
-    animations: { enabled: false },
-  };
+
+  readonly tutarGorunur = computed(
+    () =>
+      this.parasal(FINANS_YETKI.TutarGoruntule) ||
+      this.parasal(FINANS_YETKI.GelirGoruntule) ||
+      this.parasal(FINANS_YETKI.GiderGoruntule),
+  );
+  readonly karGorunur = computed(() => this.parasal(FINANS_YETKI.KarlilikGoruntule));
+
+  /** Genel durum kartları: iş kalemi her zaman; PO, fatura ve tahsilat fatura okuma izniyle. */
+  readonly kpiKartlari = computed<FinansPanelKpi[]>(() => {
+    const p = this.panel();
+    if (!p) return [];
+    const s = p.sayilar;
+    const kartlar: FinansPanelKpi[] = [
+      {
+        anahtar: 'is',
+        etiket: this.t('PANEL_KPI_ITEMS'),
+        deger: s?.isKaydi ?? p.siparisBekleyen + p.kismiSiparis + p.siparisTam + p.kismiFatura + p.tamamlanan,
+        ikon: 'ri-stack-line',
+        ton: 'primary',
+        rozetler: [
+          ...(s ? [{ metin: `${s.proje} ${this.t('PANEL_PROJECTS')}`, ton: 'neutral' as const }] : []),
+          { metin: `${p.tamamlanan} ${this.t('PANEL_KPI_DONE')}`, ton: 'success' },
+        ],
+      },
+    ];
+    if (s && this.alacakGorunur()) {
+      kartlar.push(
+        {
+          anahtar: 'po',
+          etiket: this.t('PANEL_KPI_PO'),
+          deger: s.po,
+          ikon: 'ri-file-list-3-line',
+          ton: 'info',
+          rozetler: [
+            { metin: `${s.acikPo} ${this.t('PANEL_KPI_OPEN')}`, ton: 'warning' },
+            { metin: `${s.kismiFaturaliPo} ${this.t('PANEL_KPI_PARTIAL')}`, ton: 'info' },
+            { metin: `${s.kapaliPo} ${this.t('PANEL_KPI_CLOSED')}`, ton: 'success' },
+          ],
+        },
+        {
+          anahtar: 'fatura',
+          etiket: this.t('PANEL_KPI_INVOICES'),
+          deger: s.fatura,
+          ikon: 'ri-bill-line',
+          ton: 'success',
+          rozetler: [
+            { metin: `${s.odenenFatura} ${this.t('PANEL_KPI_PAID')}`, ton: 'success' },
+            { metin: `${s.odenmemisFatura} ${this.t('PANEL_KPI_UNPAID')}`, ton: 'warning' },
+          ],
+        },
+      );
+    }
+    if (this.alacakGorunur() && p.alacaklar?.length) {
+      const toplam = (alan: 'bekleyenAdet' | 'vadesiGecenAdet' | 'yaklasanAdet') =>
+        p.alacaklar!.reduce((a, x) => a + x[alan], 0);
+      const gecen = toplam('vadesiGecenAdet');
+      kartlar.push({
+        anahtar: 'tahsilat',
+        etiket: this.t('PANEL_KPI_COLLECTION'),
+        deger: toplam('bekleyenAdet'),
+        ikon: 'ri-hand-coin-line',
+        ton: gecen > 0 ? 'danger' : 'warning',
+        rozetler: [
+          { metin: `${gecen} ${this.t('PANEL_KPI_OVERDUE')}`, ton: gecen > 0 ? 'danger' : 'neutral' },
+          { metin: `${toplam('yaklasanAdet')} ${this.t('PANEL_KPI_DUE_SOON')}`, ton: 'warning' },
+        ],
+      });
+    } else if (s) {
+      kartlar.push({
+        anahtar: 'gider',
+        etiket: this.t('PANEL_KPI_EXPENSES'),
+        deger: s.giderKaydi,
+        ikon: 'ri-wallet-3-line',
+        ton: 'warning',
+        rozetler: [],
+      });
+    }
+    return kartlar;
+  });
+
+  /** İş kalemlerinin sipariş/fatura aşamalarına dağılımı (tek yatay çubuk + açıklama). */
+  readonly isDurumlari = computed<FinansPanelDilim[]>(() => {
+    const p = this.panel();
+    if (!p) return [];
+    const dilimler = [
+      { anahtar: 'siparisBekleyen', etiket: this.t('PENDING_ORDER'), adet: p.siparisBekleyen, renk: '#fd9b45' },
+      { anahtar: 'kismiSiparis', etiket: this.t('PARTIAL_ORDER'), adet: p.kismiSiparis, renk: '#ffc94d' },
+      { anahtar: 'siparisTam', etiket: this.t('FULL_ORDER'), adet: p.siparisTam, renk: '#605dff' },
+      { anahtar: 'kismiFatura', etiket: this.t('PARTIAL_INVOICE'), adet: p.kismiFatura, renk: '#3584fc' },
+      { anahtar: 'tamamlanan', etiket: this.t('COMPLETED'), adet: p.tamamlanan, renk: '#25b003' },
+    ];
+    const toplam = dilimler.reduce((a, x) => a + x.adet, 0);
+    return dilimler.map((x) => ({ ...x, oran: toplam ? (x.adet / toplam) * 100 : 0 }));
+  });
+  readonly isDurumuToplami = computed(() => this.isDurumlari().reduce((a, x) => a + x.adet, 0));
+
+  /** Proje kapsaması: PO ve fatura için yok/kısmi/tam dilimleri. */
+  readonly projeKapsami = computed(() => {
+    const pd = this.panel()?.projeDurumlari;
+    if (!pd) return [];
+    const satir = (baslik: string, yok: number, kismi: number, tam: number, etiketler: [string, string, string]) => {
+      const toplam = yok + kismi + tam;
+      const oran = (x: number) => (toplam ? (x / toplam) * 100 : 0);
+      return {
+        baslik,
+        toplam,
+        dilimler: [
+          { etiket: etiketler[0], adet: yok, oran: oran(yok), ton: 'none' },
+          { etiket: etiketler[1], adet: kismi, oran: oran(kismi), ton: 'partial' },
+          { etiket: etiketler[2], adet: tam, oran: oran(tam), ton: 'full' },
+        ],
+      };
+    };
+    return [
+      satir('PO', pd.siparisYok, pd.siparisKismi, pd.siparisTam, [this.t('NO_ORDER'), this.t('PARTIAL_ORDER'), this.t('FULL_ORDER')]),
+      satir(this.t('INVOICE'), pd.faturaYok, pd.faturaKismi, pd.faturaTam, [
+        this.t('NO_INVOICE'),
+        this.t('PARTIAL_INVOICE'),
+        this.t('FULL_INVOICE'),
+      ]),
+    ];
+  });
+
+  /** Bekleme kovalarından en az biri doluysa kart kovaları gösterir; hepsi boşsa sakin bir "geciken iş yok" durumu. */
+  readonly gecikenVar = computed(() => (this.panel()?.yaslandirma ?? []).some((x) => x.adet > 0));
+
+  private readonly ayBicimi = computed(
+    () =>
+      new Intl.DateTimeFormat(this.translation.currentLang() === 'en' ? 'en-GB' : 'tr-TR', {
+        month: 'short',
+        year: '2-digit',
+      }),
+  );
+  private ayEtiketi(ay: string): string {
+    const [yil, no] = ay.split('-').map(Number);
+    return yil && no ? this.ayBicimi().format(new Date(yil, no - 1, 1)) : ay;
+  }
+
   readonly grafikVerileri = computed(() => {
     const grafik = this.grafik();
     return grafik === 'siparis' || grafik === 'fatura'
@@ -74,6 +256,17 @@ export class FinansPanelComponent implements OnInit {
       : (this.panel()?.[grafik] ?? []).filter((x) => x.paraBirimi === this.para());
   });
   readonly series = computed<ApexAxisChartSeries>(() => {
+    if (this.grafikGorunumu() === 'adet') {
+      const aylar = this.panel()?.aylikSayilar ?? [];
+      if (!aylar.length) return [];
+      const seriler: ApexAxisChartSeries = [{ name: this.t('PANEL_KPI_ITEMS'), data: aylar.map((x) => x.isKaydi) }];
+      if (this.alacakGorunur())
+        seriler.push(
+          { name: this.t('PANEL_KPI_PO'), data: aylar.map((x) => x.po) },
+          { name: this.t('PANEL_KPI_INVOICES'), data: aylar.map((x) => x.fatura) },
+        );
+      return seriler;
+    }
     const grafik = this.grafik();
     if (grafik === 'siparis' || grafik === 'fatura') {
       if (!this.parasal(FINANS_YETKI.TutarGoruntule)) return [];
@@ -83,10 +276,7 @@ export class FinansPanelComponent implements OnInit {
       return [
         {
           name: `${this.t('AMOUNT')} (${this.para()})`,
-          data:
-            grafik === 'siparis'
-              ? [p.siparisBekleyen, p.siparisNetTutar]
-              : [p.faturaBekleyen, p.gelir],
+          data: grafik === 'siparis' ? [p.siparisBekleyen, p.siparisNetTutar] : [p.faturaBekleyen, p.gelir],
         },
       ];
     }
@@ -101,14 +291,77 @@ export class FinansPanelComponent implements OnInit {
       result.push({ name: this.t('NET_EXPENSE'), data: rows.map((x) => x.gider) });
     return result;
   });
-  readonly xaxis = computed<ApexXAxis>(() => ({
-    categories:
-      this.grafik() === 'siparis'
-        ? [this.t('PENDING_ORDER'), this.t('PANEL_ORDERED')]
-        : this.grafik() === 'fatura'
-          ? [this.t('PENDING_INVOICE'), this.t('PANEL_INVOICED')]
-          : this.grafikVerileri().map((x) => x.grup),
+  readonly xaxis = computed<ApexXAxis>(() => {
+    const ortak: ApexXAxis = {
+      axisBorder: { show: false },
+      axisTicks: { show: false },
+      labels: { style: { colors: '#64748b', fontSize: '12px' }, rotate: 0, hideOverlappingLabels: true, trim: true },
+    };
+    if (this.grafikGorunumu() === 'adet')
+      return { ...ortak, categories: (this.panel()?.aylikSayilar ?? []).map((x) => this.ayEtiketi(x.ay)) };
+    const grafik = this.grafik();
+    return {
+      ...ortak,
+      categories:
+        grafik === 'siparis'
+          ? [this.t('PENDING_ORDER'), this.t('PANEL_ORDERED')]
+          : grafik === 'fatura'
+            ? [this.t('PENDING_INVOICE'), this.t('PANEL_INVOICED')]
+            : this.grafikVerileri().map((x) => (grafik === 'aylik' || grafik === 'beklenenTahsilat' ? this.ayEtiketi(x.grup) : x.grup)),
+    };
+  });
+  readonly chart = computed<ApexChart>(() => ({
+    type: this.grafikGorunumu() === 'adet' ? 'area' : 'bar',
+    height: 300,
+    fontFamily: 'Inter, sans-serif',
+    toolbar: { show: false },
+    zoom: { enabled: false },
+    animations: { enabled: false },
   }));
+  readonly renkler = computed(() =>
+    this.grafikGorunumu() === 'adet' ? ['#605dff', '#3584fc', '#25b003'] : ['#605dff', '#fd9b45'],
+  );
+  readonly stroke = computed<ApexStroke>(() =>
+    this.grafikGorunumu() === 'adet' ? { curve: 'smooth', width: 2.5 } : { show: true, width: 2, colors: ['transparent'] },
+  );
+  readonly fill = computed<ApexFill>(() =>
+    this.grafikGorunumu() === 'adet'
+      ? { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.28, opacityTo: 0.02, stops: [0, 95, 100] } }
+      : { opacity: 1 },
+  );
+  readonly yaxis = computed<ApexYAxis>(() => ({
+    labels: {
+      style: { colors: '#64748b', fontSize: '12px' },
+      formatter: (deger: number) =>
+        this.grafikGorunumu() === 'adet'
+          ? String(Math.round(deger))
+          : new Intl.NumberFormat('tr-TR', { notation: 'compact', maximumFractionDigits: 1 }).format(deger),
+    },
+  }));
+  readonly tooltip = computed<ApexTooltip>(() => ({
+    shared: true,
+    intersect: false,
+    y: {
+      formatter: (deger: number) =>
+        deger == null
+          ? '—'
+          : this.grafikGorunumu() === 'adet'
+            ? String(deger)
+            : `${new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(deger)} ${this.para()}`,
+    },
+  }));
+  readonly grid: ApexGrid = { borderColor: '#eceef2', strokeDashArray: 4, padding: { left: 8, right: 8 } };
+  readonly legend: ApexLegend = {
+    position: 'top',
+    horizontalAlign: 'left',
+    fontSize: '12px',
+    labels: { colors: '#64748b' },
+    markers: { size: 5, offsetX: -2 },
+    itemMargin: { horizontal: 10 },
+  };
+  readonly dataLabels: ApexDataLabels = { enabled: false };
+  readonly plotOptions: ApexPlotOptions = { bar: { borderRadius: 4, columnWidth: '46%' } };
+
   ngOnInit(): void {
     this.refresh
       .pipe(
@@ -143,6 +396,21 @@ export class FinansPanelComponent implements OnInit {
     } else return;
     this.yenile();
   }
+  /** Grafik görünümü: tutar aylık gelir/gider kırılımını, dağılım ilk açılışta iş türü kırılımını seçer. */
+  grafikGorunumuSec(gorunum: FinansPanelGrafikGorunumu): void {
+    this.grafikGorunumu.set(gorunum);
+    if (gorunum === 'tutar') this.grafik.set('aylik');
+    else if (gorunum === 'dagilim' && this.grafik() === 'aylik') this.grafik.set('isTurleri');
+  }
+  grafikAcKapat(): void {
+    const acik = !this.grafikAcik();
+    this.grafikAcik.set(acik);
+    try {
+      localStorage.setItem(GRAFIK_TERCIHI, acik ? '1' : '0');
+    } catch {
+      // Tarayıcı depolaması kapalıysa tercih yalnız bu oturumda geçerlidir.
+    }
+  }
   parasal(alan: string): boolean {
     return (
       this.permissions.hasAccess(FINANS_YETKI.ParasalVeriGoruntule) &&
@@ -154,6 +422,12 @@ export class FinansPanelComponent implements OnInit {
     if (!this.kayitGorunur() || !this.yaslandirmaGorunur()) return;
     this.bekleyenAc.emit({ asama: kova.asama, minimumGun: kova.minGun });
   }
+  /** Kovanın kalan net tutarı (tutar izniyle), ipucu olarak gösterilir. */
+  kovaTutari(kova: FinansYaslandirmaKovasi): string {
+    if (!this.parasal(FINANS_YETKI.TutarGoruntule)) return '';
+    const bicim = new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return kova.tutarlar.map((x) => `${bicim.format(x.netTutar ?? 0)} ${x.paraBirimi}`).join(' · ');
+  }
   kova(asama: FinansBekleyenAsama, minGun: number): FinansYaslandirmaKovasi | undefined {
     return this.panel()?.yaslandirma?.find((x) => x.asama === asama && x.minGun === minGun);
   }
@@ -163,6 +437,13 @@ export class FinansPanelComponent implements OnInit {
       return;
     }
     this.refresh.next();
+  }
+  private grafikTercihi(): boolean {
+    try {
+      return localStorage.getItem(GRAFIK_TERCIHI) !== '0';
+    } catch {
+      return true;
+    }
   }
   private date(value: Date): string {
     return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;

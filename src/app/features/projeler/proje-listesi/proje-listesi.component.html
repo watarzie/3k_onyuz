@@ -97,43 +97,50 @@
   <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
     <h5 class="fw-semibold mb-0">{{ isSahaYonetimi() ? 'Saha Projeleri' : isYedekYonetimi() ? 'Yedek Projeleri' : 'Projeler' }} ({{ totalCount() }})</h5>
     <div class="project-list-header-actions">
-      @if (canUseBulkEksikRapor()) {
-        <button type="button" class="btn btn-sm btn-bulk-missing-report report-download-trigger"
-          [disabled]="selectedEksikRaporCount() === 0 || bulkEksikRaporDownloading() !== null"
-          (click)="toggleBulkEksikRaporMenu($event)"
-          title="Seçilen projelerin eksik raporlarını indir">
-          @if (bulkEksikRaporDownloading() !== null) {
-            <span class="spinner-border spinner-border-sm"></span>
-          } @else {
-            <i class="ri-file-warning-line"></i>
+      @if (canUseBulkEksikRapor() || canUseBulkTalepFormu()) {
+        <div class="toolbar-group" role="group" aria-label="Seçili projeler için toplu işlemler" [class.has-selection]="selectedEksikRaporCount() > 0">
+          <span class="toolbar-group-label" title="Toplu işlemler seçili projelere uygulanır">
+            <span class="toolbar-count">{{ selectedEksikRaporCount() }}</span>seçili
+          </span>
+          @if (canUseBulkEksikRapor()) {
+            <button type="button" class="toolbar-btn report-download-trigger"
+              [disabled]="selectedEksikRaporCount() === 0 || bulkEksikRaporDownloading() !== null"
+              (click)="toggleBulkEksikRaporMenu($event)"
+              title="Seçilen projelerin eksik raporlarını indir">
+              @if (bulkEksikRaporDownloading() !== null) {
+                <span class="spinner-border spinner-border-sm"></span>
+              } @else {
+                <i class="ri-file-warning-line toolbar-icon is-danger"></i>
+              }
+              <span>Toplu Eksik Raporu</span>
+              <i class="ri-arrow-down-s-line report-download-chevron"
+                [class.open]="bulkEksikRaporMenuPosition() !== null"></i>
+            </button>
           }
-          <span>Toplu Eksik Raporu ({{ selectedEksikRaporCount() }})</span>
-          <i class="ri-arrow-down-s-line report-download-chevron"
-            [class.open]="bulkEksikRaporMenuPosition() !== null"></i>
-        </button>
-      }
-      @if (canUseBulkTalepFormu()) {
-        <button type="button" class="btn btn-sm btn-outline-success"
-          [disabled]="selectedEksikRaporCount() === 0 || topluTalepFormuIndiriliyor()"
-          (click)="indirTopluTalepFormu()"
-          title="Seçilen projelerde Grid eksiği olan ürünleri tek sayfalık talep formu Excel'ine aktar">
-          @if (topluTalepFormuIndiriliyor()) {
-            <span class="spinner-border spinner-border-sm"></span>
-          } @else {
-            <i class="ri-file-excel-2-line"></i>
+          @if (canUseBulkTalepFormu()) {
+            <button type="button" class="toolbar-btn"
+              [disabled]="selectedEksikRaporCount() === 0 || topluTalepFormuIndiriliyor()"
+              (click)="indirTopluTalepFormu()"
+              title="Seçilen projelerde Grid eksiği olan ürünleri tek sayfalık talep formu Excel'ine aktar">
+              @if (topluTalepFormuIndiriliyor()) {
+                <span class="spinner-border spinner-border-sm"></span>
+              } @else {
+                <i class="ri-file-excel-2-line toolbar-icon is-success"></i>
+              }
+              <span>Talep Formu Excel</span>
+            </button>
           }
-          <span>Talep Formu Excel ({{ selectedEksikRaporCount() }})</span>
-        </button>
+        </div>
       }
       @if (canSee3KIsListesi()) {
-        <a routerLink="/uck-is-listesi" class="btn btn-sm btn-3k-work-list">
-          <i class="ri-list-check-3-line"></i>
+        <a routerLink="/uck-is-listesi" class="toolbar-btn">
+          <i class="ri-archive-stack-line toolbar-icon is-3k"></i>
           <span>3K İş Listesi</span>
         </a>
       }
       @if (canSeeGridIsListesi()) {
-        <a routerLink="/grid-is-listesi" class="btn btn-sm btn-3k-work-list">
-          <i class="ri-list-check-3-line"></i>
+        <a routerLink="/grid-is-listesi" class="toolbar-btn">
+          <i class="ri-database-2-line toolbar-icon is-grid"></i>
           <span>Grid İş Listesi</span>
         </a>
       }
@@ -150,10 +157,10 @@
           }
         </div>
       }
-      <div class="search-box position-relative" style="width: 250px;">
-        <i class="ri-search-line position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-        <input type="text" class="form-control ps-5" placeholder="Ara..." (input)="onSearch($event)" />
-      </div>
+      <label class="toolbar-search">
+        <i class="ri-search-line" aria-hidden="true"></i>
+        <input type="search" placeholder="Proje, müşteri ara..." aria-label="Projelerde ara" (input)="onSearch($event)" />
+      </label>
     </div>
   </div>
 

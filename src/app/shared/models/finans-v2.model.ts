@@ -54,11 +54,34 @@ export interface FinansPanel {
   yaslandirma?: FinansYaslandirmaKovasi[] | null;
   /** Vadesi yaklaşan sayılan gün penceresi (finans parametresi). */
   vadeUyariGunu?: number;
+  /** Seçili dönemin genel durum sayıları: iş kalemi, proje, PO ve fatura (iptaller hariç). */
+  sayilar?: FinansPanelSayilari | null;
+  /** Ay bazında iş kalemi, PO ve fatura sayıları; ilk veri ayından dönem sonuna kesintisizdir. */
+  aylikSayilar?: FinansPanelAylikSayi[] | null;
   siparisBekleyen: number;
   kismiSiparis: number;
   siparisTam: number;
   kismiFatura: number;
   tamamlanan: number;
+}
+export interface FinansPanelSayilari {
+  isKaydi: number;
+  proje: number;
+  po: number;
+  acikPo: number;
+  kismiFaturaliPo: number;
+  kapaliPo: number;
+  fatura: number;
+  odenenFatura: number;
+  odenmemisFatura: number;
+  vadesiGecenFatura: number;
+  giderKaydi: number;
+}
+export interface FinansPanelAylikSayi {
+  ay: string;
+  isKaydi: number;
+  po: number;
+  fatura: number;
 }
 export interface FinansAlacakOzeti {
   paraBirimi: string;

@@ -65,6 +65,45 @@ export class OnayListesiComponent implements OnInit, OnDestroy {
     { label: 'İşlem Onay Merkezi' }
   ];
 
+  /** Listede istemci tarafı arama: işlem açıklaması veya talep eden kişi. */
+  arama = signal('');
+  filtreli = computed(() => {
+    const aranan = this.arama().trim().toLocaleLowerCase('tr-TR');
+    if (!aranan) return this.bekleyenler();
+    return this.bekleyenler().filter((x) =>
+      `${x.islemAciklamasi} ${x.talepEdenKisi}`.toLocaleLowerCase('tr-TR').includes(aranan));
+  });
+  /** Üst özet: bekleyen sayısı, bugün gelenler ve en eski talebin bekleme süresi. */
+  ozet = computed(() => {
+    const liste = this.bekleyenler();
+    const bugun = new Date().toDateString();
+    const tarihler = liste.map((x) => new Date(x.olusturulmaTarihi).getTime()).filter((x) => !Number.isNaN(x));
+    const enEski = tarihler.length ? Math.min(...tarihler) : null;
+    return {
+      toplam: liste.length,
+      bugun: liste.filter((x) => new Date(x.olusturulmaTarihi).toDateString() === bugun).length,
+      enEski: enEski == null ? '' : this.gecenSure(new Date(enEski).toISOString()),
+      enEskiGun: enEski == null ? 0 : Math.floor((Date.now() - enEski) / 86_400_000),
+    };
+  });
+
+  basHarfler(ad: string): string {
+    const parcalar = (ad ?? '').trim().split(/\s+/).filter(Boolean);
+    return ((parcalar[0]?.[0] ?? '') + (parcalar.length > 1 ? parcalar[parcalar.length - 1][0] : '')).toLocaleUpperCase('tr-TR') || '?';
+  }
+
+  /** "5 dk önce", "3 saat önce", "2 gün önce" biçiminde göreli süre. */
+  gecenSure(tarih: string): string {
+    const zaman = new Date(tarih).getTime();
+    if (Number.isNaN(zaman)) return '';
+    const dakika = Math.max(0, Math.floor((Date.now() - zaman) / 60_000));
+    if (dakika < 1) return 'Az önce';
+    if (dakika < 60) return `${dakika} dk önce`;
+    const saat = Math.floor(dakika / 60);
+    if (saat < 24) return `${saat} saat önce`;
+    return `${Math.floor(saat / 24)} gün önce`;
+  }
+
   ngOnInit(): void {
     this.refreshRequests
       .pipe(debounceTime(120), takeUntilDestroyed(this.destroyRef))

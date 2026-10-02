@@ -1,16 +1,13 @@
-<section class="v2-section v2-management finance-dashboard">
-  <header class="v2-toolbar v2-page-heading">
-    <div class="v2-heading">
-      <span class="v2-heading-icon" aria-hidden="true"><i class="ri-dashboard-line"></i></span>
-      <div>
-        <h3>{{ t('PANEL_TITLE') }}</h3>
-        <p>{{ t('PANEL_HELP') }}</p>
-      </div>
+<section class="v2-section finance-dashboard" [attr.aria-busy]="loading()">
+  <header class="dashboard-heading">
+    <div class="dashboard-title">
+      <h3>{{ t('PANEL_TITLE') }}</h3>
+      <p>{{ t('PANEL_HELP') }}</p>
     </div>
     <div class="period-filter">
       <div class="v2-segmented" role="group" [attr.aria-label]="t('PANEL_PERIOD')">
-        @for (secenek of ['tum', 'yil', 'ay', 'ozel']; track secenek) {
-          <button type="button" [class.active]="donem() === secenek" [attr.aria-pressed]="donem() === secenek" (click)="donemSec($any(secenek))">
+        @for (secenek of donemler; track secenek) {
+          <button type="button" [class.active]="donem() === secenek" [attr.aria-pressed]="donem() === secenek" (click)="donemSec(secenek)">
             {{ t('PANEL_PERIOD_' + secenek.toUpperCase()) }}
           </button>
         }
@@ -23,270 +20,342 @@
           <input type="date" [attr.aria-label]="t('END')" [(ngModel)]="bitis" [min]="baslangic" (change)="yenile()" />
         </div>
       }
-      <button class="btn btn-light btn-sm" type="button" [title]="t('REFRESH')" [attr.aria-label]="t('REFRESH')" (click)="yenile()" [disabled]="loading()">
+      <button class="dashboard-icon-btn" type="button" [title]="t('REFRESH')" [attr.aria-label]="t('REFRESH')" (click)="yenile()" [disabled]="loading()">
         <i class="ri-refresh-line" [class.spin]="loading()" aria-hidden="true"></i>
       </button>
     </div>
   </header>
+
   @if (panel(); as p) {
-    <div class="dashboard-counts">
-      <article class="dashboard-stat stat-amber">
-        <i class="ri-time-line" aria-hidden="true"></i>
-        <div>
-          <span>{{ t('PENDING_ORDER') }}</span
-          ><strong>{{ p.siparisBekleyen }}</strong>
-        </div>
-      </article>
-      <article class="dashboard-stat stat-blue">
-        <i class="ri-pie-chart-line" aria-hidden="true"></i>
-        <div>
-          <span>{{ t('PARTIAL_ORDER') }}</span
-          ><strong>{{ p.kismiSiparis }}</strong>
-        </div>
-      </article>
-      <article class="dashboard-stat stat-purple">
-        <i class="ri-file-list-3-line" aria-hidden="true"></i>
-        <div>
-          <span>{{ t('FULL_ORDER') }}</span
-          ><strong>{{ p.siparisTam }}</strong>
-        </div>
-      </article>
-      <article class="dashboard-stat stat-blue">
-        <i class="ri-bill-line" aria-hidden="true"></i>
-        <div>
-          <span>{{ t('PARTIAL_INVOICE') }}</span
-          ><strong>{{ p.kismiFatura }}</strong>
-        </div>
-      </article>
-      <article class="dashboard-stat stat-green">
-        <i class="ri-checkbox-circle-line" aria-hidden="true"></i>
-        <div>
-          <span>{{ t('COMPLETED') }}</span
-          ><strong>{{ p.tamamlanan }}</strong>
-        </div>
-      </article>
-    </div>
-    @if (p.projeDurumlari; as pd) {
-      <article class="v2-card dashboard-project-status">
-        <header class="dashboard-project-heading">
-          <h4><i class="ri-building-2-line" aria-hidden="true"></i>{{ t('PANEL_PROJECT_STATUS') }}</h4>
-          <span
-            >{{ pd.toplamProje }} {{ t('PANEL_PROJECTS') }} · {{ t('COMPLETED') }} {{ pd.tamamlanan }}@if (pd.fiyatBekleyen) {
-              · {{ t('PANEL_PRICE_PENDING_PROJECTS') }} {{ pd.fiyatBekleyen }}
-            }</span
-          >
-        </header>
-        <div class="dashboard-project-grid">
-          <div>
-            <span>PO</span>
-            <dl>
-              <div>
-                <dt>{{ t('NO_ORDER') }}</dt>
-                <dd>{{ pd.siparisYok }}</dd>
-              </div>
-              <div>
-                <dt>{{ t('PARTIAL_ORDER') }}</dt>
-                <dd>{{ pd.siparisKismi }}</dd>
-              </div>
-              <div>
-                <dt>{{ t('FULL_ORDER') }}</dt>
-                <dd>{{ pd.siparisTam }}</dd>
-              </div>
-            </dl>
+    <div class="dashboard-kpis">
+      @for (kart of kpiKartlari(); track kart.anahtar) {
+        <article class="kpi-card" [attr.data-kpi]="kart.anahtar">
+          <div class="kpi-top">
+            <div>
+              <span class="kpi-label">{{ kart.etiket }}</span>
+              <strong class="kpi-value">{{ kart.deger | number: '1.0-0' }}</strong>
+            </div>
+            <span class="kpi-icon" [attr.data-ton]="kart.ton" aria-hidden="true"><i [class]="kart.ikon"></i></span>
           </div>
-          <div>
-            <span>{{ t('INVOICE') }}</span>
-            <dl>
-              <div>
-                <dt>{{ t('NO_INVOICE') }}</dt>
-                <dd>{{ pd.faturaYok }}</dd>
-              </div>
-              <div>
-                <dt>{{ t('PARTIAL_INVOICE') }}</dt>
-                <dd>{{ pd.faturaKismi }}</dd>
-              </div>
-              <div>
-                <dt>{{ t('FULL_INVOICE') }}</dt>
-                <dd>{{ pd.faturaTam }}</dd>
-              </div>
-            </dl>
-          </div>
-        </div>
-        <p class="v2-note">{{ t('PANEL_PROJECT_STATUS_NOTE') }}</p>
-      </article>
-    }
-    @if (p.yaslandirma?.length) {
-      <article class="v2-card dashboard-aging">
-        <header class="dashboard-project-heading">
-          <h4><i class="ri-hourglass-2-line" aria-hidden="true"></i>{{ t('PANEL_AGING') }}</h4>
-          <span>{{ t('PANEL_AGING_NOTE') }}</span>
-        </header>
-        <div class="dashboard-aging-grid">
-          @for (asamaAdi of ['Sipariş', 'Fatura']; track asamaAdi) {
-            <div class="dashboard-aging-row">
-              <span class="dashboard-aging-label">{{ asamaAdi === 'Sipariş' ? t('PENDING_ORDER') : t('PENDING_INVOICE') }}</span>
-              @for (esik of yaslandirmaEsikleri; track esik) {
-                @if (kova($any(asamaAdi), esik); as k) {
-                  <button
-                    type="button"
-                    class="dashboard-aging-bucket"
-                    [class.is-empty]="!k.adet"
-                    [class.is-old]="esik >= 60 && k.adet > 0"
-                    [disabled]="!kayitGorunur() || !yaslandirmaGorunur() || !k.adet"
-                    (click)="kovaAc(k)"
-                  >
-                    <span>{{ esik }}+ {{ t('DAY') }}</span>
-                    <strong>{{ k.adet }}</strong>
-                    @if (parasal(izin.TutarGoruntule)) {
-                      @for (tutar of k.tutarlar; track tutar.paraBirimi) {
-                        <small>{{ tutar.netTutar | number: '1.2-2' }} {{ tutar.paraBirimi }}</small>
-                      }
-                    }
-                  </button>
-                }
+          @if (kart.rozetler.length) {
+            <div class="kpi-badges">
+              @for (rozet of kart.rozetler; track rozet.metin) {
+                <span class="kpi-badge" [attr.data-ton]="rozet.ton">{{ rozet.metin }}</span>
               }
             </div>
           }
-        </div>
-      </article>
-    }
-    @if (alacakGorunur() && p.alacaklar?.length) {
-      <article class="v2-card dashboard-receivables">
-        <header class="dashboard-project-heading">
-          <h4><i class="ri-hand-coin-line" aria-hidden="true"></i>{{ t('PANEL_RECEIVABLES') }}</h4>
-          <span>{{ t('PANEL_RECEIVABLES_NOTE').replace('{0}', '' + p.vadeUyariGunu) }}</span>
-        </header>
-        <div class="v2-currency-grid">
-          @for (alacak of p.alacaklar; track alacak.paraBirimi) {
-            <div class="dashboard-receivable">
-              <h5>{{ alacak.paraBirimi }}</h5>
-              <dl>
-                <dt>{{ t('PAYMENT_UNPAID') }}</dt>
-                <dd>{{ alacak.bekleyenAdet }}@if (parasal(izin.TutarGoruntule)) { · {{ alacak.bekleyenTutar | number: '1.2-2' }}}</dd>
-                <dt>{{ t('PAYMENT_OVERDUE') }}</dt>
-                <dd [class.text-danger]="alacak.vadesiGecenAdet > 0">{{ alacak.vadesiGecenAdet }}@if (parasal(izin.TutarGoruntule)) { · {{ alacak.vadesiGecenTutar | number: '1.2-2' }}}</dd>
-                <dt>{{ t('PAYMENT_DUE_SOON') }}</dt>
-                <dd>{{ alacak.yaklasanAdet }}@if (parasal(izin.TutarGoruntule)) { · {{ alacak.yaklasanTutar | number: '1.2-2' }}}</dd>
-                <dt>{{ t('PANEL_PAID_IN_PERIOD') }}</dt>
-                <dd>{{ alacak.zamanindaOdenenAdet + alacak.gecOdenenAdet }}@if (parasal(izin.TutarGoruntule)) { · {{ alacak.odenenTutar | number: '1.2-2' }}}</dd>
-                <dt>{{ t('PANEL_PAID_ON_TIME_LATE') }}</dt>
-                <dd>{{ alacak.zamanindaOdenenAdet }} / {{ alacak.gecOdenenAdet }}</dd>
-              </dl>
-            </div>
-          }
-        </div>
-      </article>
-    }
-    <p class="v2-note dashboard-note">
-      <i class="ri-information-line" aria-hidden="true"></i>{{ t('PANEL_CARDS_NOTE') }}
-    </p>
-    <div class="v2-currency-grid">
-      @for (row of p.tutarlar; track row.paraBirimi) {
-        <article class="v2-card dashboard-currency">
-          <header class="dashboard-currency-heading">
-            <span class="dashboard-currency-icon" aria-hidden="true"
-              ><i class="ri-exchange-dollar-line"></i
-            ></span>
-            <div>
-              <span class="v2-eyebrow">{{ t('CURRENCY') }}</span>
-              <h4>{{ row.paraBirimi }}</h4>
-            </div>
-          </header>
-          <dl>
-            @if (parasal(izin.TutarGoruntule)) {
-              <dt>{{ t('PENDING_ORDER') }}</dt>
-              <dd>{{ row.siparisBekleyen | number: '1.2-2' }}</dd>
-              <dt>{{ t('PENDING_INVOICE') }}</dt>
-              <dd>{{ row.faturaBekleyen | number: '1.2-2' }}</dd>
-            }
-            @if (parasal(izin.GelirGoruntule)) {
-              <dt>{{ t('NET_INCOME') }}</dt>
-              <dd>{{ row.gelir | number: '1.2-2' }}</dd>
-              <dt>{{ t('PANEL_YEAR_INCOME') }}</dt>
-              <dd>{{ row.yilGelir | number: '1.2-2' }}</dd>
-            }
-            @if (parasal(izin.GiderGoruntule)) {
-              <dt>{{ t('NET_EXPENSE') }}</dt>
-              <dd>{{ row.gider | number: '1.2-2' }}</dd>
-              <dt>{{ t('PANEL_YEAR_EXPENSE') }}</dt>
-              <dd>{{ row.yilGider | number: '1.2-2' }}</dd>
-            }
-            @if (parasal(izin.KarlilikGoruntule)) {
-              <dt>{{ t('PANEL_ACTUAL_DIFFERENCE') }}</dt>
-              <dd
-                class="dashboard-key-value"
-                [class.is-negative]="row.fark != null && row.fark < 0"
-              >
-                {{ row.fark | number: '1.2-2' }}
-              </dd>
-              <dt>{{ t('PANEL_ESTIMATED_PROFIT') }}</dt>
-              <dd>{{ row.tahminiKar | number: '1.2-2' }}</dd>
-              <dt>{{ t('PANEL_PROFIT_RATE') }}</dt>
-              <dd>
-                {{
-                  row.karOrani == null
-                    ? t('NOT_APPLICABLE')
-                    : (row.karOrani | number: '1.2-2') + '%'
-                }}
-              </dd>
-            }
-          </dl>
         </article>
       }
     </div>
-    @if (
-      parasal(izin.TutarGoruntule) ||
-      parasal(izin.GelirGoruntule) ||
-      parasal(izin.GiderGoruntule)
-    ) {
-      <article class="v2-card dashboard-chart">
-        <div class="v2-card-heading dashboard-chart-heading">
-          <h4>
-            <i class="ri-bar-chart-box-line" aria-hidden="true"></i>{{ t('PANEL_CHARTS') }}
-            <span class="v2-version">{{ para() }}</span>
-          </h4>
-          <label>
-            <span class="v2-eyebrow">{{ t('CURRENCY') }}</span>
-            <select [attr.aria-label]="t('CURRENCY')" [ngModel]="para()" (ngModelChange)="para.set($event)">
-              @for (kod of paraKodlari(); track kod) {
-                <option [value]="kod">{{ kod }}</option>
+
+    <div class="dashboard-layout">
+      <div class="dashboard-main">
+        <article class="dash-card dashboard-chart">
+          <header class="dash-card-head">
+            <div>
+              <h4>{{ t('PANEL_TREND') }}</h4>
+              <span class="dash-card-sub">{{ t('PANEL_TREND_SUB') }}</span>
+            </div>
+            <div class="dash-card-actions">
+              @if (grafikAcik()) {
+                <div class="v2-segmented v2-segmented-sm" role="group" [attr.aria-label]="t('PANEL_CHARTS')">
+                  <button type="button" [class.active]="grafikGorunumu() === 'adet'" [attr.aria-pressed]="grafikGorunumu() === 'adet'" (click)="grafikGorunumuSec('adet')">
+                    {{ t('PANEL_TREND_COUNT') }}
+                  </button>
+                  @if (tutarGorunur()) {
+                    <button type="button" [class.active]="grafikGorunumu() === 'tutar'" [attr.aria-pressed]="grafikGorunumu() === 'tutar'" (click)="grafikGorunumuSec('tutar')">
+                      {{ t('PANEL_TREND_AMOUNT') }}
+                    </button>
+                    <button type="button" [class.active]="grafikGorunumu() === 'dagilim'" [attr.aria-pressed]="grafikGorunumu() === 'dagilim'" (click)="grafikGorunumuSec('dagilim')">
+                      {{ t('PANEL_TREND_BREAKDOWN') }}
+                    </button>
+                  }
+                </div>
               }
-            </select>
-          </label>
-          <label>
-            <span class="v2-eyebrow">{{ t('PANEL_BREAKDOWN') }}</span>
-            <select
-              [attr.aria-label]="t('PANEL_BREAKDOWN')"
-              [ngModel]="grafik()"
-              (ngModelChange)="grafik.set($event)"
-            >
-              <option value="siparis">{{ t('PANEL_ORDER_CHART') }}</option>
-              <option value="fatura">{{ t('PANEL_INVOICE_CHART') }}</option>
-              <option value="aylik">{{ t('PANEL_MONTH_CHART') }}</option>
-              <option value="isTurleri">{{ t('PANEL_TYPE_CHART') }}</option>
-              <option value="giderTurleri">{{ t('PANEL_EXPENSE_CHART') }}</option>
-              <option value="projeler">{{ t('PANEL_PROJECT_CHART') }}</option>
-              <option value="ozelIsTurleri">{{ t('PANEL_CUSTOM_CHART') }}</option>
-              @if (alacakGorunur()) {
-                <option value="beklenenTahsilat">{{ t('PANEL_COLLECTION_CHART') }}</option>
-              }
-            </select>
-          </label>
-        </div>
-        @if (series().length) {
-          <apx-chart
-            [series]="series()"
-            [chart]="chart"
-            [xaxis]="xaxis()"
-            [colors]="['#605dff', '#fd9b45']"
-          />
-        } @else {
-          <div class="v2-empty v2-empty-compact">
-            <i class="ri-bar-chart-line" aria-hidden="true"></i>
-            <p>{{ t('PANEL_CHART_EMPTY') }}</p>
-          </div>
+              <button type="button" class="dashboard-link-btn" [attr.aria-expanded]="grafikAcik()" (click)="grafikAcKapat()">
+                <i [class]="grafikAcik() ? 'ri-eye-off-line' : 'ri-line-chart-line'" aria-hidden="true"></i>{{ t(grafikAcik() ? 'PANEL_HIDE_CHART' : 'PANEL_SHOW_CHART') }}
+              </button>
+            </div>
+          </header>
+          @if (grafikAcik()) {
+            @if (grafikGorunumu() !== 'adet') {
+              <div class="chart-controls">
+                <label>
+                  <span>{{ t('CURRENCY') }}</span>
+                  <select [attr.aria-label]="t('CURRENCY')" [ngModel]="para()" (ngModelChange)="para.set($event)">
+                    @for (kod of paraKodlari(); track kod) {
+                      <option [value]="kod">{{ kod }}</option>
+                    }
+                  </select>
+                </label>
+                @if (grafikGorunumu() === 'dagilim') {
+                  <label>
+                    <span>{{ t('PANEL_BREAKDOWN') }}</span>
+                    <select [attr.aria-label]="t('PANEL_BREAKDOWN')" [ngModel]="grafik()" (ngModelChange)="grafik.set($event)">
+                      <option value="siparis">{{ t('PANEL_ORDER_CHART') }}</option>
+                      <option value="fatura">{{ t('PANEL_INVOICE_CHART') }}</option>
+                      <option value="isTurleri">{{ t('PANEL_TYPE_CHART') }}</option>
+                      <option value="giderTurleri">{{ t('PANEL_EXPENSE_CHART') }}</option>
+                      <option value="projeler">{{ t('PANEL_PROJECT_CHART') }}</option>
+                      <option value="ozelIsTurleri">{{ t('PANEL_CUSTOM_CHART') }}</option>
+                      @if (alacakGorunur()) {
+                        <option value="beklenenTahsilat">{{ t('PANEL_COLLECTION_CHART') }}</option>
+                      }
+                    </select>
+                  </label>
+                }
+              </div>
+            }
+            @if (series().length) {
+              <apx-chart
+                [series]="series()"
+                [chart]="chart()"
+                [xaxis]="xaxis()"
+                [yaxis]="yaxis()"
+                [colors]="renkler()"
+                [stroke]="stroke()"
+                [fill]="fill()"
+                [grid]="grid"
+                [legend]="legend"
+                [tooltip]="tooltip()"
+                [dataLabels]="dataLabels"
+                [plotOptions]="plotOptions"
+              />
+            } @else {
+              <div class="dash-empty">
+                <i class="ri-bar-chart-line" aria-hidden="true"></i>
+                <p>{{ t('PANEL_CHART_EMPTY') }}</p>
+              </div>
+            }
+          }
+        </article>
+
+        @if (tutarGorunur()) {
+          <article class="dash-card dashboard-currency">
+            <header class="dash-card-head">
+              <div>
+                <h4>{{ t('PANEL_CURRENCY_SUMMARY') }}</h4>
+                <span class="dash-card-sub">{{ t('PANEL_CARDS_NOTE') }}</span>
+              </div>
+            </header>
+            @if (p.tutarlar.length) {
+              <div class="table-responsive">
+                <table class="dash-table">
+                  <thead>
+                    <tr>
+                      <th>{{ t('CURRENCY') }}</th>
+                      @if (parasal(izin.TutarGoruntule)) {
+                        <th class="text-end">{{ t('PENDING_ORDER') }}</th>
+                        <th class="text-end">{{ t('PENDING_INVOICE') }}</th>
+                      }
+                      @if (parasal(izin.GelirGoruntule)) {
+                        <th class="text-end">{{ t('NET_INCOME') }}</th>
+                      }
+                      @if (parasal(izin.GiderGoruntule)) {
+                        <th class="text-end">{{ t('NET_EXPENSE') }}</th>
+                      }
+                      @if (karGorunur()) {
+                        <th class="text-end">{{ t('PANEL_ACTUAL_DIFFERENCE') }}</th>
+                        <th class="text-end">{{ t('PANEL_ESTIMATED_PROFIT') }}</th>
+                        <th class="text-end">{{ t('PANEL_PROFIT_RATE') }}</th>
+                      }
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of p.tutarlar; track row.paraBirimi) {
+                      <tr>
+                        <td><span class="currency-chip">{{ row.paraBirimi }}</span></td>
+                        @if (parasal(izin.TutarGoruntule)) {
+                          <td class="text-end">{{ row.siparisBekleyen | number: '1.2-2' }}</td>
+                          <td class="text-end">{{ row.faturaBekleyen | number: '1.2-2' }}</td>
+                        }
+                        @if (parasal(izin.GelirGoruntule)) {
+                          <td class="text-end">
+                            <strong>{{ row.gelir | number: '1.2-2' }}</strong>
+                            <small>{{ t('PANEL_YEAR_INCOME') }}: {{ row.yilGelir | number: '1.2-2' }}</small>
+                          </td>
+                        }
+                        @if (parasal(izin.GiderGoruntule)) {
+                          <td class="text-end">
+                            <strong>{{ row.gider | number: '1.2-2' }}</strong>
+                            <small>{{ t('PANEL_YEAR_EXPENSE') }}: {{ row.yilGider | number: '1.2-2' }}</small>
+                          </td>
+                        }
+                        @if (karGorunur()) {
+                          <td class="text-end" [class.is-negative]="row.fark != null && row.fark < 0">{{ row.fark | number: '1.2-2' }}</td>
+                          <td class="text-end">{{ row.tahminiKar | number: '1.2-2' }}</td>
+                          <td class="text-end">
+                            <span class="rate-pill" [class.is-negative]="row.karOrani != null && row.karOrani < 0">
+                              {{ row.karOrani == null ? t('NOT_APPLICABLE') : (row.karOrani | number: '1.1-1') + '%' }}
+                            </span>
+                          </td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="dash-empty"><i class="ri-exchange-dollar-line" aria-hidden="true"></i><p>{{ t('PANEL_CHART_EMPTY') }}</p></div>
+            }
+          </article>
         }
-      </article>
-    }
+
+        @if (alacakGorunur() && p.alacaklar?.length) {
+          <article class="dash-card dashboard-receivables">
+            <header class="dash-card-head">
+              <div>
+                <h4>{{ t('PANEL_RECEIVABLES') }}</h4>
+                <span class="dash-card-sub">{{ t('PANEL_RECEIVABLES_NOTE').replace('{0}', '' + p.vadeUyariGunu) }}</span>
+              </div>
+            </header>
+            <div class="receivable-list">
+              @for (alacak of p.alacaklar; track alacak.paraBirimi) {
+                <div class="receivable-row">
+                  <h5>{{ alacak.paraBirimi }}</h5>
+                  <dl>
+                    <div class="metric">
+                      <dt>{{ t('PAYMENT_UNPAID') }}</dt>
+                      <dd>{{ alacak.bekleyenAdet }}@if (parasal(izin.TutarGoruntule)) { · {{ alacak.bekleyenTutar | number: '1.2-2' }}}</dd>
+                    </div>
+                    <div class="metric" [class.is-danger]="alacak.vadesiGecenAdet > 0">
+                      <dt>{{ t('PAYMENT_OVERDUE') }}</dt>
+                      <dd>{{ alacak.vadesiGecenAdet }}@if (parasal(izin.TutarGoruntule)) { · {{ alacak.vadesiGecenTutar | number: '1.2-2' }}}</dd>
+                    </div>
+                    <div class="metric" [class.is-warning]="alacak.yaklasanAdet > 0">
+                      <dt>{{ t('PAYMENT_DUE_SOON') }}</dt>
+                      <dd>{{ alacak.yaklasanAdet }}@if (parasal(izin.TutarGoruntule)) { · {{ alacak.yaklasanTutar | number: '1.2-2' }}}</dd>
+                    </div>
+                    <div class="metric is-success">
+                      <dt>{{ t('PANEL_PAID_IN_PERIOD') }}</dt>
+                      <dd>{{ alacak.zamanindaOdenenAdet + alacak.gecOdenenAdet }}@if (parasal(izin.TutarGoruntule)) { · {{ alacak.odenenTutar | number: '1.2-2' }}}</dd>
+                    </div>
+                    <div class="metric">
+                      <dt>{{ t('PANEL_PAID_ON_TIME_LATE') }}</dt>
+                      <dd>{{ alacak.zamanindaOdenenAdet }} / {{ alacak.gecOdenenAdet }}</dd>
+                    </div>
+                  </dl>
+                </div>
+              }
+            </div>
+          </article>
+        }
+      </div>
+
+      <aside class="dashboard-side">
+        <article class="dash-card dashboard-status">
+          <header class="dash-card-head">
+            <div>
+              <h4>{{ t('PANEL_ITEM_STATUS') }}</h4>
+              <span class="dash-card-sub">{{ isDurumuToplami() }} {{ t('PANEL_KPI_ITEMS_LOWER') }}</span>
+            </div>
+          </header>
+          <div class="status-bar" role="img" [attr.aria-label]="t('PANEL_ITEM_STATUS')">
+            @for (dilim of isDurumlari(); track dilim.anahtar) {
+              @if (dilim.adet) {
+                <span [style.width.%]="dilim.oran" [style.background]="dilim.renk" [title]="dilim.etiket + ': ' + dilim.adet"></span>
+              }
+            }
+          </div>
+          <ul class="dashboard-counts">
+            @for (dilim of isDurumlari(); track dilim.anahtar) {
+              <li>
+                <span class="legend-dot" [style.background]="dilim.renk" aria-hidden="true"></span>
+                <span class="legend-label">{{ dilim.etiket }}</span>
+                <strong>{{ dilim.adet }}</strong>
+                <small>{{ dilim.oran | number: '1.0-0' }}%</small>
+              </li>
+            }
+          </ul>
+        </article>
+
+        @if (p.projeDurumlari; as pd) {
+          <article class="dash-card dashboard-project-status">
+            <header class="dash-card-head">
+              <div>
+                <h4>{{ t('PANEL_PROJECT_STATUS') }}</h4>
+                <span class="dash-card-sub">
+                  {{ pd.toplamProje }} {{ t('PANEL_PROJECTS') }} · {{ t('COMPLETED') }} {{ pd.tamamlanan }}@if (pd.fiyatBekleyen) {
+                    · {{ t('PANEL_PRICE_PENDING_PROJECTS') }} {{ pd.fiyatBekleyen }}
+                  }
+                </span>
+              </div>
+              <i class="ri-information-line dash-hint" [title]="t('PANEL_PROJECT_STATUS_NOTE')" [attr.aria-label]="t('PANEL_PROJECT_STATUS_NOTE')"></i>
+            </header>
+            @for (satir of projeKapsami(); track satir.baslik) {
+              <div class="coverage">
+                <div class="coverage-head">
+                  <span>{{ satir.baslik }}</span>
+                  <small>{{ satir.toplam }} {{ t('PANEL_PROJECTS') }}</small>
+                </div>
+                <div class="coverage-bar">
+                  @for (dilim of satir.dilimler; track dilim.ton) {
+                    @if (dilim.adet) {
+                      <span [attr.data-ton]="dilim.ton" [style.width.%]="dilim.oran"></span>
+                    }
+                  }
+                </div>
+                <dl class="coverage-legend">
+                  @for (dilim of satir.dilimler; track dilim.ton) {
+                    <div [attr.data-ton]="dilim.ton">
+                      <dt>{{ dilim.etiket }}</dt>
+                      <dd>{{ dilim.adet }}</dd>
+                    </div>
+                  }
+                </dl>
+              </div>
+            }
+          </article>
+        }
+
+        @if (p.yaslandirma?.length) {
+          <article class="dash-card dashboard-aging">
+            <header class="dash-card-head">
+              <div>
+                <h4>{{ t('PANEL_AGING') }}</h4>
+                <span class="dash-card-sub">{{ t('PANEL_AGING_SHORT') }}</span>
+              </div>
+              <i class="ri-information-line dash-hint" [title]="t('PANEL_AGING_NOTE')" [attr.aria-label]="t('PANEL_AGING_NOTE')"></i>
+            </header>
+            @if (gecikenVar()) {
+              @for (asamaAdi of ['Sipariş', 'Fatura']; track asamaAdi) {
+                <div class="aging-row">
+                  <span class="aging-label">{{ asamaAdi === 'Sipariş' ? t('PENDING_ORDER') : t('PENDING_INVOICE') }}</span>
+                  <div class="aging-buckets">
+                    @for (esik of yaslandirmaEsikleri; track esik) {
+                      @if (kova($any(asamaAdi), esik); as k) {
+                        <button
+                          type="button"
+                          class="dashboard-aging-bucket"
+                          [class.is-empty]="!k.adet"
+                          [class.is-old]="esik >= 60 && k.adet > 0"
+                          [disabled]="!kayitGorunur() || !yaslandirmaGorunur() || !k.adet"
+                          [title]="kovaTutari(k)"
+                          (click)="kovaAc(k)"
+                        >
+                          <span>{{ esik }}+ {{ t('DAY') }}</span>
+                          <strong>{{ k.adet }}</strong>
+                        </button>
+                      }
+                    }
+                  </div>
+                </div>
+              }
+            } @else {
+              <div class="dash-empty dash-empty-ok">
+                <i class="ri-checkbox-circle-line" aria-hidden="true"></i>
+                <p>{{ t('PANEL_AGING_EMPTY') }}</p>
+              </div>
+            }
+          </article>
+        }
+      </aside>
+    </div>
+  } @else if (loading()) {
+    <div class="dashboard-kpis" aria-hidden="true">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="kpi-card kpi-skeleton"><span></span><span></span></div>
+      }
+    </div>
   }
 </section>
