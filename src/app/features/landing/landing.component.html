@@ -13,6 +13,7 @@
         <a href="#moduller">Modüller</a>
         <a href="#roller">Roller</a>
         <a href="#guvenlik">Güvenlik</a>
+        <a href="#konum">Konum</a>
       </nav>
       <a class="lp-btn lp-btn--ghost lp-btn--sm" [routerLink]="auth.isLoggedIn() ? '/dashboard' : '/auth/login'">
         <i [class]="auth.isLoggedIn() ? 'ri-dashboard-line' : 'ri-login-circle-line'" aria-hidden="true"></i>
@@ -42,8 +43,8 @@
           <span class="text-flow">her adım tek akışta.</span>
         </h1>
         <p class="lp-lead" data-reveal style="--d: 160ms">
-          3K; çeki listesinden tedarik takibine, sandıklamadan ambalaj üretimine, depodan sevkiyata ve finansa kadar
-          bütün süreci aynı proje gerçeği üzerinde, rol bazlı yetkiyle tek merkezden yönetir.
+          Ürün girişinden ölçülendirme ve ambalaj planına; sandıklama, depo
+          ve sevkiyata kadar tüm süreci tek merkezden yönetin.
         </p>
         <div class="lp-hero__actions" data-reveal style="--d: 240ms">
           <a class="lp-btn lp-btn--primary" [routerLink]="auth.isLoggedIn() ? '/dashboard' : '/auth/login'">
@@ -128,7 +129,7 @@
     <div class="lp-container">
       <div class="lp-heading" data-reveal>
         <span class="lp-kicker">Operasyon akışı</span>
-        <h2>Bir ürünün yolculuğu: çeki listesinden faturaya.</h2>
+        <h2>Bir ürünün yolculuğu: ürün listesinden faturaya.</h2>
         <p>Aşağı kaydırın; her aşama bir öncekinin verisini devralır ve sahne adım adım kurulur.</p>
       </div>
 
@@ -145,7 +146,7 @@
               <!-- 1. Proje: Excel satırları ürüne dönüşür -->
               <div class="scene scene--proje" [class.is-active]="aktifAdim() === 0">
                 <div class="sheet">
-                  <div class="sheet__head"><i class="ri-file-excel-2-fill"></i>cekilistesi_PA727.xlsx</div>
+                  <div class="sheet__head"><i class="ri-file-excel-2-fill"></i>urunlistesi_PA727.xlsx</div>
                   @for (r of [0, 1, 2, 3, 4]; track r) {
                     <div class="sheet__row" [style.--i]="r"><span></span><span></span><span></span></div>
                   }
@@ -228,7 +229,7 @@
                 <div class="ship-badges">
                   <span class="chip" style="--i: 0"><i class="ri-checkbox-circle-line"></i>12 sandık sevk edildi</span>
                   <span class="chip" style="--i: 1"><i class="ri-lock-2-line"></i>Proje kilitlendi</span>
-                  <span class="chip chip--doc" style="--i: 2"><i class="ri-file-list-3-line"></i>Gerçekleşen çeki</span>
+                  <span class="chip chip--doc" style="--i: 2"><i class="ri-file-list-3-line"></i>Gerçekleşen ürün listesi</span>
                 </div>
               </div>
 
@@ -438,6 +439,68 @@
         <div class="audit__row" style="--i: 1"><span class="av av--c">A</span><div><strong>Miktar 2 → 4</strong><small>Ürün kabul · 5 dk önce</small></div><span class="pill pill--cyan">Güncellendi</span></div>
         <div class="audit__row" style="--i: 2"><span class="av av--v">M</span><div><strong>Sevkiyat geri alma onaylandı</strong><small>Onay merkezi · 9 dk önce</small></div><span class="pill pill--violet">Onay</span></div>
         <div class="audit__row" style="--i: 3"><span class="av av--a">F</span><div><strong>PO-4471 faturalandı</strong><small>Finans · 14 dk önce</small></div><span class="pill pill--amber">Fatura</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Konum ===== -->
+  <section id="konum" class="lp-section">
+    <div class="lp-container">
+      <div class="lp-heading" data-reveal>
+        <span class="lp-kicker">Konum</span>
+        <h2>Derince'deki tesisimiz.</h2>
+        <p>Ahşap ambalaj üretiminin yapıldığı tesisimizi haritada görün ya da doğrudan yol tarifi alın.</p>
+      </div>
+
+      <div class="loc">
+        <div class="loc-card" data-reveal style="--d: 60ms">
+          <div class="loc-card__brand">
+            <span class="loc-card__pin"><i class="ri-map-pin-2-fill" aria-hidden="true"></i></span>
+            <div>
+              <strong>{{ konum.ad }}</strong>
+              <small>{{ konum.unvan }}</small>
+            </div>
+          </div>
+
+          <ul class="loc-card__list">
+            <li>
+              <i class="ri-map-pin-line" aria-hidden="true"></i>
+              <div><small>Adres</small><span>{{ konum.adres }}</span></div>
+            </li>
+            <li>
+              <i class="ri-phone-line" aria-hidden="true"></i>
+              <div><small>Telefon</small><a [href]="'tel:' + konum.telefonBaglanti">{{ konum.telefon }}</a></div>
+            </li>
+            <li>
+              <i class="ri-global-line" aria-hidden="true"></i>
+              <div><small>Web</small><a [href]="konum.webAdresi" target="_blank" rel="noopener">{{ konum.web }}</a></div>
+            </li>
+          </ul>
+
+          <div class="loc-card__actions">
+            <a class="lp-btn lp-btn--primary lp-btn--sm" [href]="konum.yolTarifi" target="_blank" rel="noopener">
+              <i class="ri-route-line" aria-hidden="true"></i>Yol tarifi al
+            </a>
+            <a class="lp-btn lp-btn--ghost lp-btn--sm" [href]="konum.haritaBaglantisi" target="_blank" rel="noopener">
+              <i class="ri-external-link-line" aria-hidden="true"></i>Haritada aç
+            </a>
+          </div>
+        </div>
+
+        <div class="loc-map" data-reveal style="--d: 140ms">
+          <div class="loc-map__bar">
+            <span class="dot dot--r"></span><span class="dot dot--y"></span><span class="dot dot--g"></span>
+            <span class="loc-map__title"><i class="ri-earth-line" aria-hidden="true"></i>Uydu görünümü · Derince / Kocaeli</span>
+          </div>
+          <iframe
+            class="loc-map__frame"
+            title="3K Ahşap Ambalaj konumu — uydu haritası"
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2400!2d29.8178164!3d40.7681914!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14cb477dd38080c1%3A0xd7747d2a5f68e60e!2s3K%20AH%C5%9EAP%20AMBALAJ!5e1!3m2!1str!2str!4v1759449600000!5m2!1str!2str"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            allowfullscreen
+          ></iframe>
+        </div>
       </div>
     </div>
   </section>

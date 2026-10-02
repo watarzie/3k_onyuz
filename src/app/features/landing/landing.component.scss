@@ -1892,6 +1892,141 @@ $cycle: 10s;
 @keyframes lp-hero-out { to { opacity: .25; transform: translateY(-60px) scale(.96); } }
 @keyframes lp-hero-copy-out { to { opacity: .35; transform: translateY(-30px); } }
 
+// ===== Konum =====
+// Solda iletişim kartı, sağda uygulama penceresi görünümünde uydu haritası (Google Maps embed, API anahtarsız).
+.loc {
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.4fr);
+  align-items: stretch;
+  gap: 22px;
+}
+.loc-card {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 26px;
+  border: 1px solid var(--line-2);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(17, 27, 44, .92), rgba(9, 16, 28, .95));
+  box-shadow: 0 40px 80px -40px rgba(0, 0, 0, .8), 0 0 60px -30px rgba(52, 228, 63, .3);
+}
+.loc-card__brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  strong { display: block; color: #fff; font-size: 18px; font-weight: 800; }
+  small { color: var(--muted); font-size: 12.5px; }
+}
+.loc-card__pin {
+  position: relative;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(52, 228, 63, .12);
+  color: var(--green);
+  font-size: 24px;
+  // Konum işaretinin etrafında yavaş bir dalga.
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgba(52, 228, 63, .5);
+    border-radius: inherit;
+    animation: loc-pulse 2.6s var(--ease) infinite;
+  }
+}
+@keyframes loc-pulse {
+  from { opacity: .9; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.55); }
+}
+.loc-card__list {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  li {
+    display: flex;
+    gap: 12px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+  }
+  i {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: rgba(34, 211, 238, .08);
+    color: var(--cyan);
+    font-size: 17px;
+  }
+  small {
+    display: block;
+    color: var(--muted);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  span,
+  a {
+    color: var(--text);
+    font-size: 14.5px;
+    line-height: 1.5;
+    text-decoration: none;
+  }
+  a:hover { color: var(--green); }
+}
+.loc-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: auto;
+}
+.loc-map {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line-2);
+  border-radius: 20px;
+  background: var(--surface-2);
+  box-shadow: 0 40px 80px -40px rgba(0, 0, 0, .8), 0 0 70px -30px rgba(34, 211, 238, .35);
+}
+.loc-map__bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, .02);
+}
+.loc-map__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  overflow: hidden;
+  color: #cbd5e1;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  i { color: var(--cyan); }
+}
+.loc-map__frame {
+  display: block;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 420px;
+  border: 0;
+  background: #0b1424;
+}
+
 // ===== Duyarlı düzen =====
 @media (max-width: 1100px) {
   .lp-hero { padding-top: 130px; }
@@ -1901,6 +2036,8 @@ $cycle: 10s;
   .float-card--c { right: 10px; bottom: -34px; }
   .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .lp-security { grid-template-columns: minmax(0, 1fr); }
+  .loc { grid-template-columns: minmax(0, 1fr); }
+  .loc-map__frame { min-height: 380px; }
   .roles { grid-template-columns: minmax(0, 1fr); }
   // Sekmeler kaydırma yerine satırlara sarılır; bütün roller tek bakışta görünür.
   .roles__tabs {
@@ -1936,6 +2073,9 @@ $cycle: 10s;
   .app-window { transform: none; animation: none; }
 }
 @media (max-width: 640px) {
+  .loc-card { padding: 20px; gap: 18px; }
+  .loc-card__actions .lp-btn { flex: 1 1 auto; }
+  .loc-map__frame { min-height: 320px; }
   .lp-section { padding: 80px 0; }
   .bento { grid-template-columns: minmax(0, 1fr); }
   .stage-body { height: 250px; }

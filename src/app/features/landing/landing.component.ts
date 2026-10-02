@@ -34,12 +34,12 @@ interface LandingRol {
 const ADIMLAR: LandingAdim[] = [
   {
     anahtar: 'proje',
-    baslik: 'Proje & Çeki Listesi',
+    baslik: 'Proje & Ürün Listesi',
     kisa: 'Proje',
     ikon: 'ri-file-excel-2-line',
-    ozet: 'Excel çeki listesi içe aktarılır; normal, saha ve yedek projelerin ürün omurgası tek seferde oluşur.',
+    ozet: 'Ürün listesi içe aktarılır; normal, saha ve yedek projelerin ürün omurgası tek seferde oluşur.',
     neOlur: [
-      'Çeki listesi Excel’den yüklenir, her satır izlenebilir bir ürüne dönüşür',
+      'Ürün listesi yüklenir, her satır izlenebilir bir ürüne dönüşür',
       'Revizyonlar fark önizlemesiyle gösterilir ve onaya sunulur',
       'Proje tipi (normal · saha · yedek) sonraki akışı belirler',
     ],
@@ -51,7 +51,7 @@ const ADIMLAR: LandingAdim[] = [
     baslik: 'Ürün Kabul · Tedarik Takibi',
     kisa: 'Kabul',
     ikon: 'ri-inbox-archive-line',
-    ozet: 'Tedarikçiden gelen ürünler çeki listesiyle karşılaştırılır; geliş durumu, kalite ve süreç adımları ürün bazında izlenir.',
+    ozet: 'Tedarikçiden gelen ürünler ürün listesiyle karşılaştırılır; geliş durumu, kalite ve süreç adımları ürün bazında izlenir.',
     neOlur: [
       'Tam geldi · eksik geldi · gelmedi durumları tek tabloda',
       'Kalite ve süreç işaretleri, ambar talep formu',
@@ -110,11 +110,11 @@ const ADIMLAR: LandingAdim[] = [
     ozet: 'Hazır sandıklar sevk edilir ve proje kilitlenir; geri alma gibi kritik işlemler onaya düşer.',
     neOlur: [
       'Sevkiyat ve sevkiyat geçmişi',
-      'Gerçekleşen çeki listesi raporu',
+      'Gerçekleşen ürün listesi raporu',
       'Saha eksikleri ve geri alma talepleri onay akışında',
     ],
     kim: 'Sevkiyat ve yönetim',
-    cikti: ['Gerçekleşen çeki', 'Sevk kaydı'],
+    cikti: ['Gerçekleşen ürün listesi', 'Sevk kaydı'],
   },
   {
     anahtar: 'finans',
@@ -134,12 +134,12 @@ const ADIMLAR: LandingAdim[] = [
 
 const MODULLER: LandingModul[] = [
   { baslik: '3K Sandıklama', ikon: 'ri-archive-stack-line', metin: 'Ürünleri sandıklara yerleştirin, konulan ve eksik miktarı anlık görün, sandığı tek tıkla kapatın.', ton: 'green', genis: true, gorsel: 'sandik' },
-  { baslik: 'Ürün Kabul Takibi', ikon: 'ri-inbox-archive-line', metin: 'Tedarikten gelen ürünler çeki listesiyle eşleşir; eksik, kalite ve süreç ürün bazında.', ton: 'amber' },
+  { baslik: 'Ürün Kabul Takibi', ikon: 'ri-inbox-archive-line', metin: 'Tedarikten gelen ürünler ürün listesiyle eşleşir; eksik, kalite ve süreç ürün bazında.', ton: 'amber' },
   { baslik: 'Ambalaj Üretimi', ikon: 'ri-hammer-line', metin: 'Ölçü, m³ çam ihtiyacı, üretim planı ve fırın partisi.', ton: 'amber' },
   { baslik: 'Finans Yönetimi', ikon: 'ri-line-chart-line', metin: 'İş kayıtları, PO, fatura, vade ve tahsilat; dönemsel panel ve detaylı döküm.', ton: 'cyan', genis: true, gorsel: 'grafik' },
   { baslik: 'İşlem Onay Merkezi', ikon: 'ri-shield-check-line', metin: 'Kritik işlemler onaylanmadan uygulanmaz; her karar gerekçesiyle kayda geçer.', ton: 'violet', gorsel: 'onay' },
   { baslik: 'Depo Durumu', ikon: 'ri-map-pin-2-line', metin: 'Sandık lokasyonları ve depo raporu.', ton: 'cyan', gorsel: 'harita' },
-  { baslik: 'Proje Yönetimi', ikon: 'ri-folder-3-line', metin: 'Normal, saha ve yedek projeler; çeki revizyonları.', ton: 'green' },
+  { baslik: 'Proje Yönetimi', ikon: 'ri-folder-3-line', metin: 'Normal, saha ve yedek projeler; ürün listesi revizyonları.', ton: 'green' },
   { baslik: 'Saha Yönetimi', ikon: 'ri-map-2-line', metin: 'Sahaya aktarılan sandıklar ve saha eksikleri.', ton: 'green' },
   { baslik: 'Stok Modülü', ikon: 'ri-stack-line', metin: 'Fazla teslim ve iade malzemeler.', ton: 'rose' },
   { baslik: 'Rol & Yetki', ikon: 'ri-user-settings-line', metin: 'Ekran, işlem ve alan bazında okuma/yazma yetkisi.', ton: 'violet' },
@@ -151,9 +151,9 @@ const ROLLER: LandingRol[] = [
   {
     ad: 'Planlama',
     ikon: 'ri-folder-chart-line',
-    ozet: 'Projeyi kurar, çeki listesini ve revizyonları yönetir.',
-    ekranlar: ['Projeler', 'Çeki listesi ve revizyon geçmişi', 'Eksik raporları'],
-    isler: ['Excel’den çeki listesi yükler', 'Revizyon farkını önizleyip onaya sunar', 'Toplu eksik raporu ve talep formu alır'],
+    ozet: 'Projeyi kurar, ürün listesini ve revizyonları yönetir.',
+    ekranlar: ['Projeler', 'Ürün listesi ve revizyon geçmişi', 'Eksik raporları'],
+    isler: ['Ürün listesi yükler', 'Revizyon farkını önizleyip onaya sunar', 'Toplu eksik raporu ve talep formu alır'],
   },
   {
     ad: 'Operasyon',
@@ -185,9 +185,22 @@ const ROLLER: LandingRol[] = [
   },
 ];
 
+/** Şirket konumu: Google Haritalar'daki işletme kaydı (3K AHŞAP AMBALAJ, Derince/Kocaeli). */
+const KONUM = {
+  ad: '3K Ahşap Ambalaj',
+  unvan: 'Üç Kardeşler İnşaat Kerestecilik Ltd. Şti.',
+  adres: 'Fatih Sultan Mah., 41100 Derince / Kocaeli',
+  telefon: '(0262) 223 28 75',
+  telefonBaglanti: '+902622232875',
+  web: '3kambalaj.com',
+  webAdresi: 'https://3kambalaj.com',
+  haritaBaglantisi: 'https://maps.google.com/?cid=15525171436395750926',
+  yolTarifi: 'https://www.google.com/maps/dir/?api=1&destination=40.7681914,29.8178164',
+} as const;
+
 /** Kaydırma sahnesinin pencere başlıkları; sıra ADIMLAR ile aynıdır. */
 const SAHNE_BASLIKLARI = [
-  'Proje · Çeki listesi içe aktarma',
+  'Proje · Ürün listesi içe aktarma',
   'Ürün kabul · Geliş kontrolü',
   '3K · Sandık 12',
   'Ambalaj · Üretim planı',
@@ -216,9 +229,10 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
   readonly sahneBasliklari = SAHNE_BASLIKLARI;
   readonly moduller = MODULLER;
   readonly roller = ROLLER;
+  readonly konum = KONUM;
   readonly yil = new Date().getFullYear();
   readonly modulBandi = [
-    'Çeki Listesi', 'Ürün Kabul', '3K Sandıklama', 'Ambalaj Üretimi', 'Depo', 'Sevkiyat', 'Saha',
+    'Ürün Listesi', 'Ürün Kabul', '3K Sandıklama', 'Ambalaj Üretimi', 'Depo', 'Sevkiyat', 'Saha',
     'Stok', 'Finans', 'İşlem Onayı', 'Rol & Yetki', 'Hareket Geçmişi',
   ];
 
