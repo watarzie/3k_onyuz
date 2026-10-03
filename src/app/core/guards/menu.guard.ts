@@ -31,6 +31,6 @@ export const menuGuard: CanActivateFn = async (route, state): Promise<boolean | 
     return true;
   }
 
-  // Yetkisiz — 403 sayfasına yönlendir
-  return router.createUrlTree(['/not-authorized']);
+  // Yetkisiz — 403 sayfasına yönlendir; sayfa, kullanıcının yetki talebinde göstermesi için taşınır.
+  return router.createUrlTree(['/not-authorized'], { queryParams: { sayfa: state.url } });
 };

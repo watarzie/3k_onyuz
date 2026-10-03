@@ -138,7 +138,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   logout(): void {
-    this.auth.logout();
+    this.auth.cikisYap();
   }
 
   @HostListener('document:click', ['$event'])

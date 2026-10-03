@@ -1,0 +1,73 @@
+<section class="cikis" aria-labelledby="cikis-baslik">
+  <div class="cikis-card">
+    <!-- Kilit kapanır, ardından onay rozeti belirir -->
+    <div class="kilit-sahne" aria-hidden="true">
+      <span class="halka halka--1"></span>
+      <span class="halka halka--2"></span>
+      <span class="halka halka--3"></span>
+      @for (p of [0, 1, 2, 3, 4, 5, 6, 7]; track p) {
+        <span class="kivilcim" [style.--i]="p"></span>
+      }
+      <svg class="kilit" viewBox="0 0 120 120">
+        <defs>
+          <linearGradient id="kilitGovde" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#1b2a40" />
+            <stop offset="1" stop-color="#0c1626" />
+          </linearGradient>
+          <linearGradient id="kilitKenar" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#34e43f" />
+            <stop offset="1" stop-color="#22d3ee" />
+          </linearGradient>
+        </defs>
+        <path class="kilit__kol" d="M40 56 V40 a20 20 0 0 1 40 0 V56" fill="none" stroke="url(#kilitKenar)" stroke-width="8" stroke-linecap="round" />
+        <rect class="kilit__govde" x="26" y="52" width="68" height="52" rx="14" fill="url(#kilitGovde)" stroke="url(#kilitKenar)" stroke-width="3" />
+        <circle class="kilit__delik" cx="60" cy="74" r="6" fill="#34e43f" />
+        <rect class="kilit__delik" x="57.5" y="76" width="5" height="12" rx="2.5" fill="#34e43f" />
+      </svg>
+      <span class="onay">
+        <svg viewBox="0 0 24 24"><path d="M5 12.5 l4.5 4.5 L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      </span>
+    </div>
+
+    <span class="cikis-etiket"><i class="ri-shield-check-line" aria-hidden="true"></i>Güvenli çıkış · {{ saat }}</span>
+    <h1 id="cikis-baslik">Güvenle çıkış yaptınız</h1>
+    <p class="cikis-veda">
+      @if (ad()) {
+        Görüşmek üzere, <strong>{{ ad() }}</strong>. İyi çalışmalar dileriz.
+      } @else {
+        Görüşmek üzere. İyi çalışmalar dileriz.
+      }
+    </p>
+
+    <ul class="cikis-adimlar">
+      @for (adim of adimlar; track adim.metin; let i = $index) {
+        <li [style.--i]="i">
+          <span class="cikis-adimlar__ikon"><i [class]="adim.ikon" aria-hidden="true"></i></span>
+          <span>{{ adim.metin }}</span>
+          <i class="ri-check-line cikis-adimlar__tik" aria-hidden="true"></i>
+        </li>
+      }
+    </ul>
+
+    <div class="cikis-eylemler">
+      <button type="button" class="cikis-btn cikis-btn--birincil" (click)="girisEkraninaGit()">
+        <i class="ri-login-circle-line" aria-hidden="true"></i>Tekrar giriş yap
+      </button>
+      <a class="cikis-btn cikis-btn--ikincil" routerLink="/">
+        <i class="ri-home-5-line" aria-hidden="true"></i>Tanıtım sayfası
+      </a>
+    </div>
+
+    <div class="cikis-sayac" [class.is-paused]="bekletildi()" aria-live="polite">
+      <div class="cikis-sayac__cubuk"><span [style.width.%]="ilerleme()"></span></div>
+      @if (!bekletildi()) {
+        <span>{{ kalanSure() }} sn içinde giriş ekranına yönlendirileceksiniz.</span>
+        <button type="button" class="cikis-sayac__dur" (click)="burayaKal()">Burada kal</button>
+      } @else {
+        <span>Otomatik yönlendirme durduruldu.</span>
+      }
+    </div>
+  </div>
+
+  <p class="cikis-not"><i class="ri-information-line" aria-hidden="true"></i>Ortak bir bilgisayar kullanıyorsanız tarayıcıyı da kapatmanızı öneririz.</p>
+</section>

@@ -29,6 +29,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/auth/login/login.component').then(m => m.LoginComponent),
       },
+      {
+        path: 'cikis',
+        loadComponent: () =>
+          import('./features/auth/cikis/cikis.component').then(m => m.CikisComponent),
+      },
       { path: '', redirectTo: 'login', pathMatch: 'full' },
     ],
   },
