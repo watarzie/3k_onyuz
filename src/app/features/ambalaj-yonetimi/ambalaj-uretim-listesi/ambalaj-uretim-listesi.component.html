@@ -327,7 +327,6 @@
               </td>
               <td>
                 <div class="batch-field" [class.is-dirty]="firinPartiDegisti(proje)">
-                  <i class="ri-fire-line batch-field__icon" aria-hidden="true"></i>
                   <input type="text" [(ngModel)]="firinTaslaklari[taslakAnahtari(proje.projeId)]" placeholder="Parti no" aria-label="Fırın parti numarası" />
                   <button *appCanWrite="izin.PlanOlustur" type="button" class="batch-field__save" [title]="firinPartiDegisti(proje) ? 'Değişikliği kaydet' : 'Fırın parti numarasını kaydet'" aria-label="Fırın parti numarasını kaydet" (click)="firinPartiKaydet(proje)"><i class="ri-check-line"></i></button>
                 </div>

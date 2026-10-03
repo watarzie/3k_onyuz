@@ -381,6 +381,15 @@ export class ProjeListesiComponent implements OnInit {
   isSandikMode = computed(() => this.isSandikYonetimi() || this.isSahaYonetimi() || this.isYedekYonetimi());
   showProjeTipiFilter = computed(() => this.isAktifProjeler() || this.isSevkEdilen());
 
+  /** Sayfa başlığındaki ikon çipi ve vurgu rengi; yalnız görünümü etkiler. */
+  sayfaGorunumu = computed(() => {
+    if (this.isSahaYonetimi()) return { ikon: 'ri-tools-line', renk: '#16a34a' };
+    if (this.isYedekYonetimi()) return { ikon: 'ri-box-3-line', renk: '#0ea5e9' };
+    if (this.isSevkEdilen()) return { ikon: 'ri-truck-line', renk: '#e8890c' };
+    if (this.isSandikYonetimi() && !this.isAktifProjeler()) return { ikon: 'ri-archive-line', renk: '#7c3aed' };
+    return { ikon: 'ri-folder-3-line', renk: 'var(--primaryColor)' };
+  });
+
   loadProjeler() {
     const istekSurumu = ++this.projeListeIstekSurumu;
     this.clearBulkEksikRaporSelection();

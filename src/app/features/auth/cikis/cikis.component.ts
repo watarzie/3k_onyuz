@@ -29,12 +29,6 @@ export class CikisComponent implements OnInit {
   readonly ilerleme = computed(() => (1 - this.kalanSure() / YONLENDIRME_SURESI) * 100);
   readonly saat = new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' }).format(new Date());
 
-  readonly adimlar = [
-    { ikon: 'ri-key-2-line', metin: 'Oturum anahtarı bu cihazdan silindi' },
-    { ikon: 'ri-shield-keyhole-line', metin: 'Yetki bilgileri temizlendi' },
-    { ikon: 'ri-notification-off-line', metin: 'Canlı bildirim bağlantısı kapatıldı' },
-  ];
-
   private zamanlayici?: ReturnType<typeof setInterval>;
 
   ngOnInit(): void {

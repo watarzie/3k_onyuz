@@ -28,10 +28,9 @@ describe('CikisComponent — veda sayfası', () => {
 
   afterEach(() => history.replaceState(null, ''));
 
-  it('çıkış yapan kişiyi ilk adıyla uğurlar ve temizlenen adımları gösterir', () => {
+  it('çıkış yapan kişiyi ilk adıyla uğurlar', () => {
     const { fixture, el } = kur();
     expect(el.querySelector('.cikis-veda')!.textContent).toContain('Görüşmek üzere, Ömer');
-    expect(el.querySelectorAll('.cikis-adimlar li').length).toBe(3);
     fixture.destroy();
   });
 

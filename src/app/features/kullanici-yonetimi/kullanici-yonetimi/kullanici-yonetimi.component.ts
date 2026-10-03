@@ -12,6 +12,7 @@ import { TranslationService } from '../../../core/services/translation.service';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { BildirimAbonelikAyariDto, KullaniciDto, KullaniciGuncelleRequest, RolDto, RegisterDto } from '../../../shared/models';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
+import { rolRengi } from '../../../core/constants/rol-renkleri';
 
 @Component({
   selector: 'app-kullanici-yonetimi',
@@ -66,6 +67,17 @@ export class KullaniciYonetimiComponent implements OnInit {
         k.email.toLowerCase().includes(term) ||
         k.rol.toLowerCase().includes(term)
     );
+  });
+
+  /** Üst özet kartları: yalnız yüklenen listeden sayılır, ek istek yapılmaz. */
+  ozet = computed(() => {
+    const list = this.kullanicilar();
+    return {
+      toplam: list.length,
+      zorunlu: list.filter(k => k.ikiFaktorZorunluMu).length,
+      kurulu: list.filter(k => k.ikiFaktorEtkinMi).length,
+      rolSayisi: new Set(list.map(k => k.rolId)).size,
+    };
   });
 
   ngOnInit(): void {
@@ -394,20 +406,9 @@ export class KullaniciYonetimiComponent implements OnInit {
     });
   }
 
-  // ===== Rol badge rengi =====
-  getRolBadgeClass(rol: string): string {
-    switch (rol) {
-      case 'Admin':
-        return 'badge-admin';
-      case 'Yonetici':
-        return 'badge-yonetici';
-      case 'Personel3K':
-        return 'badge-3k';
-      case 'PersonelGrid':
-        return 'badge-grid';
-      default:
-        return 'badge-default';
-    }
+  // ===== Rol rengi (rol yönetimiyle aynı palet) =====
+  rolRengi(rolId: number): string {
+    return rolRengi(rolId);
   }
 
   updateEditField(field: keyof KullaniciGuncelleRequest, value: any): void {

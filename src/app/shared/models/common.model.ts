@@ -5,6 +5,8 @@ export interface ApiResult<T> {
   value?: T;
   error?: string;
   statusCode?: number;
+  /** Hata yanıtının takip kodu (X-Correlation-ID); sunucu logundaki satırla eşleşir. */
+  takipKodu?: string;
 }
 
 /**

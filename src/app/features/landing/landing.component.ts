@@ -268,14 +268,17 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
       );
       ogeler.forEach((x) => this.gozlemci!.observe(x));
     }
-    // Ekranın ortasındaki ince şeridi kesen aşama etkin olur; sahne ona göre kurulur.
+    // Metni ekrandaki ince şeridi kesen aşama etkin olur. Masaüstünde şerit ve yapışık sahne ekranın ortasındadır,
+    // böylece etkin metin sahnesiyle yan yana gelir; dar ekranda sahne üstte durduğu için şerit sahnenin altındadır.
+    // Metinler arası boşlukta önceki aşama korunur.
+    const serit = Math.round(this.adimSeridi() * 100);
     this.adimGozlemcisi = new IntersectionObserver(
       (girdiler) => {
         for (const girdi of girdiler) {
           if (girdi.isIntersecting) this.aktifAdim.set(Number((girdi.target as HTMLElement).dataset['adim']));
         }
       },
-      { rootMargin: '-48% 0px -48% 0px' },
+      { rootMargin: `-${serit - 2}% 0px -${100 - serit - 2}% 0px` },
     );
     kok.querySelectorAll<HTMLElement>('[data-adim]').forEach((x) => this.adimGozlemcisi!.observe(x));
     this.kaydirmaDegisti();
@@ -294,10 +297,18 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
     this.ilerleme.set(yukseklik > 0 ? Math.min(100, (kok.scrollTop / yukseklik) * 100) : 0);
   }
 
-  /** Sahnedeki aşama noktasına tıklanınca o aşamanın metnine kaydırılır. */
+  /** Aşama numarasına tıklanınca o aşamanın metni etkinleştiği şeride kaydırılır. */
   adimSec(i: number): void {
     const hedef = this.host.nativeElement.querySelector<HTMLElement>(`[data-adim="${i}"]`);
-    hedef?.scrollIntoView({ behavior: this.hareketAzalt ? 'auto' : 'smooth', block: 'center' });
+    if (!hedef) return;
+    const kutu = hedef.getBoundingClientRect();
+    const top = window.scrollY + kutu.top + kutu.height / 2 - window.innerHeight * this.adimSeridi();
+    window.scrollTo({ top, behavior: this.hareketAzalt ? 'auto' : 'smooth' });
+  }
+
+  /** Aşama şeridinin ekran yüksekliğine oranı; SCSS'teki 820px kırılımıyla aynıdır. */
+  private adimSeridi(): number {
+    return window.matchMedia?.('(max-width: 820px)').matches ? 0.72 : 0.5;
   }
 
   /** Fare ışığı: imlecin konumu CSS değişkeni olarak öğeye yazılır (yalnız görsel). */

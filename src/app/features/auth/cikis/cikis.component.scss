@@ -1,6 +1,6 @@
 // Çıkış (veda) sayfası — giriş ekranıyla aynı görsel dil: koyu cam kart, marka yeşili ve camgöbeği.
 // Sahne sırası: kart yükselir → kilidin kolu iner (kilitlenir) → kıvılcımlar dağılır → onay rozeti belirir
-// → temizlenen adımlar sırayla işaretlenir. Hareket azaltma tercihinde son hâl doğrudan gösterilir.
+// → metin ve eylemler belirir. Hareket azaltma tercihinde son hâl doğrudan gösterilir.
 :host {
   --c-green: #34e43f;
   --c-green-2: #16b326;
@@ -170,7 +170,7 @@
 }
 
 .cikis-veda {
-  margin: 0 auto 22px;
+  margin: 0 auto 26px;
   max-width: 340px;
   color: var(--c-muted);
   font-size: 14.5px;
@@ -180,53 +180,12 @@
   strong { color: #fff; font-weight: 700; }
 }
 
-.cikis-adimlar {
-  display: grid;
-  gap: 8px;
-  margin: 0 0 24px;
-  padding: 0;
-  list-style: none;
-  text-align: left;
-
-  li {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    border: 1px solid var(--c-line);
-    border-radius: 12px;
-    background: rgba(255, 255, 255, .02);
-    color: #cbd5e1;
-    font-size: 13.5px;
-    animation: c-satir .5s calc(1.6s + var(--i) * .22s) var(--ease) both;
-  }
-}
-
-.cikis-adimlar__ikon {
-  display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  background: rgba(34, 211, 238, .1);
-  color: var(--c-cyan);
-  font-size: 15px;
-}
-
-.cikis-adimlar__tik {
-  margin-left: auto;
-  color: var(--c-green);
-  font-size: 18px;
-  animation: c-pop .4s calc(1.85s + var(--i) * .22s) cubic-bezier(.3, 1.8, .5, 1) both;
-}
-
 // ===== Eylemler =====
 .cikis-eylemler {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  animation: c-fade .6s 2.3s var(--ease) both;
+  animation: c-fade .6s 1.4s var(--ease) both;
 }
 
 .cikis-btn {
@@ -258,7 +217,7 @@
       inset: 0;
       background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .5) 50%, transparent 70%);
       transform: translateX(-120%);
-      animation: c-parilti 4.5s 3s ease-in-out infinite;
+      animation: c-parilti 4.5s 2.2s ease-in-out infinite;
     }
   }
   &--ikincil {
@@ -284,7 +243,7 @@
   margin-top: 18px;
   color: var(--c-muted);
   font-size: 12.5px;
-  animation: c-fade .6s 2.5s var(--ease) both;
+  animation: c-fade .6s 1.6s var(--ease) both;
 
   &.is-paused .cikis-sayac__cubuk span { background: #475569; }
 }
@@ -327,7 +286,7 @@
   color: #64748b;
   font-size: 12px;
   text-align: center;
-  animation: c-fade .6s 2.8s var(--ease) both;
+  animation: c-fade .6s 1.8s var(--ease) both;
 }
 
 // ===== Animasyonlar =====
@@ -367,10 +326,6 @@
 @keyframes c-halka {
   0% { opacity: .7; transform: scale(.8); }
   100% { opacity: 0; transform: scale(1.55); }
-}
-@keyframes c-satir {
-  from { opacity: 0; transform: translateX(-10px); }
-  to { opacity: 1; transform: none; }
 }
 @keyframes c-parilti {
   0%, 60% { transform: translateX(-120%); }

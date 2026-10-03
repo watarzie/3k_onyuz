@@ -9,133 +9,170 @@
 
 <div class="role-container">
   <!-- ===== SOL PANEL: Rol Listesi ===== -->
-  <div class="role-list-panel">
+  <aside class="role-list-panel">
     <div class="panel-card">
       <div class="panel-header">
-        <h6>{{ 'ROLE.ROLES' | translate }}</h6>
-        <button *ngIf="canManage()" class="btn-add" (click)="openAddModal()" title="Yeni Rol Ekle">
-          <i class="ri-add-line"></i>
+        <div class="panel-title">
+          <span class="panel-title__ikon"><i class="ri-team-line"></i></span>
+          <div>
+            <h6>{{ 'ROLE.ROLES' | translate }}</h6>
+            <small>{{ allRoles().length }} rol</small>
+          </div>
+        </div>
+        <button *ngIf="canManage()" type="button" class="tz-btn tz-btn--primary tz-btn--sm" (click)="openAddModal()" title="Yeni Rol Ekle">
+          <i class="ri-add-line"></i>Yeni rol
         </button>
       </div>
 
       <!-- Arama -->
       <div class="search-box">
         <i class="ri-search-line"></i>
-        <input type="text" [placeholder]="'ROLE.SEARCH_PLACEHOLDER' | translate"
+        <input type="search" [placeholder]="'ROLE.SEARCH_PLACEHOLDER' | translate"
                [ngModel]="roleSearchTerm()" (ngModelChange)="roleSearchTerm.set($event)">
       </div>
 
       <!-- Rol Listesi -->
       <div class="role-list">
-        <div *ngIf="isLoading()" class="text-center py-4">
-          <div class="spinner-border text-primary" role="status"></div>
-        </div>
+        <ng-container *ngIf="isLoading()">
+          <div *ngFor="let i of [1, 2, 3, 4, 5, 6]" class="role-skeleton"><span></span><span></span></div>
+        </ng-container>
 
         <ng-container *ngIf="!isLoading()">
-          <div *ngFor="let role of displayedRoles()"
+          <div *ngFor="let role of displayedRoles(); let i = index"
                class="role-item"
+               [style.--i]="i"
+               [style.--rol]="rolRengi(role.id)"
                [class.active]="selectedRole()?.id === role.id"
                (click)="onSelectRole(role)">
+            <span class="role-avatar">{{ rolBasHarfleri(role.ad) }}</span>
             <span class="role-name">{{ role.ad }}</span>
+            <span *ngIf="role.id === adminRolId" class="role-badge" title="Sistem rolü; silinemez"><i class="ri-shield-star-line"></i></span>
             <div class="role-actions">
-              <button class="btn-icon danger" (click)="deleteRole(role, $event)" title="Sil"
-                      *ngIf="role.id !== adminRolId && canManage()">
+              <button type="button" class="tz-btn tz-btn--icon tz-btn--danger-hover" (click)="deleteRole(role, $event)"
+                      [title]="role.ad + ' rolünü sil'" *ngIf="role.id !== adminRolId && canManage()">
                 <i class="ri-delete-bin-line"></i>
               </button>
             </div>
+            <i class="ri-arrow-right-s-line role-chevron"></i>
           </div>
 
           <div *ngIf="displayedRoles().length === 0" class="empty-state">
+            <i class="ri-search-eye-line"></i>
             {{ 'COMMON.NO_DATA' | translate }}
           </div>
         </ng-container>
       </div>
     </div>
-  </div>
+  </aside>
 
   <!-- ===== SAĞ PANEL: Yetki Düzenleme ===== -->
-  <div class="permission-panel">
+  <section class="permission-panel">
     <div class="panel-card">
       <!-- Rol seçilmemişse -->
-      <div *ngIf="!selectedRole()" class="empty-right-panel">
-        <i class="ri-shield-user-line"></i>
+      <div *ngIf="!selectedRole() && !isDetailLoading()" class="empty-right-panel">
+        <div class="empty-illus">
+          <span class="empty-illus__halka"></span>
+          <span class="empty-illus__halka empty-illus__halka--2"></span>
+          <i class="ri-shield-user-line"></i>
+        </div>
         <h5>{{ 'ROLE.SELECT_ROLE_TO_EDIT' | translate }}</h5>
         <p>{{ 'ROLE.OR_CREATE_NEW_VIA_BUTTON' | translate }}</p>
       </div>
 
       <!-- Rol seçilmişse -->
-      <ng-container *ngIf="selectedRole()">
-        <div class="panel-header permission-header">
+      <ng-container *ngIf="selectedRole() as rol">
+        <div class="permission-header">
           <div class="role-info">
-            <i class="ri-verified-badge-line"></i>
+            <span class="role-info__avatar" [style.--rol]="rolRengi(rol.id)">{{ rolBasHarfleri(rol.ad) }}</span>
             <div>
-              <h6>{{ selectedRole()!.ad }}</h6>
+              <h6>{{ rol.ad }}</h6>
               <small>{{ 'ROLE.PERMISSION_SETTINGS' | translate }}</small>
             </div>
           </div>
-          <button *ngIf="canManage()" class="btn-save" (click)="savePermissions()" [disabled]="isSaving()">
-            <i class="ri-save-line" *ngIf="!isSaving()"></i>
-            <i class="ri-loader-4-line spin" *ngIf="isSaving()"></i>
-            {{ 'COMMON.SAVE' | translate }}
-          </button>
+          <div class="permission-header__eylem">
+            <span *ngIf="degisiklikVar()" class="unsaved"><i class="ri-error-warning-line"></i>Kaydedilmemiş değişiklik</span>
+            <button *ngIf="canManage()" type="button" class="tz-btn tz-btn--primary" [class.is-pulse]="degisiklikVar()"
+                    (click)="savePermissions()" [disabled]="isSaving()">
+              <i [class]="isSaving() ? 'ri-loader-4-line tz-spin' : 'ri-save-3-line'"></i>
+              {{ 'COMMON.SAVE' | translate }}
+            </button>
+          </div>
         </div>
 
         <div class="permission-content">
-          <!-- Legend -->
-          <div class="permission-legend">
-            <div class="legend-item">
-              <input type="checkbox" disabled [checked]="true" class="form-check-input">
-              <span>{{ 'PERMISSIONS.FULL_ACCESS' | translate }}</span>
+          <!-- Özet: her seviyede kaç izin var (aynı zamanda renk açıklaması) -->
+          <div class="perm-stats" *ngIf="izinOzeti() as ozet">
+            <div class="perm-stat" data-level="3">
+              <span class="perm-stat__kutu perm-stat__kutu--w"></span>
+              <div><strong>{{ ozet.yazma }}</strong><small>{{ 'PERMISSIONS.FULL_ACCESS' | translate }}</small></div>
             </div>
-            <div class="legend-item">
-              <input type="checkbox" disabled [indeterminate]="true" class="form-check-input">
-              <span>{{ 'PERMISSIONS.READ_ONLY' | translate }}</span>
+            <div class="perm-stat" data-level="2">
+              <span class="perm-stat__kutu perm-stat__kutu--r"></span>
+              <div><strong>{{ ozet.okuma }}</strong><small>{{ 'PERMISSIONS.READ_ONLY' | translate }}</small></div>
             </div>
-            <div class="legend-item">
-              <input type="checkbox" disabled [checked]="false" class="form-check-input">
-              <span>{{ 'PERMISSIONS.NO_ACCESS' | translate }}</span>
+            <div class="perm-stat" data-level="1">
+              <span class="perm-stat__kutu"></span>
+              <div><strong>{{ ozet.yetkisiz }}</strong><small>{{ 'PERMISSIONS.NO_ACCESS' | translate }}</small></div>
+            </div>
+            <div class="perm-bar" aria-hidden="true">
+              <span class="perm-bar__w" [style.width.%]="ozet.toplam ? ozet.yazma / ozet.toplam * 100 : 0"></span>
+              <span class="perm-bar__r" [style.width.%]="ozet.toplam ? ozet.okuma / ozet.toplam * 100 : 0"></span>
             </div>
           </div>
 
-          <p class="permission-type-help">{{ 'PERMISSIONS.PERMISSION_TYPE_HELP' | translate }}</p>
-
-          <hr>
+          <div class="perm-toolbar">
+            <p class="permission-type-help"><i class="ri-information-line"></i>{{ 'PERMISSIONS.PERMISSION_TYPE_HELP' | translate }}</p>
+            <div class="perm-search">
+              <i class="ri-search-line"></i>
+              <input type="search" placeholder="İzin ara..." aria-label="İzin ara"
+                     [ngModel]="izinAramasi()" (ngModelChange)="izinAramasi.set($event)">
+            </div>
+          </div>
 
           <!-- Loading -->
-          <div *ngIf="isDetailLoading()" class="text-center py-4">
-            <div class="spinner-border text-primary" role="status"></div>
+          <div *ngIf="isDetailLoading()" class="tree-skeleton">
+            <span *ngFor="let i of [1, 2, 3, 4, 5]"></span>
           </div>
 
           <!-- Menü Ağacı -->
-          <app-menu-tree *ngIf="!isDetailLoading() && selectedRole()?.menuAgaci?.length"
-                         [nodes]="selectedRole()!.menuAgaci" [disabled]="!canManage() || isSaving()">
+          <app-menu-tree *ngIf="!isDetailLoading() && rol.menuAgaci?.length"
+                         [nodes]="rol.menuAgaci" [disabled]="!canManage() || isSaving()" [arama]="izinAramasi()">
           </app-menu-tree>
         </div>
       </ng-container>
+
+      <div *ngIf="!selectedRole() && isDetailLoading()" class="tree-skeleton tree-skeleton--full">
+        <span *ngFor="let i of [1, 2, 3, 4, 5, 6]"></span>
+      </div>
     </div>
-  </div>
+  </section>
 </div>
 
 <!-- ===== Yeni Rol Modal ===== -->
-<div class="modal-overlay" *ngIf="showAddModal()" (click)="closeAddModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h6>{{ 'ROLE.ADD_NEW' | translate }}</h6>
-      <button class="btn-close-modal" (click)="closeAddModal()">
-        <i class="ri-close-line"></i>
+<ng-container *ngIf="showAddModal()">
+  <div class="tz-modal-backdrop" (click)="closeAddModal()"></div>
+  <div class="tz-modal tz-modal--sm" role="dialog" aria-modal="true" aria-labelledby="yeni-rol-baslik" (keydown.escape)="closeAddModal()">
+    <header class="tz-modal__header">
+      <span class="tz-modal__icon"><i class="ri-shield-user-line"></i></span>
+      <div class="tz-modal__title">
+        <h5 id="yeni-rol-baslik">{{ 'ROLE.ADD_NEW' | translate }}</h5>
+        <p>Rol boş izinlerle oluşturulur; ardından sağdaki ağaçtan yetkilerini verin.</p>
+      </div>
+      <button type="button" class="tz-modal__close" (click)="closeAddModal()" aria-label="Kapat"><i class="ri-close-line"></i></button>
+    </header>
+    <div class="tz-modal__body">
+      <div class="tz-field">
+        <label for="yeni-rol-adi">Rol adı</label>
+        <input id="yeni-rol-adi" type="text" class="form-control"
+               [ngModel]="newRoleName()" (ngModelChange)="newRoleName.set($event)"
+               (keydown.enter)="addRole()" placeholder="Örn: Depo Sorumlusu" autofocus>
+      </div>
+    </div>
+    <footer class="tz-modal__footer">
+      <button type="button" class="tz-btn" (click)="closeAddModal()">{{ 'COMMON.CANCEL' | translate }}</button>
+      <button type="button" class="tz-btn tz-btn--primary" (click)="addRole()" [disabled]="!newRoleName().trim()">
+        <i class="ri-add-line"></i>{{ 'COMMON.SAVE' | translate }}
       </button>
-    </div>
-    <div class="modal-body">
-      <label>Rol Adı</label>
-      <input type="text" class="form-control"
-             [ngModel]="newRoleName()" (ngModelChange)="newRoleName.set($event)"
-             (keydown.enter)="addRole()" placeholder="Örn: SuperVisor" autofocus>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" (click)="closeAddModal()">{{ 'COMMON.CANCEL' | translate }}</button>
-      <button class="btn-confirm" (click)="addRole()" [disabled]="!newRoleName().trim()">
-        {{ 'COMMON.SAVE' | translate }}
-      </button>
-    </div>
+    </footer>
   </div>
-</div>
+</ng-container>

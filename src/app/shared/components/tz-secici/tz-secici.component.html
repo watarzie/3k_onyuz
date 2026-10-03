@@ -1,0 +1,47 @@
+<div class="tz-secici" [class.is-open]="acik()" [class.has-value]="!!deger()">
+  <button #tetik type="button" class="tz-secici__tetik" aria-haspopup="listbox" [attr.aria-expanded]="acik()"
+          [attr.aria-label]="etiket() + ': ' + seciliEtiket()" (click)="degistir()" (keydown)="tusBasildi($event)">
+    <span class="tz-secici__ikon"><i [class]="ikon()" aria-hidden="true"></i></span>
+    <span class="tz-secici__metin">
+      <small>{{ etiket() }}</small>
+      <strong>{{ seciliEtiket() }}</strong>
+    </span>
+    @if (deger()) {
+      <span class="tz-secici__temizle" role="button" tabindex="-1" title="Filtreyi kaldır" (click)="temizle($event)">
+        <i class="ri-close-line" aria-hidden="true"></i>
+      </span>
+    }
+    <i class="ri-arrow-down-s-line tz-secici__ok" aria-hidden="true"></i>
+  </button>
+
+  @if (acik()) {
+    <div class="tz-secici__panel" [style.top.px]="konum()?.top" [style.left.px]="konum()?.left" [style.width.px]="konum()?.width">
+      @if (aramaVar()) {
+        <div class="tz-secici__arama">
+          <i class="ri-search-line" aria-hidden="true"></i>
+          <input type="search" placeholder="Ara..." aria-label="Seçeneklerde ara" [value]="arama()"
+                 (input)="aramaDegisti($any($event.target).value)" (keydown)="tusBasildi($event)" />
+        </div>
+      }
+      <ul class="tz-secici__liste" role="listbox" [attr.aria-label]="etiket()">
+        @for (s of gorunenler(); track s.deger; let i = $index) {
+          <li role="option" class="tz-secici__secenek" [class.is-active]="i === aktifIndex()"
+              [class.is-selected]="s.deger === deger()" [class.is-tumu]="!s.deger"
+              [attr.aria-selected]="s.deger === deger()" [style.--i]="i"
+              (click)="sec(s)" (mouseenter)="aktifIndex.set(i)">
+            <span class="tz-secici__rozet">
+              @if (s.deger) { {{ s.deger }} } @else { <i class="ri-apps-2-line" aria-hidden="true"></i> }
+            </span>
+            <span class="tz-secici__ad">{{ s.etiket }}</span>
+            @if (s.sayi != null) {
+              <span class="tz-secici__sayi">{{ s.sayi }}{{ sayiBirimi() ? ' ' + sayiBirimi() : '' }}</span>
+            }
+            <i class="ri-check-line tz-secici__tik" aria-hidden="true"></i>
+          </li>
+        } @empty {
+          <li class="tz-secici__bos">Eşleşen seçenek yok</li>
+        }
+      </ul>
+    </div>
+  }
+</div>

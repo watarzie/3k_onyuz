@@ -68,20 +68,36 @@ export class BaseApiService {
         if (!text) return fallback;
         try {
           const json = JSON.parse(text) as { message?: string; error?: string; title?: string };
-          return json.message || json.error || json.title || fallback;
+          return (json.message || json.error || json.title || fallback) + this.takipEki(error);
         } catch {
-          return text;
+          return text + this.takipEki(error);
         }
       } catch {
-        return fallback;
+        return fallback + this.takipEki(error);
       }
     }
-    if (typeof body === 'string' && body.trim()) return body.trim();
+    if (typeof body === 'string' && body.trim()) return body.trim() + this.takipEki(error);
     if (body && typeof body === 'object') {
       const response = body as { message?: string; error?: string; title?: string };
-      return response.message || response.error || response.title || fallback;
+      return (response.message || response.error || response.title || fallback) + this.takipEki(error);
     }
-    return error.status === 0 ? 'Sunucuya bağlanılamıyor.' : fallback;
+    return error.status === 0 ? 'Sunucuya bağlanılamıyor.' : fallback + this.takipEki(error);
+  }
+
+  /**
+   * Sunucunun her yanıta koyduğu takip kodu (X-Correlation-ID). Hata bildiriminde gösterilir; kullanıcı
+   * bu kodu ilettiğinde sunucu logundaki iş hatası satırı doğrudan bulunur. Giriş/oturum (401) ve
+   * bağlantı hatalarında gösterilmez.
+   */
+  private takipKodu(error: HttpErrorResponse): string | null {
+    if (error.status < 400 || error.status === 401) return null;
+    const kod = error.headers?.get('X-Correlation-ID')?.trim();
+    return kod && /^[A-Za-z0-9-]{4,64}$/.test(kod) ? kod : null;
+  }
+
+  private takipEki(error: HttpErrorResponse): string {
+    const kod = this.takipKodu(error);
+    return kod ? ` · Takip: ${kod}` : '';
   }
 
   private wrapSuccess<T>(data: T): ApiResult<T> {
@@ -111,6 +127,8 @@ export class BaseApiService {
     }
 
     const extraProps = typeof error.error === 'object' && error.error !== null ? error.error : {};
+    const takipKodu = this.takipKodu(error);
+    if (takipKodu) message += ` · Takip: ${takipKodu}`;
 
     return of({
       ...extraProps,
@@ -118,6 +136,7 @@ export class BaseApiService {
       error: message,
       message: message, // component'ler bazen error bazen message property arayabiliyor
       statusCode: error.status,
+      ...(takipKodu ? { takipKodu } : {}),
     } as any);
   }
 }

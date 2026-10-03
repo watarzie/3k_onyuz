@@ -22,6 +22,7 @@ import { PermissionService } from '../../../core/services/permission.service';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
 import { pdfMakeYukle } from '../../../core/services/pdfmake-yukleyici';
 import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
+import { TzSecenek, TzSeciciComponent } from '../../../shared/components/tz-secici/tz-secici.component';
 
 
 interface AmbarTalepItem {
@@ -54,7 +55,7 @@ const SEVK_DURUMLARI: DurumSecenegi[] = [
 @Component({
   selector: 'app-grid-urunler',
   standalone: true,
-  imports: [NgClass, DatePipe, FormsModule, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent],
+  imports: [NgClass, DatePipe, FormsModule, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent, TzSeciciComponent],
   templateUrl: './grid-urunler.component.html',
   styleUrl: './grid-urunler.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -215,6 +216,19 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     }
 
     return Array.from(byKey.values()).sort((a, b) => this.compareSandikNo(a, b));
+  });
+  /** Sandık seçicisi: her sandık, listede o sandıkta görünen ürün satırı sayısıyla. */
+  sandikSecenekleri = computed<TzSecenek[]>(() => {
+    const sayilar = new Map<string, number>();
+    for (const urun of this.urunler()) {
+      const key = this.normalizeSandikNo(urun.sandikNo ?? '');
+      if (key) sayilar.set(key, (sayilar.get(key) ?? 0) + 1);
+    }
+    return this.sandikFilterOptions().map(sandikNo => ({
+      deger: sandikNo,
+      etiket: `Sandık ${sandikNo}`,
+      sayi: sayilar.get(this.normalizeSandikNo(sandikNo)) ?? 0,
+    }));
   });
   projeBaslik = computed(() => {
     const proje = this.mevcutProje();

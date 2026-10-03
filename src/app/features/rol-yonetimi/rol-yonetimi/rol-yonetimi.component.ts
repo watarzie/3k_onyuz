@@ -12,6 +12,8 @@ import { MenuTreeComponent } from '../menu-tree/menu-tree.component';
 import { PermissionService } from '../../../core/services/permission.service';
 import { normalizeMenuTree } from '../../../core/services/menu-permission-tree';
 import { ADMIN_ROL_ID, YETKI } from '../../../core/constants/yetki-kodlari';
+import { YetkiTipi } from '../../../core/constants/enums';
+import { rolRengi } from '../../../core/constants/rol-renkleri';
 
 @Component({
   selector: 'app-rol-yonetimi',
@@ -42,6 +44,10 @@ export class RolYonetimiComponent implements OnInit {
   /** Yeni rol ekleme modali */
   showAddModal = signal(false);
   newRoleName = signal('');
+  /** İzin ağacında görünüm süzgeci (izinleri değiştirmez). */
+  izinAramasi = signal('');
+  /** Son yüklenen/kaydedilen izin dağılımı; kaydedilmemiş değişikliği göstermek için. */
+  private kayitliIzinler = '';
 
   displayedRoles = computed(() => {
     const list = this.allRoles();
@@ -76,6 +82,8 @@ export class RolYonetimiComponent implements OnInit {
         // Parent referanslarını set et (recursive)
         menuAgaci.forEach(m => this.setParentRefs(m));
         this.selectedRole.set({ ...detay, menuAgaci });
+        this.kayitliIzinler = this.izinImzasi(menuAgaci);
+        this.izinAramasi.set('');
         this.isDetailLoading.set(false);
       },
       error: () => {
@@ -107,6 +115,7 @@ export class RolYonetimiComponent implements OnInit {
         const menuAgaci = normalizeMenuTree(updated.menuAgaci);
         menuAgaci.forEach(m => this.setParentRefs(m));
         this.selectedRole.set({ ...updated, menuAgaci });
+        this.kayitliIzinler = this.izinImzasi(menuAgaci);
         this.isSaving.set(false);
         this.permissions.notifyPermissionsChanged();
         this.toast.success('Yetki ayarları başarıyla kaydedildi.');
@@ -172,6 +181,44 @@ export class RolYonetimiComponent implements OnInit {
         this.toast.error('Rol silinemedi.');
       },
     });
+  }
+
+  // ===== Görünüm yardımcıları =====
+
+  rolBasHarfleri(ad: string): string {
+    const parcalar = ad.trim().split(/\s+/).filter(Boolean);
+    const harfler = parcalar.length > 1 ? parcalar[0][0] + parcalar[1][0] : (parcalar[0] ?? '?').slice(0, 2);
+    return harfler.toLocaleUpperCase('tr-TR');
+  }
+
+  rolRengi(id: number): string {
+    return rolRengi(id);
+  }
+
+  /** Seçili rolün izin dağılımı (ağaç yerinde değiştiği için her çizimde sayılır; ağaç küçüktür). */
+  izinOzeti(): { yazma: number; okuma: number; yetkisiz: number; toplam: number } {
+    const ozet = { yazma: 0, okuma: 0, yetkisiz: 0, toplam: 0 };
+    const say = (nodes: MenuTreeDto[]) => nodes.forEach(n => {
+      ozet.toplam++;
+      if (n.yetkiTipiId === YetkiTipi.W) ozet.yazma++;
+      else if (n.yetkiTipiId === YetkiTipi.R) ozet.okuma++;
+      else ozet.yetkisiz++;
+      say(n.children ?? []);
+    });
+    say(this.selectedRole()?.menuAgaci ?? []);
+    return ozet;
+  }
+
+  /** Yüklenen/kaydedilen hâlden farklı izin varsa kaydet düğmesi vurgulanır. */
+  degisiklikVar(): boolean {
+    const rol = this.selectedRole();
+    return !!rol && this.izinImzasi(rol.menuAgaci) !== this.kayitliIzinler;
+  }
+
+  private izinImzasi(nodes: MenuTreeDto[]): string {
+    const yetkiler: RolYetkiItemDto[] = [];
+    this.collectPermissions(nodes, yetkiler);
+    return yetkiler.map(y => `${y.menuTanimiId}:${y.yetkiTipiId}`).join(',');
   }
 
   // ===== Private Helpers =====

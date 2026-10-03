@@ -710,10 +710,12 @@ $cycle: 10s;
   gap: 56px;
   align-items: start;
 }
+// Sahne ekranın dikey ortasına yapışır (yükseklik ≈ 504px); etkin aşama metni de ortada etkinleştiği için
+// ikisi kaydırma boyunca yan yana durur. Kısa ekranda gezinme çubuğunun altında kalır.
 .story__stage-wrap {
   order: 2;
   position: sticky;
-  top: 96px;
+  top: max(88px, calc(50vh - 252px));
 }
 .story__steps {
   order: 1;
@@ -727,10 +729,10 @@ $cycle: 10s;
   display: grid;
   grid-template-columns: 52px minmax(0, 1fr);
   gap: 18px;
-  min-height: 72vh;
+  min-height: 66vh;
   align-content: center;
   padding: 24px 0;
-  opacity: .32;
+  opacity: .38;
   transition: opacity .45s ease;
   // Aşamaları birleştiren dikey ray.
   &::before {
@@ -746,6 +748,7 @@ $cycle: 10s;
     opacity: 1;
     &::before { background: linear-gradient(180deg, transparent, rgba(52, 228, 63, .6) 15%, rgba(34, 211, 238, .6) 85%, transparent); }
   }
+  &.is-done::before { background: linear-gradient(180deg, transparent, rgba(52, 228, 63, .35) 15%, rgba(52, 228, 63, .35) 85%, transparent); }
   &:first-child::before { top: 40%; }
   &:last-child::before { bottom: 40%; }
 }
@@ -770,6 +773,10 @@ $cycle: 10s;
     box-shadow: 0 0 0 6px rgba(52, 228, 63, .1), 0 14px 34px -10px rgba(52, 228, 63, .7);
     transform: scale(1.06);
   }
+  .is-done & {
+    border-color: rgba(52, 228, 63, .4);
+    color: var(--green);
+  }
 }
 .story-step__kicker {
   color: #7ee8fa;
@@ -778,7 +785,33 @@ $cycle: 10s;
   letter-spacing: .08em;
   text-transform: uppercase;
 }
+// Etkin aşama metni cam kart olur; kenar boşluğu her durumda aynı kalır, böylece metin yer değiştirmez.
 .story-step__body {
+  position: relative;
+  padding: 22px 24px;
+  border: 1px solid transparent;
+  border-radius: 22px;
+  transition: border-color .45s ease, background .45s ease, box-shadow .45s ease, transform .45s var(--ease);
+  .is-active & {
+    border-color: rgba(52, 228, 63, .2);
+    background:
+      radial-gradient(120% 90% at 0% 0%, rgba(52, 228, 63, .08), transparent 55%),
+      linear-gradient(180deg, rgba(17, 27, 44, .7), rgba(9, 16, 28, .5));
+    box-shadow: 0 30px 60px -36px rgba(0, 0, 0, .9), inset 0 1px 0 rgba(255, 255, 255, .04);
+    transform: translateX(4px);
+  }
+  // Kartın sağ kenarından sahneye uzanan ince bağ: metnin hangi sahneyi anlattığını gösterir.
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(52, 228, 63, .55), rgba(34, 211, 238, 0));
+    transition: width .5s var(--ease);
+  }
+  .is-active &::after { width: 44px; }
   h3 {
     margin: 8px 0 10px;
     color: #fff;
@@ -2068,6 +2101,9 @@ $cycle: 10s;
   .scene { padding: 18px; gap: 16px; }
   .stage-dots { padding: 10px; }
   .story-step { min-height: 62vh; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; }
+  .story-step__body { padding: 16px 16px; border-radius: 18px; }
+  .story-step__body::after { display: none; }
+  .is-active .story-step__body { transform: none; }
   .story-step::before { left: 21px; }
   .story-step__num { width: 44px; height: 44px; border-radius: 13px; font-size: 19px; }
   .app-window { transform: none; animation: none; }

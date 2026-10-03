@@ -209,6 +209,15 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
 .tz-ico-info { color: #0e8fb5; }
 .tz-ico-dark { color: #334155; }
 
+// Yükleniyor ikonu (ör. kaydederken ri-loader-4-line).
+.tz-spin {
+  display: inline-block;
+  animation: tz-spin .8s linear infinite;
+}
+@keyframes tz-spin {
+  to { transform: rotate(360deg); }
+}
+
 .tz-btn-group {
   display: inline-flex;
   align-items: center;

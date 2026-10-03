@@ -16,14 +16,25 @@ import { STATUS_BADGE_MAP } from '../../../core/constants/enums';
   standalone: true,
   imports: [NgClass],
   template: `<span class="badge" [ngClass]="badgeClass()">{{ label() }}</span>`,
+  // Yuvarlak rozet: başta durum renginde nokta, ince tonlu kenar.
   styles: [`
-    .badge { font-size: 12px; padding: 4px 10px; border-radius: 4px; font-weight: 500; }
-    .badge-success { background: rgba(37,176,3,.15); color: #25B003; }
-    .badge-danger { background: rgba(255,64,35,.15); color: #FF4023; }
-    .badge-warning { background: rgba(255,193,7,.15); color: #e6a800; }
-    .badge-info { background: rgba(53,132,252,.15); color: #3584FC; }
-    .badge-secondary { background: rgba(100,116,139,.15); color: #64748B; }
-    .badge-purple { background: rgba(173,99,246,.15); color: #AD63F6; }
+    .badge {
+      --ton: #64748B;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px 4px 8px; border: 1px solid color-mix(in srgb, var(--ton) 22%, transparent); border-radius: 999px;
+      background: color-mix(in srgb, var(--ton) 9%, #fff); color: color-mix(in srgb, var(--ton) 88%, #000);
+      font-size: 12px; font-weight: 650; line-height: 1.3; white-space: nowrap;
+    }
+    .badge::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--ton);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--ton) 18%, transparent);
+    }
+    .badge-success { --ton: #1e9a3a; }
+    .badge-danger { --ton: #e5372a; }
+    .badge-warning { --ton: #d48806; }
+    .badge-info { --ton: #2f74e0; }
+    .badge-secondary { --ton: #64748B; }
+    .badge-purple { --ton: #9b4fe8; }
   `],
 })
 export class StatusBadgeComponent {

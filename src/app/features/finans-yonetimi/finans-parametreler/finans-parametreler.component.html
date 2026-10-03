@@ -9,7 +9,7 @@
         <p class="v2-note">{{ t('CURRENCIES_HELP') }}</p>
       </div>
       @if (yazabilir()) {
-        <button type="button" class="btn btn-primary btn-sm" (click)="yeniParaBirimi()">
+        <button type="button" class="tz-btn tz-btn--primary" (click)="yeniParaBirimi()">
           <i class="ri-add-line" aria-hidden="true"></i>{{ t('CURRENCY_ADD') }}
         </button>
       }
@@ -44,11 +44,16 @@
                 @if (yazabilir()) {
                   <td>
                     <div class="v2-actions justify-content-end">
-                      <button type="button" class="btn btn-light btn-sm" (click)="duzenle(paraBirimi)">
-                        <i class="ri-edit-line" aria-hidden="true"></i>{{ t('EDIT') }}
+                      <button type="button" class="tz-btn tz-btn--sm" (click)="duzenle(paraBirimi)">
+                        <i class="ri-edit-line tz-ico-primary" aria-hidden="true"></i>{{ t('EDIT') }}
                       </button>
-                      <button type="button" class="btn btn-light btn-sm" [disabled]="kaydediliyor()" (click)="aktiflikDegistir(paraBirimi)">
-                        {{ paraBirimi.aktif ? t('DEACTIVATE') : t('ACTIVATE') }}
+                      <button type="button" class="tz-btn tz-btn--sm" [class.tz-btn--danger-hover]="paraBirimi.aktif"
+                              [disabled]="kaydediliyor()" (click)="aktiflikDegistir(paraBirimi)">
+                        @if (paraBirimi.aktif) {
+                          <i class="ri-pause-circle-line tz-ico-warning" aria-hidden="true"></i>{{ t('DEACTIVATE') }}
+                        } @else {
+                          <i class="ri-play-circle-line tz-ico-success" aria-hidden="true"></i>{{ t('ACTIVATE') }}
+                        }
                       </button>
                     </div>
                   </td>
@@ -80,9 +85,9 @@
           <p class="v2-note">{{ t('CURRENCY_CODE_LOCKED') }}</p>
         }
         <div class="v2-actions justify-content-end">
-          <button type="button" class="btn btn-light" (click)="form.set(null)">{{ t('CANCEL') }}</button>
-          <button type="button" class="btn btn-primary" [disabled]="kaydediliyor()" (click)="paraBirimiKaydet()">
-            <i class="ri-save-3-line" aria-hidden="true"></i>{{ t('SAVE') }}
+          <button type="button" class="tz-btn" (click)="form.set(null)">{{ t('CANCEL') }}</button>
+          <button type="button" class="tz-btn tz-btn--primary" [disabled]="kaydediliyor()" (click)="paraBirimiKaydet()">
+            <i [class]="kaydediliyor() ? 'ri-loader-4-line tz-spin' : 'ri-save-3-line'" aria-hidden="true"></i>{{ t('SAVE') }}
           </button>
         </div>
       </div>
@@ -116,8 +121,8 @@
     </div>
     @if (yazabilir()) {
       <div class="v2-actions justify-content-end mt-3">
-        <button type="button" class="btn btn-primary" [disabled]="kaydediliyor()" (click)="parametreleriKaydet()">
-          <i class="ri-save-3-line" aria-hidden="true"></i>{{ t('SAVE') }}
+        <button type="button" class="tz-btn tz-btn--primary" [disabled]="kaydediliyor()" (click)="parametreleriKaydet()">
+          <i [class]="kaydediliyor() ? 'ri-loader-4-line tz-spin' : 'ri-save-3-line'" aria-hidden="true"></i>{{ t('SAVE') }}
         </button>
       </div>
     }

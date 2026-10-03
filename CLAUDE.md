@@ -91,6 +91,7 @@ t(key: string): string {
 ### Ortak servis ve bileşenler
 
 - **HTTP**: servisler `BaseApiService`'ten türer; sonuç `ApiResult<T>` (`isSuccess`, `value`, hata). Hatalar çoğunlukla `isSuccess: false` değeri olarak gelir, yalnız `subscribe.error`'a güvenme. Endpoint'ler `core/constants/api-endpoints.ts` → `API.*`.
+- **Takip kodu**: `BaseApiService` 400+ hatalarda (401 hariç) yanıtın `X-Correlation-ID` başlığını mesaja " · Takip: <kod>" olarak ekler ve `takipKodu` alanında döndürür; kod sunucu logundaki iş hatası satırıyla eşleşir. Hata metnine ek yapıldığı için metni eşitlikle karşılaştırma.
 - **202 = onaya alındı, uygulanmadı**: `onayaAlindi(sonuc)` (`shared/models`) true ise başarı mesajı, liste yenileme veya indirme gibi sonraki adımı çalıştırma.
 - **ConfirmService**: `await this.confirm.ask({ title, message, type })` → `boolean`; gerekçe gerekiyorsa `askWithReason({ ..., reason: { label, hint } })` → `string | null`. Mesaj HTML olarak işlenir: kullanıcı/sunucu metni `duzMetin()` ile eklenir. Tarayıcı `confirm()` kullanma.
 - **ToastService**: `success`, `error`, `warning`, `info`.

@@ -1733,7 +1733,7 @@ table tbody tr.completed-project:hover > td {
   align-items: center;
   width: 178px;
   height: 36px;
-  padding: 0 3px 0 10px;
+  padding: 0 3px 0 4px;
   border: 1px solid var(--borderColor);
   border-radius: 9px;
   background: #fff;
@@ -1756,10 +1756,6 @@ table tbody tr.completed-project:hover > td {
     outline: 0;
     &::placeholder { color: #a0aec0; font-weight: 500; }
   }
-}
-.batch-field__icon {
-  color: #e8890c;
-  font-size: 15px;
 }
 .batch-field__save {
   display: inline-grid;

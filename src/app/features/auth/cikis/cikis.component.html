@@ -39,16 +39,6 @@
       }
     </p>
 
-    <ul class="cikis-adimlar">
-      @for (adim of adimlar; track adim.metin; let i = $index) {
-        <li [style.--i]="i">
-          <span class="cikis-adimlar__ikon"><i [class]="adim.ikon" aria-hidden="true"></i></span>
-          <span>{{ adim.metin }}</span>
-          <i class="ri-check-line cikis-adimlar__tik" aria-hidden="true"></i>
-        </li>
-      }
-    </ul>
-
     <div class="cikis-eylemler">
       <button type="button" class="cikis-btn cikis-btn--birincil" (click)="girisEkraninaGit()">
         <i class="ri-login-circle-line" aria-hidden="true"></i>Tekrar giriş yap

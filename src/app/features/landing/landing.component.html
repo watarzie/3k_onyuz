@@ -260,11 +260,12 @@
         <!-- Kaydırılan aşama metinleri -->
         <ol class="story__steps">
           @for (adim of adimlar; track adim.anahtar; let i = $index) {
-            <li class="story-step" [attr.data-adim]="i" [class.is-active]="aktifAdim() === i">
+            <li class="story-step" [class.is-active]="aktifAdim() === i" [class.is-done]="i < aktifAdim()">
               <button type="button" class="story-step__num" (click)="adimSec(i)" [attr.aria-label]="'Aşama ' + (i + 1) + ': ' + adim.baslik">
                 <i [class]="adim.ikon" aria-hidden="true"></i>
               </button>
-              <div class="story-step__body">
+              <!-- Gözlenen öğe metnin kendisidir: metin ekran ortasına gelince aşama etkinleşir ve ortadaki sahneyle hizalanır. -->
+              <div class="story-step__body" [attr.data-adim]="i">
                 <span class="story-step__kicker">Aşama {{ i + 1 }}</span>
                 <h3>{{ adim.baslik }}</h3>
                 <p>{{ adim.ozet }}</p>
