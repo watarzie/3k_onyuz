@@ -1,124 +1,134 @@
 <div class="page-container uck-worklist-page grid-worklist-page">
-  <div class="page-head">
-    <div>
-      <div class="title-row">
-        <i class="ri-list-check-3-line"></i>
+  <header class="wl-hero">
+    <div class="wl-hero__sol">
+      <span class="wl-hero__ikon"><i class="ri-database-2-line" aria-hidden="true"></i></span>
+      <div class="wl-hero__metin">
+        <app-breadcrumb [items]="breadcrumb"></app-breadcrumb>
         <h2>Grid İş Listesi</h2>
+        <p><strong>Grid'in aksiyon alması gereken ürünler burada toplanır.</strong> Yeniden sevk edilmesi veya eksik kalan miktarın tamamlanması gereken satırlar normal, saha ve yedek projeleriyle birlikte görünür.</p>
       </div>
-      <app-breadcrumb [items]="breadcrumb"></app-breadcrumb>
     </div>
 
     <div class="head-actions">
       <app-readonly-banner menuKod="grid-is-listesi"></app-readonly-banner>
-      <button type="button" class="btn btn-outline-primary" (click)="load()">
-        <i class="ri-refresh-line"></i>
+      <button type="button" class="today-chip" [class.active]="todayOnly()" [disabled]="loading()" (click)="toggleTodayFilter()">
+        <i class="ri-time-line" aria-hidden="true"></i>
+        <span>Bugünkü işlem</span>
+        <b>{{ data()?.bugunGridIslemi ?? 0 }}</b>
+        @if (todayOnly()) {
+          <i class="ri-close-line" aria-hidden="true"></i>
+        }
+      </button>
+      <button type="button" class="tz-btn" (click)="load()" [disabled]="loading()">
+        <i class="ri-refresh-line tz-ico-primary" [class.tz-spin]="loading()" aria-hidden="true"></i>
         Yenile
       </button>
     </div>
-  </div>
+  </header>
 
-  <div class="info-strip">
-    <div>
-      <strong>Grid'in aksiyon alması gereken ürünler burada toplanır.</strong>
-      <span>Yeniden sevk edilmesi veya eksik kalan miktarın tamamlanması gereken satırlar normal, saha ve yedek projeleriyle birlikte görünür.</span>
-    </div>
-    <button type="button" class="today-chip" [class.active]="todayOnly()" [disabled]="loading()" (click)="toggleTodayFilter()">
-      <i class="ri-time-line"></i>
-      <span>Bugünkü işlem:</span>
-      <b>{{ data()?.bugunGridIslemi ?? 0 }}</b>
-      @if (todayOnly()) {
-        <i class="ri-close-line"></i>
-      }
-    </button>
-  </div>
-
+  @let toplamIs = data()?.toplam ?? 0;
   <div class="summary-grid">
-    <button type="button" class="summary-card total" [class.active]="activeTip() === 'all'" (click)="setTip('all')">
-      <span class="icon"><i class="ri-list-check-3-line"></i></span>
-      <span class="value">{{ data()?.toplam ?? 0 }}</span>
-      <span class="label">Toplam İş</span>
+    <button type="button" class="summary-card total" style="--i: 0" [class.active]="activeTip() === 'all'" (click)="setTip('all')">
+      <span class="icon"><i class="ri-list-check-3" aria-hidden="true"></i></span>
+      <span class="summary-copy">
+        <span class="value">{{ toplamIs }}</span>
+        <span class="label">Toplam İş</span>
+      </span>
+      <span class="summary-note">{{ totalCount() }} proje</span>
     </button>
 
-    <button type="button" class="summary-card resend" [class.active]="activeTip() === 'yeniden'" (click)="setTip('yeniden')">
-      <span class="icon"><i class="ri-loop-right-line"></i></span>
-      <span class="value">{{ data()?.yenidenSevkGerekli ?? 0 }}</span>
-      <span class="label">Yeniden Sevk Gerekli</span>
+    <button type="button" class="summary-card resend" style="--i: 1" [class.active]="activeTip() === 'yeniden'" (click)="setTip('yeniden')">
+      <span class="icon"><i class="ri-loop-right-line" aria-hidden="true"></i></span>
+      <span class="summary-copy">
+        <span class="value">{{ data()?.yenidenSevkGerekli ?? 0 }}</span>
+        <span class="label">Yeniden Sevk Gerekli</span>
+      </span>
+      <span class="summary-bar"><span [style.width.%]="toplamIs ? (data()?.yenidenSevkGerekli ?? 0) / toplamIs * 100 : 0"></span></span>
     </button>
 
-    <button type="button" class="summary-card missing" [class.active]="activeTip() === 'eksik'" (click)="setTip('eksik')">
-      <span class="icon"><i class="ri-error-warning-line"></i></span>
-      <span class="value">{{ data()?.eksikGelen ?? 0 }}</span>
-      <span class="label">Eksik Geldi</span>
+    <button type="button" class="summary-card missing" style="--i: 2" [class.active]="activeTip() === 'eksik'" (click)="setTip('eksik')">
+      <span class="icon"><i class="ri-error-warning-line" aria-hidden="true"></i></span>
+      <span class="summary-copy">
+        <span class="value">{{ data()?.eksikGelen ?? 0 }}</span>
+        <span class="label">Eksik Geldi</span>
+      </span>
+      <span class="summary-bar"><span [style.width.%]="toplamIs ? (data()?.eksikGelen ?? 0) / toplamIs * 100 : 0"></span></span>
     </button>
   </div>
 
   <div class="worklist-card">
     <div class="worklist-toolbar">
       <div class="toolbar-title">
+        <span class="toolbar-ikon"><i class="ri-stack-line" aria-hidden="true"></i></span>
         <h3>İşler</h3>
-        <span>{{ data()?.toplam ?? 0 }} iş</span>
+        <span>{{ toplamIs }} iş</span>
         <span>{{ totalCount() }} proje</span>
       </div>
 
       <div class="toolbar-actions">
-        <div class="filter-tabs">
+        <div class="filter-tabs" role="tablist" aria-label="İş tipi">
           @for (tip of tipler; track tip.key) {
-            <button type="button" [class.active]="activeTip() === tip.key" (click)="setTip(tip.key)">
-              <i [class]="tip.icon"></i>
+            <button type="button" role="tab" [class.active]="activeTip() === tip.key" [attr.aria-selected]="activeTip() === tip.key" (click)="setTip(tip.key)">
+              <i [class]="tip.icon" aria-hidden="true"></i>
               {{ tip.label }}
               <span>{{ tip.count() }}</span>
             </button>
           }
         </div>
 
-        <div class="search-box">
-          <i class="ri-search-line"></i>
+        <label class="search-box">
+          <i class="ri-search-line" aria-hidden="true"></i>
           <input
-            type="text"
+            type="search"
             placeholder="Proje, barkod, sandık veya ürün ara..."
+            aria-label="İşlerde ara"
             [ngModel]="searchTerm()"
             (ngModelChange)="searchTerm.set($event)"
           />
-        </div>
+        </label>
       </div>
     </div>
 
     @if (todayOnly()) {
       <div class="active-filter-strip">
-        <i class="ri-filter-3-line"></i>
+        <i class="ri-filter-3-line" aria-hidden="true"></i>
         Bugünkü Grid işleri filtreleniyor.
-        <button type="button" (click)="toggleTodayFilter()">Filtreyi kaldır</button>
+        <button type="button" (click)="toggleTodayFilter()"><i class="ri-close-line" aria-hidden="true"></i>Filtreyi kaldır</button>
       </div>
     }
 
     @if (loading()) {
-      <div class="skeleton-list">
+      <div class="skeleton-list" aria-busy="true" aria-label="İşler yükleniyor">
         @for (_ of [1, 2, 3, 4, 5]; track _) {
-          <div class="skeleton-row"></div>
+          <div class="skeleton-row" [style.--i]="_">
+            <span class="sk sk--ikon"></span>
+            <span class="sk-lines"><span class="sk sk--w30"></span><span class="sk sk--w20"></span></span>
+            <span class="sk sk--blok"></span><span class="sk sk--blok"></span><span class="sk sk--blok"></span>
+          </div>
         }
       </div>
     } @else if (errorMessage()) {
       <div class="empty-state error">
-        <i class="ri-error-warning-line"></i>
+        <div class="empty-illus"><span class="empty-halka"></span><i class="ri-error-warning-line" aria-hidden="true"></i></div>
         <h4>Liste yüklenemedi</h4>
         <p>{{ errorMessage() }}</p>
-        <button type="button" class="btn btn-outline-primary" (click)="load()">Tekrar Dene</button>
+        <button type="button" class="tz-btn" (click)="load()"><i class="ri-refresh-line tz-ico-primary" aria-hidden="true"></i>Tekrar Dene</button>
       </div>
     } @else if (items().length === 0) {
       <div class="empty-state">
-        <i class="ri-checkbox-circle-line"></i>
+        <div class="empty-illus"><span class="empty-halka"></span><span class="empty-halka empty-halka--2"></span><i class="ri-checkbox-circle-line" aria-hidden="true"></i></div>
         <h4>Bu filtrede bekleyen iş yok</h4>
         <p>Grid tarafının aksiyon almasını gerektiren ürün bulunmuyor.</p>
       </div>
     } @else {
       <div class="project-groups">
-        @for (group of projectGroups(); track group.key) {
-          <section class="project-group" [class.expanded]="isProjectExpanded(group)">
-            <button type="button" class="project-group-head" (click)="toggleProject(group)">
+        @for (group of projectGroups(); track group.key; let gi = $index) {
+          <section class="project-group" [class.expanded]="isProjectExpanded(group)" [style.--i]="gi">
+            <button type="button" class="project-group-head" [attr.aria-expanded]="isProjectExpanded(group)" (click)="toggleProject(group)">
               <div class="project-main">
-                <span class="project-icon"><i class="ri-folder-3-line"></i></span>
-                <span>
-                  <strong>{{ group.projeNo }}</strong>
+                <span class="project-icon"><i class="ri-folder-3-line" aria-hidden="true"></i></span>
+                <span class="project-name">
+                  <strong>{{ group.projeNo }} <span class="project-type-pill">{{ projeTipiLabel(group.projeTipiId) }}</span></strong>
                   @if (group.musteri) {
                     <small>{{ group.musteri }}</small>
                   }
@@ -126,12 +136,15 @@
               </div>
 
               <div class="project-metrics">
-                <span class="project-type-pill">{{ projeTipiLabel(group.projeTipiId) }}</span>
-                <span class="metric-pill">{{ group.items.length }} iş</span>
-                <span class="metric-pill">{{ group.sandikCount }} sandık</span>
-                <span class="metric-pill danger">Yeniden {{ group.resendCount }} · Eksik {{ group.missingCount }}</span>
-                <span class="metric-pill muted">Son işlem {{ group.latestTimestamp ? (group.latestTimestamp | date:'dd.MM.yyyy HH:mm') : '-' }}</span>
-                <i class="ri-arrow-down-s-line chevron"></i>
+                <span class="metric"><small>İş</small><b>{{ group.items.length }}</b></span>
+                <span class="metric"><small>Sandık</small><b>{{ group.sandikCount }}</b></span>
+                <span class="metric" [class.warn]="group.resendCount > 0"><small>Yeniden</small><b>{{ group.resendCount }}</b></span>
+                <span class="metric" [class.danger]="group.missingCount > 0"><small>Eksik</small><b>{{ group.missingCount }}</b></span>
+                <span class="metric metric--zaman">
+                  <small>Son işlem</small>
+                  <b><i class="ri-time-line" aria-hidden="true"></i>{{ group.latestTimestamp ? (group.latestTimestamp | date:'dd.MM.yyyy HH:mm') : '-' }}</b>
+                </span>
+                <span class="chevron-wrap"><i class="ri-arrow-down-s-line chevron" aria-hidden="true"></i></span>
               </div>
             </button>
 
@@ -169,15 +182,15 @@
                             {{ item.isTipiMetni }}
                           </span>
                         </td>
-                        <td><span class="box-pill">{{ item.sandikNo || '-' }}</span></td>
+                        <td><span class="box-pill"><i class="ri-archive-line" aria-hidden="true"></i>{{ item.sandikNo || '-' }}</span></td>
                         <td><span class="barcode">{{ item.barkodNo || '-' }}</span></td>
-                        <td>{{ item.olcuResmiPozNo || '-' }}</td>
+                        <td class="poz">{{ item.olcuResmiPozNo || '-' }}</td>
                         <td>
                           <div class="product-cell">
                             <strong>{{ item.aciklama }}</strong>
                             <span>#{{ item.siraNo }} · {{ formatQuantity(item.istenenAdet) }} {{ item.birim }}</span>
                             @if (item.gridAciklama) {
-                              <small>{{ item.gridAciklama }}</small>
+                              <small><i class="ri-chat-1-line" aria-hidden="true"></i>{{ item.gridAciklama }}</small>
                             }
                           </div>
                         </td>
@@ -187,17 +200,17 @@
                             {{ item.gridSevkDurumuMetni }}
                           </span>
                         </td>
-                        <td>{{ formatQuantity(item.gridGelenAdet) }} {{ item.birim }}</td>
-                        <td>{{ formatQuantity(item.gridSevkMiktari) }} {{ item.birim }}</td>
-                        <td>{{ formatQuantity(item.ucKGelenMiktar) }} {{ item.birim }}</td>
-                        <td>
-                          <span class="remaining-danger">{{ formatQuantity(actionQuantity(item)) }} {{ item.birim }}</span>
+                        <td class="qty">{{ formatQuantity(item.gridGelenAdet) }} <small>{{ item.birim }}</small></td>
+                        <td class="qty">{{ formatQuantity(item.gridSevkMiktari) }} <small>{{ item.birim }}</small></td>
+                        <td class="qty">{{ formatQuantity(item.ucKGelenMiktar) }} <small>{{ item.birim }}</small></td>
+                        <td class="qty">
+                          <span class="remaining-danger">{{ formatQuantity(actionQuantity(item)) }} <small>{{ item.birim }}</small></span>
                         </td>
-                        <td>{{ item.sonIslemTarihi ? (item.sonIslemTarihi | date:'dd.MM.yyyy HH:mm') : '-' }}</td>
+                        <td class="when">{{ item.sonIslemTarihi ? (item.sonIslemTarihi | date:'dd.MM.yyyy HH:mm') : '-' }}</td>
                         <td class="text-end">
-                          <a class="btn btn-sm btn-primary" [routerLink]="goToLink(item)" [queryParams]="goToQueryParams(item)" (click)="$event.stopPropagation()">
-                            <i class="ri-arrow-right-line"></i>
+                          <a class="go-btn" [routerLink]="goToLink(item)" [queryParams]="goToQueryParams(item)" (click)="$event.stopPropagation()">
                             Grid'e Git
+                            <i class="ri-arrow-right-line" aria-hidden="true"></i>
                           </a>
                         </td>
                       </tr>
@@ -211,7 +224,7 @@
       </div>
 
       <div class="pagination-bar">
-        <div class="page-size">
+        <label class="page-size">
           <span>Sayfa başına proje</span>
           <select [ngModel]="pageSize()" (ngModelChange)="onPageSizeChange($event)">
             <option value="15">15</option>
@@ -219,18 +232,17 @@
             <option value="50">50</option>
             <option value="100">100</option>
           </select>
-        </div>
+        </label>
 
-        <div class="page-status">Sayfa {{ page() }} / {{ totalPages() }}</div>
-
-        <div class="page-buttons">
-          <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="page() <= 1" (click)="previousPage()">
-            Önceki
+        <nav class="page-buttons" aria-label="Sayfalama">
+          <button type="button" class="page-btn" [disabled]="page() <= 1" (click)="previousPage()">
+            <i class="ri-arrow-left-s-line" aria-hidden="true"></i><span>Önceki</span>
           </button>
-          <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="!data()?.liste?.hasMore" (click)="nextPage()">
-            Sonraki
+          <span class="page-status" aria-current="page"><b>{{ page() }}</b> / {{ totalPages() }}</span>
+          <button type="button" class="page-btn" [disabled]="!data()?.liste?.hasMore" (click)="nextPage()">
+            <span>Sonraki</span><i class="ri-arrow-right-s-line" aria-hidden="true"></i>
           </button>
-        </div>
+        </nav>
       </div>
     }
   </div>

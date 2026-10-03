@@ -1,30 +1,35 @@
 <div class="notification-page fade-in">
   <div class="page-heading">
-    <div>
-      <app-breadcrumb [items]="breadcrumb" />
-      <div class="heading-copy">
-        <span class="heading-icon"><i class="ri-notification-4-line"></i></span>
-        <div>
-          <h2>Bildirim Merkezi</h2>
-          <p>
-            {{ aktifGorunum() === 'bildirimler'
-              ? 'Size gönderilen sistem bildirimlerini görüntüleyin ve yönetin.'
-              : 'Kişisel işlem onayı geçmişinizi, kararları ve çalıştırma sonuçlarını izleyin.' }}
-          </p>
-        </div>
+    <div class="heading-copy">
+      <span class="heading-icon">
+        <i class="ri-notification-4-line"></i>
+        @if (toplamOkunmamis() > 0) {
+          <span class="heading-icon__nokta" aria-hidden="true"></span>
+        }
+      </span>
+      <div>
+        <app-breadcrumb [items]="breadcrumb" />
+        <h2>Bildirim Merkezi</h2>
+        <p>
+          {{ aktifGorunum() === 'bildirimler'
+            ? 'Size gönderilen sistem bildirimlerini görüntüleyin ve yönetin.'
+            : 'Kişisel işlem onayı geçmişinizi, kararları ve çalıştırma sonuçlarını izleyin.' }}
+        </p>
       </div>
     </div>
 
     @if (aktifGorunum() === 'bildirimler') {
-      <button type="button" class="mark-all-read" (click)="markAllAsRead()"
-              [disabled]="markingAllRead() || toplamOkunmamis() === 0">
-        @if (markingAllRead()) {
-          <span class="spinner-border spinner-border-sm"></span>
-        } @else {
-          <i class="ri-check-double-line"></i>
-        }
-        Tümünü okundu işaretle
-      </button>
+      <div class="heading-actions">
+        <span class="heading-stat" [class.is-zero]="toplamOkunmamis() === 0">
+          <i class="ri-mail-unread-line"></i>
+          <b>{{ toplamOkunmamis() }}</b> okunmamış
+        </span>
+        <button type="button" class="tz-btn mark-all-read" (click)="markAllAsRead()"
+                [disabled]="markingAllRead() || toplamOkunmamis() === 0">
+          <i [class]="markingAllRead() ? 'ri-loader-4-line tz-spin' : 'ri-check-double-line tz-ico-primary'"></i>
+          Tümünü okundu işaretle
+        </button>
+      </div>
     }
   </div>
 
@@ -156,7 +161,7 @@
             }
           </p>
         </div>
-        <span class="unread-summary">
+        <span class="unread-summary" [class.is-zero]="toplamOkunmamis() === 0">
           <i class="ri-mail-unread-line"></i>
           {{ toplamOkunmamis() }} okunmamış
         </span>
@@ -189,35 +194,38 @@
           </div>
         } @else {
           <div class="notification-items">
-            @for (bildirim of bildirimler(); track bildirim.id) {
-              <button type="button" class="notification-row"
-                      [class.unread]="!bildirim.okunduMu"
-                      [class.active]="seciliBildirimId() === bildirim.id"
-                      [attr.aria-current]="seciliBildirimId() === bildirim.id ? 'true' : null"
-                      (click)="openDetail(bildirim)">
-                <span class="unread-dot" aria-hidden="true"></span>
-                <span class="type-icon" [ngClass]="getBildirimClass(bildirim.tipId)">
-                  <i [class]="getBildirimIcon(bildirim.tipId)"></i>
-                </span>
-                <span class="row-copy">
-                  <span class="row-title-line">
-                    <strong>{{ bildirim.baslik }}</strong>
-                    <time>{{ bildirim.olusturulmaTarihi | date:'dd.MM.yyyy HH:mm' }}</time>
+            @for (grup of gunGruplari(); track grup.etiket) {
+              <div class="day-label"><span>{{ grup.etiket }}</span><small>{{ grup.bildirimler.length }}</small></div>
+              @for (bildirim of grup.bildirimler; track bildirim.id; let i = $index) {
+                <button type="button" class="notification-row" [style.--i]="i"
+                        [class.unread]="!bildirim.okunduMu"
+                        [class.active]="seciliBildirimId() === bildirim.id"
+                        [attr.aria-current]="seciliBildirimId() === bildirim.id ? 'true' : null"
+                        (click)="openDetail(bildirim)">
+                  <span class="unread-dot" aria-hidden="true"></span>
+                  <span class="type-icon" [ngClass]="getBildirimClass(bildirim.tipId)">
+                    <i [class]="getBildirimIcon(bildirim.tipId)"></i>
                   </span>
-                  <span class="row-message">{{ bildirim.mesaj }}</span>
-                  <span class="row-meta">
-                    <span class="type-label">{{ getBildirimTipiAdi(bildirim.tipId) }}</span>
-                    @if (bildirim.metadata?.projeNo; as projeNo) {
-                      <span><i class="ri-folder-3-line"></i>{{ projeNo }}</span>
-                    }
-                    <span [class.is-unread]="!bildirim.okunduMu">
-                      <i [class]="bildirim.okunduMu ? 'ri-check-double-line' : 'ri-mail-unread-line'"></i>
-                      {{ bildirim.okunduMu ? 'Okundu' : 'Okunmamış' }}
+                  <span class="row-copy">
+                    <span class="row-title-line">
+                      <strong>{{ bildirim.baslik }}</strong>
+                      <time [attr.datetime]="bildirim.olusturulmaTarihi" [title]="bildirim.olusturulmaTarihi | date:'dd.MM.yyyy HH:mm'">{{ bildirim.olusturulmaTarihi | date:'HH:mm' }}</time>
+                    </span>
+                    <span class="row-message">{{ bildirim.mesaj }}</span>
+                    <span class="row-meta">
+                      <span class="type-label">{{ getBildirimTipiAdi(bildirim.tipId) }}</span>
+                      @if (bildirim.metadata?.projeNo; as projeNo) {
+                        <span><i class="ri-folder-3-line"></i>{{ projeNo }}</span>
+                      }
+                      <span [class.is-unread]="!bildirim.okunduMu">
+                        <i [class]="bildirim.okunduMu ? 'ri-check-double-line' : 'ri-mail-unread-line'"></i>
+                        {{ bildirim.okunduMu ? 'Okundu' : 'Okunmamış' }}
+                      </span>
                     </span>
                   </span>
-                </span>
-                <i class="ri-arrow-right-s-line row-arrow"></i>
-              </button>
+                  <i class="ri-arrow-right-s-line row-arrow"></i>
+                </button>
+              }
             }
           </div>
         }
@@ -320,7 +328,7 @@
         }
       } @else {
         <div class="detail-state select-state">
-          <span><i class="ri-cursor-line"></i></span>
+          <span><i class="ri-cursor-line"></i><i class="detail-state__halka" aria-hidden="true"></i></span>
           <strong>Bir bildirim seçin</strong>
           <p>Detayları görmek için soldaki listeden bir bildirime tıklayın.</p>
         </div>

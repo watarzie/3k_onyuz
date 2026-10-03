@@ -1,29 +1,18 @@
 @use '../../uck/uck-is-listesi/uck-is-listesi.component.scss';
 
-.summary-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+// Grid ekranı ortak iş listesi tasarımını kullanır; yalnız kimlik rengi turuncudur.
+.grid-worklist-page {
+  --ton: #e8590c;
 }
 
 .project-type-pill {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
-  padding: 3px 8px;
+  padding: 2px 8px;
   border-radius: 999px;
-  background: #edf4ff;
-  color: #2563eb;
+  background: color-mix(in srgb, var(--primaryColor) 10%, #fff);
+  color: var(--primaryColor);
   font-size: 11px;
-  font-weight: 800;
-}
-
-@media (max-width: 992px) {
-  .summary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 576px) {
-  .summary-grid {
-    grid-template-columns: 1fr;
-  }
+  font-weight: 700;
+  letter-spacing: 0;
 }

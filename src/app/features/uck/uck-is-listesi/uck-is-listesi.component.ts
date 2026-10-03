@@ -49,7 +49,7 @@ export class UcKIsListesiComponent implements OnInit {
   ];
 
   tipler: Array<{ key: IsTipi; label: string; count: () => number; icon: string }> = [
-    { key: 'all', label: 'Tümü', count: () => this.data()?.toplam ?? 0, icon: 'ri-list-check-3-line' },
+    { key: 'all', label: 'Tümü', count: () => this.data()?.toplam ?? 0, icon: 'ri-list-check-3' },
     { key: 'teslim', label: '3K Teslim Bekleyen', count: () => this.data()?.teslimBekleyen ?? 0, icon: 'ri-inbox-archive-line' },
     { key: 'yeniden', label: 'Yeniden Sevk Gerekli', count: () => this.data()?.yenidenSevkGerekli ?? 0, icon: 'ri-loop-right-line' },
     { key: 'eksik', label: 'Eksik Gelen', count: () => this.data()?.eksikGelen ?? 0, icon: 'ri-error-warning-line' },

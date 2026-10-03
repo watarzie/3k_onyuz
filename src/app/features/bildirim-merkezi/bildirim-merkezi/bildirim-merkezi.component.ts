@@ -98,6 +98,19 @@ export class BildirimMerkeziComponent implements OnInit, OnDestroy {
     this.arama().trim().length > 0
   );
   readonly guvenliHedefUrl = computed(() => this.resolveSafeTarget(this.seciliBildirim()?.hedefUrl));
+  /** Sayfadaki bildirimler gün başlıklarıyla gruplanır; sıra sunucudan geldiği gibi kalır (yalnız görünüm). */
+  readonly gunGruplari = computed(() => {
+    const bugun = new Date();
+    bugun.setHours(0, 0, 0, 0);
+    const gruplar: { etiket: string; bildirimler: BildirimDto[] }[] = [];
+    for (const bildirim of this.bildirimler()) {
+      const etiket = this.gunEtiketi(bildirim.olusturulmaTarihi, bugun);
+      const son = gruplar[gruplar.length - 1];
+      if (son?.etiket === etiket) son.bildirimler.push(bildirim);
+      else gruplar.push({ etiket, bildirimler: [bildirim] });
+    }
+    return gruplar;
+  });
 
   ngOnInit(): void {
     this.restoreFiltersFromUrl();
@@ -153,6 +166,18 @@ export class BildirimMerkeziComponent implements OnInit, OnDestroy {
       });
 
     if (this.aktifGorunum() === 'bildirimler') this.loadBildirimler(false);
+  }
+
+  private gunEtiketi(tarih: string, bugun: Date): string {
+    const gun = new Date(tarih);
+    if (Number.isNaN(gun.getTime())) return 'Tarihsiz';
+    gun.setHours(0, 0, 0, 0);
+    const fark = Math.round((bugun.getTime() - gun.getTime()) / 86_400_000);
+    if (fark === 0) return 'Bugün';
+    if (fark === 1) return 'Dün';
+    return gun.toLocaleDateString('tr-TR', fark > 1 && fark < 7
+      ? { weekday: 'long', day: 'numeric', month: 'long' }
+      : { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
   ngOnDestroy(): void {

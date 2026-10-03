@@ -52,7 +52,7 @@ export class GridIsListesiComponent implements OnInit {
   ];
 
   tipler: Array<{ key: IsTipi; label: string; count: () => number; icon: string }> = [
-    { key: 'all', label: 'Tümü', count: () => this.data()?.toplam ?? 0, icon: 'ri-list-check-3-line' },
+    { key: 'all', label: 'Tümü', count: () => this.data()?.toplam ?? 0, icon: 'ri-list-check-3' },
     { key: 'yeniden', label: 'Yeniden Sevk Gerekli', count: () => this.data()?.yenidenSevkGerekli ?? 0, icon: 'ri-loop-right-line' },
     { key: 'eksik', label: 'Eksik Geldi', count: () => this.data()?.eksikGelen ?? 0, icon: 'ri-error-warning-line' },
   ];
