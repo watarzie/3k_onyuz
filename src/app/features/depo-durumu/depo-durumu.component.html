@@ -1,414 +1,393 @@
-<div class="page-title-area mb-4">
-  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+<div class="depo-page">
+  <!-- ===== Başlık ===== -->
+  <header class="depo-head">
     <div>
-      <h2 class="fw-bold mb-1">{{ 'MENU.DEPO_DURUMU' | translate }}</h2>
+      <h2>{{ 'MENU.DEPO_DURUMU' | translate }}</h2>
       <app-breadcrumb [items]="breadcrumb" />
     </div>
-    <div class="d-flex align-items-center gap-2 flex-wrap">
+    <div class="depo-head__actions">
       @if (canWriteCurrentMenu()) {
-      <button type="button" class="btn btn-outline-primary depo-manage-trigger" (click)="openDepoModal()">
-        <i class="ri-map-pin-add-line"></i>
-        <span>Depo Yönet</span>
-      </button>
+        <button type="button" class="tz-btn" (click)="openDepoModal()">
+          <i class="ri-map-pin-add-line tz-ico-primary"></i>Depo Yönet
+        </button>
       }
 
       <div class="report-action" (click)="$event.stopPropagation()">
-        <button type="button" class="btn btn-danger report-trigger" (click)="toggleReportMenu($event)" [disabled]="downloadingPdf()">
+        <button type="button" class="tz-btn tz-btn--primary" (click)="toggleReportMenu($event)" [disabled]="downloadingPdf()"
+                aria-haspopup="menu" [attr.aria-expanded]="reportMenuOpen()">
           @if (downloadingPdf()) {
             <span class="spinner-border spinner-border-sm"></span>
           } @else {
             <i class="ri-file-pdf-2-line"></i>
           }
-          <span>Depo Sandık Raporu</span>
+          Depo Sandık Raporu
           <i class="ri-arrow-down-s-line report-chevron" [class.open]="reportMenuOpen()"></i>
         </button>
 
         @if (reportMenuOpen()) {
-        <div class="report-menu">
-          <button type="button" class="report-menu-item is-all" (click)="indirDepoSandikPdf(null)" [disabled]="downloadingPdf()">
-            <span class="report-menu-icon"><i class="ri-apps-2-line"></i></span>
-            <span>Tüm Projeler</span>
-          </button>
-          <button type="button" class="report-menu-item is-normal" (click)="indirDepoSandikPdf(1)" [disabled]="downloadingPdf()">
-            <span class="report-menu-icon"><i class="ri-building-2-line"></i></span>
-            <span>Normal Projeler</span>
-          </button>
-          <button type="button" class="report-menu-item is-saha" (click)="indirDepoSandikPdf(2)" [disabled]="downloadingPdf()">
-            <span class="report-menu-icon"><i class="ri-map-pin-line"></i></span>
-            <span>Saha Projeleri</span>
-          </button>
-          <button type="button" class="report-menu-item is-yedek" (click)="indirDepoSandikPdf(3)" [disabled]="downloadingPdf()">
-            <span class="report-menu-icon"><i class="ri-archive-line"></i></span>
-            <span>Yedek Projeleri</span>
-          </button>
-        </div>
+          <div class="report-menu" role="menu">
+            <span class="report-menu__title">Rapor kapsamı</span>
+            <button type="button" role="menuitem" class="report-menu-item" data-ton="primary" (click)="indirDepoSandikPdf(null)" [disabled]="downloadingPdf()">
+              <span class="report-menu-icon"><i class="ri-apps-2-line"></i></span>
+              <span>Tüm Projeler</span>
+            </button>
+            <button type="button" role="menuitem" class="report-menu-item" data-ton="info" (click)="indirDepoSandikPdf(ProjeTipi.Normal)" [disabled]="downloadingPdf()">
+              <span class="report-menu-icon"><i class="ri-building-2-line"></i></span>
+              <span>Normal Projeler</span>
+            </button>
+            <button type="button" role="menuitem" class="report-menu-item" data-ton="success" (click)="indirDepoSandikPdf(ProjeTipi.Saha)" [disabled]="downloadingPdf()">
+              <span class="report-menu-icon"><i class="ri-map-pin-line"></i></span>
+              <span>Saha Projeleri</span>
+            </button>
+            <button type="button" role="menuitem" class="report-menu-item" data-ton="warning" (click)="indirDepoSandikPdf(ProjeTipi.Yedek)" [disabled]="downloadingPdf()">
+              <span class="report-menu-icon"><i class="ri-archive-line"></i></span>
+              <span>Yedek Projeleri</span>
+            </button>
+          </div>
         }
       </div>
     </div>
-  </div>
-</div>
+  </header>
 
-<!-- ===== Summary Cards ===== -->
-<div class="row g-4 mb-4">
-  <div class="col-12 col-md-3">
-    <div class="trezo-card border-0 bg-white h-100 depo-summary-card is-primary">
-      <div class="p-4 text-center">
+  <!-- ===== Özet kartları ===== -->
+  <section class="depo-kpis">
+    @for (kart of kapsamKartlari(); track kart.scope) {
+      <article class="depo-kpi" [attr.data-ton]="kart.ton" [class.is-main]="kart.scope === 'global'">
         @if (depoSummaryLoading()) {
-        <div class="summary-skeleton">
-          <span class="skeleton-line skeleton-title"></span>
-          <span class="skeleton-number"></span>
-          <div class="skeleton-badges">
-            <span></span><span></span><span></span><span></span>
-          </div>
-        </div>
+          <div class="kpi-skeleton"><span></span><span></span><span></span></div>
         } @else {
-        <h6 class="fw-semibold mb-2 text-uppercase">Genel Toplam Sandık</h6>
-        <h2 class="fw-bold mb-3 text-dark">{{ getSummaryTotal('global') }}</h2>
-        <div class="d-flex justify-content-center gap-2 flex-wrap">
-          @for (depo of getSummaryDepoSegments('global'); track depo.id) {
-          <span class="depo-badge" [style.color]="depo.color" [style.background-color]="depo.softColor">
-            <i [class]="depo.icon"></i>{{ depo.label }}: <strong>{{ depo.count }}</strong>
-          </span>
-          }
-        </div>
-        }
-      </div>
-    </div>
-  </div>
-
-  <div class="col-12 col-md-3">
-    <div class="trezo-card border-0 bg-white h-100 depo-summary-card">
-      <div class="p-4 text-center">
-        @if (depoSummaryLoading()) {
-        <div class="summary-skeleton">
-          <span class="skeleton-line skeleton-title"></span>
-          <span class="skeleton-number"></span>
-          <div class="skeleton-badges">
-            <span></span><span></span><span></span><span></span>
+          <div class="depo-kpi__top">
+            <span class="depo-kpi__icon"><i [class]="kart.ikon"></i></span>
+            <div class="depo-kpi__text">
+              <span class="depo-kpi__label">{{ kart.baslik }}</span>
+              <strong class="depo-kpi__value">{{ kart.toplam }}<small>sandık</small></strong>
+            </div>
           </div>
-        </div>
-        } @else {
-        <h6 class="fw-semibold mb-2 text-uppercase">Normal Projeler</h6>
-        <h2 class="fw-bold mb-3 text-dark">{{ getSummaryTotal('normal') }}</h2>
-        <div class="d-flex justify-content-center gap-2 flex-wrap">
-          @for (depo of getSummaryDepoSegments('normal'); track depo.id) {
-          <span class="depo-badge" [style.color]="depo.color" [style.background-color]="depo.softColor">
-            <i [class]="depo.icon"></i>{{ depo.label }}: <strong>{{ depo.count }}</strong>
-          </span>
-          }
-        </div>
-        }
-      </div>
-    </div>
-  </div>
-
-  <div class="col-12 col-md-3">
-    <div class="trezo-card border-0 bg-white h-100 depo-summary-card">
-      <div class="p-4 text-center">
-        @if (depoSummaryLoading()) {
-        <div class="summary-skeleton">
-          <span class="skeleton-line skeleton-title"></span>
-          <span class="skeleton-number"></span>
-          <div class="skeleton-badges">
-            <span></span><span></span><span></span><span></span>
-          </div>
-        </div>
-        } @else {
-        <h6 class="fw-semibold mb-2 text-uppercase">Saha Projeleri</h6>
-        <h2 class="fw-bold mb-3 text-dark">{{ getSummaryTotal('saha') }}</h2>
-        <div class="d-flex justify-content-center gap-2 flex-wrap">
-          @for (depo of getSummaryDepoSegments('saha'); track depo.id) {
-          <span class="depo-badge" [style.color]="depo.color" [style.background-color]="depo.softColor">
-            <i [class]="depo.icon"></i>{{ depo.label }}: <strong>{{ depo.count }}</strong>
-          </span>
-          }
-        </div>
-        }
-      </div>
-    </div>
-  </div>
-
-  <div class="col-12 col-md-3">
-    <div class="trezo-card border-0 bg-white h-100 depo-summary-card">
-      <div class="p-4 text-center">
-        @if (depoSummaryLoading()) {
-        <div class="summary-skeleton">
-          <span class="skeleton-line skeleton-title"></span>
-          <span class="skeleton-number"></span>
-          <div class="skeleton-badges">
-            <span></span><span></span><span></span><span></span>
-          </div>
-        </div>
-        } @else {
-        <h6 class="fw-semibold mb-2 text-uppercase">Yedek Projeleri</h6>
-        <h2 class="fw-bold mb-3 text-dark">{{ getSummaryTotal('yedek') }}</h2>
-        <div class="d-flex justify-content-center gap-2 flex-wrap">
-          @for (depo of getSummaryDepoSegments('yedek'); track depo.id) {
-          <span class="depo-badge" [style.color]="depo.color" [style.background-color]="depo.softColor">
-            <i [class]="depo.icon"></i>{{ depo.label }}: <strong>{{ depo.count }}</strong>
-          </span>
-          }
-        </div>
-        }
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ===== Donut Chart ===== -->
-<div class="row mb-4 justify-content-center">
-  <div class="col-12 col-md-8 col-lg-6">
-    <div class="trezo-card border-0 bg-white h-100 depo-chart-card">
-      <div class="card-header border-0 pb-0 pt-4 px-4 text-center">
-        <h5 class="fw-bold mb-0 text-dark">{{ 'LABELS.DEPO_DAGILIM' | translate }}</h5>
-      </div>
-      <div class="card-body p-4 d-flex flex-column flex-sm-row align-items-center justify-content-center gap-5">
-        @if (depoSummaryLoading()) {
-        <div class="depo-chart-skeleton">
-          <span class="skeleton-donut"></span>
-          <div class="skeleton-legend">
-            <span></span><span></span><span></span><span></span>
-          </div>
-        </div>
-        } @else {
-        <div class="depo-donut">
-          <svg viewBox="0 0 42 42" class="donut-chart w-100 h-100">
-            <circle class="donut-ring" cx="21" cy="21" r="15.9" fill="transparent" stroke="#f1f5f9" stroke-width="5" />
-            @for (seg of getDonutSegments(); track seg.id; let i = $index) {
+          <div class="stack-bar" [class.is-empty]="!kart.toplam" aria-hidden="true">
+            @for (seg of kart.segmentler; track seg.id) {
               @if (seg.count > 0) {
-              <circle class="donut-segment" cx="21" cy="21" r="15.9" fill="transparent"
-                [attr.stroke]="seg.color"
-                stroke-width="5"
-                [attr.stroke-dasharray]="getDonutPercentage(seg.count, getSummaryTotal('global')) + ' ' + (100 - getDonutPercentage(seg.count, getSummaryTotal('global')))"
-                [attr.stroke-dashoffset]="getDonutOffset(i)" />
+                <span [style.width.%]="seg.oran" [style.background]="seg.color"></span>
               }
             }
-            <text x="21" y="19" text-anchor="middle" dominant-baseline="central" class="donut-text">
-              <tspan class="donut-number" font-size="8" font-weight="800" fill="#1e293b">{{ getSummaryTotal('global') }}</tspan>
-            </text>
-            <text x="21" y="25" text-anchor="middle" dominant-baseline="central">
-              <tspan font-size="3.5" fill="#64748b" font-weight="500">Toplam</tspan>
-            </text>
-          </svg>
-        </div>
-        <div class="depo-legend-list">
-          @for (seg of getDonutSegments(); track seg.id) {
-          <div class="depo-legend-row">
-            <span class="legend-dot" [style.background-color]="seg.color"></span>
-            <span class="text-secondary fw-medium">{{ seg.label }}</span>
-            <strong class="depo-legend-value text-dark fs-5">{{ seg.count }}</strong>
           </div>
-          }
-        </div>
-        }
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ===== Project Distribution Table ===== -->
-<div class="trezo-card border-0 bg-white project-distribution-card">
-  <div class="card-header border-0 pb-0 pt-4 px-4 d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
-    <h4 class="fw-bold mb-0 text-dark">Proje Bazlı Depo Dağılımı <span class="badge bg-secondary-subtle text-secondary ms-2 rounded-pill fs-6">{{ totalCount() }}</span></h4>
-    <div class="search-box position-relative">
-      <i class="ri-search-2-line position-absolute top-50 translate-middle-y text-muted"></i>
-      <input type="text" class="form-control bg-light border-0" placeholder="Proje ara..." (input)="onSearch($event)" />
-    </div>
-  </div>
-  <div class="card-body p-0">
-    @if (loading()) {
-    <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
-    } @else if (projeler().length === 0) {
-    <div class="text-center py-5 text-muted">
-      <i class="ri-inbox-line fs-1 mb-3 d-block"></i>
-      Kritere uygun proje bulunamadı.
-    </div>
-    } @else {
-    <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0 text-nowrap">
-        <thead class="bg-light">
-          <tr>
-            <th style="width: 50px;" class="border-bottom-0"></th>
-            <th class="text-uppercase text-secondary fw-semibold border-bottom-0">PROJE NO</th>
-            <th class="text-uppercase text-secondary fw-semibold border-bottom-0">PROJE TİPİ</th>
-            <th class="text-uppercase text-secondary fw-semibold text-center border-bottom-0">TOPLAM SANDIK</th>
-            @for (loc of visibleDepoLokasyonlari(); track loc.id) {
-            <th class="text-uppercase text-secondary fw-semibold text-center border-bottom-0">{{ loc.deger }} DEPO</th>
+          <ul class="depo-kpi__list">
+            @for (seg of kart.segmentler; track seg.id) {
+              <li [class.is-zero]="!seg.count" [title]="seg.label + ': ' + seg.count + ' sandık (%' + seg.oranMetni + ')'">
+                <span class="dot" [style.background]="seg.color"></span>{{ seg.label }}<b>{{ seg.count }}</b>
+              </li>
             }
-            <th class="text-uppercase text-secondary fw-semibold text-center border-bottom-0">RAPOR</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (p of projeler(); track p.id) {
-          <tr [class.bg-light]="expandedProjeId() === p.id" (click)="toggleExpand(p.id)" class="project-row">
-            <td class="text-center py-3">
-              <i [class]="expandedProjeId() === p.id ? 'ri-arrow-down-s-line' : 'ri-arrow-right-s-line'" class="fs-5 text-primary"></i>
-            </td>
-            <td class="fw-bold text-dark py-3">{{ p.projeNo }}</td>
-            <td class="py-3">
-              <span class="badge px-3 py-1 rounded-pill" [ngClass]="{
-                  'bg-info-subtle text-info': p.projeTipiId === 1,
-                  'bg-success-subtle text-success': p.projeTipiId === 2,
-                  'bg-warning-subtle text-warning': p.projeTipiId === 3
-                }">{{ projeTipiMetni(p.projeTipiId) }}</span>
-            </td>
-            <td class="text-center fw-semibold text-dark py-3">{{ p.depoSandikSayisi }}</td>
-            @for (loc of visibleDepoLokasyonlari(); track loc.id; let i = $index) {
-            <td class="text-center py-3">
-              @if (getProjectDepoCount(p, loc) > 0) {
-              <span class="depo-count-pill" [style.color]="getLokasyonColor(loc, i)" [style.background-color]="getLokasyonSoftColor(loc, i)">{{ getProjectDepoCount(p, loc) }}</span>
-              } @else {
-              <span class="text-muted" style="opacity: 0.5;">-</span>
-              }
-            </td>
-            }
-            <td class="text-center py-3">
-              <button
-                type="button"
-                class="btn btn-sm project-report-btn"
-                (click)="indirProjeDepoSandikPdf(p, $event)"
-                [disabled]="downloadingProjectPdf() !== null"
-                title="Proje depo sandık raporu"
-                aria-label="Proje depo sandık raporu indir">
-                @if (downloadingProjectPdf() === p.id) {
-                  <span class="spinner-border spinner-border-sm"></span>
-                } @else {
-                  <i class="ri-file-pdf-2-line"></i>
-                }
-                <span>PDF</span>
-              </button>
-            </td>
-          </tr>
-
-          @if (expandedProjeId() === p.id) {
-          <tr>
-            <td [attr.colspan]="getProjectTableColspan()" class="p-0 border-0">
-              <div class="bg-light p-4 expanded-detail">
-                @if (expandedLoading()) {
-                <div class="text-center py-3"><span class="spinner-border spinner-border-sm text-primary"></span> <span class="text-muted ms-2">Sandıklar yükleniyor...</span></div>
-                } @else if (expandedSandiklar().length === 0) {
-                <div class="text-center py-3 text-muted small"><i class="ri-information-line me-1"></i>Bu projeye ait depoda sandık bulunmuyor.</div>
-                } @else {
-                <table class="table table-sm bg-white mb-0 border rounded overflow-hidden">
-                  <thead class="bg-light text-secondary text-uppercase fw-semibold">
-                    <tr>
-                      <th class="border-bottom-0 py-2 px-3">SANDIK NO</th>
-                      <th class="border-bottom-0 py-2 px-3">TİPİ</th>
-                      <th class="border-bottom-0 py-2 px-3">DURUM</th>
-                      <th class="border-bottom-0 py-2 px-3">LOKASYON</th>
-                      <th class="border-bottom-0 py-2 px-3">ÜRÜN (TAMAMLANAN / GEREKLİ)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (s of expandedSandiklar(); track s.id) {
-                    <tr>
-                      <td class="fw-bold text-dark py-2 px-3">{{ s.sandikNo }}</td>
-                      <td class="py-2 px-3"><span class="badge bg-light text-secondary">Standart</span></td>
-                      <td class="py-2 px-3"><app-status-badge [status]="s.durumMetni" [label]="s.durumMetni" /></td>
-                      <td class="py-2 px-3">
-                        @if (s.depoLokasyonMetni) {
-                        <span class="text-dark"><i class="ri-map-pin-line text-info me-1"></i> {{ s.depoLokasyonMetni }}</span>
-                        } @else {
-                        <span class="text-muted"><i class="ri-map-pin-line me-1"></i> Belirsiz</span>
-                        }
-                      </td>
-                      <td class="py-2 px-3">
-                        <div class="d-flex align-items-center gap-2">
-                          <span class="fw-semibold">{{ s.urunSayisi }}</span>
-                          @if (s.urunSayisi > 0 && s.durumMetni === 'Hazır') {
-                          <i class="ri-check-double-line text-success fs-5"></i>
-                          }
-                        </div>
-                      </td>
-                    </tr>
-                    }
-                  </tbody>
-                </table>
-                }
-              </div>
-            </td>
-          </tr>
-          }
-          }
-        </tbody>
-      </table>
-    </div>
-    <div class="project-pagination d-flex align-items-center justify-content-between flex-wrap gap-3">
-      <div class="pagination-summary d-flex align-items-center flex-wrap gap-2">
-        <span>{{ paginationStart() }}-{{ paginationEnd() }} / {{ totalCount() }} proje</span>
-        <span class="pagination-divider"></span>
-        <label class="mb-0" for="depoProjectPageSize">Sayfa başına</label>
-        <select id="depoProjectPageSize" class="form-select form-select-sm page-size-select" [ngModel]="pageSize()" (ngModelChange)="onPageSizeChange($event)">
-          @for (size of pageSizeOptions; track size) {
-          <option [ngValue]="size">{{ size }}</option>
-          }
-        </select>
-      </div>
-
-      <div class="pagination-controls d-flex align-items-center gap-1">
-        <button type="button" class="btn btn-sm pagination-btn" (click)="previousPage()" [disabled]="currentPage() === 1" aria-label="Önceki sayfa">
-          <i class="ri-arrow-left-s-line"></i>
-        </button>
-        @for (page of visiblePageNumbers(); track page) {
-        <button type="button" class="btn btn-sm pagination-btn page-number" [ngClass]="{ 'active': currentPage() === page }" (click)="goToPage(page)">
-          {{ page }}
-        </button>
+          </ul>
         }
-        <button type="button" class="btn btn-sm pagination-btn" (click)="nextPage()" [disabled]="currentPage() === totalPages()" aria-label="Sonraki sayfa">
-          <i class="ri-arrow-right-s-line"></i>
-        </button>
-      </div>
-    </div>
+      </article>
     }
-  </div>
+  </section>
+
+  <!-- ===== Dağılım ===== -->
+  <section class="depo-insights">
+    <article class="depo-panel">
+      <header class="depo-panel__head">
+        <div>
+          <h5>{{ 'LABELS.DEPO_DAGILIM' | translate }}</h5>
+          <p>Bütün projelerde depodaki sandıkların depolara göre dağılımı.</p>
+        </div>
+      </header>
+      @if (depoSummaryLoading()) {
+        <div class="donut-wrap">
+          <span class="skeleton-donut"></span>
+          <div class="skeleton-legend"><span></span><span></span><span></span><span></span></div>
+        </div>
+      } @else {
+        <div class="donut-wrap">
+          <div class="donut">
+            <svg viewBox="0 0 42 42" aria-hidden="true">
+              <circle cx="21" cy="21" r="15.9155" fill="transparent" stroke="#eef2f7" stroke-width="5" />
+              @for (d of donutDilimleri(); track d.id) {
+                <circle class="donut__seg" cx="21" cy="21" r="15.9155" fill="transparent" stroke-width="5"
+                        [attr.stroke]="d.renk" [attr.stroke-dasharray]="d.dash" [attr.stroke-dashoffset]="d.offset" />
+              }
+            </svg>
+            <div class="donut__center">
+              <strong>{{ genelKart().toplam }}</strong>
+              <span>Toplam sandık</span>
+            </div>
+          </div>
+          <ul class="donut-legend">
+            @for (seg of genelKart().segmentler; track seg.id) {
+              <li>
+                <div class="donut-legend__row">
+                  <span class="dot" [style.background]="seg.color"></span>
+                  <span class="donut-legend__ad">{{ seg.label }}</span>
+                  <span class="donut-legend__oran">%{{ seg.oranMetni }}</span>
+                  <strong>{{ seg.count }}</strong>
+                </div>
+                <div class="donut-legend__bar"><span [style.width.%]="seg.oran" [style.background]="seg.color"></span></div>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </article>
+
+    <article class="depo-panel">
+      <header class="depo-panel__head">
+        <div>
+          <h5>Depo × proje tipi</h5>
+          <p>Her depoda hangi proje tipinden kaç sandık bulunduğu.</p>
+        </div>
+      </header>
+      @if (depoSummaryLoading()) {
+        <div class="matrix-skeleton"><span></span><span></span><span></span><span></span></div>
+      } @else {
+        <div class="table-responsive">
+          <table class="depo-matrix">
+            <thead>
+              <tr>
+                <th>Depo</th>
+                <th><span class="tip-pill" data-tip="1">Normal</span></th>
+                <th><span class="tip-pill" data-tip="2">Saha</span></th>
+                <th><span class="tip-pill" data-tip="3">Yedek</span></th>
+                <th>Toplam</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (satir of depoMatrisi().satirlar; track satir.id) {
+                <tr [style.--renk]="satir.renk">
+                  <th scope="row"><span class="matrix-ad"><span class="dot"></span>{{ satir.ad }}</span></th>
+                  @for (deger of satir.degerler; track $index) {
+                    <td [class.is-zero]="!deger" [style.--yogunluk]="deger / depoMatrisi().enBuyuk">{{ deger || '—' }}</td>
+                  }
+                  <td class="is-total">{{ satir.toplam }}</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">Toplam</th>
+                @for (t of depoMatrisi().toplamlar; track $index) {
+                  <td>{{ t }}</td>
+                }
+                <td class="is-total">{{ depoMatrisi().genel }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      }
+    </article>
+  </section>
+
+  <!-- ===== Proje bazlı dağılım ===== -->
+  <section class="depo-panel depo-projects">
+    <header class="depo-panel__head depo-projects__head">
+      <div class="depo-projects__title">
+        <h5>Proje Bazlı Depo Dağılımı</h5>
+        <span class="count-pill">{{ totalCount() }}</span>
+      </div>
+      <label class="tz-input-icon depo-search">
+        <i class="ri-search-line"></i>
+        <input type="search" class="form-control" placeholder="Proje ara..." aria-label="Proje ara" (input)="onSearch($event)" />
+      </label>
+    </header>
+
+    @if (loading()) {
+      <div class="table-skeleton">
+        @for (i of [1, 2, 3, 4, 5]; track i) { <span></span> }
+      </div>
+    } @else if (projeler().length === 0) {
+      <div class="depo-empty">
+        <i class="ri-inbox-line"></i>
+        <strong>Kritere uygun proje bulunamadı</strong>
+        <span>Aramayı değiştirip tekrar deneyin.</span>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="depo-table">
+          <thead>
+            <tr>
+              <th class="col-toggle"></th>
+              <th>Proje no</th>
+              <th>Proje tipi</th>
+              <th class="text-center">Toplam sandık</th>
+              @for (loc of visibleDepoLokasyonlari(); track loc.id; let i = $index) {
+                <th class="text-center"><span class="th-depo"><span class="dot" [style.background]="getLokasyonColor(loc, i)"></span>{{ loc.deger }}</span></th>
+              }
+              <th class="text-end">Rapor</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (satir of projeSatirlari(); track satir.p.id) {
+              <tr class="project-row" [class.is-open]="expandedProjeId() === satir.p.id" (click)="toggleExpand(satir.p.id)">
+                <td class="col-toggle">
+                  <span class="row-toggle" [attr.aria-label]="expandedProjeId() === satir.p.id ? 'Sandıkları gizle' : 'Sandıkları göster'"><i class="ri-arrow-right-s-line"></i></span>
+                </td>
+                <td><strong class="proje-no">{{ satir.p.projeNo }}</strong></td>
+                <td><span class="tip-pill" [attr.data-tip]="satir.p.projeTipiId">{{ projeTipiMetni(satir.p.projeTipiId) }}</span></td>
+                <td class="text-center">
+                  <div class="total-cell">
+                    <strong [class.is-zero]="!satir.p.depoSandikSayisi">{{ satir.p.depoSandikSayisi }}</strong>
+                    @if (satir.depolanan > 0) {
+                      <span class="mini-bar" aria-hidden="true">
+                        @for (s of satir.sayilar; track s.id) {
+                          @if (s.sayi > 0) { <span [style.flex-grow]="s.sayi" [style.background]="s.renk"></span> }
+                        }
+                      </span>
+                    }
+                  </div>
+                </td>
+                @for (s of satir.sayilar; track s.id) {
+                  <td class="text-center">
+                    @if (s.sayi > 0) {
+                      <span class="depo-count-pill" [style.color]="s.renk" [style.background-color]="s.soft">{{ s.sayi }}</span>
+                    } @else {
+                      <span class="dash">—</span>
+                    }
+                  </td>
+                }
+                <td class="text-end">
+                  <button type="button" class="tz-btn tz-btn--sm"
+                          (click)="indirProjeDepoSandikPdf(satir.p, $event)"
+                          [disabled]="downloadingProjectPdf() !== null"
+                          title="Proje depo sandık raporu" aria-label="Proje depo sandık raporu indir">
+                    @if (downloadingProjectPdf() === satir.p.id) {
+                      <span class="spinner-border spinner-border-sm"></span>
+                    } @else {
+                      <i class="ri-file-pdf-2-line tz-ico-danger"></i>
+                    }
+                    PDF
+                  </button>
+                </td>
+              </tr>
+
+              @if (expandedProjeId() === satir.p.id) {
+                <tr class="detail-row">
+                  <td [attr.colspan]="getProjectTableColspan()">
+                    <div class="expanded-detail">
+                      <div class="expanded-detail__head">
+                        <span class="expanded-detail__icon"><i class="ri-archive-stack-line"></i></span>
+                        <strong>{{ satir.p.projeNo }}</strong>
+                        <span>· depodaki sandıklar</span>
+                        @if (!expandedLoading()) { <span class="count-pill">{{ expandedSandiklar().length }}</span> }
+                      </div>
+                      @if (expandedLoading()) {
+                        <div class="expanded-detail__state"><span class="spinner-border spinner-border-sm text-primary"></span>Sandıklar yükleniyor...</div>
+                      } @else if (expandedSandiklar().length === 0) {
+                        <div class="expanded-detail__state"><i class="ri-information-line"></i>Bu projeye ait depoda sandık bulunmuyor.</div>
+                      } @else {
+                        <div class="table-responsive">
+                          <table class="sandik-table">
+                            <thead>
+                              <tr>
+                                <th>Sandık no</th>
+                                <th>Tipi</th>
+                                <th>Durum</th>
+                                <th>Lokasyon</th>
+                                <th>Ürün (tamamlanan / gerekli)</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              @for (s of expandedSandiklar(); track s.id) {
+                                <tr>
+                                  <td><strong>{{ s.sandikNo }}</strong></td>
+                                  <td><span class="type-chip">Standart</span></td>
+                                  <td><app-status-badge [status]="s.durumMetni" [label]="s.durumMetni" /></td>
+                                  <td>
+                                    @if (s.depoLokasyonMetni) {
+                                      <span class="loc-chip" [style.--renk]="depoMetniRengi(s.depoLokasyonMetni) ?? '#0ea5e9'"><i class="ri-map-pin-2-fill"></i>{{ s.depoLokasyonMetni }}</span>
+                                    } @else {
+                                      <span class="loc-chip is-unknown"><i class="ri-map-pin-line"></i>Belirsiz</span>
+                                    }
+                                  </td>
+                                  <td>
+                                    <span class="urun-cell">
+                                      <b>{{ s.urunSayisi }}</b>
+                                      @if (s.urunSayisi > 0 && s.durumMetni === 'Hazır') {
+                                        <i class="ri-check-double-line" title="Hazır"></i>
+                                      }
+                                    </span>
+                                  </td>
+                                </tr>
+                              }
+                            </tbody>
+                          </table>
+                        </div>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="depo-pagination">
+        <div class="depo-pagination__info">
+          <span><b>{{ paginationStart() }}–{{ paginationEnd() }}</b> / {{ totalCount() }} proje</span>
+          <label for="depoProjectPageSize">Sayfa başına</label>
+          <select id="depoProjectPageSize" class="form-select form-select-sm" [ngModel]="pageSize()" (ngModelChange)="onPageSizeChange($event)">
+            @for (size of pageSizeOptions; track size) {
+              <option [ngValue]="size">{{ size }}</option>
+            }
+          </select>
+        </div>
+        <div class="depo-pagination__pages">
+          <button type="button" class="page-btn" (click)="previousPage()" [disabled]="currentPage() === 1" aria-label="Önceki sayfa">
+            <i class="ri-arrow-left-s-line"></i>
+          </button>
+          @for (page of visiblePageNumbers(); track page) {
+            <button type="button" class="page-btn" [class.active]="currentPage() === page" [attr.aria-current]="currentPage() === page ? 'page' : null" (click)="goToPage(page)">{{ page }}</button>
+          }
+          <button type="button" class="page-btn" (click)="nextPage()" [disabled]="currentPage() === totalPages()" aria-label="Sonraki sayfa">
+            <i class="ri-arrow-right-s-line"></i>
+          </button>
+        </div>
+      </footer>
+    }
+  </section>
 </div>
 
-<!-- ===== Depo Management Modal ===== -->
+<!-- ===== Depo yönetimi penceresi ===== -->
 @if (depoModalOpen()) {
-<div class="modal-overlay" (click)="closeDepoModal()"></div>
-<div class="depo-modal">
-  <div class="depo-modal-header">
-    <div>
-      <h5 class="mb-1 fw-bold"><i class="ri-map-pin-add-line me-2 text-primary"></i>Depo Yönetimi</h5>
-      <p class="mb-0 text-muted small">Yeni depo ekleyin veya kullanılmayan kullanıcı depolarını kaldırın.</p>
-    </div>
-    <button class="btn btn-sm border-0 bg-transparent shadow-none" (click)="closeDepoModal()">
-      <i class="ri-close-line fs-4"></i>
-    </button>
-  </div>
+  <div class="tz-modal-backdrop" (click)="closeDepoModal()"></div>
+  <div class="tz-modal tz-modal--sm" role="dialog" aria-modal="true" aria-labelledby="depo-modal-baslik" (keydown.escape)="closeDepoModal()">
+    <header class="tz-modal__header">
+      <span class="tz-modal__icon"><i class="ri-map-pin-add-line"></i></span>
+      <div class="tz-modal__title">
+        <h5 id="depo-modal-baslik">Depo Yönetimi</h5>
+        <p>Yeni depo ekleyin veya kullanılmayan kullanıcı depolarını kaldırın.</p>
+      </div>
+      <button type="button" class="tz-modal__close" (click)="closeDepoModal()" aria-label="Kapat"><i class="ri-close-line"></i></button>
+    </header>
 
-  <div class="depo-modal-body">
-    <label class="form-label fw-semibold">Yeni Depo Adı</label>
-    <div class="depo-add-row">
-      <input type="text" class="form-control" placeholder="Örn. Öz Nakliyat" [ngModel]="yeniDepoAdi()" (ngModelChange)="yeniDepoAdi.set($event)" (keyup.enter)="depoEkle()" />
-      <button class="btn btn-primary" (click)="depoEkle()" [disabled]="savingDepo()">
-        @if (savingDepo()) { <span class="spinner-border spinner-border-sm"></span> }
-        <i class="ri-add-line"></i>
-        <span>Ekle</span>
-      </button>
-    </div>
-
-    <div class="depo-list mt-4">
-      @for (loc of getYonetilebilirDepoLokasyonlari(); track loc.id; let i = $index) {
-      <div class="depo-list-item">
-        <div class="d-flex align-items-center gap-2">
-          <span class="depo-color-dot" [style.background-color]="getLokasyonColor(loc, i)"></span>
-          <div>
-            <div class="fw-semibold text-dark">{{ loc.deger }}</div>
-          </div>
-        </div>
-        <div class="d-flex align-items-center gap-2">
-          @if (depoSistemKaydiMi(loc)) {
-          <span class="badge bg-light text-secondary">Sistem</span>
-          } @else {
-          <button class="btn btn-sm btn-outline-danger" (click)="depoSil(loc)" [disabled]="savingDepo() || !depoSilinebilirMi(loc)">
-            <i class="ri-delete-bin-line"></i>
+    <div class="tz-modal__body">
+      <div class="tz-field">
+        <label for="yeniDepoAdi">Yeni depo adı</label>
+        <div class="depo-add-row">
+          <input id="yeniDepoAdi" type="text" class="form-control" placeholder="Örn. Öz Nakliyat"
+                 [ngModel]="yeniDepoAdi()" (ngModelChange)="yeniDepoAdi.set($event)" (keyup.enter)="depoEkle()" />
+          <button type="button" class="tz-btn tz-btn--primary" (click)="depoEkle()" [disabled]="savingDepo()">
+            @if (savingDepo()) { <span class="spinner-border spinner-border-sm"></span> } @else { <i class="ri-add-line"></i> }
+            Ekle
           </button>
-          }
         </div>
       </div>
-      }
+
+      <div class="depo-list">
+        <span class="depo-list__title">Depolar <em>{{ getYonetilebilirDepoLokasyonlari().length }}</em></span>
+        @for (loc of getYonetilebilirDepoLokasyonlari(); track loc.id; let i = $index) {
+          <div class="depo-list-item">
+            <span class="depo-color-dot" [style.background-color]="getLokasyonColor(loc, i)"></span>
+            <span class="depo-list-item__ad">{{ loc.deger }}</span>
+            @if (depoSistemKaydiMi(loc)) {
+              <span class="sys-badge"><i class="ri-lock-line"></i>Sistem</span>
+            } @else {
+              <button type="button" class="tz-btn tz-btn--icon tz-btn--danger-hover" (click)="depoSil(loc)"
+                      [disabled]="savingDepo() || !depoSilinebilirMi(loc)" [title]="loc.deger + ' deposunu sil'" [attr.aria-label]="loc.deger + ' deposunu sil'">
+                <i class="ri-delete-bin-line"></i>
+              </button>
+            }
+          </div>
+        }
+      </div>
     </div>
   </div>
-</div>
 }

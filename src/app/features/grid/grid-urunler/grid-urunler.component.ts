@@ -8,7 +8,7 @@ import { GridService } from '../../../core/services/grid.service';
 import { SandikService } from '../../../core/services/sandik.service';
 import { ProjeService } from '../../../core/services/proje.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { ConfirmService } from '../../../core/services/confirm.service';
+import { ConfirmService, duzMetin } from '../../../core/services/confirm.service';
 import { PdfService } from '../../../core/services/pdf.service';
 
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
@@ -16,10 +16,14 @@ import { StatCardComponent } from '../../../shared/components/stat-card/stat-car
 import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
 import { GridUrunDto, GridDurumGuncelleDto, ProjeDropdownDto, CekiSatiriAnaVeriGuncelleDto, SahaTamamlamaIzDto } from '../../../shared/models/index';
-import { GridDurum, GridSevkDurum, SurecDurum, UcKDurum } from '../../../core/constants/enums';
+import { GridDurum, GridSevkDurum, ProjeTipi, SurecDurum, UcKDurum } from '../../../core/constants/enums';
+import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { PermissionService } from '../../../core/services/permission.service';
+import { YETKI } from '../../../core/constants/yetki-kodlari';
+import { pdfMakeYukle } from '../../../core/services/pdfmake-yukleyici';
+import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
+import { TzSecenek, TzSeciciComponent } from '../../../shared/components/tz-secici/tz-secici.component';
 
-declare const pdfMake: any;
 
 interface AmbarTalepItem {
   cekiSatiriId: number;
@@ -51,7 +55,7 @@ const SEVK_DURUMLARI: DurumSecenegi[] = [
 @Component({
   selector: 'app-grid-urunler',
   standalone: true,
-  imports: [NgClass, DatePipe, FormsModule, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent],
+  imports: [NgClass, DatePipe, FormsModule, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent, TzSeciciComponent],
   templateUrl: './grid-urunler.component.html',
   styleUrl: './grid-urunler.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -96,13 +100,13 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   panelError = signal('');
   panelUyari = signal('');
 
-  canEditCekiVerisi = computed(() => this.permissions.canWrite('ceki-verisi-duzenle'));
-  canDeleteCekiVerisi = computed(() => this.permissions.canWrite('ceki-verisi-sil'));
-  canSahaAktarimGeriAl = computed(() => this.permissions.canWrite('saha-aktarim-geri-al'));
+  canEditCekiVerisi = computed(() => this.permissions.canWrite(YETKI.SANDIK.CEKI_VERISI_DUZENLE));
+  canDeleteCekiVerisi = computed(() => this.permissions.canWrite(YETKI.SANDIK.CEKI_VERISI_SIL));
+  canSahaAktarimGeriAl = computed(() => this.permissions.canWrite(YETKI.SAHA.AKTARIM_GERI_AL));
   canSeeEksikRapor = computed(() =>
-    this.activeMenuKod === 'grid-modulu' &&
-    this.mevcutProje()?.projeTipiId === 1 &&
-    this.permissions.hasAccess('eksik-raporu')
+    this.projeTipi.tip === ProjeTipi.Normal &&
+    this.mevcutProje()?.projeTipiId === ProjeTipi.Normal &&
+    this.permissions.hasAccess(YETKI.SANDIK.EKSIK_RAPORU)
   );
   showEksikRaporMenu = signal(false);
   eksikRaporDownloading = signal<'pdf' | 'excel' | null>(null);
@@ -213,6 +217,19 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
     return Array.from(byKey.values()).sort((a, b) => this.compareSandikNo(a, b));
   });
+  /** Sandık seçicisi: her sandık, listede o sandıkta görünen ürün satırı sayısıyla. */
+  sandikSecenekleri = computed<TzSecenek[]>(() => {
+    const sayilar = new Map<string, number>();
+    for (const urun of this.urunler()) {
+      const key = this.normalizeSandikNo(urun.sandikNo ?? '');
+      if (key) sayilar.set(key, (sayilar.get(key) ?? 0) + 1);
+    }
+    return this.sandikFilterOptions().map(sandikNo => ({
+      deger: sandikNo,
+      etiket: `Sandık ${sandikNo}`,
+      sayi: sayilar.get(this.normalizeSandikNo(sandikNo)) ?? 0,
+    }));
+  });
   projeBaslik = computed(() => {
     const proje = this.mevcutProje();
     return proje ? `${proje.projeNo} - ${proje.musteri}` : `Proje #${this.projeId()}`;
@@ -236,18 +253,20 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   breadcrumb: { label: string; link?: string }[] = [];
 
+  private readonly projeTipi = projeTipiBaglami(rotaProjeTipi(this.route.snapshot));
+
   private get activeMenuKod(): string {
-    return this.route.snapshot.data?.['menuKod'] || 'grid-modulu';
+    return this.route.snapshot.data?.['menuKod'] || YETKI.SANDIK.GRID_MODULU;
   }
 
   get manuelIcerikTekilAdi(): string {
-    return this.activeMenuKod === 'yedek-grid-modulu'
+    return this.projeTipi.tip === ProjeTipi.Yedek
       ? 'manuel yedek malzemesi'
       : 'manuel saha ürünü';
   }
 
   private get manuelIcerikCogulAdi(): string {
-    return this.activeMenuKod === 'yedek-grid-modulu'
+    return this.projeTipi.tip === ProjeTipi.Yedek
       ? 'Manuel yedek malzemeleri'
       : 'Manuel saha ürünleri';
   }
@@ -267,14 +286,10 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     this.projeId.set(id);
     const focusCekiSatiriId = Number(this.route.snapshot.queryParamMap.get('focusCekiSatiriId'));
     this.focusCekiSatiriId.set(Number.isInteger(focusCekiSatiriId) && focusCekiSatiriId > 0 ? focusCekiSatiriId : null);
-    const isSaha = this.activeMenuKod === 'saha-grid-modulu';
-    const isYedek = this.activeMenuKod === 'yedek-grid-modulu';
-    const parentLabel = isSaha ? 'Saha Yönetimi' : isYedek ? 'Yedek Yönetimi' : 'Sandık Yönetimi';
-    const parentLink = isSaha ? '/saha-yonetimi' : isYedek ? '/yedek-yonetimi' : '/sandik-yonetimi';
     this.breadcrumb = [
       { label: 'Ana Kontrol Paneli', link: '/dashboard' },
-      { label: parentLabel, link: parentLink },
-      { label: isSaha ? 'Saha Grid Modülü' : isYedek ? 'Yedek Grid Modülü' : 'Grid Modülü' },
+      { label: this.ts.translate(this.projeTipi.baslik.yonetim), link: this.projeTipi.yonetimRotasi },
+      { label: this.ts.translate(this.projeTipi.baslik.grid) },
     ];
     this.loadProjeBilgisi();
     this.loadUrunler();
@@ -327,14 +342,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
 
   private downloadBlob(blob: Blob, fileName: string) {
-    const url = window.URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = fileName;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    window.setTimeout(() => window.URL.revokeObjectURL(url), 0);
+    dosyayiKaydet(blob, fileName);
   }
 
   private safeFileName(value: string): string {
@@ -565,7 +573,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
     const onay = await this.confirmService.ask({
       title: 'Saha Aktarımını Geri Al',
-      message: `${iz.sahaProjeNo} / Sandık ${iz.sahaSandikNo} içindeki ${this.formatMiktar(iz.miktar)} ${iz.birim} aktarım kaynak projeye geri dönecek. Devam edilsin mi?`,
+      message: `${duzMetin(iz.sahaProjeNo)} / Sandık ${duzMetin(iz.sahaSandikNo)} içindeki ${this.formatMiktar(iz.miktar)} ${duzMetin(iz.birim)} aktarım kaynak projeye geri dönecek. Devam edilsin mi?`,
       confirmText: 'Geri Al',
       cancelText: 'Vazgeç',
       type: 'warning'
@@ -658,7 +666,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     this.panelUrun.set(urun);
     if (this.isGridYenidenSevkAcikUrun(urun) && this.isParcaliEksikYenidenSevkUrun(urun)) {
       this.panelDurum.set('Tam Geldi');
-      this.panelGelenAdet.set(urun.istenenAdet);
+      this.panelGelenAdet.set(this.getAnaIstenenAdet(urun));
       this.panelTrafoSevkAdet.set(0);
     } else {
       this.panelDurum.set(urun.gridDurumuMetni);
@@ -690,7 +698,8 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
     switch (durum) {
       case 'Tam Geldi':
-        this.panelGelenAdet.set(u.istenenAdet);
+        // Grid komutu satır bazlıdır; çok sandıklı üründe sandık payı değil satır toplamı gelir.
+        this.panelGelenAdet.set(this.getAnaIstenenAdet(u));
         this.panelTrafoSevkAdet.set(0);
         break;
       case 'Eksik Geldi':
@@ -783,24 +792,25 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     const u = this.panelUrun();
     if (!u) return 0;
     if (this.panelDurum() === 'İptal') return 0;
-    return u.istenenAdet - this.panelGelenAdet() - this.panelTrafoSevkAdet();
+    return this.getAnaIstenenAdet(u) - this.panelGelenAdet() - this.panelTrafoSevkAdet();
   }
 
   // Validasyon
   validatePanel(): string | null {
     const u = this.panelUrun()!;
     const d = this.panelDurum();
+    const satirIstenen = this.getAnaIstenenAdet(u);
 
     if (d === 'Eksik Geldi') {
       if (this.panelGelenAdet() <= 0) return 'Gelen adet girilmelidir.';
-      if (this.panelGelenAdet() >= u.istenenAdet) return 'Gelen adet, toplam miktardan küçük olmalıdır.';
+      if (this.panelGelenAdet() >= satirIstenen) return 'Gelen adet, toplam miktardan küçük olmalıdır.';
     }
 
     if (d === 'Trafo Sevk') {
       if (this.panelTrafoSevkAdet() <= 0) return 'Trafo sevk adeti girilmelidir.';
-      if (this.panelTrafoSevkAdet() > u.istenenAdet) return 'Trafo sevk adeti miktardan büyük olamaz.';
+      if (this.panelTrafoSevkAdet() > satirIstenen) return 'Trafo sevk adeti miktardan büyük olamaz.';
       const toplam = this.panelGelenAdet() + this.panelTrafoSevkAdet();
-      if (toplam > u.istenenAdet) return 'Toplam adet, çeki miktarını aşamaz.';
+      if (toplam > satirIstenen) return 'Toplam adet, çeki miktarını aşamaz.';
     }
 
     if (this.panelSevkAdet() > 0 && this.panelSevkDurumu() !== 'Sevk Edildi') {
@@ -877,7 +887,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       || u.surecDurumId != null;
   }
 
-  durumSifirla(urun?: GridUrunDto) {
+  async durumSifirla(urun?: GridUrunDto) {
     const u = urun ?? this.panelUrun();
     if (!u) return;
     if (this.isSatirSevkKilidi(u)) {
@@ -886,8 +896,15 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (!confirm(`"${u.aciklama}" ürününün Grid durumunu sıfırlamak istediğinize emin misiniz?\n\nGrid alanlarıyla birlikte Kalite ve Süreç durumları da temizlenecek; ürün çeki yüklendiğindeki ham durumuna dönecektir.\n\nBu işlem geri alınamaz.`))
-      return;
+    const onay = await this.confirmService.ask({
+      title: 'Grid Durumunu Sıfırla',
+      message: `<strong>${duzMetin(u.aciklama)}</strong> ürününün Grid durumunu sıfırlamak istediğinize emin misiniz?<br><br>Grid alanlarıyla birlikte Kalite ve Süreç durumları da temizlenecek; ürün çeki yüklendiğindeki ham durumuna dönecektir.<br><br><small class="text-muted">Bu işlem geri alınamaz.</small>`,
+      confirmText: 'Evet, Sıfırla',
+      cancelText: 'Vazgeç',
+      type: 'danger'
+    });
+
+    if (!onay) return;
 
     this.panelSaving.set(true);
     this.panelError.set('');
@@ -1063,7 +1080,19 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   isUcKIslemYapilmis(u: GridUrunDto): boolean {
     if (this.isTamamlanmisParcaliEksikSevkUrun(u)) return false;
     if (this.isGridYenidenSevkAcikUrun(u)) return false;
-    return u.ucKDurumuId !== UcKDurum.Bekliyor || u.gelenMiktar > 0;
+    return u.ucKDurumuId !== UcKDurum.Bekliyor || this.getSatirGelen(u) > 0;
+  }
+
+  /**
+   * Grid sayaçları (aktif sevk, borç) satır bazlıdır; onlarla karşılaştırılan 3K geleni ve
+   * kalan da satır toplamı olmalıdır. Çok sandıklı satırda sandık değerleri farklı ölçektedir.
+   */
+  getSatirGelen(u: GridUrunDto): number {
+    return Math.max(Number(u.sandikBazliDagitim ? (u.toplamUcKGelenMiktar ?? u.gelenMiktar) : u.gelenMiktar) || 0, 0);
+  }
+
+  getSatirKalan(u: GridUrunDto): number {
+    return Math.max(Number(u.sandikBazliDagitim ? (u.toplamKalanMiktar ?? u.kalanMiktar) : u.kalanMiktar) || 0, 0);
   }
 
   isYenidenSevkGerekliUrun(u: GridUrunDto | null | undefined): boolean {
@@ -1075,7 +1104,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       u.gridSevkDurumuId === GridSevkDurum.SevkEdildi &&
       (u.gridSevkMiktari ?? 0) > 0 &&
       (u.projeGonderilen ?? 0) > 0 &&
-      (u.kalanMiktar ?? 0) > 0;
+      this.getSatirKalan(u) > 0;
   }
 
   isParcaliEksikYenidenSevkUrun(u: GridUrunDto | null | undefined): boolean {
@@ -1083,7 +1112,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       u.gridDurumuId === GridDurum.EksikGeldi &&
       u.gridSevkDurumuId === GridSevkDurum.SevkEdildi &&
       (u.gridSevkMiktari ?? 0) > 0 &&
-      (u.kalanMiktar ?? 0) > 0;
+      this.getSatirKalan(u) > 0;
   }
 
   isBackendYenidenSevkAcikUrun(u: GridUrunDto | null | undefined): boolean {
@@ -1101,8 +1130,8 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       u.gridDurumuId === GridDurum.TamGeldi &&
       u.gridSevkDurumuId === GridSevkDurum.SevkEdildi &&
       (u.gridSevkMiktari ?? 0) > 0 &&
-      (u.gelenMiktar ?? 0) > (u.gridSevkMiktari ?? 0) &&
-      (u.kalanMiktar ?? 0) === 0;
+      this.getSatirGelen(u) > (u.gridSevkMiktari ?? 0) &&
+      this.getSatirKalan(u) === 0;
   }
 
   isGridYenidenSevkAcikUrun(u: GridUrunDto | null | undefined): boolean {
@@ -1125,17 +1154,17 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       return Math.max(u.yenidenSevkGerekliAdet ?? 0, 0);
     }
     if (this.isProjeGonderilenYenidenSevkUrun(u)) {
-      return Math.max(Math.min(u.projeGonderilen ?? 0, u.kalanMiktar ?? 0), 0);
+      return Math.max(Math.min(u.projeGonderilen ?? 0, this.getSatirKalan(u)), 0);
     }
     if (this.isParcaliEksikYenidenSevkUrun(u)) {
-      return Math.max(u.kalanMiktar ?? 0, 0);
+      return this.getSatirKalan(u);
     }
     return 0;
   }
 
   getGridSevkGorunum(u: GridUrunDto): number {
     const aktifSevk = Math.max(u.gridSevkMiktari ?? 0, 0);
-    const gelen = Math.max(u.gelenMiktar ?? 0, 0);
+    const gelen = this.getSatirGelen(u);
 
     if (aktifSevk <= 0) return 0;
 
@@ -1188,12 +1217,12 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   /** Menü bazlı kontrol - Kalite butonlarını görme yetkisi */
   get canKalite(): boolean {
-    return this.permissions.canWrite('kalite-modulu');
+    return this.permissions.canWrite(YETKI.SANDIK.KALITE_MODULU);
   }
 
   /** Menü bazlı kontrol - Süreç butonlarını görme yetkisi */
   get canSurec(): boolean {
-    return this.permissions.canWrite('surec-modulu');
+    return this.permissions.canWrite(YETKI.SANDIK.SUREC_MODULU);
   }
 
   get canGridWrite(): boolean {
@@ -1533,7 +1562,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     if (items.length === 0) this.closeAmbarTalepModal();
   }
 
-  generateAmbarTalepPdf() {
+  async generateAmbarTalepPdf(): Promise<void> {
     const items = this.ambarTalepItems();
     if (items.length === 0) return;
     this.ambarTalepGenerating.set(true);
@@ -1675,7 +1704,8 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       };
 
       const fileName = `Talep_Formu_${dateStr.replace(/\./g, '-')}_${timeStr.replace(':', '')}`;
-      pdfMake.createPdf(docDefinition).download(`${fileName}.pdf`);
+      const pdfMake = await pdfMakeYukle();
+      await pdfMake.createPdf(docDefinition).download(`${fileName}.pdf`);
       this.toast.success('Talep Formu PDF olarak indirildi.');
 
       // Seçili ürünlerin süreç durumunu talep kaynağına göre güncelle

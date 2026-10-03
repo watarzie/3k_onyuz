@@ -1,6 +1,5 @@
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { Component, HostListener, computed, inject, signal, OnInit, OnDestroy } from '@angular/core';
-import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
@@ -17,6 +16,10 @@ import { API } from '../../core/constants/api-endpoints';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
 import { ProjeDepoDagilimDto, ProjeDto, SandikDto, LookupItem } from '../../shared/models/index';
+import { YETKI } from '../../core/constants/yetki-kodlari';
+import { ProjeTipi } from '../../core/constants/enums';
+import { projeTipiBaglami } from '../../core/constants/proje-tipi';
+import { dosyayiKaydet } from '../../core/services/dosya-kaydet';
 
 type DepoSummaryScope = 'global' | 'normal' | 'saha' | 'yedek';
 
@@ -28,6 +31,33 @@ interface DepoSegment {
   softColor: string;
   icon: string;
 }
+
+/** Özet kartının kapsamı ve görünümü. */
+interface KapsamTanimi {
+  scope: DepoSummaryScope;
+  baslik: string;
+  ikon: string;
+  ton: 'primary' | 'info' | 'success' | 'warning';
+}
+
+interface OranliSegment extends DepoSegment {
+  oran: number;
+  oranMetni: string;
+}
+
+interface KapsamKarti extends KapsamTanimi {
+  toplam: number;
+  segmentler: OranliSegment[];
+}
+
+const KAPSAMLAR: KapsamTanimi[] = [
+  { scope: 'global', baslik: 'Genel toplam', ikon: 'ri-stack-line', ton: 'primary' },
+  { scope: 'normal', baslik: 'Normal projeler', ikon: 'ri-building-2-line', ton: 'info' },
+  { scope: 'saha', baslik: 'Saha projeleri', ikon: 'ri-map-pin-line', ton: 'success' },
+  { scope: 'yedek', baslik: 'Yedek projeleri', ikon: 'ri-archive-line', ton: 'warning' },
+];
+
+const ORAN_BICIMI = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 1 });
 
 interface DashboardDepoDagilimDto {
   depoLokasyonId: number;
@@ -45,11 +75,12 @@ interface DashboardOzetDto {
 @Component({
   selector: 'app-depo-durumu',
   standalone: true,
-  imports: [TranslatePipe, NgClass, FormsModule, StatusBadgeComponent, BreadcrumbComponent],
+  imports: [TranslatePipe, FormsModule, StatusBadgeComponent, BreadcrumbComponent],
   templateUrl: './depo-durumu.component.html',
   styleUrl: './depo-durumu.component.scss',
 })
 export class DepoDurumuComponent implements OnInit, OnDestroy {
+  protected readonly ProjeTipi = ProjeTipi;
   ts = inject(TranslationService);
   private route = inject(ActivatedRoute);
   private projeService = inject(ProjeService);
@@ -134,6 +165,64 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
     return this.sortLokasyonlar(Array.from(byId.values()).filter(l => !this.isBelirsiz(l)));
   });
   depoSummaryLoading = computed(() => this.summaryLoading() || this.lokasyonLoading());
+
+  // --- Görünüm hesapları: şablon her değişiklik denetiminde yeniden hesaplamasın diye tek yerde ---
+  /** Özet kartları: kapsam başına toplam ve depo payları. */
+  readonly kapsamKartlari = computed<KapsamKarti[]>(() => KAPSAMLAR.map(kapsam => {
+    const segmentler = this.getSummaryDepoSegments(kapsam.scope);
+    const toplam = segmentler.reduce((sum, s) => sum + s.count, 0);
+    return {
+      ...kapsam,
+      toplam,
+      segmentler: segmentler.map(s => {
+        const oran = toplam ? (s.count / toplam) * 100 : 0;
+        return { ...s, oran, oranMetni: ORAN_BICIMI.format(oran) };
+      }),
+    };
+  }));
+  readonly genelKart = computed(() => this.kapsamKartlari()[0]);
+
+  /** Halka grafik dilimleri: çevre 100 birimdir; dilimler arasında ince boşluk bırakılır. */
+  readonly donutDilimleri = computed(() => {
+    const dolu = this.genelKart().segmentler.filter(s => s.count > 0);
+    const bosluk = dolu.length > 1 ? 0.8 : 0;
+    let birikim = 0;
+    return dolu.map(s => {
+      const uzunluk = Math.max(s.oran - bosluk, 0.01);
+      const dilim = { id: s.id, renk: s.color, dash: `${uzunluk} ${100 - uzunluk}`, offset: 25 - birikim };
+      birikim += s.oran;
+      return dilim;
+    });
+  });
+
+  /** Depo × proje tipi tablosu; hücre rengi en büyük değere göre yoğunlaşır. */
+  readonly depoMatrisi = computed(() => {
+    const kapsamlar: DepoSummaryScope[] = ['normal', 'saha', 'yedek'];
+    const satirlar = this.visibleDepoLokasyonlari().map((loc, i) => ({
+      id: loc.id,
+      ad: loc.deger,
+      renk: this.getLokasyonColor(loc, i),
+      degerler: kapsamlar.map(k => this.getSummaryDepoCount(k, loc)),
+      toplam: this.getSummaryDepoCount('global', loc),
+    }));
+    const enBuyuk = Math.max(1, ...satirlar.flatMap(s => s.degerler));
+    const toplamlar = kapsamlar.map((_, i) => satirlar.reduce((sum, s) => sum + s.degerler[i], 0));
+    return { satirlar, enBuyuk, toplamlar, genel: satirlar.reduce((sum, s) => sum + s.toplam, 0) };
+  });
+
+  /** Proje tablosu satırları: depo sayıları ve renkleri bir kez hesaplanır. */
+  readonly projeSatirlari = computed(() => {
+    const lokasyonlar = this.visibleDepoLokasyonlari();
+    return this.projeler().map(p => {
+      const sayilar = lokasyonlar.map((loc, i) => ({
+        id: loc.id,
+        sayi: this.getProjectDepoCount(p, loc),
+        renk: this.getLokasyonColor(loc, i),
+        soft: this.getLokasyonSoftColor(loc, i),
+      }));
+      return { p, sayilar, depolanan: sayilar.reduce((sum, s) => sum + s.sayi, 0) };
+    });
+  });
   downloadingPdf = signal(false);
   downloadingProjectPdf = signal<number | null>(null);
   reportMenuOpen = signal(false);
@@ -142,7 +231,7 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
   savingDepo = signal(false);
 
   canWriteCurrentMenu = computed(() => {
-    const menuKod = this.route.snapshot.data?.['menuKod'] || 'depo-durumu';
+    const menuKod = this.route.snapshot.data?.['menuKod'] || YETKI.DEPO_DURUMU;
     return typeof menuKod === 'string' && this.permissionService.canWrite(menuKod);
   });
 
@@ -431,25 +520,7 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
   }
 
   projeTipiMetni(projeTipiId: number): string {
-    return projeTipiId === 2 ? 'Saha' : projeTipiId === 3 ? 'Yedek' : 'Normal';
-  }
-
-  // --- Donut chart helpers ---
-  getDonutPercentage(count: number, total: number): number {
-    return total > 0 ? Math.round((count / total) * 100) : 0;
-  }
-
-  getDonutSegments(): DepoSegment[] {
-    return this.getSummaryDepoSegments('global');
-  }
-
-  getDonutOffset(index: number): number {
-    const segments = this.getDonutSegments();
-    const total = this.getSummaryTotal('global');
-    const previousTotal = segments
-      .slice(0, index)
-      .reduce((sum, s) => sum + this.getDonutPercentage(s.count, total), 0);
-    return 25 - previousTotal;
+    return projeTipiBaglami(projeTipiId).ad;
   }
 
   // --- Report menu ---
@@ -480,6 +551,14 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
     if (key === 'GRID') return '#F59E0B';
     if (this.isBelirsiz(lokasyon)) return '#64748B';
     return this.palette[index % this.palette.length];
+  }
+
+  /** Açılan sandık listesinde depo adının rengi; özet ve tablodaki renkle aynıdır. */
+  depoMetniRengi(metin: string | null | undefined): string | null {
+    const ad = (metin ?? '').trim().toLocaleUpperCase('tr-TR');
+    const lokasyonlar = this.visibleDepoLokasyonlari();
+    const i = lokasyonlar.findIndex(l => l.deger.trim().toLocaleUpperCase('tr-TR') === ad);
+    return i < 0 ? null : this.getLokasyonColor(lokasyonlar[i], i);
   }
 
   getLokasyonSoftColor(lokasyon: LookupItem, index = 0): string {
@@ -581,13 +660,8 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
     this.pdfService.depoSandikPdf(projeTipiId).subscribe({
       next: (blob) => {
         this.downloadingPdf.set(false);
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
         const tarih = new Date().toISOString().split('T')[0].replace(/-/g, '');
-        a.download = `DepoSandikRaporu_${this.getReportTypeLabel(projeTipiId)}_${tarih}.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        dosyayiKaydet(blob, `DepoSandikRaporu_${this.getReportTypeLabel(projeTipiId)}_${tarih}.pdf`);
       },
       error: () => {
         this.downloadingPdf.set(false);
@@ -606,13 +680,8 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
     this.pdfService.projeDepoSandikPdf(proje.id).subscribe({
       next: (blob) => {
         this.downloadingProjectPdf.set(null);
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
         const tarih = new Date().toISOString().split('T')[0].replace(/-/g, '');
-        a.download = `${this.sanitizeFilePart(proje.projeNo)}_DepoSandikRaporu_${tarih}.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        dosyayiKaydet(blob, `${this.sanitizeFilePart(proje.projeNo)}_DepoSandikRaporu_${tarih}.pdf`);
       },
       error: () => {
         this.downloadingProjectPdf.set(null);

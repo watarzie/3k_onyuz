@@ -10,7 +10,7 @@ import { ProjeService } from '../../../core/services/proje.service';
 import { GridService } from '../../../core/services/grid.service';
 import { StokService } from '../../../core/services/stok.service';
 import { SandikService } from '../../../core/services/sandik.service';
-import { ConfirmService } from '../../../core/services/confirm.service';
+import { ConfirmService, duzMetin } from '../../../core/services/confirm.service';
 import { PdfService } from '../../../core/services/pdf.service';
 import { PermissionService } from '../../../core/services/permission.service';
 
@@ -18,8 +18,11 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
-import { UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, UcKTopluSecimDto, ProjeDropdownDto, GridUrunDto, StokKaydiDto, CekiSatiriAnaVeriGuncelleDto, SahaTamamlamaIzDto } from '../../../shared/models/index';
-import { UcKDurum, GridSevkDurum, GridDurum } from '../../../core/constants/enums';
+import { UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, UcKTopluSecimDto, ProjeDropdownDto, GridUrunDto, StokKaydiDto, CekiSatiriAnaVeriGuncelleDto, SahaTamamlamaIzDto, onayaAlindi } from '../../../shared/models/index';
+import { UcKDurum, GridSevkDurum, GridDurum, ProjeTipi } from '../../../core/constants/enums';
+import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
+import { YETKI } from '../../../core/constants/yetki-kodlari';
+import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 
 interface KarsilamaTipi { id: number; value: string; label: string; color: string; bgClass: string; }
 
@@ -82,9 +85,9 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   panelError = signal('');
   panelUyari = signal('');
 
-  canEditCekiVerisi = computed(() => this.permissions.canWrite('ceki-verisi-duzenle'));
-  canDeleteCekiVerisi = computed(() => this.permissions.canWrite('ceki-verisi-sil'));
-  canSahaAktarimGeriAl = computed(() => this.permissions.canWrite('saha-aktarim-geri-al'));
+  canEditCekiVerisi = computed(() => this.permissions.canWrite(YETKI.SANDIK.CEKI_VERISI_DUZENLE));
+  canDeleteCekiVerisi = computed(() => this.permissions.canWrite(YETKI.SANDIK.CEKI_VERISI_SIL));
+  canSahaAktarimGeriAl = computed(() => this.permissions.canWrite(YETKI.SAHA.AKTARIM_GERI_AL));
 
   readonly birimSecenekleri = [
     { id: 1, label: 'Adet' },
@@ -219,18 +222,20 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   karsilamaTipleri = KARSILAMA_TIPLERI;
   breadcrumb: { label: string; link?: string }[] = [];
 
+  private readonly projeTipi = projeTipiBaglami(rotaProjeTipi(this.route.snapshot));
+
   private get activeMenuKod(): string {
-    return this.route.snapshot.data?.['menuKod'] || '3k-modulu';
+    return this.route.snapshot.data?.['menuKod'] || YETKI.SANDIK.UCK_MODULU;
   }
 
   get manuelIcerikTekilAdi(): string {
-    return this.activeMenuKod === 'yedek-3k-modulu'
+    return this.projeTipi.tip === ProjeTipi.Yedek
       ? 'manuel yedek malzemesi'
       : 'manuel saha ürünü';
   }
 
   private get manuelIcerikCogulAdi(): string {
-    return this.activeMenuKod === 'yedek-3k-modulu'
+    return this.projeTipi.tip === ProjeTipi.Yedek
       ? 'Manuel yedek malzemeleri'
       : 'Manuel saha ürünleri';
   }
@@ -255,15 +260,11 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     this.projeId.set(id);
     this.sandikId.set(Number.isFinite(sandikIdParam) && sandikIdParam > 0 ? sandikIdParam : null);
     this.sandikNo.set(sNo);
-    const isSaha = this.activeMenuKod === 'saha-3k-modulu';
-    const isYedek = this.activeMenuKod === 'yedek-3k-modulu';
-    const parentLabel = isSaha ? 'Saha Yönetimi' : isYedek ? 'Yedek Yönetimi' : 'Sandık Yönetimi';
-    const parentLink = isSaha ? '/saha-yonetimi' : isYedek ? '/yedek-yonetimi' : '/sandik-yonetimi';
-    const uckLink = isSaha ? `/saha-yonetimi/uck/${id}` : isYedek ? `/yedek-yonetimi/uck/${id}` : `/uck/${id}`;
+    const projeTipi = this.projeTipi;
     this.breadcrumb = [
       { label: 'Ana Kontrol Paneli', link: '/dashboard' },
-      { label: parentLabel, link: parentLink },
-      { label: isYedek ? 'Yedek 3K Sandıklar' : '3K Sandıklar', link: uckLink },
+      { label: this.ts.translate(projeTipi.baslik.yonetim), link: projeTipi.yonetimRotasi },
+      { label: projeTipi.tip === ProjeTipi.Yedek ? 'Yedek 3K Sandıklar' : '3K Sandıklar', link: `${projeTipi.ucKRotasi}/${id}` },
       { label: sNo || '3K Ürünler' },
     ];
 
@@ -515,7 +516,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
     const onay = await this.confirmService.ask({
       title: 'Saha Aktarımını Geri Al',
-      message: `${iz.sahaProjeNo} / Sandık ${iz.sahaSandikNo} içindeki ${this.formatMiktar(iz.miktar)} ${iz.birim} aktarım kaynak projeye geri dönecek. Devam edilsin mi?`,
+      message: `${duzMetin(iz.sahaProjeNo)} / Sandık ${duzMetin(iz.sahaSandikNo)} içindeki ${this.formatMiktar(iz.miktar)} ${duzMetin(iz.birim)} aktarım kaynak projeye geri dönecek. Devam edilsin mi?`,
       confirmText: 'Geri Al',
       cancelText: 'Vazgeç',
       type: 'warning'
@@ -1277,9 +1278,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.panelSaving.set(false);
         if (res.isSuccess) {
-          // Some backend APIs wrap the 202 inside the returned JSON object body
-          const returnedStatus = (res.value as any)?.statusCode;
-          if (res.statusCode === 202 || returnedStatus === 202) {
+          if (onayaAlindi(res)) {
             this.toast.info('İşleminiz yetkili onayına sunulmuştur.');
           } else {
             this.toast.success('3K durumu başarıyla güncellendi.');
@@ -1315,12 +1314,19 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       || u.surecDurumId != null;
   }
 
-  durumSifirla(urun?: UcKUrunDto) {
+  async durumSifirla(urun?: UcKUrunDto) {
     const u = urun ?? this.panelUrun();
     if (!u) return;
 
-    if (!confirm(`"${u.aciklama}" ürününün 3K karşılama durumunu sıfırlamak istediğinize emin misiniz?\n\n3K alanları sıfırlanacak; ürünün toplam 3K hareketi başlangıç seviyesine dönerse Kalite ve Süreç durumları da temizlenecektir. Diğer sandıklarda devam eden hareketler varsa bu iki durum korunur.\n\nBu işlem geri alınamaz.`))
-      return;
+    const onay = await this.confirmService.ask({
+      title: '3K Durumunu Sıfırla',
+      message: `<strong>${duzMetin(u.aciklama)}</strong> ürününün 3K karşılama durumunu sıfırlamak istediğinize emin misiniz?<br><br>3K alanları sıfırlanacak; ürünün toplam 3K hareketi başlangıç seviyesine dönerse Kalite ve Süreç durumları da temizlenecektir. Diğer sandıklarda devam eden hareketler varsa bu iki durum korunur.<br><br><small class="text-muted">Bu işlem geri alınamaz.</small>`,
+      confirmText: 'Evet, Sıfırla',
+      cancelText: 'Vazgeç',
+      type: 'danger'
+    });
+
+    if (!onay) return;
 
     this.panelSaving.set(true);
     this.panelError.set('');
@@ -1709,15 +1715,9 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   // ===== Eksik Ürünler Raporu İndirme =====
   eksikUrunlerRaporuIndir() {
     this.toast.info('Rapor hazırlanıyor...');
-    const menuKod = this.activeMenuKod === 'yedek-3k-modulu' ? 'yedek-eksik-raporu' : 'eksik-raporu';
-    this.pdfService.eksikUrunlerPdf(this.projeId(), menuKod).subscribe({
+    this.pdfService.eksikUrunlerPdf(this.projeId()).subscribe({
       next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `EksikUrunlerRaporu_${this.projeId()}.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        dosyayiKaydet(blob, `EksikUrunlerRaporu_${this.projeId()}.pdf`);
         this.toast.success('Rapor indirildi.');
       },
       error: () => this.toast.error('Rapor indirilemedi.')
@@ -1737,7 +1737,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
     const onay = await this.confirmService.ask({
       title: 'Manuel Ürün Sil',
-      message: `<strong>${u.aciklama}</strong> ürününü silmek istediğinize emin misiniz?<br><br><small class="text-muted">Bu işlem geri alınamaz.</small>`,
+      message: `<strong>${duzMetin(u.aciklama)}</strong> ürününü silmek istediğinize emin misiniz?<br><br><small class="text-muted">Bu işlem geri alınamaz.</small>`,
       confirmText: 'Evet, Sil',
       cancelText: 'Vazgeç',
       type: 'danger'

@@ -1,0 +1,533 @@
+// Finans paneli detay dökümü — panelin kart dilinde: sekmeler, sıralı tablo, açılır kalem listesi, pay çubukları.
+:host {
+  display: block;
+  --dt-primary: var(--primaryColor, #605dff);
+  --dt-soft: color-mix(in srgb, var(--dt-primary) 8%, #fff);
+  --dt-border: var(--borderColor, #eceef2);
+  --dt-title: var(--blackColor, #3a4252);
+  --dt-muted: var(--bodyColor, #64748b);
+}
+
+.detail-card {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--dt-border);
+  border-radius: 12px;
+  background: #fff;
+}
+.detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  h4 {
+    margin: 0;
+    color: var(--dt-title);
+    font-size: 16px;
+    font-weight: 700;
+  }
+}
+.detail-sub {
+  display: block;
+  margin-top: 4px;
+  color: var(--dt-muted);
+  font-size: 12px;
+}
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.detail-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--dt-border);
+  border-radius: 10px;
+  background: #f8fafc;
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--dt-muted);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    i {
+      font-size: 14px;
+    }
+    &.active {
+      background: #fff;
+      color: var(--dt-primary);
+      box-shadow: 0 2px 5px #172b4d12;
+    }
+  }
+}
+.detail-currency {
+  width: auto;
+  min-height: 36px;
+  padding: 4px 28px 4px 10px;
+  border: 1px solid var(--dt-border);
+  border-radius: 8px;
+  font-size: 12.5px;
+}
+
+.detail-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.detail-search {
+  position: relative;
+  width: min(280px, 100%);
+  margin: 0;
+  i {
+    position: absolute;
+    top: 50%;
+    left: 11px;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    pointer-events: none;
+  }
+  input {
+    width: 100%;
+    height: 36px;
+    padding: 0 12px 0 32px;
+    border: 1px solid var(--dt-border);
+    border-radius: 9px;
+    background: #f6f7f9;
+    font-size: 12.5px;
+    outline: 0;
+    &:focus {
+      border-color: var(--dt-primary);
+      background: #fff;
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--dt-primary) 14%, transparent);
+    }
+  }
+}
+.detail-count {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+// Proje tablosu
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  th {
+    padding: 10px 12px;
+    background: #f8fafc;
+    color: var(--dt-muted);
+    font-size: 11.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    &:first-child {
+      border-radius: 8px 0 0 8px;
+    }
+    &:last-child {
+      border-radius: 0 8px 8px 0;
+    }
+  }
+  td {
+    padding: 12px;
+    border-bottom: 1px solid var(--dt-border);
+    color: var(--dt-title);
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  tfoot td {
+    border-bottom: 0;
+    background: #fafbfc;
+    color: var(--dt-muted);
+    font-size: 12px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+}
+.project-row {
+  transition: background 0.15s ease;
+  &.is-clickable {
+    cursor: pointer;
+  }
+  &:hover {
+    background: #fafbff;
+  }
+  &.is-open {
+    background: var(--dt-soft);
+    > td {
+      border-bottom-color: transparent;
+    }
+    .chevron-btn i {
+      transform: rotate(180deg);
+    }
+  }
+}
+.project-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  strong {
+    display: block;
+    font-weight: 700;
+  }
+  small {
+    display: block;
+    max-width: 220px;
+    overflow: hidden;
+    color: var(--dt-muted);
+    font-size: 11.5px;
+    text-overflow: ellipsis;
+  }
+}
+.project-avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--dt-soft);
+  color: var(--dt-primary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.num {
+  font-variant-numeric: tabular-nums;
+  &.strong {
+    font-weight: 700;
+  }
+}
+.coverage-cell {
+  display: grid;
+  grid-template-columns: auto;
+  gap: 4px;
+  min-width: 130px;
+  small {
+    color: var(--dt-muted);
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+  }
+}
+.coverage-pill {
+  justify-self: start;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+  // FinansKarsilanma: 0 yok, 1 kısmi, 2 tam.
+  &[data-ton='1'] {
+    background: #fff5ed;
+    color: #c2410c;
+  }
+  &[data-ton='2'] {
+    background: #eeffe5;
+    color: #1e8308;
+  }
+}
+.mini-bar {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eef1f5;
+  span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--dt-primary);
+  }
+  &.is-invoice span {
+    background: #25b003;
+  }
+}
+.detail-chevron-col {
+  width: 44px;
+  text-align: right;
+}
+.chevron-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--dt-border);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--dt-muted);
+  i {
+    font-size: 17px;
+    transition: transform 0.18s ease;
+  }
+  &:hover {
+    border-color: color-mix(in srgb, var(--dt-primary) 35%, transparent);
+    color: var(--dt-primary);
+  }
+}
+
+// Açılan kalemler
+.items-row > td {
+  padding: 0 12px 14px;
+  background: var(--dt-soft);
+  white-space: normal;
+}
+.items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--dt-primary) 14%, var(--dt-border));
+  border-radius: 10px;
+  background: #fff;
+}
+.item {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto auto 30px;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  &:hover {
+    background: #f8fafc;
+  }
+}
+.item-crate {
+  display: grid;
+  place-items: center;
+  height: 30px;
+  border-radius: 7px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.item-main {
+  min-width: 0;
+  strong {
+    display: block;
+    overflow: hidden;
+    font-size: 12.5px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  small {
+    display: block;
+    overflow: hidden;
+    color: var(--dt-muted);
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+.item-status {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fff5ed;
+  color: #c2410c;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  &[data-durum='3'],
+  &[data-durum='4'] {
+    background: #e9f3ff;
+    color: #1d63c9;
+  }
+  &[data-durum='5'] {
+    background: #eeffe5;
+    color: #1e8308;
+  }
+  &[data-durum='6'] {
+    background: #f1f5f9;
+    color: #64748b;
+  }
+}
+.item-amount {
+  min-width: 90px;
+  color: var(--dt-title);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.item-open {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--dt-muted);
+  font-size: 15px;
+  &:hover {
+    background: var(--dt-soft);
+    color: var(--dt-primary);
+  }
+}
+.items-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--dt-muted);
+  font-size: 12.5px;
+  &.is-error {
+    color: #d92d20;
+  }
+}
+.items-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 2px 0;
+  color: var(--dt-muted);
+  font-size: 11.5px;
+}
+.show-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 9px;
+  border: 1px dashed var(--dt-border);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--dt-primary);
+  font-size: 12.5px;
+  font-weight: 600;
+  &:hover {
+    background: var(--dt-soft);
+  }
+}
+
+// Kategori ve gider pay listesi
+.category-list {
+  display: flex;
+  flex-direction: column;
+}
+.category-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.1fr) minmax(100px, 2fr) 52px minmax(120px, auto);
+  align-items: center;
+  gap: 14px;
+  padding: 11px 4px;
+  border-bottom: 1px dashed var(--dt-border);
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+.category-name {
+  min-width: 0;
+  strong {
+    display: block;
+    color: var(--dt-title);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  small {
+    display: block;
+    color: var(--dt-muted);
+    font-size: 11.5px;
+  }
+}
+.category-bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eef1f5;
+  span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #8b89ff, var(--dt-primary));
+  }
+  &.is-expense span {
+    background: linear-gradient(90deg, #fdb47c, #fd5812);
+  }
+}
+.category-share {
+  color: var(--dt-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.category-amounts {
+  text-align: right;
+  strong {
+    display: block;
+    color: var(--dt-title);
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  small {
+    display: block;
+    color: #1e8308;
+    font-size: 11px;
+  }
+}
+.detail-foot-note {
+  margin: 12px 0 0;
+  color: #94a3b8;
+  font-size: 11.5px;
+}
+.detail-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 28px 12px;
+  color: #94a3b8;
+  i {
+    font-size: 26px;
+  }
+  p {
+    margin: 0;
+    font-size: 12.5px;
+  }
+}
+
+@media (max-width: 700px) {
+  .detail-card {
+    padding: 16px;
+  }
+  .category-row {
+    grid-template-columns: minmax(0, 1fr) 52px;
+    .category-bar {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+    .category-amounts {
+      grid-column: 1 / -1;
+      text-align: left;
+    }
+  }
+  .item {
+    grid-template-columns: 48px minmax(0, 1fr) 30px;
+    .item-status,
+    .item-amount {
+      grid-column: 2;
+      justify-self: start;
+    }
+  }
+}

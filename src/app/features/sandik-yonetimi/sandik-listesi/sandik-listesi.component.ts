@@ -9,10 +9,11 @@ import { ToastService } from '../../../core/services/toast.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { SandikDto } from '../../../shared/models/index';
-import { SandikTipi, DepoLokasyon } from '../../../core/constants/enums';
-import { PdfService } from '../../../core/services/pdf.service';
-import { ConfirmService } from '../../../core/services/confirm.service';
+import { SandikTipi, DepoLokasyon, ProjeTipi } from '../../../core/constants/enums';
+import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
+import { ConfirmService, duzMetin } from '../../../core/services/confirm.service';
 import { PermissionService } from '../../../core/services/permission.service';
+import { YETKI } from '../../../core/constants/yetki-kodlari';
 
 @Component({
   selector: 'app-sandik-listesi',
@@ -27,7 +28,6 @@ export class SandikListesiComponent implements OnInit {
   private sandikService = inject(SandikService);
   private lookupService = inject(LookupService);
   private toast = inject(ToastService);
-  private pdfService = inject(PdfService);
   private confirmService = inject(ConfirmService);
   private permissionService = inject(PermissionService);
 
@@ -36,13 +36,13 @@ export class SandikListesiComponent implements OnInit {
   filteredSandiklar = signal<SandikDto[]>([]);
   loading = signal(true);
   searchTerm = signal('');
-  downloadingPdf = signal<number | null>(null);
 
   // Sandık Ekleme Modal
   showEkleModal = signal(false);
   yeniSandikNo = signal('');
   yeniSandikIsmi = signal('');
-  yeniTipId = signal(SandikTipi.AhsapKapali);
+  /** Sandık tipi her proje türünde zorunludur (G2); kullanıcı açıkça seçer. */
+  yeniTipId = signal<SandikTipi | null>(null);
   yeniLokasyonId = signal(DepoLokasyon.UcK);
   eklemeSaving = signal(false);
   yeniEn = signal<number | null>(null);
@@ -56,36 +56,21 @@ export class SandikListesiComponent implements OnInit {
   sandikTipleri = signal<{id: number, deger: string}[]>([]);
 
   breadcrumb: { label: string; link?: string }[] = [];
-  routePrefix = signal('/sandik-yonetimi');
-  isSahaYedek = signal(false);
-  isSahaYonetimi = signal(false);
-  isYedekYonetimi = signal(false);
+  private readonly projeTipi = projeTipiBaglami(rotaProjeTipi(this.route.snapshot));
+  readonly routePrefix = this.projeTipi.yonetimRotasi;
+  readonly isSahaYedek = this.projeTipi.tip !== ProjeTipi.Normal;
   canWriteSandik = computed(() => {
-    const menuKod = this.route.snapshot.data['menuKod'] || 'sandik-yonetimi';
+    const menuKod = this.route.snapshot.data['menuKod'] || YETKI.SANDIK.YONETIMI;
     return this.permissionService.canWrite(menuKod);
   });
 
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('projeId'));
-    const menuKod = this.route.snapshot.data['menuKod'] || 'sandik-yonetimi';
     this.projeId.set(id);
-    
-    let title = this.ts.translate('MENU.SANDIK_YONETIMI');
-    if (menuKod === 'saha-yonetimi' || menuKod === 'saha-sandiklar') {
-      title = 'Saha Yönetimi';
-      this.routePrefix.set('/saha-yonetimi');
-      this.isSahaYedek.set(true);
-      this.isSahaYonetimi.set(true);
-    } else if (menuKod === 'yedek-yonetimi' || menuKod === 'yedek-sandiklar') {
-      title = 'Yedek Yönetimi';
-      this.routePrefix.set('/yedek-yonetimi');
-      this.isSahaYedek.set(true);
-      this.isYedekYonetimi.set(true);
-    }
 
     this.breadcrumb = [
       { label: this.ts.translate('MENU.DASHBOARD'), link: '/dashboard' },
-      { label: title },
+      { label: this.ts.translate(this.projeTipi.baslik.yonetim) },
     ];
     this.loadLookups();
     this.loadSandiklar();
@@ -144,27 +129,6 @@ export class SandikListesiComponent implements OnInit {
       : this.getDurumLabel(sandik.durumMetni);
   }
 
-  indirPdf(sandikId: number) {
-    this.downloadingPdf.set(sandikId);
-    const menuKod = this.isSahaYonetimi() ? 'saha-raporu' : this.isYedekYonetimi() ? 'yedek-raporu' : undefined;
-    this.pdfService.sahaSandikPdf(sandikId, menuKod).subscribe({
-      next: (blob) => {
-        this.downloadingPdf.set(null);
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${this.isYedekYonetimi() ? 'Yedek' : 'Saha'}SandikRaporu_${sandikId}.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
-        this.toast.success('Rapor başarıyla indirildi.');
-      },
-      error: () => {
-        this.downloadingPdf.set(null);
-        this.toast.error('Rapor indirilirken bir hata oluştu.');
-      }
-    });
-  }
-
   // ===== Sandık Ekleme =====
 
   openEkleModal() {
@@ -174,7 +138,7 @@ export class SandikListesiComponent implements OnInit {
     }, 0);
     this.yeniSandikNo.set((maxNo + 1).toString());
     this.yeniSandikIsmi.set('');
-    this.yeniTipId.set(SandikTipi.AhsapKapali);
+    this.yeniTipId.set(null);
     this.yeniLokasyonId.set(DepoLokasyon.UcK);
     this.yeniEn.set(null);
     this.yeniBoy.set(null);
@@ -194,12 +158,17 @@ export class SandikListesiComponent implements OnInit {
       this.toast.error('Sandık numarası girilmelidir.');
       return;
     }
+    const tipId = this.yeniTipId();
+    if (!tipId) {
+      this.toast.error('Sandık tipi seçilmelidir.');
+      return;
+    }
     this.eklemeSaving.set(true);
     this.sandikService.sandikEkle({
       projeId: this.projeId(),
       sandikNo: no,
       sandikIsmi: this.yeniSandikIsmi().trim() || undefined,
-      tipId: this.yeniTipId(),
+      tipId,
       depoLokasyonId: this.yeniLokasyonId(),
       en: this.yeniEn() ?? undefined,
       boy: this.yeniBoy() ?? undefined,
@@ -234,7 +203,7 @@ export class SandikListesiComponent implements OnInit {
 
     const onay = await this.confirmService.ask({
       title: 'Sandık Sil',
-      message: `<strong>${s.sandikNo}</strong> numaralı sandığı silmek istediğinize emin misiniz?${silmeDetayi}<br><br><small class="text-muted">Bu işlem geri alınamaz.</small>`,
+      message: `<strong>${duzMetin(s.sandikNo)}</strong> numaralı sandığı silmek istediğinize emin misiniz?${silmeDetayi}<br><br><small class="text-muted">Bu işlem geri alınamaz.</small>`,
       confirmText: 'Evet, Sil',
       cancelText: 'Vazgeç',
       type: 'danger'

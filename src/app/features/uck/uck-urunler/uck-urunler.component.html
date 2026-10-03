@@ -41,32 +41,39 @@
       }
     </div>
     <div class="table-actions d-flex align-items-center gap-2 flex-wrap">
-      @if (canDeleteCekiVerisi()) {
-      <button class="btn btn-sm btn-outline-danger" [disabled]="!hasSelection" (click)="deleteSelectedCekiSatirlari()">
-        <i class="ri-delete-bin-line me-1"></i>Çeki Sil ({{ selectionCount }})
-      </button>
-      }
-      <!-- Toplu İşlemler Dropdown -->
-      <div *appCanWrite class="dropdown" id="uckTopluIslemlerDropdown"
-        [class.show]="showTopluIslemlerMenu()">
-        <button class="btn btn-sm btn-dark dropdown-toggle" [disabled]="!hasSelection" type="button"
-          (click)="showTopluIslemlerMenu.set(!showTopluIslemlerMenu())">
-          <i class="ri-stack-line me-1"></i>Toplu İşlemler ({{ selectionCount }})
+      @if (canSelectRows) {
+      <div class="tz-btn-group" role="group" aria-label="Seçili ürünler için toplu işlemler" [class.has-selection]="hasSelection">
+        <span class="tz-btn-group__label" title="Bu işlemler tabloda seçili ürünlere uygulanır">
+          <span class="tz-btn-group__count">{{ selectionCount }}</span>seçili
+        </span>
+        @if (canDeleteCekiVerisi()) {
+        <button type="button" class="tz-btn tz-btn--danger-hover" [disabled]="!hasSelection" (click)="deleteSelectedCekiSatirlari()">
+          <i class="ri-delete-bin-line tz-ico-danger"></i>Çeki Sil
         </button>
-        <ul class="dropdown-menu dropdown-menu-end shadow-lg" [class.show]="showTopluIslemlerMenu()">
-          <li><button type="button" class="dropdown-item" [disabled]="!isTopluTamGeldiAllowed"
-            (click)="showTopluIslemlerMenu.set(false); openTopluTamGeldi()">
-            <i class="ri-check-double-line me-2 text-success"></i>Toplu Sevk Adeti Tam Geldi
-          </button></li>
-          <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluTedarikci()">
-            <i class="ri-truck-line me-2" style="color:#1B7D3A"></i>Toplu Tedarikçiden Karşıla
-          </a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item text-danger" (click)="showTopluIslemlerMenu.set(false); openTopluGeriAl()">
-            <i class="ri-arrow-go-back-line me-2"></i>Toplu Geri Al
-          </a></li>
-        </ul>
+        }
+        <!-- Toplu İşlemler Dropdown -->
+        <div *appCanWrite class="dropdown" id="uckTopluIslemlerDropdown"
+          [class.show]="showTopluIslemlerMenu()">
+          <button class="tz-btn dropdown-toggle" [disabled]="!hasSelection" type="button"
+            (click)="showTopluIslemlerMenu.set(!showTopluIslemlerMenu())">
+            <i class="ri-stack-line tz-ico-primary"></i>Toplu İşlemler
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-lg" [class.show]="showTopluIslemlerMenu()">
+            <li><button type="button" class="dropdown-item" [disabled]="!isTopluTamGeldiAllowed"
+              (click)="showTopluIslemlerMenu.set(false); openTopluTamGeldi()">
+              <i class="ri-check-double-line me-2 text-success"></i>Toplu Sevk Adeti Tam Geldi
+            </button></li>
+            <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluTedarikci()">
+              <i class="ri-truck-line me-2" style="color:#1B7D3A"></i>Toplu Tedarikçiden Karşıla
+            </a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" (click)="showTopluIslemlerMenu.set(false); openTopluGeriAl()">
+              <i class="ri-arrow-go-back-line me-2"></i>Toplu Geri Al
+            </a></li>
+          </ul>
+        </div>
       </div>
+      }
       <div class="search-box position-relative">
         <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
         <input type="text" class="form-control" placeholder="Ara..." (input)="onSearch($event)" />
@@ -201,10 +208,15 @@
                 {{ getSevkDurumLabel(u.gridSevkDurumuMetni) }}
               </span>
             </td>
-            <td class="text-center">{{ u.gridGelenAdet }}</td>
+            <!-- Grid gelen/Trafo satır toplamıdır; çok sandıklı üründe "satır" işaretiyle gösterilir. -->
+            <td class="text-center">{{ u.gridGelenAdet }}
+              @if (u.sandikBazliDagitim && u.gridGelenAdet > 0) { <small class="allocation-secondary" title="Satır toplamı: ürünün bütün sandıkları için geçerlidir">satır</small> }
+            </td>
             <td class="text-center" [ngClass]="{'text-info fw-semibold': getGridSevkGorunum(u) > 0}">{{
               getGridSevkGorunum(u) > 0 ? getGridSevkGorunum(u) : '-' }}</td>
-            <td class="text-center">{{ u.trafoSevkAdet > 0 ? u.trafoSevkAdet : '-' }}</td>
+            <td class="text-center">{{ u.trafoSevkAdet > 0 ? u.trafoSevkAdet : '-' }}
+              @if (u.sandikBazliDagitim && u.trafoSevkAdet > 0) { <small class="allocation-secondary" title="Satır toplamı: ürünün bütün sandıkları için geçerlidir">satır</small> }
+            </td>
             <td>
               <span class="durum-badge" [style.background]="getTipColor(u.ucKKarsilamaTipiMetni) + '15'"
                 [style.color]="getTipColor(u.ucKKarsilamaTipiMetni)"
@@ -218,11 +230,15 @@
             <td class="text-center" [ngClass]="{'text-primary fw-semibold': u.projeKarsilanan > 0}">{{ u.projeKarsilanan
               > 0 ? u.projeKarsilanan : '-' }}</td>
             <td class="text-center" [ngClass]="{'text-warning fw-semibold': u.projeGonderilen > 0}">{{ u.projeGonderilen
-              > 0 ? u.projeGonderilen : '-' }}</td>
+              > 0 ? u.projeGonderilen : '-' }}
+              @if (u.sandikBazliDagitim && u.projeGonderilen > 0) { <small class="allocation-secondary" title="Satır toplamı: ürünün bütün sandıkları için geçerlidir">satır</small> }
+            </td>
             <td class="text-center" [ngClass]="{'text-success fw-semibold': u.tedarikciKarsilanan > 0}">{{
               u.tedarikciKarsilanan > 0 ? u.tedarikciKarsilanan : '-' }}</td>
             <td class="text-center" [ngClass]="{'text-danger fw-semibold': u.geriGonderilenMiktar > 0}">{{
-              u.geriGonderilenMiktar > 0 ? u.geriGonderilenMiktar : '-' }}</td>
+              u.geriGonderilenMiktar > 0 ? u.geriGonderilenMiktar : '-' }}
+              @if (u.sandikBazliDagitim && u.geriGonderilenMiktar > 0) { <small class="allocation-secondary" title="Satır toplamı: ürünün bütün sandıkları için geçerlidir">satır</small> }
+            </td>
             <td style="max-width:160px">
               @if (u.projeKarsilanan > 0) {
               <div class="d-flex align-items-center gap-1">

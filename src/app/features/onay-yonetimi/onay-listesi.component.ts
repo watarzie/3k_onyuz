@@ -21,6 +21,7 @@ import { OnayGecmisiDto } from '../../shared/models/onay-gecmisi.model';
 import { RolDto } from '../../shared/models/rol.model';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
 import { CekiRevizyonOnizlemeComponent } from '../../shared/components/ceki-revizyon-onizleme/ceki-revizyon-onizleme.component';
+import { YETKI } from '../../core/constants/yetki-kodlari';
 
 @Component({
   selector: 'app-onay-listesi',
@@ -41,8 +42,8 @@ export class OnayListesiComponent implements OnInit, OnDestroy {
   private loadRequest?: Subscription;
   private detailRequest?: Subscription;
 
-  public canWrite = computed(() => this.permissions.canWrite('islem-onay-merkezi'));
-  public canManageRules = computed(() => this.permissions.canWrite('onay-kurallari-yonet'));
+  public canWrite = computed(() => this.permissions.canWrite(YETKI.ONAY.MERKEZI));
+  public canManageRules = computed(() => this.permissions.canWrite(YETKI.ONAY.KURALLARI_YONET));
 
   bekleyenler = signal<OnayBekleyenIslemDto[]>([]);
   kurallar = signal<OnayKuraliDto[]>([]);
@@ -50,6 +51,25 @@ export class OnayListesiComponent implements OnInit, OnDestroy {
   updatingKuralKodlari = signal<Set<string>>(new Set());
   loading = signal<boolean>(true);
   showKurallarModal = signal<boolean>(false);
+  /** Kural penceresinde yalnız görünümü süzer; kurallar ve kayıt akışı değişmez. */
+  kuralAramasi = signal('');
+  kuralFiltresi = signal<'tumu' | 'onayda' | 'kapali'>('tumu');
+  readonly kuralOzeti = computed(() => {
+    const kurallar = this.kurallar();
+    return {
+      toplam: kurallar.length,
+      onayda: kurallar.filter(k => k.onayGerektirirMi).length,
+      kapali: kurallar.filter(k => !k.onayGerektirirMi).length,
+      sabit: kurallar.filter(k => !k.onayGerektirirMiDegistirilebilir).length,
+    };
+  });
+  readonly gorunenKurallar = computed(() => {
+    const aranan = this.kuralAramasi().trim().toLocaleLowerCase('tr');
+    const filtre = this.kuralFiltresi();
+    return this.kurallar().filter(k =>
+      (filtre === 'tumu' || (filtre === 'onayda') === k.onayGerektirirMi) &&
+      (!aranan || `${k.islemAdi} ${k.islemKodu}`.toLocaleLowerCase('tr').includes(aranan)));
+  });
   onayModalIslem = signal<OnayBekleyenIslemDto | null>(null);
   onayModalDetay = signal<OnayGecmisiDto | null>(null);
   onayModalDetayLoading = signal<boolean>(false);
@@ -63,6 +83,45 @@ export class OnayListesiComponent implements OnInit, OnDestroy {
     { label: 'Ana Kontrol Paneli', link: '/dashboard' },
     { label: 'İşlem Onay Merkezi' }
   ];
+
+  /** Listede istemci tarafı arama: işlem açıklaması veya talep eden kişi. */
+  arama = signal('');
+  filtreli = computed(() => {
+    const aranan = this.arama().trim().toLocaleLowerCase('tr-TR');
+    if (!aranan) return this.bekleyenler();
+    return this.bekleyenler().filter((x) =>
+      `${x.islemAciklamasi} ${x.talepEdenKisi}`.toLocaleLowerCase('tr-TR').includes(aranan));
+  });
+  /** Üst özet: bekleyen sayısı, bugün gelenler ve en eski talebin bekleme süresi. */
+  ozet = computed(() => {
+    const liste = this.bekleyenler();
+    const bugun = new Date().toDateString();
+    const tarihler = liste.map((x) => new Date(x.olusturulmaTarihi).getTime()).filter((x) => !Number.isNaN(x));
+    const enEski = tarihler.length ? Math.min(...tarihler) : null;
+    return {
+      toplam: liste.length,
+      bugun: liste.filter((x) => new Date(x.olusturulmaTarihi).toDateString() === bugun).length,
+      enEski: enEski == null ? '' : this.gecenSure(new Date(enEski).toISOString()),
+      enEskiGun: enEski == null ? 0 : Math.floor((Date.now() - enEski) / 86_400_000),
+    };
+  });
+
+  basHarfler(ad: string): string {
+    const parcalar = (ad ?? '').trim().split(/\s+/).filter(Boolean);
+    return ((parcalar[0]?.[0] ?? '') + (parcalar.length > 1 ? parcalar[parcalar.length - 1][0] : '')).toLocaleUpperCase('tr-TR') || '?';
+  }
+
+  /** "5 dk önce", "3 saat önce", "2 gün önce" biçiminde göreli süre. */
+  gecenSure(tarih: string): string {
+    const zaman = new Date(tarih).getTime();
+    if (Number.isNaN(zaman)) return '';
+    const dakika = Math.max(0, Math.floor((Date.now() - zaman) / 60_000));
+    if (dakika < 1) return 'Az önce';
+    if (dakika < 60) return `${dakika} dk önce`;
+    const saat = Math.floor(dakika / 60);
+    if (saat < 24) return `${saat} saat önce`;
+    return `${Math.floor(saat / 24)} gün önce`;
+  }
 
   ngOnInit(): void {
     this.refreshRequests
@@ -129,6 +188,11 @@ export class OnayListesiComponent implements OnInit, OnDestroy {
     return this.updatingKuralKodlari().has(this.kuralKey(kural));
   }
 
+  /** Listede bulunan rollerden seçili olanların sayısı. */
+  seciliRolSayisi(kural: OnayKuraliDto): number {
+    return this.roller().filter(rol => this.rolSeciliMi(kural, rol.id)).length;
+  }
+
   rolSeciliMi(kural: OnayKuraliDto, rolId: number): boolean {
     return (kural.yetkiliRolIdleri ?? []).includes(rolId);
   }
@@ -192,6 +256,8 @@ export class OnayListesiComponent implements OnInit, OnDestroy {
   openSettingsModal() {
     if (!this.canManageRules()) return;
 
+    this.kuralAramasi.set('');
+    this.kuralFiltresi.set('tumu');
     this.loadKurallar();
     this.loadRoller();
     this.showKurallarModal.set(true);

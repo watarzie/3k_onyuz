@@ -7,7 +7,8 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { ProjeService } from '../../../core/services/proje.service';
 import { SandikService } from '../../../core/services/sandik.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { EksikUrunForSandikDto, ProjeDropdownDto, SandikDto } from '../../../shared/models';
+import { EksikUrunForSandikDto, ProjeDropdownDto, SandikDto, aktifSahaProjeleri } from '../../../shared/models';
+import { ProjeTipi } from '../../../core/constants/enums';
 
 interface SepetUrun extends EksikUrunForSandikDto {
   draftId: string;
@@ -197,7 +198,7 @@ export class EksikSahaOlusturComponent implements OnInit {
     const requestId = ++this.kaynakProjeSearchRequest;
     this.loadingProjeler.set(true);
     this.projeService.getProjeDropdownListesi({
-      projeTipiId: 1,
+      projeTipiId: ProjeTipi.Normal,
       searchTerm,
       take: 50,
       includeIds: this.selectedProjeIds(),
@@ -703,7 +704,7 @@ export class EksikSahaOlusturComponent implements OnInit {
     const requestId = ++this.hedefSahaSearchRequest;
     this.hedefSahaProjeLoading.set(true);
     this.projeService.getProjeDropdownListesi({
-      projeTipiId: 2,
+      projeTipiId: ProjeTipi.Saha,
       searchTerm,
       isSevkEdilen: false,
       take: 50,
@@ -714,7 +715,7 @@ export class EksikSahaOlusturComponent implements OnInit {
 
         this.hedefSahaProjeLoading.set(false);
         if (res.isSuccess && res.value) {
-          this.hedefSahaProjeleri.set(this.filterAktifSahaProjeleri(res.value ?? []));
+          this.hedefSahaProjeleri.set(aktifSahaProjeleri(res.value ?? []));
         } else {
           this.toast.warning(res.error || 'Saha projeleri yüklenemedi.');
         }
@@ -770,13 +771,6 @@ export class EksikSahaOlusturComponent implements OnInit {
         this.toast.error('Saha sandıkları yüklenirken sunucu hatası oluştu.');
       }
     });
-  }
-
-  private filterAktifSahaProjeleri(projeler: ProjeDropdownDto[]): ProjeDropdownDto[] {
-    return projeler
-      .filter(p => p.projeTipiId === 2)
-      .filter(p => p.durumId !== 5 && p.durumId !== 6)
-      .sort((a, b) => a.projeNo.localeCompare(b.projeNo, 'tr-TR'));
   }
 
   private extractNumber(value: string): number {

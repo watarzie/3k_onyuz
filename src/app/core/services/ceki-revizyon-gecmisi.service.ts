@@ -24,7 +24,4 @@ export class CekiRevizyonGecmisiService {
     return this.api.downloadFile(API.CEKI.REVIZYON_DOSYA(kayit.projeId, kayit.kaynak, kayit.kayitId));
   }
 
-  dosyaHatasi(error: unknown, fallback: string) {
-    return this.api.downloadErrorMessage(error, fallback);
-  }
 }

@@ -12,8 +12,7 @@ describe('PermissionService menü yenileme', () => {
   const menu: MenuTreeDto[] = [{
     id: 1,
     kod: 'islem-onay-merkezi',
-    labelKey: '',
-    ad: 'İşlem Onay Merkezi',
+    labelKey: 'MENU.ISLEM_ONAY_MERKEZI',
     icon: '',
     sira: 1,
     yetkiTipiId: YetkiTipi.R,
@@ -120,12 +119,12 @@ describe('PermissionService menü yenileme', () => {
     expect(service.hasAccess('islem-onay-merkezi')).toBeTrue();
   }));
 
-  it('sunucudan gelen N ve R üst menü sınırlarını route ve işlem iznine uygular', fakeAsync(() => {
+  it('sunucudan gelen N ve R üst menü sınırlarını bütün alt düğümlere uygular', fakeAsync(() => {
     const item = (id: number, kod: string, permission: YetkiTipi,
-      children: MenuTreeDto[] = [], required?: YetkiTipi): MenuTreeDto => ({
+      children: MenuTreeDto[] = []): MenuTreeDto => ({
       id, kod, labelKey: '', icon: '', route: `/${kod}`, sira: id,
       yetkiTipiId: permission, yetkiTipiMetni: YetkiTipi[permission],
-      children, gerekenYetkiTipiId: required,
+      children,
     });
     const inconsistentMenu = [
       item(1, 'sandik-yonetimi', YetkiTipi.N, [
@@ -133,7 +132,7 @@ describe('PermissionService menü yenileme', () => {
       ]),
       item(3, 'okuma-modulu', YetkiTipi.R, [
         item(4, 'okuma-alt-menu', YetkiTipi.W),
-        item(5, 'yazma-islemi', YetkiTipi.W, [], YetkiTipi.W),
+        item(5, 'yazma-islemi', YetkiTipi.W),
       ]),
     ];
 
@@ -143,12 +142,11 @@ describe('PermissionService menü yenileme', () => {
 
     expect(service.menuAgaci().map(item => item.kod)).toEqual(['okuma-modulu']);
     expect(service.hasAccess('sandik-yonetimi')).toBeFalse();
+    expect(service.hasAccess('sandik-alt-islem')).toBeFalse();
     expect(service.canWrite('sandik-alt-islem')).toBeFalse();
-    expect(service.isRouteAllowed('/sandik-alt-islem')).toBeFalse();
     expect(service.hasAccess('okuma-alt-menu')).toBeTrue();
     expect(service.canWrite('okuma-alt-menu')).toBeFalse();
-    expect(service.isRouteAllowed('/okuma-alt-menu')).toBeTrue();
-    expect(service.hasAccess('yazma-islemi')).toBeFalse();
+    expect(service.hasAccess('yazma-islemi')).toBeTrue();
     expect(service.canWrite('yazma-islemi')).toBeFalse();
   }));
 });

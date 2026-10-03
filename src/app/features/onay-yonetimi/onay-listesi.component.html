@@ -1,169 +1,263 @@
-<div class="page-container fade-in">
-  <!-- Header -->
-  <div class="header-actions">
-    <app-breadcrumb [items]="breadcrumb"></app-breadcrumb>
-    <div class="actions">
-      @if (canManageRules()) {
-        <button class="btn btn-primary me-2" (click)="openSettingsModal()">
-          <i class="ri-settings-3-line"></i>
-          <span>Sistem Kuralları</span>
+<div class="approval-page">
+  <div class="page-title-area mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <h2 class="fw-bold mb-1">İşlem Onay Merkezi</h2>
+        <app-breadcrumb [items]="breadcrumb"></app-breadcrumb>
+      </div>
+      <div class="approval-actions">
+        <button type="button" class="approval-btn approval-btn--ghost" (click)="loadData()" [disabled]="loading()">
+          <i class="ri-refresh-line" [class.spin]="loading()" aria-hidden="true"></i>
+          <span>Yenile</span>
         </button>
-      }
-      <button class="btn btn-outline" (click)="loadData()">
-        <i class="ri-refresh-line"></i>
-        <span>Yenile</span>
-      </button>
+        @if (canManageRules()) {
+          <button type="button" class="approval-btn approval-btn--primary" (click)="openSettingsModal()">
+            <i class="ri-settings-3-line" aria-hidden="true"></i>
+            <span>Sistem Kuralları</span>
+          </button>
+        }
+      </div>
     </div>
   </div>
 
-  <!-- Content -->
-  <div class="card panel-card fade-in">
-    <div class="card-header">
-      <div class="title-with-icon">
-        <i class="ri-check-double-fill primary-text"></i>
-        <h3>Bekleyen Onaylar</h3>
+  <div class="approval-stats">
+    <article class="approval-stat">
+      <div>
+        <span>Bekleyen onay</span>
+        <strong>{{ ozet().toplam }}</strong>
       </div>
-      <span class="badge primary-badge">{{ bekleyenler().length }} Kayıt</span>
-    </div>
+      <span class="approval-stat__icon is-primary" aria-hidden="true"><i class="ri-shield-check-line"></i></span>
+    </article>
+    <article class="approval-stat">
+      <div>
+        <span>Bugün gelen</span>
+        <strong>{{ ozet().bugun }}</strong>
+      </div>
+      <span class="approval-stat__icon is-info" aria-hidden="true"><i class="ri-inbox-archive-line"></i></span>
+    </article>
+    <article class="approval-stat">
+      <div>
+        <span>En eski talep</span>
+        <strong>{{ ozet().enEski ? ozet().enEski : '—' }}</strong>
+      </div>
+      <span class="approval-stat__icon" [class.is-warning]="ozet().enEskiGun < 2" [class.is-danger]="ozet().enEskiGun >= 2" aria-hidden="true"><i class="ri-time-line"></i></span>
+    </article>
+  </div>
 
-    <!-- Loading -->
+  <section class="approval-card">
+    <header class="approval-card__head">
+      <div>
+        <h3>Bekleyen Onaylar</h3>
+        <p>Onaylanan talep sunucuda yeniden doğrulanıp çalıştırılır; reddedilen talep gerekçesiyle geçmişe yazılır.</p>
+      </div>
+      <label class="approval-search">
+        <i class="ri-search-line" aria-hidden="true"></i>
+        <input type="search" placeholder="İşlem veya personel ara..." aria-label="Bekleyen onaylarda ara"
+               [value]="arama()" (input)="arama.set($any($event.target).value)" />
+      </label>
+    </header>
+
     @if (loading()) {
-      <div class="loading-state">
-        <div class="spinner"></div>
+      <div class="approval-state" role="status">
+        <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>
         <span>İşlem onay listesi yükleniyor...</span>
       </div>
-    }
-
-    <!-- Empty State -->
-    @if (!loading() && bekleyenler().length === 0) {
-      <div class="empty-state">
-        <i class="ri-shield-check-line empty-icon success-text" style="font-size: 3rem;"></i>
+    } @else if (bekleyenler().length === 0) {
+      <div class="approval-empty">
+        <span class="approval-empty__icon" aria-hidden="true"><i class="ri-shield-check-line"></i></span>
         <h4>Tüm işlemler onaylanmış!</h4>
         <p>Şu an sıraya düşmüş veya bekleyen bir kullanıcı isteği bulunmuyor.</p>
       </div>
-    }
-
-    <!-- Table -->
-    @if (!loading() && bekleyenler().length > 0) {
-      <div class="table-container">
-        <table class="table hover-fx animate-table">
+    } @else if (filtreli().length === 0) {
+      <div class="approval-empty">
+        <span class="approval-empty__icon is-muted" aria-hidden="true"><i class="ri-search-eye-line"></i></span>
+        <h4>Sonuç bulunamadı</h4>
+        <p>"{{ arama() }}" aramasıyla eşleşen bekleyen talep yok.</p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="approval-table">
           <thead>
             <tr>
-              <th width="30%">İşlem Açıklaması</th>
-              <th width="25%">Talep Eden Personel</th>
-              <th width="20%">Oluşturulma Tarihi</th>
-              <th width="15%">Durum</th>
-              <th width="10%" class="text-right">Aksiyon</th>
+              <th>İşlem</th>
+              <th>Talep eden</th>
+              <th>Oluşturulma</th>
+              <th>Durum</th>
+              <th class="text-end">Aksiyon</th>
             </tr>
           </thead>
           <tbody>
-            @for (islem of bekleyenler(); track islem.id; let i = $index) {
-              <tr [style.animation-delay]="(i * 0.03) + 's'">
-                <td class="font-medium">{{ islem.islemAciklamasi }}</td>
+            @for (islem of filtreli(); track islem.id) {
+              <tr>
+                <td class="approval-table__desc">
+                  <span class="approval-table__icon" aria-hidden="true"><i class="ri-file-shield-2-line"></i></span>
+                  <span>{{ islem.islemAciklamasi }}</span>
+                </td>
                 <td>
-                  <div class="icon-text">
-                    <i class="ri-user-smile-line text-muted"></i>
+                  <div class="approval-person">
+                    <span class="approval-avatar" aria-hidden="true">{{ basHarfler(islem.talepEdenKisi) }}</span>
                     <span>{{ islem.talepEdenKisi }}</span>
                   </div>
                 </td>
-                <td class="date-col">{{ islem.olusturulmaTarihi | date:'dd.MM.yyyy HH:mm' }}</td>
-                <td>
-                  <span class="status-badge" [ngClass]="{'bg-warning': islem.durum === 1}">Bekliyor</span>
+                <td class="approval-table__date">
+                  <strong>{{ gecenSure(islem.olusturulmaTarihi) }}</strong>
+                  <small>{{ islem.olusturulmaTarihi | date: 'dd.MM.yyyy HH:mm' }}</small>
                 </td>
-                <td class="text-right">
-                  <div class="action-buttons horizontal">
-                    @if (canWrite()) {
-                      <button class="btn-icon text-success" title="İşlemi Onayla ve Çalıştır" (click)="openOnayModal(islem)">
-                        <i class="ri-check-line"></i>
+                <td>
+                  <span class="approval-status" [ngClass]="{ 'is-waiting': islem.durum === 1 }">
+                    <span class="approval-status__dot" aria-hidden="true"></span>Bekliyor
+                  </span>
+                </td>
+                <td class="text-end">
+                  @if (canWrite()) {
+                    <div class="approval-row-actions">
+                      <button type="button" class="approval-row-btn is-approve" title="İşlemi Onayla ve Çalıştır" (click)="openOnayModal(islem)">
+                        <i class="ri-check-line" aria-hidden="true"></i><span>Onayla</span>
                       </button>
-                      <button class="btn-icon text-danger" title="Talebi Reddet" (click)="openRetModal(islem)">
-                        <i class="ri-close-line"></i>
+                      <button type="button" class="approval-row-btn is-reject" title="Talebi Reddet" (click)="openRetModal(islem)">
+                        <i class="ri-close-line" aria-hidden="true"></i><span>Reddet</span>
                       </button>
-                    } @else {
-                      <span class="text-muted">-</span>
-                    }
-                  </div>
+                    </div>
+                  } @else {
+                    <span class="approval-readonly">Salt okunur</span>
+                  }
                 </td>
               </tr>
             }
           </tbody>
         </table>
       </div>
+      <footer class="approval-card__foot">{{ filtreli().length }} / {{ bekleyenler().length }} talep gösteriliyor</footer>
     }
-  </div>
+  </section>
 </div>
 
 <!-- Rules Modal -->
 @if (showKurallarModal()) {
-  <div class="modal-backdrop fade show"></div>
-  <div class="modal fade show approval-rules-shell" style="display: block;" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content">
-        <div class="modal-header border-bottom-0 pb-0">
-          <h5 class="modal-title">
-            <i class="ri-settings-3-line me-2 text-primary"></i>
-            Dinamik Onay Kuralları
-          </h5>
-          <button type="button" class="btn-close" (click)="closeSettingsModal()" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <p class="text-muted small mb-4">Onaya düşen tüm operasyonları ve bu operasyonları hangi rollerin onaylayabileceğini buradan yönetebilirsiniz.</p>
-          
-          <div class="rules-list">
-            @for (kural of kurallar(); track kural.islemKodu) {
-              <div class="approval-rule-card" [class.is-saving]="kuralUpdating(kural)">
-                <div class="approval-rule-card__main">
-                  <div class="rule-info">
-                    <h6>{{ kural.islemAdi }}</h6>
-                    <div class="rule-meta">
-                      <span>{{ kural.islemKodu }}</span>
-                      @if (!kural.onayGerektirirMiDegistirilebilir) {
-                        <span class="always-approval-badge">Her zaman onayda</span>
-                      } @else {
-                        <span>Onay gereksinimi: <b>{{ kural.onayGerektirirMi ? 'Evet' : 'Hayır' }}</b></span>
-                      }
-                    </div>
-                  </div>
-                  <div class="form-check form-switch m-0">
-                    <input class="form-check-input flexSwitchCheckChecked"
-                           type="checkbox"
-                           role="switch"
-                           [checked]="kural.onayGerektirirMi"
-                           [disabled]="!kural.onayGerektirirMiDegistirilebilir || kuralUpdating(kural)"
-                           (change)="toggleKural(kural)">
-                  </div>
-                </div>
+  <div class="tz-modal-backdrop" (click)="closeSettingsModal()"></div>
+  <div class="tz-modal tz-modal--xl rules-modal" role="dialog" aria-modal="true" aria-labelledby="kurallar-baslik" (keydown.escape)="closeSettingsModal()">
+    <header class="tz-modal__header">
+      <span class="tz-modal__icon"><i class="ri-shield-keyhole-line"></i></span>
+      <div class="tz-modal__title">
+        <h5 id="kurallar-baslik">Dinamik Onay Kuralları</h5>
+        <p>Hangi işlemlerin onaya düşeceğini ve onları hangi rollerin onaylayabileceğini yönetin.</p>
+      </div>
+      <button type="button" class="tz-modal__close" (click)="closeSettingsModal()" aria-label="Kapat"><i class="ri-close-line"></i></button>
+    </header>
 
-                <div class="approval-roles">
-                  <span class="approval-roles__label">Onaycı roller</span>
-                  <div class="approval-roles__list">
-                    @for (rol of roller(); track rol.id) {
-                      <button type="button"
-                              class="role-chip"
-                              [class.active]="rolSeciliMi(kural, rol.id)"
-                              [disabled]="kuralUpdating(kural)"
-                              (click)="toggleKuralRol(kural, rol.id)">
-                        <i [class]="rolSeciliMi(kural, rol.id) ? 'ri-check-line' : 'ri-add-line'"></i>
-                        {{ rol.ad }}
-                      </button>
-                    }
-                    @if (roller().length === 0) {
-                      <span class="text-muted small">Rol listesi yükleniyor...</span>
-                    }
-                  </div>
-                </div>
-              </div>
-            }
-            @if (kurallar().length === 0) {
-              <div class="text-center p-4 text-muted">Kurallar yükleniyor...</div>
-            }
-          </div>
+    <div class="rules-toolbar">
+      <div class="rules-stats">
+        <div class="rules-stat">
+          <span class="rules-stat__icon"><i class="ri-list-check-3"></i></span>
+          <div><strong>{{ kuralOzeti().toplam }}</strong><small>İşlem</small></div>
         </div>
-        <div class="modal-footer border-top-0 pt-0">
-          <button type="button" class="btn btn-outline-secondary w-100" (click)="closeSettingsModal()">Kapat</button>
+        <div class="rules-stat" data-ton="primary">
+          <span class="rules-stat__icon"><i class="ri-shield-check-line"></i></span>
+          <div><strong>{{ kuralOzeti().onayda }}</strong><small>Onaya düşen</small></div>
+        </div>
+        <div class="rules-stat" data-ton="muted">
+          <span class="rules-stat__icon"><i class="ri-flashlight-line"></i></span>
+          <div><strong>{{ kuralOzeti().kapali }}</strong><small>Onaysız çalışan</small></div>
+        </div>
+        <div class="rules-stat" data-ton="locked">
+          <span class="rules-stat__icon"><i class="ri-lock-2-line"></i></span>
+          <div><strong>{{ kuralOzeti().sabit }}</strong><small>Her zaman onayda</small></div>
+        </div>
+      </div>
+      <div class="rules-filter">
+        <label class="tz-input-icon rules-search">
+          <i class="ri-search-line"></i>
+          <input class="form-control" type="search" placeholder="İşlem adı veya kodu ara" aria-label="Kural ara"
+                 [value]="kuralAramasi()" (input)="kuralAramasi.set($any($event.target).value)">
+        </label>
+        <div class="tz-segmented" role="group" aria-label="Onay durumu filtresi">
+          <button type="button" [class.active]="kuralFiltresi() === 'tumu'" (click)="kuralFiltresi.set('tumu')">Tümü</button>
+          <button type="button" [class.active]="kuralFiltresi() === 'onayda'" (click)="kuralFiltresi.set('onayda')"><i class="ri-shield-check-line"></i>Onayda</button>
+          <button type="button" [class.active]="kuralFiltresi() === 'kapali'" (click)="kuralFiltresi.set('kapali')"><i class="ri-flashlight-line"></i>Onaysız</button>
         </div>
       </div>
     </div>
+
+    <div class="tz-modal__body rules-body">
+      @for (kural of gorunenKurallar(); track kural.islemKodu) {
+        <article class="rule-card"
+                 [class.is-on]="kural.onayGerektirirMi"
+                 [class.is-locked]="!kural.onayGerektirirMiDegistirilebilir"
+                 [class.is-saving]="kuralUpdating(kural)">
+          <div class="rule-card__head">
+            <span class="rule-card__icon">
+              <i [class]="!kural.onayGerektirirMiDegistirilebilir ? 'ri-lock-2-line' : kural.onayGerektirirMi ? 'ri-shield-check-line' : 'ri-shield-line'"></i>
+            </span>
+            <div class="rule-card__title">
+              <h6>{{ kural.islemAdi }}</h6>
+              <div class="rule-card__meta">
+                <code>{{ kural.islemKodu }}</code>
+                @if (!kural.onayGerektirirMiDegistirilebilir) {
+                  <span class="rule-badge rule-badge--locked"><i class="ri-lock-line"></i>Her zaman onayda</span>
+                } @else if (kural.onayGerektirirMi) {
+                  <span class="rule-badge rule-badge--on"><i class="ri-checkbox-circle-line"></i>Onay gerekli</span>
+                } @else {
+                  <span class="rule-badge rule-badge--off"><i class="ri-flashlight-line"></i>Onaysız çalışır</span>
+                }
+              </div>
+            </div>
+            @if (kuralUpdating(kural)) {
+              <span class="rule-card__saving"><i class="ri-loader-4-line spin"></i>Kaydediliyor</span>
+            }
+            <label class="rule-switch"
+                   [title]="!kural.onayGerektirirMiDegistirilebilir ? 'Bu işlem her zaman onaya düşer; kapatılamaz.' : kural.onayGerektirirMi ? 'Onayı kapat' : 'Onayı aç'">
+              <input type="checkbox" role="switch"
+                     [checked]="kural.onayGerektirirMi"
+                     [disabled]="!kural.onayGerektirirMiDegistirilebilir || kuralUpdating(kural)"
+                     [attr.aria-label]="kural.islemAdi + ' için onay gereksinimi'"
+                     (change)="toggleKural(kural)">
+              <span class="rule-switch__track"><span class="rule-switch__thumb"></span></span>
+            </label>
+          </div>
+
+          <div class="rule-card__roles">
+            <div class="rule-card__roles-head">
+              <span>Onaycı roller</span>
+              <em>{{ seciliRolSayisi(kural) }} / {{ roller().length }} seçili</em>
+              @if (!kural.onayGerektirirMi) {
+                <small><i class="ri-information-line"></i>Onay kapalıyken bu işlem onaya düşmez.</small>
+              }
+            </div>
+            <div class="role-chips">
+              @for (rol of roller(); track rol.id) {
+                <button type="button"
+                        class="role-chip"
+                        [class.active]="rolSeciliMi(kural, rol.id)"
+                        [attr.aria-pressed]="rolSeciliMi(kural, rol.id)"
+                        [disabled]="kuralUpdating(kural)"
+                        (click)="toggleKuralRol(kural, rol.id)">
+                  <i [class]="rolSeciliMi(kural, rol.id) ? 'ri-check-line' : 'ri-add-line'"></i>{{ rol.ad }}
+                </button>
+              } @empty {
+                <span class="rules-muted"><i class="ri-loader-4-line spin"></i>Rol listesi yükleniyor…</span>
+              }
+            </div>
+          </div>
+        </article>
+      } @empty {
+        @if (kurallar().length === 0) {
+          @for (i of [1, 2, 3]; track i) {
+            <div class="rule-card rule-card--skeleton"><span></span><span></span><span></span></div>
+          }
+        } @else {
+          <div class="rules-empty">
+            <i class="ri-search-eye-line"></i>
+            <strong>Eşleşen kural yok</strong>
+            <span>Aramayı veya durum filtresini değiştirin.</span>
+          </div>
+        }
+      }
+    </div>
+
+    <footer class="tz-modal__footer rules-footer">
+      <span class="rules-footer__hint"><i class="ri-save-3-line"></i>Değişiklikler anında kaydedilir.</span>
+      <button type="button" class="tz-btn" (click)="closeSettingsModal()">Kapat</button>
+    </footer>
   </div>
 }
 

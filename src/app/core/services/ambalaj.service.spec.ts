@@ -71,7 +71,7 @@ describe('AmbalajService referans sözleşmesi', () => {
   });
 
   it('plan seçimini referans gövdesiyle kaydeder', () => {
-    service.planKaydet(682, 'FP-01', [10, 11], 1, 2, 1).subscribe();
+    service.planKaydet(682, 'FP-01', [10, 11], 1, 1).subscribe();
 
     const [url, body] = api.put.calls.mostRecent().args;
     expect(url as string).toMatch(/\/api\/ambalaj\/projeler\/682\/plan\?/i);
@@ -79,7 +79,6 @@ describe('AmbalajService referans sözleşmesi', () => {
       firinPartiNo: 'FP-01',
       seciliKaynakSandikIds: [10, 11],
       grup: 1,
-      durumId: 2,
     });
   });
 

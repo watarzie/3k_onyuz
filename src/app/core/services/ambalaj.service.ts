@@ -15,14 +15,13 @@ import {
   AmbalajKalemKaydetRequest,
   AmbalajOzelSandikKaydetRequest,
   AmbalajProjeListelemeRequest,
+  AmbalajProjeUretimDurumuSonucDto,
   AmbalajPlanlamaProjeleriSayfasiDto,
-  AmbalajTalepEdenDto,
   AmbalajSandikSecenegiDto,
   AmbalajUretimKalemDto,
   AmbalajUretimPlanDto,
   ApiResult,
   OzelSandikTur,
-  UretimDurumId,
 } from '../../shared/models';
 
 @Injectable({ providedIn: 'root' })
@@ -43,16 +42,26 @@ export class AmbalajService {
     if (request.includeSummary !== undefined) {
       params = params.set('includeSummary', request.includeSummary);
     }
+    if (request.tamamlanan !== undefined) params = params.set('tamamlanan', request.tamamlanan);
+    if (request.uretimDurumu) params = params.set('uretimDurumu', request.uretimDurumu);
 
     return this.api.get<AmbalajPlanlamaProjeleriSayfasiDto>(API.AMBALAJ.PROJELER, { params });
+  }
+
+  /** FB listesinden proje üretimini tamamlar (A2) veya tamamlanmayı geri alır (A3). */
+  projeUretimDurumu(projeId: number, tamamla: boolean, aciklama?: string): Observable<ApiResult<AmbalajProjeUretimDurumuSonucDto>> {
+    return this.api.put<AmbalajProjeUretimDurumuSonucDto>(API.AMBALAJ.PROJE_URETIM_DURUMU(projeId), {
+      tamamla,
+      ...(aciklama?.trim() ? { aciklama: aciklama.trim() } : {}),
+    });
   }
 
   getPlan(projeId: number, kaynakProjeTipiId?: number, grup?: AmbalajGrup): Observable<ApiResult<AmbalajUretimPlanDto>> {
     return this.api.get<AmbalajUretimPlanDto>(API.AMBALAJ.PLAN(projeId, kaynakProjeTipiId, grup));
   }
 
-  planKaydet(projeId: number, firinPartiNo: string, seciliKaynakSandikIds: number[], grup: AmbalajGrup, durumId: UretimDurumId, kaynakProjeTipiId?: number, gerekce?: string): Observable<ApiResult<AmbalajUretimPlanDto>> {
-    return this.api.put<AmbalajUretimPlanDto>(API.AMBALAJ.PLAN(projeId, kaynakProjeTipiId, grup), { firinPartiNo, seciliKaynakSandikIds, grup, durumId, ...(gerekce ? { gerekce } : {}) });
+  planKaydet(projeId: number, firinPartiNo: string, seciliKaynakSandikIds: number[], grup: AmbalajGrup, kaynakProjeTipiId?: number, gerekce?: string): Observable<ApiResult<AmbalajUretimPlanDto>> {
+    return this.api.put<AmbalajUretimPlanDto>(API.AMBALAJ.PLAN(projeId, kaynakProjeTipiId, grup), { firinPartiNo, seciliKaynakSandikIds, grup, ...(gerekce ? { gerekce } : {}) });
   }
 
   ambalajKarariKaydet(sandikId: number, ambalajaDahilMi: boolean, gerekce?: string): Observable<ApiResult<AmbalajUretimPlanDto>> {
@@ -122,16 +131,8 @@ export class AmbalajService {
     return this.api.delete<void>(API.AMBALAJ.IC_SANDIK_SABLONU(sablonId));
   }
 
-  getTalepEdenler(): Observable<ApiResult<AmbalajTalepEdenDto[]>> {
-    return this.api.get<AmbalajTalepEdenDto[]>(API.AMBALAJ.TALEP_EDENLER);
-  }
-
   getTalepEdenKullanicilar(): Observable<ApiResult<AmbalajKullaniciSecenegiDto[]>> {
     return this.api.get<AmbalajKullaniciSecenegiDto[]>(API.AMBALAJ.TALEP_EDEN_KULLANICILAR);
-  }
-
-  talepEdenEkle(ad: string): Observable<ApiResult<AmbalajTalepEdenDto>> {
-    return this.api.post<AmbalajTalepEdenDto>(API.AMBALAJ.TALEP_EDENLER, { ad });
   }
 
   uretimFormuIndir(projeId: number, tur?: number | null): Observable<Blob> {

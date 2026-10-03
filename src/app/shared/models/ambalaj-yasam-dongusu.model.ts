@@ -5,6 +5,8 @@ export interface AmbalajFormOlusturRequest {
   idempotencyAnahtari: string;
   yenidenOlustur: boolean;
   aciklama?: string;
+  /** İsteğe bağlı: formdaki sandıklardan oluşan finans kalemlerinin varsayılan finans tarihi (A6). */
+  finansTarihi?: string | null;
 }
 export interface AmbalajFormSurumu {
   id: number;

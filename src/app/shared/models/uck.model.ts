@@ -36,6 +36,11 @@ export interface UcKUrunDto {
   birim: string;
   gridDurumuId: number;
   gridDurumuMetni: string;
+  /**
+   * Grid gelen, Trafo, aktif Grid sevki, hatalı, geri gönderilen ve başka projeye verilen
+   * satır bazlıdır: çok sandıklı üründe sandığa bölünmez. Sandık bazlı teslim sınırı
+   * aktifGridSevkPartisi* ve gridGeriGonderilebilirMiktar alanlarından gelir.
+   */
   gridGelenAdet: number;
   trafoSevkAdet: number;
   gridSevkDurumuId: number;

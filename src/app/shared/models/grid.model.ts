@@ -11,6 +11,10 @@ export interface GridUrunDto {
   /** Bu sandık içeriğine tahsis edilmiş güncel miktar. */
   sandikMiktari?: number;
   sandikBazliDagitim?: boolean;
+  /** Satır toplamları (sandık dağılımından bağımsız). Grid komutları satır bazlıdır. */
+  toplamGridGelenAdet?: number;
+  toplamUcKGelenMiktar?: number;
+  toplamKalanMiktar?: number;
   sandikAktarilanGiris?: number;
   sandikAktarilanCikis?: number;
   sandikTransferOzeti?: string;
@@ -33,6 +37,11 @@ export interface GridUrunDto {
   sandikSevkEdildiMi: boolean;
   gridDurumuId: number;
   gridDurumuMetni: string;
+  /**
+   * Grid tarafı sayaçları satır bazlıdır: çok sandıklı üründe her sandık satırı satırın
+   * gerçek değerini taşır (sandığa oranla bölünmez). Grid gelen, Trafo, aktif sevk,
+   * yeniden sevk borcu, Grid eksik, başka projeye verilen ve geri gönderilen bu gruptadır.
+   */
   gridGelenAdet: number;
   trafoSevkAdet: number;
   gridSevkDurumuId: number;

@@ -28,6 +28,7 @@ html {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
@@ -39,7 +40,9 @@ body {
   font-family: var(--fontFamily);
   width: 100%;
   max-width: 100%;
+  // clip, hidden gibi yatay taşmayı gizler ama kaydırma kabı oluşturmaz; position: sticky çalışır.
   overflow-x: hidden;
+  overflow-x: clip;
 }
 
 img,
@@ -54,59 +57,6 @@ input,
 select,
 textarea {
   min-width: 0;
-}
-
-.btn-new-sandik {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  min-height: 32px;
-  padding: 6px 12px 6px 8px;
-  border: 1px solid #C7E7D2;
-  border-radius: 8px;
-  background: linear-gradient(180deg, #FFFFFF 0%, #F7FCF9 100%);
-  color: #057A55;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
-  transition: border-color .18s ease, background .18s ease, box-shadow .18s ease, transform .18s ease, color .18s ease;
-
-  i {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 6px;
-    background: #22A765;
-    color: #FFFFFF;
-    font-size: 13px;
-    line-height: 1;
-    box-shadow: 0 3px 8px rgba(34, 167, 101, .14);
-  }
-
-  &:hover,
-  &:focus {
-    border-color: #8ED9AA;
-    background: linear-gradient(180deg, #FFFFFF 0%, #EFFAF4 100%);
-    color: #046C4E;
-    box-shadow: 0 5px 14px rgba(34, 167, 101, .08);
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 6px rgba(22, 163, 74, .10);
-  }
-
-  &:disabled {
-    opacity: .62;
-    transform: none;
-    box-shadow: none;
-    cursor: not-allowed;
-  }
 }
 
 a {
@@ -174,6 +124,434 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   .project-context-value {
     white-space: normal;
   }
+}
+
+// ===== Trezo düğme sistemi (bütün sayfalar) =====
+// Beyaz, ince kenarlı düğme; anlam rengi yalnız simgede (tz-ico-*). Birincil işlem tz-btn--primary ile dolu.
+// Seçime bağlı toplu işlemler tz-btn-group içinde seçili sayı rozetiyle toplanır.
+.tz-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid var(--borderColor);
+  border-radius: 10px;
+  background: var(--whiteColor);
+  color: var(--blackColor);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease, color .15s ease, box-shadow .15s ease;
+
+  > i {
+    font-size: 16px;
+    line-height: 1;
+  }
+  &:hover:not(:disabled),
+  &:focus-visible {
+    border-color: color-mix(in srgb, var(--primaryColor) 35%, transparent);
+    color: var(--primaryColor);
+    box-shadow: 0 4px 12px -8px rgba(96, 93, 255, .55);
+  }
+  &:disabled,
+  &.disabled {
+    opacity: .5;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+  &.dropdown-toggle::after {
+    margin-left: 2px;
+    color: #94a3b8;
+  }
+
+  &--primary {
+    border-color: var(--primaryColor);
+    background: var(--primaryColor);
+    color: #fff;
+    &:hover:not(:disabled),
+    &:focus-visible {
+      border-color: var(--primaryColor);
+      background: color-mix(in srgb, var(--primaryColor) 88%, #000);
+      color: #fff;
+    }
+    &.dropdown-toggle::after { color: rgba(255, 255, 255, .8); }
+  }
+  &--sm {
+    min-height: 32px;
+    padding: 0 11px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    > i { font-size: 15px; }
+  }
+  &--icon {
+    width: 32px;
+    min-height: 32px;
+    padding: 0;
+    border-radius: 8px;
+    color: var(--bodyColor);
+    > i { font-size: 15px; }
+  }
+  &--danger-hover:hover:not(:disabled) {
+    border-color: #ffd5ce;
+    background: #fff1ef;
+    color: #d92d20;
+  }
+}
+.tz-ico-primary { color: var(--primaryColor); }
+.tz-ico-danger { color: #e5372a; }
+.tz-ico-success { color: #1e8a3a; }
+.tz-ico-warning { color: #e8890c; }
+.tz-ico-info { color: #0e8fb5; }
+.tz-ico-dark { color: #334155; }
+
+// Yükleniyor ikonu (ör. kaydederken ri-loader-4-line).
+.tz-spin {
+  display: inline-block;
+  animation: tz-spin .8s linear infinite;
+}
+@keyframes tz-spin {
+  to { transform: rotate(360deg); }
+}
+
+.tz-btn-group {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px 3px 3px 10px;
+  border: 1px dashed #d5dbe5;
+  border-radius: 12px;
+  background: #f8fafc;
+  transition: border-color .15s ease, background .15s ease;
+
+  &.has-selection {
+    border-style: solid;
+    border-color: color-mix(in srgb, var(--primaryColor) 30%, transparent);
+    background: color-mix(in srgb, var(--primaryColor) 5%, #fff);
+  }
+  .tz-btn {
+    min-height: 32px;
+    padding: 0 11px;
+    border-radius: 8px;
+    font-size: 12.5px;
+  }
+}
+.tz-btn-group__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 4px;
+  color: var(--bodyColor);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tz-btn-group__count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 11.5px;
+  font-weight: 700;
+  .has-selection & {
+    background: var(--primaryColor);
+    color: #fff;
+  }
+}
+
+// ===== Trezo modal sistemi (bütün sayfalar) =====
+// <div class="tz-modal-backdrop"> + <div class="tz-modal tz-modal--md" role="dialog">: başlıkta renkli ikon çipi,
+// başlık ve kısa açıklama; gövdede tz-field alanları; altta tz-btn düğmeleri. Konum ve animasyon buradadır,
+// bileşende satır içi stil gerekmez.
+.tz-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  background: rgba(15, 23, 42, .48);
+  backdrop-filter: blur(3px);
+  animation: tz-modal-fade .18s ease;
+}
+.tz-modal {
+  --tz-ton: var(--primaryColor);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 1055;
+  display: flex;
+  flex-direction: column;
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: hidden;
+  border-radius: 18px;
+  background: var(--whiteColor);
+  box-shadow: 0 30px 80px -20px rgba(15, 23, 42, .45), 0 0 0 1px rgba(15, 23, 42, .04);
+  transform: translate(-50%, -50%);
+  animation: tz-modal-in .22s cubic-bezier(.2, .7, .2, 1);
+
+  &--sm { width: min(420px, calc(100vw - 32px)); }
+  &--lg { width: min(640px, calc(100vw - 32px)); }
+  &--xl { width: min(1080px, calc(100vw - 32px)); }
+  &[data-ton='success'] { --tz-ton: #1e9a3a; }
+  &[data-ton='info'] { --tz-ton: #0e8fb5; }
+  &[data-ton='warning'] { --tz-ton: #e8890c; }
+  &[data-ton='danger'] { --tz-ton: #e5372a; }
+}
+.tz-modal__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 22px 22px 18px 24px;
+  border-bottom: 1px solid var(--borderColor);
+}
+.tz-modal__icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--tz-ton) 11%, #fff);
+  color: var(--tz-ton);
+  font-size: 20px;
+}
+.tz-modal__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  h5 {
+    margin: 0;
+    color: var(--blackColor);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+  }
+  p {
+    margin: 3px 0 0;
+    color: var(--bodyColor);
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+}
+.tz-modal__close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  margin: -4px -4px 0 0;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 19px;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+  &:hover { background: #f1f5f9; color: #334155; }
+}
+.tz-modal__body {
+  padding: 22px 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.tz-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--borderColor);
+  background: #fafbfc;
+  .tz-btn { min-height: 42px; min-width: 110px; }
+}
+
+// Form alanları
+.tz-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  > span,
+  > label {
+    color: #475569;
+    font-size: 12.5px;
+    font-weight: 600;
+    b { color: #e5372a; font-weight: 700; }
+  }
+  small { color: #94a3b8; font-size: 11.5px; }
+  .form-control,
+  .form-select {
+    min-height: 42px;
+    border: 1px solid var(--borderColor);
+    border-radius: 10px;
+    background-color: #fff;
+    color: var(--blackColor);
+    font-size: 13.5px;
+    transition: border-color .15s ease, box-shadow .15s ease;
+    &:hover { border-color: #cbd5e1; }
+    &:focus {
+      border-color: var(--tz-ton, var(--primaryColor));
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--tz-ton, var(--primaryColor)) 14%, transparent);
+    }
+    &::placeholder { color: #a0abbb; }
+  }
+  textarea.form-control { min-height: 84px; resize: vertical; }
+}
+.tz-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  &--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+// Alan grubu: alanlar ve ızgaralar arasında eşit dikey boşluk.
+.tz-form {
+  display: grid;
+  gap: 14px;
+}
+
+// İkonlu giriş: solda sabit ikon (barkod, arama).
+.tz-input-icon {
+  position: relative;
+  display: block;
+  > i {
+    position: absolute;
+    top: 50%;
+    left: 12px;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 16px;
+    pointer-events: none;
+  }
+  .form-control { padding-left: 38px; }
+}
+
+// Sekmeli seçim (iki-üç yöntem arasında geçiş).
+.tz-segmented {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--borderColor);
+  border-radius: 11px;
+  background: #f8fafc;
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--bodyColor);
+    font-size: 12.5px;
+    font-weight: 600;
+    transition: background .15s ease, color .15s ease, box-shadow .15s ease;
+    i { font-size: 15px; }
+    &:hover { color: var(--blackColor); }
+    &.active {
+      background: #fff;
+      color: var(--primaryColor);
+      box-shadow: 0 2px 6px rgba(23, 43, 77, .08);
+    }
+  }
+}
+
+// Birimli giriş (mm, kg): sağda sabit birim etiketi.
+.tz-input-unit {
+  position: relative;
+  display: block;
+  .form-control { padding-right: 40px; }
+  > em {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 600;
+    pointer-events: none;
+  }
+}
+
+// Bölüm başlığı: ince çizgiyle ayrılan alt grup ("Fiziksel özellikler · isteğe bağlı").
+.tz-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 22px 0 14px;
+  color: var(--blackColor);
+  font-size: 13px;
+  font-weight: 700;
+  i { color: var(--tz-ton, var(--primaryColor)); font-size: 16px; }
+  small { color: #94a3b8; font-size: 11.5px; font-weight: 500; }
+  &::after {
+    content: '';
+    flex: 1 1 auto;
+    height: 1px;
+    background: var(--borderColor);
+  }
+}
+
+// Özet kutusu: işlem gören kayıt bilgisi.
+.tz-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--tz-ton) 18%, var(--borderColor));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--tz-ton) 5%, #fff);
+  > i {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: #fff;
+    color: var(--tz-ton);
+    font-size: 17px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .06);
+  }
+  span { display: block; color: var(--bodyColor); font-size: 11.5px; font-weight: 600; }
+  strong { display: block; color: var(--blackColor); font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
+}
+.tz-summary[data-ton='success'] { --tz-ton: #1e9a3a; }
+.tz-summary[data-ton='warning'] { --tz-ton: #e8890c; }
+.tz-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f1f6ff;
+  color: #1d4ed8;
+  font-size: 12.5px;
+  line-height: 1.5;
+  i { font-size: 15px; }
+}
+
+@keyframes tz-modal-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tz-modal-in {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(.96); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@media (max-width: 575.98px) {
+  .tz-field-grid,
+  .tz-field-grid--3 { grid-template-columns: minmax(0, 1fr); }
+  .tz-modal__footer > .tz-btn { flex: 1 1 0; min-width: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tz-modal,
+  .tz-modal-backdrop { animation: none; }
 }
 
 // Trezo card base

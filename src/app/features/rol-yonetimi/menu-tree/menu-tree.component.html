@@ -1,33 +1,42 @@
-<ul class="menu-tree">
-  <li *ngFor="let node of nodes">
-    <div class="node-row">
-      <!-- Expand/Collapse toggle (sadece children varsa) -->
-      <div class="toggle-area" *ngIf="hasChildren(node)" (click)="toggle(node)">
-        <i class="ri-arrow-down-s-line" *ngIf="isExpanded(node)"></i>
-        <i class="ri-arrow-right-s-line" *ngIf="!isExpanded(node)"></i>
+<ul class="menu-tree" [class.is-root]="derinlik === 0">
+  <ng-container *ngFor="let node of nodes; let i = index">
+    <li *ngIf="gorunur(node)" class="mt-node" [class.has-children]="hasChildren(node)"
+        [class.is-root]="derinlik === 0" [style.--i]="i">
+      <div class="node-row" [attr.data-level]="node.yetkiTipiId" [class.is-disabled]="isPermissionDisabled(node)"
+           [class.is-match]="eslesir(node)">
+        <!-- Aç/kapa (yalnız alt düğümü olanlarda) -->
+        <button type="button" class="toggle-area" *ngIf="hasChildren(node)" [class.is-open]="isExpanded(node)"
+                [attr.aria-expanded]="isExpanded(node)" (click)="toggle(node)">
+          <i class="ri-arrow-right-s-line"></i>
+        </button>
+        <div class="toggle-spacer" *ngIf="!hasChildren(node)"></div>
+
+        <!-- Üç durumlu kutu: işaretli = yazma, yarım = okuma, boş = yetkisiz -->
+        <input type="checkbox"
+               #permissionCheckbox
+               class="form-check-input mt-check"
+               [checked]="node.yetkiTipiId === yetkiTipi.W"
+               [indeterminate]="node.yetkiTipiId === yetkiTipi.R"
+               [disabled]="isPermissionDisabled(node)"
+               [attr.aria-label]="(node.labelKey | translate) + ': ' + (seviyeAnahtari(node) | translate)"
+               (change)="onPermissionChange(node, permissionCheckbox)">
+
+        <span *ngIf="node.icon" class="node-icon"><i class="{{ node.icon }}"></i></span>
+        <span class="node-label">{{ node.labelKey | translate }}</span>
+
+        <!-- Seviye etiketi; tıklanınca kutu ile aynı döngüyü uygular -->
+        <button type="button" class="level-pill" [attr.data-level]="node.yetkiTipiId"
+                [disabled]="isPermissionDisabled(node)" tabindex="-1"
+                (click)="onPermissionChange(node, permissionCheckbox)">
+          <i [class]="node.yetkiTipiId === yetkiTipi.W ? 'ri-edit-2-line' : node.yetkiTipiId === yetkiTipi.R ? 'ri-eye-line' : 'ri-forbid-line'"></i>
+          {{ seviyeAnahtari(node) | translate }}
+        </button>
       </div>
-      <div class="toggle-spacer" *ngIf="!hasChildren(node)"></div>
 
-      <!-- Checkbox (tri-state) -->
-      <input type="checkbox"
-             #permissionCheckbox
-             class="form-check-input"
-             [checked]="node.yetkiTipiId === yetkiTipi.W"
-             [indeterminate]="node.yetkiTipiId === yetkiTipi.R"
-             [disabled]="isPermissionDisabled(node)"
-             (change)="onPermissionChange(node, permissionCheckbox)">
-
-      <!-- İkon -->
-      <i *ngIf="node.icon" class="{{ node.icon }} node-icon"></i>
-
-      <!-- Label -->
-      <span class="node-label">{{ node.ad || (node.labelKey | translate) }}</span>
-      <small *ngIf="node.kritikMi" class="text-danger">{{ 'PERMISSIONS.CRITICAL' | translate }}</small>
-    </div>
-
-    <!-- Recursive children -->
-    <app-menu-tree *ngIf="hasChildren(node) && isExpanded(node)"
-                   [nodes]="node.children" [disabled]="disabled">
-    </app-menu-tree>
-  </li>
+      <!-- Alt düğümler -->
+      <app-menu-tree *ngIf="hasChildren(node) && isExpanded(node)" class="mt-children"
+                     [nodes]="node.children" [disabled]="disabled" [arama]="arama" [derinlik]="derinlik + 1">
+      </app-menu-tree>
+    </li>
+  </ng-container>
 </ul>

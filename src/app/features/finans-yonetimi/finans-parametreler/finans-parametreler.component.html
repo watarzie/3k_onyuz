@@ -1,0 +1,130 @@
+<section class="v2-section">
+  @if (hata()) {
+    <div class="v2-error" role="alert"><i class="ri-error-warning-line" aria-hidden="true"></i>{{ hata() }}</div>
+  }
+  <article class="v2-card">
+    <header class="v2-toolbar">
+      <div>
+        <h4><i class="ri-money-euro-circle-line" aria-hidden="true"></i> {{ t('CURRENCIES') }}</h4>
+        <p class="v2-note">{{ t('CURRENCIES_HELP') }}</p>
+      </div>
+      @if (yazabilir()) {
+        <button type="button" class="tz-btn tz-btn--primary" (click)="yeniParaBirimi()">
+          <i class="ri-add-line" aria-hidden="true"></i>{{ t('CURRENCY_ADD') }}
+        </button>
+      }
+    </header>
+    @if (loading()) {
+      <div class="v2-empty" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span></div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table v2-table mb-0">
+          <thead>
+            <tr>
+              <th>{{ t('CURRENCY_CODE') }}</th>
+              <th>{{ t('CURRENCY_NAME') }}</th>
+              <th>{{ t('CURRENCY_SYMBOL') }}</th>
+              <th>{{ t('ORDER') }}</th>
+              <th>{{ t('STATUS') }}</th>
+              @if (yazabilir()) {
+                <th class="text-end">{{ t('ACTION') }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (paraBirimi of paraBirimleri(); track paraBirimi.id) {
+              <tr>
+                <td><strong>{{ paraBirimi.kod }}</strong></td>
+                <td>{{ paraBirimi.ad }}</td>
+                <td>{{ paraBirimi.sembol || '—' }}</td>
+                <td>{{ paraBirimi.sira }}</td>
+                <td>
+                  <span class="v2-status" [class.is-active]="paraBirimi.aktif">{{ paraBirimi.aktif ? t('ACTIVE') : t('PASSIVE') }}</span>
+                </td>
+                @if (yazabilir()) {
+                  <td>
+                    <div class="v2-actions justify-content-end">
+                      <button type="button" class="tz-btn tz-btn--sm" (click)="duzenle(paraBirimi)">
+                        <i class="ri-edit-line tz-ico-primary" aria-hidden="true"></i>{{ t('EDIT') }}
+                      </button>
+                      <button type="button" class="tz-btn tz-btn--sm" [class.tz-btn--danger-hover]="paraBirimi.aktif"
+                              [disabled]="kaydediliyor()" (click)="aktiflikDegistir(paraBirimi)">
+                        @if (paraBirimi.aktif) {
+                          <i class="ri-pause-circle-line tz-ico-warning" aria-hidden="true"></i>{{ t('DEACTIVATE') }}
+                        } @else {
+                          <i class="ri-play-circle-line tz-ico-success" aria-hidden="true"></i>{{ t('ACTIVATE') }}
+                        }
+                      </button>
+                    </div>
+                  </td>
+                }
+              </tr>
+            } @empty {
+              <tr><td colspan="6"><div class="v2-empty">{{ t('CURRENCY_EMPTY') }}</div></td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+    @if (form(); as f) {
+      <div class="v2-card mt-3">
+        <div class="v2-fields">
+          <label
+            >{{ t('CURRENCY_CODE') }} *<input
+              maxlength="3"
+              [disabled]="f.id !== null"
+              [(ngModel)]="f.kod"
+              [placeholder]="'USD'"
+          /></label>
+          <label>{{ t('CURRENCY_NAME') }} *<input maxlength="100" [(ngModel)]="f.ad" /></label>
+          <label>{{ t('CURRENCY_SYMBOL') }}<input maxlength="10" [(ngModel)]="f.sembol" /></label>
+          <label>{{ t('ORDER') }}<input type="number" min="0" max="9999" [(ngModel)]="f.sira" /></label>
+          <label class="v2-check"><input type="checkbox" [(ngModel)]="f.aktif" />{{ t('ACTIVE') }}</label>
+        </div>
+        @if (f.id !== null) {
+          <p class="v2-note">{{ t('CURRENCY_CODE_LOCKED') }}</p>
+        }
+        <div class="v2-actions justify-content-end">
+          <button type="button" class="tz-btn" (click)="form.set(null)">{{ t('CANCEL') }}</button>
+          <button type="button" class="tz-btn tz-btn--primary" [disabled]="kaydediliyor()" (click)="paraBirimiKaydet()">
+            <i [class]="kaydediliyor() ? 'ri-loader-4-line tz-spin' : 'ri-save-3-line'" aria-hidden="true"></i>{{ t('SAVE') }}
+          </button>
+        </div>
+      </div>
+    }
+  </article>
+
+  <article class="v2-card mt-3">
+    <header class="v2-toolbar">
+      <div>
+        <h4><i class="ri-calendar-schedule-line" aria-hidden="true"></i> {{ t('DUE_SETTINGS') }}</h4>
+        <p class="v2-note">{{ t('DUE_SETTINGS_HELP') }}</p>
+      </div>
+    </header>
+    <div class="v2-fields">
+      <label
+        >{{ t('DEFAULT_DUE_DAYS') }}<input
+          type="number"
+          min="0"
+          max="365"
+          [disabled]="!yazabilir()"
+          [(ngModel)]="parametreForm.varsayilanVadeGunu"
+      /></label>
+      <label
+        >{{ t('DUE_WARNING_DAYS') }}<input
+          type="number"
+          min="0"
+          max="90"
+          [disabled]="!yazabilir()"
+          [(ngModel)]="parametreForm.vadeUyariGunu"
+      /></label>
+    </div>
+    @if (yazabilir()) {
+      <div class="v2-actions justify-content-end mt-3">
+        <button type="button" class="tz-btn tz-btn--primary" [disabled]="kaydediliyor()" (click)="parametreleriKaydet()">
+          <i [class]="kaydediliyor() ? 'ri-loader-4-line tz-spin' : 'ri-save-3-line'" aria-hidden="true"></i>{{ t('SAVE') }}
+        </button>
+      </div>
+    }
+  </article>
+</section>

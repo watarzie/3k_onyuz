@@ -114,12 +114,25 @@ export class AuthService {
     sessionStorage.removeItem(TWO_FACTOR_CHALLENGE_KEY);
   }
 
+  /** Oturumu sonlandırır ve giriş ekranına döner (süre dolması, 401 gibi otomatik çıkışlar). */
   logout(): void {
-    this.clearPendingTwoFactorChallenge();
-    this.session.clearAll();
-    this.currentUser.set(null);
-    this.permissions.clear();
+    this.oturumuTemizle();
     this.router.navigate(['/auth/login']);
+  }
+
+  /**
+   * Kullanıcının kendi isteğiyle çıkışı: oturum aynı şekilde temizlenir, ardından veda sayfası
+   * gösterilir. Ad yalnız gezinme durumunda taşınır; hiçbir depolamaya yazılmaz.
+   */
+  cikisYap(): void {
+    const ad = this.currentUser()?.adSoyad ?? null;
+    this.oturumuTemizle();
+    this.router.navigate(['/auth/cikis'], { state: { ad } });
+  }
+
+  private oturumuTemizle(): void {
+    this.clearPendingTwoFactorChallenge();
+    this.clearAuthenticatedSession();
   }
 
   getToken(): string | null {

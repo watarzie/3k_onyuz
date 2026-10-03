@@ -5,15 +5,18 @@ import { FormsModule } from '@angular/forms';
 import { TranslationService } from '../../../core/services/translation.service';
 import { SandikService } from '../../../core/services/sandik.service';
 import { ProjeService } from '../../../core/services/proje.service';
-import { ConfirmService } from '../../../core/services/confirm.service';
+import { ConfirmService, duzMetin } from '../../../core/services/confirm.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { LookupService } from '../../../core/services/lookup.service';
 import { PdfService } from '../../../core/services/pdf.service';
-import { SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
+import { ProjeTipi, SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
+import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
-import { SandikDto, LookupResponse, ProjeDropdownDto } from '../../../shared/models/index';
+import { SandikDto, LookupResponse, ProjeDropdownDto, aktifSahaProjeleri, onayaAlindi } from '../../../shared/models/index';
+import { YETKI } from '../../../core/constants/yetki-kodlari';
+import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 
 @Component({
   selector: 'app-uck-sandiklar',
@@ -38,28 +41,24 @@ export class UcKSandiklarComponent implements OnInit {
   private readonly sahayaAktarilmisSandikMesaji = 'Bu sandık sahaya aktarıldığı için normal proje tarafında işlem yapılamaz. Geri almak için saha aktarımını geri alın.';
   private readonly sahaUzerindenSevkEdilmisSandikMesaji = 'Bu sandık saha projesi üzerinden sevk edildi. Geri alma işlemi kaynak sandıktan değil, ilgili saha sevkiyatından yapılmalıdır.';
 
+  private readonly projeTipi = projeTipiBaglami(rotaProjeTipi(this.route.snapshot));
+
   private get activeMenuKod(): string {
-    return this.route.snapshot.data?.['menuKod'] || '3k-modulu';
+    return this.route.snapshot.data?.['menuKod'] || YETKI.SANDIK.UCK_MODULU;
   }
 
-  isSahaContext = computed(() => this.activeMenuKod === 'saha-3k-modulu');
-  isYedekContext = computed(() => this.activeMenuKod === 'yedek-3k-modulu');
-  uckRoutePrefix = computed(() =>
-    this.isSahaContext() ? '/saha-yonetimi/uck' : this.isYedekContext() ? '/yedek-yonetimi/uck' : '/uck'
-  );
-  uckSandikRoutePrefix = computed(() =>
-    this.isSahaContext() ? '/saha-yonetimi/uck/sandik' : this.isYedekContext() ? '/yedek-yonetimi/uck/sandik' : '/uck/sandik'
-  );
+  readonly uckRoutePrefix = this.projeTipi.ucKRotasi;
+  readonly uckSandikRoutePrefix = `${this.projeTipi.ucKRotasi}/sandik`;
   canWriteSandik = computed(() => this.permissionService.canWrite(this.activeMenuKod));
   canWriteSevk = computed(() => this.permissionService.canWrite(this.activeMenuKod));
-  canAssignLocation = computed(() => this.permissionService.canWrite('sandik-lokasyon-atama'));
+  canAssignLocation = computed(() => this.permissionService.canWrite(YETKI.SANDIK.LOKASYON_ATAMA));
   canSandiklariSahayaAktar = computed(() =>
-    !this.isSahaContext() && !this.isYedekContext() && this.permissionService.canWrite('sahaya-aktar')
+    this.projeTipi.tip === ProjeTipi.Normal && this.permissionService.canWrite(YETKI.SAHA.SAHAYA_AKTAR)
   );
   canUseSandikSelection = computed(() =>
     this.canWriteSandik() || this.canAssignLocation() || this.canSandiklariSahayaAktar()
   );
-  canSeeSandikDurumRaporu = computed(() => this.permissionService.hasAccess(this.sandikDurumRaporMenuKod()));
+  canSeeSandikDurumRaporu = computed(() => this.permissionService.hasAccess(this.projeTipi.yetki.ucKSandikDurumRaporu));
 
   projeId = signal(0);
   mevcutProje = signal<ProjeDropdownDto | null>(null);
@@ -112,7 +111,8 @@ export class UcKSandiklarComponent implements OnInit {
   showSandikEkleModal = signal(false);
   ekSandikNo = signal('');
   ekSandikIsmi = signal('');
-  ekTipId = signal(1);
+  /** Sandık tipi zorunludur (G2); kullanıcı açıkça seçer. */
+  ekTipId = signal<number | null>(null);
   ekLokasyonId = signal(2);
   ekSaving = signal(false);
   ekBoy = signal<number | null>(null);
@@ -143,14 +143,10 @@ export class UcKSandiklarComponent implements OnInit {
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('projeId'));
     this.projeId.set(id);
-    const isSaha = this.isSahaContext();
-    const isYedek = this.isYedekContext();
-    const parentLabel = isSaha ? 'Saha Yönetimi' : isYedek ? 'Yedek Yönetimi' : 'Sandık Yönetimi';
-    const parentLink = isSaha ? '/saha-yonetimi' : isYedek ? '/yedek-yonetimi' : '/sandik-yonetimi';
     this.breadcrumb = [
       { label: 'Ana Kontrol Paneli', link: '/dashboard' },
-      { label: parentLabel, link: parentLink },
-      { label: isSaha ? 'Saha 3K Modülü' : isYedek ? 'Yedek 3K Modülü' : '3K Modülü' },
+      { label: this.ts.translate(this.projeTipi.baslik.yonetim), link: this.projeTipi.yonetimRotasi },
+      { label: this.ts.translate(this.projeTipi.baslik.ucK) },
     ];
     this.loadProjeBilgisi();
     this.loadLookups();
@@ -314,7 +310,7 @@ export class UcKSandiklarComponent implements OnInit {
       next: (res) => {
         this.isSavingLokasyon.set(false);
         if (res.isSuccess) {
-          const queued = res.statusCode === 202 || this.isApprovalQueueResponse(res.value);
+          const queued = onayaAlindi(res);
           if (queued) {
             this.toast.info('Lokasyon atama talebi yetkili onayına gönderildi.');
           } else {
@@ -336,14 +332,6 @@ export class UcKSandiklarComponent implements OnInit {
         this.toast.error('Sunucu ile iletişim kurulamadı.');
       }
     });
-  }
-
-  private isApprovalQueueResponse(value: unknown): value is { statusCode: 202 } {
-    if (typeof value !== 'object' || value === null || !('statusCode' in value)) {
-      return false;
-    }
-
-    return (value as { statusCode?: unknown }).statusCode === 202;
   }
 
   getDurumLabel(durum: string): string {
@@ -425,16 +413,11 @@ export class UcKSandiklarComponent implements OnInit {
     if (this.downloadingSandikDurumRaporu()) return;
 
     this.downloadingSandikDurumRaporu.set(true);
-    this.pdfService.uckSandikDurumPdf(this.projeId(), this.sandikDurumRaporMenuKod()).subscribe({
+    this.pdfService.uckSandikDurumPdf(this.projeId()).subscribe({
       next: (blob) => {
         this.downloadingSandikDurumRaporu.set(false);
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
         const projeNo = this.mevcutProje()?.projeNo ?? `Proje_${this.projeId()}`;
-        a.href = url;
-        a.download = `${projeNo}_SandikDurumRaporu.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        dosyayiKaydet(blob, `${projeNo}_SandikDurumRaporu.pdf`);
         this.toast.success('Sandık durum raporu indirildi.');
       },
       error: () => {
@@ -442,12 +425,6 @@ export class UcKSandiklarComponent implements OnInit {
         this.toast.error('Sandık durum raporu indirilirken hata oluştu.');
       }
     });
-  }
-
-  private sandikDurumRaporMenuKod(): string {
-    if (this.isSahaContext()) return 'saha-3k-sandik-durum-raporu';
-    if (this.isYedekContext()) return 'yedek-3k-sandik-durum-raporu';
-    return '3k-sandik-durum-raporu';
   }
 
   onSandikCardClick(event: Event, sandik: SandikDto) {
@@ -506,7 +483,7 @@ export class UcKSandiklarComponent implements OnInit {
       next: (res) => {
         this.kilitAcSaving.set(false);
         if (res.isSuccess) {
-          const queued = (res.value as any)?.statusCode === 202;
+          const queued = onayaAlindi(res);
           this.toast.success(queued ? `Sandık "${sandik.sandikNo}" kilit açma talebi onaya gönderildi.` : `Sandık "${sandik.sandikNo}" kilidi açıldı.`);
           this.closeKilitAcModal();
           this.selectedSandikIds.set(new Set());
@@ -536,7 +513,7 @@ export class UcKSandiklarComponent implements OnInit {
 
     const onay = await this.confirmService.ask({
       title: 'Düzeltmeyi Tamamla',
-      message: `<strong>${sandik.sandikNo}</strong> numaralı sandık tekrar kilitlenecek. Sevkiyat kaydı korunmaya devam edecek ve yeni sevkiyat oluşturulmayacak. Onaylıyor musunuz?`,
+      message: `<strong>${duzMetin(sandik.sandikNo)}</strong> numaralı sandık tekrar kilitlenecek. Sevkiyat kaydı korunmaya devam edecek ve yeni sevkiyat oluşturulmayacak. Onaylıyor musunuz?`,
       confirmText: 'Evet, Tamamla',
       cancelText: 'Vazgeç',
       type: 'success'
@@ -776,7 +753,7 @@ export class UcKSandiklarComponent implements OnInit {
     const requestId = ++this.hedefSahaSearchRequest;
     this.hedefSahaProjeLoading.set(true);
     this.projeService.getProjeDropdownListesi({
-      projeTipiId: 2,
+      projeTipiId: ProjeTipi.Saha,
       searchTerm,
       isSevkEdilen: false,
       take: 50,
@@ -787,10 +764,7 @@ export class UcKSandiklarComponent implements OnInit {
 
         this.hedefSahaProjeLoading.set(false);
         if (res.isSuccess && res.value) {
-          this.hedefSahaProjeleri.set((res.value ?? [])
-            .filter(p => p.projeTipiId === 2)
-            .filter(p => p.durumId !== 5 && p.durumId !== 6)
-            .sort((a, b) => a.projeNo.localeCompare(b.projeNo, 'tr-TR')));
+          this.hedefSahaProjeleri.set(aktifSahaProjeleri(res.value ?? []));
         }
       },
       error: () => {
@@ -804,11 +778,11 @@ export class UcKSandiklarComponent implements OnInit {
   private generateMissingItemHtml(item: any): string {
     return `
       <div class="mb-3 border-bottom pb-2 ms-2 me-2">
-        <div class="fw-bold fs-6 text-dark">${item.siraNo} - ${item.barkod}</div>
-        <div class="text-secondary small mb-2">${item.aciklama}</div>
+        <div class="fw-bold fs-6 text-dark">${duzMetin(item.siraNo)} - ${duzMetin(item.barkod)}</div>
+        <div class="text-secondary small mb-2">${duzMetin(item.aciklama)}</div>
         <div>
-          <span class="badge bg-primary text-white me-2 px-2 py-1">Kalan: ${item.kalan}</span>
-          <span class="badge bg-danger text-white px-2 py-1">Durum: ${item.durumMetni}</span>
+          <span class="badge bg-primary text-white me-2 px-2 py-1">Kalan: ${duzMetin(item.kalan)}</span>
+          <span class="badge bg-danger text-white px-2 py-1">Durum: ${duzMetin(item.durumMetni)}</span>
         </div>
       </div>`;
   }
@@ -826,7 +800,7 @@ export class UcKSandiklarComponent implements OnInit {
           this.refreshSandiklar();
         } else if (res.hasMissingOrDefectiveItems) {
           const warningList = res.uyariDetaylari?.map((u: any) => `
-             <div class="text-dark fw-bold mb-2">Sandık ${u.sandikNo}</div>
+             <div class="text-dark fw-bold mb-2">Sandık ${duzMetin(u.sandikNo)}</div>
              <div class="mb-3">${u.urunHatalari.map((item: any) => this.generateMissingItemHtml(item)).join('')}</div>
            `).join('') || '';
 
@@ -849,7 +823,7 @@ export class UcKSandiklarComponent implements OnInit {
         const errorBody = err.error?.value ?? err.error;
         if (errorBody && errorBody.hasMissingOrDefectiveItems) {
           const warningList = errorBody.uyariDetaylari?.map((u: any) => `
-             <div class="text-dark fw-bold mb-2">Sandık ${u.sandikNo}</div>
+             <div class="text-dark fw-bold mb-2">Sandık ${duzMetin(u.sandikNo)}</div>
              <div class="mb-3">${u.urunHatalari.map((item: any) => this.generateMissingItemHtml(item)).join('')}</div>
            `).join('') || '';
 
@@ -927,7 +901,7 @@ export class UcKSandiklarComponent implements OnInit {
           const warningList = res.missingItemDetails?.map((item: any) => this.generateMissingItemHtml(item)).join('') || '';
           const warningConfirm = await this.confirmService.ask({
             title: 'Eksik / Hatalı Ürün Var',
-            message: `<div class="mb-3 text-dark">${res.message}</div><div class="text-start mb-0">${warningList}</div>`,
+            message: `<div class="mb-3 text-dark">${duzMetin(res.message)}</div><div class="text-start mb-0">${warningList}</div>`,
             confirmText: 'Yine de Kapat',
             cancelText: 'Vazgeç',
             type: 'info'
@@ -946,7 +920,7 @@ export class UcKSandiklarComponent implements OnInit {
           const warningList = (errorBody.missingItemDetails || []).map((item: any) => this.generateMissingItemHtml(item)).join('');
           const warningConfirm = await this.confirmService.ask({
             title: 'Eksik / Hatalı Ürün Var',
-            message: `<div class="mb-3 text-dark">${errorBody.message}</div><div class="text-start mb-0">${warningList}</div>`,
+            message: `<div class="mb-3 text-dark">${duzMetin(errorBody.message)}</div><div class="text-start mb-0">${warningList}</div>`,
             confirmText: 'Yine de Kapat',
             cancelText: 'Vazgeç',
             type: 'info'
@@ -973,7 +947,7 @@ export class UcKSandiklarComponent implements OnInit {
     }, 0);
     this.ekSandikNo.set((maxNo + 1).toString());
     this.ekSandikIsmi.set('');
-    this.ekTipId.set(1);
+    this.ekTipId.set(null);
     this.ekLokasyonId.set(2);
     this.ekBoy.set(null);
     this.ekEn.set(null);
@@ -995,12 +969,17 @@ export class UcKSandiklarComponent implements OnInit {
       this.toast.error('Sandık numarası girilmelidir.');
       return;
     }
+    const tipId = this.ekTipId();
+    if (!tipId) {
+      this.toast.error('Sandık tipi seçilmelidir.');
+      return;
+    }
     this.ekSaving.set(true);
     this.sandikService.sandikEkle({
       projeId: this.projeId(),
       sandikNo: no,
       sandikIsmi: this.ekSandikIsmi().trim() || undefined,
-      tipId: this.ekTipId(),
+      tipId,
       depoLokasyonId: this.ekLokasyonId(),
       boy: this.ekBoy() || undefined,
       en: this.ekEn() || undefined,
@@ -1041,7 +1020,7 @@ export class UcKSandiklarComponent implements OnInit {
 
     const confirm = await this.confirmService.ask({
       title: 'Sandık Sil',
-      message: `<strong>${sandik.sandikNo}</strong> numaralı sandığı silmek istediğinize emin misiniz?${silmeDetayi}<br><br>
+      message: `<strong>${duzMetin(sandik.sandikNo)}</strong> numaralı sandığı silmek istediğinize emin misiniz?${silmeDetayi}<br><br>
                 <div class="alert alert-danger py-2 mb-0">
                   <i class="ri-alert-line me-1"></i> Bu işlem geri alınamaz.
                 </div>`,

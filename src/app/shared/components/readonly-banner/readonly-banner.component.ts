@@ -1,4 +1,4 @@
-import { Component, inject, computed, Input } from '@angular/core';
+import { Component, inject, computed, input } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { PermissionService } from '../../../core/services/permission.service';
 
@@ -40,11 +40,10 @@ export class ReadOnlyBannerComponent {
   private route = inject(ActivatedRoute);
 
   /** Opsiyonel: kontrol edilecek menuKod. Verilmezse route'tan alınır. */
-  @Input() menuKod: string = '';
+  readonly menuKod = input('');
 
-  isReadOnly = computed(() => {
-    const kod = this.menuKod || this.route.snapshot.data?.['menuKod'] || '';
-    if (!kod) return false;
-    return this.permissions.isReadOnly(kod);
+  readonly isReadOnly = computed(() => {
+    const kod = this.menuKod() || this.route.snapshot.data?.['menuKod'] || '';
+    return !!kod && this.permissions.isReadOnly(kod);
   });
 }

@@ -20,6 +20,7 @@ import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcru
 import { BaseApiService } from '../../core/services/base-api.service';
 import { LookupService } from '../../core/services/lookup.service';
 import { API } from '../../core/constants/api-endpoints';
+import { ProjeTipi } from '../../core/constants/enums';
 import { LookupItem } from '../../shared/models/lookup.model';
 
 interface DashboardOzetDto {
@@ -260,6 +261,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   dashboardSummaryLoading = computed(() => this.loadingOzet());
   dashboardDepoChartLoading = computed(() => this.loadingOzet() || this.loadingDepoLokasyonlari());
 
+  /** Başlık altındaki tarih satırı, ör. "2 Ekim 2026 Cuma". */
+  readonly bugunMetni = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' }).format(new Date());
+
   breadcrumb = [
     { label: 'Ana Kontrol Paneli' },
   ];
@@ -281,7 +285,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     return [
       {
-        projeTipiId: 1,
+        projeTipiId: ProjeTipi.Normal,
         projeTipiMetni: 'Normal',
         toplamProje: 0,
         hazirlananProje: 0,
@@ -296,7 +300,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         sandikDurumOzetleri: [],
       },
       {
-        projeTipiId: 2,
+        projeTipiId: ProjeTipi.Saha,
         projeTipiMetni: 'Saha',
         toplamProje: 0,
         hazirlananProje: 0,
@@ -311,7 +315,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         sandikDurumOzetleri: [],
       },
       {
-        projeTipiId: 3,
+        projeTipiId: ProjeTipi.Yedek,
         projeTipiMetni: 'Yedek',
         toplamProje: 0,
         hazirlananProje: 0,
@@ -766,8 +770,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         nextPage,
         this.sandikDurumDetayPageSize,
         searchTerm
-      ),
-      { headers: { 'X-Menu-Kod': 'dashboard' } }
+      )
     ).subscribe({
       next: res => {
         if (requestSeq !== this.sandikDurumDetayRequestSeq) return;

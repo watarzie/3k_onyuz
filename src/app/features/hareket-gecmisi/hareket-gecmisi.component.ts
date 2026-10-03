@@ -9,12 +9,14 @@ import { ProjeService } from '../../core/services/proje.service';
 import { LookupService } from '../../core/services/lookup.service';
 import { HareketGecmisiDto, ProjeDropdownDto, LookupItem } from '../../shared/models/index';
 import { ToastService } from '../../core/services/toast.service';
-import { ConfirmService } from '../../core/services/confirm.service';
+import { ConfirmService, duzMetin } from '../../core/services/confirm.service';
+import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
+import { ServerPagerComponent } from '../../shared/components/server-pager/server-pager.component';
 
 @Component({
   selector: 'app-hareket-gecmisi',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, BreadcrumbComponent, ServerPagerComponent],
   templateUrl: './hareket-gecmisi.component.html',
   styleUrls: ['./hareket-gecmisi.component.scss']
 })
@@ -24,6 +26,11 @@ export class HareketGecmisiComponent implements OnInit {
   private toast = inject(ToastService);
   private confirmService = inject(ConfirmService);
   private lookupService = inject(LookupService);
+
+  breadcrumb = [
+    { label: 'Ana Kontrol Paneli', link: '/dashboard' },
+    { label: 'Hareket Geçmişi' }
+  ];
 
   projeler = signal<ProjeDropdownDto[]>([]);
   selectedProjeId = signal<number | null>(null);
@@ -62,10 +69,6 @@ export class HareketGecmisiComponent implements OnInit {
       ].some(value => (value ?? '').toLocaleLowerCase('tr-TR').includes(term));
     });
   });
-
-  mathMin(a: number, b: number): number {
-    return Math.min(a, b);
-  }
 
   ngOnInit() {
     this.loadProjeler();
@@ -204,22 +207,21 @@ export class HareketGecmisiComponent implements OnInit {
     }
   }
 
-  // Renkli badge'ler için yardımcı metot
+  /** İşlem hapının tonu: oluşturma mor, iptal kırmızı, güncelleme mavi, kapanış yeşil, taşıma turuncu. */
   getBadgeClass(islemTipiMetni: string): string {
-    const text = islemTipiMetni.toLowerCase();
-    if (text.includes('oluşturuldu') || text.includes('yüklendi')) return 'bg-primary-transparent text-primary';
-    if (text.includes('iptal')) return 'bg-danger-transparent text-danger';
-    if (text.includes('güncellendi') || text.includes('değiştirildi')) return 'bg-info-transparent text-info';
-    if (text.includes('kapatıldı') || text.includes('hazırlandı')) return 'bg-success-transparent text-success';
-    if (text.includes('taşındı') || text.includes('eklendi')) return 'bg-warning-transparent text-warning';
-    if (text.includes('karşılandı')) return 'bg-success-transparent text-success';
-    return 'bg-secondary-transparent text-secondary';
+    const text = (islemTipiMetni ?? '').toLocaleLowerCase('tr-TR');
+    if (text.includes('oluşturuldu') || text.includes('yüklendi')) return 'primary';
+    if (text.includes('iptal') || text.includes('silindi')) return 'danger';
+    if (text.includes('güncellendi') || text.includes('değiştirildi')) return 'info';
+    if (text.includes('kapatıldı') || text.includes('hazırlandı') || text.includes('karşılandı')) return 'success';
+    if (text.includes('taşındı') || text.includes('eklendi')) return 'warning';
+    return 'neutral';
   }
 
   showFullText(title: string, text: string) {
     this.confirmService.ask({
       title: title,
-      message: `<div class="text-start text-dark" style="max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;">${text}</div>`,
+      message: `<div class="text-start text-dark" style="max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;">${duzMetin(text)}</div>`,
       confirmText: 'Kapat',
       cancelText: '',
       type: 'info'

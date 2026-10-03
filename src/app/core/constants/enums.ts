@@ -6,6 +6,13 @@
  * ÖNEMLİ: Bu dosyadaki değerler veritabanı seed datası ile senkronize olmalıdır.
  */
 
+// ===== Proje Tipi =====
+export enum ProjeTipi {
+  Normal = 1,
+  Saha = 2,
+  Yedek = 3,
+}
+
 // ===== Proje Durumu =====
 export enum ProjeDurum {
   Hazirlaniyor = 1,
@@ -28,6 +35,7 @@ export enum SandikDurum {
 export enum SandikTipi {
   AhsapKapali = 1,
   KatlanirSandik = 2,
+  Kontrplak = 3,
 }
 
 // ===== Depo Lokasyonu =====
@@ -274,3 +282,46 @@ export const STATUS_BADGE_MAP: Record<string, string> = {
   'Siparişte': 'badge-purple',
   'Tamamlandı': 'badge-success',
 };
+
+// ===== Finans: proje/grup sipariş ve fatura karşılanması (backend FinansKarsilanma) =====
+export enum FinansKarsilanma {
+  Yok = 0,
+  Kismi = 1,
+  Tam = 2,
+}
+
+// ===== Finans: faturanın tahsilat durumu (backend FinansOdemeDurumu; vade ve ödeme işaretinden türetilir) =====
+export enum FinansOdemeDurumu {
+  Bekliyor = 1,
+  VadesiYaklasiyor = 2,
+  VadesiGecti = 3,
+  ZamanindaOdendi = 4,
+  GecOdendi = 5,
+}
+
+// ===== Finans: fatura listesi ödeme filtresi (backend FinansOdemeFiltresi) =====
+export enum FinansOdemeFiltresi {
+  Odenmedi = 1,
+  VadesiYaklasan = 2,
+  VadesiGecen = 3,
+  Odendi = 4,
+}
+
+// ===== Finans: fiyat satırının malzemesi (backend FinansSandikMalzemesi; boşsa sandığın malzemesi) =====
+export enum FinansSandikMalzemesi {
+  Ahsap = 1,
+  Kontra = 2,
+}
+
+// ===== Finans: PO/fatura alanındaki kategori kırılımı (backend FinansIsKategorisi) =====
+export enum FinansIsKategorisi {
+  AnaAmbalaj = 1,
+  SarfKereste = 2,
+  Ilave = 3,
+  Ic = 4,
+  Saha = 5,
+  Yedek = 6,
+  DigerUretim = 7,
+  OzelIs = 8,
+  DuzenliIs = 9,
+}

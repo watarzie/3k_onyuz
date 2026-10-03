@@ -1,3 +1,5 @@
+import { ProjeDurum, ProjeTipi } from '../../core/constants/enums';
+
 // ===== Proje =====
 
 export interface ProjeDepoDagilimDto {
@@ -113,17 +115,6 @@ export interface SahaSandikAktarimGeriAlResultDto {
   sandikBosaldiMi: boolean;
 }
 
-export interface ProjeTransferDto {
-  id: number;
-  kaynakProjeNo: string;
-  hedefProjeNo: string;
-  barkodNo: string;
-  miktar: number;
-  kullaniciAdi: string;
-  aciklama?: string;
-  tarih: string;
-}
-
 /** Dropdown'lar için hafif proje DTO — sadece Id/ProjeNo/Musteri */
 export interface SevkiyatSandikDto {
   sandikId: number;
@@ -151,4 +142,12 @@ export interface ProjeDropdownDto {
   projeTipiId?: number;
   durumId?: number;
   lokasyon?: string | null;
+}
+
+/** Sahaya aktarım hedefi olabilecek projeler: sevk edilmemiş saha projeleri, proje numarasına göre sıralı. */
+export function aktifSahaProjeleri(projeler: ProjeDropdownDto[]): ProjeDropdownDto[] {
+  return projeler
+    .filter(p => p.projeTipiId === ProjeTipi.Saha)
+    .filter(p => p.durumId !== ProjeDurum.SevkEdildi && p.durumId !== ProjeDurum.EksikSevkEdildi)
+    .sort((a, b) => a.projeNo.localeCompare(b.projeNo, 'tr-TR'));
 }

@@ -2,12 +2,21 @@ import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { ToastComponent } from '../../shared/components/toast/toast.component';
 
+/**
+ * Giriş sayfalarının zemini: derin lacivert üstünde yavaşça dolaşan marka yeşili ve camgöbeği aurora ışıkları,
+ * kenarlara doğru sönen ince ızgara. Hareket azaltma tercihinde ışıklar sabit kalır.
+ */
 @Component({
   selector: 'app-auth-layout',
   standalone: true,
   imports: [RouterOutlet, ToastComponent],
   template: `
     <div class="auth-wrapper">
+      <div class="auth-aurora" aria-hidden="true">
+        <span class="aurora aurora--green"></span>
+        <span class="aurora aurora--cyan"></span>
+        <span class="aurora aurora--violet"></span>
+      </div>
       <router-outlet />
     </div>
     <app-toast />
@@ -21,23 +30,49 @@ import { ToastComponent } from '../../shared/components/toast/toast.component';
       justify-content: center;
       overflow: hidden;
       background:
-        linear-gradient(180deg, rgba(2, 10, 18, .94), rgba(2, 12, 22, .98)),
-        radial-gradient(ellipse at 50% 76%, rgba(34, 199, 45, .18), transparent 52%),
-        #020912;
+        radial-gradient(ellipse 80% 60% at 50% 120%, rgba(34, 199, 45, .14), transparent 60%),
+        linear-gradient(180deg, #040a14 0%, #050c18 55%, #03080f 100%);
     }
 
-    .auth-wrapper::before {
-      content: "";
+    .auth-aurora {
       position: absolute;
-      inset: auto -12vw -16vh -12vw;
-      height: 34vh;
+      inset: 0;
       pointer-events: none;
-      background:
-        linear-gradient(172deg, transparent 42%, rgba(38, 223, 56, .34) 49%, rgba(38, 223, 56, .1) 51%, transparent 58%),
-        linear-gradient(168deg, transparent 48%, rgba(38, 223, 56, .16) 50%, transparent 55%);
-      filter: blur(.2px);
-      opacity: .78;
+      filter: blur(90px);
+      opacity: .7;
     }
+    .aurora {
+      position: absolute;
+      border-radius: 50%;
+      will-change: transform;
+    }
+    .aurora--green {
+      width: 46vw;
+      height: 46vw;
+      left: -8vw;
+      top: 18vh;
+      background: radial-gradient(circle, rgba(52, 228, 63, .34), transparent 65%);
+      animation: aurora-a 22s ease-in-out infinite alternate;
+    }
+    .aurora--cyan {
+      width: 38vw;
+      height: 38vw;
+      right: -6vw;
+      top: -10vh;
+      background: radial-gradient(circle, rgba(34, 211, 238, .26), transparent 65%);
+      animation: aurora-b 26s ease-in-out infinite alternate;
+    }
+    .aurora--violet {
+      width: 30vw;
+      height: 30vw;
+      right: 18vw;
+      bottom: -14vh;
+      background: radial-gradient(circle, rgba(124, 108, 255, .18), transparent 65%);
+      animation: aurora-c 30s ease-in-out infinite alternate;
+    }
+    @keyframes aurora-a { to { transform: translate(14vw, -8vh) scale(1.12); } }
+    @keyframes aurora-b { to { transform: translate(-10vw, 14vh) scale(.92); } }
+    @keyframes aurora-c { to { transform: translate(-16vw, -10vh) scale(1.15); } }
 
     .auth-wrapper::after {
       content: "";
@@ -45,16 +80,21 @@ import { ToastComponent } from '../../shared/components/toast/toast.component';
       inset: 0;
       pointer-events: none;
       background-image:
-        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.014) 1px, transparent 1px);
-      background-size: 44px 44px;
-      -webkit-mask-image: linear-gradient(to bottom, transparent, black 18%, black 78%, transparent);
-      mask-image: linear-gradient(to bottom, transparent, black 18%, black 78%, transparent);
+        linear-gradient(rgba(255,255,255,.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+      background-size: 48px 48px;
+      -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, black 30%, transparent 85%);
+      mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, black 30%, transparent 85%);
     }
 
-    .auth-wrapper > * {
+    .auth-wrapper > router-outlet + *,
+    .auth-wrapper > :not(.auth-aurora) {
       position: relative;
       z-index: 1;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .aurora { animation: none; }
     }
   `],
 })

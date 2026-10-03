@@ -5,8 +5,8 @@
       <app-breadcrumb [items]="breadcrumb" />
     </div>
     @if (canWriteSandik()) {
-    <button class="btn btn-new-sandik" (click)="openEkleModal()">
-      <i class="ri-add-circle-line"></i> Yeni Sandık Ekle
+    <button type="button" class="tz-btn tz-btn--primary" (click)="openEkleModal()">
+      <i class="ri-add-line"></i>Yeni Sandık Ekle
     </button>
     }
   </div>
@@ -50,7 +50,7 @@
                 <td>{{ s.depoLokasyonMetni }}</td>
                 <td>
                   <div class="d-flex gap-2">
-                    <a [routerLink]="[routePrefix(), projeId(), s.id]" class="btn btn-sm btn-action">
+                    <a [routerLink]="[routePrefix, projeId(), s.id]" class="btn btn-sm btn-action">
                       <i class="ri-eye-line me-1"></i> Detay
                     </a>
                     @if (canWriteSandik() && s.silinebilirMi) {
@@ -74,78 +74,82 @@
 
 <!-- ===== Sandık Ekleme Modal ===== -->
 @if (showEkleModal()) {
-  <div class="modal-overlay" (click)="closeEkleModal()"></div>
-  <div class="modal-container">
-    <div class="modal-header-custom">
-      <h5 class="fw-semibold mb-0"><i class="ri-archive-line me-2"></i>Yeni Sandık Ekle</h5>
-      <button class="btn btn-sm border-0" (click)="closeEkleModal()"><i class="ri-close-line fs-5"></i></button>
-    </div>
-    <div class="modal-body-custom">
-      <div class="row g-3 mb-3">
-        <div class="col-6">
-          <label class="form-label fw-semibold">Sandık No <span class="text-danger">*</span></label>
-          <input type="text" class="form-control" [ngModel]="yeniSandikNo()" (ngModelChange)="yeniSandikNo.set($event)" placeholder="Ör: 5" />
-        </div>
-        <div class="col-6">
-          <label class="form-label fw-semibold">Sandık İsmi</label>
-          <input type="text" class="form-control" [ngModel]="yeniSandikIsmi()" (ngModelChange)="yeniSandikIsmi.set($event)" placeholder="Ör: Elektrik" />
-        </div>
+  <div class="tz-modal-backdrop" (click)="closeEkleModal()"></div>
+  <div class="tz-modal" role="dialog" aria-modal="true" aria-labelledby="sandik-ekle-baslik">
+    <div class="tz-modal__header">
+      <span class="tz-modal__icon" aria-hidden="true"><i class="ri-archive-line"></i></span>
+      <div class="tz-modal__title">
+        <h5 id="sandik-ekle-baslik">Yeni Sandık Ekle</h5>
+        <p>Sandık numarası ve tipi zorunludur; ölçüler sonradan da girilebilir.</p>
       </div>
-      @if (isSahaYedek()) {
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Sandık Tipi <span class="text-danger">*</span></label>
-          <select class="form-select" [ngModel]="yeniTipId()" (ngModelChange)="yeniTipId.set(+$event)">
-            @for (t of sandikTipleri(); track t.id) {
-              <!-- Ahşap Kapalı (1) ve Katlanır Sandık (2) vb. DB'den gelenler -->
-              <!-- Proje=1, Yedek=2, Saha=3 ama "Ahşap Kapalı=1, Katlanır Sandık=2" olarak db seeder ile değişti -->
-              <option [value]="t.id">{{ t.deger }}</option>
-            }
-          </select>
+      <button type="button" class="tz-modal__close" (click)="closeEkleModal()" aria-label="Kapat"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="tz-modal__body">
+      <div class="tz-form">
+        <div class="tz-field-grid">
+          <label class="tz-field">
+            <span>Sandık no <b>*</b></span>
+            <input type="text" class="form-control" [ngModel]="yeniSandikNo()" (ngModelChange)="yeniSandikNo.set($event)" placeholder="Ör: 5" />
+          </label>
+          <label class="tz-field">
+            <span>Sandık ismi</span>
+            <input type="text" class="form-control" [ngModel]="yeniSandikIsmi()" (ngModelChange)="yeniSandikIsmi.set($event)" placeholder="Ör: Elektrik" />
+          </label>
         </div>
-      }
-      <div class="mb-3">
-        <label class="form-label fw-semibold">Depo Lokasyonu</label>
-        <select class="form-select" [ngModel]="yeniLokasyonId()" (ngModelChange)="yeniLokasyonId.set(+$event)">
-          @for (l of lokasyonlar(); track l.id) {
-            <option [value]="l.id">{{ l.deger }}</option>
-          }
-        </select>
+        <div class="tz-field-grid">
+          <label class="tz-field">
+            <span>Sandık tipi <b>*</b></span>
+            <select class="form-select" [ngModel]="yeniTipId()" (ngModelChange)="yeniTipId.set($event ? +$event : null)">
+              <option [ngValue]="null">Tip seçin</option>
+              @for (t of sandikTipleri(); track t.id) {
+                <option [ngValue]="t.id">{{ t.deger }}</option>
+              }
+            </select>
+          </label>
+          <label class="tz-field">
+            <span>Depo lokasyonu</span>
+            <select class="form-select" [ngModel]="yeniLokasyonId()" (ngModelChange)="yeniLokasyonId.set(+$event)">
+              @for (l of lokasyonlar(); track l.id) {
+                <option [value]="l.id">{{ l.deger }}</option>
+              }
+            </select>
+          </label>
+        </div>
       </div>
 
-      <!-- Fiziksel Özellikler (Opsiyonel) -->
-      <h6 class="fw-semibold mt-4 mb-2">Fiziksel Özellikler (Opsiyonel)</h6>
-      <div class="row g-2 mb-3">
-        <div class="col-4">
-          <label class="form-label small fw-semibold">Boy (mm)</label>
-          <input type="number" step="0.01" class="form-control form-control-sm" [ngModel]="yeniBoy()" (ngModelChange)="yeniBoy.set($event)" />
+      <div class="tz-section"><i class="ri-ruler-line" aria-hidden="true"></i>Fiziksel özellikler <small>isteğe bağlı</small></div>
+      <div class="tz-form">
+        <div class="tz-field-grid tz-field-grid--3">
+          <label class="tz-field">
+            <span>Boy</span>
+            <span class="tz-input-unit"><input type="number" step="0.01" class="form-control" [ngModel]="yeniBoy()" (ngModelChange)="yeniBoy.set($event)" /><em>mm</em></span>
+          </label>
+          <label class="tz-field">
+            <span>En</span>
+            <span class="tz-input-unit"><input type="number" step="0.01" class="form-control" [ngModel]="yeniEn()" (ngModelChange)="yeniEn.set($event)" /><em>mm</em></span>
+          </label>
+          <label class="tz-field">
+            <span>Yükseklik</span>
+            <span class="tz-input-unit"><input type="number" step="0.01" class="form-control" [ngModel]="yeniYukseklik()" (ngModelChange)="yeniYukseklik.set($event)" /><em>mm</em></span>
+          </label>
         </div>
-        <div class="col-4">
-          <label class="form-label small fw-semibold">En (mm)</label>
-          <input type="number" step="0.01" class="form-control form-control-sm" [ngModel]="yeniEn()" (ngModelChange)="yeniEn.set($event)" />
-        </div>
-        <div class="col-4">
-          <label class="form-label small fw-semibold">Yükseklik (mm)</label>
-          <input type="number" step="0.01" class="form-control form-control-sm" [ngModel]="yeniYukseklik()" (ngModelChange)="yeniYukseklik.set($event)" />
-        </div>
-      </div>
-      <div class="row g-2">
-        <div class="col-6">
-          <label class="form-label small fw-semibold">Net Kg</label>
-          <input type="number" step="0.01" class="form-control form-control-sm" [ngModel]="yeniNetKg()" (ngModelChange)="yeniNetKg.set($event)" />
-        </div>
-        <div class="col-6">
-          <label class="form-label small fw-semibold">Gross Kg</label>
-          <input type="number" step="0.01" class="form-control form-control-sm" [ngModel]="yeniGrossKg()" (ngModelChange)="yeniGrossKg.set($event)" />
+        <div class="tz-field-grid">
+          <label class="tz-field">
+            <span>Net ağırlık</span>
+            <span class="tz-input-unit"><input type="number" step="0.01" class="form-control" [ngModel]="yeniNetKg()" (ngModelChange)="yeniNetKg.set($event)" /><em>kg</em></span>
+          </label>
+          <label class="tz-field">
+            <span>Brüt ağırlık (gross)</span>
+            <span class="tz-input-unit"><input type="number" step="0.01" class="form-control" [ngModel]="yeniGrossKg()" (ngModelChange)="yeniGrossKg.set($event)" /><em>kg</em></span>
+          </label>
         </div>
       </div>
     </div>
-    <div class="modal-footer-custom">
-      <button class="btn btn-outline flex-grow-1" (click)="closeEkleModal()">İptal</button>
-      <button class="btn btn-save flex-grow-1" (click)="sandikEkle()" [disabled]="eklemeSaving()">
-        @if (eklemeSaving()) {
-          <span class="spinner-border spinner-border-sm me-1"></span>
-        }
-        Oluştur
+    <div class="tz-modal__footer">
+      <button type="button" class="tz-btn" (click)="closeEkleModal()">Vazgeç</button>
+      <button type="button" class="tz-btn tz-btn--primary" (click)="sandikEkle()" [disabled]="eklemeSaving()">
+        @if (eklemeSaving()) { <span class="spinner-border spinner-border-sm"></span> } @else { <i class="ri-add-line"></i> }
+        Sandık Oluştur
       </button>
     </div>
   </div>

@@ -3,7 +3,7 @@ import { Observable, Subject } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, StokKaydiDto, StokKaydiOlusturDto, StokKarsilamaDto } from '../../shared/models/index';
+import { ApiResult, StokKaydiDto, StokKaydiOlusturDto } from '../../shared/models/index';
 import { PaginatedList } from '../../shared/models/common.model';
 
 /**
@@ -56,9 +56,5 @@ export class StokService {
 
   stokSil(id: number): Observable<ApiResult<unknown>> {
     return this.api.delete<unknown>(API.STOK.DELETE(id));
-  }
-
-  stokKarsila(dto: StokKarsilamaDto): Observable<ApiResult<unknown>> {
-    return this.api.post<unknown>(API.STOK.KARSILA, dto);
   }
 }

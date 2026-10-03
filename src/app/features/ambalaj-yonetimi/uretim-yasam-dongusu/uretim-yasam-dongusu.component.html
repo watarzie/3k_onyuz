@@ -1,0 +1,351 @@
+@if (plan() || bagimsiz()) {
+  <section
+    class="lifecycle-panel"
+    [class.integrated]="entegre()"
+    [attr.aria-label]="t('FORM_TITLE')"
+  >
+    <div class="lifecycle-heading">
+      <span class="lifecycle-icon"><i class="ri-file-list-3-line"></i></span>
+      <div>
+        <h3>{{ t('FORM_TITLE') }}</h3>
+        <p>{{ t(entegre() ? 'FORM_SELECTION_HELP' : 'FORM_HELP') }}</p>
+      </div>
+      <span class="selection-count">{{ seciliAdet() }} {{ t('SELECTED') }}</span>
+    </div>
+    @if (!entegre()) {
+      <div class="lifecycle-table-wrap">
+        <table class="lifecycle-table">
+          <thead>
+            <tr>
+              <th>{{ t('SELECT') }}</th>
+              <th>{{ t('CRATE') }}</th>
+              <th>{{ t('TYPE') }}</th>
+              <th>{{ t('QUANTITY') }}</th>
+              @if (permissions.hasAccess(izin.M3Goruntule)) {
+                <th>{{ t('NET') }}</th>
+              }
+              <th>{{ t('STATUS_ACTION') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (k of satirlar(); track k.kaynakSandikId || k.id) {
+              <tr [class.selected]="secim().includes(secimKimligi(k))">
+                <td>
+                  <input
+                    type="checkbox"
+                    [attr.aria-label]="k.sandikNo + ' ' + t('SELECT')"
+                    [disabled]="k.ambalajaDahilMi === false || islemde() || !secimYetkili()"
+                    [ngModel]="secim().includes(secimKimligi(k))"
+                    (ngModelChange)="sec(secimKimligi(k), $event)"
+                  />
+                </td>
+                <td>
+                  <strong>{{ k.sandikNo }}</strong
+                  ><small>{{ k.ad }}</small>
+                </td>
+                <td>{{ k.sandikTipi }}</td>
+                <td>{{ k.adet }}</td>
+                @if (permissions.hasAccess(izin.M3Goruntule)) {
+                  <td>
+                    {{
+                      k.m3HesaplanabilirMi === false
+                        ? t('NOT_APPLICABLE')
+                        : k.hacimM3 === null
+                          ? '—'
+                          : (k.hacimM3 | number: '1.3-3')
+                    }}
+                  </td>
+                }
+                <td>
+                  <span class="production-status status-{{ k.uretimDurumu || 1 }}">{{
+                    k.ambalajaDahilMi === false
+                      ? t('EXCLUDED')
+                      : k.uretimDurumu === 3
+                        ? t('COMPLETED')
+                        : k.uretimDurumu === 2
+                          ? t('IN_PROGRESS')
+                          : t('WAITING')
+                  }}</span>
+                  <div class="row-actions">
+                    @if (
+                      k.id > 0 &&
+                      k.uretimDurumu === 2 &&
+                      permissions.canWrite(izin.UretimiTamamla) &&
+                      permissions.canWrite(izin.DurumDuzenle)
+                    ) {
+                      <button
+                        type="button"
+                        class="success-action"
+                        [disabled]="islemde()"
+                        (click)="durum(k.id, 3)"
+                      >
+                        {{ t('COMPLETE') }}
+                      </button>
+                    }
+                    @if (
+                      k.id > 0 &&
+                      k.uretimDurumu === 2 &&
+                      permissions.canWrite(izin.DurumuGeriAl) &&
+                      permissions.canWrite(izin.DurumDuzenle)
+                    ) {
+                      <button type="button" [disabled]="islemde()" (click)="durum(k.id, 1)">
+                        {{ t('BACKWARD') }}
+                      </button>
+                    }
+                    @if (
+                      k.id > 0 &&
+                      k.uretimDurumu === 3 &&
+                      permissions.canWrite(izin.UretimiYenidenAc) &&
+                      permissions.canWrite(izin.DurumuGeriAl) &&
+                      permissions.canWrite(izin.DurumDuzenle)
+                    ) {
+                      <button type="button" [disabled]="islemde()" (click)="durum(k.id, 2)">
+                        {{ t('REOPEN') }}
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+    <div class="lifecycle-controls">
+      @if (!entegre()) {
+        <label class="reason-field"
+          ><span>{{ t('REASON') }}</span
+          ><input [ngModel]="gerekce" (ngModelChange)="gerekceyiDegistir($event)" maxlength="1000"
+        /></label>
+      }
+      <label class="reason-field finance-date-field" [title]="t('FINANCE_DATE_HELP')"
+        ><span>{{ t('FINANCE_DATE') }}</span
+        ><input type="date" [(ngModel)]="finansTarihi"
+      /></label>
+      <div class="form-actions">
+        @if (permissions.canWrite(izin.FormOlustur) || permissions.canWrite(izin.FormYenidenOlustur)) {
+          @let bicimler = indirmeBicimleri();
+          @if (bicimler.length > 1) {
+            <!-- A2/D10: form oluşturulurken biçim sorulur; form o anki veriyle üretilip hemen indirilir. -->
+            <app-islemler-menusu
+              [etiket]="t(islemde() ? 'SAVING' : 'CREATE')"
+              [ikon]="islemde() ? 'ri-loader-4-line spin' : 'ri-file-add-line'"
+              [birincil]="true"
+              [disabled]="islemde() || !secim().length || !formYetkili()"
+            >
+              <button type="button" (click)="olustur('pdf')">
+                <i class="ri-file-pdf-2-line"></i><span>{{ t('CREATE_AS_PDF') }}</span>
+              </button>
+              <button type="button" (click)="olustur('xlsx')">
+                <i class="ri-file-excel-2-line"></i><span>{{ t('CREATE_AS_EXCEL') }}</span>
+              </button>
+            </app-islemler-menusu>
+          } @else {
+            <button
+              type="button"
+              class="primary-action"
+              [disabled]="islemde() || !secim().length || !formYetkili()"
+              (click)="olustur(bicimler[0])"
+            >
+              <i [class]="islemde() ? 'ri-loader-4-line spin' : 'ri-file-add-line'"></i
+              >{{ t(islemde() ? 'SAVING' : 'CREATE') }}
+            </button>
+          }
+        }
+      </div>
+    </div>
+    <p class="lifecycle-note">{{ t('FINANCE_DATE_HELP') }}</p>
+    @if (yenidenOlusturulacak()) {
+      <p class="lifecycle-note">
+        <i class="ri-refresh-line"></i>
+        {{ t(formYetkili() ? 'REGENERATE_NOTE' : 'REGENERATE_FORBIDDEN') }}
+      </p>
+    }
+  </section>
+}
+@if (raporModu() && permissions.hasAccess(izin.RaporGoruntule)) {
+  <details class="card p-3 mb-3">
+    <summary class="h5">{{ t('REPORT_TITLE') }}</summary>
+    <div class="d-flex flex-wrap gap-2 align-items-end my-3">
+      <label
+        >{{ t('START') }}<input class="form-control" type="date" [(ngModel)]="baslangic"
+      /></label>
+      <label>{{ t('END') }}<input class="form-control" type="date" [(ngModel)]="bitis" /></label>
+      <button class="btn btn-primary" [disabled]="raporYukleniyor()" (click)="raporGetir()">
+        {{ t('LOAD_REPORT') }}
+      </button>
+      @if (permissions.hasAccess(izin.PdfIndir)) {
+        <button class="btn btn-outline-primary" (click)="raporIndir('pdf')">PDF</button>
+      }
+      @if (permissions.hasAccess(izin.ExcelIndir)) {
+        <button class="btn btn-outline-primary" (click)="raporIndir('xlsx')">Excel</button>
+      }
+    </div>
+    @if (rapor(); as r) {
+      <p>
+        {{ r.m3Tanimi }} Toplam {{ r.toplam.adet }} adet.
+        @if (
+          r.m3Gorunur &&
+          permissions.hasAccess(izin.M3Goruntule) &&
+          permissions.hasAccess(izin.M3RaporGoruntule)
+        ) {
+          Net {{ r.toplam.netM3 | number: '1.3-3' }} m³.
+        }
+        @if (
+          r.sarfGorunur &&
+          permissions.hasAccess(izin.M3Goruntule) &&
+          permissions.hasAccess(izin.M3RaporGoruntule) &&
+          permissions.hasAccess(izin.SarfGoruntule)
+        ) {
+          Sarf {{ r.toplam.sarfM3 | number: '1.3-3' }} m³; sarf dahil
+          {{ r.toplam.sarfDahilM3 | number: '1.3-3' }} m³.
+        }
+      </p>
+      @if (r.tarihiBelirsizEskiKayitSayisi) {
+        <p class="alert alert-warning">
+          {{ r.tarihiBelirsizEskiKayitSayisi }} {{ t('LEGACY_WARNING') }}
+        </p>
+      }
+      @if (camGrafigi(); as g) {
+        @if (permissions.hasAccess(izin.M3Goruntule) && permissions.hasAccess(izin.M3RaporGoruntule)) {
+          <div class="pine-chart">
+            <h4 class="h6">{{ t('PRODUCED_PINE_CHART') }}</h4>
+            <p class="lifecycle-note">{{ t('PRODUCED_PINE_HELP') }}</p>
+            <apx-chart [series]="g.series" [chart]="grafik" [xaxis]="g.xaxis" />
+          </div>
+        }
+      }
+      <label
+        >{{ t('GROUPING')
+        }}<select class="form-select" [(ngModel)]="gruplama">
+          <option value="projeler">{{ t('PROJECT') }}</option>
+          <option value="gunler">{{ t('DAY') }}</option>
+          <option value="aylar">{{ t('MONTH') }}</option>
+          <option value="cinsler">{{ t('TYPE') }}</option>
+        </select></label
+      >
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{{ t('GROUP') }}</th>
+            <th>{{ t('QUANTITY') }}</th>
+            @if (
+              r.m3Gorunur &&
+              permissions.hasAccess(izin.M3Goruntule) &&
+              permissions.hasAccess(izin.M3RaporGoruntule)
+            ) {
+              <th>{{ t('NET') }}</th>
+            }
+            @if (
+              r.sarfGorunur &&
+              permissions.hasAccess(izin.M3Goruntule) &&
+              permissions.hasAccess(izin.M3RaporGoruntule) &&
+              permissions.hasAccess(izin.SarfGoruntule)
+            ) {
+              <th>{{ t('WASTE') }}</th>
+              <th>{{ t('WITH_WASTE') }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (g of r[gruplama]; track g.anahtar) {
+            <tr>
+              <td>{{ g.anahtar }}</td>
+              <td>{{ g.adet }}</td>
+              @if (
+                r.m3Gorunur &&
+                permissions.hasAccess(izin.M3Goruntule) &&
+                permissions.hasAccess(izin.M3RaporGoruntule)
+              ) {
+                <td>{{ g.netM3 === null ? t('NOT_APPLICABLE') : (g.netM3 | number: '1.3-3') }}</td>
+              }
+              @if (
+                r.sarfGorunur &&
+                permissions.hasAccess(izin.M3Goruntule) &&
+                permissions.hasAccess(izin.M3RaporGoruntule) &&
+                permissions.hasAccess(izin.SarfGoruntule)
+              ) {
+                <td>{{ g.sarfM3 | number: '1.3-3' }}</td>
+                <td>{{ g.sarfDahilM3 | number: '1.3-3' }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+      @if (permissions.canWrite(izin.GerceklesmeDuzelt)) {
+        <details>
+          <summary>{{ t('DETAILS') }}</summary>
+          @for (k of r.kayitlar; track k.id) {
+            <div class="border-bottom py-2">
+              {{ k.tarih | date: 'dd.MM.yyyy' }} · {{ k.projeNo }} · {{ k.sandikNo }} ·
+              {{ k.adet }} adet
+              <button
+                class="btn btn-sm btn-outline-secondary"
+                [disabled]="
+                  k.m3HesaplanabilirMi &&
+                  (!r.m3Gorunur ||
+                    !r.sarfGorunur ||
+                    !permissions.hasAccess(izin.M3Goruntule) ||
+                    !permissions.hasAccess(izin.M3RaporGoruntule) ||
+                    !permissions.hasAccess(izin.SarfGoruntule))
+                "
+                (click)="duzelt(k)"
+              >
+                {{ t('CORRECT') }}
+              </button>
+            </div>
+          }
+        </details>
+      }
+    }
+    @if (duzeltme(); as k) {
+      <div class="card p-3 my-3">
+        <h4 class="h6">{{ t('CORRECTION_TITLE') }}</h4>
+        <label
+          >{{ t('DATE') }}<input type="date" class="form-control" [(ngModel)]="k.tarih"
+        /></label>
+        <label
+          >{{ t('QUANTITY')
+          }}<input type="number" min="1" class="form-control" [(ngModel)]="k.adet"
+        /></label>
+        @if (
+          k.m3HesaplanabilirMi &&
+          permissions.hasAccess(izin.M3Goruntule) &&
+          permissions.hasAccess(izin.M3RaporGoruntule) &&
+          permissions.hasAccess(izin.SarfGoruntule)
+        ) {
+          <label
+            >{{ t('NET')
+            }}<input
+              type="number"
+              min="0"
+              step="0.000001"
+              class="form-control"
+              [(ngModel)]="k.netM3"
+          /></label>
+          <label
+            >{{ t('WASTE')
+            }}<input
+              type="number"
+              min="0"
+              step="0.000001"
+              class="form-control"
+              [(ngModel)]="k.sarfM3"
+          /></label>
+        }
+        <label
+          >{{ t('REASON') }}<input class="form-control" [(ngModel)]="gerekce" maxlength="1000"
+        /></label>
+        <div class="mt-2">
+          <button
+            class="btn btn-warning"
+            [disabled]="islemde() || !gerekce.trim()"
+            (click)="duzeltmeyiKaydet()"
+          >
+            {{ t('SAVE_CORRECTION') }}</button
+          ><button class="btn btn-light" (click)="duzeltme.set(null)">{{ t('CANCEL') }}</button>
+        </div>
+      </div>
+    }
+  </details>
+}

@@ -1,10 +1,11 @@
 import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NgClass } from '@angular/common';
-import { ToggleService } from '../header/toggle.service';
+import { ToggleService } from '../../core/services/toggle.service';
 import { TranslationService } from '../../core/services/translation.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { YetkiTipi } from '../../core/constants/enums';
+import { YETKI } from '../../core/constants/yetki-kodlari';
 
 interface MenuItem {
   label: string;
@@ -50,7 +51,7 @@ export class SidebarComponent {
         // Route=null olanları sidebar'da GİZLE (grid-modulu, 3k-modulu gibi)
         children: node.children
           ?.filter(child => child.yetkiTipiId >= YetkiTipi.R && !!child.route &&
-            child.kod !== '3k-is-listesi' && child.kod !== 'grid-is-listesi')
+            child.kod !== YETKI.SANDIK.UCK_IS_LISTESI && child.kod !== YETKI.SANDIK.GRID_IS_LISTESI)
           .map(child => ({
             label: this.ts.translate(child.labelKey),
             kod: child.kod,

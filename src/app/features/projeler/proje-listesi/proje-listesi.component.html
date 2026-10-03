@@ -1,44 +1,45 @@
-<div class="page-title-area mb-4">
-  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-    <div>
-      <h2 class="fw-bold mb-1">
+<div class="pl-hero" [style.--ton]="sayfaGorunumu().renk">
+  <div class="pl-hero__sol">
+    <span class="pl-hero__ikon"><i [class]="sayfaGorunumu().ikon" aria-hidden="true"></i></span>
+    <div class="pl-hero__metin">
+      <h2>
         @if (isSahaYonetimi()) {
-          <i class="ri-tools-line me-2"></i>Saha Yönetimi
+          Saha Yönetimi
         } @else if (isYedekYonetimi()) {
-          <i class="ri-box-3-line me-2"></i>Yedek Yönetimi
+          Yedek Yönetimi
         } @else {
           {{ 'MENU.PROJELER' | translate }}
         }
       </h2>
       <app-breadcrumb [items]="breadcrumb" />
     </div>
-    <div class="d-flex gap-2">
-      @if (isSahaYonetimi() && canUseEksikTamamlama()) {
-        <a routerLink="/saha-yonetimi/eksik-olustur" class="btn btn-outline-success">
-          <i class="ri-tools-line me-2"></i>Eksiklerden Oluştur
-        </a>
-      }
-      @if (isYedekYonetimi() && canUploadYedekCeki()) {
-        <button class="btn btn-primary-gradient" (click)="openUploadModal('yedek')">
-          <i class="ri-file-excel-2-line me-2"></i>Yedek Çekisi Yükle
+  </div>
+  <div class="pl-hero__eylem">
+    @if (isSahaYonetimi() && canUseEksikTamamlama()) {
+      <a routerLink="/saha-yonetimi/eksik-olustur" class="tz-btn">
+        <i class="ri-tools-line tz-ico-success"></i>Eksiklerden Oluştur
+      </a>
+    }
+    @if (isYedekYonetimi() && canUploadYedekCeki()) {
+      <button type="button" class="tz-btn tz-btn--primary" (click)="openUploadModal('yedek')">
+        <i class="ri-file-excel-2-line"></i>Yedek Çekisi Yükle
+      </button>
+    } @else if (isSahaYonetimi() && canWriteCurrentMenu()) {
+      <button type="button" class="tz-btn tz-btn--primary" (click)="openProjeOlusturModal()">
+        <i class="ri-add-line"></i>Proje Oluştur
+      </button>
+    } @else if (!isSevkEdilen() && !isSahaYonetimi() && !isYedekYonetimi() && (canUploadCeki() || canUploadRevision())) {
+      @if (canUploadRevision()) {
+        <button type="button" class="tz-btn" (click)="openUploadModal('revizyon')">
+          <i class="ri-git-branch-line tz-ico-warning"></i>Revizyon Yükle
         </button>
-      } @else if (isSahaYonetimi() && canWriteCurrentMenu()) {
-        <button class="btn btn-primary-gradient" (click)="openProjeOlusturModal()">
-          <i class="ri-add-line me-2"></i>Proje Oluştur
-        </button>
-      } @else if (!isSevkEdilen() && !isSahaYonetimi() && !isYedekYonetimi() && (canUploadCeki() || canUploadRevision())) {
-        @if (canUploadRevision()) {
-          <button class="btn btn-outline-warning" (click)="openUploadModal('revizyon')">
-            <i class="ri-git-branch-line me-2"></i>Revizyon Yükle
-          </button>
-        }
-        @if (canUploadCeki()) {
-          <button class="btn btn-primary-gradient" (click)="openUploadModal('normal')">
-            <i class="ri-upload-2-line me-2"></i>Çeki Yükle
-          </button>
-        }
       }
-    </div>
+      @if (canUploadCeki()) {
+        <button type="button" class="tz-btn tz-btn--primary" (click)="openUploadModal('normal')">
+          <i class="ri-upload-2-line"></i>Çeki Yükle
+        </button>
+      }
+    }
   </div>
 </div>
 
@@ -93,34 +94,58 @@
   </div>
 }
 
-<div class="trezo-card border-0 shadow-none mb-4">
+<div class="trezo-card pl-kart mb-4" [style.--ton]="sayfaGorunumu().renk">
   <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-    <h5 class="fw-semibold mb-0">{{ isSahaYonetimi() ? 'Saha Projeleri' : isYedekYonetimi() ? 'Yedek Projeleri' : 'Projeler' }} ({{ totalCount() }})</h5>
+    <div class="pl-kart__baslik">
+      <span class="pl-kart__ikon"><i class="ri-list-check-3" aria-hidden="true"></i></span>
+      <h5>{{ isSahaYonetimi() ? 'Saha Projeleri' : isYedekYonetimi() ? 'Yedek Projeleri' : 'Projeler' }}</h5>
+      <span class="pl-sayac">{{ totalCount() }}</span>
+    </div>
     <div class="project-list-header-actions">
-      @if (canUseBulkEksikRapor()) {
-        <button type="button" class="btn btn-sm btn-bulk-missing-report report-download-trigger"
-          [disabled]="selectedEksikRaporCount() === 0 || bulkEksikRaporDownloading() !== null"
-          (click)="toggleBulkEksikRaporMenu($event)"
-          title="Seçilen projelerin eksik raporlarını indir">
-          @if (bulkEksikRaporDownloading() !== null) {
-            <span class="spinner-border spinner-border-sm"></span>
-          } @else {
-            <i class="ri-file-warning-line"></i>
+      @if (canUseBulkEksikRapor() || canUseBulkTalepFormu()) {
+        <div class="toolbar-group" role="group" aria-label="Seçili projeler için toplu işlemler" [class.has-selection]="selectedEksikRaporCount() > 0">
+          <span class="toolbar-group-label" title="Toplu işlemler seçili projelere uygulanır">
+            <span class="toolbar-count">{{ selectedEksikRaporCount() }}</span>seçili
+          </span>
+          @if (canUseBulkEksikRapor()) {
+            <button type="button" class="toolbar-btn report-download-trigger"
+              [disabled]="selectedEksikRaporCount() === 0 || bulkEksikRaporDownloading() !== null"
+              (click)="toggleBulkEksikRaporMenu($event)"
+              title="Seçilen projelerin eksik raporlarını indir">
+              @if (bulkEksikRaporDownloading() !== null) {
+                <span class="spinner-border spinner-border-sm"></span>
+              } @else {
+                <i class="ri-file-warning-line toolbar-icon is-danger"></i>
+              }
+              <span>Toplu Eksik Raporu</span>
+              <i class="ri-arrow-down-s-line report-download-chevron"
+                [class.open]="bulkEksikRaporMenuPosition() !== null"></i>
+            </button>
           }
-          <span>Toplu Eksik Raporu ({{ selectedEksikRaporCount() }})</span>
-          <i class="ri-arrow-down-s-line report-download-chevron"
-            [class.open]="bulkEksikRaporMenuPosition() !== null"></i>
-        </button>
+          @if (canUseBulkTalepFormu()) {
+            <button type="button" class="toolbar-btn"
+              [disabled]="selectedEksikRaporCount() === 0 || topluTalepFormuIndiriliyor()"
+              (click)="indirTopluTalepFormu()"
+              title="Seçilen projelerde Grid eksiği olan ürünleri tek sayfalık talep formu Excel'ine aktar">
+              @if (topluTalepFormuIndiriliyor()) {
+                <span class="spinner-border spinner-border-sm"></span>
+              } @else {
+                <i class="ri-file-excel-2-line toolbar-icon is-success"></i>
+              }
+              <span>Talep Formu Excel</span>
+            </button>
+          }
+        </div>
       }
       @if (canSee3KIsListesi()) {
-        <a routerLink="/uck-is-listesi" class="btn btn-sm btn-3k-work-list">
-          <i class="ri-list-check-3-line"></i>
+        <a routerLink="/uck-is-listesi" class="toolbar-btn">
+          <i class="ri-archive-stack-line toolbar-icon is-3k"></i>
           <span>3K İş Listesi</span>
         </a>
       }
       @if (canSeeGridIsListesi()) {
-        <a routerLink="/grid-is-listesi" class="btn btn-sm btn-3k-work-list">
-          <i class="ri-list-check-3-line"></i>
+        <a routerLink="/grid-is-listesi" class="toolbar-btn">
+          <i class="ri-database-2-line toolbar-icon is-grid"></i>
           <span>Grid İş Listesi</span>
         </a>
       }
@@ -137,56 +162,76 @@
           }
         </div>
       }
-      <div class="search-box position-relative" style="width: 250px;">
-        <i class="ri-search-line position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-        <input type="text" class="form-control ps-5" placeholder="Ara..." (input)="onSearch($event)" />
-      </div>
+      <label class="toolbar-search">
+        <i class="ri-search-line" aria-hidden="true"></i>
+        <input type="search" placeholder="Proje, müşteri ara..." aria-label="Projelerde ara" (input)="onSearch($event)" />
+      </label>
     </div>
   </div>
 
   <div class="card-body p-0">
     @if (loading()) {
-      <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
+      <div class="pl-iskelet" aria-busy="true" aria-label="Projeler yükleniyor">
+        @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+          <div class="pl-iskelet__satir" [style.--i]="i">
+            <span class="sk sk--ikon"></span>
+            <span class="sk sk--w18"></span>
+            <span class="sk sk--w12"></span>
+            <span class="sk sk--pill"></span>
+            <span class="sk sk--w20"></span>
+            <span class="sk sk--bar"></span>
+          </div>
+        }
+      </div>
     } @else if (projeler().length === 0 && !loading()) {
-      <div class="text-center py-5">
+      <div class="pl-bos">
+        <div class="pl-bos__illus">
+          <span class="pl-bos__halka"></span>
+          <span class="pl-bos__halka pl-bos__halka--2"></span>
+          @if (isSevkEdilen()) {
+            <i class="ri-truck-line"></i>
+          } @else if (isSahaYonetimi()) {
+            <i class="ri-archive-drawer-line"></i>
+          } @else if (isYedekYonetimi()) {
+            <i class="ri-file-excel-2-line"></i>
+          } @else {
+            <i class="ri-folder-add-line"></i>
+          }
+        </div>
         @if (isSevkEdilen()) {
-          <div class="empty-icon mb-3 text-muted" style="font-size: 3rem;"><i class="ri-truck-line"></i></div>
-          <h5 class="fw-semibold mb-2">Sevk edilen proje bulunmuyor</h5>
+          <h5>Sevk edilen proje bulunmuyor</h5>
         } @else if (isSahaYonetimi()) {
-          <div class="empty-icon mb-3" style="font-size: 3rem;"><i class="ri-archive-drawer-line"></i></div>
-          <h5 class="fw-semibold mb-2">Henüz saha projesi bulunmuyor</h5>
-          <p class="text-muted mb-3">Başlamak için yeni bir proje oluşturun</p>
+          <h5>Henüz saha projesi bulunmuyor</h5>
+          <p>Başlamak için yeni bir proje oluşturun</p>
           @if (canWriteCurrentMenu()) {
-            <button class="btn btn-primary-gradient" (click)="openProjeOlusturModal()">
-              <i class="ri-add-line me-2"></i>Proje Oluştur
+            <button type="button" class="tz-btn tz-btn--primary" (click)="openProjeOlusturModal()">
+              <i class="ri-add-line"></i>Proje Oluştur
             </button>
           }
         } @else if (isYedekYonetimi()) {
-          <div class="empty-icon mb-3 text-success" style="font-size: 3rem;"><i class="ri-file-excel-2-line"></i></div>
-          <h5 class="fw-semibold mb-2">Henüz yedek projesi bulunmuyor</h5>
-          <p class="text-muted mb-3">Yedek çeki dosyasını yüklediğinizde proje ve ilk sandık otomatik oluşturulur.</p>
+          <h5>Henüz yedek projesi bulunmuyor</h5>
+          <p>Yedek çeki dosyasını yüklediğinizde proje ve ilk sandık otomatik oluşturulur.</p>
           @if (canUploadYedekCeki()) {
-            <button class="btn btn-primary-gradient" (click)="openUploadModal('yedek')">
-              <i class="ri-upload-2-line me-2"></i>Yedek Çekisi Yükle
+            <button type="button" class="tz-btn tz-btn--primary" (click)="openUploadModal('yedek')">
+              <i class="ri-upload-2-line"></i>Yedek Çekisi Yükle
             </button>
           }
         } @else {
-          <div class="empty-icon mb-3"><i class="ri-folder-add-line"></i></div>
-          <h5 class="fw-semibold mb-2">Henüz proje bulunmuyor</h5>
-          <p class="text-muted mb-3">Başlamak için bir çeki dosyası yükleyin</p>
+          <h5>Henüz proje bulunmuyor</h5>
+          <p>Başlamak için bir çeki dosyası yükleyin</p>
           @if (canUploadCeki()) {
-            <button class="btn btn-primary-gradient" (click)="openUploadModal('normal')">
-              <i class="ri-upload-2-line me-2"></i>Çeki Yükle
+            <button type="button" class="tz-btn tz-btn--primary" (click)="openUploadModal('normal')">
+              <i class="ri-upload-2-line"></i>Çeki Yükle
             </button>
           }
         }
       </div>
     } @else {
       <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <table class="table align-middle mb-0 pl-tablo">
           <thead>
             <tr>
-              @if (canUseBulkEksikRapor()) {
+              @if (canUseBulkSecim()) {
                 <th class="bulk-report-select-column">
                   <input type="checkbox" class="form-check-input"
                     aria-label="Bu sayfadaki projeleri rapor için seç"
@@ -219,9 +264,9 @@
             </tr>
           </thead>
           <tbody>
-            @for (p of projeler(); track p.id) {
-              <tr>
-                @if (canUseBulkEksikRapor()) {
+            @for (p of projeler(); track p.id; let i = $index) {
+              <tr class="pl-satir" [style.--i]="i" [attr.data-tip]="p.projeTipiId">
+                @if (canUseBulkSecim()) {
                   <td class="bulk-report-select-column">
                     <input type="checkbox" class="form-check-input"
                       [checked]="isEksikRaporProjeSelected(p.id)"
@@ -231,38 +276,48 @@
                       (change)="toggleEksikRaporProjeSelection(p.id)" />
                   </td>
                 }
-                <td class="fw-semibold">
-                  @if (isSandikMode()) {
-                    <div class="d-flex align-items-center gap-2">
-                      <div class="proje-icon"><i class="ri-folder-line"></i></div>
-                      <span>{{ p.projeNo }}</span>
-                    </div>
-                  } @else {
-                    {{ p.projeNo }}
-                  }
+                <td class="pl-proje">
+                  <div class="pl-proje__hucre">
+                    <span class="pl-proje__ikon"><i [class]="isSandikMode() ? 'ri-folder-line' : 'ri-folder-3-line'" aria-hidden="true"></i></span>
+                    <span class="pl-proje__no">{{ p.projeNo }}</span>
+                  </div>
                 </td>
                 @if (showProjeTipiFilter()) {
-                  <td>
-                    <span class="badge" [ngClass]="{
-                      'bg-primary-subtle text-primary': p.projeTipiId === 1,
-                      'bg-success-subtle text-success': p.projeTipiId === 2,
-                      'bg-info-subtle text-info': p.projeTipiId === 3
-                    }">{{ p.projeTipiId === 1 ? 'Normal' : (p.projeTipiId === 2 ? 'Saha' : 'Yedek') }}</span>
+                  <td data-label="Proje Tipi">
+                    <span class="badge pl-tip" [ngClass]="{
+                      'bg-primary-subtle text-primary': p.projeTipiId === ProjeTipi.Normal,
+                      'bg-success-subtle text-success': p.projeTipiId === ProjeTipi.Saha,
+                      'bg-info-subtle text-info': p.projeTipiId === ProjeTipi.Yedek
+                    }">{{ projeTipiMetni(p.projeTipiId) }}</span>
                   </td>
                 }
                 @if (isSandikMode()) {
-                  <td>{{ p.musteri || '-' }}</td>
-                  <td>
-                    <span class="fw-semibold">{{ p.hazirSandikSayisi }}/{{ p.sandikSayisi }}</span>
-                    <small class="text-muted ms-1">hazır</small>
+                  <td data-label="Müşteri">
+                    @if (p.musteri) {
+                      <span class="pl-musteri"><i class="ri-building-2-line" aria-hidden="true"></i>{{ p.musteri }}</span>
+                    } @else {
+                      <span class="pl-yok">-</span>
+                    }
                   </td>
-                  <td><span class="fw-semibold">{{ p.toplamUrunSayisi }}</span></td>
+                  <td [attr.data-label]="'LABELS.TOPLAM_SANDIK' | translate">
+                    <div class="pl-hazir" [class.is-tam]="p.sandikSayisi > 0 && p.hazirSandikSayisi === p.sandikSayisi">
+                      <span class="pl-hazir__sayi"><b>{{ p.hazirSandikSayisi }}</b>/{{ p.sandikSayisi }} <small>hazır</small></span>
+                      <span class="pl-hazir__bar"><span [style.width.%]="p.sandikSayisi ? p.hazirSandikSayisi / p.sandikSayisi * 100 : 0"></span></span>
+                    </div>
+                  </td>
+                  <td data-label="Ürün Sayısı"><span class="pl-adet"><i class="ri-stack-line" aria-hidden="true"></i>{{ p.toplamUrunSayisi }}</span></td>
                 } @else {
-                  <td>{{ p.sandikSayisi }}</td>
-                  <td>{{ p.lokasyon ?? '-' }}</td>
+                  <td [attr.data-label]="'LABELS.TOPLAM_SANDIK' | translate"><span class="pl-adet"><i class="ri-archive-line" aria-hidden="true"></i>{{ p.sandikSayisi }}</span></td>
+                  <td [attr.data-label]="'LABELS.LOKASYON' | translate">
+                    @if (p.lokasyon) {
+                      <span class="pl-musteri"><i class="ri-map-pin-2-line" aria-hidden="true"></i>{{ p.lokasyon }}</span>
+                    } @else {
+                      <span class="pl-yok">-</span>
+                    }
+                  </td>
                 }
-                <td><app-status-badge [status]="p.durumMetni" [label]="getDurumLabel(p.durumMetni)" /></td>
-                <td class="shipment-date-cell">
+                <td [attr.data-label]="'LABELS.durumMetni' | translate"><app-status-badge [status]="p.durumMetni" [label]="getDurumLabel(p.durumMetni)" /></td>
+                <td class="shipment-date-cell pl-c-genis" [attr.data-label]="'LABELS.SEVK_TAKVIMI' | translate">
                   <div class="shipment-date-stack">
                     <div class="shipment-date shipment-date--planned">
                       <span class="shipment-date-label">
@@ -284,21 +339,19 @@
                     </div>
                   </div>
                 </td>
-                <td>
-                  <div class="d-flex align-items-center gap-2">
-                    <div class="progress flex-grow-1" style="height: 6px; min-width: 100px;">
-                      <div class="progress-bar" [ngClass]="{
-                        'bg-success': getTamamlanmaYuzdesi(p) === 100,
-                        'bg-primary': getTamamlanmaYuzdesi(p) > 0 && getTamamlanmaYuzdesi(p) < 100,
-                        'bg-secondary': getTamamlanmaYuzdesi(p) === 0
-                      }" [style.width.%]="getTamamlanmaYuzdesi(p)"></div>
-                    </div>
-                    <small class="fw-semibold">{{ getTamamlanmaYuzdesi(p) }}%</small>
+                <td class="pl-c-genis" [attr.data-label]="'LABELS.TAMAMLANMA' | translate">
+                  @let yuzde = getTamamlanmaYuzdesi(p);
+                  <div class="pl-tamam" [class.is-tam]="yuzde === 100" [class.is-sifir]="yuzde === 0">
+                    <span class="pl-tamam__bar"><span [style.width.%]="yuzde"></span></span>
+                    <span class="pl-tamam__yuzde">
+                      @if (yuzde === 100) { <i class="ri-check-line" aria-hidden="true"></i> }
+                      {{ yuzde }}%
+                    </span>
                   </div>
                 </td>
                 @if (shouldShowActions(p)) {
-                  <td>
-                    <div class="d-flex gap-1 flex-wrap">
+                  <td class="pl-c-islem">
+                    <app-islemler-menusu>
                       @if (canSeeRevizyonGecmisi(p)) {
                         <button type="button" class="btn btn-sm btn-outline-primary" (click)="revizyonGecmisiProje.set(p)"><i class="ri-history-line me-1"></i>{{ 'REV_HISTORY.TITLE' | translate }}</button>
                       }
@@ -420,15 +473,20 @@
                         }
                       }
                       
+                      @if (isSevkEdilen() && kilidiAcabilir(p)) {
+                        <button class="btn btn-sm btn-outline-primary" (click)="openKilitAcModal(p)">
+                          <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
+                        </button>
+                      }
                       @if ((canSevkEtCurrent() || canUpdatePlanlananSevkTarihiCurrent()) && (!isSandikMode() || isSahaYonetimi() || isYedekYonetimi())) {
                         @if (p.durumMetni === 'SevkEdildi' || p.durumMetni === 'Sevk Edildi') {
-                          @if (canSevkEtCurrent() && p.fizikselSevkEdilmisSandikVarMi) {
+                          @if (!isSevkEdilen() && kilidiAcabilir(p)) {
                             <button class="btn btn-sm btn-outline-primary" (click)="openKilitAcModal(p)">
                               <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
                             </button>
                           }
                         } @else {
-                          @if (canSevkEtCurrent() && p.fizikselSevkEdilmisSandikVarMi && hasSevkiyatGecmisi(p)) {
+                          @if (!isSevkEdilen() && kilidiAcabilir(p) && hasSevkiyatGecmisi(p)) {
                             <button class="btn btn-sm btn-outline-primary" (click)="openKilitAcModal(p)">
                               <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
                             </button>
@@ -449,10 +507,10 @@
 
                       @if (canDeleteProjectCurrent()) {
                         <button class="btn btn-sm btn-outline-danger" (click)="projeSil(p)" title="Projeyi Sil">
-                          <i class="ri-delete-bin-line"></i>
+                          <i class="ri-delete-bin-line me-1"></i>Projeyi Sil
                         </button>
                       }
-                    </div>
+                    </app-islemler-menusu>
                   </td>
                 }
               </tr>
@@ -463,35 +521,32 @@
 
       <!-- Pagination -->
     @if (totalCount() > 0) {
-      <div class="d-flex align-items-center justify-content-between p-3 border-top flex-wrap gap-2">
-        <div class="d-flex align-items-center gap-2">
-          <span class="text-muted">Sayfa başına:</span>
-          <select class="form-select form-select-sm" style="width: auto;"
-            [ngModel]="pageSize()"
-            (ngModelChange)="onPageSizeChange(+$event)">
-            @for (opt of pageSizeOptions; track opt) {
-              <option [value]="opt">{{ opt }}</option>
-            }
-          </select>
-          <span class="text-muted ms-2">
-            Toplam {{ totalCount() }} projeden
-            {{ (currentPage() - 1) * pageSize() + 1 }} -
-            {{ mathMin(currentPage() * pageSize(), totalCount()) }}
+      <div class="pl-sayfalama">
+        <div class="pl-sayfalama__sol">
+          <label class="pl-sayfa-boyu">
+            <span>Sayfa başına</span>
+            <select
+              [ngModel]="pageSize()"
+              (ngModelChange)="onPageSizeChange(+$event)">
+              @for (opt of pageSizeOptions; track opt) {
+                <option [value]="opt">{{ opt }}</option>
+              }
+            </select>
+          </label>
+          <span class="pl-sayfalama__bilgi">
+            Toplam <b>{{ totalCount() }}</b> projeden
+            <b>{{ (currentPage() - 1) * pageSize() + 1 }} – {{ mathMin(currentPage() * pageSize(), totalCount()) }}</b>
             arası gösteriliyor
           </span>
         </div>
-        <nav>
-          <ul class="pagination pagination-sm mb-0">
-            <li class="page-item" [class.disabled]="currentPage() === 1">
-              <a class="page-link" (click)="prevPage()" role="button">Önceki</a>
-            </li>
-            <li class="page-item active">
-              <span class="page-link">{{ currentPage() }} / {{ totalPages() }}</span>
-            </li>
-            <li class="page-item" [class.disabled]="currentPage() >= totalPages()">
-              <a class="page-link" (click)="nextPage()" role="button">Sonraki</a>
-            </li>
-          </ul>
+        <nav class="pl-sayfalama__nav" aria-label="Sayfalama">
+          <button type="button" class="pl-sayfa-btn" (click)="prevPage()" [disabled]="currentPage() === 1">
+            <i class="ri-arrow-left-s-line" aria-hidden="true"></i><span>Önceki</span>
+          </button>
+          <span class="pl-sayfa-no" aria-current="page"><b>{{ currentPage() }}</b> / {{ totalPages() }}</span>
+          <button type="button" class="pl-sayfa-btn" (click)="nextPage()" [disabled]="currentPage() >= totalPages()">
+            <span>Sonraki</span><i class="ri-arrow-right-s-line" aria-hidden="true"></i>
+          </button>
         </nav>
       </div>
     }

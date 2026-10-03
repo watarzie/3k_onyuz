@@ -1,0 +1,392 @@
+<!-- Breadcrumb -->
+<div class="breadcrumb-card">
+  <h5>{{ 'USER.TITLE' | translate }}</h5>
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="ri-home-4-line"></i> {{ 'COMMON.DASHBOARD' | translate }}</a></li>
+    <li class="breadcrumb-item active">{{ 'USER.TITLE' | translate }}</li>
+  </ol>
+</div>
+
+<!-- Özet -->
+<div class="ku-stats" *ngIf="ozet() as o">
+  <div class="ku-stat" style="--ton: #605dff; --i: 0">
+    <span class="ku-stat__ikon"><i class="ri-group-line"></i></span>
+    <div class="ku-stat__metin">
+      <strong>{{ isLoading() ? '–' : o.toplam }}</strong>
+      <small>Toplam kullanıcı</small>
+    </div>
+  </div>
+  <div class="ku-stat" style="--ton: #16a34a; --i: 1">
+    <span class="ku-stat__ikon"><i class="ri-shield-check-line"></i></span>
+    <div class="ku-stat__metin">
+      <strong>{{ isLoading() ? '–' : o.zorunlu }}<em>/ {{ o.toplam }}</em></strong>
+      <small>2FA zorunlu</small>
+    </div>
+    <span class="ku-stat__bar"><span [style.width.%]="o.toplam ? o.zorunlu / o.toplam * 100 : 0"></span></span>
+  </div>
+  <div class="ku-stat" style="--ton: #0ea5e9; --i: 2">
+    <span class="ku-stat__ikon"><i class="ri-smartphone-line"></i></span>
+    <div class="ku-stat__metin">
+      <strong>{{ isLoading() ? '–' : o.kurulu }}<em>/ {{ o.toplam }}</em></strong>
+      <small>Authenticator kurulu</small>
+    </div>
+    <span class="ku-stat__bar"><span [style.width.%]="o.toplam ? o.kurulu / o.toplam * 100 : 0"></span></span>
+  </div>
+  <div class="ku-stat" style="--ton: #e8890c; --i: 3">
+    <span class="ku-stat__ikon"><i class="ri-shield-user-line"></i></span>
+    <div class="ku-stat__metin">
+      <strong>{{ isLoading() ? '–' : o.rolSayisi }}</strong>
+      <small>Kullanılan rol</small>
+    </div>
+  </div>
+</div>
+
+<div class="users-card">
+  <!-- Header -->
+  <div class="card-header">
+    <div class="header-left">
+      <span class="header-ikon"><i class="ri-team-line"></i></span>
+      <div>
+        <h6>{{ 'USER.USER_LIST' | translate }} <span class="count-badge">{{ filteredKullanicilar().length }}</span></h6>
+        <small>Hesaplar, roller ve iki adımlı doğrulama durumu</small>
+      </div>
+    </div>
+    <div class="header-right">
+      <label class="search-box">
+        <i class="ri-search-line"></i>
+        <input type="search" [placeholder]="'USER.SEARCH_PLACEHOLDER' | translate"
+               [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)">
+      </label>
+      <button *ngIf="canManageNotifications()" type="button" class="tz-btn" (click)="openNotificationSettings()">
+        <i class="ri-notification-badge-line tz-ico-primary"></i>
+        Bildirim Alıcıları
+      </button>
+      <button *ngIf="canManageNotifications() && canManagePermissions()" type="button" class="tz-btn tz-btn--primary" (click)="openAddModal()">
+        <i class="ri-user-add-line"></i>
+        {{ 'USER.ADD_NEW' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>{{ 'USER.NAME' | translate }}</th>
+          <th>{{ 'USER.ROLE' | translate }}</th>
+          <th>{{ 'USER.TWO_FACTOR_COLUMN' | translate }}</th>
+          <th class="w-actions">{{ 'ACTIONS.ISLEM' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody *ngIf="isLoading()">
+        <tr *ngFor="let i of [1, 2, 3, 4, 5, 6]" class="skeleton-row">
+          <td><div class="sk-user"><span class="sk sk--avatar"></span><span class="sk-lines"><span class="sk sk--w60"></span><span class="sk sk--w40"></span></span></div></td>
+          <td><span class="sk sk--pill"></span></td>
+          <td><span class="sk sk--w40"></span></td>
+          <td><span class="sk sk--w60 sk--right"></span></td>
+        </tr>
+      </tbody>
+      <tbody *ngIf="!isLoading()">
+        <tr *ngFor="let k of filteredKullanicilar(); let i = index" class="user-row" [style.--i]="i" [style.--rol]="rolRengi(k.rolId)">
+          <td>
+            <div class="user-cell">
+              <div class="avatar" [attr.data-initials]="k.basHarf">{{ k.basHarf }}</div>
+              <div class="user-cell__metin">
+                <span class="user-name">{{ k.adSoyad }}</span>
+                <span class="user-email"><i class="ri-mail-line"></i>{{ k.email }}</span>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="role-badge">{{ k.rol }}</span>
+          </td>
+          <td>
+            <div class="two-factor-cell">
+              <div class="two-factor-policy-row">
+                <label
+                  class="user-two-factor-switch"
+                  [class.read-only]="!canManageTwoFactor()"
+                  [title]="(k.ikiFaktorZorunluMu ? 'USER.TWO_FACTOR_REQUIRED_HELP' : 'USER.TWO_FACTOR_OPTIONAL_HELP') | translate">
+                  <input
+                    type="checkbox"
+                    [checked]="k.ikiFaktorZorunluMu"
+                    [disabled]="!canManageTwoFactor() || isTwoFactorBusy(k.id)"
+                    [attr.aria-label]="(k.ikiFaktorZorunluMu ? 'USER.TWO_FACTOR_REQUIRED_HELP' : 'USER.TWO_FACTOR_OPTIONAL_HELP') | translate"
+                    (change)="updateTwoFactorRequirement(k, $any($event.target).checked)" />
+                  <span class="switch-track"><span class="switch-thumb"></span></span>
+                </label>
+                <span class="two-factor-policy-label">
+                  {{ (k.ikiFaktorZorunluMu ? 'USER.TWO_FACTOR_REQUIRED' : 'USER.TWO_FACTOR_OPTIONAL') | translate }}
+                </span>
+                <i
+                  *ngIf="twoFactorPolicyPendingIds().has(k.id)"
+                  class="ri-loader-4-line spin two-factor-spinner"
+                  [title]="'USER.TWO_FACTOR_SAVING' | translate"></i>
+              </div>
+
+              <span
+                class="enrollment-badge"
+                [class.enrolled]="k.ikiFaktorEtkinMi"
+                [class.not-enrolled]="!k.ikiFaktorEtkinMi"
+                [title]="twoFactorStatusTitle(k)">
+                <i [class]="k.ikiFaktorEtkinMi ? 'ri-checkbox-circle-fill' : 'ri-time-line'"></i>
+                {{ (k.ikiFaktorEtkinMi ? 'USER.TWO_FACTOR_ENROLLED' : 'USER.TWO_FACTOR_NOT_ENROLLED') | translate }}
+              </span>
+            </div>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button *ngIf="canManageNotifications()" type="button" class="act act--edit" (click)="openEditModal(k)" title="Düzenle">
+                <i class="ri-edit-line"></i>
+              </button>
+              <button *ngIf="canManageNotifications()" type="button" class="act act--key" (click)="openPasswordModal(k)" title="Şifre Değiştir">
+                <i class="ri-lock-password-line"></i>
+              </button>
+              <button
+                *ngIf="canManageTwoFactor()"
+                type="button"
+                class="act act--2fa"
+                (click)="resetTwoFactor(k)"
+                [disabled]="!k.ikiFaktorEtkinMi || isTwoFactorBusy(k.id)"
+                [attr.aria-label]="'USER.TWO_FACTOR_RESET' | translate"
+                [title]="(k.ikiFaktorEtkinMi ? 'USER.TWO_FACTOR_RESET' : 'USER.TWO_FACTOR_NOT_ENROLLED_HELP') | translate">
+                <i
+                  [class]="twoFactorResetPendingIds().has(k.id)
+                    ? 'ri-loader-4-line spin'
+                    : 'ri-shield-keyhole-line'"></i>
+              </button>
+              <button *ngIf="canManageNotifications()" type="button" class="act act--danger" (click)="deleteUser(k)" title="Sil">
+                <i class="ri-delete-bin-line"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="filteredKullanicilar().length === 0" class="empty-tr">
+          <td colspan="4">
+            <div class="empty-state">
+              <div class="empty-state__ikon"><i [class]="searchTerm().trim() ? 'ri-user-search-line' : 'ri-user-line'"></i></div>
+              <strong>{{ searchTerm().trim() ? 'Aramanızla eşleşen kullanıcı yok' : ('COMMON.NO_DATA' | translate) }}</strong>
+              <span *ngIf="searchTerm().trim()">Ad, e-posta veya rol adının bir kısmıyla tekrar deneyin.</span>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== Bildirim Alıcı Ayarları ===== -->
+<ng-container *ngIf="showNotificationSettings()">
+  <div class="tz-modal-backdrop" (click)="closeNotificationSettings()"></div>
+  <div class="tz-modal tz-modal--lg" role="dialog" aria-modal="true" aria-labelledby="bildirim-alici-baslik">
+    <header class="tz-modal__header">
+      <span class="tz-modal__icon"><i class="ri-notification-badge-line"></i></span>
+      <div class="tz-modal__title">
+        <h5 id="bildirim-alici-baslik">Bildirim Alıcıları</h5>
+        <p>Çeki veya revizyon yüklenince bildirim alacak kullanıcıları belirleyin.</p>
+      </div>
+      <button type="button" class="tz-modal__close" (click)="closeNotificationSettings()" [disabled]="notificationSettingsSaving()" aria-label="Kapat">
+        <i class="ri-close-line"></i>
+      </button>
+    </header>
+
+    <div class="tz-modal__body notification-settings-body">
+      <div *ngIf="notificationSettingsLoading()" class="notification-settings-state">
+        <span class="spinner-border spinner-border-sm text-primary"></span> Kullanıcılar yükleniyor
+      </div>
+
+      <div *ngIf="!notificationSettingsLoading()" class="notification-settings-table-wrapper">
+        <table class="notification-settings-table">
+          <thead>
+            <tr>
+              <th>Kullanıcı</th>
+              <th class="text-center">Çeki Yüklendi</th>
+              <th class="text-center">Revizyon Yüklendi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of notificationSettings()">
+              <td>
+                <strong>{{ item.adSoyad }}</strong>
+                <span>{{ item.email }} · {{ item.rol }}</span>
+              </td>
+              <td class="text-center">
+                <label class="notification-switch">
+                  <input type="checkbox" [checked]="item.cekiYuklendiBildirimi"
+                         (change)="toggleNotificationSetting(item.kullaniciId, 'cekiYuklendiBildirimi')">
+                  <span></span>
+                </label>
+              </td>
+              <td class="text-center">
+                <label class="notification-switch revision">
+                  <input type="checkbox" [checked]="item.cekiRevizyonuBildirimi"
+                         (change)="toggleNotificationSetting(item.kullaniciId, 'cekiRevizyonuBildirimi')">
+                  <span></span>
+                </label>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <footer class="tz-modal__footer">
+      <button type="button" class="tz-btn" (click)="closeNotificationSettings()" [disabled]="notificationSettingsSaving()">İptal</button>
+      <button type="button" class="tz-btn tz-btn--primary" (click)="saveNotificationSettings()"
+              [disabled]="notificationSettingsSaving() || notificationSettingsLoading()">
+        <i [class]="notificationSettingsSaving() ? 'ri-loader-4-line tz-spin' : 'ri-save-3-line'"></i>
+        Ayarları Kaydet
+      </button>
+    </footer>
+  </div>
+</ng-container>
+
+<!-- ===== Düzenleme Modali ===== -->
+<ng-container *ngIf="showEditModal()">
+  <div class="tz-modal-backdrop" (click)="closeEditModal()"></div>
+  <div class="tz-modal tz-modal--sm" role="dialog" aria-modal="true" aria-labelledby="kullanici-duzenle-baslik">
+    <header class="tz-modal__header">
+      <span class="tz-modal__icon"><i class="ri-user-settings-line"></i></span>
+      <div class="tz-modal__title">
+        <h5 id="kullanici-duzenle-baslik">{{ 'USER.EDIT_USER' | translate }}</h5>
+        <p>Ad soyad ve rol bilgisini güncelleyin.</p>
+      </div>
+      <button type="button" class="tz-modal__close" (click)="closeEditModal()" aria-label="Kapat"><i class="ri-close-line"></i></button>
+    </header>
+    <div class="tz-modal__body">
+      <div class="tz-form">
+        <div class="tz-field">
+          <label for="ku-duzenle-ad">{{ 'USER.NAME' | translate }}</label>
+          <input id="ku-duzenle-ad" type="text" class="form-control"
+                 [ngModel]="editData().adSoyad" (ngModelChange)="updateEditField('adSoyad', $event)">
+        </div>
+        <div class="tz-field">
+          <label for="ku-duzenle-rol">{{ 'USER.ROLE' | translate }}</label>
+          <select id="ku-duzenle-rol" class="form-select"
+                  [disabled]="!canManagePermissions()" [ngModel]="editData().rolId" (ngModelChange)="updateEditField('rolId', +$event)">
+            <option *ngFor="let r of roller()" [value]="r.id">{{ r.ad }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <footer class="tz-modal__footer">
+      <button type="button" class="tz-btn" (click)="closeEditModal()">{{ 'COMMON.CANCEL' | translate }}</button>
+      <button type="button" class="tz-btn tz-btn--primary" (click)="saveEdit()" [disabled]="isSaving()">
+        <i [class]="isSaving() ? 'ri-loader-4-line tz-spin' : 'ri-save-3-line'"></i>
+        {{ 'COMMON.SAVE' | translate }}
+      </button>
+    </footer>
+  </div>
+</ng-container>
+
+<!-- ===== Yeni Kullanıcı Modali ===== -->
+<ng-container *ngIf="showAddModal()">
+  <div class="tz-modal-backdrop" (click)="closeAddModal()"></div>
+  <div class="tz-modal" role="dialog" aria-modal="true" aria-labelledby="kullanici-ekle-baslik">
+    <header class="tz-modal__header">
+      <span class="tz-modal__icon"><i class="ri-user-add-line"></i></span>
+      <div class="tz-modal__title">
+        <h5 id="kullanici-ekle-baslik">{{ 'USER.ADD_NEW' | translate }}</h5>
+        <p>Hesap oluşturulur; yetkiler seçilen rolden gelir.</p>
+      </div>
+      <button type="button" class="tz-modal__close" (click)="closeAddModal()" aria-label="Kapat"><i class="ri-close-line"></i></button>
+    </header>
+    <div class="tz-modal__body">
+      <div class="tz-form">
+        <div class="tz-field">
+          <label for="ku-ekle-ad">{{ 'USER.NAME' | translate }}</label>
+          <span class="tz-input-icon">
+            <i class="ri-user-line"></i>
+            <input id="ku-ekle-ad" type="text" class="form-control" placeholder="Adı Soyadı"
+                   [ngModel]="newUser().adSoyad" (ngModelChange)="updateNewUserField('adSoyad', $event)">
+          </span>
+        </div>
+        <div class="tz-field">
+          <label for="ku-ekle-eposta">{{ 'USER.EMAIL' | translate }}</label>
+          <span class="tz-input-icon">
+            <i class="ri-mail-line"></i>
+            <input id="ku-ekle-eposta" type="email" class="form-control" placeholder="kullanici@firma.com"
+                   [ngModel]="newUser().email" (ngModelChange)="updateNewUserField('email', $event)">
+          </span>
+        </div>
+        <div class="tz-field-grid">
+          <div class="tz-field">
+            <label for="ku-ekle-sifre">{{ 'USER.PASSWORD' | translate }}</label>
+            <span class="tz-input-icon">
+              <i class="ri-lock-line"></i>
+              <input id="ku-ekle-sifre" type="password" class="form-control" placeholder="••••••"
+                     [ngModel]="newUser().sifre" (ngModelChange)="updateNewUserField('sifre', $event)">
+            </span>
+          </div>
+          <div class="tz-field">
+            <label for="ku-ekle-rol">{{ 'USER.ROLE' | translate }}</label>
+            <select id="ku-ekle-rol" class="form-select"
+                    [ngModel]="newUser().rolId" (ngModelChange)="updateNewUserField('rolId', +$event)">
+              <option *ngFor="let r of roller()" [value]="r.id">{{ r.ad }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <footer class="tz-modal__footer">
+      <button type="button" class="tz-btn" (click)="closeAddModal()">{{ 'COMMON.CANCEL' | translate }}</button>
+      <button type="button" class="tz-btn tz-btn--primary" (click)="addUser()" [disabled]="isSaving() || !newUser().adSoyad || !newUser().email || !newUser().sifre">
+        <i [class]="isSaving() ? 'ri-loader-4-line tz-spin' : 'ri-user-add-line'"></i>
+        {{ 'USER.CREATE' | translate }}
+      </button>
+    </footer>
+  </div>
+</ng-container>
+
+<!-- ===== Şifre Değiştirme Modali ===== -->
+<ng-container *ngIf="showPasswordModal()">
+  <div class="tz-modal-backdrop" (click)="closePasswordModal()"></div>
+  <div class="tz-modal tz-modal--sm" role="dialog" aria-modal="true" aria-labelledby="sifre-degistir-baslik" data-ton="warning">
+    <header class="tz-modal__header">
+      <span class="tz-modal__icon"><i class="ri-lock-password-line"></i></span>
+      <div class="tz-modal__title">
+        <h5 id="sifre-degistir-baslik">Şifre Değiştir</h5>
+        <p>Yeni şifre en az 6 karakter olmalıdır.</p>
+      </div>
+      <button type="button" class="tz-modal__close" (click)="closePasswordModal()" aria-label="Kapat"><i class="ri-close-line"></i></button>
+    </header>
+    <div class="tz-modal__body">
+      <div class="tz-summary" data-ton="warning">
+        <i class="ri-user-line"></i>
+        <div><span>Kullanıcı</span><strong>{{ passwordUserName() }}</strong></div>
+      </div>
+      <div class="tz-form">
+        <div class="tz-field">
+          <label for="ku-yeni-sifre">Yeni Şifre</label>
+          <div class="input-password">
+            <input id="ku-yeni-sifre" [type]="showNewPassword() ? 'text' : 'password'" class="form-control"
+                   placeholder="En az 6 karakter"
+                   [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)">
+            <button type="button" class="btn-toggle-pw" (click)="toggleNewPassword()" [attr.aria-label]="showNewPassword() ? 'Şifreyi gizle' : 'Şifreyi göster'">
+              <i [class]="showNewPassword() ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
+            </button>
+          </div>
+        </div>
+        <div class="tz-field">
+          <label for="ku-sifre-tekrar">Şifre Tekrar</label>
+          <div class="input-password">
+            <input id="ku-sifre-tekrar" [type]="showConfirmPassword() ? 'text' : 'password'" class="form-control"
+                   placeholder="Şifreyi tekrar girin"
+                   [ngModel]="confirmPassword()" (ngModelChange)="confirmPassword.set($event)">
+            <button type="button" class="btn-toggle-pw" (click)="toggleConfirmPassword()" [attr.aria-label]="showConfirmPassword() ? 'Şifreyi gizle' : 'Şifreyi göster'">
+              <i [class]="showConfirmPassword() ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <footer class="tz-modal__footer">
+      <button type="button" class="tz-btn" (click)="closePasswordModal()">İptal</button>
+      <button type="button" class="tz-btn tz-btn--primary" (click)="savePassword()" [disabled]="isSaving() || !newPassword() || !confirmPassword()">
+        <i [class]="isSaving() ? 'ri-loader-4-line tz-spin' : 'ri-lock-password-line'"></i>
+        Şifreyi Kaydet
+      </button>
+    </footer>
+  </div>
+</ng-container>

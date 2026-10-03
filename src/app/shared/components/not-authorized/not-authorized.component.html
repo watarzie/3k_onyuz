@@ -1,0 +1,73 @@
+<section class="yetkisiz" aria-labelledby="yetkisiz-baslik">
+  <div class="yetkisiz-kart">
+    <!-- İllüstrasyon: arkada 403, önde salınan kalkan ve kilit; çevresinde dönen yörüngeler ve tarama ışını -->
+    <div class="sahne" aria-hidden="true">
+      <span class="sahne__kod">403</span>
+      <span class="yorunge yorunge--1"><i></i></span>
+      <span class="yorunge yorunge--2"><i></i></span>
+      <span class="tarama"></span>
+      <svg class="kalkan" viewBox="0 0 120 140">
+        <defs>
+          <linearGradient id="kalkanDolgu" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#7c78ff" />
+            <stop offset="1" stop-color="#4f46e5" />
+          </linearGradient>
+          <linearGradient id="kalkanParilti" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#fff" stop-opacity="0" />
+            <stop offset=".5" stop-color="#fff" stop-opacity=".45" />
+            <stop offset="1" stop-color="#fff" stop-opacity="0" />
+          </linearGradient>
+          <clipPath id="kalkanKirp">
+            <path d="M60 6 L108 24 V66 C108 98 87 121 60 134 C33 121 12 98 12 66 V24 Z" />
+          </clipPath>
+        </defs>
+        <path d="M60 6 L108 24 V66 C108 98 87 121 60 134 C33 121 12 98 12 66 V24 Z" fill="url(#kalkanDolgu)" />
+        <path d="M60 18 L97 32 V66 C97 91 81 109 60 120 C39 109 23 91 23 66 V32 Z" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="2" />
+        <g clip-path="url(#kalkanKirp)">
+          <rect class="kalkan__parilti" x="-60" y="0" width="50" height="140" fill="url(#kalkanParilti)" transform="skewX(-20)" />
+        </g>
+        <g class="kilit">
+          <path class="kilit__kol" d="M48 66 V56 a12 12 0 0 1 24 0 V66" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" />
+          <rect x="40" y="63" width="40" height="32" rx="8" fill="#fff" />
+          <circle class="kilit__delik" cx="60" cy="76" r="4.5" fill="#ef4444" />
+          <rect x="58" y="78" width="4" height="9" rx="2" fill="#ef4444" />
+        </g>
+      </svg>
+      <span class="yasak"><i class="ri-close-line"></i></span>
+    </div>
+
+    <span class="yetkisiz-etiket"><i class="ri-shield-keyhole-line" aria-hidden="true"></i>Erişim engellendi · 403</span>
+    <h1 id="yetkisiz-baslik">Bu sayfaya erişim izniniz yok</h1>
+    <p class="yetkisiz-aciklama">
+      Rolünüz bu ekranı görüntülemeye yetkili değil. Yetkiler rol yönetiminden verilir; bu bir hata ise
+      sistem yöneticinize başvurun.
+    </p>
+
+    <dl class="yetkisiz-bilgi">
+      @if (sayfa()) {
+        <div>
+          <dt><i class="ri-links-line" aria-hidden="true"></i>İstenen sayfa</dt>
+          <dd><code>{{ sayfa() }}</code></dd>
+        </div>
+      }
+      @if (kullanici()?.rol) {
+        <div>
+          <dt><i class="ri-user-settings-line" aria-hidden="true"></i>Rolünüz</dt>
+          <dd>{{ kullanici()?.rol }}</dd>
+        </div>
+      }
+      <div>
+        <dt><i class="ri-time-line" aria-hidden="true"></i>Zaman</dt>
+        <dd>{{ zaman }}</dd>
+      </div>
+    </dl>
+
+    <div class="yetkisiz-eylemler">
+      <a class="tz-btn tz-btn--primary" routerLink="/dashboard"><i class="ri-dashboard-line"></i>Ana panele dön</a>
+      <button type="button" class="tz-btn" (click)="geriGit()"><i class="ri-arrow-go-back-line tz-ico-primary"></i>Geri git</button>
+      <button type="button" class="tz-btn" (click)="talepMetniniKopyala()" title="Yöneticiye gönderebileceğiniz yetki talebi metnini kopyalar">
+        <i class="ri-file-copy-line tz-ico-info"></i>Yetki talebini kopyala
+      </button>
+    </div>
+  </div>
+</section>

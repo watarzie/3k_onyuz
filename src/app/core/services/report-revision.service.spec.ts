@@ -15,15 +15,15 @@ describe('Rapor ve revizyon geçmişi API sözleşmeleri', () => {
     TestBed.configureTestingModule({ providers: [PdfService, CekiRevizyonGecmisiService, { provide: BaseApiService, useValue: api }] });
   });
 
-  for (const [type, menu] of [[1, 'eksik-raporu'], [2, 'saha-sevk-sonrasi-eksik-raporu'], [3, 'yedek-eksik-raporu']] as const) {
-    it(`${type} projesinde PDF/Excel için aynı proje tipi ve seçim gönderilir`, () => {
+  for (const type of [1, 2, 3] as const) {
+    it(`${type} projesinde PDF/Excel için aynı proje tipi ve seçim gönderilir; ekran başlığı gönderilmez`, () => {
       const service = TestBed.inject(PdfService);
       service.topluEksikUrunlerPdf([10, 20], type).subscribe();
       service.topluEksikUrunlerExcel([10, 20], type).subscribe();
       expect(api.downloadPostFile).toHaveBeenCalledTimes(2);
       for (const call of api.downloadPostFile.calls.all()) {
+        expect(call.args.length).toBe(2);
         expect(call.args[1]).toEqual({ projeIds: [10, 20], projeTipi: type });
-        expect(call.args[2]).toEqual({ headers: { 'X-Menu-Kod': menu } });
       }
     });
   }

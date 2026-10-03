@@ -1,0 +1,130 @@
+// Kapsülleme yok: projeksiyonla gelen işlem düğmeleri menü öğesi olarak biçimlenir. Seçiciler bileşen etiketiyle
+// sınırlıdır; sayfanın diğer düğmelerini etkilemez.
+app-islemler-menusu {
+  display: inline-block;
+  position: relative;
+}
+
+app-islemler-menusu .islemler-tetik {
+  // Ölçü ve renkler tz-btn--sm ile aynıdır; satırdaki diğer düğmelerle hizalı durur.
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 9px 0 11px;
+  border: 1px solid var(--borderColor, #dbe2ea);
+  border-radius: 8px;
+  background: var(--whiteColor, #fff);
+  color: var(--blackColor, #1f2937);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+
+  > i {
+    font-size: 15px;
+    line-height: 1;
+  }
+  > i:first-child {
+    color: var(--bodyColor, #64748b);
+  }
+  &:hover:not(:disabled),
+  &[aria-expanded='true'] {
+    border-color: color-mix(in srgb, var(--primaryColor, #605dff) 35%, transparent);
+    color: var(--primaryColor, #605dff);
+    box-shadow: 0 4px 12px -8px rgba(96, 93, 255, 0.55);
+    > i:first-child {
+      color: var(--primaryColor, #605dff);
+    }
+  }
+  &:disabled {
+    opacity: 0.55;
+  }
+  .islemler-ok {
+    transition: transform 0.15s ease;
+  }
+  .islemler-ok.acik {
+    transform: rotate(180deg);
+  }
+
+  // Birincil işlem: sayfanın ana düğmesi gibi dolu görünür.
+  &.birincil {
+    gap: 7px;
+    min-height: 39px;
+    padding: 8px 14px;
+    border-color: var(--primaryColor, #605dff);
+    border-radius: 8px;
+    background: var(--primaryColor, #605dff);
+    color: #fff;
+
+    > i:first-child {
+      color: #fff;
+    }
+    &:hover:not(:disabled),
+    &[aria-expanded='true'] {
+      border-color: var(--primaryColor, #605dff);
+      color: #fff;
+      filter: brightness(0.96);
+      > i:first-child {
+        color: #fff;
+      }
+    }
+  }
+}
+
+app-islemler-menusu .islemler-panel {
+  display: none;
+  position: fixed;
+  z-index: 2060;
+  width: 240px;
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid var(--borderColor, #dbe2ea);
+  border-radius: 8px;
+  background: var(--whiteColor, #fff);
+  box-shadow: 0 12px 28px rgb(15 23 42 / 16%);
+
+  &.acik {
+    display: flex;
+  }
+
+  // Menü öğeleri: doğrudan veya sarmalayıcı içinde gelen düğme ve bağlantılar tam genişlikte, sola hizalı.
+  > button,
+  > a,
+  > * > button,
+  > * > a {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    width: 100%;
+    min-height: 34px;
+    margin: 0;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--blackColor, #1f2937);
+    font-size: 12.5px;
+    font-weight: 500;
+    text-align: left;
+    text-decoration: none;
+    box-shadow: none;
+
+    &:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--primaryColor, #605dff) 9%, transparent);
+      color: var(--primaryColor, #605dff);
+    }
+    &:disabled {
+      opacity: 0.5;
+    }
+    &.danger,
+    &.btn-outline-danger {
+      color: #b42318;
+    }
+  }
+}

@@ -6,6 +6,9 @@ export interface SandikDto {
   ad?: string;
   durumId: number;
   durumMetni: string;
+  /** Sandık tipi (SandikTipi); Ambalaj senkronunda sandık cinsini belirler. */
+  tipId?: number;
+  tipMetni?: string;
   sevkiyatDuzeltmeAcikMi?: boolean;
   depoLokasyonId: number;
   depoLokasyonMetni: string;
@@ -29,6 +32,8 @@ export interface SandikDetayDto {
   ad?: string;
   durumId: number;
   durumMetni: string;
+  tipId?: number;
+  tipMetni?: string;
   sevkiyatDuzeltmeAcikMi?: boolean;
   depoLokasyonId: number;
   depoLokasyonMetni: string;
@@ -117,56 +122,17 @@ export interface UrunGuncelleDto {
   projeId: number;
 }
 
-export interface SandikDegistirDto {
-  cekiSatiriId: number;
-  yeniFiiliSandikNo: string;
-  projeId: number;
-  kullaniciId: number;
-}
-
 export interface SandikOzellikGuncelleDto {
   sandikId: number;
   sandikIsmi?: string;
+  /** Sandık tipi zorunludur (G2). */
+  tipId: number;
   en?: number;
   boy?: number;
   yukseklik?: number;
   netKg?: number;
   grossKg?: number;
   depoLokasyonId?: number;
-}
-
-export interface TeslimAlDto {
-  cekiSatiriId: number;
-  projeId: number;
-  gelenMiktar: number;
-  not?: string;
-}
-
-export interface TopluTeslimAlDto {
-  projeId: number;
-  urunler: { cekiSatiriId: number; gelenMiktar: number }[];
-  not?: string;
-}
-
-export interface UrunIptalDto {
-  cekiSatiriId: number;
-  projeId: number;
-  kullaniciId: number;
-}
-
-export interface EksikUrunDto {
-  cekiSatiriId: number;
-  siraNo: number;
-  barkodNo: string;
-  aciklama: string;
-  istenenAdet: number;
-  gelenMiktar: number;
-  eksikMiktar: number;
-  gridDurumuId: number;
-  gridDurumuMetni: string;
-  ucKDurumuId: number;
-  ucKDurumuMetni: string;
-  sandikNo: string;
 }
 
 export interface UrunTasiDto {

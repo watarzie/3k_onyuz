@@ -5,7 +5,7 @@ import { YetkiTipi } from '../../core/constants/enums';
 import { PermissionService } from '../../core/services/permission.service';
 import { TranslationService } from '../../core/services/translation.service';
 import { MenuTreeDto } from '../../shared/models';
-import { ToggleService } from '../header/toggle.service';
+import { ToggleService } from '../../core/services/toggle.service';
 import { SidebarComponent } from './sidebar.component';
 
 describe('SidebarComponent yetki filtresi', () => {

@@ -1,0 +1,526 @@
+// Rol yönetimi — Trezo: solda avatarlı rol listesi, sağda özetli ve aranabilir izin ağacı.
+:host {
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  display: block;
+}
+
+.breadcrumb-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 16px 22px;
+  border: 1px solid var(--borderColor, #e5e7eb);
+  border-radius: 14px;
+  background: #fff;
+
+  h5 { margin: 0; color: var(--blackColor, #1e293b); font-weight: 700; }
+
+  .breadcrumb {
+    display: flex;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    li { color: #64748b; font-size: 13px; }
+    li a { color: var(--primaryColor); text-decoration: none; }
+    li a i { margin-right: 4px; vertical-align: middle; }
+    li.active { color: var(--blackColor, #1e293b); }
+    li + li::before { content: '›'; margin-right: 8px; color: #cbd5e1; }
+  }
+}
+
+.role-container {
+  display: grid;
+  grid-template-columns: 330px minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.panel-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--borderColor, #e5e7eb);
+  border-radius: 16px;
+  background: #fff;
+  animation: rol-gir .45s var(--ease) backwards;
+}
+
+.permission-panel .panel-card {
+  min-height: calc(100vh - 220px);
+  animation-delay: .08s;
+}
+
+// ===== Sol panel =====
+.role-list-panel {
+  position: sticky;
+  top: 90px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 16px 12px;
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  h6 { margin: 0; color: var(--blackColor, #1e293b); font-size: 15px; font-weight: 700; }
+  small { color: #94a3b8; font-size: 12px; font-weight: 600; }
+}
+
+.panel-title__ikon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--primaryColor) 10%, #fff);
+  color: var(--primaryColor);
+  font-size: 18px;
+}
+
+.search-box {
+  position: relative;
+  margin: 0 16px 10px;
+
+  i {
+    position: absolute;
+    top: 50%;
+    left: 12px;
+    color: #94a3b8;
+    transform: translateY(-50%);
+  }
+  input {
+    width: 100%;
+    height: 38px;
+    padding: 0 12px 0 34px;
+    border: 1px solid var(--borderColor, #e5e7eb);
+    border-radius: 10px;
+    background: #f8fafc;
+    font-size: 13px;
+    outline: 0;
+    transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
+
+    &:focus {
+      border-color: var(--primaryColor);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(96, 93, 255, .12);
+    }
+  }
+}
+
+.role-list {
+  display: grid;
+  gap: 4px;
+  max-height: calc(100vh - 300px);
+  padding: 4px 10px 12px;
+  overflow-y: auto;
+}
+
+.role-item {
+  --rol: var(--primaryColor);
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color .18s ease, transform .18s var(--ease);
+  animation: rol-satir .35s calc(var(--i, 0) * 30ms) var(--ease) backwards;
+
+  // Seçili rolün solunda beliren renkli şerit
+  &::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    bottom: 10px;
+    left: 0;
+    width: 3px;
+    border-radius: 3px;
+    background: var(--rol);
+    transform: scaleY(0);
+    transition: transform .22s var(--ease);
+  }
+
+  &:hover {
+    background: #f6f7fb;
+    transform: translateX(2px);
+
+    .role-actions { opacity: 1; }
+    .role-chevron { opacity: .6; }
+  }
+  &.active {
+    background: color-mix(in srgb, var(--rol) 9%, #fff);
+
+    &::before { transform: scaleY(1); }
+    .role-name { color: var(--blackColor, #1e293b); font-weight: 700; }
+    .role-avatar { box-shadow: 0 6px 14px -6px var(--rol); }
+    .role-chevron { opacity: 1; color: var(--rol); }
+  }
+}
+
+.role-avatar {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--rol) 14%, #fff);
+  color: var(--rol);
+  font-size: 12.5px;
+  font-weight: 800;
+  transition: box-shadow .2s ease;
+}
+
+.role-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: #334155;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.role-badge {
+  color: #7c3aed;
+  font-size: 15px;
+}
+
+.role-actions {
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+
+.role-chevron {
+  color: #94a3b8;
+  font-size: 18px;
+  opacity: 0;
+  transition: opacity .15s ease, color .15s ease;
+}
+
+.role-skeleton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+
+  span {
+    border-radius: 9px;
+    background: linear-gradient(90deg, #eef1f5, #f8f9fb, #eef1f5);
+    background-size: 220% 100%;
+    animation: rol-parilti 1.2s ease-in-out infinite;
+  }
+  span:first-child { width: 34px; height: 34px; }
+  span:last-child { flex: 1; height: 12px; border-radius: 999px; }
+}
+
+.empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 28px 12px;
+  color: #94a3b8;
+  font-size: 13px;
+
+  i { font-size: 24px; }
+}
+
+// ===== Sağ panel =====
+.empty-right-panel {
+  display: grid;
+  flex: 1;
+  place-content: center;
+  justify-items: center;
+  padding: 60px 20px;
+  text-align: center;
+
+  h5 { margin: 18px 0 6px; color: var(--blackColor, #1e293b); font-weight: 700; }
+  p { margin: 0; color: #64748b; font-size: 13.5px; }
+}
+
+.empty-illus {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 110px;
+  height: 110px;
+
+  i {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #7c78ff, #4f46e5);
+    color: #fff;
+    font-size: 30px;
+    box-shadow: 0 16px 30px -12px rgba(79, 70, 229, .6);
+    animation: rol-sal 3.6s ease-in-out infinite;
+  }
+}
+
+.empty-illus__halka {
+  position: absolute;
+  inset: 12px;
+  border: 1px solid rgba(96, 93, 255, .35);
+  border-radius: 50%;
+  animation: rol-halka 3s ease-out infinite;
+
+  &--2 { animation-delay: 1.5s; }
+}
+
+.permission-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--borderColor, #e5e7eb);
+  background:
+    radial-gradient(100% 140% at 0% 0%, color-mix(in srgb, var(--primaryColor) 6%, transparent), transparent 60%),
+    #fff;
+}
+
+.role-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  h6 { margin: 0; color: var(--blackColor, #1e293b); font-size: 17px; font-weight: 800; }
+  small { color: #94a3b8; font-size: 12px; font-weight: 600; }
+}
+
+.role-info__avatar {
+  --rol: var(--primaryColor);
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: var(--rol);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  box-shadow: 0 10px 22px -10px var(--rol);
+  animation: rol-pop .4s var(--ease);
+}
+
+.permission-header__eylem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .tz-btn { min-height: 40px; }
+  .tz-btn.is-pulse { animation: rol-nabiz 1.8s ease-in-out infinite; }
+}
+
+.unsaved {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fff7e6;
+  color: #b45309;
+  font-size: 12px;
+  font-weight: 700;
+  animation: rol-pop .3s var(--ease);
+}
+
+.permission-content {
+  padding: 18px 20px 22px;
+}
+
+// Özet + renk açıklaması
+.perm-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.perm-stat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--borderColor, #e5e7eb);
+  border-radius: 12px;
+  background: #fafbfc;
+
+  strong { display: block; color: var(--blackColor, #1e293b); font-size: 18px; font-weight: 800; line-height: 1.1; }
+  small { color: #64748b; font-size: 12px; font-weight: 600; }
+}
+
+.perm-stat__kutu {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff center / 12px no-repeat;
+
+  &--w {
+    border-color: var(--primaryColor);
+    background-color: var(--primaryColor);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m5 10.5 3.2 3.2L15 7'/%3e%3c/svg%3e");
+  }
+  &--r {
+    border-color: #0ea5e9;
+    background-color: #0ea5e9;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-width='3' d='M6 10h8'/%3e%3c/svg%3e");
+  }
+}
+
+.perm-bar {
+  display: flex;
+  grid-column: 1 / -1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eef2f7;
+
+  span { height: 100%; transition: width .4s var(--ease); }
+  &__w { background: var(--primaryColor); }
+  &__r { background: #0ea5e9; }
+}
+
+.perm-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.permission-type-help {
+  display: flex;
+  flex: 1 1 320px;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  color: #64748b;
+  font-size: 12.5px;
+  line-height: 1.5;
+
+  i { margin-top: 1px; color: var(--primaryColor); }
+}
+
+.perm-search {
+  position: relative;
+  flex: 0 1 260px;
+
+  i {
+    position: absolute;
+    top: 50%;
+    left: 12px;
+    color: #94a3b8;
+    transform: translateY(-50%);
+  }
+  input {
+    width: 100%;
+    height: 38px;
+    padding: 0 12px 0 34px;
+    border: 1px solid var(--borderColor, #e5e7eb);
+    border-radius: 10px;
+    background: #f8fafc;
+    font-size: 13px;
+    outline: 0;
+
+    &:focus {
+      border-color: var(--primaryColor);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(96, 93, 255, .12);
+    }
+  }
+}
+
+.tree-skeleton {
+  display: grid;
+  gap: 10px;
+
+  &--full { padding: 22px; }
+  span {
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(90deg, #eef1f5, #f8f9fb, #eef1f5);
+    background-size: 220% 100%;
+    animation: rol-parilti 1.2s ease-in-out infinite;
+  }
+}
+
+// ===== Animasyonlar =====
+@keyframes rol-gir {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes rol-satir {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes rol-pop {
+  from { opacity: 0; transform: scale(.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes rol-sal {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes rol-halka {
+  from { opacity: .8; transform: scale(.7); }
+  to { opacity: 0; transform: scale(1.4); }
+}
+@keyframes rol-nabiz {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(96, 93, 255, .45); }
+  50% { box-shadow: 0 0 0 6px rgba(96, 93, 255, 0); }
+}
+@keyframes rol-parilti {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+// ===== Duyarlı düzen =====
+@media (max-width: 991.98px) {
+  .role-container { grid-template-columns: minmax(0, 1fr); }
+  .role-list-panel { position: static; }
+  .role-list { max-height: 300px; }
+  .permission-panel .panel-card { min-height: 0; }
+}
+
+@media (max-width: 575.98px) {
+  // Dar ekranda üç sayaç yan yana kalır; kutu sayının üstüne geçer.
+  .perm-stats { gap: 8px; }
+  .perm-stat {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 9px 10px;
+    small { font-size: 11px; }
+  }
+  .perm-search { flex: 1 1 100%; }
+  .permission-header__eylem { width: 100%; justify-content: space-between; }
+  .role-actions { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; }
+}

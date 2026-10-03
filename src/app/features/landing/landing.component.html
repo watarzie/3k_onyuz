@@ -1,133 +1,531 @@
-<section class="landing-page">
-  <div class="scene-layer" aria-hidden="true">
-    <div class="grid-field"></div>
-    <div class="flow-line line-a"></div>
-    <div class="flow-line line-b"></div>
-    <div class="flow-line line-c"></div>
+<div class="lp">
+  <div class="scroll-progress" aria-hidden="true"><span [style.width.%]="ilerleme()"></span></div>
 
-    <div class="terminal terminal-left">
-      <div class="terminal-top">
-        <span></span><span></span><span></span>
-      </div>
-      <div class="terminal-row strong"></div>
-      <div class="terminal-row"></div>
-      <div class="terminal-row short"></div>
-      <div class="terminal-status">
-        <i class="ri-checkbox-circle-line"></i>
-        <span>Akış Hazır</span>
-      </div>
+  <!-- ===== Menü ===== -->
+  <header class="lp-nav" [class.is-scrolled]="kaydirildi()">
+    <div class="lp-container lp-nav__inner">
+      <a class="lp-brand" routerLink="/">
+        <img src="/images/3k-emblem.svg" alt="" />
+        <span>3K</span>
+      </a>
+      <nav class="lp-nav__links" aria-label="Sayfa bölümleri">
+        <a href="#akis">Akış</a>
+        <a href="#moduller">Modüller</a>
+        <a href="#roller">Roller</a>
+        <a href="#guvenlik">Güvenlik</a>
+        <a href="#konum">Konum</a>
+      </nav>
+      <a class="lp-btn lp-btn--ghost lp-btn--sm" [routerLink]="auth.isLoggedIn() ? '/dashboard' : '/auth/login'">
+        <i [class]="auth.isLoggedIn() ? 'ri-dashboard-line' : 'ri-login-circle-line'" aria-hidden="true"></i>
+        {{ auth.isLoggedIn() ? 'Panele Git' : 'Giriş Yap' }}
+      </a>
     </div>
-
-    <div class="dock-map">
-      <div class="dock-node node-1"><i class="ri-file-list-3-line"></i></div>
-      <div class="dock-node node-2"><i class="ri-grid-line"></i></div>
-      <div class="dock-node node-3"><i class="ri-archive-line"></i></div>
-      <div class="dock-node node-4"><i class="ri-truck-line"></i></div>
-      <div class="dock-rail rail-1"></div>
-      <div class="dock-rail rail-2"></div>
-    </div>
-
-    <div class="terminal terminal-right">
-      <div class="mini-chart">
-        <span style="height: 54%"></span>
-        <span style="height: 78%"></span>
-        <span style="height: 42%"></span>
-        <span style="height: 88%"></span>
-      </div>
-      <div class="terminal-row strong"></div>
-      <div class="terminal-row short"></div>
-    </div>
-  </div>
-
-  <header class="landing-nav">
-    <a class="brand" routerLink="/">
-      <img src="/images/3k-emblem.svg" alt="3K amblem" />
-      <span>3K</span>
-    </a>
-
-    <nav class="nav-links" aria-label="Sayfa bağlantıları">
-      <a href="#akis">Akış</a>
-      <a href="#moduller">Modüller</a>
-    </nav>
-
-    <a class="nav-login" [routerLink]="auth.isLoggedIn() ? '/dashboard' : '/auth/login'">
-      <i [class]="auth.isLoggedIn() ? 'ri-dashboard-line' : 'ri-login-circle-line'"></i>
-      <span>{{ auth.isLoggedIn() ? 'Panele Git' : 'Giriş Yap' }}</span>
-    </a>
   </header>
 
-  <main class="hero">
-    <div class="hero-copy">
-      <p class="eyebrow">All Processes. <span>One Flow.</span></p>
-      <h1>3K Sevkiyat Yönetim Sistemi</h1>
-      <p class="hero-text">
-        Ürün girişinden ölçülendirme ve ambalaj planına; sandıklama, depo ve sevkiyata kadar tüm süreci tek merkezden yönetin.
-      </p>
-      <div class="hero-actions">
-        <a class="primary-action" [routerLink]="auth.isLoggedIn() ? '/dashboard' : '/auth/login'">
-          <i [class]="auth.isLoggedIn() ? 'ri-dashboard-line' : 'ri-login-circle-line'"></i>
-          <span>{{ auth.isLoggedIn() ? 'Kontrol Paneline Git' : 'Sisteme Giriş Yap' }}</span>
-        </a>
-        <a class="secondary-action" href="#akis">
-          <i class="ri-arrow-down-line"></i>
-          <span>Akışı Gör</span>
+  <!-- ===== Hero ===== -->
+  <section class="lp-hero" (pointermove)="isikTasi($event)">
+    <div class="lp-hero__bg" aria-hidden="true">
+      <span class="orb orb--green"></span>
+      <span class="orb orb--cyan"></span>
+      <span class="orb orb--violet"></span>
+      <span class="hero-grid"></span>
+      <span class="hero-spotlight"></span>
+    </div>
+
+    <div class="lp-container lp-hero__inner">
+      <div class="lp-hero__copy">
+        <span class="lp-eyebrow" data-reveal>
+          <span class="pulse-dot" aria-hidden="true"></span>
+          All Processes. <b>One Flow.</b>
+        </span>
+        <h1 data-reveal style="--d: 80ms">
+          Üründen sevkiyata,<br />
+          <span class="text-flow">her adım tek akışta.</span>
+        </h1>
+        <p class="lp-lead" data-reveal style="--d: 160ms">
+          Ürün girişinden ölçülendirme ve ambalaj planına; sandıklama, depo
+          ve sevkiyata kadar tüm süreci tek merkezden yönetin.
+        </p>
+        <div class="lp-hero__actions" data-reveal style="--d: 240ms">
+          <a class="lp-btn lp-btn--primary" [routerLink]="auth.isLoggedIn() ? '/dashboard' : '/auth/login'">
+            <i [class]="auth.isLoggedIn() ? 'ri-dashboard-line' : 'ri-login-circle-line'" aria-hidden="true"></i>
+            {{ auth.isLoggedIn() ? 'Kontrol Paneline Git' : 'Sisteme Giriş Yap' }}
+          </a>
+          <a class="lp-btn lp-btn--ghost" href="#akis">
+            <i class="ri-play-circle-line" aria-hidden="true"></i>Akışı Keşfet
+          </a>
+        </div>
+        <ul class="lp-trust" data-reveal style="--d: 320ms">
+          <li><i class="ri-shield-keyhole-line" aria-hidden="true"></i>İki adımlı doğrulama</li>
+          <li><i class="ri-checkbox-circle-line" aria-hidden="true"></i>Onaylı kritik işlemler</li>
+          <li><i class="ri-eye-off-line" aria-hidden="true"></i>Alan bazlı yetki</li>
+          <li><i class="ri-file-chart-line" aria-hidden="true"></i>PDF · Excel raporlar</li>
+        </ul>
+      </div>
+
+      <!-- Canlı uygulama penceresi: ürünler sandığa girer, sandık dolar ve kapanır -->
+      <div class="lp-hero__visual" data-reveal style="--d: 200ms" aria-hidden="true">
+        <div class="app-window">
+          <div class="app-window__bar">
+            <span class="dot dot--r"></span><span class="dot dot--y"></span><span class="dot dot--g"></span>
+            <span class="app-window__title"><i class="ri-archive-stack-line"></i>3K · Sandık 12 — PA727-03</span>
+          </div>
+          <div class="app-window__body">
+            <div class="crate-list">
+              <div class="crate-list__head"><span>Ürün</span><span>Durum</span></div>
+              @for (urun of ['Radyatör FG-L', 'Montaj seti', 'Cıvata M16 × 60', 'Somun M12']; track urun; let i = $index) {
+                <div class="crate-row" [style.--i]="i">
+                  <span class="crate-row__name"><i class="ri-box-3-line"></i>{{ urun }}</span>
+                  <span class="status-swap">
+                    <span class="st st--wait">Gelmedi</span>
+                    <span class="st st--ok">Tam geldi</span>
+                    <span class="st st--in">Sandıkta</span>
+                  </span>
+                </div>
+              }
+            </div>
+            <div class="crate-panel">
+              <div class="ring"><span class="ring__value"></span></div>
+              <span class="crate-panel__label">Tamamlanma</span>
+              <div class="crate-box">
+                <span class="crate-box__fill"></span>
+                <i class="ri-archive-line"></i>
+              </div>
+              <span class="close-btn"><i class="ri-lock-line"></i><b class="close-btn__a">Sandığı Kapat</b><b class="close-btn__b">Kapatıldı</b></span>
+            </div>
+          </div>
+          <div class="app-toast"><i class="ri-checkbox-circle-fill"></i>Sandık 12 kapatıldı · 4 ürün</div>
+        </div>
+
+        <div class="float-card float-card--a">
+          <span class="float-card__icon fc-amber"><i class="ri-inbox-archive-line"></i></span>
+          <div><small>Ürün kabul</small><strong>Tam geldi 5 / 17</strong><span class="mini-bar"><span></span></span></div>
+        </div>
+        <div class="float-card float-card--b">
+          <span class="float-card__icon fc-cyan"><i class="ri-bill-line"></i></span>
+          <div><small>Finans</small><strong>PO-4471 faturalandı</strong></div>
+        </div>
+        <div class="float-card float-card--c">
+          <span class="float-card__icon fc-violet"><i class="ri-shield-check-line"></i></span>
+          <div><small>Onay merkezi</small><strong>1 talep onaylandı</strong></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Modül bandı ===== -->
+  <div class="lp-marquee" aria-hidden="true">
+    <div class="lp-marquee__track">
+      @for (tur of [0, 1]; track tur) {
+        @for (ad of modulBandi; track ad) {
+          <span><i class="ri-checkbox-blank-circle-fill"></i>{{ ad }}</span>
+        }
+      }
+    </div>
+  </div>
+
+  <!-- ===== Akış (kaydırmaya bağlı anlatım) ===== -->
+  <section id="akis" class="lp-section story-section">
+    <div class="lp-container">
+      <div class="lp-heading" data-reveal>
+        <span class="lp-kicker">Operasyon akışı</span>
+        <h2>Bir ürünün yolculuğu: ürün listesinden faturaya.</h2>
+        <p>Aşağı kaydırın; her aşama bir öncekinin verisini devralır ve sahne adım adım kurulur.</p>
+      </div>
+
+      <div class="story">
+        <!-- Yapışık sahne -->
+        <div class="story__stage-wrap">
+          <div class="story__stage" aria-hidden="true">
+            <div class="stage-bar">
+              <span class="dot dot--r"></span><span class="dot dot--y"></span><span class="dot dot--g"></span>
+              <span class="stage-bar__title">{{ sahneBasliklari[aktifAdim()] }}</span>
+              <span class="stage-bar__step">{{ aktifAdim() + 1 }}/{{ adimlar.length }}</span>
+            </div>
+            <div class="stage-body">
+              <!-- 1. Proje: Excel satırları ürüne dönüşür -->
+              <div class="scene scene--proje" [class.is-active]="aktifAdim() === 0">
+                <div class="sheet">
+                  <div class="sheet__head"><i class="ri-file-excel-2-fill"></i>urunlistesi_PA727.xlsx</div>
+                  @for (r of [0, 1, 2, 3, 4]; track r) {
+                    <div class="sheet__row" [style.--i]="r"><span></span><span></span><span></span></div>
+                  }
+                </div>
+                <div class="scene-arrow"><i class="ri-arrow-right-line"></i></div>
+                <div class="plist">
+                  <span class="plist__label">Ürün listesi</span>
+                  @for (u of ['Radyatör FG-L', 'Montaj seti', 'Cıvata M16 × 60', 'Somun M12']; track u; let i = $index) {
+                    <div class="plist__item" [style.--i]="i"><i class="ri-box-3-line"></i>{{ u }}</div>
+                  }
+                </div>
+              </div>
+
+              <!-- 2. Ürün kabul: gelen ürünler "Tam geldi" olur -->
+              <div class="scene scene--kabul" [class.is-active]="aktifAdim() === 1">
+                <div class="accept">
+                  @for (u of ['Radyatör FG-L', 'Montaj seti', 'Cıvata M16 × 60', 'Somun M12']; track u; let i = $index) {
+                    <div class="accept__row" [style.--i]="i">
+                      <span><i class="ri-box-3-line"></i>{{ u }}</span>
+                      <span class="flip"><b class="flip__a">Bekleniyor</b><b class="flip__b"><i class="ri-check-line"></i>Tam geldi</b></span>
+                    </div>
+                  }
+                  <div class="accept__total"><span>Kabul edilen</span><strong class="count-up"></strong></div>
+                </div>
+              </div>
+
+              <!-- 3. Sandıklama: ürünler sandığa düşer -->
+              <div class="scene scene--sandik" [class.is-active]="aktifAdim() === 2">
+                <div class="crate3d">
+                  <div class="crate3d__items">
+                    @for (n of [0, 1, 2, 3]; track n) {
+                      <span class="drop" [style.--i]="n"><i class="ri-box-3-fill"></i></span>
+                    }
+                  </div>
+                  <div class="crate3d__box"><span>SANDIK 12</span></div>
+                </div>
+                <div class="crate-meter">
+                  <span>Konulan</span>
+                  <div class="crate-meter__bar"><span></span></div>
+                  <strong>4 / 4 ürün</strong>
+                  <em class="crate-closed"><i class="ri-lock-line"></i>Sandık kapatıldı</em>
+                </div>
+              </div>
+
+              <!-- 4. Ambalaj: ölçü çizgileri ve üretim formu -->
+              <div class="scene scene--ambalaj" [class.is-active]="aktifAdim() === 3">
+                <div class="blueprint">
+                  <div class="blueprint__box"></div>
+                  <span class="dim dim--w"><b>Boy 1400 mm</b></span>
+                  <span class="dim dim--h"><b>Yük. 1375 mm</b></span>
+                  <span class="dim dim--d"><b>En 1000 mm</b></span>
+                </div>
+                <div class="chips">
+                  <span class="chip" style="--i: 0"><i class="ri-tree-line"></i>Çam ihtiyacı 0,19 m³</span>
+                  <span class="chip" style="--i: 1"><i class="ri-fire-line"></i>Fırın partisi FP-2611</span>
+                  <span class="chip chip--doc" style="--i: 2"><i class="ri-file-pdf-2-line"></i>Üretim formu.pdf</span>
+                </div>
+              </div>
+
+              <!-- 5. Depo: sandık rafa yerleşir -->
+              <div class="scene scene--depo" [class.is-active]="aktifAdim() === 4">
+                <div class="rack">
+                  @for (h of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]; track h) {
+                    <span class="rack__slot" [class.is-full]="h % 3 === 0" [class.is-target]="h === 7"></span>
+                  }
+                  <span class="rack__crate"><i class="ri-archive-line"></i></span>
+                </div>
+                <div class="loc-badge"><i class="ri-map-pin-2-fill"></i>Lokasyon: <b>3K · Raf B-2</b></div>
+              </div>
+
+              <!-- 6. Sevkiyat: kamyon yola çıkar -->
+              <div class="scene scene--sevk" [class.is-active]="aktifAdim() === 5">
+                <div class="road">
+                  <div class="truck">
+                    <span class="truck__load"><i class="ri-archive-line"></i><i class="ri-archive-line"></i><i class="ri-archive-line"></i></span>
+                    <i class="ri-truck-fill truck__icon"></i>
+                  </div>
+                  <span class="road__line"></span>
+                </div>
+                <div class="ship-badges">
+                  <span class="chip" style="--i: 0"><i class="ri-checkbox-circle-line"></i>12 sandık sevk edildi</span>
+                  <span class="chip" style="--i: 1"><i class="ri-lock-2-line"></i>Proje kilitlendi</span>
+                  <span class="chip chip--doc" style="--i: 2"><i class="ri-file-list-3-line"></i>Gerçekleşen ürün listesi</span>
+                </div>
+              </div>
+
+              <!-- 7. Finans: iş → PO → fatura -->
+              <div class="scene scene--finans" [class.is-active]="aktifAdim() === 6">
+                <div class="money-flow">
+                  <div class="doc" style="--i: 0"><small>İş kalemleri</small><strong>12 sandık</strong></div>
+                  <i class="ri-arrow-right-line money-flow__arrow" style="--i: 0"></i>
+                  <div class="doc" style="--i: 1"><small>PO</small><strong>PO-4471</strong></div>
+                  <i class="ri-arrow-right-line money-flow__arrow" style="--i: 1"></i>
+                  <div class="doc doc--paid" style="--i: 2"><small>Fatura</small><strong>F-2026-118</strong><em>Ödendi</em></div>
+                </div>
+                <div class="bars">
+                  @for (h of [34, 52, 46, 70, 62, 88]; track $index) {
+                    <span [style.--h]="h + '%'" [style.--i]="$index"></span>
+                  }
+                </div>
+              </div>
+            </div>
+            <div class="stage-dots">
+              @for (adim of adimlar; track adim.anahtar; let i = $index) {
+                <span [class.is-active]="aktifAdim() === i" [class.is-done]="i < aktifAdim()"></span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Kaydırılan aşama metinleri -->
+        <ol class="story__steps">
+          @for (adim of adimlar; track adim.anahtar; let i = $index) {
+            <li class="story-step" [class.is-active]="aktifAdim() === i" [class.is-done]="i < aktifAdim()">
+              <button type="button" class="story-step__num" (click)="adimSec(i)" [attr.aria-label]="'Aşama ' + (i + 1) + ': ' + adim.baslik">
+                <i [class]="adim.ikon" aria-hidden="true"></i>
+              </button>
+              <!-- Gözlenen öğe metnin kendisidir: metin ekran ortasına gelince aşama etkinleşir ve ortadaki sahneyle hizalanır. -->
+              <div class="story-step__body" [attr.data-adim]="i">
+                <span class="story-step__kicker">Aşama {{ i + 1 }}</span>
+                <h3>{{ adim.baslik }}</h3>
+                <p>{{ adim.ozet }}</p>
+                <ul>
+                  @for (madde of adim.neOlur; track madde) {
+                    <li><i class="ri-check-line" aria-hidden="true"></i>{{ madde }}</li>
+                  }
+                </ul>
+                <div class="story-step__meta">
+                  <span><i class="ri-user-3-line" aria-hidden="true"></i>{{ adim.kim }}</span>
+                  @for (c of adim.cikti; track c) {
+                    <span class="is-output"><i class="ri-file-text-line" aria-hidden="true"></i>{{ c }}</span>
+                  }
+                </div>
+              </div>
+            </li>
+          }
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Modüller ===== -->
+  <section id="moduller" class="lp-section lp-section--alt">
+    <div class="lp-container">
+      <div class="lp-heading" data-reveal>
+        <span class="lp-kicker">Modüller</span>
+        <h2>Her modül aynı proje gerçeğine bağlı çalışır.</h2>
+        <p>Bir sandık kapandığında depo, sevkiyat ve finans aynı anda bilir. Kullanıcı yalnız yetkisine düşen ekranı ve alanı görür.</p>
+      </div>
+
+      <div class="bento" (pointermove)="kartIsigi($event)">
+        @for (m of moduller; track m.baslik; let i = $index) {
+          <article class="bento-card" [class.is-wide]="m.genis" [attr.data-ton]="m.ton" data-reveal [style.--d]="(i % 4) * 70 + 'ms'">
+            <span class="bento-card__icon"><i [class]="m.ikon" aria-hidden="true"></i></span>
+            <h3>{{ m.baslik }}</h3>
+            <p>{{ m.metin }}</p>
+            @switch (m.gorsel) {
+              @case ('sandik') {
+                <div class="viz viz--crates" aria-hidden="true">
+                  @for (n of [1, 2, 3, 4, 5, 6]; track n) {
+                    <span class="viz-crate" [style.--i]="n"><b>{{ n }}</b><em></em></span>
+                  }
+                </div>
+              }
+              @case ('grafik') {
+                <div class="viz viz--chart" aria-hidden="true">
+                  @for (h of [38, 62, 48, 80, 66, 92, 74]; track $index) {
+                    <span [style.--h]="h + '%'" [style.--i]="$index"></span>
+                  }
+                </div>
+              }
+              @case ('onay') {
+                <div class="viz viz--approve" aria-hidden="true">
+                  <span class="approve-row"><i class="ri-time-line"></i>Sevkiyat geri alma talebi</span>
+                  <span class="approve-badge"><i class="ri-check-line"></i>Onaylandı</span>
+                </div>
+              }
+              @case ('iz') {
+                <div class="viz viz--trail" aria-hidden="true">
+                  <span class="trail-row" style="--i: 0"><b>Miktar</b><em class="old">2</em><i class="ri-arrow-right-line"></i><em class="new">4</em></span>
+                  <span class="trail-row" style="--i: 1"><b>Lokasyon</b><em class="old">Belirsiz</em><i class="ri-arrow-right-line"></i><em class="new">3K</em></span>
+                </div>
+              }
+              @case ('bildirim') {
+                <div class="viz viz--notify" aria-hidden="true">
+                  <span class="notify-row" style="--i: 0"><i class="ri-shield-check-line"></i>Yeni onay talebi · PA683-5010</span>
+                  <span class="notify-row" style="--i: 1"><i class="ri-checkbox-circle-line"></i>Sandık 4 sahaya aktarıldı</span>
+                </div>
+              }
+              @case ('harita') {
+                <div class="viz viz--map" aria-hidden="true">
+                  <span class="pin" style="--x: 22%; --y: 40%; --i: 0"></span>
+                  <span class="pin" style="--x: 58%; --y: 28%; --i: 1"></span>
+                  <span class="pin" style="--x: 76%; --y: 62%; --i: 2"></span>
+                  <span class="pin" style="--x: 38%; --y: 70%; --i: 3"></span>
+                </div>
+              }
+            }
+          </article>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Roller ===== -->
+  <section id="roller" class="lp-section">
+    <div class="lp-container">
+      <div class="lp-heading" data-reveal>
+        <span class="lp-kicker">Roller</span>
+        <h2>Herkes kendi işine odaklanır.</h2>
+        <p>Rol bazlı ekran ve işlem yetkisi; tutar, ölçü ve m³ gibi alanlar yalnız yetkisi olana görünür.</p>
+      </div>
+
+      <div class="roles" data-reveal style="--d: 120ms">
+        <div class="roles__tabs" role="tablist" aria-label="Roller">
+          @for (r of roller; track r.ad; let i = $index) {
+            <button type="button" role="tab" [class.is-active]="aktifRol() === i" [attr.aria-selected]="aktifRol() === i" (click)="aktifRol.set(i)">
+              <i [class]="r.ikon" aria-hidden="true"></i>{{ r.ad }}
+            </button>
+          }
+        </div>
+        @for (r of [roller[aktifRol()]]; track r.ad) {
+          <div class="roles__panel" role="tabpanel">
+            <div class="roles__intro">
+              <span class="roles__icon"><i [class]="r.ikon" aria-hidden="true"></i></span>
+              <div>
+                <h3>{{ r.ad }}</h3>
+                <p>{{ r.ozet }}</p>
+              </div>
+            </div>
+            <div class="roles__cols">
+              <div>
+                <small>Gördüğü ekranlar</small>
+                <ul>
+                  @for (e of r.ekranlar; track e) {
+                    <li><i class="ri-window-line" aria-hidden="true"></i>{{ e }}</li>
+                  }
+                </ul>
+              </div>
+              <div>
+                <small>Yaptığı işler</small>
+                <ul>
+                  @for (e of r.isler; track e) {
+                    <li><i class="ri-flashlight-line" aria-hidden="true"></i>{{ e }}</li>
+                  }
+                </ul>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Güvenlik ===== -->
+  <section id="guvenlik" class="lp-section lp-section--alt">
+    <div class="lp-container lp-security">
+      <div class="lp-security__copy">
+        <div class="lp-heading lp-heading--left" data-reveal>
+          <span class="lp-kicker">Güvenlik ve denetim</span>
+          <h2>Kritik her adım onaylı, her değişiklik izli.</h2>
+          <p>Sistem kimin neyi değiştirebileceğine sunucuda karar verir; ekranda gizlemek yetmez, veri hiç gönderilmez.</p>
+        </div>
+        <div class="sec-grid">
+          <div class="sec-tile" data-reveal style="--d: 60ms">
+            <i class="ri-shield-keyhole-line" aria-hidden="true"></i>
+            <h3>İki adımlı doğrulama</h3>
+            <p>Doğrulayıcı uygulama kodu ve tek kullanımlık kurtarma kodları.</p>
+          </div>
+          <div class="sec-tile" data-reveal style="--d: 120ms">
+            <i class="ri-git-pull-request-line" aria-hidden="true"></i>
+            <h3>İşlem onay kuyruğu</h3>
+            <p>Kritik talepler onaylanmadan uygulanmaz; red gerekçesiyle kaydedilir.</p>
+          </div>
+          <div class="sec-tile" data-reveal style="--d: 180ms">
+            <i class="ri-eye-off-line" aria-hidden="true"></i>
+            <h3>Alan bazlı yetki</h3>
+            <p>Tutar, birim fiyat, ölçü ve m³ alanları yetkisi olmayana boş döner.</p>
+          </div>
+          <div class="sec-tile" data-reveal style="--d: 240ms">
+            <i class="ri-history-line" aria-hidden="true"></i>
+            <h3>Tam denetim izi</h3>
+            <p>Hareket geçmişi ve finans değişiklik kayıtları eski ve yeni değerle.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="audit" data-reveal style="--d: 160ms" aria-hidden="true">
+        <div class="audit__head"><i class="ri-history-line"></i>Hareket geçmişi <span class="live-dot"></span></div>
+        <div class="audit__row" style="--i: 0"><span class="av">S</span><div><strong>Sandık 12 kapatıldı</strong><small>3K · 2 dk önce</small></div><span class="pill pill--green">Kapandı</span></div>
+        <div class="audit__row" style="--i: 1"><span class="av av--c">A</span><div><strong>Miktar 2 → 4</strong><small>Ürün kabul · 5 dk önce</small></div><span class="pill pill--cyan">Güncellendi</span></div>
+        <div class="audit__row" style="--i: 2"><span class="av av--v">M</span><div><strong>Sevkiyat geri alma onaylandı</strong><small>Onay merkezi · 9 dk önce</small></div><span class="pill pill--violet">Onay</span></div>
+        <div class="audit__row" style="--i: 3"><span class="av av--a">F</span><div><strong>PO-4471 faturalandı</strong><small>Finans · 14 dk önce</small></div><span class="pill pill--amber">Fatura</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Konum ===== -->
+  <section id="konum" class="lp-section">
+    <div class="lp-container">
+      <div class="lp-heading" data-reveal>
+        <span class="lp-kicker">Konum</span>
+        <h2>Derince'deki tesisimiz.</h2>
+        <p>Ahşap ambalaj üretiminin yapıldığı tesisimizi haritada görün ya da doğrudan yol tarifi alın.</p>
+      </div>
+
+      <div class="loc">
+        <div class="loc-card" data-reveal style="--d: 60ms">
+          <div class="loc-card__brand">
+            <span class="loc-card__pin"><i class="ri-map-pin-2-fill" aria-hidden="true"></i></span>
+            <div>
+              <strong>{{ konum.ad }}</strong>
+              <small>{{ konum.unvan }}</small>
+            </div>
+          </div>
+
+          <ul class="loc-card__list">
+            <li>
+              <i class="ri-map-pin-line" aria-hidden="true"></i>
+              <div><small>Adres</small><span>{{ konum.adres }}</span></div>
+            </li>
+            <li>
+              <i class="ri-phone-line" aria-hidden="true"></i>
+              <div><small>Telefon</small><a [href]="'tel:' + konum.telefonBaglanti">{{ konum.telefon }}</a></div>
+            </li>
+            <li>
+              <i class="ri-global-line" aria-hidden="true"></i>
+              <div><small>Web</small><a [href]="konum.webAdresi" target="_blank" rel="noopener">{{ konum.web }}</a></div>
+            </li>
+          </ul>
+
+          <div class="loc-card__actions">
+            <a class="lp-btn lp-btn--primary lp-btn--sm" [href]="konum.yolTarifi" target="_blank" rel="noopener">
+              <i class="ri-route-line" aria-hidden="true"></i>Yol tarifi al
+            </a>
+            <a class="lp-btn lp-btn--ghost lp-btn--sm" [href]="konum.haritaBaglantisi" target="_blank" rel="noopener">
+              <i class="ri-external-link-line" aria-hidden="true"></i>Haritada aç
+            </a>
+          </div>
+        </div>
+
+        <div class="loc-map" data-reveal style="--d: 140ms">
+          <div class="loc-map__bar">
+            <span class="dot dot--r"></span><span class="dot dot--y"></span><span class="dot dot--g"></span>
+            <span class="loc-map__title"><i class="ri-earth-line" aria-hidden="true"></i>Uydu görünümü · Derince / Kocaeli</span>
+          </div>
+          <iframe
+            class="loc-map__frame"
+            title="3K Ahşap Ambalaj konumu — uydu haritası"
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2400!2d29.8178164!3d40.7681914!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14cb477dd38080c1%3A0xd7747d2a5f68e60e!2s3K%20AH%C5%9EAP%20AMBALAJ!5e1!3m2!1str!2str!4v1759449600000!5m2!1str!2str"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            allowfullscreen
+          ></iframe>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Kapanış ===== -->
+  <section class="lp-section lp-cta-wrap">
+    <div class="lp-container">
+      <div class="lp-cta" data-reveal (pointermove)="isikTasi($event)">
+        <span class="lp-cta__glow" aria-hidden="true"></span>
+        <img src="/images/3k-emblem.svg" alt="" class="lp-cta__logo" />
+        <h2>Bütün süreç, tek akış.</h2>
+        <p>Projenizi açın, akışı ekibinizle aynı ekranda yürütün.</p>
+        <a class="lp-btn lp-btn--primary" [routerLink]="auth.isLoggedIn() ? '/dashboard' : '/auth/login'">
+          {{ auth.isLoggedIn() ? 'Panele Devam Et' : 'Giriş Ekranına Geç' }}<i class="ri-arrow-right-line" aria-hidden="true"></i>
         </a>
       </div>
     </div>
-  </main>
-</section>
+  </section>
 
-<section id="akis" class="process-band">
-  <div class="section-heading">
-    <span>Operasyon Akışı</span>
-    <h2>Ürün, sandık ve sevkiyat aynı ritimde ilerler.</h2>
-  </div>
-
-  <div class="process-steps">
-    <article>
-      <i class="ri-file-excel-2-line"></i>
-      <h3>Ürün Girişi</h3>
-      <p>Excel veya manuel veriyle proje omurgası oluşur.</p>
-    </article>
-    <article>
-      <i class="ri-layout-grid-line"></i>
-      <h3>Ölçülendirme</h3>
-      <p>Ürüne ve sevk şekline göre ölçü, ağırlık ve ambalaj planı hazırlanır.</p>
-    </article>
-    <article>
-      <i class="ri-archive-stack-line"></i>
-      <h3>Ambalajlama</h3>
-      <p>Ürünler uygun koruma yöntemiyle sandık içerisine alınır.</p>
-    </article>
-    <article>
-      <i class="ri-truck-line"></i>
-      <h3>Sevkiyat</h3>
-      <p>Raporlar, depo hareketleri ve kilitli proje akışı tamamlanır.</p>
-    </article>
-  </div>
-</section>
-
-<section id="moduller" class="module-band">
-  <div class="module-copy">
-    <span>Kontrol Merkezi</span>
-    <h2>Her modül, aynı proje gerçeğine bağlı çalışır.</h2>
-    <p>Ürün kabul, ölçülendirme, ambalajlama, sandıklama, stok, depo, saha ve sevkiyat süreçleri birbirine bağlı ilerler; kullanıcı yalnızca kendi yetkisine düşen aksiyonu görür.</p>
-  </div>
-  <div class="module-list">
-    <div><i class="ri-database-2-line"></i><span>Depo Durumu</span></div>
-    <div><i class="ri-stack-line"></i><span>Stok Modülü</span></div>
-    <div><i class="ri-map-pin-line"></i><span>Saha Yönetimi</span></div>
-    <div><i class="ri-shield-check-line"></i><span>İşlem Onayı</span></div>
-  </div>
-</section>
-
-<section id="guvence" class="assurance-band">
-  <div>
-    <span>3K</span>
-    <strong>All Processes. One Flow.</strong>
-  </div>
-  <a [routerLink]="auth.isLoggedIn() ? '/dashboard' : '/auth/login'">
-    {{ auth.isLoggedIn() ? 'Panele Devam Et' : 'Giriş Ekranına Geç' }}
-    <i class="ri-arrow-right-line"></i>
-  </a>
-</section>
+  <footer class="lp-footer">
+    <div class="lp-container lp-footer__inner">
+      <span class="lp-brand lp-brand--sm"><img src="/images/3k-emblem.svg" alt="" /><span>3K</span></span>
+      <span>All Processes. One Flow.</span>
+      <span>© {{ yil }} 3K. Tüm hakları saklıdır.</span>
+    </div>
+  </footer>
+</div>

@@ -11,20 +11,6 @@ export interface CekiYuklemeResultDto {
   mesaj: string;
 }
 
-export interface CekiRevizyonSonuc {
-  projeId: number;
-  projeNo: string;
-  anaCekiId: number;
-  revizyonCekiId: number;
-  eklenenSatirSayisi: number;
-  guncellenenSatirSayisi: number;
-  silinenSatirSayisi: number;
-  atlananSatirSayisi: number;
-  islenenRevizyonSatiriSayisi: number;
-  mesaj: string;
-  uyarilar: string[];
-}
-
 export interface CekiRevizyonOnayTalebiSonuc {
   talepId: number;
   projeId: number;
@@ -211,22 +197,4 @@ export interface CekiRevizyonSorunu {
 export interface CekiRevizyonApiResult<T> extends ApiResult<T> {
   message?: string;
   issues?: CekiRevizyonSorunu[];
-}
-
-export interface CekiSatiriDto {
-  id: number;
-  siraNo: number;
-  olcuResmiPozNo?: string;
-  barkodNo: string;
-  aciklama: string;
-  istenenAdet: number;
-  birim: string;
-  cekideGecenSandikNo: string;
-  fiiliSandikNo?: string;
-  remarks?: string;
-  durum: string;
-  paketleyenBasHarf?: string;
-  kontrolEdenBasHarf?: string;
-  konulanAdet: number;
-  eksikAdet: number;
 }

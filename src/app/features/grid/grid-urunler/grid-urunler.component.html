@@ -11,16 +11,73 @@
     </div>
     <div class="page-actions d-flex align-items-center gap-2 flex-wrap">
       <app-readonly-banner />
+      @if (canSelectRows) {
+      <div class="tz-btn-group" role="group" aria-label="Seçili ürünler için toplu işlemler" [class.has-selection]="hasSelection">
+        <span class="tz-btn-group__label" title="Bu işlemler tabloda seçili ürünlere uygulanır">
+          <span class="tz-btn-group__count">{{ selectedRowKeys().size }}</span>seçili
+        </span>
+        @if (canDeleteCekiVerisi()) {
+        <button type="button" class="tz-btn tz-btn--danger-hover" [disabled]="!hasSelection" (click)="deleteSelectedCekiSatirlari()">
+          <i class="ri-delete-bin-line tz-ico-danger"></i>Çeki Sil
+        </button>
+        }
+        <!-- Toplu İşlemler Dropdown -->
+        <div *appCanWrite class="dropdown" id="gridTopluIslemlerDropdown"
+          [class.show]="showTopluIslemlerMenu()">
+          <button class="tz-btn dropdown-toggle" [disabled]="!hasSelection" type="button"
+            (click)="showTopluIslemlerMenu.set(!showTopluIslemlerMenu())">
+            <i class="ri-stack-line tz-ico-primary"></i>Toplu İşlemler
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-lg" [class.show]="showTopluIslemlerMenu()">
+            <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('tamGeldi')">
+              <i class="ri-checkbox-circle-line me-2 text-success"></i>Toplu Tam Geldi
+            </a></li>
+            <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluSevk()">
+              <i class="ri-truck-line me-2 text-primary"></i>Toplu Sevk
+            </a></li>
+            <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('gridKapandi')">
+              <i class="ri-lock-line me-2" style="color:#37474F"></i>Toplu Grid Kapandı
+            </a></li>
+            <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('iptal')">
+              <i class="ri-close-circle-line me-2 text-warning"></i>Toplu İptal
+            </a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('geriAl')">
+              <i class="ri-arrow-go-back-line me-2"></i>Toplu Geri Al
+            </a></li>
+          </ul>
+        </div>
+        @if (canKalite) {
+        <button type="button" class="tz-btn" [disabled]="!hasSelection" (click)="openKaliteModal()">
+          <i class="ri-shield-check-line tz-ico-warning"></i>Kalite
+        </button>
+        }
+        @if (canSurec) {
+        <button type="button" class="tz-btn"
+                [disabled]="!hasSelection || selectedSurecTamamlandiCount() > 0"
+                [title]="selectedSurecTamamlandiCount() > 0 ? 'Tamamlanan süreçler güncellenemez.' : ''"
+                (click)="openSurecModal()">
+          <i class="ri-settings-3-line tz-ico-info"></i>Süreç
+        </button>
+        <button type="button" class="tz-btn"
+                [disabled]="!hasSelection || selectedSurecTamamlandiCount() > 0"
+                [title]="selectedSurecTamamlandiCount() > 0 ? 'Tamamlanan süreçler için talep kaynağı değiştirilemez.' : ''"
+                (click)="openAmbarTalepModal()">
+          <i class="ri-file-list-3-line tz-ico-dark"></i>Talep Formu
+        </button>
+        }
+      </div>
+      }
       @if (canSeeEksikRapor()) {
       <div class="dropdown eksik-report-dropdown" [class.show]="showEksikRaporMenu()"
         (click)="$event.stopPropagation()">
-        <button type="button" class="btn btn-outline-danger dropdown-toggle"
+        <button type="button" class="tz-btn dropdown-toggle"
           [disabled]="eksikRaporDownloading() !== null"
           (click)="toggleEksikRaporMenu()">
           @if (eksikRaporDownloading() !== null) {
-            <span class="spinner-border spinner-border-sm me-1"></span>
+            <span class="spinner-border spinner-border-sm"></span>
           } @else {
-            <i class="ri-file-warning-line me-1"></i>
+            <i class="ri-file-warning-line tz-ico-danger"></i>
           }
           Eksik Raporu
         </button>
@@ -36,59 +93,9 @@
         </div>
       </div>
       }
-      @if (canDeleteCekiVerisi()) {
-      <button class="btn btn-outline-danger" [disabled]="!hasSelection" (click)="deleteSelectedCekiSatirlari()">
-        <i class="ri-delete-bin-line me-1"></i>Çeki Sil ({{ selectedRowKeys().size }})
+      <button *appCanWrite type="button" class="tz-btn tz-btn--primary" (click)="openManuelEkleModal()">
+        <i class="ri-add-line"></i>Manuel Ürün Ekle
       </button>
-      }
-      <button *appCanWrite class="btn btn-primary" (click)="openManuelEkleModal()">
-        <i class="ri-add-line me-2"></i>Manuel Ürün Ekle
-      </button>
-      <!-- Toplu İşlemler Dropdown -->
-      <div *appCanWrite class="dropdown" id="gridTopluIslemlerDropdown"
-        [class.show]="showTopluIslemlerMenu()">
-        <button class="btn btn-dark dropdown-toggle" [disabled]="!hasSelection" type="button"
-          (click)="showTopluIslemlerMenu.set(!showTopluIslemlerMenu())">
-          <i class="ri-stack-line me-1"></i>Toplu İşlemler ({{ selectedRowKeys().size }})
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end shadow-lg" [class.show]="showTopluIslemlerMenu()">
-          <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('tamGeldi')">
-            <i class="ri-checkbox-circle-line me-2 text-success"></i>Toplu Tam Geldi
-          </a></li>
-          <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluSevk()">
-            <i class="ri-truck-line me-2 text-primary"></i>Toplu Sevk
-          </a></li>
-          <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('gridKapandi')">
-            <i class="ri-lock-line me-2" style="color:#37474F"></i>Toplu Grid Kapandı
-          </a></li>
-          <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('iptal')">
-            <i class="ri-close-circle-line me-2 text-warning"></i>Toplu İptal
-          </a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item text-danger" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('geriAl')">
-            <i class="ri-arrow-go-back-line me-2"></i>Toplu Geri Al
-          </a></li>
-        </ul>
-      </div>
-      @if (canKalite) {
-      <button class="btn btn-outline-warning" [disabled]="!hasSelection" (click)="openKaliteModal()">
-        <i class="ri-shield-check-line me-1"></i>Kalite ({{ selectedRowKeys().size }})
-      </button>
-      }
-      @if (canSurec) {
-      <button class="btn btn-outline-info"
-              [disabled]="!hasSelection || selectedSurecTamamlandiCount() > 0"
-              [title]="selectedSurecTamamlandiCount() > 0 ? 'Tamamlanan süreçler güncellenemez.' : ''"
-              (click)="openSurecModal()">
-        <i class="ri-settings-3-line me-1"></i>Süreç ({{ selectedRowKeys().size }})
-      </button>
-      <button class="btn btn-ambar-talep"
-              [disabled]="!hasSelection || selectedSurecTamamlandiCount() > 0"
-              [title]="selectedSurecTamamlandiCount() > 0 ? 'Tamamlanan süreçler için talep kaynağı değiştirilemez.' : ''"
-              (click)="openAmbarTalepModal()">
-        <i class="ri-file-list-3-line me-1"></i>Talep Formu
-      </button>
-      }
     </div>
   </div>
 </div>
@@ -122,16 +129,9 @@
       }
     </div>
     <div class="table-toolbar d-flex align-items-center gap-2 flex-wrap">
-      <div class="sandik-filter position-relative">
-        <i class="ri-archive-line position-absolute top-50 translate-middle-y"></i>
-        <select class="form-select" [ngModel]="selectedSandikNo()" (ngModelChange)="onSandikFilterChange($event)"
-          aria-label="Sandık filtrele">
-          <option value="">Tüm Sandıklar</option>
-          @for (sandikNo of sandikFilterOptions(); track sandikNo) {
-          <option [value]="sandikNo">Sandık {{ sandikNo }}</option>
-          }
-        </select>
-      </div>
+      <app-tz-secici class="sandik-filter" etiket="Sandık" tumuEtiketi="Tüm sandıklar" ikon="ri-archive-line"
+        sayiBirimi="ürün" [secenekler]="sandikSecenekleri()" [tumuSayi]="urunler().length"
+        [deger]="selectedSandikNo()" (degisti)="onSandikFilterChange($event)" />
       <div class="search-box position-relative">
         <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>
         <input type="text" class="form-control" placeholder="Ara..." (input)="onSearch($event)" />
@@ -260,20 +260,30 @@
                 {{ getDurumLabel(u.gridDurumuMetni) }}
               </span>
             </td>
-            <td class="text-center">{{ u.gridGelenAdet }} <small class="text-muted">{{ u.birim }}</small></td>
+            <!-- Grid sütunları satır toplamıdır; çok sandıklı üründe "satır" işaretiyle gösterilir. -->
+            <td class="text-center">{{ u.gridGelenAdet }} <small class="text-muted">{{ u.birim }}</small>
+              @if (u.sandikBazliDagitim && u.gridGelenAdet > 0) { <small class="allocation-secondary" title="Satır toplamı: ürünün bütün sandıkları için geçerlidir">satır</small> }
+            </td>
             <td class="text-center" [ngClass]="{'text-info fw-semibold': getGridSevkGorunum(u) > 0}">{{
-              getGridSevkGorunum(u) > 0 ? getGridSevkGorunum(u) : '-' }}</td>
-            <td class="text-center">{{ u.trafoSevkAdet > 0 ? u.trafoSevkAdet : '-' }}</td>
+              getGridSevkGorunum(u) > 0 ? getGridSevkGorunum(u) : '-' }}
+              @if (u.sandikBazliDagitim && getGridSevkGorunum(u) > 0) { <small class="allocation-secondary" title="Satır toplamı: ürünün bütün sandıkları için geçerlidir">satır</small> }
+            </td>
+            <td class="text-center">{{ u.trafoSevkAdet > 0 ? u.trafoSevkAdet : '-' }}
+              @if (u.sandikBazliDagitim && u.trafoSevkAdet > 0) { <small class="allocation-secondary" title="Satır toplamı: ürünün bütün sandıkları için geçerlidir">satır</small> }
+            </td>
             <td class="text-center fw-semibold"
               [ngClass]="{'text-danger': u.gridDurumuId !== GridDurum.Iptal && u.gridEksikMiktar > 0, 'text-success': u.gridDurumuId !== GridDurum.Iptal && u.gridEksikMiktar === 0}">
               {{ u.gridDurumuId === GridDurum.Iptal ? '-' : u.gridEksikMiktar }}
+              @if (u.sandikBazliDagitim && u.gridDurumuId !== GridDurum.Iptal && u.gridEksikMiktar > 0) { <small class="allocation-secondary" title="Satır toplamı: ürünün bütün sandıkları için geçerlidir">satır</small> }
             </td>
             <td>
               <span class="durum-badge-sm" [style.color]="getSevkDurumColor(u.gridSevkDurumuMetni)">
                 {{ getSevkDurumLabel(u.gridSevkDurumuMetni) }}
               </span>
               @if (u.yenidenSevkGerekliAdet > 0) {
-              <div class="small text-warning fw-semibold mt-1">{{ u.yenidenSevkGerekliAdet }} {{ u.birim }}</div>
+              <div class="small text-warning fw-semibold mt-1">{{ u.yenidenSevkGerekliAdet }} {{ u.birim }}
+                @if (u.sandikBazliDagitim) { <small class="allocation-secondary" title="Satır toplamı: ürünün bütün sandıkları için geçerlidir">satır</small> }
+              </div>
               }
             </td>
             <td style="max-width:160px">
@@ -311,11 +321,14 @@
             <td class="text-center" [ngClass]="{'text-primary fw-semibold': u.projeKarsilanan > 0}">{{ u.projeKarsilanan
               > 0 ? u.projeKarsilanan : '-' }}</td>
             <td class="text-center" [ngClass]="{'text-warning fw-semibold': u.projeGonderilen > 0}">{{ u.projeGonderilen
-              > 0 ? u.projeGonderilen : '-' }}</td>
+              > 0 ? u.projeGonderilen : '-' }}
+              @if (u.sandikBazliDagitim && u.projeGonderilen > 0) { <small class="allocation-secondary" title="Satır toplamı: ürünün bütün sandıkları için geçerlidir">satır</small> }
+            </td>
             <td class="text-center" [ngClass]="{'text-success fw-semibold': u.tedarikciKarsilanan > 0}">{{
               u.tedarikciKarsilanan > 0 ? u.tedarikciKarsilanan : '-' }}</td>
             <td class="text-center" [ngClass]="{'text-danger fw-semibold': u.geriGonderilenMiktar > 0}">
               {{ u.geriGonderilenMiktar > 0 ? u.geriGonderilenMiktar : '-' }}
+              @if (u.sandikBazliDagitim && u.geriGonderilenMiktar > 0) { <small class="allocation-secondary" title="Satır toplamı: ürünün bütün sandıkları için geçerlidir">satır</small> }
               @if (u.geriGonderilmeSebebiMetni) {
               <div class="small text-danger mt-1" [title]="u.geriGonderilmeSebebiMetni">
                 {{ u.geriGonderilmeSebebiMetni }}
@@ -601,9 +614,12 @@
       <label class="form-label fw-semibold">Grid Gelen Adet</label>
       <input type="number" class="form-control" [ngModel]="panelGelenAdet()"
         (ngModelChange)="panelGelenAdet.set($event); recalcPanel()" [disabled]="!isGelenAdetAktif" min="0"
-        [max]="panelUrun()!.istenenAdet" step="any" />
+        [max]="getAnaIstenenAdet(panelUrun()!)" step="any" />
       @if (panelDurum() === 'Tam Geldi') {
-      <small class="text-muted">Otomatik: Seçilen miktar ({{ panelUrun()!.istenenAdet }})</small>
+      <small class="text-muted">Otomatik: Satır miktarı ({{ getAnaIstenenAdet(panelUrun()!) }})</small>
+      }
+      @if (panelUrun()!.sandikBazliDagitim) {
+      <small class="d-block text-muted">Grid işlemi ürünün bütün sandıkları için geçerlidir; miktarlar satır toplamıdır.</small>
       }
     </div>
 
@@ -612,7 +628,7 @@
       <label class="form-label fw-semibold">Trafo Sevk Adet</label>
       <input type="number" class="form-control" [ngModel]="panelTrafoSevkAdet()"
         (ngModelChange)="panelTrafoSevkAdet.set($event); recalcPanel()" [disabled]="!isTrafoAktif" min="0"
-        [max]="panelUrun()!.istenenAdet" step="any" />
+        [max]="getAnaIstenenAdet(panelUrun()!)" step="any" />
     </div>
 
     <!-- Eksik Hesabı -->
@@ -739,59 +755,57 @@
 
 <!-- ===== Manuel Ürün Ekleme Modal ===== -->
 @if (showManuelEkleModal()) {
-<div class="modal-overlay" (click)="closeManuelEkleModal()"></div>
-<div class="toplu-sevk-modal">
-  <div class="modal-header d-flex align-items-center justify-content-between">
-    <h5 class="fw-semibold mb-0"><i class="ri-add-circle-line me-2"></i>Manuel Ürün Ekle</h5>
-    <button class="btn btn-sm border-0" (click)="closeManuelEkleModal()"><i class="ri-close-line fs-5"></i></button>
+<div class="tz-modal-backdrop" (click)="closeManuelEkleModal()"></div>
+<div class="tz-modal" role="dialog" aria-modal="true" aria-labelledby="grid-manuel-baslik">
+  <div class="tz-modal__header">
+    <span class="tz-modal__icon" aria-hidden="true"><i class="ri-add-box-line"></i></span>
+    <div class="tz-modal__title">
+      <h5 id="grid-manuel-baslik">Manuel Ürün Ekle</h5>
+      <p>Çeki listesinde olmayan bir ürünü Grid'e ekleyin.</p>
+    </div>
+    <button type="button" class="tz-modal__close" (click)="closeManuelEkleModal()" aria-label="Kapat"><i class="ri-close-line"></i></button>
   </div>
-  <div class="modal-body">
-    <div class="alert-info-custom mb-3 py-2" style="font-size:13px;">
-      <i class="ri-information-line me-1"></i>Eklenen manuel ürün doğrudan <strong>Tam Geldi</strong> durumunda Grid'e
-      yansıyacaktır.
-    </div>
-    <div class="row g-3 mb-3">
-      <div class="col-6">
-        <label class="form-label fw-semibold">Sandık No <span class="text-danger">*</span></label>
-        <input type="text" class="form-control" [ngModel]="yeniSandikNo()"
-          (ngModelChange)="onYeniSandikNoChange($event)" placeholder="Hangi sandığa eklenecek?" />
-      </div>
-      <div class="col-6">
-        <label class="form-label fw-semibold">Sandık İsmi</label>
-        <input type="text" class="form-control" [ngModel]="yeniSandikIsmi()"
-          (ngModelChange)="yeniSandikIsmi.set($event)" [disabled]="sandikIsmiKilitli()"
-          [placeholder]="sandikIsmiKilitli() ? 'Mevcut sandıkta isim değiştirilemez' : 'Yeni ise isim girin'" />
-      </div>
-      <div class="col-12 mt-1">
-        @if (sandikIsmiKilitli()) {
-        <small class="text-warning fw-semibold">
-          <i class="ri-lock-line me-1"></i>{{ mevcutManuelSandikNo() }} numaralı sandık zaten var; isim alanı yalnızca
-          yeni sandık oluştururken kullanılır.
-        </small>
-        } @else {
-        <small class="text-muted">Eğer bu sandık numarası yoksa otomatik oluşturulacaktır.</small>
-        }
+  <div class="tz-modal__body">
+    <div class="tz-summary" data-ton="success">
+      <i class="ri-checkbox-circle-line" aria-hidden="true"></i>
+      <div>
+        <strong>Tam Geldi olarak eklenir</strong>
+        <span>Manuel ürün Grid'e doğrudan Tam Geldi durumunda yansır.</span>
       </div>
     </div>
-    <div class="mb-3">
-      <label class="form-label fw-semibold">Barkod No</label>
-      <input type="text" class="form-control" [ngModel]="yeniBarkod()" (ngModelChange)="yeniBarkod.set($event)"
-        placeholder="Boş bırakılırsa 'MANUEL' atanır" />
-    </div>
-    <div class="mb-3">
-      <label class="form-label fw-semibold">Açıklama <span class="text-danger">*</span></label>
-      <input type="text" class="form-control" [ngModel]="yeniAciklama()" (ngModelChange)="yeniAciklama.set($event)"
-        placeholder="Ürün açıklaması" />
-    </div>
-    <div class="row g-3">
-      <div class="col-6">
-        <label class="form-label fw-semibold">Miktar <span class="text-danger">*</span></label>
-        <input type="number" class="form-control" min="0.01" step="any" [ngModel]="yeniAdet()"
-          (ngModelChange)="yeniAdet.set($event)" />
+    <div class="tz-form">
+      <div class="tz-field-grid">
+        <label class="tz-field">
+          <span>Sandık no <b>*</b></span>
+          <input type="text" class="form-control" [ngModel]="yeniSandikNo()" (ngModelChange)="onYeniSandikNoChange($event)" placeholder="Hangi sandığa eklenecek?" />
+        </label>
+        <label class="tz-field">
+          <span>Sandık ismi</span>
+          <input type="text" class="form-control" [ngModel]="yeniSandikIsmi()" (ngModelChange)="yeniSandikIsmi.set($event)" [disabled]="sandikIsmiKilitli()"
+            [placeholder]="sandikIsmiKilitli() ? 'Mevcut sandıkta değiştirilemez' : 'Yeni sandıksa isim girin'" />
+        </label>
       </div>
-      <div class="col-6">
-        <label class="form-label fw-semibold">Birim</label>
-        <select class="form-select" [ngModel]="yeniBirim()" (ngModelChange)="yeniBirim.set(+$event)">
+      @if (sandikIsmiKilitli()) {
+        <small class="manuel-hint is-locked"><i class="ri-lock-line" aria-hidden="true"></i>{{ mevcutManuelSandikNo() }} numaralı sandık zaten var; isim yalnız yeni sandık oluştururken kullanılır.</small>
+      } @else {
+        <small class="manuel-hint"><i class="ri-information-line" aria-hidden="true"></i>Bu sandık numarası yoksa otomatik oluşturulur.</small>
+      }
+      <label class="tz-field">
+        <span>Ürün açıklaması <b>*</b></span>
+        <input type="text" class="form-control" [ngModel]="yeniAciklama()" (ngModelChange)="yeniAciklama.set($event)" placeholder="Ör: Radyatör montaj seti" />
+      </label>
+      <label class="tz-field">
+        <span>Barkod no</span>
+        <span class="tz-input-icon"><i class="ri-barcode-line" aria-hidden="true"></i><input type="text" class="form-control" [ngModel]="yeniBarkod()" (ngModelChange)="yeniBarkod.set($event)" placeholder="Boş bırakılırsa MANUEL atanır" /></span>
+      </label>
+      <div class="tz-field-grid">
+        <label class="tz-field">
+          <span>Miktar <b>*</b></span>
+          <input type="number" class="form-control" min="0.01" step="any" [ngModel]="yeniAdet()" (ngModelChange)="yeniAdet.set($event)" />
+        </label>
+        <label class="tz-field">
+          <span>Birim</span>
+          <select class="form-select" [ngModel]="yeniBirim()" (ngModelChange)="yeniBirim.set(+$event)">
           <option [value]="1">ADET</option>
           <option [value]="2">SET</option>
           <option [value]="3">METRE</option>
@@ -802,20 +816,20 @@
           <option [value]="8">TON</option>
           <option [value]="9">METREKARE</option>
           <option [value]="10">METREKÜP</option>
-        </select>
+          </select>
+        </label>
       </div>
-    </div>
-    <div class="mb-3 mt-3">
-      <label class="form-label fw-semibold">Ekleme Nedeni</label>
-      <textarea class="form-control" rows="2" [ngModel]="yeniNeden()" (ngModelChange)="yeniNeden.set($event)"
-        placeholder="Neden ekleniyor? (isteğe bağlı)"></textarea>
+      <label class="tz-field">
+        <span>Ekleme nedeni</span>
+        <textarea class="form-control" rows="2" [ngModel]="yeniNeden()" (ngModelChange)="yeniNeden.set($event)" placeholder="Neden ekleniyor? (isteğe bağlı)"></textarea>
+      </label>
     </div>
   </div>
-  <div class="modal-footer d-flex gap-2">
-    <button class="btn btn-outline flex-grow-1" (click)="closeManuelEkleModal()">İptal</button>
-    <button class="btn btn-primary flex-grow-1" (click)="kaydetManuelUrun()" [disabled]="manuelSaving()">
-      @if (manuelSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-      Ekle
+  <div class="tz-modal__footer">
+    <button type="button" class="tz-btn" (click)="closeManuelEkleModal()">Vazgeç</button>
+    <button type="button" class="tz-btn tz-btn--primary" (click)="kaydetManuelUrun()" [disabled]="manuelSaving()">
+      @if (manuelSaving()) { <span class="spinner-border spinner-border-sm"></span> } @else { <i class="ri-add-line"></i> }
+      Ürünü Ekle
     </button>
   </div>
 </div>

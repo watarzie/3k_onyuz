@@ -1,0 +1,224 @@
+<div class="stock-page">
+  <div class="page-title-area mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <h2 class="fw-bold mb-1">Stok Yönetimi</h2>
+        <app-breadcrumb [items]="breadcrumb"></app-breadcrumb>
+      </div>
+      <div class="stock-actions">
+        <button type="button" class="stock-btn" (click)="indirStokPdf()" [disabled]="downloadingPdf()">
+          @if (downloadingPdf()) {
+            <span class="spinner-border spinner-border-sm"></span>
+          } @else {
+            <i class="ri-file-pdf-2-line stock-btn__pdf" aria-hidden="true"></i>
+          }
+          <span>Stok Raporu</span>
+        </button>
+        @if (canWriteStock()) {
+          <button type="button" class="stock-btn stock-btn--primary" (click)="openAddModal()">
+            <i class="ri-add-line" aria-hidden="true"></i>
+            <span>Yeni Stok Ekle</span>
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <section class="stock-card">
+    <header class="stock-card__head">
+      <div class="stock-card__title">
+        <span class="stock-card__icon" aria-hidden="true"><i class="ri-archive-2-line"></i></span>
+        <div>
+          <h3>Stok kayıtları</h3>
+          <p>{{ totalCount() }} kayıt · depodaki fazla ve iade malzemeler</p>
+        </div>
+      </div>
+      <label class="stock-search">
+        <i class="ri-search-line" aria-hidden="true"></i>
+        <input type="search" placeholder="Barkod, malzeme veya proje ara..." aria-label="Stoklarda ara"
+               [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event); onSearchChange()" />
+      </label>
+    </header>
+
+    @if (loading()) {
+      <div class="stock-state" role="status">
+        <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>
+        <span>Stoklar yükleniyor...</span>
+      </div>
+    } @else if (filteredStoklar().length === 0) {
+      <div class="stock-empty">
+        <span class="stock-empty__icon" aria-hidden="true"><i class="ri-inbox-archive-line"></i></span>
+        <h4>Stok bulunamadı</h4>
+        <p>{{ searchTerm() ? 'Aramanızla eşleşen stok kaydı yok.' : 'Henüz stok kaydı eklenmemiş.' }}</p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="stock-table">
+          <thead>
+            <tr>
+              <th>Malzeme</th>
+              <th class="text-end">Miktar</th>
+              <th>Kaynak proje</th>
+              <th>Giriş nedeni</th>
+              <th>Lokasyon</th>
+              <th>Durum</th>
+              @if (canWriteStock() || canDeleteStock()) {
+                <th class="text-end">İşlem</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of filteredStoklar(); track s.id) {
+              <tr [class.is-depleted]="s.durumMetni !== 'Aktif'">
+                <td>
+                  <div class="stock-item">
+                    <span class="stock-item__icon" aria-hidden="true"><i class="ri-box-3-line"></i></span>
+                    <div>
+                      <strong>{{ s.malzemeAdi }}</strong>
+                      @if (s.malzemeKodu) {
+                        <small class="stock-code"><i class="ri-barcode-line" aria-hidden="true"></i>{{ s.malzemeKodu }}</small>
+                      } @else {
+                        <small class="stock-code is-empty">Barkodsuz</small>
+                      }
+                    </div>
+                  </div>
+                </td>
+                <td class="text-end">
+                  <span class="stock-qty"><strong>{{ s.miktar | number: '1.0-3' }}</strong><small>{{ s.birimMetni }}</small></span>
+                </td>
+                <td>
+                  @if (s.kaynakProje) {
+                    <span class="stock-chip">{{ s.kaynakProje }}</span>
+                  } @else {
+                    <span class="stock-muted">—</span>
+                  }
+                </td>
+                <td><span class="stock-reason">{{ s.stokGirisNedeni || '—' }}</span></td>
+                <td>
+                  @if (s.lokasyon) {
+                    <span class="stock-location"><i class="ri-map-pin-2-line" aria-hidden="true"></i>{{ s.lokasyon }}</span>
+                  } @else {
+                    <span class="stock-muted">—</span>
+                  }
+                </td>
+                <td>
+                  <span class="stock-status" [class.is-active]="s.durumMetni === 'Aktif'">
+                    <span class="stock-status__dot" aria-hidden="true"></span>{{ s.durumMetni }}
+                  </span>
+                </td>
+                @if (canWriteStock() || canDeleteStock()) {
+                  <td class="text-end">
+                    <div class="stock-row-actions">
+                      @if (canWriteStock()) {
+                        <button type="button" class="stock-icon-btn" (click)="openEditModal(s)" title="Düzenle" aria-label="Düzenle">
+                          <i class="ri-edit-2-line"></i>
+                        </button>
+                      }
+                      @if (canDeleteStock()) {
+                        <button type="button" class="stock-icon-btn is-danger" (click)="deleteStock(s)" title="Sil" aria-label="Sil">
+                          <i class="ri-delete-bin-line"></i>
+                        </button>
+                      }
+                    </div>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="stock-card__foot">
+        <app-server-pager
+          [pageNumber]="currentPage()"
+          [pageSize]="pageSize()"
+          [totalCount]="totalCount()"
+          [totalPages]="totalPages()"
+          [hasPreviousPage]="currentPage() > 1"
+          [hasNextPage]="currentPage() < totalPages()"
+          (pageChange)="onPageChange($event)"
+          (pageSizeChange)="sayfaBoyutuDegisti($event)"
+        />
+      </div>
+    }
+  </section>
+</div>
+
+<!-- Modal: Stok Ekle / Düzenle -->
+<div class="modal fade stock-modal" [ngClass]="{'show d-block': isAddModalOpen()}">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="stock-modal__title">
+          <span class="stock-modal__icon" aria-hidden="true"><i [class]="isEditMode() ? 'ri-edit-2-line' : 'ri-inbox-unarchive-line'"></i></span>
+          <div>
+            <h5 class="modal-title">{{ isEditMode() ? 'Stok Kaydını Düzenle' : 'Depoya Stok Girişi Yap' }}</h5>
+            <p>Malzeme adı, miktar, birim ve giriş nedeni zorunludur.</p>
+          </div>
+        </div>
+        <button type="button" class="btn-close" (click)="closeAddModal()" aria-label="Kapat"></button>
+      </div>
+      <div class="modal-body p-4">
+        
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Malzeme Adı <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" placeholder="Örn: M5 Somun" [(ngModel)]="yeniStok.malzemeAdi" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Barkod / Malzeme Kodu <small class="text-muted">(Opsiyonel)</small></label>
+            <input type="text" class="form-control" placeholder="Okutun veya yazın..." [(ngModel)]="yeniStok.malzemeKodu" />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Miktar <span class="text-danger">*</span></label>
+            <input type="number" min="0" step="any" class="form-control" [(ngModel)]="yeniStok.miktar" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Birim <span class="text-danger">*</span></label>
+            <select class="form-select" [(ngModel)]="yeniStok.birimId">
+              <option [value]="1">ADET</option>
+              <option [value]="2">SET</option>
+              <option [value]="3">METRE</option>
+              <option [value]="4">KG</option>
+              <option [value]="5">LİTRE</option>
+              <option [value]="6">TAKIM</option>
+              <option [value]="7">PAKET</option>
+              <option [value]="8">TON</option>
+              <option [value]="9">METREKARE</option>
+              <option [value]="10">METREKÜP</option>
+            </select>
+          </div>
+
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Kaynak Proje / İade Projesi <small class="text-muted">(Opsiyonel)</small></label>
+            <select class="form-select" [(ngModel)]="yeniStok.kaynakProje">
+              <option value="" selected>Proje Seçiniz (Opsiyonel)...</option>
+              @for (p of projeler(); track p.id) {
+                 <option [value]="p.projeNo">{{ p.projeNo }} — {{ p.musteri }}</option>
+              }
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Lokasyon</label>
+            <input type="text" class="form-control" placeholder="Raf-1" [(ngModel)]="yeniStok.lokasyon" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Stok Giriş Nedeni <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" placeholder="Sipariş İptali, Proje Artanı vb." [(ngModel)]="yeniStok.stokGirisNedeni" />
+          </div>
+        </div>
+
+        <div class="stock-modal__note">
+          <i class="ri-information-line" aria-hidden="true"></i>
+          <span>Kaynak proje ve barkod (malzeme kodu) isteğe bağlıdır.</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="stock-btn" (click)="closeAddModal()">Vazgeç</button>
+        <button type="button" class="stock-btn stock-btn--primary" (click)="saveStock()">
+          <i class="ri-save-3-line me-1"></i> Kaydet
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

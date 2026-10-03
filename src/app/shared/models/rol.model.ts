@@ -24,9 +24,6 @@ export interface MenuTreeDto {
   yetkiTipiId: number;
   yetkiTipiMetni: string;
   children: MenuTreeDto[];
-  ad?: string | null;
-  gerekenYetkiTipiId?: number | null;
-  kritikMi?: boolean;
   /** UI-only state: parent referansı (set edildikten sonra) */
   parent?: MenuTreeDto;
 }
@@ -42,21 +39,4 @@ export interface RolGuncelleRequest {
   id: number;
   ad: string;
   yetkiler: RolYetkiItemDto[];
-}
-
-export interface RolSablonu {
-  kod: string;
-  ad: string;
-  modulMenuId: number;
-  izinKodlari: string[];
-}
-
-export interface KullaniciYetkiModel {
-  menuTanimiId: number;
-  kod: string;
-  ad: string;
-  rolYetkiTipiId: number;
-  etkinYetkiTipiId: number;
-  izinVerildi: boolean | null;
-  kritik: boolean;
 }

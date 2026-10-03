@@ -1,90 +1,65 @@
 import { Injectable, inject } from '@angular/core';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
+import { ProjeTipi } from '../constants/enums';
 import { Observable } from 'rxjs';
 
 /**
- * PdfController (2 endpoint) — dosya indirme:
- *  GET /api/pdf/indir/{projeId}   → PDF
- *  GET /api/pdf/excel/{projeId}   → Excel
+ * Rapor indirmeleri (PdfController). Hangi menü izninin gerektiğini sunucu projenin gerçek
+ * tipinden çözer; istemci ekran bilgisi göndermez.
  */
 @Injectable({ providedIn: 'root' })
 export class PdfService {
   private api = inject(BaseApiService);
-  private menuOptions(menuKod: string) { return { headers: { 'X-Menu-Kod': menuKod } }; }
 
-  indirPdf(projeId: number): Observable<Blob> {
-    return this.api.downloadFile(API.PDF.INDIR(projeId));
+  sahaProjePdf(projeId: number): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.SAHA_PROJE(projeId));
   }
 
-  indirExcel(projeId: number): Observable<Blob> {
-    return this.api.downloadFile(API.PDF.EXCEL(projeId));
+  eksikUrunlerPdf(projeId: number): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.EKSIK_URUNLER(projeId));
   }
 
-  sahaSandikPdf(sandikId: number, menuKod?: string): Observable<Blob> {
-    return this.api.downloadFile(API.PDF.SAHA_SANDIK(sandikId), menuKod ? this.menuOptions(menuKod) : undefined);
+  eksikUrunlerExcel(projeId: number): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.EKSIK_URUNLER_EXCEL(projeId));
   }
 
-  sahaProjePdf(projeId: number, menuKod?: string): Observable<Blob> {
-    return this.api.downloadFile(API.PDF.SAHA_PROJE(projeId), menuKod ? this.menuOptions(menuKod) : undefined);
+  /** projeTipi raporun kapsamıdır; sunucu her projenin gerçek tipini ayrıca doğrular. */
+  topluEksikUrunlerPdf(projeIds: number[], projeTipi: ProjeTipi = ProjeTipi.Normal): Observable<Blob> {
+    return this.api.downloadPostFile(API.PDF.TOPLU_EKSIK_URUNLER, { projeIds, projeTipi });
   }
 
-  eksikUrunlerPdf(projeId: number, menuKod = 'eksik-raporu'): Observable<Blob> {
-    return this.api.downloadFile(API.PDF.EKSIK_URUNLER(projeId), this.menuOptions(menuKod));
+  topluEksikUrunlerExcel(projeIds: number[], projeTipi: ProjeTipi = ProjeTipi.Normal): Observable<Blob> {
+    return this.api.downloadPostFile(API.PDF.TOPLU_EKSIK_URUNLER_EXCEL, { projeIds, projeTipi });
   }
 
-  eksikUrunlerExcel(projeId: number, menuKod = 'eksik-raporu'): Observable<Blob> {
-    return this.api.downloadFile(API.PDF.EKSIK_URUNLER_EXCEL(projeId), this.menuOptions(menuKod));
-  }
-
-  topluEksikUrunlerPdf(projeIds: number[], projeTipi: 1 | 2 | 3 = 1): Observable<Blob> {
-    return this.api.downloadPostFile(
-      API.PDF.TOPLU_EKSIK_URUNLER,
-      { projeIds, projeTipi },
-      this.menuOptions(this.topluEksikMenuKodu(projeTipi))
-    );
-  }
-
-  topluEksikUrunlerExcel(projeIds: number[], projeTipi: 1 | 2 | 3 = 1): Observable<Blob> {
-    return this.api.downloadPostFile(
-      API.PDF.TOPLU_EKSIK_URUNLER_EXCEL,
-      { projeIds, projeTipi },
-      this.menuOptions(this.topluEksikMenuKodu(projeTipi))
-    );
-  }
-
-  private topluEksikMenuKodu(projeTipi: 1 | 2 | 3): string {
-    return projeTipi === 2 ? 'saha-sevk-sonrasi-eksik-raporu' : projeTipi === 3 ? 'yedek-eksik-raporu' : 'eksik-raporu';
+  /** G4: seçili projelerin Grid eksiği olan ürünleri tek sayfalık talep formu Excel'inde (salt okunur). */
+  topluTalepFormuExcel(projeIds: number[], projeTipi: ProjeTipi = ProjeTipi.Normal): Observable<Blob> {
+    return this.api.downloadPostFile(API.PDF.TOPLU_TALEP_FORMU_EXCEL, { projeIds, projeTipi });
   }
 
   downloadErrorMessage(error: unknown, fallback: string): Promise<string> {
     return this.api.downloadErrorMessage(error, fallback);
   }
 
-  gerceklesenCekiListesiPdf(projeId: number, menuKod = 'gerceklesen-ceki-raporu'): Observable<Blob> {
-    return this.api.downloadFile(API.PDF.GERCEKLESEN_CEKI_LISTESI(projeId), this.menuOptions(menuKod));
+  gerceklesenCekiListesiPdf(projeId: number): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.GERCEKLESEN_CEKI_LISTESI(projeId));
   }
 
-  gerceklesenCekiListesiExcel(projeId: number, menuKod = 'gerceklesen-ceki-raporu'): Observable<Blob> {
-    return this.api.downloadFile(API.PDF.GERCEKLESEN_CEKI_LISTESI_EXCEL(projeId), this.menuOptions(menuKod));
+  gerceklesenCekiListesiExcel(projeId: number): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.GERCEKLESEN_CEKI_LISTESI_EXCEL(projeId));
   }
 
   sahaGerceklesenCekiListesiPdf(projeId: number): Observable<Blob> {
-    return this.api.downloadFile(
-      API.PDF.SAHA_GERCEKLESEN_CEKI_LISTESI(projeId),
-      this.menuOptions('saha-gerceklesen-ceki-raporu')
-    );
+    return this.api.downloadFile(API.PDF.SAHA_GERCEKLESEN_CEKI_LISTESI(projeId));
   }
 
   sahaGerceklesenCekiListesiExcel(projeId: number): Observable<Blob> {
-    return this.api.downloadFile(
-      API.PDF.SAHA_GERCEKLESEN_CEKI_LISTESI_EXCEL(projeId),
-      this.menuOptions('saha-gerceklesen-ceki-raporu')
-    );
+    return this.api.downloadFile(API.PDF.SAHA_GERCEKLESEN_CEKI_LISTESI_EXCEL(projeId));
   }
 
-  uckSandikDurumPdf(projeId: number, menuKod = '3k-sandik-durum-raporu'): Observable<Blob> {
-    return this.api.downloadFile(API.PDF.UCK_SANDIK_DURUM(projeId), this.menuOptions(menuKod));
+  uckSandikDurumPdf(projeId: number): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.UCK_SANDIK_DURUM(projeId));
   }
 
   stokPdf(): Observable<Blob> {

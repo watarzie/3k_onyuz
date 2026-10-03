@@ -54,6 +54,17 @@ export interface AmbalajProjeListelemeRequest {
   pageNumber: number;
   pageSize: number;
   includeSummary?: boolean;
+  /** true: yalnız üretimi tamamlanan projeler; false: tamamlananlar hariç (net kalan ihtiyaç); boş: hepsi. */
+  tamamlanan?: boolean;
+  /** Proje geneli üretim durumu: 1 üretim bekliyor, 2 üretimde; boş: hepsi. */
+  uretimDurumu?: 1 | 2;
+}
+
+/** Proje bazlı toplu tamamlama veya geri alma sonucu. */
+export interface AmbalajProjeUretimDurumuSonucDto {
+  projeId: number;
+  degisenKayit: number;
+  projeDurumu: number;
 }
 
 export interface AmbalajUretimPlanDto {
@@ -138,11 +149,6 @@ export interface AmbalajIcSandikSablonKaydetRequest {
   yukseklik: number | null;
 }
 
-export interface AmbalajTalepEdenDto {
-  id: number;
-  ad: string;
-}
-
 export interface AmbalajKullaniciSecenegiDto {
   id: number;
   adSoyad: string;
@@ -155,6 +161,8 @@ export interface AmbalajIlaveSandikAdayDto {
   boy?: number;
   en?: number;
   yukseklik?: number;
+  /** Kaynak sandığın tipi (Ahşap Kapalı, Katlanır Sandık, Kontrplak Sandık veya Diğer). */
+  sandikTipi?: string | null;
 }
 
 export interface AmbalajSandikSecenegiDto {
@@ -164,6 +172,7 @@ export interface AmbalajSandikSecenegiDto {
   boy?: number;
   en?: number;
   yukseklik?: number;
+  sandikTipi?: string | null;
 }
 
 export interface AmbalajBagimsizSandikDto {
@@ -250,7 +259,7 @@ export interface AmbalajOzelSandikKaydetRequest {
   aciklama?: string;
 }
 
-export type AmbalajKuyruk = 'normal' | 'ozel' | 'saha' | 'yedek' | 'ilave' | 'ic';
+export type AmbalajKuyruk = 'normal' | 'tamamlanan' | 'ozel' | 'saha' | 'yedek' | 'ilave' | 'ic';
 export type OzelSandikTur = 2 | 3 | 4 | 5;
 export type AmbalajGrup = 1 | 2 | 3;
 export type UretimDurumId = 1 | 2 | 3;

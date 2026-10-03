@@ -11,7 +11,7 @@ import { normalizeMenuTree } from './menu-permission-tree';
  * GÜVENLİK PRENSİBİ:
  * - Menü ağacı backend'den gelir; hiyerarşi istemcide de sınırlandırılır.
  * - N üst düğüm ve altı gösterilmez; R üst düğüm altındaki W işlemleri etkin sayılmaz.
- * - Route Guard bu servisteki yetkili route listesini kontrol eder.
+ * - Route Guard, route data'sındaki menuKod için hasAccess/canWrite sonucunu kullanır.
  */
 @Injectable({ providedIn: 'root' })
 export class PermissionService {
@@ -60,17 +60,11 @@ export class PermissionService {
   /** Flat yetki map: menuKod → YetkiTipiId (1=N, 2=R, 3=W) */
   private _yetkiMap = signal<Map<string, number>>(new Map());
 
-  /** Yetkili route'lar (route guard için) */
-  private _allowedRoutes = signal<Set<string>>(new Set());
-
   /** Yetki bilgisi yüklenmiş mi? */
   loaded = signal(false);
 
   /** Dış erişim için menü ağacı (sidebar kullanır) */
   menuAgaci = computed(() => this._menuAgaci());
-
-  /** Yetkili route listesi (route guard kullanır) */
-  allowedRoutes = computed(() => this._allowedRoutes());
 
   private loadPromise: Promise<boolean> | null = null;
   private loadVersion = 0;
@@ -102,7 +96,6 @@ export class PermissionService {
             }
             this._menuAgaci.set([]);
             this._yetkiMap.set(new Map());
-            this._allowedRoutes.set(new Set());
             this.loaded.set(false);
             this.loadPromise = null;
             resolve(false);
@@ -188,13 +181,6 @@ export class PermissionService {
     return this._yetkiMap().get(menuKod) === YetkiTipi.R;
   }
 
-  /** Route'a erişim var mı? (Route Guard kullanır) */
-  isRouteAllowed(route: string): boolean {
-    // Normalize: /projeler → /projeler
-    const normalized = route.startsWith('/') ? route : `/${route}`;
-    return this._allowedRoutes().has(normalized);
-  }
-
   /** Oturumu temizle */
   clear(): void {
     this.loadVersion++;
@@ -204,7 +190,6 @@ export class PermissionService {
     this.refreshPromise = null;
     this._menuAgaci.set([]);
     this._yetkiMap.set(new Map());
-    this._allowedRoutes.set(new Set());
     this.loaded.set(false);
     this.loadPromise = null;
   }
@@ -214,28 +199,23 @@ export class PermissionService {
   private applyMenu(menuAgaci: MenuTreeDto[]): void {
     const effectiveMenu = normalizeMenuTree(menuAgaci, true);
     const map = new Map<string, number>();
-    const routes = new Set<string>();
-    this.flattenTree(effectiveMenu, map, routes);
+    this.flattenTree(effectiveMenu, map);
     this._menuAgaci.set(effectiveMenu);
     const previous = this._yetkiMap();
     if (previous.size !== map.size || [...map].some(([code, permission]) => previous.get(code) !== permission)) {
       this._yetkiMap.set(map);
     }
-    this._allowedRoutes.set(routes);
     this.loaded.set(true);
     this.lastSuccessfulLoadAt = Date.now();
   }
 
-  private flattenTree(nodes: MenuTreeDto[], map: Map<string, number>, routes: Set<string>): void {
+  private flattenTree(nodes: MenuTreeDto[], map: Map<string, number>): void {
     for (const node of nodes) {
       if (node.kod) {
         map.set(node.kod, node.yetkiTipiId);
       }
-      if (node.route && node.yetkiTipiId >= YetkiTipi.R) {
-        routes.add(node.route);
-      }
       if (node.children?.length) {
-        this.flattenTree(node.children, map, routes);
+        this.flattenTree(node.children, map);
       }
     }
   }

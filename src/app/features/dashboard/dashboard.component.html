@@ -1,7 +1,8 @@
 <div class="page-title-area mb-4">
   <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
     <div>
-      <h2 class="fw-bold mb-1">ANA KONTROL PANELİ</h2>
+      <h2 class="fw-bold mb-1">Ana Kontrol Paneli</h2>
+      <p class="dashboard-subtitle">{{ bugunMetni }} · Projelerin, sandıkların ve sevkiyatın anlık özeti</p>
       <app-breadcrumb [items]="breadcrumb" />
     </div>
   </div>
@@ -102,8 +103,8 @@
             }
           </div>
         </div>
-        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" routerLink="/projeler">
-          <i class="ri-add-line me-1"></i> Yeni Proje Ekle
+        <button type="button" class="tz-btn tz-btn--sm" routerLink="/projeler">
+          <i class="ri-add-line tz-ico-primary"></i>Yeni Proje Ekle
         </button>
       </div>
       <div class="dash-card-body p-0">
@@ -170,7 +171,7 @@
           <div class="dash-card-footer">
             <span class="text-muted small">{{ projeler().length }} / {{ projelerTotal() }} proje gösteriliyor</span>
             @if (projelerHasMore()) {
-              <button class="btn btn-sm btn-light ms-auto" (click)="loadProjeler()" [disabled]="loadingProjeler()">Daha Fazla</button>
+              <button type="button" class="tz-btn tz-btn--sm ms-auto" (click)="loadProjeler()" [disabled]="loadingProjeler()"><i class="ri-arrow-down-line"></i>Daha Fazla</button>
             }
           </div>
         }
@@ -637,7 +638,7 @@
       <div class="dash-card-footer">
         <span class="text-muted small">{{ sahayaAktarilanSandiklar().length }} / {{ sahaSandikTotal() }} sandık gösteriliyor</span>
         @if (sahaSandikHasMore()) {
-          <button class="btn btn-sm btn-light ms-auto" (click)="loadSahayaAktarilanSandiklar()" [disabled]="loadingSahaSandiklari()">Daha Fazla</button>
+          <button type="button" class="tz-btn tz-btn--sm ms-auto" (click)="loadSahayaAktarilanSandiklar()" [disabled]="loadingSahaSandiklari()"><i class="ri-arrow-down-line"></i>Daha Fazla</button>
         }
       </div>
     }

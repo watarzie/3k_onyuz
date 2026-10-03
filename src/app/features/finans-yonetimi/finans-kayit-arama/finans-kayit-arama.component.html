@@ -1,0 +1,208 @@
+<article class="v2-card v2-list-card record-search">
+  <header class="record-search-head">
+    <nav class="v2-segmented" [attr.aria-label]="t('PANEL_VIEW')">
+      <button type="button" [class.active]="gorunum() === 'arama'" [attr.aria-pressed]="gorunum() === 'arama'" (click)="gorunumSec('arama')">
+        <i class="ri-search-2-line" aria-hidden="true"></i>{{ t('PANEL_ALL_SEARCH') }}
+      </button>
+      @if (bekleyenGorunur()) {
+        <button type="button" [class.active]="gorunum() === 'bekleyen'" [attr.aria-pressed]="gorunum() === 'bekleyen'" (click)="gorunumSec('bekleyen')">
+          <i class="ri-time-line" aria-hidden="true"></i>{{ t('PANEL_PENDING') }}
+        </button>
+      }
+    </nav>
+    <p class="v2-note">
+      <i class="ri-information-line" aria-hidden="true"></i>{{ t(gorunum() === 'arama' ? 'PANEL_ALL_SEARCH_NOTE' : 'PANEL_AGE_NOTE') }}
+    </p>
+    @if (gorunum() === 'arama' && projeGruplari().length) {
+      <button type="button" class="btn btn-light btn-sm" (click)="tumunuAcKapat()">
+        <i [class]="tumuAcik() ? 'ri-contract-up-down-line' : 'ri-expand-up-down-line'" aria-hidden="true"></i>{{ tumuAcik() ? 'Tümünü kapat' : 'Tümünü aç' }}
+      </button>
+    }
+  </header>
+
+  <div class="filter-bar">
+    <label class="filter-field filter-grow">
+      <span>{{ t('SEARCH') }}</span>
+      <span class="filter-input"><i class="ri-search-line" aria-hidden="true"></i><input type="search" [attr.aria-label]="t('SEARCH')" [(ngModel)]="arama" (ngModelChange)="aramaDegisti()" [placeholder]="t('PANEL_SEARCH_ALL_HINT')" /></span>
+    </label>
+    <label class="filter-field">
+      <span>{{ t('CURRENCY') }}</span>
+      <select [(ngModel)]="para" (change)="filtrele()">
+        <option value="">{{ t('REPORT_ALL_CURRENCIES') }}</option>
+        @for (kod of paraBirimleri.aktifKodlar(); track kod) {
+          <option [value]="kod">{{ kod }}</option>
+        }
+      </select>
+    </label>
+    <label class="filter-field">
+      <span>{{ t('TYPE') }}</span>
+      <select [(ngModel)]="isTuru" (change)="filtrele()">
+        <option value="">{{ t('PANEL_ALL_TYPES') }}</option>
+        @for (item of isTurleri; track item.id) {
+          <option [value]="item.id">{{ t(item.ad) }}</option>
+        }
+      </select>
+    </label>
+    <label class="filter-field">
+      <span>{{ t('WORK_STATUS') }}</span>
+      <select [(ngModel)]="durum" (change)="filtrele()">
+        <option value="">{{ t('PANEL_ALL_STATES') }}</option>
+        <option value="1">{{ t('PENDING_ORDER') }}</option>
+        <option value="2">{{ t('PARTIAL_ORDER') }}</option>
+        <option value="3">{{ t('FULL_ORDER') }}</option>
+        <option value="4">{{ t('PARTIAL_INVOICE') }}</option>
+        <option value="5">{{ t('FULL_INVOICE') }}</option>
+      </select>
+    </label>
+    @if (gorunum() === 'bekleyen') {
+      <label class="filter-field">
+        <span>{{ t('PANEL_WAIT_STAGE') }}</span>
+        <select [ngModel]="asama()" (ngModelChange)="asama.set($event); filtrele()">
+          <option value="">{{ t('PANEL_ALL_STATES') }}</option>
+          <option value="Sipariş">{{ t('PENDING_ORDER') }}</option>
+          <option value="Fatura">{{ t('PENDING_INVOICE') }}</option>
+        </select>
+      </label>
+      <label class="filter-field">
+        <span>{{ t('PANEL_WAIT_DAYS') }}</span>
+        <select [(ngModel)]="minimumGun" (change)="filtrele()">
+          <option [ngValue]="15">15+ {{ t('DAY') }}</option>
+          <option [ngValue]="30">30+ {{ t('DAY') }}</option>
+          <option [ngValue]="60">60+ {{ t('DAY') }}</option>
+          <option [ngValue]="90">90+ {{ t('DAY') }}</option>
+        </select>
+      </label>
+    }
+    <div class="filter-actions">
+      @if (etkinFiltre()) {
+        <button type="button" class="btn btn-link btn-sm" (click)="filtreleriTemizle()">
+          <i class="ri-filter-off-line" aria-hidden="true"></i>{{ t('FILTERS_RESET') }}
+        </button>
+      }
+      @if (gorunum() === 'arama' && permissions.canWrite(izin.PoGir) && secilenler().size) {
+        <button class="btn btn-primary btn-sm" type="button" (click)="topluSiparis()">
+          <i class="ri-add-circle-line" aria-hidden="true"></i>{{ t('PANEL_PO_SELECTION') }} ({{ secilenler().size }})
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="v2-empty" role="status">
+      <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>{{ t('PANEL_LOADING') }}
+    </div>
+  } @else {
+    <div class="table-responsive">
+      <table class="table v2-table">
+        <thead>
+          <tr>
+            @if (gorunum() === 'arama') {
+              <th class="select-column"></th>
+            }
+            <th>{{ t('PROJECT_WORK') }}</th>
+            <th>{{ t(gorunum() === 'arama' ? 'PANEL_FINANCE_DATE' : 'START') }}</th>
+            <th>{{ t('STATUS') }}</th>
+            @if (parasal(izin.TutarGoruntule)) {
+              <th class="text-end">{{ t('AMOUNT') }}</th>
+            }
+            <th class="text-end">{{ t('ACTION') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (gorunum() === 'arama') {
+            @for (grup of projeGruplari(); track grup.projeNo) {
+              <tr class="project-group-row" [class.expanded]="projeAcik(grup.projeNo)">
+                <td class="select-column">
+                  @if (permissions.canWrite(izin.PoGir)) {
+                    <input type="checkbox" [attr.aria-label]="grup.projeNo + ' ' + t('SELECT')" [checked]="projeSecili(grup)" (change)="projeSec(grup, $any($event.target).checked)" />
+                  }
+                </td>
+                <td>
+                  <button type="button" class="project-toggle" [attr.aria-expanded]="projeAcik(grup.projeNo)" (click)="projeAcKapat(grup.projeNo)">
+                    <i [class]="projeAcik(grup.projeNo) ? 'ri-arrow-down-s-line' : 'ri-arrow-right-s-line'" aria-hidden="true"></i>
+                    <span><strong>{{ grup.projeNo }}</strong><small>{{ grup.musteri }} · {{ grup.kalemler.length }} kalem · {{ grup.kategoriSayisi }} kategori</small></span>
+                  </button>
+                </td>
+                <td>
+                  {{ grup.ilkTarih | date: 'dd.MM.yyyy' }}@if (grup.sonTarih !== grup.ilkTarih) { – {{ grup.sonTarih | date: 'dd.MM.yyyy' }} }
+                </td>
+                <td></td>
+                @if (parasal(izin.TutarGoruntule)) {
+                  <td class="text-end v2-nowrap">
+                    @for (toplam of grup.toplamlar; track toplam.paraBirimi) {
+                      <div><strong>{{ toplam.net | number: '1.2-2' }} {{ toplam.paraBirimi }}</strong></div>
+                    }
+                  </td>
+                }
+                <td class="text-end">
+                  <button type="button" class="btn btn-light btn-sm" (click)="projeAcKapat(grup.projeNo)">{{ projeAcik(grup.projeNo) ? 'Gizle' : 'Kalemler' }}</button>
+                </td>
+              </tr>
+              @if (projeAcik(grup.projeNo)) {
+                @for (row of grup.kalemler; track row.id) {
+                  <tr class="project-item-row">
+                    <td class="select-column">
+                      @if (permissions.canWrite(izin.PoGir)) {
+                        <input type="checkbox" [attr.aria-label]="row.projeNo + ' ' + t('SELECT')" [checked]="secilenler().has(row.id)" (change)="sec(row.id, $any($event.target).checked)" />
+                      }
+                    </td>
+                    <td>
+                      <strong>{{ row.sandikNo || row.isAdi || row.sandikAdi }}</strong
+                      ><small>{{ t(kategoriAnahtari(row.kategori)) }} · {{ row.isAdi || row.sandikAdi }}</small
+                      ><small>PO: {{ row.poNumaralari.join(', ') || '—' }} · {{ t('INVOICE') }}: {{ row.faturaNumaralari.join(', ') || '—' }}</small>
+                    </td>
+                    <td>{{ row.finansTarihi | date: 'dd.MM.yyyy' }}<small>{{ row.finansDonemi | date: 'MM.yyyy' }}</small></td>
+                    <td>
+                      <span class="v2-status" [class.is-active]="row.kaynakAktif">{{ row.kaynakAktif ? t('PANEL_ACTIVE_SOURCE') : t('PANEL_INACTIVE_SOURCE') }}</span>
+                    </td>
+                    @if (parasal(izin.TutarGoruntule)) {
+                      <td class="text-end v2-nowrap">{{ row.netTutar | number: '1.2-2' }} {{ row.paraBirimi }}</td>
+                    }
+                    <td class="text-end">
+                      <button class="btn btn-outline-primary btn-sm" (click)="kayitAc.emit({ tur: 'IsKaydi', id: row.id })">{{ t('DETAIL') }}</button>
+                    </td>
+                  </tr>
+                }
+              }
+            }
+          } @else {
+            @for (row of bekleyenler()?.items; track row.asama + ':' + row.isKaydiId + ':' + row.siparisKalemiId) {
+              <tr>
+                <td><strong>{{ row.projeNo }}</strong><small>{{ row.isAdi }} · {{ row.poNumarasi }}</small></td>
+                <td>{{ row.baslangic | date: 'dd.MM.yyyy' }}</td>
+                <td><span class="v2-status">{{ row.asama }} · {{ row.gun }} {{ t('DAY') }}</span></td>
+                @if (parasal(izin.TutarGoruntule)) {
+                  <td class="text-end v2-nowrap">{{ row.kalanNetTutar | number: '1.2-2' }} {{ row.paraBirimi }}</td>
+                }
+                <td class="text-end">
+                  <button class="btn btn-outline-primary btn-sm" (click)="kayitAc.emit({ tur: 'IsKaydi', id: row.isKaydiId })">{{ t('DETAIL') }}</button>
+                </td>
+              </tr>
+            }
+          }
+          @if (!pager()?.totalCount) {
+            <tr>
+              <td colspan="6">
+                <div class="v2-empty"><i class="ri-inbox-2-line" aria-hidden="true"></i><p>{{ t('PANEL_EMPTY') }}</p></div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (pager(); as page) {
+      <div class="v2-pager">
+        <app-server-pager
+          [pageNumber]="page.pageNumber"
+          [pageSize]="page.pageSize"
+          [totalCount]="page.totalCount"
+          [totalPages]="page.totalPages"
+          [hasPreviousPage]="page.hasPreviousPage"
+          [hasNextPage]="page.hasNextPage"
+          (pageChange)="sayfa($event)"
+          (pageSizeChange)="boyut($event)"
+        />
+      </div>
+    }
+  }
+</article>

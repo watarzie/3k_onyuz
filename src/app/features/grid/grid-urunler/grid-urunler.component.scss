@@ -27,32 +27,6 @@
   min-width: 0;
 }
 
-.sandik-filter {
-  select {
-    padding-left: 36px;
-    background-color: #F6F7F9;
-    border: 1px solid var(--borderColor);
-    border-radius: 8px;
-    height: 38px;
-    width: 170px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--blackColor);
-
-    &:focus {
-      border-color: var(--primaryColor);
-      box-shadow: none;
-    }
-  }
-
-  i {
-    left: 12px;
-    color: var(--bodyColor);
-    pointer-events: none;
-    z-index: 1;
-  }
-}
-
 .page-actions {
   justify-content: flex-end;
   min-width: 0;
@@ -147,8 +121,7 @@
     flex: 1 1 100%;
   }
 
-  .table-toolbar .search-box input,
-  .table-toolbar .sandik-filter select {
+  .table-toolbar .search-box input {
     width: 100%;
   }
 
@@ -679,29 +652,19 @@ tbody tr.row-sevk-kilitli {
 }
 @keyframes popFade { from { opacity: 0; transform: translateX(-50%) translateY(4px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 
-// ===== Talep Formu =====
-.btn-ambar-talep {
-  background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
-  color: #fff;
-  border: none;
-  font-weight: 600;
-  font-size: 13px;
-  padding: 7px 16px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  &:hover:not(:disabled) {
-    background: linear-gradient(135deg, #1a3352 0%, #1d4ed8 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
-    color: #fff;
-  }
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    color: #fff;
-  }
+// Manuel ürün ekleme: sandık numarası altındaki kısa bilgi satırı.
+.manuel-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: -6px;
+  color: var(--bodyColor);
+  font-size: 12px;
+  i { color: #94a3b8; }
+  &.is-locked { color: #b45309; i { color: #e8890c; } }
 }
 
+// ===== Talep Formu =====
 .ambar-talep-modal {
   border: none;
   border-radius: 14px;

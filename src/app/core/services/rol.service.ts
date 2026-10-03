@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { API } from '../constants/api-endpoints';
 import { BaseApiService } from './base-api.service';
-import { RolDto, RolDetayDto, RolGuncelleRequest, RolSablonu, ApiResult } from '../../shared/models';
+import { RolDto, RolDetayDto, RolGuncelleRequest, ApiResult, onayaAlindi } from '../../shared/models';
 
 @Injectable({ providedIn: 'root' })
 export class RolService {
@@ -16,12 +16,9 @@ export class RolService {
     return this.api.get<RolDetayDto>(API.ROL.DETAY(id)).pipe(map(result => this.value(result)));
   }
 
-  getSablonlar(): Observable<RolSablonu[]> {
-    return this.api.get<RolSablonu[]>(API.ROL.SABLONLAR).pipe(map(result => this.value(result)));
-  }
-
-  rolOlustur(ad: string, sablonKodu?: string): Observable<RolDto> {
-    return this.api.post<RolDto>(API.ROL.CREATE, { ad, sablonKodu }).pipe(map(result => this.value(result)));
+  /** Rol izinsiz oluşturulur; izinler menü ağacından ayrıca verilir. */
+  rolOlustur(ad: string): Observable<RolDto> {
+    return this.api.post<RolDto>(API.ROL.CREATE, { ad }).pipe(map(result => this.value(result)));
   }
 
   rolGuncelle(request: RolGuncelleRequest): Observable<RolDetayDto> {
@@ -35,7 +32,7 @@ export class RolService {
   }
 
   private value<T>(result: ApiResult<T>): T {
-    if (!result.isSuccess || result.statusCode === 202 || result.value == null) {
+    if (!result.isSuccess || onayaAlindi(result) || result.value == null) {
       throw new Error(result.error || 'Rol işlemi tamamlanamadı.');
     }
     return result.value;

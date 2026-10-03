@@ -1,5 +1,5 @@
 import { DatePipe, NgClass } from '@angular/common';
-import { Component, computed, effect, HostListener, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, effect, HostListener, inject, NgZone, OnDestroy, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
@@ -9,7 +9,8 @@ import { PermissionService } from '../../core/services/permission.service';
 import { TranslationService } from '../../core/services/translation.service';
 import { BildirimDto, BildirimTipi } from '../../shared/models';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
-import { ToggleService } from './toggle.service';
+import { ToggleService } from '../../core/services/toggle.service';
+import { YETKI } from '../../core/constants/yetki-kodlari';
 
 @Component({
   selector: 'app-header',
@@ -42,10 +43,19 @@ export class HeaderComponent implements OnInit, OnDestroy {
   private permissionUpdateSubscription?: Subscription;
 
   get canSeeApprovalQueue(): boolean {
-    return this.permissions.hasAccess('islem-onay-merkezi');
+    return this.permissions.hasAccess(YETKI.ONAY.MERKEZI);
   }
 
   constructor() {
+    // Kaydırma Angular zone'u dışında dinlenir: her kaydırma olayı bütün sayfada değişiklik denetimi başlatmaz.
+    // Yalnız eşik geçilince sinyal değişir ve başlık yeniden çizilir.
+    const kaydirildi = () => {
+      const yapiskan = window.scrollY >= 50;
+      if (yapiskan !== this.isSticky()) this.isSticky.set(yapiskan);
+    };
+    inject(NgZone).runOutsideAngular(() => window.addEventListener('scroll', kaydirildi, { passive: true }));
+    inject(DestroyRef).onDestroy(() => window.removeEventListener('scroll', kaydirildi));
+
     effect(() => {
       if (this.canSeeApprovalQueue) {
         this.fetchApprovalCount();
@@ -128,12 +138,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   logout(): void {
-    this.auth.logout();
-  }
-
-  @HostListener('window:scroll')
-  onScroll(): void {
-    this.isSticky.set(window.scrollY >= 50);
+    this.auth.cikisYap();
   }
 
   @HostListener('document:click', ['$event'])
