@@ -205,4 +205,68 @@ describe('Grid ürün yeniden sevk uygunluğu', () => {
       sevkMiktari: 3,
     }));
   });
+
+  it('çok sandıklı satırda Tam Geldi ve sevk satır toplamıyla gönderilir; sandık payıyla daraltılmaz', () => {
+    // PA559-01: istenen 2, Sandık 10 ve Sandık 11 arasında 1+1 dağıtılmış; panel Sandık 11 satırından açılır.
+    const panelComponent = panelComponentOlustur();
+    const row = urun({
+      istenenAdet: 1,
+      anaIstenenAdet: 2,
+      sandikMiktari: 1,
+      sandikBazliDagitim: true,
+      gridDurumuId: GridDurum.Bekliyor,
+      gridDurumuMetni: 'Bekliyor',
+      gridGelenAdet: 0,
+      gridSevkDurumuId: GridSevkDurum.Bekliyor,
+      gridSevkDurumuMetni: 'Bekliyor',
+      gridSevkMiktari: undefined,
+      gelenMiktar: 0,
+      kalanMiktar: 1,
+      toplamUcKGelenMiktar: 0,
+      toplamKalanMiktar: 2,
+      ucKDurumuId: UcKDurum.Bekliyor,
+      gridYenidenSevkEdilebilirMi: false,
+      gridYenidenSevkUstSiniri: 0,
+    });
+    let gonderilen: GridDurumGuncelleDto | undefined;
+    (panelComponent as any).gridService = {
+      durumGuncelle: (dto: GridDurumGuncelleDto) => {
+        gonderilen = dto;
+        return NEVER;
+      },
+    };
+
+    panelComponent.openPanel(row);
+    panelComponent.onDurumChange('Tam Geldi');
+    panelComponent.onSevkDurumChange('Sevk Edildi');
+
+    expect(panelComponent.panelGelenAdet()).toBe(2);
+    expect(panelComponent.maxSevkAdet).toBe(2);
+    expect(panelComponent.panelSevkAdet()).toBe(2);
+    expect(panelComponent.panelEksik).toBe(0);
+    panelComponent.savePanel();
+    expect(gonderilen).toEqual(jasmine.objectContaining({ gridGelenAdet: 2, sevkMiktari: 2 }));
+  });
+
+  it('çok sandıklı satırda Grid sevk gösterimi ve 3K işlem kontrolü satır geleniyle yapılır', () => {
+    // Sandık 11 boş (gelen 0) fakat satırda 1 adet 3K'ya ulaşmış: satır 3K işlemli sayılır.
+    const row = urun({
+      istenenAdet: 1,
+      anaIstenenAdet: 2,
+      sandikBazliDagitim: true,
+      gridSevkMiktari: 1,
+      gelenMiktar: 0,
+      kalanMiktar: 1,
+      toplamUcKGelenMiktar: 1,
+      toplamKalanMiktar: 1,
+      ucKDurumuId: UcKDurum.Bekliyor,
+      gridSevkDurumuId: GridSevkDurum.SevkEdildi,
+      gridYenidenSevkEdilebilirMi: false,
+      gridYenidenSevkUstSiniri: 0,
+    });
+
+    expect(component.getSatirGelen(row)).toBe(1);
+    expect(component.isUcKIslemYapilmis(row)).toBeTrue();
+    expect(component.getGridSevkGorunum(row)).toBe(2);
+  });
 });

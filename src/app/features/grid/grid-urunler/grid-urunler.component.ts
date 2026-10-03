@@ -652,7 +652,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     this.panelUrun.set(urun);
     if (this.isGridYenidenSevkAcikUrun(urun) && this.isParcaliEksikYenidenSevkUrun(urun)) {
       this.panelDurum.set('Tam Geldi');
-      this.panelGelenAdet.set(urun.istenenAdet);
+      this.panelGelenAdet.set(this.getAnaIstenenAdet(urun));
       this.panelTrafoSevkAdet.set(0);
     } else {
       this.panelDurum.set(urun.gridDurumuMetni);
@@ -684,7 +684,8 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
     switch (durum) {
       case 'Tam Geldi':
-        this.panelGelenAdet.set(u.istenenAdet);
+        // Grid komutu satır bazlıdır; çok sandıklı üründe sandık payı değil satır toplamı gelir.
+        this.panelGelenAdet.set(this.getAnaIstenenAdet(u));
         this.panelTrafoSevkAdet.set(0);
         break;
       case 'Eksik Geldi':
@@ -777,24 +778,25 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     const u = this.panelUrun();
     if (!u) return 0;
     if (this.panelDurum() === 'İptal') return 0;
-    return u.istenenAdet - this.panelGelenAdet() - this.panelTrafoSevkAdet();
+    return this.getAnaIstenenAdet(u) - this.panelGelenAdet() - this.panelTrafoSevkAdet();
   }
 
   // Validasyon
   validatePanel(): string | null {
     const u = this.panelUrun()!;
     const d = this.panelDurum();
+    const satirIstenen = this.getAnaIstenenAdet(u);
 
     if (d === 'Eksik Geldi') {
       if (this.panelGelenAdet() <= 0) return 'Gelen adet girilmelidir.';
-      if (this.panelGelenAdet() >= u.istenenAdet) return 'Gelen adet, toplam miktardan küçük olmalıdır.';
+      if (this.panelGelenAdet() >= satirIstenen) return 'Gelen adet, toplam miktardan küçük olmalıdır.';
     }
 
     if (d === 'Trafo Sevk') {
       if (this.panelTrafoSevkAdet() <= 0) return 'Trafo sevk adeti girilmelidir.';
-      if (this.panelTrafoSevkAdet() > u.istenenAdet) return 'Trafo sevk adeti miktardan büyük olamaz.';
+      if (this.panelTrafoSevkAdet() > satirIstenen) return 'Trafo sevk adeti miktardan büyük olamaz.';
       const toplam = this.panelGelenAdet() + this.panelTrafoSevkAdet();
-      if (toplam > u.istenenAdet) return 'Toplam adet, çeki miktarını aşamaz.';
+      if (toplam > satirIstenen) return 'Toplam adet, çeki miktarını aşamaz.';
     }
 
     if (this.panelSevkAdet() > 0 && this.panelSevkDurumu() !== 'Sevk Edildi') {
@@ -1064,7 +1066,19 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   isUcKIslemYapilmis(u: GridUrunDto): boolean {
     if (this.isTamamlanmisParcaliEksikSevkUrun(u)) return false;
     if (this.isGridYenidenSevkAcikUrun(u)) return false;
-    return u.ucKDurumuId !== UcKDurum.Bekliyor || u.gelenMiktar > 0;
+    return u.ucKDurumuId !== UcKDurum.Bekliyor || this.getSatirGelen(u) > 0;
+  }
+
+  /**
+   * Grid sayaçları (aktif sevk, borç) satır bazlıdır; onlarla karşılaştırılan 3K geleni ve
+   * kalan da satır toplamı olmalıdır. Çok sandıklı satırda sandık değerleri farklı ölçektedir.
+   */
+  getSatirGelen(u: GridUrunDto): number {
+    return Math.max(Number(u.sandikBazliDagitim ? (u.toplamUcKGelenMiktar ?? u.gelenMiktar) : u.gelenMiktar) || 0, 0);
+  }
+
+  getSatirKalan(u: GridUrunDto): number {
+    return Math.max(Number(u.sandikBazliDagitim ? (u.toplamKalanMiktar ?? u.kalanMiktar) : u.kalanMiktar) || 0, 0);
   }
 
   isYenidenSevkGerekliUrun(u: GridUrunDto | null | undefined): boolean {
@@ -1076,7 +1090,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       u.gridSevkDurumuId === GridSevkDurum.SevkEdildi &&
       (u.gridSevkMiktari ?? 0) > 0 &&
       (u.projeGonderilen ?? 0) > 0 &&
-      (u.kalanMiktar ?? 0) > 0;
+      this.getSatirKalan(u) > 0;
   }
 
   isParcaliEksikYenidenSevkUrun(u: GridUrunDto | null | undefined): boolean {
@@ -1084,7 +1098,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       u.gridDurumuId === GridDurum.EksikGeldi &&
       u.gridSevkDurumuId === GridSevkDurum.SevkEdildi &&
       (u.gridSevkMiktari ?? 0) > 0 &&
-      (u.kalanMiktar ?? 0) > 0;
+      this.getSatirKalan(u) > 0;
   }
 
   isBackendYenidenSevkAcikUrun(u: GridUrunDto | null | undefined): boolean {
@@ -1102,8 +1116,8 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       u.gridDurumuId === GridDurum.TamGeldi &&
       u.gridSevkDurumuId === GridSevkDurum.SevkEdildi &&
       (u.gridSevkMiktari ?? 0) > 0 &&
-      (u.gelenMiktar ?? 0) > (u.gridSevkMiktari ?? 0) &&
-      (u.kalanMiktar ?? 0) === 0;
+      this.getSatirGelen(u) > (u.gridSevkMiktari ?? 0) &&
+      this.getSatirKalan(u) === 0;
   }
 
   isGridYenidenSevkAcikUrun(u: GridUrunDto | null | undefined): boolean {
@@ -1126,17 +1140,17 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       return Math.max(u.yenidenSevkGerekliAdet ?? 0, 0);
     }
     if (this.isProjeGonderilenYenidenSevkUrun(u)) {
-      return Math.max(Math.min(u.projeGonderilen ?? 0, u.kalanMiktar ?? 0), 0);
+      return Math.max(Math.min(u.projeGonderilen ?? 0, this.getSatirKalan(u)), 0);
     }
     if (this.isParcaliEksikYenidenSevkUrun(u)) {
-      return Math.max(u.kalanMiktar ?? 0, 0);
+      return this.getSatirKalan(u);
     }
     return 0;
   }
 
   getGridSevkGorunum(u: GridUrunDto): number {
     const aktifSevk = Math.max(u.gridSevkMiktari ?? 0, 0);
-    const gelen = Math.max(u.gelenMiktar ?? 0, 0);
+    const gelen = this.getSatirGelen(u);
 
     if (aktifSevk <= 0) return 0;
 
