@@ -1,19 +1,12 @@
-<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="128" height="128" rx="28" fill="url(#paint0_linear)"/>
-  <rect x="1" y="1" width="126" height="126" rx="27" stroke="white" stroke-opacity=".08" stroke-width="2"/>
-  <g filter="url(#shadow)">
-    <path d="M64 30L98 49V88L64 108L30 88V49L64 30Z" stroke="white" stroke-width="11" stroke-linejoin="round"/>
-    <path d="M31 50L64 69L97 50" stroke="white" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M64 69V107" stroke="white" stroke-width="11" stroke-linecap="round"/>
-  </g>
+<svg width="128" height="128" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <filter id="shadow" x="18" y="20" width="92" height="100" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#07120D" flood-opacity=".25"/>
-    </filter>
-    <linearGradient id="paint0_linear" x1="18" y1="14" x2="112" y2="118" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#34E43F"/>
-      <stop offset=".52" stop-color="#22C72D"/>
-      <stop offset="1" stop-color="#14A91E"/>
+    <linearGradient id="amblem-zemin" x1="6" y1="4" x2="42" y2="46" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#356F54"/>
+      <stop offset="1" stop-color="#1A3C2D"/>
     </linearGradient>
   </defs>
+  <rect width="48" height="48" rx="14" fill="url(#amblem-zemin)"/>
+  <rect x=".75" y=".75" width="46.5" height="46.5" rx="13.25" stroke="#FFFFFF" stroke-opacity=".12" stroke-width="1.5"/>
+  <path d="M24 11.5 34.8 17.75 24 24 13.2 17.75Z" fill="#D9A96F" fill-opacity=".92"/>
+  <path d="M24 11.5 34.8 17.75V30.25L24 36.5 13.2 30.25V17.75Z M13.2 17.75 24 24 34.8 17.75 M24 24V36.5" stroke="#F6EAD8" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
 </svg>

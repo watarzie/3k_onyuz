@@ -2,217 +2,217 @@ import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, inject, 
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 
-/** Bir ürünün sistemdeki yolculuğu; sıra gerçek iş akışıdır. */
+/**
+ * Sayfadaki şirket bilgileri 3kambalaj.com'daki kurumsal, hizmet ve ürün sayfalarından alınmıştır; müşteriye özel
+ * iş akışları (ürün kabul, PO, talep formu, saha gibi) bilerek anlatılmaz. Sayfa 3K'nın genel işini tanıtır.
+ */
+
+/** Bir sandığın tesisteki yolculuğu; sıra gerçek iş sırasıdır. */
 interface LandingAdim {
   anahtar: string;
   baslik: string;
-  kisa: string;
   ikon: string;
   ozet: string;
-  neOlur: string[];
-  kim: string;
-  cikti: string[];
+  maddeler: string[];
+  etiketler: string[];
+  sahne: string;
 }
 
-interface LandingModul {
-  baslik: string;
-  ikon: string;
-  metin: string;
-  ton: 'green' | 'cyan' | 'violet' | 'amber' | 'rose';
-  genis?: boolean;
-  gorsel?: 'grafik' | 'onay' | 'harita' | 'sandik' | 'iz' | 'bildirim';
-}
-
-interface LandingRol {
+/** Çalışma biçimi: 3K'nın işin hangi adımlarını üstlendiği (3kambalaj.com hizmet modelleri). */
+interface LandingCalismaBicimi {
   ad: string;
   ikon: string;
+  baslik: string;
   ozet: string;
-  ekranlar: string[];
-  isler: string[];
+  adimlar: { ikon: string; ad: string }[];
 }
+
+/** Ürün kartındaki küçük sandık/palet çiziminin dokusu. */
+type UrunDokusu = 'kapali' | 'kafes' | 'kontrplak' | 'osb' | 'katlanir' | 'menteseli' | 'klipsli' | 'ozel' | 'palet' | 'palet-kontrplak' | 'palet-ozel';
+
+interface LandingUrun {
+  ad: string;
+  metin: string;
+  doku: UrunDokusu;
+}
+
+interface LandingSayac {
+  hedef: number;
+  onek?: string;
+  sonek: string;
+  etiket: string;
+  /** Sayı biçimlenmeden yazılır (yıl gibi). */
+  yalin?: boolean;
+}
+
+const KURULUS_YILI = 1993;
 
 const ADIMLAR: LandingAdim[] = [
   {
-    anahtar: 'proje',
-    baslik: 'Proje & Ürün Listesi',
-    kisa: 'Proje',
-    ikon: 'ri-file-excel-2-line',
-    ozet: 'Ürün listesi içe aktarılır; normal, saha ve yedek projelerin ürün omurgası tek seferde oluşur.',
-    neOlur: [
-      'Ürün listesi yüklenir, her satır izlenebilir bir ürüne dönüşür',
-      'Revizyonlar fark önizlemesiyle gösterilir ve onaya sunulur',
-      'Proje tipi (normal · saha · yedek) sonraki akışı belirler',
-    ],
-    kim: 'Proje ve planlama',
-    cikti: ['Ürün listesi', 'Revizyon geçmişi'],
+    anahtar: 'tasarim',
+    baslik: 'Proje Tasarımı',
+    ikon: 'ri-ruler-2-line',
+    ozet: 'Ürünün ölçüsü, ağırlığı ve gideceği yol birlikte değerlendirilir; sandık ürüne göre tasarlanır.',
+    maddeler: ['Ürün boyutları ve ağırlığı alınır', 'Sevk aracı ve yükleme şekli belirlenir', 'Sandık tipi ve iç sabitleme tasarlanır'],
+    etiketler: ['Ölçüye özel', 'Teknik çizim'],
+    sahne: 'Tasarım · Sandık ölçüleri',
   },
   {
-    anahtar: 'kabul',
-    baslik: 'Ürün Kabul · Tedarik Takibi',
-    kisa: 'Kabul',
-    ikon: 'ri-inbox-archive-line',
-    ozet: 'Tedarikçiden gelen ürünler ürün listesiyle karşılaştırılır; geliş durumu, kalite ve süreç adımları ürün bazında izlenir.',
-    neOlur: [
-      'Tam geldi · eksik geldi · gelmedi durumları tek tabloda',
-      'Kalite ve süreç işaretleri, ambar talep formu',
-      'Eksik ürün raporu PDF ve Excel olarak hazır',
-    ],
-    kim: 'Satın alma ve ürün kabul ekibi',
-    cikti: ['Eksik raporu', 'Talep formu'],
-  },
-  {
-    anahtar: '3k',
-    baslik: '3K · Sandıklama',
-    kisa: '3K',
-    ikon: 'ri-archive-stack-line',
-    ozet: 'Ürünler sandıklara yerleştirilir; konulan, eksik ve kalan miktar her an görünür.',
-    neOlur: [
-      'Sandık oluştur, ürünü yerleştir, sandığı kapat',
-      'Projeden veya tedarikçiden karşılama, toplu taşıma',
-      'Sandık lokasyonu ve sahaya aktarım',
-    ],
-    kim: '3K operasyon ekibi',
-    cikti: ['Sandık durum raporu', 'Kapalı sandıklar'],
-  },
-  {
-    anahtar: 'ambalaj',
-    baslik: 'Ambalaj Üretimi',
-    kisa: 'Ambalaj',
+    anahtar: 'uretim',
+    baslik: 'Tomruktan Sandığa Üretim',
     ikon: 'ri-hammer-line',
-    ozet: 'Sandık ölçüleri, çam ihtiyacı (m³) ve üretim planı hazırlanır; fırın partisi kayda geçer.',
-    neOlur: [
-      'Ölçüsü eksik sandıklar önceden işaretlenir',
-      'Üretim formu tek tıkla PDF veya Excel',
-      'Planlandı → üretimde → tamamlandı durumu',
-    ],
-    kim: 'Ambalaj üretimi',
-    cikti: ['Üretim formu', 'm³ ihtiyacı'],
+    ozet: 'Tomruk biçim hattı ve tam otomatik üretim hattı aynı tesiste; kereste de sandık da kendi elimizden çıkar.',
+    maddeler: ['Tomruk kendi hattımızda biçilir', 'Tam otomatik makine parkurunda üretim', 'Kapalı, kafes, kontrplak, OSB ve özel sandık'],
+    etiketler: ['2 entegre hat', 'Tam otomatik'],
+    sahne: 'Üretim · Biçim hattı',
+  },
+  {
+    anahtar: 'ispm',
+    baslik: 'ISPM-15 Isıl İşlem',
+    ikon: 'ri-temp-hot-line',
+    ozet: 'Uluslararası sevkiyat için ahşap ISPM-15 standardında ısıl işlemden geçirilir ve damgalanır.',
+    maddeler: ['Ahşabın çekirdeğinde 56 °C, en az 30 dakika', 'İşlem sonrası ISPM-15 damgası', 'Yurt içi ve yurt dışı sevkiyata uygun'],
+    etiketler: ['ISPM-15', 'Isıl işlem (HT)'],
+    sahne: 'Isıl işlem · Fırın',
+  },
+  {
+    anahtar: 'sandiklama',
+    baslik: 'Sandıklama ve Montaj',
+    ikon: 'ri-archive-stack-line',
+    ozet: 'Ürün uzman personelin gözetiminde sandığa yerleştirilir ve sabitlenir; nem ve darbeye karşı korunur.',
+    maddeler: ['Ürün sandığa yerleştirilip sabitlenir', 'Nem alıcı uygulanır', 'Alüminyum folyo ile vakumlanır, sandık kapatılır'],
+    etiketler: ['Nem alıcı', 'Vakumlu folyo'],
+    sahne: 'Sandıklama · Montaj',
   },
   {
     anahtar: 'depo',
-    baslik: 'Depo & Stok',
-    kisa: 'Depo',
-    ikon: 'ri-map-pin-2-line',
-    ozet: 'Sandıkların depo lokasyonu ve fazla teslim, iade malzemeler stokta takip edilir.',
-    neOlur: [
-      'Lokasyon atama ve anlık depo durumu',
-      'Fazla teslim ve iade stok kaydı',
-      'Proje tipine göre depo sandık raporu',
-    ],
-    kim: 'Depo ekibi',
-    cikti: ['Depo sandık raporu', 'Stok raporu'],
+    baslik: 'Güvenli Depolama',
+    ikon: 'ri-store-3-line',
+    ozet: 'Ambalajlanan ürünler sahanızdan alınıp güvenlikli depolarımıza taşınır; sevk tarihine kadar sigortalı korunur.',
+    maddeler: ['Sahanızdan depomuza sevk', 'Sigortalı depolama', 'Her sandığın yeri sistemde izlenir'],
+    etiketler: ['DepoFix', 'Sigortalı'],
+    sahne: 'Depo · Lokasyon',
   },
   {
     anahtar: 'sevk',
-    baslik: 'Sevkiyat & Saha',
-    kisa: 'Sevkiyat',
-    ikon: 'ri-truck-line',
-    ozet: 'Hazır sandıklar sevk edilir ve proje kilitlenir; geri alma gibi kritik işlemler onaya düşer.',
-    neOlur: [
-      'Sevkiyat ve sevkiyat geçmişi',
-      'Gerçekleşen ürün listesi raporu',
-      'Saha eksikleri ve geri alma talepleri onay akışında',
+    baslik: 'Yükleme ve Liman Teslimi',
+    ikon: 'ri-ship-2-line',
+    ozet: 'Sevk tarihi geldiğinde sandıklar yüklenir; sevkiyat sigortalanır ve ürün limana teslim edilir.',
+    maddeler: ['Sevk aracına uygun yükleme', 'Sevkiyatların sigortalanması', 'Liman teslimi'],
+    etiketler: ['Yükleme', 'Liman teslimi'],
+    sahne: 'Sevkiyat · Liman',
+  },
+];
+
+const CALISMA_BICIMLERI: LandingCalismaBicimi[] = [
+  {
+    ad: 'Standart',
+    ikon: 'ri-tools-line',
+    baslik: 'Ürününüzü uzman ekibimiz sandıklar',
+    ozet: 'Ürün, uzman personelin gözetiminde sandık içerisine yerleştirilir ve sabitlenir. Ölçüden yüklemeye kadar her adım ürünün kendisine göre planlanır.',
+    adimlar: [
+      { ikon: 'ri-ruler-2-line', ad: 'Ürün ölçüsü ve sevk aracı' },
+      { ikon: 'ri-draft-line', ad: 'Sandık tasarımı' },
+      { ikon: 'ri-anchor-line', ad: 'Yerleştirme ve sabitleme' },
+      { ikon: 'ri-drop-line', ad: 'Nem alıcı ve vakumlu folyo' },
+      { ikon: 'ri-truck-line', ad: 'Yükleme' },
     ],
-    kim: 'Sevkiyat ve yönetim',
-    cikti: ['Gerçekleşen ürün listesi', 'Sevk kaydı'],
   },
   {
-    anahtar: 'finans',
-    baslik: 'Finans',
-    kisa: 'Finans',
-    ikon: 'ri-money-euro-circle-line',
-    ozet: 'Üretilen işler finans kaydına dönüşür; PO, fatura, vade ve tahsilat aynı ekranda izlenir.',
-    neOlur: [
-      'İş kalemleri kendiliğinden oluşur, tarifeyle fiyatlanır',
-      'PO ve fatura dağıtımı, ödeme ve vade takibi',
-      'Dönemsel panel, detaylı döküm ve raporlar',
+    ad: 'Pro',
+    ikon: 'ri-team-line',
+    baslik: 'Ekibimiz fabrikanızda sizinle çalışır',
+    ozet: 'Fabrikanızda düzenli olarak kalacak yeterli sayıda personel istihdam edilir. Projelendirme ve sevk sürecinin tamamı bu ekip tarafından yürütülür.',
+    adimlar: [
+      { ikon: 'ri-team-line', ad: 'Fabrikanızda kalıcı ekip' },
+      { ikon: 'ri-draft-line', ad: 'Projelendirme' },
+      { ikon: 'ri-archive-stack-line', ad: 'Sandıklama' },
+      { ikon: 'ri-umbrella-line', ad: 'Sigorta ve malzeme temini' },
+      { ikon: 'ri-truck-line', ad: 'Sevk süreci' },
     ],
-    kim: 'Finans',
-    cikti: ['PO ve fatura', 'Finans raporları'],
+  },
+  {
+    ad: 'DepoFix',
+    ikon: 'ri-store-3-line',
+    baslik: 'Sandıklı ürününüzü depolar, limana teslim ederiz',
+    ozet: 'Sahanızda ambalajlanan ürünler güvenlikli depolarımıza taşınır ve sigortalı tutulur. Sevk tarihi geldiğinde yüklenir ve limana teslim edilir.',
+    adimlar: [
+      { ikon: 'ri-truck-line', ad: 'Sahanızdan teslim alma' },
+      { ikon: 'ri-store-3-line', ad: 'Güvenlikli depo' },
+      { ikon: 'ri-umbrella-line', ad: 'Sigortalı bekleme' },
+      { ikon: 'ri-calendar-check-line', ad: 'Sevk tarihinde yükleme' },
+      { ikon: 'ri-ship-2-line', ad: 'Liman teslimi' },
+    ],
   },
 ];
 
-const MODULLER: LandingModul[] = [
-  { baslik: '3K Sandıklama', ikon: 'ri-archive-stack-line', metin: 'Ürünleri sandıklara yerleştirin, konulan ve eksik miktarı anlık görün, sandığı tek tıkla kapatın.', ton: 'green', genis: true, gorsel: 'sandik' },
-  { baslik: 'Ürün Kabul Takibi', ikon: 'ri-inbox-archive-line', metin: 'Tedarikten gelen ürünler ürün listesiyle eşleşir; eksik, kalite ve süreç ürün bazında.', ton: 'amber' },
-  { baslik: 'Ambalaj Üretimi', ikon: 'ri-hammer-line', metin: 'Ölçü, m³ çam ihtiyacı, üretim planı ve fırın partisi.', ton: 'amber' },
-  { baslik: 'Finans Yönetimi', ikon: 'ri-line-chart-line', metin: 'İş kayıtları, PO, fatura, vade ve tahsilat; dönemsel panel ve detaylı döküm.', ton: 'cyan', genis: true, gorsel: 'grafik' },
-  { baslik: 'İşlem Onay Merkezi', ikon: 'ri-shield-check-line', metin: 'Kritik işlemler onaylanmadan uygulanmaz; her karar gerekçesiyle kayda geçer.', ton: 'violet', gorsel: 'onay' },
-  { baslik: 'Depo Durumu', ikon: 'ri-map-pin-2-line', metin: 'Sandık lokasyonları ve depo raporu.', ton: 'cyan', gorsel: 'harita' },
-  { baslik: 'Proje Yönetimi', ikon: 'ri-folder-3-line', metin: 'Normal, saha ve yedek projeler; ürün listesi revizyonları.', ton: 'green' },
-  { baslik: 'Saha Yönetimi', ikon: 'ri-map-2-line', metin: 'Sahaya aktarılan sandıklar ve saha eksikleri.', ton: 'green' },
-  { baslik: 'Stok Modülü', ikon: 'ri-stack-line', metin: 'Fazla teslim ve iade malzemeler.', ton: 'rose' },
-  { baslik: 'Rol & Yetki', ikon: 'ri-user-settings-line', metin: 'Ekran, işlem ve alan bazında okuma/yazma yetkisi.', ton: 'violet' },
-  { baslik: 'Hareket Geçmişi', ikon: 'ri-history-line', metin: 'Kim, neyi, ne zaman değiştirdi; eski ve yeni değerle.', ton: 'cyan', genis: true, gorsel: 'iz' },
-  { baslik: 'Bildirim Merkezi', ikon: 'ri-notification-3-line', metin: 'Onay talepleri ve durum değişiklikleri ilgili kişiye anında düşer.', ton: 'rose', genis: true, gorsel: 'bildirim' },
+const SANDIKLAR: LandingUrun[] = [
+  { ad: 'Tam Kapalı İhracat Sandığı', metin: 'Ağır ekipman, araç ve makine parçaları için dayanıklı çözüm.', doku: 'kapali' },
+  { ad: 'Kafes Sandık', metin: 'Yarı kapalı tasarım; ürünün havalanmasını sağlar.', doku: 'kafes' },
+  { ad: 'Kontrplak Sandık', metin: 'Sudan etkilenmez; deniz aşırı sevkiyatlarda tercih edilir.', doku: 'kontrplak' },
+  { ad: 'OSB Sandık', metin: 'Hafif yapısıyla taşıma maliyetini düşürür.', doku: 'osb' },
+  { ad: 'Katlanır Sandık', metin: 'Tekrar kullanılabilir; Avrupa pazarında yaygın.', doku: 'katlanir' },
+  { ad: 'Menteşeli Sandık', metin: 'Kolayca açılıp kapanır, istiflenebilir.', doku: 'menteseli' },
+  { ad: 'Klipsli Sandık', metin: 'Montajı ve demontajı kolay depo çözümü.', doku: 'klipsli' },
+  { ad: 'Özel Sandık', metin: 'İhtiyacınıza göre tasarlanan modeller.', doku: 'ozel' },
 ];
 
-const ROLLER: LandingRol[] = [
-  {
-    ad: 'Planlama',
-    ikon: 'ri-folder-chart-line',
-    ozet: 'Projeyi kurar, ürün listesini ve revizyonları yönetir.',
-    ekranlar: ['Projeler', 'Ürün listesi ve revizyon geçmişi', 'Eksik raporları'],
-    isler: ['Ürün listesi yükler', 'Revizyon farkını önizleyip onaya sunar', 'Toplu eksik raporu ve talep formu alır'],
-  },
-  {
-    ad: 'Operasyon',
-    ikon: 'ri-archive-stack-line',
-    ozet: 'Gelen ürünleri kabul eder, sandıklara yerleştirir.',
-    ekranlar: ['Ürün kabul takibi', '3K sandık listesi', 'Sandık içerik yönetimi'],
-    isler: ['Tam geldi / eksik geldi işaretler', 'Ürünü sandığa koyar, sandığı kapatır', 'Toplu taşıma ve lokasyon atar'],
-  },
-  {
-    ad: 'Ambalaj',
-    ikon: 'ri-hammer-line',
-    ozet: 'Sandık ölçüsünden üretime kadar ambalajı planlar.',
-    ekranlar: ['Ambalaj üretim listesi', 'Üretim planı', 'Özel sandıklar'],
-    isler: ['Ölçü eksiklerini tamamlar', 'Üretim formunu PDF/Excel indirir', 'Fırın partisini kaydeder'],
-  },
-  {
-    ad: 'Finans',
-    ikon: 'ri-money-euro-circle-line',
-    ozet: 'İşleri PO’ya ve faturaya bağlar, tahsilatı izler.',
-    ekranlar: ['Finans kontrol paneli', 'Finans iş takibi', 'PO ve faturalar', 'Raporlar'],
-    isler: ['PO ve fatura girer, dağıtır', 'Ödeme ve vadeyi işaretler', 'Dönemsel rapor ve önizleme alır'],
-  },
-  {
-    ad: 'Yönetim',
-    ikon: 'ri-dashboard-3-line',
-    ozet: 'Bütün akışı tek panelden izler, kritik işlemleri onaylar.',
-    ekranlar: ['Ana kontrol paneli', 'İşlem onay merkezi', 'Rol ve kullanıcı yönetimi', 'Hareket geçmişi'],
-    isler: ['Kritik talepleri onaylar veya gerekçeyle reddeder', 'Rol ve alan yetkilerini belirler', 'Değişiklik izini denetler'],
-  },
+const PALETLER: LandingUrun[] = [
+  { ad: 'Ahşap Palet', metin: 'Endüstriyel taşıma için dayanıklı platform.', doku: 'palet' },
+  { ad: 'Kontrplak Palet', metin: 'ISPM-15 sertifikası gerektirmez.', doku: 'palet-kontrplak' },
+  { ad: 'Özel Palet', metin: 'Ürününüze göre özelleştirilmiş tasarım.', doku: 'palet-ozel' },
 ];
 
-/** Şirket konumu: Google Haritalar'daki işletme kaydı (3K AHŞAP AMBALAJ, Derince/Kocaeli). */
+/** Kaydırdıkça kelime kelime koyulaşan tanıtım cümlesi; vurgulu parçalar yeşil yazılır. */
+const MANIFESTO: [string, boolean][] = [
+  [`${KURULUS_YILI}'te İstanbul'da başlayan yolculuğumuz bugün Derince'deki`, false],
+  ['9.000 m²', true],
+  ['tesisimizde sürüyor. Tomruğu kendi hattımızda biçiyor, sandığı', false],
+  ['ürününüzün ölçüsüne göre', true],
+  ['tasarlıyor,', false],
+  ['ISPM-15', true],
+  ['standardında ısıl işlemden geçiriyor ve ürününüzü', false],
+  ['limana teslim edilene kadar', true],
+  ['koruyoruz.', false],
+];
+
+/** Platform bölümü: müşteriden bağımsız, 3K'nın kendi operasyonunu izleyen yetenekler. */
+const OZELLIKLER = [
+  { ikon: 'ri-archive-stack-line', baslik: 'Sandık bazında takip', metin: 'Her sandığın içeriği, ölçüsü ve durumu tek ekranda.' },
+  { ikon: 'ri-ruler-2-line', baslik: 'Ambalaj üretim planı', metin: 'Ölçü, m³ ihtiyacı ve üretim formu hazır.' },
+  { ikon: 'ri-map-pin-2-line', baslik: 'Depo ve lokasyon', metin: 'Sandığın hangi rafta olduğu her an bilinir.' },
+  { ikon: 'ri-truck-line', baslik: 'Sevkiyat kaydı', metin: 'Yüklenen sandıklar ve sevkiyat geçmişi.' },
+  { ikon: 'ri-shield-check-line', baslik: 'Onaylı kritik işlemler', metin: 'Kritik değişiklik onaysız uygulanmaz, iz bırakır.' },
+  { ikon: 'ri-file-chart-line', baslik: 'PDF · Excel raporlar', metin: 'Sandık, depo ve üretim raporları tek tıkla.' },
+];
+
+/** Uygulama penceresindeki örnek satırlar (görsel); ilk satır aşamaları döngüyle gezer. */
+const CANLI_DURUMLAR = ['Tasarım', 'Üretimde', 'Isıl işlem', 'Sandıklandı', 'Depoda', 'Sevk edildi'];
+const TAKIP_SATIRLARI = [
+  { no: 'SND-0139', tip: 'Kontrplak sandık', oran: 66, durum: 'Sandıklandı', ton: 'mavi' },
+  { no: 'SND-0135', tip: 'Kafes sandık', oran: 83, durum: 'Depoda · B-2', ton: 'mavi' },
+  { no: 'SND-0128', tip: 'Özel sandık', oran: 100, durum: 'Sevk edildi', ton: 'yesil' },
+];
+
+/** Şirket konumu ve iletişim: Google Haritalar işletme kaydı ve 3kambalaj.com iletişim sayfası. */
 const KONUM = {
   ad: '3K Ahşap Ambalaj',
   unvan: 'Üç Kardeşler İnşaat Kerestecilik Ltd. Şti.',
   adres: 'Fatih Sultan Mah., 41100 Derince / Kocaeli',
   telefon: '(0262) 223 28 75',
   telefonBaglanti: '+902622232875',
+  eposta: 'info@3kambalaj.com',
   web: '3kambalaj.com',
   webAdresi: 'https://3kambalaj.com',
+  saatler: 'Hafta içi 08:00 – 17:00 · Cumartesi 08:00 – 12:30',
   haritaBaglantisi: 'https://maps.google.com/?cid=15525171436395750926',
   yolTarifi: 'https://www.google.com/maps/dir/?api=1&destination=40.7681914,29.8178164',
 } as const;
 
-/** Kaydırma sahnesinin pencere başlıkları; sıra ADIMLAR ile aynıdır. */
-const SAHNE_BASLIKLARI = [
-  'Proje · Ürün listesi içe aktarma',
-  'Ürün kabul · Geliş kontrolü',
-  '3K · Sandık 12',
-  'Ambalaj · Üretim planı',
-  'Depo · Lokasyon',
-  'Sevkiyat · PA727-03',
-  'Finans · PO ve fatura',
-];
-
 /**
- * 3K tanıtım sayfası. Akış bölümü kaydırmaya bağlı anlatımdır: metin aşamaları kaydırıldıkça yapışık sahne
- * o aşamanın görselini kurar. Animasyonlar CSS ile çalışır; bileşen yalnız görünürlüğü, etkin aşamayı,
- * kaydırma ilerlemesini ve fare ışığını yönetir.
+ * 3K tanıtım sayfası. Süreç bölümü kaydırmaya bağlı anlatımdır: metin aşamaları kaydırıldıkça yapışık sahne o
+ * aşamanın çizimini kurar. Animasyonlar CSS ile çalışır; bileşen yalnız görünürlüğü, etkin aşamayı, kaydırma
+ * ilerlemesini, sayaçları ve kahraman sandığın yeniden kurulmasını yönetir.
  */
 @Component({
   selector: 'app-landing',
@@ -226,35 +226,55 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly adimlar = ADIMLAR;
-  readonly sahneBasliklari = SAHNE_BASLIKLARI;
-  readonly moduller = MODULLER;
-  readonly roller = ROLLER;
+  readonly calismaBicimleri = CALISMA_BICIMLERI;
+  readonly urunGruplari = [
+    { ad: 'Sandıklar', ikon: 'ri-archive-line', urunler: SANDIKLAR },
+    { ad: 'Paletler', ikon: 'ri-stack-line', urunler: PALETLER },
+  ];
+  readonly ozellikler = OZELLIKLER;
+  readonly canliDurumlar = CANLI_DURUMLAR;
+  readonly takipSatirlari = TAKIP_SATIRLARI;
   readonly konum = KONUM;
   readonly yil = new Date().getFullYear();
-  readonly modulBandi = [
-    'Ürün Listesi', 'Ürün Kabul', '3K Sandıklama', 'Ambalaj Üretimi', 'Depo', 'Sevkiyat', 'Saha',
-    'Stok', 'Finans', 'İşlem Onayı', 'Rol & Yetki', 'Hareket Geçmişi',
+  readonly manifesto = MANIFESTO.flatMap(([metin, vurgu]) => metin.split(' ').map((kelime) => ({ kelime, vurgu })));
+  readonly urunBandi = [...SANDIKLAR, ...PALETLER].map((x) => x.ad);
+  readonly sayaclar: LandingSayac[] = [
+    { hedef: new Date().getFullYear() - KURULUS_YILI, sonek: '+', etiket: 'yıllık tecrübe' },
+    { hedef: 9000, sonek: ' m²', etiket: 'üretim ve depolama alanı' },
+    { hedef: 2, sonek: '', etiket: 'entegre üretim hattı' },
+    { hedef: 15, onek: 'ISPM-', sonek: '', etiket: 'standardında ısıl işlem', yalin: true },
   ];
+  /** Kahraman bölümündeki süzülen talaş taneleri: konum, boy ve gecikme sabittir (rastgele değil). */
+  readonly talaslar = Array.from({ length: 14 }, (_, i) => ({
+    x: (i * 37 + 11) % 100,
+    boy: 3 + (i % 4) * 2,
+    sure: 14 + (i % 5) * 3,
+    gecikme: -((i * 2.3) % 16),
+  }));
 
   readonly aktifAdim = signal(0);
-  readonly aktifRol = signal(0);
+  readonly aktifUrunGrubu = signal(0);
+  readonly aktifBicim = signal(0);
   readonly kaydirildi = signal(false);
   readonly ilerleme = signal(0);
+  readonly manifestoIlerleme = signal(0);
+  /** Artınca kahraman sandığı DOM'dan çıkıp yeniden girer; böylece kurulum animasyonu baştan oynar. */
+  readonly kurulum = signal(0);
 
   private gozlemci?: IntersectionObserver;
   private adimGozlemcisi?: IntersectionObserver;
+  private sayacGozlemcisi?: IntersectionObserver;
   private readonly hareketAzalt =
     typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
   ngAfterViewInit(): void {
     const kok = this.host.nativeElement;
     const ogeler = kok.querySelectorAll<HTMLElement>('[data-reveal]');
-    if (typeof IntersectionObserver === 'undefined') {
+    const sayaclar = kok.querySelectorAll<HTMLElement>('[data-sayac]');
+    if (typeof IntersectionObserver === 'undefined' || this.hareketAzalt) {
       ogeler.forEach((x) => x.classList.add('is-in'));
-      return;
-    }
-    if (this.hareketAzalt) {
-      ogeler.forEach((x) => x.classList.add('is-in'));
+      sayaclar.forEach((x) => this.sayacYaz(x, 1));
+      if (typeof IntersectionObserver === 'undefined') return;
     } else {
       this.gozlemci = new IntersectionObserver(
         (girdiler) => {
@@ -267,6 +287,21 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
         { threshold: 0.14, rootMargin: '0px 0px -40px 0px' },
       );
       ogeler.forEach((x) => this.gozlemci!.observe(x));
+
+      this.sayacGozlemcisi = new IntersectionObserver(
+        (girdiler) => {
+          for (const girdi of girdiler) {
+            if (!girdi.isIntersecting) continue;
+            this.sayacGozlemcisi?.unobserve(girdi.target);
+            this.sayacOynat(girdi.target as HTMLElement);
+          }
+        },
+        { threshold: 0.6 },
+      );
+      sayaclar.forEach((x) => {
+        this.sayacYaz(x, 0);
+        this.sayacGozlemcisi!.observe(x);
+      });
     }
     // Metni ekrandaki ince şeridi kesen aşama etkin olur. Masaüstünde şerit ve yapışık sahne ekranın ortasındadır,
     // böylece etkin metin sahnesiyle yan yana gelir; dar ekranda sahne üstte durduğu için şerit sahnenin altındadır.
@@ -287,14 +322,26 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.gozlemci?.disconnect();
     this.adimGozlemcisi?.disconnect();
+    this.sayacGozlemcisi?.disconnect();
   }
 
   @HostListener('window:scroll')
+  @HostListener('window:resize')
   kaydirmaDegisti(): void {
     const kok = document.documentElement;
     const yukseklik = kok.scrollHeight - kok.clientHeight;
     this.kaydirildi.set(kok.scrollTop > 12);
     this.ilerleme.set(yukseklik > 0 ? Math.min(100, (kok.scrollTop / yukseklik) * 100) : 0);
+
+    // Tanıtım cümlesi ekranın altına girdiğinde koyulaşmaya başlar, ekranın üst üçte birine varınca tamamlanır.
+    const manifesto = this.host.nativeElement.querySelector<HTMLElement>('.manifesto__metin');
+    if (manifesto) {
+      const kutu = manifesto.getBoundingClientRect();
+      const baslangic = window.innerHeight * 0.88;
+      const bitis = window.innerHeight * 0.3;
+      const oran = (baslangic - kutu.top) / (baslangic - bitis + kutu.height * 0.6);
+      this.manifestoIlerleme.set(this.hareketAzalt ? 1 : Math.max(0, Math.min(1, oran)));
+    }
   }
 
   /** Aşama numarasına tıklanınca o aşamanın metni etkinleştiği şeride kaydırılır. */
@@ -306,26 +353,34 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
     window.scrollTo({ top, behavior: this.hareketAzalt ? 'auto' : 'smooth' });
   }
 
+  /** Sıra numarası iki haneli yazılır: 01, 02… */
+  sira(i: number): string {
+    return String(i + 1).padStart(2, '0');
+  }
+
+  sandigiYenidenKur(): void {
+    this.kurulum.update((x) => x + 1);
+  }
+
   /** Aşama şeridinin ekran yüksekliğine oranı; SCSS'teki 820px kırılımıyla aynıdır. */
   private adimSeridi(): number {
     return window.matchMedia?.('(max-width: 820px)').matches ? 0.72 : 0.5;
   }
 
-  /** Fare ışığı: imlecin konumu CSS değişkeni olarak öğeye yazılır (yalnız görsel). */
-  isikTasi(olay: PointerEvent): void {
-    const hedef = olay.currentTarget as HTMLElement;
-    const kutu = hedef.getBoundingClientRect();
-    hedef.style.setProperty('--mx', `${olay.clientX - kutu.left}px`);
-    hedef.style.setProperty('--my', `${olay.clientY - kutu.top}px`);
+  private sayacOynat(oge: HTMLElement): void {
+    const sure = 1600;
+    const baslangic = performance.now();
+    const adim = (simdi: number) => {
+      const t = Math.min(1, (simdi - baslangic) / sure);
+      this.sayacYaz(oge, 1 - Math.pow(1 - t, 3));
+      if (t < 1) requestAnimationFrame(adim);
+    };
+    requestAnimationFrame(adim);
   }
 
-  /** Bento kartları: ışık her kartın kendi koordinatına göre konur. */
-  kartIsigi(olay: PointerEvent): void {
-    const kapsayici = olay.currentTarget as HTMLElement;
-    kapsayici.querySelectorAll<HTMLElement>('.bento-card').forEach((kart) => {
-      const kutu = kart.getBoundingClientRect();
-      kart.style.setProperty('--mx', `${olay.clientX - kutu.left}px`);
-      kart.style.setProperty('--my', `${olay.clientY - kutu.top}px`);
-    });
+  private sayacYaz(oge: HTMLElement, oran: number): void {
+    const hedef = Number(oge.dataset['sayac']);
+    const deger = Math.round(hedef * oran);
+    oge.textContent = oge.dataset['yalin'] === 'true' ? String(deger) : deger.toLocaleString('tr-TR');
   }
 }
