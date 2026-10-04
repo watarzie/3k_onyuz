@@ -117,6 +117,9 @@ export const API = {
     URUNLER: `${BASE}/finans/urunler`,
     URUN: (urunId: number) => `${BASE}/finans/urunler/${urunId}`,
     URUN_YENIDEN_FIYATLA: (urunId: number) => `${BASE}/finans/urunler/${urunId}/yeniden-fiyatla`,
+    TARIFE_DUZELTME_ONIZLEME: (urunId: number, tarifeId: number) =>
+      `${BASE}/finans/urunler/${urunId}/tarifeler/${tarifeId}/duzeltme-onizleme`,
+    TARIFE_DUZELT: (urunId: number, tarifeId: number) => `${BASE}/finans/urunler/${urunId}/tarifeler/${tarifeId}/duzelt`,
     IS_RAPORU_PDF: `${BASE}/finans/raporlar/isler/pdf`,
     IS_RAPORU_EXCEL: `${BASE}/finans/raporlar/isler/excel`,
     AYLIK_RAPOR_PDF: `${BASE}/finans/raporlar/aylik/pdf`,

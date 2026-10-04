@@ -689,6 +689,108 @@ input[type='checkbox'] { accent-color: var(--finance-primary); }
   font-size: 12px;
   line-height: 1.6;
 }
+// Hatalı tarife düzeltme: tarife penceresinin üstünde açılır.
+.modal-backdrop.ust-katman { z-index: 1090; }
+.side-panel.ust-katman { z-index: 1091; }
+.tarife-duzelt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border: 1px solid var(--finance-border);
+  border-radius: 7px;
+  background: var(--whiteColor);
+  color: #475569;
+  font-size: 11.5px;
+  font-weight: 650;
+  white-space: nowrap;
+  transition: border-color .15s ease, color .15s ease;
+  i { font-size: 13px; color: #e8890c; }
+  &:hover { border-color: #f5c27a; color: #b45309; }
+}
+.duzeltme-etkisi {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+.duzeltme-deger {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  > i { color: #94a3b8; font-size: 18px; }
+}
+.duzeltme-deger__kutu {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--finance-border);
+  border-radius: 10px;
+  background: #f8fafc;
+  small { color: #64748b; font-size: 11px; font-weight: 650; }
+  strong { color: var(--blackColor); font-size: 15px; font-variant-numeric: tabular-nums; }
+  em { color: #64748b; font-size: 11.5px; font-style: normal; }
+  &.is-yeni {
+    border-color: #605dff40;
+    background: var(--finance-soft);
+    strong { color: var(--finance-primary); }
+  }
+}
+.duzeltme-sayac {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    b { font-size: 13px; }
+  }
+  .is-duzeltilir { background: #ecfdf3; color: #15803d; }
+  .is-korunur { background: #f1f5f9; color: #475569; }
+}
+.duzeltme-tutar {
+  margin: 0;
+  color: #475569;
+  font-size: 12px;
+  b { color: var(--blackColor); font-variant-numeric: tabular-nums; }
+}
+.duzeltme-kalemleri {
+  display: grid;
+  gap: 6px;
+  max-height: 260px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+  scrollbar-width: thin;
+  li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    border: 1px solid #dcfce7;
+    border-radius: 8px;
+    background: #f7fef9;
+    > i { color: #16a34a; font-size: 16px; }
+    span { display: grid; min-width: 0; }
+    strong { overflow: hidden; color: var(--blackColor); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+    small { color: #64748b; font-size: 11px; }
+    em { color: #334155; font-size: 12px; font-style: normal; font-weight: 650; font-variant-numeric: tabular-nums; }
+    &.is-korunur {
+      border-color: var(--finance-border);
+      background: #f8fafc;
+      > i { color: #94a3b8; }
+    }
+  }
+}
+.duzeltme-gerekce { margin-top: 16px; }
+
 .checkbox-list {
   display: grid;
   gap: 8px;

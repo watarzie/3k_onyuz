@@ -52,6 +52,9 @@ import {
   FinansParametreler,
   FinansVadeUyarilari,
   FinansYenidenFiyatlamaSonuc,
+  FinansTarifeDuzeltmeOnizleme,
+  FinansTarifeDuzeltmeSonuc,
+  FinansTarifeDuzeltRequest,
 } from '../../shared/models/finans-v2.model';
 import { FinansIsKategorisi, FinansKarsilanma } from '../constants/enums';
 
@@ -121,6 +124,16 @@ export class FinansService {
   /** D4: ürüne bağlı, PO'suz açık kalemleri finans tarihlerinde geçerli tarifeyle yeniden fiyatlar. */
   urunYenidenFiyatla(id: number, aciklama: string) {
     return this.api.post<FinansYenidenFiyatlamaSonuc>(API.FINANS.URUN_YENIDEN_FIYATLA(id), { aciklama });
+  }
+  /** Hatalı tarife düzeltmenin etkisini veriyi değiştirmeden gösterir: düzeltilecek/korunacak kalemler. */
+  tarifeDuzeltmeOnizle(urunId: number, tarifeId: number, birimFiyat: number, kdvOrani: number) {
+    return this.api.get<FinansTarifeDuzeltmeOnizleme>(API.FINANS.TARIFE_DUZELTME_ONIZLEME(urunId, tarifeId), {
+      params: new HttpParams().set('birimFiyat', birimFiyat).set('kdvOrani', kdvOrani),
+    });
+  }
+  /** Sürümün fiyatını gerekçeyle düzeltir; yalnız o sürümün tarife fiyatıyla fiyatlanmış açık kalemler değişir. */
+  tarifeDuzelt(urunId: number, tarifeId: number, request: FinansTarifeDuzeltRequest) {
+    return this.api.post<FinansTarifeDuzeltmeSonuc>(API.FINANS.TARIFE_DUZELT(urunId, tarifeId), request);
   }
   kaliciSilOnizleme(varlikTuru: FinansVarlikTuru, id: number) {
     return this.api.get<FinansKaliciSilOnizleme>(API.FINANS.KALICI_SIL_ONIZLEME, {

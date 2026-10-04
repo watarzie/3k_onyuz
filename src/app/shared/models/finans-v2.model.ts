@@ -180,6 +180,46 @@ export interface FinansYenidenFiyatlamaSonuc {
   incelenenKalem: number;
   fiyatlananKalem: number;
 }
+/** Hatalı tarife düzeltme: sürüm değeri ve düzeltilecek kalemlerin net toplamı; yetkisiz kullanıcıya null gelir. */
+export interface FinansTarifeDuzeltmeDegeri {
+  birimFiyat: number | null;
+  kdvOrani: number | null;
+  netTutar: number | null;
+}
+export interface FinansTarifeDuzeltmeKalemi {
+  isKaydiId: number;
+  projeNo: string;
+  isAdi: string;
+  finansTarihi: string;
+  kaynakTuru: string;
+  duzeltilir: boolean;
+  korunmaNedeni: string | null;
+  netTutar: number | null;
+}
+export interface FinansTarifeDuzeltmeOnizleme {
+  tarifeId: number;
+  urunId: number;
+  urunAdi: string;
+  paraBirimi: string;
+  gecerlilikBaslangici: string;
+  gecerlilikBitisi: string;
+  mevcut: FinansTarifeDuzeltmeDegeri;
+  yeni: FinansTarifeDuzeltmeDegeri;
+  duzeltilecekKalemSayisi: number;
+  korunanKalemSayisi: number;
+  kalemler: FinansTarifeDuzeltmeKalemi[];
+  kalemListesiKisaltildi: boolean;
+}
+export interface FinansTarifeDuzeltRequest {
+  birimFiyat: number;
+  kdvOrani: number;
+  aciklama: string;
+}
+export interface FinansTarifeDuzeltmeSonuc {
+  tarifeId: number;
+  duzeltilenKalemSayisi: number;
+  korunanKalemSayisi: number;
+}
 export interface FinansProjeDurumSayilari {
   toplamProje: number;
   siparisYok: number;

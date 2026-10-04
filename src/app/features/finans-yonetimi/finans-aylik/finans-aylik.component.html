@@ -1489,7 +1489,7 @@
           <span>Fiyat geçmişi</span>
           <div class="table-responsive">
             <table class="table align-middle mb-0">
-              <thead><tr><th>Başlangıç</th><th>Bitiş</th><th>Birim fiyat</th><th>KDV</th></tr></thead>
+              <thead><tr><th>Başlangıç</th><th>Bitiş</th><th>Birim fiyat</th><th>KDV</th>@if (tarifeDuzeltilebilir()) {<th></th>}</tr></thead>
               <tbody>
                 @for (surum of duzenlenenUrunTarifeleri(); track surum.id) {
                   <tr>
@@ -1497,6 +1497,13 @@
                     <td>{{ surum.gecerlilikBitisi.slice(0, 10) === acikUcluTarifeBitisi ? 'Açık' : (surum.gecerlilikBitisi | date: 'dd.MM.yyyy') }}</td>
                     <td>{{ surum.birimFiyat | number: '1.2-4' }} {{ surum.paraBirimi }}</td>
                     <td>%{{ surum.kdvOrani }}</td>
+                    @if (tarifeDuzeltilebilir()) {
+                      <td class="text-end">
+                        <button type="button" class="tarife-duzelt-btn" title="Yanlış girilmiş fiyatı düzelt" (click)="tarifeDuzeltmeAc(surum)">
+                          <i class="ri-tools-line" aria-hidden="true"></i>Düzelt
+                        </button>
+                      </td>
+                    }
                   </tr>
                 }
               </tbody>
@@ -1518,6 +1525,110 @@
       >
         Kaydet
       </button>
+    </footer>
+  </section>
+}
+@if (tarifeDuzeltmeSurumu(); as surum) {
+  <div class="modal-backdrop ust-katman" (click)="tarifeDuzeltmeSurumu.set(null)"></div>
+  <section class="side-panel compact ust-katman tarife-duzeltme" role="dialog" aria-modal="true" aria-labelledby="tarife-duzeltme-baslik">
+    <header>
+      <div>
+        <h3 id="tarife-duzeltme-baslik"><i class="ri-tools-line" aria-hidden="true"></i>Hatalı Tarifeyi Düzelt</h3>
+        <small>
+          {{ urunForm.kod }} · {{ surum.gecerlilikBaslangici | date: 'dd.MM.yyyy' }} –
+          {{ surum.gecerlilikBitisi.slice(0, 10) === acikUcluTarifeBitisi ? 'Açık' : (surum.gecerlilikBitisi | date: 'dd.MM.yyyy') }}
+        </small>
+      </div>
+      <button type="button" title="Kapat" (click)="tarifeDuzeltmeSurumu.set(null)">
+        <i class="ri-close-line"></i>
+      </button>
+    </header>
+    <div class="panel-body">
+      <p class="form-note">
+        Yanlış girilmiş bir fiyatı düzeltmek içindir. Sürümün tarih aralığı değişmez; yalnız bu sürümün tarife fiyatıyla
+        fiyatlanmış açık kalemler yeni değere çekilir. PO'ya bağlı ya da fiyatı elle verilmiş kalemler korunur.
+        Yeni bir fiyat dönemi başlatmak için bunun yerine tarife formundaki geçerlilik tarihini kullanın.
+      </p>
+      <div class="form-grid">
+        <label class="field"
+          ><span>Doğru birim fiyat ({{ surum.paraBirimi }}) *</span
+          ><input class="form-control" type="number" min="0" step="0.01"
+            [(ngModel)]="tarifeDuzeltmeForm.birimFiyat" (ngModelChange)="tarifeDuzeltmeDegeriDegisti()" /></label
+        ><label class="field"
+          ><span>KDV oranı</span
+          ><input class="form-control" type="number" min="0" max="100"
+            [(ngModel)]="tarifeDuzeltmeForm.kdvOrani" (ngModelChange)="tarifeDuzeltmeDegeriDegisti()" /></label>
+      </div>
+
+      @if (tarifeDuzeltmeOnizlemesi(); as onizleme) {
+        <div class="duzeltme-etkisi">
+          <div class="duzeltme-deger">
+            <span class="duzeltme-deger__kutu">
+              <small>Mevcut</small>
+              <strong>{{ onizleme.mevcut.birimFiyat | number: '1.2-4' }} {{ onizleme.paraBirimi }}</strong>
+              <em>KDV %{{ onizleme.mevcut.kdvOrani }}</em>
+            </span>
+            <i class="ri-arrow-right-line" aria-hidden="true"></i>
+            <span class="duzeltme-deger__kutu is-yeni">
+              <small>Düzeltilmiş</small>
+              <strong>{{ onizleme.yeni.birimFiyat | number: '1.2-4' }} {{ onizleme.paraBirimi }}</strong>
+              <em>KDV %{{ onizleme.yeni.kdvOrani }}</em>
+            </span>
+          </div>
+          <div class="duzeltme-sayac">
+            <span class="is-duzeltilir"><b>{{ onizleme.duzeltilecekKalemSayisi }}</b> kalem düzeltilecek</span>
+            <span class="is-korunur"><b>{{ onizleme.korunanKalemSayisi }}</b> kalem korunacak</span>
+          </div>
+          @if (onizleme.mevcut.netTutar !== null && onizleme.yeni.netTutar !== null && onizleme.duzeltilecekKalemSayisi) {
+            <p class="duzeltme-tutar">
+              Düzeltilecek kalemlerin net toplamı
+              <b>{{ onizleme.mevcut.netTutar | number: '1.2-2' }}</b> →
+              <b>{{ onizleme.yeni.netTutar | number: '1.2-2' }} {{ onizleme.paraBirimi }}</b>
+            </p>
+          }
+          @if (onizleme.kalemler.length) {
+            <ul class="duzeltme-kalemleri">
+              @for (kalem of onizleme.kalemler; track kalem.isKaydiId) {
+                <li [class.is-korunur]="!kalem.duzeltilir">
+                  <i [class]="kalem.duzeltilir ? 'ri-checkbox-circle-line' : 'ri-lock-line'" aria-hidden="true"></i>
+                  <span>
+                    <strong>{{ kalem.projeNo }} · {{ kalem.isAdi }}</strong>
+                    <small>{{ kalem.finansTarihi | date: 'dd.MM.yyyy' }} · {{ kalem.duzeltilir ? 'Düzeltilecek' : kalem.korunmaNedeni }}</small>
+                  </span>
+                  @if (kalem.netTutar !== null) {
+                    <em>{{ kalem.netTutar | number: '1.2-2' }}</em>
+                  }
+                </li>
+              }
+            </ul>
+            @if (onizleme.kalemListesiKisaltildi) {
+              <small class="money-note">Liste ilk {{ onizleme.kalemler.length }} kalemle sınırlandı; sayılar tüm kalemleri kapsar.</small>
+            }
+          } @else {
+            <small class="money-note">Bu sürümle fiyatlanmış açık kalem yok; yalnız sürümün fiyatı düzeltilecek.</small>
+          }
+        </div>
+        <label class="field duzeltme-gerekce"
+          ><span>Gerekçe *</span
+          ><textarea class="form-control" rows="3" maxlength="1000" placeholder="Ör. 500 yanlışlıkla girildi; doğru fiyat 565."
+            [(ngModel)]="tarifeDuzeltmeForm.aciklama"></textarea>
+        </label>
+      }
+      @if (tarifeDuzeltmeHatasi()) {
+        <div class="form-error">{{ tarifeDuzeltmeHatasi() }}</div>
+      }
+    </div>
+    <footer>
+      <button type="button" class="btn btn-light" (click)="tarifeDuzeltmeSurumu.set(null)">Vazgeç</button>
+      @if (!tarifeDuzeltmeOnizlemesi()) {
+        <button type="button" class="btn btn-primary" [disabled]="tarifeDuzeltmeYukleniyor()" (click)="tarifeDuzeltmeOnizle()">
+          Etkisini Gör
+        </button>
+      } @else {
+        <button type="button" class="btn btn-primary" [disabled]="tarifeDuzeltmeYukleniyor() || tarifeDuzeltmeForm.aciklama.trim().length < 5" (click)="tarifeDuzelt()">
+          Düzelt ve Uygula
+        </button>
+      }
     </footer>
   </section>
 }

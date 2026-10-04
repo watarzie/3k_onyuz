@@ -34,7 +34,12 @@ import {
 } from '../ortak/finans-etiketleri';
 import { TranslationService } from '../../../core/services/translation.service';
 import { FinansIsKategorisi, FinansKarsilanma, FinansOdemeFiltresi } from '../../../core/constants/enums';
-import { FinansBekleyenAsama, FinansVadeUyarilari, FinansVarlikTuru } from '../../../shared/models/finans-v2.model';
+import {
+  FinansBekleyenAsama,
+  FinansTarifeDuzeltmeOnizleme,
+  FinansVadeUyarilari,
+  FinansVarlikTuru,
+} from '../../../shared/models/finans-v2.model';
 import { FinansParaBirimiService } from '../../../core/services/finans-para-birimi.service';
 import { ApiResult } from '../../../shared/models/common.model';
 import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
@@ -312,6 +317,16 @@ export class FinansYonetimiComponent implements OnInit {
   yenidenFiyatlaAciklama = '';
   yenidenFiyatlaHatasi = signal('');
   yenidenFiyatlaniyor = signal(false);
+
+  /**
+   * Hatalı tarife düzeltme: geçmişteki bir sürümün yanlış fiyatı gerekçeyle düzeltilir. Önce etkisi (düzeltilecek ve
+   * korunacak kalemler) gösterilir; değerler değişince önizleme düşer, uygulama yalnız görülen etkiyle yapılır.
+   */
+  tarifeDuzeltmeSurumu = signal<FinansTarifeSurumu | null>(null);
+  tarifeDuzeltmeForm = { birimFiyat: 0, kdvOrani: 0, aciklama: '' };
+  tarifeDuzeltmeOnizlemesi = signal<FinansTarifeDuzeltmeOnizleme | null>(null);
+  tarifeDuzeltmeHatasi = signal('');
+  tarifeDuzeltmeYukleniyor = signal(false);
 
   urunAcik = signal(false);
   urunKaydediliyor = signal(false);
@@ -926,6 +941,76 @@ export class FinansYonetimiComponent implements OnInit {
       this.toast.success(`${result.value.fiyatlananKalem} kalem yeni tarifeyle fiyatlandı (${result.value.incelenenKalem} açık kalem incelendi).`);
       this.aylikListeyiYukle();
     });
+  }
+
+  tarifeDuzeltilebilir(): boolean {
+    return !!this.duzenlenenUrunId() && this.permissions.canWrite(this.izin.BirimFiyatDegistir);
+  }
+
+  tarifeDuzeltmeAc(surum: FinansTarifeSurumu): void {
+    if (!this.tarifeDuzeltilebilir() || surum.birimFiyat === null || surum.kdvOrani === null) return;
+    this.tarifeDuzeltmeForm = { birimFiyat: surum.birimFiyat, kdvOrani: surum.kdvOrani, aciklama: '' };
+    this.tarifeDuzeltmeOnizlemesi.set(null);
+    this.tarifeDuzeltmeHatasi.set('');
+    this.tarifeDuzeltmeSurumu.set(surum);
+  }
+
+  /** Fiyat veya KDV değişince eski önizleme geçersizdir; uygulamadan önce yeniden görülmelidir. */
+  tarifeDuzeltmeDegeriDegisti(): void {
+    this.tarifeDuzeltmeOnizlemesi.set(null);
+    this.tarifeDuzeltmeHatasi.set('');
+  }
+
+  tarifeDuzeltmeOnizle(): void {
+    const surum = this.tarifeDuzeltmeSurumu();
+    const urunId = this.duzenlenenUrunId();
+    const { birimFiyat, kdvOrani } = this.tarifeDuzeltmeForm;
+    if (!surum || !urunId || this.tarifeDuzeltmeYukleniyor()) return;
+    if (!Number.isFinite(birimFiyat) || !Number.isFinite(kdvOrani) || birimFiyat < 0 || kdvOrani < 0 || kdvOrani > 100) {
+      this.tarifeDuzeltmeHatasi.set('Geçerli bir birim fiyat ve 0-100 aralığında KDV girin.');
+      return;
+    }
+    this.tarifeDuzeltmeHatasi.set('');
+    this.tarifeDuzeltmeYukleniyor.set(true);
+    this.service.tarifeDuzeltmeOnizle(urunId, surum.id, Number(birimFiyat), Number(kdvOrani))
+      .pipe(finalize(() => this.tarifeDuzeltmeYukleniyor.set(false)))
+      .subscribe(result => {
+        if (!result.isSuccess || !result.value) {
+          this.tarifeDuzeltmeHatasi.set(result.error ?? 'Düzeltmenin etkisi hesaplanamadı.');
+          return;
+        }
+        this.tarifeDuzeltmeOnizlemesi.set(result.value);
+      });
+  }
+
+  tarifeDuzelt(): void {
+    const surum = this.tarifeDuzeltmeSurumu();
+    const urunId = this.duzenlenenUrunId();
+    const aciklama = this.tarifeDuzeltmeForm.aciklama.trim();
+    if (!surum || !urunId || !this.tarifeDuzeltmeOnizlemesi() || this.tarifeDuzeltmeYukleniyor()) return;
+    if (aciklama.length < 5) {
+      this.tarifeDuzeltmeHatasi.set('Düzeltme gerekçesi en az 5 karakter olmalıdır.');
+      return;
+    }
+    const istek = { birimFiyat: Number(this.tarifeDuzeltmeForm.birimFiyat), kdvOrani: Number(this.tarifeDuzeltmeForm.kdvOrani), aciklama };
+    this.tarifeDuzeltmeYukleniyor.set(true);
+    this.service.tarifeDuzelt(urunId, surum.id, istek)
+      .pipe(finalize(() => this.tarifeDuzeltmeYukleniyor.set(false)))
+      .subscribe(result => {
+        if (this.onayaAlindiysaBildir(result)) return;
+        if (!result.isSuccess || !result.value) {
+          this.tarifeDuzeltmeHatasi.set(result.error ?? 'Tarife düzeltilemedi.');
+          return;
+        }
+        const { duzeltilenKalemSayisi, korunanKalemSayisi } = result.value;
+        this.tarifeDuzeltmeSurumu.set(null);
+        this.urunAcik.set(false);
+        this.toast.success(
+          `Tarife düzeltildi: ${duzeltilenKalemSayisi} kalem yeni fiyata çekildi` +
+          (korunanKalemSayisi ? `, ${korunanKalemSayisi} kalem korundu.` : '.'));
+        this.urunleriYenile();
+        this.aylikListeyiYukle();
+      });
   }
 
   raporIndirilebilir(bicim: 'pdf' | 'excel'): boolean {
