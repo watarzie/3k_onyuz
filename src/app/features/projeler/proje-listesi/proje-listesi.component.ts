@@ -680,7 +680,7 @@ export class ProjeListesiComponent implements OnInit {
     });
   }
 
-  /** G4: seçili projelerin Grid eksiği olan ürünleri tek sayfalık talep formu Excel'i olarak indirilir. */
+  /** G4 / G-110: seçili projelerde Grid eksiği olup 3K kalanı süren ürünler tek sayfalık talep formu Excel'i olarak indirilir. */
   indirTopluTalepFormu() {
     if (!this.canUseBulkTalepFormu() || this.topluTalepFormuIndiriliyor()) return;
     const projeIds = Array.from(this.selectedEksikRaporProjeIds());

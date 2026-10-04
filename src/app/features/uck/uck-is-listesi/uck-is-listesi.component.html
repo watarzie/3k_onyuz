@@ -5,7 +5,7 @@
       <div class="wl-hero__metin">
         <app-breadcrumb [items]="breadcrumb"></app-breadcrumb>
         <h2>3K İş Listesi</h2>
-        <p><strong>Grid hareketleri burada toplanır.</strong> 3K tarafının teslim alması, kontrol etmesi veya yeniden sevk beklemesi gereken satırlar proje bazında görünür.</p>
+        <p><strong>3K'nın teslim alması gereken ürünler burada toplanır.</strong> Grid'in sevk ettiği ve henüz teslim alınmamış satırlar proje bazında görünür.</p>
       </div>
     </div>
 
@@ -28,41 +28,21 @@
 
   @let toplamIs = data()?.toplam ?? 0;
   <div class="summary-grid">
-    <button type="button" class="summary-card total" style="--i: 0" [class.active]="activeTip() === 'all'" (click)="setTip('all')">
-      <span class="icon"><i class="ri-list-check-3" aria-hidden="true"></i></span>
-      <span class="summary-copy">
-        <span class="value">{{ toplamIs }}</span>
-        <span class="label">Toplam İş</span>
-      </span>
-      <span class="summary-note">{{ totalCount() }} proje</span>
-    </button>
-
-    <button type="button" class="summary-card waiting" style="--i: 1" [class.active]="activeTip() === 'teslim'" (click)="setTip('teslim')">
+    <div class="summary-card waiting" style="--i: 0">
       <span class="icon"><i class="ri-inbox-archive-line" aria-hidden="true"></i></span>
       <span class="summary-copy">
-        <span class="value">{{ data()?.teslimBekleyen ?? 0 }}</span>
-        <span class="label">3K Teslim Bekleyen</span>
+        <span class="value">{{ toplamIs }}</span>
+        <span class="label">3K Teslim Bekleyen İş</span>
       </span>
-      <span class="summary-bar"><span [style.width.%]="toplamIs ? (data()?.teslimBekleyen ?? 0) / toplamIs * 100 : 0"></span></span>
-    </button>
+    </div>
 
-    <button type="button" class="summary-card resend" style="--i: 2" [class.active]="activeTip() === 'yeniden'" (click)="setTip('yeniden')">
-      <span class="icon"><i class="ri-loop-right-line" aria-hidden="true"></i></span>
+    <div class="summary-card total" style="--i: 1">
+      <span class="icon"><i class="ri-folder-3-line" aria-hidden="true"></i></span>
       <span class="summary-copy">
-        <span class="value">{{ data()?.yenidenSevkGerekli ?? 0 }}</span>
-        <span class="label">Yeniden Sevk Gerekli</span>
+        <span class="value">{{ totalCount() }}</span>
+        <span class="label">Proje</span>
       </span>
-      <span class="summary-bar"><span [style.width.%]="toplamIs ? (data()?.yenidenSevkGerekli ?? 0) / toplamIs * 100 : 0"></span></span>
-    </button>
-
-    <button type="button" class="summary-card missing" style="--i: 3" [class.active]="activeTip() === 'eksik'" (click)="setTip('eksik')">
-      <span class="icon"><i class="ri-error-warning-line" aria-hidden="true"></i></span>
-      <span class="summary-copy">
-        <span class="value">{{ data()?.eksikGelen ?? 0 }}</span>
-        <span class="label">Eksik Gelen</span>
-      </span>
-      <span class="summary-bar"><span [style.width.%]="toplamIs ? (data()?.eksikGelen ?? 0) / toplamIs * 100 : 0"></span></span>
-    </button>
+    </div>
   </div>
 
   <div class="worklist-card">
@@ -74,16 +54,6 @@
       </div>
 
       <div class="toolbar-actions">
-        <div class="filter-tabs" role="tablist" aria-label="İş tipi">
-          @for (tip of tipler; track tip.key) {
-            <button type="button" role="tab" [class.active]="activeTip() === tip.key" [attr.aria-selected]="activeTip() === tip.key" (click)="setTip(tip.key)">
-              <i [class]="tip.icon" aria-hidden="true"></i>
-              {{ tip.label }}
-              <span>{{ tip.count() }}</span>
-            </button>
-          }
-        </div>
-
         <label class="search-box">
           <i class="ri-search-line" aria-hidden="true"></i>
           <input
@@ -126,7 +96,7 @@
       <div class="empty-state">
         <div class="empty-illus"><span class="empty-halka"></span><span class="empty-halka empty-halka--2"></span><i class="ri-checkbox-circle-line" aria-hidden="true"></i></div>
         <h4>Bu filtrede bekleyen iş yok</h4>
-        <p>Grid tarafında 3K'nın aksiyon almasını gerektiren yeni bir satır bulunmuyor.</p>
+        <p>Grid'in sevk ettiği ve 3K'nın teslim alması gereken bekleyen ürün bulunmuyor.</p>
       </div>
     } @else {
       <div class="project-groups">
@@ -160,7 +130,6 @@
                 <table class="table align-middle mb-0">
                   <thead>
                     <tr>
-                      <th>Öncelik</th>
                       <th>Sandık</th>
                       <th>Barkod</th>
                       <th>POZ NO</th>
@@ -183,11 +152,6 @@
                         (keydown.enter)="goToItem(item)"
                         (keydown.space)="goToItem(item); $event.preventDefault()"
                       >
-                        <td>
-                          <span class="priority-pill" [ngClass]="priorityClass(item)">
-                            {{ item.isTipiMetni }}
-                          </span>
-                        </td>
                         <td>
                           <span class="box-pill"><i class="ri-archive-line" aria-hidden="true"></i>{{ item.sandikNo || '-' }}</span>
                         </td>

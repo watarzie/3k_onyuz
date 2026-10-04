@@ -209,6 +209,13 @@
   }
   &:focus-visible { outline: 0; box-shadow: 0 0 0 3px rgba(96, 93, 255, .3); }
 }
+// Filtre olmayan bilgi kartı (3K listesi): tıklanabilir görünmesin.
+div.summary-card:hover {
+  border-color: var(--borderColor, #e5e7eb);
+  box-shadow: none;
+  transform: none;
+  .icon { transform: none; }
+}
 
 // ===== Liste kartı ve araç çubuğu =====
 .worklist-card {

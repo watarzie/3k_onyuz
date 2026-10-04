@@ -1,13 +1,11 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { DatePipe, NgClass } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
 import { UcKService } from '../../../core/services/uck.service';
 import { UcKIsListesiDto, UcKIsListesiItemDto } from '../../../shared/models';
-
-type IsTipi = 'all' | 'teslim' | 'yeniden' | 'eksik';
 
 interface UcKIsProjectGroup {
   key: number;
@@ -24,7 +22,7 @@ interface UcKIsProjectGroup {
 @Component({
   selector: 'app-uck-is-listesi',
   standalone: true,
-  imports: [DatePipe, NgClass, RouterLink, FormsModule, BreadcrumbComponent, ReadOnlyBannerComponent],
+  imports: [DatePipe, RouterLink, FormsModule, BreadcrumbComponent, ReadOnlyBannerComponent],
   templateUrl: './uck-is-listesi.component.html',
   styleUrls: ['./uck-is-listesi.component.scss'],
 })
@@ -35,7 +33,6 @@ export class UcKIsListesiComponent implements OnInit {
   loading = signal(true);
   errorMessage = signal('');
   data = signal<UcKIsListesiDto | null>(null);
-  activeTip = signal<IsTipi>('all');
   searchTerm = signal('');
   page = signal(1);
   pageSize = signal(25);
@@ -46,13 +43,6 @@ export class UcKIsListesiComponent implements OnInit {
     { label: 'Ana Kontrol Paneli', link: '/dashboard' },
     { label: 'Sandık Yönetimi' },
     { label: '3K İş Listesi' },
-  ];
-
-  tipler: Array<{ key: IsTipi; label: string; count: () => number; icon: string }> = [
-    { key: 'all', label: 'Tümü', count: () => this.data()?.toplam ?? 0, icon: 'ri-list-check-3' },
-    { key: 'teslim', label: '3K Teslim Bekleyen', count: () => this.data()?.teslimBekleyen ?? 0, icon: 'ri-inbox-archive-line' },
-    { key: 'yeniden', label: 'Yeniden Sevk Gerekli', count: () => this.data()?.yenidenSevkGerekli ?? 0, icon: 'ri-loop-right-line' },
-    { key: 'eksik', label: 'Eksik Gelen', count: () => this.data()?.eksikGelen ?? 0, icon: 'ri-error-warning-line' },
   ];
 
   items = computed(() => {
@@ -145,7 +135,6 @@ export class UcKIsListesiComponent implements OnInit {
     this.uckService.getIsListesi({
       page: this.page(),
       pageSize: this.pageSize(),
-      isTipi: this.activeTip(),
       sadeceBugun: this.todayOnly(),
     }).subscribe(res => {
       this.loading.set(false);
@@ -164,16 +153,6 @@ export class UcKIsListesiComponent implements OnInit {
 
   toggleTodayFilter(): void {
     this.todayOnly.update(value => !value);
-    this.page.set(1);
-    this.load();
-  }
-
-  setTip(tip: IsTipi): void {
-    if (this.activeTip() === tip) {
-      return;
-    }
-
-    this.activeTip.set(tip);
     this.page.set(1);
     this.load();
   }
@@ -234,10 +213,6 @@ export class UcKIsListesiComponent implements OnInit {
     }
 
     return numeric.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
-  }
-
-  priorityClass(item: UcKIsListesiItemDto): string {
-    return `priority-${item.isTipi || 'default'}`;
   }
 
   trackById(_index: number, item: UcKIsListesiItemDto): number {

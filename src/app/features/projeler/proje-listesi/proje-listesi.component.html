@@ -126,7 +126,7 @@
             <button type="button" class="toolbar-btn"
               [disabled]="selectedEksikRaporCount() === 0 || topluTalepFormuIndiriliyor()"
               (click)="indirTopluTalepFormu()"
-              title="Seçilen projelerde Grid eksiği olan ürünleri tek sayfalık talep formu Excel'ine aktar">
+              title="Seçilen projelerde Grid eksiği olup 3K'da hâlâ kalanı bulunan ürünleri, kalan miktarıyla tek sayfalık talep formu Excel'ine aktar">
               @if (topluTalepFormuIndiriliyor()) {
                 <span class="spinner-border spinner-border-sm"></span>
               } @else {

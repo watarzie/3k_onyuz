@@ -109,9 +109,7 @@ export interface ProjeTransferZincirDto {
 export interface UcKIsListesiDto {
   toplam: number;
   teslimBekleyen: number;
-  eksikGelen: number;
   trafoSevk: number;
-  yenidenSevkGerekli: number;
   gridKapandi: number;
   bugunGridIslemi: number;
   liste: UcKPagedResultDto<UcKIsListesiItemDto>;
