@@ -1,4 +1,5 @@
 import { TranslationService } from '../../../core/services/translation.service';
+import { APEX_ORTAK, GRAFIK_RENKLERI, GRAFIK_SEMANTIK } from '../../../core/constants/grafik-renkleri';
 import { DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, OnInit, computed, inject, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -209,11 +210,11 @@ export class FinansPanelComponent implements OnInit {
     const p = this.panel();
     if (!p) return [];
     const dilimler = [
-      { anahtar: 'siparisBekleyen', etiket: this.t('PENDING_ORDER'), adet: p.siparisBekleyen, renk: '#fd9b45' },
-      { anahtar: 'kismiSiparis', etiket: this.t('PARTIAL_ORDER'), adet: p.kismiSiparis, renk: '#ffc94d' },
-      { anahtar: 'siparisTam', etiket: this.t('FULL_ORDER'), adet: p.siparisTam, renk: '#605dff' },
-      { anahtar: 'kismiFatura', etiket: this.t('PARTIAL_INVOICE'), adet: p.kismiFatura, renk: '#3584fc' },
-      { anahtar: 'tamamlanan', etiket: this.t('COMPLETED'), adet: p.tamamlanan, renk: '#25b003' },
+      { anahtar: 'siparisBekleyen', etiket: this.t('PENDING_ORDER'), adet: p.siparisBekleyen, renk: GRAFIK_RENKLERI[4] },
+      { anahtar: 'kismiSiparis', etiket: this.t('PARTIAL_ORDER'), adet: p.kismiSiparis, renk: GRAFIK_RENKLERI[1] },
+      { anahtar: 'siparisTam', etiket: this.t('FULL_ORDER'), adet: p.siparisTam, renk: GRAFIK_RENKLERI[0] },
+      { anahtar: 'kismiFatura', etiket: this.t('PARTIAL_INVOICE'), adet: p.kismiFatura, renk: GRAFIK_RENKLERI[2] },
+      { anahtar: 'tamamlanan', etiket: this.t('COMPLETED'), adet: p.tamamlanan, renk: GRAFIK_SEMANTIK.basari },
     ];
     const toplam = dilimler.reduce((a, x) => a + x.adet, 0);
     return dilimler.map((x) => ({ ...x, oran: toplam ? (x.adet / toplam) * 100 : 0 }));
@@ -278,12 +279,12 @@ export class FinansPanelComponent implements OnInit {
       const aylar = this.panel()?.aylikSayilar ?? [];
       if (!aylar.length) return [];
       const seriler: FinansPanelSeri[] = [
-        { anahtar: 'is', ad: this.t('PANEL_KPI_ITEMS'), renk: '#605dff', data: aylar.map((x) => x.isKaydi) },
+        { anahtar: 'is', ad: this.t('PANEL_KPI_ITEMS'), renk: GRAFIK_RENKLERI[0], data: aylar.map((x) => x.isKaydi) },
       ];
       if (this.alacakGorunur())
         seriler.push(
-          { anahtar: 'po', ad: this.t('PANEL_KPI_PO'), renk: '#3584fc', data: aylar.map((x) => x.po) },
-          { anahtar: 'fatura', ad: this.t('PANEL_KPI_INVOICES'), renk: '#25b003', data: aylar.map((x) => x.fatura) },
+          { anahtar: 'po', ad: this.t('PANEL_KPI_PO'), renk: GRAFIK_RENKLERI[1], data: aylar.map((x) => x.po) },
+          { anahtar: 'fatura', ad: this.t('PANEL_KPI_INVOICES'), renk: GRAFIK_RENKLERI[2], data: aylar.map((x) => x.fatura) },
         );
       return seriler;
     }
@@ -297,7 +298,7 @@ export class FinansPanelComponent implements OnInit {
         {
           anahtar: 'tutar',
           ad: `${this.t('AMOUNT')} (${this.para()})`,
-          renk: '#605dff',
+          renk: GRAFIK_RENKLERI[0],
           data: grafik === 'siparis' ? [p.siparisBekleyen, p.siparisNetTutar] : [p.faturaBekleyen, p.gelir],
         },
       ];
@@ -308,11 +309,11 @@ export class FinansPanelComponent implements OnInit {
       result.push({
         anahtar: 'gelir',
         ad: grafik === 'beklenenTahsilat' ? this.t('PANEL_EXPECTED_COLLECTION') : this.t('NET_INCOME'),
-        renk: '#605dff',
+        renk: GRAFIK_RENKLERI[0],
         data: rows.map((x) => x.gelir),
       });
     if (this.parasal(FINANS_YETKI.GiderGoruntule) && rows.some((x) => x.gider != null))
-      result.push({ anahtar: 'gider', ad: this.t('NET_EXPENSE'), renk: '#fd9b45', data: rows.map((x) => x.gider) });
+      result.push({ anahtar: 'gider', ad: this.t('NET_EXPENSE'), renk: GRAFIK_RENKLERI[1], data: rows.map((x) => x.gider) });
     return result;
   });
   /**
@@ -331,7 +332,7 @@ export class FinansPanelComponent implements OnInit {
     const ortak: ApexXAxis = {
       axisBorder: { show: false },
       axisTicks: { show: false },
-      labels: { style: { colors: '#64748b', fontSize: '12px' }, rotate: 0, hideOverlappingLabels: true, trim: true },
+      labels: { style: { colors: APEX_ORTAK.etiketRengi, fontSize: APEX_ORTAK.fontSize }, rotate: 0, hideOverlappingLabels: true, trim: true },
     };
     if (this.grafikGorunumu() === 'adet')
       return { ...ortak, categories: (this.panel()?.aylikSayilar ?? []).map((x) => this.ayEtiketi(x.ay)) };
@@ -355,7 +356,7 @@ export class FinansPanelComponent implements OnInit {
   readonly chart = computed<ApexChart>(() => ({
     type: this.grafikGorunumu() === 'adet' ? 'area' : 'bar',
     height: 300,
-    fontFamily: 'Inter, sans-serif',
+    fontFamily: APEX_ORTAK.fontFamily,
     toolbar: { show: false },
     zoom: { enabled: false },
     animations: { enabled: false },
@@ -370,7 +371,7 @@ export class FinansPanelComponent implements OnInit {
   );
   readonly yaxis = computed<ApexYAxis>(() => ({
     labels: {
-      style: { colors: '#64748b', fontSize: '12px' },
+      style: { colors: APEX_ORTAK.etiketRengi, fontSize: APEX_ORTAK.fontSize },
       formatter: (deger: number) =>
         this.grafikGorunumu() === 'adet'
           ? String(Math.round(deger))
@@ -389,7 +390,7 @@ export class FinansPanelComponent implements OnInit {
             : `${new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(deger)} ${this.para()}`,
     },
   }));
-  readonly grid: ApexGrid = { borderColor: '#eceef2', strokeDashArray: 4, padding: { left: 8, right: 8 } };
+  readonly grid: ApexGrid = { borderColor: APEX_ORTAK.gridBorderColor, strokeDashArray: APEX_ORTAK.strokeDashArray, padding: { left: 8, right: 8 } };
   readonly legend: ApexLegend = { show: false };
   readonly dataLabels: ApexDataLabels = { enabled: false };
   readonly plotOptions: ApexPlotOptions = { bar: { borderRadius: 4, columnWidth: '46%' } };

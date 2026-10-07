@@ -1,7 +1,8 @@
 <div class="page-title-area mb-4">
   <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
     <div class="page-heading-block">
-      <h2 class="fw-bold mb-1"><i class="ri-archive-stack-line me-2"></i>3K — {{ sandikNo() }}</h2>
+      <span class="page-title-ikon" style="--ton: var(--k-orange)" aria-hidden="true"><i class="ri-archive-stack-line"></i></span>
+      <h2 class="fw-bold mb-1">3K — {{ sandikNo() }}</h2>
       <div class="project-context-pill" [title]="projeBaslik()">
         <i class="ri-folder-info-line"></i>
         <span class="project-context-label">Aktif Proje</span>
@@ -64,7 +65,7 @@
               <i class="ri-check-double-line me-2 text-success"></i>Toplu Sevk Adeti Tam Geldi
             </button></li>
             <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluTedarikci()">
-              <i class="ri-truck-line me-2" style="color:#1B7D3A"></i>Toplu Tedarikçiden Karşıla
+              <i class="ri-truck-line me-2" style="color: var(--k-green)"></i>Toplu Tedarikçiden Karşıla
             </a></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item text-danger" (click)="showTopluIslemlerMenu.set(false); openTopluGeriAl()">
@@ -829,7 +830,7 @@
 <div class="modal-overlay" (click)="closeTopluTedarikci()">
   <div class="modal-box" (click)="$event.stopPropagation()">
     <div class="modal-header">
-      <h5 class="fw-semibold mb-0"><i class="ri-truck-line me-2" style="color:#1B7D3A"></i>Toplu Tedarikçiden Karşıla
+      <h5 class="fw-semibold mb-0"><i class="ri-truck-line me-2" style="color: var(--k-green)"></i>Toplu Tedarikçiden Karşıla
       </h5>
       <button class="btn btn-sm border-0" (click)="closeTopluTedarikci()"><i class="ri-close-line fs-5"></i></button>
     </div>
@@ -845,7 +846,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline-secondary" (click)="closeTopluTedarikci()">Vazgeç</button>
-      <button class="btn" style="background:#1B7D3A;color:#fff" (click)="confirmTopluTedarikci()"
+      <button class="btn" style="background: var(--k-green); color: #fff" (click)="confirmTopluTedarikci()"
         [disabled]="topluTedarikciSaving()">
         @if (topluTedarikciSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
         <i class="ri-truck-line me-1"></i>Onayla
@@ -864,7 +865,7 @@
     <button class="btn btn-sm border-0" (click)="closeTopluGeriAl()"><i class="ri-close-line fs-5"></i></button>
   </div>
   <div class="modal-body">
-    <div class="alert-info-custom mb-3" style="border-left-color:#D32F2F">
+    <div class="alert-info-custom mb-3" style="border-left-color: var(--k-danger)">
       <i class="ri-information-line me-2"></i>
       <strong>{{ selectionCount }}</strong> ürün seçildi. Seçili ürünlerin 3K durumları sıfırlanacak;
       toplam 3K hareketi başlangıç seviyesine dönen ürünlerin Kalite ve Süreç durumları da temizlenecek.

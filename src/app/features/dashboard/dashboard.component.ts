@@ -1,4 +1,5 @@
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
+import { GRAFIK_RENKLERI, GRAFIK_SEMANTIK, GRAFIK_TONLAR } from '../../core/constants/grafik-renkleri';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -926,11 +927,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getSahaAktarimDurumColor(durumId: number): string {
-    if (durumId === 2) return '#2563eb';
-    if (durumId === 3) return '#059669';
-    if (durumId === 4) return '#d97706';
-    if (durumId === 5) return '#7c3aed';
-    return '#64748b';
+    if (durumId === 2) return GRAFIK_SEMANTIK.bilgi;
+    if (durumId === 3) return GRAFIK_SEMANTIK.basari;
+    if (durumId === 4) return GRAFIK_SEMANTIK.uyari;
+    if (durumId === 5) return GRAFIK_TONLAR.mor;
+    return GRAFIK_SEMANTIK.notr;
   }
 
   getCalismaMetni(p: DashboardProjeItemDto): string {
@@ -944,10 +945,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getProgressColor(yuzde: number): string {
-    if (yuzde >= 80) return '#22c55e';
-    if (yuzde >= 50) return '#3b82f6';
-    if (yuzde >= 25) return '#f59e0b';
-    return '#ef4444';
+    if (yuzde >= 80) return GRAFIK_SEMANTIK.basari;
+    if (yuzde >= 50) return GRAFIK_SEMANTIK.bilgi;
+    if (yuzde >= 25) return GRAFIK_SEMANTIK.uyari;
+    return GRAFIK_SEMANTIK.hata;
   }
 
   getDonutPercentage(count: number, total: number): number {
@@ -982,10 +983,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getSandikDurumColor(durumId: number): string {
-    if (durumId === 2) return '#2563eb';
-    if (durumId === 3) return '#059669';
-    if (durumId === 4) return '#7c3aed';
-    return '#64748b';
+    if (durumId === 2) return GRAFIK_SEMANTIK.bilgi;
+    if (durumId === 3) return GRAFIK_SEMANTIK.basari;
+    if (durumId === 4) return GRAFIK_TONLAR.mor;
+    return GRAFIK_SEMANTIK.notr;
   }
 
   private sortLokasyonlar(lokasyonlar: LookupItem[]): LookupItem[] {
@@ -1004,10 +1005,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private getLokasyonColor(lokasyon: LookupItem, index = 0): string {
     const key = lokasyon.deger.trim().toUpperCase();
-    if (key === '3K') return '#0EA5E9';
-    if (key === 'SEYMEN') return '#078A55';
-    if (key === 'GRID') return '#F59E0B';
-    const palette = ['#3584FC', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#06B6D4', '#64748B', '#14B8A6'];
+    if (key === '3K') return GRAFIK_SEMANTIK.bilgi;
+    if (key === 'SEYMEN') return GRAFIK_SEMANTIK.basari;
+    if (key === 'GRID') return GRAFIK_SEMANTIK.uyari;
+    const palette = GRAFIK_RENKLERI;
     return palette[index % palette.length];
   }
 

@@ -1,7 +1,7 @@
 .v2-finance-dialog {
-  --dialog-primary: var(--primaryColor, #605dff);
-  --dialog-muted: var(--bodyColor, #64748b);
-  --dialog-line: var(--borderColor, #e5eaf1);
+  --dialog-primary: var(--primaryColor, var(--k-green));
+  --dialog-muted: var(--bodyColor, var(--k-muted));
+  --dialog-line: var(--borderColor, var(--k-line));
   --dialog-soft: color-mix(in srgb, var(--dialog-primary) 6%, var(--whiteColor, #fff));
   display: flex;
   flex-direction: column;
@@ -12,7 +12,7 @@
   border: 1px solid var(--dialog-line);
   border-radius: 14px;
   background: var(--whiteColor, #fff);
-  box-shadow: 0 20px 70px #15253d33;
+  box-shadow: 0 20px 70px color-mix(in srgb, var(--k-ink) 20%, transparent);
 
   .v2-dialog-header {
     flex: 0 0 auto;
@@ -89,7 +89,7 @@
     color: #fff;
     background: var(--dialog-primary);
     border-color: var(--dialog-primary);
-    box-shadow: 0 3px 8px #605dff16;
+    box-shadow: 0 3px 8px color-mix(in srgb, var(--k-green) 9%, transparent);
   }
   .btn-primary:hover:not(:disabled) {
     background: color-mix(in srgb, var(--dialog-primary) 88%, #000);
@@ -109,24 +109,24 @@
     background: var(--whiteColor, #fff);
   }
   .btn-danger {
-    background: #dc3545;
-    border-color: #dc3545;
+    background: var(--k-danger);
+    border-color: var(--k-danger);
     color: #fff;
   }
   .btn-outline-danger {
-    border-color: #f1b6bd;
-    color: #b42339;
+    border-color: color-mix(in srgb, var(--k-danger) 22%, #fff);
+    color: var(--k-danger);
     background: transparent;
   }
   .btn-outline-danger:hover:not(:disabled) {
-    background: #fff1f2;
+    background: color-mix(in srgb, var(--k-danger) 10%, #fff);
   }
   button:disabled {
     opacity: 0.55;
     cursor: not-allowed;
   }
   button:focus-visible {
-    outline: 3px solid #605dff55;
+    outline: 3px solid color-mix(in srgb, var(--k-green) 33%, transparent);
     outline-offset: 3px;
   }
   .v2-dialog-close {
@@ -170,7 +170,7 @@
     border-color: var(--dialog-primary);
   }
   .v2-dialog-tabs button:hover:not(.active) {
-    background: #f7f8fb;
+    background: color-mix(in srgb, var(--k-info) 10%, #fff);
   }
 
   .v2-dialog-body {
@@ -178,14 +178,14 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 24px 26px;
-    background: #f6f7fb;
+    background: var(--k-paper);
   }
   .v2-card {
     padding: 22px;
     margin-bottom: 20px;
     border-radius: 11px;
     border-color: var(--dialog-line);
-    box-shadow: 0 3px 10px #102a4303;
+    box-shadow: 0 3px 10px color-mix(in srgb, var(--k-ink) 1%, transparent);
     min-width: 0;
   }
   .v2-card:last-child {
@@ -212,7 +212,7 @@
   }
   label {
     min-width: 0;
-    color: var(--blackColor, #334155);
+    color: var(--blackColor, var(--k-ink-2));
     font-size: 12px;
     line-height: 1.5;
   }
@@ -226,7 +226,7 @@
     transition: border-color 0.15s ease;
   }
   input::placeholder {
-    color: #94a3b8;
+    color: var(--k-faint);
     font-size: 12px;
   }
   textarea {
@@ -237,13 +237,13 @@
   select:focus,
   textarea:focus {
     border-color: var(--dialog-primary);
-    outline: 3px solid #605dff16;
+    outline: 3px solid color-mix(in srgb, var(--k-green) 9%, transparent);
   }
   input:disabled,
   select:disabled,
   textarea:disabled {
     color: var(--dialog-muted);
-    background: #f3f5f8;
+    background: var(--k-hover);
     cursor: not-allowed;
   }
   input[type='checkbox'] {
@@ -279,7 +279,7 @@
     min-height: 32px;
     padding: 6px 9px;
     font-size: 11px;
-    color: #b42339;
+    color: var(--k-danger);
   }
   .v2-pricing-card > .v2-note:first-child {
     margin-top: 0;
@@ -296,7 +296,7 @@
     font-size: 10px;
     font-weight: 600;
     line-height: 1.5;
-    border: 1px solid #605dff20;
+    border: 1px solid color-mix(in srgb, var(--k-green) 13%, transparent);
   }
   .v2-note {
     font-size: 12px;
@@ -345,7 +345,7 @@
   .v2-table td {
     padding: 15px 16px;
     font-size: 12px;
-    color: var(--blackColor, #334155);
+    color: var(--blackColor, var(--k-ink-2));
     border-color: var(--dialog-line);
     background: transparent;
     vertical-align: middle;
@@ -407,7 +407,7 @@
     color: var(--dialog-muted);
   }
   .v2-dialog-definition dd {
-    color: var(--blackColor, #334155);
+    color: var(--blackColor, var(--k-ink-2));
     font-weight: 600;
   }
   .v2-dialog-definition dt:first-child,
@@ -422,7 +422,7 @@
   .v2-dialog-upload {
     gap: 10px;
     padding: 20px;
-    border: 1px dashed #605dff55;
+    border: 1px dashed color-mix(in srgb, var(--k-green) 33%, transparent);
     border-radius: 10px;
     background: var(--whiteColor, #fff);
     margin-bottom: 20px;
@@ -456,7 +456,7 @@
     padding: 13px 16px;
     font-size: 12px;
     line-height: 1.65;
-    border: 1px solid #fecdd3;
+    border: 1px solid color-mix(in srgb, var(--k-danger) 22%, #fff);
   }
   .v2-empty {
     display: flex;
@@ -470,11 +470,11 @@
     color: var(--dialog-primary);
   }
   .v2-danger {
-    background: #fffafa;
-    border-color: #fecaca;
+    background: color-mix(in srgb, var(--k-danger) 10%, #fff);
+    border-color: color-mix(in srgb, var(--k-danger) 22%, #fff);
   }
   .v2-danger .v2-dialog-card-title > i {
-    color: #b42339;
+    color: var(--k-danger);
   }
   .v2-dialog-footer {
     flex-wrap: wrap;
@@ -491,8 +491,8 @@
     margin-bottom: 16px;
   }
   .v2-blocked-row > td {
-    color: var(--bodyColor, #64748b);
-    background: #fafbfc;
+    color: var(--bodyColor, var(--k-muted));
+    background: var(--k-hover);
   }
   .v2-block-reason {
     display: inline-flex;
@@ -501,8 +501,8 @@
     margin-top: 6px;
     padding: 3px 9px;
     border-radius: 999px;
-    background: #ecfdf3;
-    color: #067647;
+    background: color-mix(in srgb, var(--k-success) 10%, #fff);
+    color: var(--k-success);
     font-size: 11px;
     font-weight: 600;
   }
@@ -512,10 +512,10 @@
     gap: 8px;
     margin: 0 0 14px;
     padding: 10px 14px;
-    border: 1px solid #abefc6;
+    border: 1px solid color-mix(in srgb, var(--k-success) 22%, #fff);
     border-radius: 10px;
-    background: #ecfdf3;
-    color: #067647;
+    background: color-mix(in srgb, var(--k-success) 10%, #fff);
+    color: var(--k-success);
     font-size: 13px;
     font-weight: 600;
   }

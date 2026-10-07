@@ -1,6 +1,6 @@
 // 3K tanıtım sayfası
-// Dil: sakin, klasik ve aydınlık. Sıcak kâğıt beyazı zemin, mürekkep tonunda metin, başlıklarda serif (Fraunces),
-// gövdede Inter. Marka yeşili yalnız vurgu ve eylemde; ahşap tonları sandık çizimlerinde. Hareket ölçülü ve
+// Dil: sakin, klasik ve aydınlık. Sıcak kâğıt beyazı zemin, mürekkep tonunda metin, başlıklarda Sarabun 700,
+// gövdede Sarabun 400. Marka yeşili yalnız vurgu ve eylemde; ahşap tonları sandık çizimlerinde. Hareket ölçülü ve
 // anlamlıdır: her animasyon bir iş adımını anlatır (sandığın kurulması, tomruğun biçilmesi, ısıl işlem, sevkiyat).
 
 // Isıl işlem sahnesindeki sıcaklık sayacı: tamsayı olarak kaydedilen özellik canlandırılabilir ve sayaç olarak yazılır.
@@ -28,7 +28,7 @@
   --wood-3: #a06a36;
   --wood-4: #7a4e25;
   --wood-soft: #f6ead8;
-  --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --serif: 'Sarabun', 'Inter', sans-serif;
   --ease: cubic-bezier(.2, .7, .2, 1);
   --shadow-sm: 0 1px 2px rgba(20, 28, 23, .04), 0 6px 16px -8px rgba(20, 28, 23, .1);
   --shadow-lg: 0 40px 80px -40px rgba(60, 42, 18, .32), 0 14px 30px -18px rgba(20, 28, 23, .16);
@@ -37,26 +37,49 @@
   color: var(--ink);
 }
 
-// Ahşap kalas dokusu: yatay kalaslar, aralarında ince derz ve üstünde lif çizgileri.
-@mixin kalas($kalas: 36px, $acik: #e2b47b, $koyu: #d29d60) {
+// Çam kalas dokusu: açık renkli yatay kalaslar, aralarında ince derz ve üstünde seyrek lif çizgileri.
+// Renkler ürün kartlarındaki sandık çizimleriyle aynı ailede tutulur (soluk çam, turuncuya kaçmaz).
+@mixin kalas($kalas: 36px, $acik: #e9c895, $koyu: #d9ae72) {
   background:
-    repeating-linear-gradient(90deg, rgba(122, 78, 37, .07) 0 1px, transparent 1px 7px, rgba(122, 78, 37, .04) 7px 9px, transparent 9px 19px),
-    repeating-linear-gradient(180deg, $acik 0, $koyu $kalas - 2px, rgba(110, 68, 30, .65) $kalas - 2px, rgba(110, 68, 30, .65) $kalas);
+    repeating-linear-gradient(90deg, rgba(122, 78, 37, .05) 0 1px, transparent 1px 9px, rgba(122, 78, 37, .03) 9px 11px, transparent 11px 23px),
+    repeating-linear-gradient(180deg, $acik 0, $koyu $kalas - 3px, rgba(104, 64, 28, .55) $kalas - 3px, rgba(104, 64, 28, .55) $kalas);
 }
-// Sandık yüzü çerçevesi ve çapraz destek kalası.
-@mixin cerceve($kalinlik: 11px, $renk: #c08a4f) {
-  box-shadow: inset 0 0 0 $kalinlik $renk, inset 0 0 0 ($kalinlik + 1px) rgba(90, 55, 25, .35);
+// İhracat sandığı çerçevesi: dört kenarda çıta (kenar gölgeli), köşelerde çivi başı ve isteğe bağlı çapraz destek.
+// Çıtalar ::before katmanında degrade olarak çizilir; böylece yüz döndüğünde çıta da aynı düzlemde kalır.
+// Konumlar #{} ile yazılır; aksi halde Sass "/" işaretini bölme sanıp arka planı bozar.
+@mixin cerceve($kalinlik: 12px, $renk: #d6a66a, $capraz: true) {
+  $kenar: rgba(96, 58, 24, .42);
+  $isik: rgba(255, 255, 255, .22);
+  $civi: radial-gradient(circle, rgba(70, 42, 14, .7) 1.4px, rgba(70, 42, 14, .25) 2px, transparent 2.6px);
+  $yakin: $kalinlik * .5 - 2px;
+  $uzak: calc(100% - #{$kalinlik * .5 + 4px});
+  $cita: $kenar 0 1px, $isik 1px 2px, $renk 2px $kalinlik - 1px, $kenar $kalinlik - 1px $kalinlik, transparent $kalinlik;
+  $katmanlar:
+    $civi #{$yakin} #{$yakin} / 6px 6px no-repeat,
+    $civi #{$uzak} #{$yakin} / 6px 6px no-repeat,
+    $civi #{$yakin} #{$uzak} / 6px 6px no-repeat,
+    $civi #{$uzak} #{$uzak} / 6px 6px no-repeat,
+    linear-gradient(90deg, $cita),
+    linear-gradient(270deg, $cita),
+    linear-gradient(180deg, $cita),
+    linear-gradient(0deg, $cita);
   &::before {
     content: '';
     position: absolute;
-    inset: $kalinlik;
-    background: linear-gradient(to top right,
-      transparent calc(50% - #{$kalinlik * .8 + 1px}),
-      rgba(90, 55, 25, .35) calc(50% - #{$kalinlik * .8 + 1px}),
-      $renk calc(50% - #{$kalinlik * .8}),
-      $renk calc(50% + #{$kalinlik * .8}),
-      rgba(90, 55, 25, .35) calc(50% + #{$kalinlik * .8}),
-      transparent calc(50% + #{$kalinlik * .8 + 1px}));
+    inset: 0;
+    @if $capraz {
+      background:
+        $katmanlar,
+        linear-gradient(to top right,
+          transparent calc(50% - #{$kalinlik * .7 + 1px}),
+          $kenar calc(50% - #{$kalinlik * .7 + 1px}),
+          $renk calc(50% - #{$kalinlik * .7}),
+          $renk calc(50% + #{$kalinlik * .7}),
+          $kenar calc(50% + #{$kalinlik * .7}),
+          transparent calc(50% + #{$kalinlik * .7 + 1px}));
+    } @else {
+      background: $katmanlar;
+    }
   }
 }
 
@@ -200,7 +223,7 @@
   transition: transform .5s var(--ease);
   .lp-brand:hover & { transform: rotate(-6deg) scale(1.04); }
 }
-// Kelime işareti: serif "3K" ve altında aralıklı küçük büyük harflerle "Ahşap Ambalaj".
+// Kelime işareti: yalnız kalın "3K".
 .lp-brand__ad {
   display: grid;
   line-height: 1;
@@ -208,16 +231,8 @@
     color: var(--ink);
     font-family: var(--serif);
     font-size: 21px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: -.01em;
-  }
-  small {
-    margin-top: 3px;
-    color: var(--muted);
-    font-size: 9.5px;
-    font-weight: 600;
-    letter-spacing: .2em;
-    text-transform: uppercase;
   }
 }
 .lp-nav__links {
@@ -348,7 +363,7 @@
   color: var(--ink);
   font-family: var(--serif);
   font-size: clamp(42px, 5.6vw, 78px);
-  font-weight: 400;
+  font-weight: 700;
   font-variation-settings: 'opsz' 144;
   line-height: 1.02;
   letter-spacing: -.03em;
@@ -471,9 +486,9 @@
   width: var(--w);
   height: var(--h);
   @include kalas(38px);
-  @include cerceve(11px);
+  @include cerceve(12px);
   animation: yuz-gel 1s var(--ease) var(--g, 0s) both;
-  // Işık: her yüzün açısına göre gölge katmanı.
+  // Işık: her yüzün açısına göre gölge katmanı; çıtaların üstüne biner ki yüz bütün halinde kararsın.
   &::after {
     content: '';
     position: absolute;
@@ -484,15 +499,21 @@
   &--arka { --g: 2.45s; --tz: -170px; --golge: .3; transform: rotateY(180deg) translateZ(calc(var(--d) / 2)); }
   &--sol { --g: 2.3s; --tx: -190px; --golge: .26; width: var(--d); left: calc((var(--w) - var(--d)) / 2); transform: rotateY(-90deg) translateZ(calc(var(--w) / 2)); }
   &--sag { --g: 2.6s; --tx: 190px; --golge: .14; width: var(--d); left: calc((var(--w) - var(--d)) / 2); transform: rotateY(90deg) translateZ(calc(var(--w) / 2)); }
+  // Kapak: kalaslar kısa kenar boyunca, üstünde çerçeve ve ortada bir tutucu çıta; çapraz yok.
   &--kapak {
     --g: 3.6s;
     --ty: -230px;
     height: var(--d);
     top: calc((var(--h) - var(--d)) / 2);
     transform: rotateX(90deg) translateZ(calc(var(--h) / 2));
-    @include kalas(40px, #ebc38e, #dcab70);
-    box-shadow: inset 0 0 0 11px #c99358, inset 0 0 0 12px rgba(90, 55, 25, .3);
-    &::before { display: none; }
+    @include kalas(40px, #eccd9c, #dcb277);
+    @include cerceve(12px, #dcae72, false);
+    box-shadow: inset 0 0 0 1px rgba(96, 58, 24, .25);
+    &::after {
+      background:
+        linear-gradient(90deg, transparent calc(50% - 7px), rgba(96, 58, 24, .42) calc(50% - 7px), rgba(255, 255, 255, .22) calc(50% - 6px), #dcae72 calc(50% - 5px), #dcae72 calc(50% + 5px), rgba(96, 58, 24, .42) calc(50% + 5px), transparent calc(50% + 6px)),
+        rgba(70, 40, 14, var(--golge, 0));
+    }
   }
   &--taban {
     --g: .15s;
@@ -501,41 +522,47 @@
     height: var(--d);
     top: calc((var(--h) - var(--d)) / 2);
     transform: rotateX(-90deg) translateZ(calc(var(--h) / 2));
-    &::before { display: none; }
+    @include cerceve(12px, #d6a66a, false);
   }
 }
 @keyframes yuz-gel {
   from { opacity: 0; translate: var(--tx, 0px) var(--ty, 0px) var(--tz, 0px); }
   to { opacity: 1; translate: 0 0 0; }
 }
+// Yan yüzdeki marka: tahtaya basılmış şablon (stencil) yazı; mürekkep ahşabın dokusuyla karışır.
 .yuz__marka {
   position: absolute;
   z-index: 1;
-  top: 18px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
-  color: rgba(80, 46, 18, .55);
-  font-size: 30px;
-  font-weight: 900;
-  letter-spacing: -.02em;
+  transform: translate(-50%, -50%);
+  color: rgba(70, 40, 14, .62);
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  mix-blend-mode: multiply;
 }
+// ISPM-15 damgası: yüzle aynı düzlemde, dik durur; şablon kalıbıyla basılmış ısıl işlem işareti.
 .damga {
   position: absolute;
   z-index: 1;
-  bottom: 22px;
-  left: 24px;
+  bottom: 26px;
+  left: 28px;
   display: grid;
-  justify-items: center;
-  padding: 6px 10px;
-  border: 2.5px solid rgba(78, 44, 16, .72);
-  border-radius: 8px;
-  color: rgba(78, 44, 16, .78);
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  align-items: center;
+  padding: 6px 10px 5px;
+  border: 2.5px solid rgba(70, 40, 14, .72);
+  border-radius: 6px;
+  color: rgba(70, 40, 14, .8);
   line-height: 1;
-  transform: rotate(-7deg);
+  mix-blend-mode: multiply;
   animation: damga-bas .55s cubic-bezier(.2, 1.5, .4, 1) 4.4s both;
-  i { font-size: 18px; }
-  b { margin-top: 2px; font-size: 13px; font-weight: 900; letter-spacing: .08em; }
-  small { margin-top: 2px; font-size: 10px; font-weight: 800; letter-spacing: .2em; }
+  i { grid-row: 1 / span 2; font-size: 22px; }
+  b { font-size: 12.5px; font-weight: 900; letter-spacing: .1em; }
+  small { margin-top: 3px; font-size: 9.5px; font-weight: 800; letter-spacing: .24em; }
 }
 @keyframes damga-bas {
   from { opacity: 0; scale: 1.9; }
@@ -691,7 +718,7 @@
     color: var(--ink);
     font-family: var(--serif);
     font-size: clamp(34px, 3.6vw, 48px);
-    font-weight: 400;
+    font-weight: 700;
     line-height: 1;
     letter-spacing: -.02em;
     font-variant-numeric: tabular-nums;
@@ -754,7 +781,7 @@
     color: var(--ink);
     font-family: var(--serif);
     font-size: clamp(34px, 4.3vw, 56px);
-    font-weight: 400;
+    font-weight: 700;
     line-height: 1.08;
     letter-spacing: -.025em;
   }
@@ -799,7 +826,7 @@
   color: var(--ink);
   font-family: var(--serif);
   font-size: clamp(28px, 3.7vw, 52px);
-  font-weight: 400;
+  font-weight: 700;
   line-height: 1.24;
   letter-spacing: -.02em;
   span {
@@ -840,7 +867,7 @@
     color: var(--ink);
     font-family: var(--serif);
     font-size: 30px;
-    font-weight: 500;
+    font-weight: 700;
     letter-spacing: -.02em;
   }
   span {
@@ -957,7 +984,7 @@
     color: var(--ink);
     font-family: var(--serif);
     font-size: clamp(24px, 2.4vw, 32px);
-    font-weight: 500;
+    font-weight: 700;
     letter-spacing: -.02em;
   }
   p {
@@ -1333,7 +1360,7 @@
     color: var(--ink);
     font-family: var(--serif);
     font-size: 34px;
-    font-weight: 500;
+    font-weight: 700;
     line-height: 1;
     font-variant-numeric: tabular-nums;
   }
@@ -1791,7 +1818,7 @@
     color: var(--ink);
     font-family: var(--serif);
     font-size: 20px;
-    font-weight: 500;
+    font-weight: 700;
     line-height: 1.25;
     letter-spacing: -.01em;
   }
@@ -1812,7 +1839,7 @@
     color: var(--ink);
     font-family: var(--serif);
     font-size: clamp(26px, 2.6vw, 34px);
-    font-weight: 500;
+    font-weight: 700;
     line-height: 1.15;
     letter-spacing: -.02em;
   }
@@ -1930,223 +1957,6 @@
 }
 
 // ===== Ürünler =====
-.urun-sekme {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  width: max-content;
-  margin: -24px auto 40px;
-  padding: 5px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--surface);
-  button {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 9px 18px;
-    border: 0;
-    border-radius: 999px;
-    background: transparent;
-    color: var(--ink-2);
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background .3s ease, color .3s ease;
-    span {
-      padding: 1px 8px;
-      border-radius: 999px;
-      background: var(--paper-2);
-      color: var(--muted);
-      font-size: 12px;
-    }
-    &.is-active {
-      background: var(--ink);
-      color: #fff;
-      span { background: rgba(255, 255, 255, .14); color: #fff; }
-    }
-  }
-}
-.urunler {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 18px;
-}
-.urun {
-  padding: 14px 14px 22px;
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  background: var(--surface);
-  animation: gir .6s var(--ease) calc(var(--i) * 60ms) backwards;
-  transition: transform .45s var(--ease), box-shadow .45s ease, border-color .45s ease;
-  h3 {
-    margin: 4px 8px 6px;
-    color: var(--ink);
-    font-size: 16.5px;
-    font-weight: 700;
-  }
-  p {
-    margin: 0 8px;
-    color: var(--muted);
-    font-size: 14px;
-    line-height: 1.55;
-  }
-  &:hover {
-    border-color: var(--line-2);
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-6px);
-  }
-  &:hover .urun__yuz { transform: rotate(-3deg) scale(1.05); }
-}
-.urun__no {
-  display: block;
-  margin: 18px 8px 0;
-  color: var(--wood-3);
-  font-family: var(--serif);
-  font-size: 15px;
-  font-style: italic;
-}
-.urun__cizim {
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  height: 160px;
-  border-radius: 16px;
-  background: radial-gradient(circle, rgba(20, 28, 23, .06) 1px, transparent 1.4px) 0 0 / 16px 16px, var(--paper-2);
-}
-.urun__yuz {
-  position: relative;
-  width: 150px;
-  height: 100px;
-  border-radius: 4px;
-  transition: transform .6s var(--ease);
-  filter: drop-shadow(0 14px 14px rgba(70, 46, 20, .18));
-  [data-doku='kapali'] & {
-    @include kalas(20px);
-    @include cerceve(7px);
-  }
-  [data-doku='kafes'] & {
-    background: repeating-linear-gradient(180deg, transparent 0 7px, #dcab70 7px 19px, rgba(110, 68, 30, .5) 19px 20px);
-    @include cerceve(7px);
-  }
-  [data-doku='kontrplak'] &,
-  [data-doku='klipsli'] &,
-  [data-doku='katlanir'] & {
-    background:
-      repeating-linear-gradient(115deg, rgba(150, 100, 50, .08) 0 2px, transparent 2px 26px),
-      linear-gradient(135deg, #ecce9f, #dbb27c);
-    box-shadow: inset 0 0 0 5px #c49157;
-  }
-  [data-doku='osb'] & {
-    background:
-      radial-gradient(ellipse 7px 3px at 20% 30%, #b2814a 60%, transparent 64%) 0 0 / 23px 17px,
-      radial-gradient(ellipse 5px 2px at 70% 60%, #a3733d 60%, transparent 64%) 0 0 / 19px 13px,
-      radial-gradient(ellipse 4px 2px at 40% 80%, #c79a5f 60%, transparent 64%) 0 0 / 15px 11px,
-      #ddb57f;
-    box-shadow: inset 0 0 0 6px #b98149;
-  }
-  // Katlanır: ortadan katlanma çizgisi ve köşe sacları.
-  [data-doku='katlanir'] &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      linear-gradient(90deg, transparent calc(50% - 1px), rgba(90, 55, 25, .55) calc(50% - 1px) calc(50% + 1px), transparent 0),
-      linear-gradient(#6c7782, #6c7782) 0 0 / 12px 12px no-repeat,
-      linear-gradient(#6c7782, #6c7782) 100% 0 / 12px 12px no-repeat,
-      linear-gradient(#6c7782, #6c7782) 0 100% / 12px 12px no-repeat,
-      linear-gradient(#6c7782, #6c7782) 100% 100% / 12px 12px no-repeat;
-  }
-  [data-doku='menteseli'] & {
-    @include kalas(20px);
-    box-shadow: inset 0 0 0 7px #c08a4f;
-    &::before {
-      content: '';
-      position: absolute;
-      top: -5px;
-      right: 0;
-      left: 0;
-      height: 12px;
-      background:
-        linear-gradient(#59636d, #59636d) 24% 0 / 18px 12px no-repeat,
-        linear-gradient(#59636d, #59636d) 76% 0 / 18px 12px no-repeat;
-    }
-  }
-  [data-doku='klipsli'] &::before {
-    content: '';
-    position: absolute;
-    inset: -3px;
-    background:
-      linear-gradient(#5f6a74, #5f6a74) 30% 0 / 10px 14px no-repeat,
-      linear-gradient(#5f6a74, #5f6a74) 70% 0 / 10px 14px no-repeat,
-      linear-gradient(#5f6a74, #5f6a74) 30% 100% / 10px 14px no-repeat,
-      linear-gradient(#5f6a74, #5f6a74) 70% 100% / 10px 14px no-repeat,
-      linear-gradient(#5f6a74, #5f6a74) 0 50% / 14px 10px no-repeat,
-      linear-gradient(#5f6a74, #5f6a74) 100% 50% / 14px 10px no-repeat;
-  }
-  [data-doku='ozel'] & {
-    border: 2px dashed var(--green);
-    background:
-      repeating-linear-gradient(0deg, rgba(45, 95, 71, .1) 0 1px, transparent 1px 12px),
-      repeating-linear-gradient(90deg, rgba(45, 95, 71, .1) 0 1px, transparent 1px 12px),
-      #fff;
-    filter: none;
-    &::before {
-      content: '✦';
-      position: absolute;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      color: var(--green);
-      font-size: 30px;
-    }
-  }
-  // Paletler: önden görünüş; üst tabla, takozlar ve alt kalas.
-  [data-doku^='palet'] & {
-    width: 170px;
-    height: 16px;
-    border-radius: 2px;
-    @include kalas(16px, #e6ba82, #d2a063);
-  }
-  [data-doku='palet-kontrplak'] & {
-    background: linear-gradient(180deg, #ecce9f, #d7ad76);
-    box-shadow: inset 0 -2px 0 rgba(110, 68, 30, .3);
-  }
-  [data-doku='palet-ozel'] & {
-    border: 2px dashed var(--green);
-    background: #fff;
-    filter: none;
-  }
-}
-.urun__takoz {
-  width: 170px;
-  height: 40px;
-  transition: transform .6s var(--ease);
-  background:
-    linear-gradient(180deg, transparent 28px, #cf9b5e 28px) 0 0 / 100% 100% no-repeat,
-    linear-gradient(var(--wood-3), var(--wood-3)) 4px 0 / 30px 28px no-repeat,
-    linear-gradient(var(--wood-3), var(--wood-3)) center 0 / 30px 28px no-repeat,
-    linear-gradient(var(--wood-3), var(--wood-3)) calc(100% - 4px) 0 / 30px 28px no-repeat;
-  filter: drop-shadow(0 12px 12px rgba(70, 46, 20, .16));
-  [data-doku='palet-kontrplak'] & {
-    background:
-      linear-gradient(180deg, transparent 28px, #d7ad76 28px) 0 0 / 100% 100% no-repeat,
-      linear-gradient(#c79a62, #c79a62) 4px 0 / 30px 28px no-repeat,
-      linear-gradient(#c79a62, #c79a62) center 0 / 30px 28px no-repeat,
-      linear-gradient(#c79a62, #c79a62) calc(100% - 4px) 0 / 30px 28px no-repeat;
-  }
-  [data-doku='palet-ozel'] & {
-    background:
-      linear-gradient(180deg, transparent 28px, rgba(45, 95, 71, .28) 28px) 0 0 / 100% 100% no-repeat,
-      linear-gradient(rgba(45, 95, 71, .22), rgba(45, 95, 71, .22)) 4px 0 / 30px 28px no-repeat,
-      linear-gradient(rgba(45, 95, 71, .22), rgba(45, 95, 71, .22)) center 0 / 30px 28px no-repeat,
-      linear-gradient(rgba(45, 95, 71, .22), rgba(45, 95, 71, .22)) calc(100% - 4px) 0 / 30px 28px no-repeat;
-    filter: none;
-  }
-  .urun:hover & { transform: rotate(-3deg) scale(1.05); }
-}
-
-// ===== Dijital platform =====
 .platform {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
@@ -2296,7 +2106,7 @@
     color: var(--ink);
     font-family: var(--serif);
     font-size: 28px;
-    font-weight: 500;
+    font-weight: 700;
     line-height: 1;
   }
 }
@@ -2464,7 +2274,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  strong { display: block; color: var(--ink); font-family: var(--serif); font-size: 22px; font-weight: 500; }
+  strong { display: block; color: var(--ink); font-family: var(--serif); font-size: 22px; font-weight: 700; }
   small { color: var(--muted); font-size: 13px; }
 }
 .tesis {
@@ -2481,7 +2291,7 @@
     color: var(--ink);
     font-family: var(--serif);
     font-size: 21px;
-    font-weight: 500;
+    font-weight: 700;
     letter-spacing: -.02em;
     white-space: nowrap;
   }
@@ -2585,7 +2395,7 @@
     color: var(--ink);
     font-family: var(--serif);
     font-size: clamp(30px, 3.8vw, 50px);
-    font-weight: 400;
+    font-weight: 700;
     line-height: 1.1;
     letter-spacing: -.025em;
   }
@@ -2699,13 +2509,6 @@
   .adimlar { display: none; }
   .mini-ozet strong { font-size: 22px; }
   .uygulama__bildirim { right: 10px; left: 10px; justify-content: center; }
-  .urun-sekme { width: 100%; button { flex: 1; justify-content: center; } }
-  .urunler { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-  .urun { padding: 10px 10px 16px; border-radius: 18px; }
-  .urun__cizim { height: 112px; border-radius: 12px; > * { zoom: .68; } }
-  .urun__no { margin: 12px 6px 0; }
-  .urun h3 { margin: 2px 6px 4px; font-size: 14.5px; }
-  .urun p { margin: 0 6px; font-size: 12.5px; }
   .cta { padding: 56px 22px; border-radius: 24px; }
   .hero__eylemler .lp-btn { flex: 1 1 100%; }
 }

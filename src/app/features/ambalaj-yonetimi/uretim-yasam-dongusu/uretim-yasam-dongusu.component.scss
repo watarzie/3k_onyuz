@@ -5,10 +5,10 @@
 .lifecycle-panel {
   margin: 16px 0;
   padding: 18px 20px;
-  border: 1px solid var(--borderColor, #e5e7eb);
+  border: 1px solid var(--borderColor, var(--k-line));
   border-radius: 10px;
   background: var(--whiteColor, #fff);
-  color: var(--blackColor, #243047);
+  color: var(--blackColor, var(--k-ink));
 }
 .lifecycle-panel.integrated {
   margin: 16px 24px 0;
@@ -28,7 +28,7 @@
   justify-content: center;
   border-radius: 10px;
   background: rgba(96, 93, 255, 0.08);
-  color: var(--primaryColor, #605dff);
+  color: var(--primaryColor, var(--k-green));
   font-size: 21px;
 }
 .lifecycle-heading h3 {
@@ -38,7 +38,7 @@
 }
 .lifecycle-heading p {
   margin: 0;
-  color: var(--bodyColor, #64748b);
+  color: var(--bodyColor, var(--k-muted));
   font-size: 12px;
   line-height: 1.5;
 }
@@ -47,8 +47,8 @@
   flex: 0 0 auto;
   padding: 5px 9px;
   border-radius: 6px;
-  background: #f3f4f8;
-  color: var(--bodyColor, #64748b);
+  background: var(--k-paper);
+  color: var(--bodyColor, var(--k-muted));
   font-size: 11px;
   font-weight: 600;
 }
@@ -65,7 +65,7 @@
 .reason-field > span {
   display: block;
   margin-bottom: 6px;
-  color: var(--bodyColor, #64748b);
+  color: var(--bodyColor, var(--k-muted));
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -74,14 +74,14 @@
   width: 100%;
   min-height: 39px;
   padding: 8px 10px;
-  border: 1px solid var(--borderColor, #e5e7eb);
+  border: 1px solid var(--borderColor, var(--k-line));
   border-radius: 8px;
   background: #fff;
   color: inherit;
 }
 .reason-field input:focus {
   outline: 0;
-  border-color: var(--primaryColor, #605dff);
+  border-color: var(--primaryColor, var(--k-green));
   box-shadow: 0 0 0 3px rgba(96, 93, 255, 0.1);
 }
 .form-actions {
@@ -95,7 +95,7 @@ input[type='checkbox'] {
   width: 17px;
   height: 17px;
   flex-shrink: 0;
-  accent-color: var(--primaryColor, #605dff);
+  accent-color: var(--primaryColor, var(--k-green));
   cursor: pointer;
 }
 button {
@@ -116,9 +116,9 @@ input:disabled {
   gap: 7px;
   min-height: 39px;
   padding: 8px 14px;
-  border: 1px solid var(--primaryColor, #605dff);
+  border: 1px solid var(--primaryColor, var(--k-green));
   border-radius: 8px;
-  background: var(--primaryColor, #605dff);
+  background: var(--primaryColor, var(--k-green));
   color: #fff;
   font-size: 12px;
   font-weight: 600;
@@ -137,16 +137,16 @@ input:disabled {
   gap: 5px;
   min-height: 30px;
   padding: 4px 9px;
-  border: 1px solid var(--borderColor, #e5e7eb);
+  border: 1px solid var(--borderColor, var(--k-line));
   border-radius: 6px;
   background: #fff;
-  color: var(--primaryColor, #605dff);
+  color: var(--primaryColor, var(--k-green));
   font-size: 11px;
 }
 .lifecycle-table-wrap {
   overflow-x: auto;
   margin-bottom: 16px;
-  border: 1px solid var(--borderColor, #e5e7eb);
+  border: 1px solid var(--borderColor, var(--k-line));
   border-radius: 8px;
 }
 .lifecycle-table {
@@ -155,8 +155,8 @@ input:disabled {
 }
 .lifecycle-table th {
   padding: 11px 13px;
-  background: #f6f7f9;
-  color: var(--bodyColor, #64748b);
+  background: var(--k-paper);
+  color: var(--bodyColor, var(--k-muted));
   font-size: 11px;
   font-weight: 600;
   text-align: left;
@@ -164,7 +164,7 @@ input:disabled {
 }
 .lifecycle-table td {
   padding: 12px 13px;
-  border-top: 1px solid var(--borderColor, #e5e7eb);
+  border-top: 1px solid var(--borderColor, var(--k-line));
   font-size: 12px;
 }
 .lifecycle-table tr.selected {
@@ -173,7 +173,7 @@ input:disabled {
 .lifecycle-table small {
   display: block;
   margin-top: 4px;
-  color: var(--bodyColor, #64748b);
+  color: var(--bodyColor, var(--k-muted));
 }
 .production-status {
   display: inline-flex;
@@ -185,24 +185,24 @@ input:disabled {
   white-space: nowrap;
 }
 .status-1 {
-  background: #fffbeb;
-  color: #a16207;
+  background: color-mix(in srgb, var(--k-warning) 10%, #fff);
+  color: var(--k-warning);
 }
 .status-2 {
-  background: #eff6ff;
-  color: #2563eb;
+  background: color-mix(in srgb, var(--k-info) 10%, #fff);
+  color: var(--k-info);
 }
 .status-3 {
-  background: #f0fdf4;
-  color: #15803d;
+  background: color-mix(in srgb, var(--k-success) 10%, #fff);
+  color: var(--k-success);
 }
 .row-actions {
   margin-top: 6px;
 }
 .row-actions .success-action {
-  color: #15704b;
-  background: #f0fdf4;
-  border-color: #bbf7d0;
+  color: var(--k-success);
+  background: color-mix(in srgb, var(--k-success) 10%, #fff);
+  border-color: color-mix(in srgb, var(--k-success) 22%, #fff);
 }
 .spin {
   animation: lifecycle-spin 1s linear infinite;
@@ -246,7 +246,7 @@ input:disabled {
   align-items: center;
   gap: 6px;
   margin: 10px 0 0;
-  color: var(--bodyColor, #64748b);
+  color: var(--bodyColor, var(--k-muted));
   font-size: 11px;
 }
 .pine-chart {

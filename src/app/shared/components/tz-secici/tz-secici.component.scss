@@ -16,10 +16,10 @@
   min-width: 190px;
   height: 42px;
   padding: 0 10px 0 5px;
-  border: 1px solid var(--borderColor, #e5e7eb);
+  border: 1px solid var(--borderColor, var(--k-line));
   border-radius: 12px;
   background: var(--whiteColor, #fff);
-  color: var(--blackColor, #1e293b);
+  color: var(--blackColor, var(--k-ink));
   text-align: left;
   transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
 
@@ -67,7 +67,7 @@
   line-height: 1.15;
 
   small {
-    color: #94a3b8;
+    color: var(--k-faint);
     font-size: 10.5px;
     font-weight: 700;
     letter-spacing: .05em;
@@ -88,19 +88,19 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  color: #94a3b8;
+  color: var(--k-faint);
   font-size: 15px;
   cursor: pointer;
   transition: background-color .15s ease, color .15s ease;
 
   &:hover {
-    background: #fee2e2;
-    color: #dc2626;
+    background: color-mix(in srgb, var(--k-danger) 10%, #fff);
+    color: var(--k-danger);
   }
 }
 
 .tz-secici__ok {
-  color: #94a3b8;
+  color: var(--k-faint);
   font-size: 18px;
   transition: transform .2s ease, color .2s ease;
 
@@ -115,7 +115,7 @@
   position: fixed;
   z-index: 2070;
   overflow: hidden;
-  border: 1px solid var(--borderColor, #e5e7eb);
+  border: 1px solid var(--borderColor, var(--k-line));
   border-radius: 14px;
   background: var(--whiteColor, #fff);
   box-shadow: 0 24px 48px -16px rgba(15, 23, 42, .28), 0 2px 6px rgba(15, 23, 42, .06);
@@ -132,16 +132,16 @@
     top: 50%;
     left: 20px;
     margin-top: 2px;
-    color: #94a3b8;
+    color: var(--k-faint);
     transform: translateY(-50%);
   }
   input {
     width: 100%;
     height: 34px;
     padding: 0 10px 0 32px;
-    border: 1px solid var(--borderColor, #e5e7eb);
+    border: 1px solid var(--borderColor, var(--k-line));
     border-radius: 9px;
-    background: #f8fafc;
+    background: var(--k-paper);
     font-size: 13px;
     outline: 0;
 
@@ -166,14 +166,14 @@
   gap: 10px;
   padding: 7px 8px;
   border-radius: 10px;
-  color: #334155;
+  color: var(--k-ink-2);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   animation: tz-secici-satir .22s calc(var(--i) * 18ms) ease-out both;
 
   &.is-active {
-    background: #f4f5ff;
+    background: var(--k-green-soft);
   }
   &.is-selected {
     background: color-mix(in srgb, var(--primaryColor) 9%, #fff);
@@ -190,7 +190,7 @@
   }
   &.is-tumu {
     margin-bottom: 4px;
-    border-bottom: 1px dashed #e2e8f0;
+    border-bottom: 1px dashed var(--k-line);
     border-radius: 10px 10px 4px 4px;
   }
 }
@@ -203,8 +203,8 @@
   height: 28px;
   padding: 0 6px;
   border-radius: 8px;
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--k-paper);
+  color: var(--k-ink-2);
   font-size: 12px;
   font-weight: 800;
   transition: background-color .15s ease, color .15s ease;
@@ -223,8 +223,8 @@
 .tz-secici__sayi {
   padding: 1px 8px;
   border-radius: 999px;
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--k-paper);
+  color: var(--k-muted);
   font-size: 11.5px;
   font-weight: 700;
   white-space: nowrap;
@@ -240,7 +240,7 @@
 
 .tz-secici__bos {
   padding: 14px;
-  color: #94a3b8;
+  color: var(--k-faint);
   font-size: 12.5px;
   text-align: center;
 }

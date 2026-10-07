@@ -16,25 +16,30 @@ import { STATUS_BADGE_MAP } from '../../../core/constants/enums';
   standalone: true,
   imports: [NgClass],
   template: `<span class="badge" [ngClass]="badgeClass()">{{ label() }}</span>`,
-  // Yuvarlak rozet: başta durum renginde nokta, ince tonlu kenar.
+  // Yuvarlak rozet: başta durum renginde nokta, yumuşak zemin/rozet kalıbı (zemin %10, kenar %22, metin %85 ton).
+  // Tonlar global --k-* semantik token'larıdır; hepsi beyaz üstünde AA kontrastı geçer.
   styles: [`
     .badge {
-      --ton: #64748B;
+      --ton: var(--k-muted);
       display: inline-flex; align-items: center; gap: 6px;
       padding: 4px 10px 4px 8px; border: 1px solid color-mix(in srgb, var(--ton) 22%, transparent); border-radius: 999px;
-      background: color-mix(in srgb, var(--ton) 9%, #fff); color: color-mix(in srgb, var(--ton) 88%, #000);
+      background: color-mix(in srgb, var(--ton) 10%, #fff); color: color-mix(in srgb, var(--ton) 85%, #000);
       font-size: 12px; font-weight: 650; line-height: 1.3; white-space: nowrap;
     }
     .badge::before {
       content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--ton);
       box-shadow: 0 0 0 3px color-mix(in srgb, var(--ton) 18%, transparent);
     }
-    .badge-success { --ton: #1e9a3a; }
-    .badge-danger { --ton: #e5372a; }
-    .badge-warning { --ton: #d48806; }
-    .badge-info { --ton: #2f74e0; }
-    .badge-secondary { --ton: #64748B; }
-    .badge-purple { --ton: #9b4fe8; }
+    .badge-success { --ton: var(--k-success); }   /* tamamlandı, hazır, kapandı */
+    .badge-danger { --ton: var(--k-danger); }     /* gelmedi, kayıp, iptal */
+    .badge-warning { --ton: var(--k-warning); }   /* eksik geldi, hatalı */
+    .badge-orange { --ton: var(--k-orange); }     /* kısmi / eksik sevk */
+    .badge-info { --ton: var(--k-info); }         /* sevk edildi, devam ediyor */
+    .badge-steel { --ton: var(--k-steel); }       /* bekliyor, rezerve */
+    .badge-wood { --ton: var(--k-wood-3); }       /* atölyede hazırlanıyor, üretimde */
+    .badge-purple { --ton: var(--k-purple); }     /* başka yere yönlendi, siparişte */
+    .badge-dark { --ton: var(--k-ink-2); }        /* grid kapandı */
+    .badge-secondary { --ton: var(--k-muted); }   /* boş, bilinmeyen */
   `],
 })
 export class StatusBadgeComponent {

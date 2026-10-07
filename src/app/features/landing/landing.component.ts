@@ -227,10 +227,6 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
 
   readonly adimlar = ADIMLAR;
   readonly calismaBicimleri = CALISMA_BICIMLERI;
-  readonly urunGruplari = [
-    { ad: 'Sandıklar', ikon: 'ri-archive-line', urunler: SANDIKLAR },
-    { ad: 'Paletler', ikon: 'ri-stack-line', urunler: PALETLER },
-  ];
   readonly ozellikler = OZELLIKLER;
   readonly canliDurumlar = CANLI_DURUMLAR;
   readonly takipSatirlari = TAKIP_SATIRLARI;
@@ -253,7 +249,6 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
   }));
 
   readonly aktifAdim = signal(0);
-  readonly aktifUrunGrubu = signal(0);
   readonly aktifBicim = signal(0);
   readonly kaydirildi = signal(false);
   readonly ilerleme = signal(0);

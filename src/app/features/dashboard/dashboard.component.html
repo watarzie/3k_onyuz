@@ -1,6 +1,7 @@
 <div class="page-title-area mb-4">
   <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
     <div>
+      <span class="page-title-ikon" style="--ton: var(--k-green)" aria-hidden="true"><i class="ri-dashboard-line"></i></span>
       <h2 class="fw-bold mb-1">Ana Kontrol Paneli</h2>
       <p class="dashboard-subtitle">{{ bugunMetni }} · Projelerin, sandıkların ve sevkiyatın anlık özeti</p>
       <app-breadcrumb [items]="breadcrumb" />
@@ -746,13 +747,13 @@
 
           <div class="yuzde-circles mt-4">
             <div class="yuzde-item">
-              <div class="yuzde-circle" [style.background]="'conic-gradient(#22c55e ' + sahaYuzde() * 3.6 + 'deg, #e2e8f0 0deg)'">
+              <div class="yuzde-circle" [style.background]="'conic-gradient(var(--k-success) ' + sahaYuzde() * 3.6 + 'deg, var(--k-line) 0deg)'">
                 <span>{{ sahaYuzde() }}%</span>
               </div>
               <div class="yuzde-label">Saha Tamamlanma</div>
             </div>
             <div class="yuzde-item">
-              <div class="yuzde-circle" [style.background]="'conic-gradient(#f59e0b ' + yedekYuzde() * 3.6 + 'deg, #e2e8f0 0deg)'">
+              <div class="yuzde-circle" [style.background]="'conic-gradient(var(--k-warning) ' + yedekYuzde() * 3.6 + 'deg, var(--k-line) 0deg)'">
                 <span>{{ yedekYuzde() }}%</span>
               </div>
               <div class="yuzde-label">Yedek Tamamlanma</div>

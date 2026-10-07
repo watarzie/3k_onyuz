@@ -1,5 +1,5 @@
 // Çıkış (veda) sayfası — giriş ekranıyla aynı görsel dil: kâğıt beyazı zemin üstünde beyaz kart, çam yeşili ve
-// ahşap tonları, serif başlık.
+// ahşap tonları, kalın Sarabun başlık.
 // Sahne sırası: kart yükselir → kilidin kolu iner (kilitlenir) → kıvılcımlar dağılır → onay rozeti belirir
 // → metin ve eylemler belirir. Hareket azaltma tercihinde son hâl doğrudan gösterilir.
 :host {
@@ -57,7 +57,7 @@
   h1 {
     margin: 12px 0 6px;
     color: var(--c-text);
-    font-family: 'Fraunces', Georgia, serif;
+    font-family: 'Sarabun', 'Inter', sans-serif;
     font-size: 30px;
     font-weight: 500;
     letter-spacing: -.02em;

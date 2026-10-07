@@ -15,7 +15,7 @@
 }
 .search-box {
   input {
-    padding-left: 36px; background: #F6F7F9; border: 1px solid var(--borderColor);
+    padding-left: 36px; background: var(--k-paper); border: 1px solid var(--borderColor);
     border-radius: 8px; height: 38px; width: 220px; font-size: 13px;
     &:focus { border-color: var(--primaryColor); box-shadow: none; }
   }
@@ -53,17 +53,17 @@
   }
 
   &::-webkit-scrollbar-track {
-    background: #EEF2F7;
+    background: var(--k-line);
     border-radius: 999px;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #94A3B8;
+    background: var(--k-faint);
     border-radius: 999px;
   }
 
   &::-webkit-scrollbar-thumb:hover {
-    background: #64748B;
+    background: var(--k-muted);
   }
 }
 
@@ -156,11 +156,11 @@ table {
   th {
     font-size: 10px; text-transform: uppercase; letter-spacing: .5px;
     color: var(--bodyColor); font-weight: 600; padding: 10px 10px;
-    border-bottom: 1px solid var(--borderColor); background: #F8FAFC; white-space: nowrap;
+    border-bottom: 1px solid var(--borderColor); background: var(--k-paper); white-space: nowrap;
   }
   td { padding: 9px 10px; font-size: 12px; border-bottom: 1px solid var(--borderColor); }
   tr:last-child td { border-bottom: none; }
-  tr:hover { background: #FAFBFC; }
+  tr:hover { background: var(--k-hover); }
 }
 
 // Satır tıklanabilir
@@ -181,8 +181,8 @@ table {
   }
 }
 
-@include kalan-row(row-kalan-yok, #25B003, #ECF8EF, #DFF3E7);
-@include kalan-row(row-kalan-var, #EF4444, #FFE7E5, #FFD6D3);
+@include kalan-row(row-kalan-yok, var(--k-success), color-mix(in srgb, var(--k-success) 10%, #fff), color-mix(in srgb, var(--k-success) 22%, #fff));
+@include kalan-row(row-kalan-var, var(--k-danger), color-mix(in srgb, var(--k-danger) 10%, #fff), color-mix(in srgb, var(--k-danger) 22%, #fff));
 tbody tr.row-selected > td { background-color: rgba(96,93,255,.08) !important; }
 
 tbody tr.row-sevk-kilitli {
@@ -190,15 +190,15 @@ tbody tr.row-sevk-kilitli {
 }
 
 tbody tr.row-sevk-kilitli > td {
-  background-color: #F1F5F9 !important;
-  color: #64748B;
+  background-color: var(--k-paper) !important;
+  color: var(--k-muted);
 }
 
 tbody tr.row-sevk-kilitli:hover > td {
-  background-color: #E2E8F0 !important;
+  background-color: var(--k-line) !important;
 }
 
-.barkod { font-size: 10px; background: #F0F0F5; padding: 2px 5px; border-radius: 3px; color: var(--bodyColor); font-family: monospace; }
+.barkod { font-size: 10px; background: var(--k-paper); padding: 2px 5px; border-radius: 3px; color: var(--bodyColor); font-family: monospace; }
 .badge-sandik {
   background: rgba(96,93,255,.08); color: var(--primaryColor); padding: 2px 7px;
   border-radius: 4px; font-size: 10px; font-weight: 600;
@@ -223,12 +223,12 @@ tbody tr.row-sevk-kilitli:hover > td {
   white-space: nowrap;
 }
 .allocation-secondary {
-  color: #64748B;
+  color: var(--k-muted);
 }
 .allocation-transfer {
   max-width: 150px;
   overflow: hidden;
-  color: #2563EB;
+  color: var(--k-info);
   text-overflow: ellipsis;
 
   i {
@@ -259,20 +259,20 @@ tbody tr.row-sevk-kilitli:hover > td {
   white-space: nowrap;
 }
 .saha-source-pill {
-  color: #2563EB;
-  background: #EFF6FF;
-  border: 1px solid #BFDBFE;
+  color: var(--k-info);
+  background: color-mix(in srgb, var(--k-info) 10%, #fff);
+  border: 1px solid color-mix(in srgb, var(--k-info) 22%, #fff);
 }
 .saha-trace-pill {
-  color: #047857;
-  background: #ECFDF5;
-  border: 1px solid #A7F3D0;
+  color: var(--k-success);
+  background: color-mix(in srgb, var(--k-success) 10%, #fff);
+  border: 1px solid color-mix(in srgb, var(--k-success) 22%, #fff);
   cursor: pointer;
 
   &:hover {
-    color: #065F46;
-    background: #D1FAE5;
-    border-color: #6EE7B7;
+    color: var(--k-success);
+    background: color-mix(in srgb, var(--k-success) 10%, #fff);
+    border-color: color-mix(in srgb, var(--k-success) 45%, #fff);
   }
 
   strong {
@@ -308,7 +308,7 @@ tbody tr.row-sevk-kilitli:hover > td {
 }
 
 .transfer-net {
-  color: #475569;
+  color: var(--k-ink-2);
   font-size: 10px;
   font-weight: 700;
 }
@@ -323,16 +323,16 @@ tbody tr.row-sevk-kilitli:hover > td {
   gap: 8px;
 
   span {
-    background: #F8FAFC;
+    background: var(--k-paper);
     border: 1px solid var(--borderColor);
     border-radius: 8px;
     padding: 9px 10px;
     font-size: 12px;
-    color: #64748B;
+    color: var(--k-muted);
   }
 
   strong {
-    color: #0F172A;
+    color: var(--k-ink);
   }
 }
 
@@ -344,8 +344,8 @@ tbody tr.row-sevk-kilitli:hover > td {
 }
 
 .transfer-chain-explainer {
-  border: 1px solid #D7E6FF;
-  background: linear-gradient(180deg, #F8FBFF 0%, #F2F7FF 100%);
+  border: 1px solid color-mix(in srgb, var(--k-info) 22%, #fff);
+  background: linear-gradient(180deg, var(--k-hover) 0%, color-mix(in srgb, var(--k-info) 10%, #fff) 100%);
   border-radius: 10px;
   padding: 12px 14px;
 }
@@ -362,7 +362,7 @@ tbody tr.row-sevk-kilitli:hover > td {
 
 .transfer-chain-explainer p {
   margin: 0;
-  color: #334155;
+  color: var(--k-ink-2);
   font-size: 12px;
   line-height: 1.45;
 
@@ -373,17 +373,17 @@ tbody tr.row-sevk-kilitli:hover > td {
 
 .transfer-chain-item {
   border: 1px solid var(--borderColor);
-  border-left: 4px solid #94A3B8;
+  border-left: 4px solid var(--k-faint);
   border-radius: 8px;
   padding: 12px;
   background: #fff;
 
   &.transfer-in {
-    border-left-color: #3584FC;
+    border-left-color: var(--k-info);
   }
 
   &.transfer-out {
-    border-left-color: #FFB200;
+    border-left-color: var(--k-warning);
   }
 }
 
@@ -393,7 +393,7 @@ tbody tr.row-sevk-kilitli:hover > td {
   justify-content: space-between;
   gap: 12px;
   font-weight: 800;
-  color: #1E293B;
+  color: var(--k-ink);
 }
 
 .transfer-route {
@@ -414,8 +414,8 @@ tbody tr.row-sevk-kilitli:hover > td {
   margin-top: 6px;
 
   span {
-    background: #F1F5F9;
-    color: #64748B;
+    background: var(--k-paper);
+    color: var(--k-muted);
     border-radius: 999px;
     padding: 2px 8px;
     font-size: 10px;
@@ -425,7 +425,7 @@ tbody tr.row-sevk-kilitli:hover > td {
 
 .transfer-chain-note {
   margin-top: 8px;
-  color: #475569;
+  color: var(--k-ink-2);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -445,7 +445,7 @@ tbody tr.row-sevk-kilitli:hover > td {
   display: flex; align-items: center; justify-content: space-between;
 }
 .panel-body { padding: 24px; flex: 1; overflow-y: auto; }
-.urun-ozet { background: #F8FAFC; border-radius: 10px; padding: 16px; }
+.urun-ozet { background: var(--k-paper); border-radius: 10px; padding: 16px; }
 .ozet-chip {
   font-size: 11px; color: var(--bodyColor); background: #fff; border: 1px solid var(--borderColor);
   padding: 2px 10px; border-radius: 5px; display: inline-flex; align-items: center; gap: 4px;
@@ -455,9 +455,9 @@ tbody tr.row-sevk-kilitli:hover > td {
   align-items: flex-start;
   gap: 7px;
   padding: 9px 11px;
-  color: #1D4ED8;
-  background: #EFF6FF;
-  border: 1px solid #BFDBFE;
+  color: var(--k-info);
+  background: color-mix(in srgb, var(--k-info) 10%, #fff);
+  border: 1px solid color-mix(in srgb, var(--k-info) 22%, #fff);
   border-radius: 8px;
   font-size: 11px;
   font-weight: 650;
@@ -475,7 +475,7 @@ tbody tr.row-sevk-kilitli:hover > td {
 .durum-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
 .alert-danger-panel {
   background: rgba(255,64,35,.06); border: 1px solid rgba(255,64,35,.2);
-  color: #FF4023; border-radius: 8px; padding: 10px 14px; font-size: 12px;
+  color: var(--k-danger); border-radius: 8px; padding: 10px 14px; font-size: 12px;
 }
 .alert-uyari {
   border: 1px solid; border-radius: 8px; padding: 10px 14px; font-size: 12px; font-weight: 600;
@@ -483,8 +483,8 @@ tbody tr.row-sevk-kilitli:hover > td {
 .eksik-gosterge {
   display: flex; align-items: center; justify-content: space-between;
   padding: 12px 16px; border-radius: 8px; font-size: 14px;
-  &.eksik-var { background: rgba(255,64,35,.06); color: #FF4023; }
-  &.eksik-yok { background: rgba(37,176,3,.06); color: #25B003; }
+  &.eksik-var { background: rgba(255,64,35,.06); color: var(--k-danger); }
+  &.eksik-yok { background: rgba(37,176,3,.06); color: var(--k-success); }
   strong { font-size: 20px; }
 }
 .fazla-geldi-card {
@@ -494,17 +494,17 @@ tbody tr.row-sevk-kilitli:hover > td {
   .fazla-icon {
     width: 36px; height: 36px; border-radius: 8px;
     display: inline-flex; align-items: center; justify-content: center;
-    color: #0284C7; background: #E0F2FE; font-size: 18px; flex-shrink: 0;
+    color: var(--k-info); background: color-mix(in srgb, var(--k-info) 10%, #fff); font-size: 18px; flex-shrink: 0;
   }
   .fazla-content {
     flex: 1; min-width: 0;
-    strong { display: block; color: #075985; font-size: 13px; line-height: 1.2; }
-    small { display: block; color: #64748B; margin-top: 2px; }
+    strong { display: block; color: var(--k-info); font-size: 13px; line-height: 1.2; }
+    small { display: block; color: var(--k-muted); margin-top: 2px; }
   }
 }
 .btn-outline { background: transparent; color: var(--bodyColor); border: 1px solid var(--borderColor); border-radius: 8px; }
 .btn-save {
-  background: linear-gradient(135deg, #25B003, #34D399); color: #fff; border: none; font-weight: 600; border-radius: 8px;
+  background: linear-gradient(135deg, var(--k-success), var(--k-success)); color: #fff; border: none; font-weight: 600; border-radius: 8px;
   &:disabled { opacity: .6; }
 }
 
@@ -563,14 +563,14 @@ tbody tr.row-sevk-kilitli:hover > td {
 
   h5 {
     margin: 0;
-    color: #0F172A;
+    color: var(--k-ink);
     font-size: 17px;
     font-weight: 800;
   }
 
   p {
     margin: 4px 0 0;
-    color: #64748B;
+    color: var(--k-muted);
     font-size: 12px;
     font-weight: 600;
     line-height: 1.35;
@@ -584,9 +584,9 @@ tbody tr.row-sevk-kilitli:hover > td {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #2563EB;
-  background: #EFF6FF;
-  border: 1px solid #DBEAFE;
+  color: var(--k-info);
+  background: color-mix(in srgb, var(--k-info) 10%, #fff);
+  border: 1px solid color-mix(in srgb, var(--k-info) 22%, #fff);
   flex-shrink: 0;
   font-size: 18px;
 }
@@ -596,15 +596,15 @@ tbody tr.row-sevk-kilitli:hover > td {
   height: 36px;
   border: 0;
   border-radius: 8px;
-  color: #475569;
-  background: #F8FAFC;
+  color: var(--k-ink-2);
+  background: var(--k-paper);
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
   &:hover {
-    color: #0F172A;
-    background: #F1F5F9;
+    color: var(--k-ink);
+    background: var(--k-paper);
   }
 }
 
@@ -614,8 +614,8 @@ tbody tr.row-sevk-kilitli:hover > td {
 }
 
 .saha-trace-source {
-  border: 1px solid #DBEAFE;
-  background: linear-gradient(180deg, #F8FBFF 0%, #F2F7FF 100%);
+  border: 1px solid color-mix(in srgb, var(--k-info) 22%, #fff);
+  background: linear-gradient(180deg, var(--k-hover) 0%, color-mix(in srgb, var(--k-info) 10%, #fff) 100%);
   border-radius: 10px;
   padding: 12px 14px;
   display: grid;
@@ -623,19 +623,19 @@ tbody tr.row-sevk-kilitli:hover > td {
   margin-bottom: 12px;
 
   span {
-    color: #64748B;
+    color: var(--k-muted);
     font-size: 11px;
     font-weight: 800;
     text-transform: uppercase;
   }
 
   strong {
-    color: #0F172A;
+    color: var(--k-ink);
     font-size: 14px;
   }
 
   b {
-    color: #047857;
+    color: var(--k-success);
     font-size: 12px;
   }
 }
@@ -647,7 +647,7 @@ tbody tr.row-sevk-kilitli:hover > td {
 
 .saha-trace-item {
   border: 1px solid var(--borderColor);
-  border-left: 4px solid #94A3B8;
+  border-left: 4px solid var(--k-faint);
   border-radius: 10px;
   background: #fff;
   padding: 12px;
@@ -655,8 +655,8 @@ tbody tr.row-sevk-kilitli:hover > td {
   gap: 12px;
 
   &.shipped {
-    border-left-color: #2563EB;
-    background: #F8FBFF;
+    border-left-color: var(--k-info);
+    background: var(--k-hover);
   }
 }
 
@@ -664,8 +664,8 @@ tbody tr.row-sevk-kilitli:hover > td {
   width: 34px;
   height: 34px;
   border-radius: 8px;
-  color: #2563EB;
-  background: #EFF6FF;
+  color: var(--k-info);
+  background: color-mix(in srgb, var(--k-info) 10%, #fff);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -681,7 +681,7 @@ tbody tr.row-sevk-kilitli:hover > td {
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  color: #0F172A;
+  color: var(--k-ink);
 
   strong {
     font-size: 13px;
@@ -689,7 +689,7 @@ tbody tr.row-sevk-kilitli:hover > td {
   }
 
   span {
-    color: #047857;
+    color: var(--k-success);
     font-size: 12px;
     font-weight: 800;
     white-space: nowrap;
@@ -706,8 +706,8 @@ tbody tr.row-sevk-kilitli:hover > td {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    color: #64748B;
-    background: #F1F5F9;
+    color: var(--k-muted);
+    background: var(--k-paper);
     border-radius: 999px;
     padding: 3px 8px;
     font-size: 10.5px;
@@ -729,7 +729,7 @@ tbody tr.row-sevk-kilitli:hover > td {
 
 .alert-info-custom {
   background: rgba(53,132,252,.06); border: 1px solid rgba(53,132,252,.2);
-  color: #3584FC; border-radius: 8px; padding: 12px 16px; font-size: 13px;
+  color: var(--k-info); border-radius: 8px; padding: 12px 16px; font-size: 13px;
 }
 
 // Açıklama hücresi — hover ile tam metni gösterir
@@ -744,12 +744,12 @@ tbody tr.row-sevk-kilitli:hover > td {
     display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
     min-width: 200px; max-width: 340px; width: max-content;
     padding: 10px 14px; border-radius: 8px; font-size: 12.5px; line-height: 1.5;
-    color: #fff; background: #1e293b; box-shadow: 0 4px 16px rgba(0,0,0,.2);
+    color: #fff; background: var(--k-ink); box-shadow: 0 4px 16px rgba(0,0,0,.2);
     white-space: normal; word-break: break-word; z-index: 100;
     animation: popFade .15s ease;
     &::after {
       content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
-      border: 6px solid transparent; border-top-color: #1e293b;
+      border: 6px solid transparent; border-top-color: var(--k-ink);
     }
   }
   &:hover .aciklama-popup { display: block; }
@@ -764,8 +764,8 @@ tbody tr.row-sevk-kilitli:hover > td {
 
 .saha-trace-rollback {
   border: 1px solid rgba(245, 158, 11, .35);
-  background: #FFFBEB;
-  color: #B45309;
+  background: color-mix(in srgb, var(--k-warning) 10%, #fff);
+  color: var(--k-warning);
   border-radius: 8px;
   padding: 7px 10px;
   font-size: 11px;
@@ -777,7 +777,7 @@ tbody tr.row-sevk-kilitli:hover > td {
 
   &:hover:not(:disabled) {
     border-color: rgba(245, 158, 11, .65);
-    background: #FEF3C7;
+    background: color-mix(in srgb, var(--k-warning) 10%, #fff);
   }
 
   &:disabled {

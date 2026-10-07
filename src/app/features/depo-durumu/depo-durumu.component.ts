@@ -1,4 +1,5 @@
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
+import { GRAFIK_RENKLERI, GRAFIK_SEMANTIK } from '../../core/constants/grafik-renkleri';
 import { Component, HostListener, computed, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
@@ -241,7 +242,7 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
   ];
 
   private readonly systemLokasyonIds = new Set([1, 2, 4, 5]);
-  private readonly palette = ['#3584FC', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#06B6D4', '#64748B', '#14B8A6'];
+  private readonly palette = GRAFIK_RENKLERI;
 
   // --- Debounced search ---
   private searchSubject = new Subject<string>();
@@ -546,10 +547,10 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
 
   getLokasyonColor(lokasyon: LookupItem, index = 0): string {
     const key = lokasyon.deger.trim().toUpperCase();
-    if (key === '3K') return '#0EA5E9';
-    if (key === 'SEYMEN') return '#078A55';
-    if (key === 'GRID') return '#F59E0B';
-    if (this.isBelirsiz(lokasyon)) return '#64748B';
+    if (key === '3K') return GRAFIK_SEMANTIK.bilgi;
+    if (key === 'SEYMEN') return GRAFIK_SEMANTIK.basari;
+    if (key === 'GRID') return GRAFIK_SEMANTIK.uyari;
+    if (this.isBelirsiz(lokasyon)) return GRAFIK_SEMANTIK.notr;
     return this.palette[index % this.palette.length];
   }
 

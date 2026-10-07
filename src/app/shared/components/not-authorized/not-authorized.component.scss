@@ -2,11 +2,11 @@
 // kilidin kolu kısa aralıklarla kilitlenir; iki yörünge döner, tarama ışını kalkanın üzerinden geçer ve
 // yasak rozeti nabız gibi atar. Hareket azaltma tercihinde sahne durağandır.
 :host {
-  --ink: var(--blackColor, #1e293b);
-  --muted: var(--bodyColor, #64748b);
-  --line: var(--borderColor, #e5e7eb);
-  --primary: var(--primaryColor, #605dff);
-  --danger: #ef4444;
+  --ink: var(--blackColor, var(--k-ink));
+  --muted: var(--bodyColor, var(--k-muted));
+  --line: var(--borderColor, var(--k-line));
+  --primary: var(--primaryColor, var(--k-green));
+  --danger: var(--k-danger);
   --ease: cubic-bezier(.2, .7, .2, 1);
   display: block;
 }
@@ -175,7 +175,7 @@
   border: 1px solid rgba(239, 68, 68, .25);
   border-radius: 999px;
   background: rgba(239, 68, 68, .07);
-  color: #dc2626;
+  color: var(--k-danger);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: .03em;
@@ -204,14 +204,14 @@
     padding: 10px 12px;
     border: 1px solid var(--line);
     border-radius: 12px;
-    background: #f8fafc;
+    background: var(--k-paper);
   }
   dt {
     display: flex;
     align-items: center;
     gap: 5px;
     margin-bottom: 3px;
-    color: #94a3b8;
+    color: var(--k-faint);
     font-size: 11px;
     font-weight: 700;
     letter-spacing: .05em;

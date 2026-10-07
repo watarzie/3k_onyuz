@@ -236,33 +236,44 @@ export const STATUS_BADGE_MAP: Record<string, string> = {
   'IptalVeyaPasif': 'badge-danger',
   'Iptal': 'badge-danger',
 
-  // === Sarı (Uyarı / Eksik) ===
+  // === Kehribar (eksik geldi / hatalı) ve yanık turuncu (kısmi / eksik sevk) ===
   'EksikGeldi': 'badge-warning',
   'Eksik Geldi': 'badge-warning',
   'Sevk Adeti Eksik Geldi': 'badge-warning',
   'Eksik': 'badge-warning',
-  'KismiSevkEdildi': 'badge-warning',
-  'KismiGeldi': 'badge-warning',
-  'KismiTamamlandi': 'badge-warning',
+  'KismiSevkEdildi': 'badge-orange',
+  'KismiSevk': 'badge-orange',
+  'Kısmi Sevk': 'badge-orange',
+  'KismiGeldi': 'badge-orange',
+  'KismiTamamlandi': 'badge-orange',
   'HataliUrun': 'badge-warning',
-  'EksikSevkEdildi': 'badge-warning',
+  'EksikSevkEdildi': 'badge-orange',
+  'Eksik Sevk Edildi': 'badge-orange',
 
   // === Mavi (Bilgi / Devam Ediyor) ===
   'SevkEdildi': 'badge-info',
   'Sevkedildi': 'badge-info',
   'Sevk Edildi': 'badge-info',
-  'Uretimde': 'badge-info',
+  'Uretimde': 'badge-wood',
+  'Imalat': 'badge-wood',
   'Devam': 'badge-info',
   'DevamEdiyor': 'badge-info',
   'TedarikcidenGeldi': 'badge-info',
+  'Tedarik': 'badge-info',
+  'Tedarik3KTeslim': 'badge-info',
+  'Onaylandi': 'badge-success',
+  'Reddedildi': 'badge-danger',
+  'Tukendi': 'badge-danger',
 
-  // === Gri (Bekliyor / Pasif) ===
-  'Bekliyor': 'badge-secondary',
-  'Bekletiliyor': 'badge-secondary',
-  'Hazirlaniyor': 'badge-secondary',
-  'Hazırlanıyor': 'badge-secondary',
+  // === Çelik mavisi (bekliyor / rezerve) ve ahşap (atölyede hazırlanıyor) ===
+  'Bekliyor': 'badge-steel',
+  'Bekletiliyor': 'badge-steel',
+  'Hazirlaniyor': 'badge-wood',
+  'Hazırlanıyor': 'badge-wood',
   'Boş': 'badge-secondary',
-  'Beklemede': 'badge-secondary',
+  'Beklemede': 'badge-steel',
+  'Rezerve': 'badge-steel',
+  'Ambar': 'badge-steel',
 
   // === Mor (Özel durum) ===
   'SonraGidecek': 'badge-purple',
@@ -280,6 +291,7 @@ export const STATUS_BADGE_MAP: Record<string, string> = {
   'Grid Kapandı': 'badge-dark',
   'GridKapandi': 'badge-dark',
   'Siparişte': 'badge-purple',
+  'Sipariste': 'badge-purple',
   'Tamamlandı': 'badge-success',
 };
 

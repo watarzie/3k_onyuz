@@ -10,9 +10,9 @@ header { justify-content: space-between; border-bottom: 1px solid var(--borderCo
 header h5 { margin: 0 0 6px; font-size: 17px; font-weight: 600; }
 footer { border-top: 1px solid var(--borderColor); flex-wrap: wrap; }
 .bulk-body { padding: 20px 24px; overflow-y: auto; }
-.bulk-note { padding: 12px; color: #1d4ed8; background: #eff6ff; border-radius: 8px; font-size: 13px; }
+.bulk-note { padding: 12px; color: var(--k-info); background: color-mix(in srgb, var(--k-info) 10%, #fff); border-radius: 8px; font-size: 13px; }
 .bulk-preview { border: 1px solid var(--borderColor); border-radius: 8px; }
-th { background: #f8fafc; color: var(--bodyColor); font-size: 12px; white-space: nowrap; padding: 12px; }
+th { background: var(--k-paper); color: var(--bodyColor); font-size: 12px; white-space: nowrap; padding: 12px; }
 td { padding: 12px; font-size: 13px; }
 .product { min-width: 180px; max-width: 300px; overflow-wrap: anywhere; }
 .amount { min-width: 145px; width: 165px; }

@@ -1,4 +1,5 @@
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { GRAFIK_SEMANTIK, GRAFIK_TONLAR } from '../../../core/constants/grafik-renkleri';
 import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy, HostListener, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject } from 'rxjs';
@@ -383,10 +384,10 @@ export class ProjeListesiComponent implements OnInit {
 
   /** Sayfa başlığındaki ikon çipi ve vurgu rengi; yalnız görünümü etkiler. */
   sayfaGorunumu = computed(() => {
-    if (this.isSahaYonetimi()) return { ikon: 'ri-tools-line', renk: '#16a34a' };
-    if (this.isYedekYonetimi()) return { ikon: 'ri-box-3-line', renk: '#0ea5e9' };
-    if (this.isSevkEdilen()) return { ikon: 'ri-truck-line', renk: '#e8890c' };
-    if (this.isSandikYonetimi() && !this.isAktifProjeler()) return { ikon: 'ri-archive-line', renk: '#7c3aed' };
+    if (this.isSahaYonetimi()) return { ikon: 'ri-tools-line', renk: GRAFIK_SEMANTIK.basari };
+    if (this.isYedekYonetimi()) return { ikon: 'ri-box-3-line', renk: GRAFIK_SEMANTIK.bilgi };
+    if (this.isSevkEdilen()) return { ikon: 'ri-truck-line', renk: GRAFIK_SEMANTIK.uyari };
+    if (this.isSandikYonetimi() && !this.isAktifProjeler()) return { ikon: 'ri-archive-line', renk: GRAFIK_TONLAR.mor };
     return { ikon: 'ri-folder-3-line', renk: 'var(--primaryColor)' };
   });
 

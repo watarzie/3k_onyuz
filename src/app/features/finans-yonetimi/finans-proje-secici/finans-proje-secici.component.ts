@@ -69,9 +69,9 @@ import { FinansSayfaliSonuc } from '../../../shared/models/finans.model';
         inset: 46px 0 auto;
         padding: 12px;
         background: white;
-        border: 1px solid #e6e9ef;
+        border: 1px solid var(--k-line);
         border-radius: 10px;
-        box-shadow: 0 8px 24px #2020401c;
+        box-shadow: 0 8px 24px color-mix(in srgb, var(--k-ink) 11%, transparent);
         max-height: 340px;
         overflow-y: auto;
       }
@@ -82,10 +82,10 @@ import { FinansSayfaliSonuc } from '../../../shared/models/finans.model';
         border: 0;
         background: transparent;
         padding: 9px 7px;
-        color: #44516b;
+        color: var(--k-ink-2);
       }
       .project-dropdown > button:hover {
-        background: #f3f2ff;
+        background: var(--k-green-soft);
       }
       .project-pages {
         display: flex;
@@ -95,7 +95,7 @@ import { FinansSayfaliSonuc } from '../../../shared/models/finans.model';
         margin-top: 8px;
       }
       .project-pages button {
-        border: 1px solid #e6e9ef;
+        border: 1px solid var(--k-line);
         border-radius: 5px;
         background: white;
         padding: 5px;

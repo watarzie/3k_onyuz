@@ -1,4 +1,5 @@
 import { signal } from '@angular/core';
+import { GRAFIK_RENKLERI } from '../../../core/constants/grafik-renkleri';
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { FinansPanelComponent } from './finans-panel.component';
@@ -163,12 +164,12 @@ describe('Finans paneli bağımsız kayıt izni', () => {
     const dugmeler = () => Array.from(fixture.nativeElement.querySelectorAll('.chart-legend__item')) as HTMLButtonElement[];
     const kapali = () => dugmeler().map((x) => x.classList.contains('is-off'));
     expect(dugmeler().length).toBe(3);
-    expect(c.series().map((x) => x.color)).toEqual(['#605dff', '#3584fc', '#25b003']);
+    expect(c.series().map((x) => x.color)).toEqual([GRAFIK_RENKLERI[0], GRAFIK_RENKLERI[1], GRAFIK_RENKLERI[2]]);
 
     dugmeler()[2].click(); fixture.detectChanges();
     expect(c.series().length).toBe(2);
     expect(kapali()).toEqual([false, false, true]);
-    expect(c.series().map((x) => x.color)).toEqual(['#605dff', '#3584fc']);
+    expect(c.series().map((x) => x.color)).toEqual([GRAFIK_RENKLERI[0], GRAFIK_RENKLERI[1]]);
 
     dugmeler()[2].click(); fixture.detectChanges();
     expect(c.series().map((x) => x.data)).toEqual([[4, 6], [2, 3], [1, 5]]);

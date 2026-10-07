@@ -1,4 +1,5 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { GRAFIK_SEMANTIK, GRAFIK_TONLAR } from '../../../core/constants/grafik-renkleri';
 import { ActivatedRoute } from '@angular/router';
 import { DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -27,14 +28,14 @@ import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 interface KarsilamaTipi { id: number; value: string; label: string; color: string; bgClass: string; }
 
 const KARSILAMA_TIPLERI: KarsilamaTipi[] = [
-  { id: UcKDurum.TamGeldi, value: 'Sevk Adeti Tam Geldi', label: 'SEVK ADETİ TAM GELDİ', color: '#25B003', bgClass: 'row-tam-geldi' },
-  { id: UcKDurum.EksikGeldi, value: 'Sevk Adeti Eksik Geldi', label: 'SEVK ADETİ EKSİK GELDİ', color: '#FD5812', bgClass: 'row-eksik-geldi' },
-  { id: UcKDurum.ProjedenKarsilandi, value: 'Projeden Karşılandı', label: 'PROJEDEN KARŞILANDI', color: '#3584FC', bgClass: 'row-projeden' },
-  { id: UcKDurum.StoktanKarsilandi, value: 'Stoktan Karşılandı', label: 'STOKTAN KARŞILANDI', color: '#9C27B0', bgClass: 'row-stoktan' },
-  { id: UcKDurum.TedarikcidenGeldi, value: 'Tedarikçiden Geldi', label: 'TEDARİKÇİDEN GELDİ', color: '#1B7D3A', bgClass: 'row-tedarikci' },
-  { id: UcKDurum.Gelmedi, value: 'Gelmedi', label: 'GELMEDİ', color: '#FF4023', bgClass: 'row-gelmedi' },
-  { id: UcKDurum.FazlaGeldi, value: 'Fazla Geldi', label: 'FAZLA GELDİ', color: '#0EA5E9', bgClass: 'row-fazla-geldi' },
-  { id: UcKDurum.GeriGonderildi, value: 'Geri Gönderildi', label: 'GERİ GÖNDERİLDİ', color: '#D32F2F', bgClass: 'row-geri-gonderildi' },
+  { id: UcKDurum.TamGeldi, value: 'Sevk Adeti Tam Geldi', label: 'SEVK ADETİ TAM GELDİ', color: GRAFIK_SEMANTIK.basari, bgClass: 'row-tam-geldi' },
+  { id: UcKDurum.EksikGeldi, value: 'Sevk Adeti Eksik Geldi', label: 'SEVK ADETİ EKSİK GELDİ', color: GRAFIK_TONLAR.turuncu, bgClass: 'row-eksik-geldi' },
+  { id: UcKDurum.ProjedenKarsilandi, value: 'Projeden Karşılandı', label: 'PROJEDEN KARŞILANDI', color: GRAFIK_SEMANTIK.bilgi, bgClass: 'row-projeden' },
+  { id: UcKDurum.StoktanKarsilandi, value: 'Stoktan Karşılandı', label: 'STOKTAN KARŞILANDI', color: GRAFIK_TONLAR.mor, bgClass: 'row-stoktan' },
+  { id: UcKDurum.TedarikcidenGeldi, value: 'Tedarikçiden Geldi', label: 'TEDARİKÇİDEN GELDİ', color: GRAFIK_TONLAR.yesilKoyu, bgClass: 'row-tedarikci' },
+  { id: UcKDurum.Gelmedi, value: 'Gelmedi', label: 'GELMEDİ', color: GRAFIK_SEMANTIK.hata, bgClass: 'row-gelmedi' },
+  { id: UcKDurum.FazlaGeldi, value: 'Fazla Geldi', label: 'FAZLA GELDİ', color: GRAFIK_SEMANTIK.bilgi, bgClass: 'row-fazla-geldi' },
+  { id: UcKDurum.GeriGonderildi, value: 'Geri Gönderildi', label: 'GERİ GÖNDERİLDİ', color: GRAFIK_SEMANTIK.hata, bgClass: 'row-geri-gonderildi' },
 ];
 
 
@@ -404,14 +405,14 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   // Grid Durumu Renkleri
   getGridDurumColor(value: string): string {
     const GRID_RENKLERI: Record<string, string> = {
-      'Tam Geldi': '#25B003',
-      'Eksik Geldi': '#FD5812',
-      'Gelmedi': '#FF4023',
-      'Trafo Sevk': '#00BCD4',
-      'İptal': '#FFB200',
-      'Siparişte': '#9C27B0',
+      'Tam Geldi': GRAFIK_SEMANTIK.basari,
+      'Eksik Geldi': GRAFIK_TONLAR.turuncu,
+      'Gelmedi': GRAFIK_SEMANTIK.hata,
+      'Trafo Sevk': GRAFIK_SEMANTIK.bilgi,
+      'İptal': GRAFIK_SEMANTIK.uyari,
+      'Siparişte': GRAFIK_TONLAR.mor,
     };
-    return GRID_RENKLERI[value] || '#64748B';
+    return GRID_RENKLERI[value] || GRAFIK_SEMANTIK.notr;
   }
 
   getSevkDurumLabel(value?: string): string {
@@ -420,31 +421,31 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   getSevkDurumColor(value?: string): string {
     const SEVK_RENKLERI: Record<string, string> = {
-      'Sevk Edildi': '#25B003',
-      'Bekliyor': '#FD5812',
-      'Sevk Edilmedi': '#FF4023',
-      'Yeniden Sevk Gerekli': '#D97706',
+      'Sevk Edildi': GRAFIK_SEMANTIK.basari,
+      'Bekliyor': GRAFIK_TONLAR.turuncu,
+      'Sevk Edilmedi': GRAFIK_SEMANTIK.hata,
+      'Yeniden Sevk Gerekli': GRAFIK_SEMANTIK.uyari,
     };
-    return value ? (SEVK_RENKLERI[value] || '#64748B') : '#64748B';
+    return value ? (SEVK_RENKLERI[value] || GRAFIK_SEMANTIK.notr) : GRAFIK_SEMANTIK.notr;
   }
 
   // Kalite Durumu Renkleri
   getKaliteDurumColor(value?: string): string {
-    if (!value) return '#94a3b8';
-    return value === 'Onaylandı' ? '#25B003' : '#E65100';
+    if (!value) return GRAFIK_TONLAR.soluk;
+    return value === 'Onaylandı' ? GRAFIK_SEMANTIK.basari : GRAFIK_TONLAR.turuncu;
   }
 
   // Süreç Durumu Renkleri
   getSurecDurumColor(value?: string): string {
     const renkler: Record<string, string> = {
-      'Ambar': '#607D8B',
-      'İmalat': '#3584FC',
-      'Tedarik': '#9C27B0',
-      'Tedarik 3K Teslim': '#1B7D3A',
-      'Siparişte': '#D97706',
-      'Tamamlandı': '#25B003',
+      'Ambar': GRAFIK_TONLAR.celik,
+      'İmalat': GRAFIK_SEMANTIK.bilgi,
+      'Tedarik': GRAFIK_TONLAR.mor,
+      'Tedarik 3K Teslim': GRAFIK_TONLAR.yesilKoyu,
+      'Siparişte': GRAFIK_SEMANTIK.uyari,
+      'Tamamlandı': GRAFIK_SEMANTIK.basari,
     };
-    return value ? (renkler[value] || '#94a3b8') : '#94a3b8';
+    return value ? (renkler[value] || GRAFIK_TONLAR.soluk) : GRAFIK_TONLAR.soluk;
   }
 
   onFilterTip(tip: string) {
@@ -553,7 +554,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   }
 
   getTipColor(value: string): string {
-    return KARSILAMA_TIPLERI.find(t => t.value === value)?.color ?? '#64748B';
+    return KARSILAMA_TIPLERI.find(t => t.value === value)?.color ?? GRAFIK_SEMANTIK.notr;
   }
 
   // ===== Side Panel =====

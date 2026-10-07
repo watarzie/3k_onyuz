@@ -1,11 +1,11 @@
 // Finans paneli detay dökümü — panelin kart dilinde: sekmeler, sıralı tablo, açılır kalem listesi, pay çubukları.
 :host {
   display: block;
-  --dt-primary: var(--primaryColor, #605dff);
+  --dt-primary: var(--primaryColor, var(--k-green));
   --dt-soft: color-mix(in srgb, var(--dt-primary) 8%, #fff);
-  --dt-border: var(--borderColor, #eceef2);
-  --dt-title: var(--blackColor, #3a4252);
-  --dt-muted: var(--bodyColor, #64748b);
+  --dt-border: var(--borderColor, var(--k-line));
+  --dt-title: var(--blackColor, var(--k-ink-2));
+  --dt-muted: var(--bodyColor, var(--k-muted));
 }
 
 .detail-card {
@@ -47,7 +47,7 @@
   padding: 4px;
   border: 1px solid var(--dt-border);
   border-radius: 10px;
-  background: #f8fafc;
+  background: var(--k-paper);
   button {
     display: inline-flex;
     align-items: center;
@@ -66,7 +66,7 @@
     &.active {
       background: #fff;
       color: var(--dt-primary);
-      box-shadow: 0 2px 5px #172b4d12;
+      box-shadow: 0 2px 5px color-mix(in srgb, var(--k-ink) 7%, transparent);
     }
   }
 }
@@ -96,7 +96,7 @@
     top: 50%;
     left: 11px;
     transform: translateY(-50%);
-    color: #94a3b8;
+    color: var(--k-faint);
     pointer-events: none;
   }
   input {
@@ -105,7 +105,7 @@
     padding: 0 12px 0 32px;
     border: 1px solid var(--dt-border);
     border-radius: 9px;
-    background: #f6f7f9;
+    background: var(--k-paper);
     font-size: 12.5px;
     outline: 0;
     &:focus {
@@ -116,7 +116,7 @@
   }
 }
 .detail-count {
-  color: #94a3b8;
+  color: var(--k-faint);
   font-size: 12px;
 }
 
@@ -127,7 +127,7 @@
   font-size: 13px;
   th {
     padding: 10px 12px;
-    background: #f8fafc;
+    background: var(--k-paper);
     color: var(--dt-muted);
     font-size: 11.5px;
     font-weight: 600;
@@ -148,7 +148,7 @@
   }
   tfoot td {
     border-bottom: 0;
-    background: #fafbfc;
+    background: var(--k-hover);
     color: var(--dt-muted);
     font-size: 12px;
     font-weight: 700;
@@ -161,7 +161,7 @@
     cursor: pointer;
   }
   &:hover {
-    background: #fafbff;
+    background: var(--k-hover);
   }
   &.is-open {
     background: var(--dt-soft);
@@ -224,25 +224,25 @@
   justify-self: start;
   padding: 2px 8px;
   border-radius: 999px;
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--k-paper);
+  color: var(--k-ink-2);
   font-size: 11px;
   font-weight: 600;
   // FinansKarsilanma: 0 yok, 1 kısmi, 2 tam.
   &[data-ton='1'] {
-    background: #fff5ed;
-    color: #c2410c;
+    background: color-mix(in srgb, var(--k-orange) 10%, #fff);
+    color: var(--k-orange);
   }
   &[data-ton='2'] {
-    background: #eeffe5;
-    color: #1e8308;
+    background: color-mix(in srgb, var(--k-success) 10%, #fff);
+    color: var(--k-success);
   }
 }
 .mini-bar {
   height: 5px;
   overflow: hidden;
   border-radius: 999px;
-  background: #eef1f5;
+  background: var(--k-line);
   span {
     display: block;
     height: 100%;
@@ -250,7 +250,7 @@
     background: var(--dt-primary);
   }
   &.is-invoice span {
-    background: #25b003;
+    background: var(--k-success);
   }
 }
 .detail-chevron-col {
@@ -301,7 +301,7 @@
   padding: 7px 8px;
   border-radius: 8px;
   &:hover {
-    background: #f8fafc;
+    background: var(--k-paper);
   }
 }
 .item-crate {
@@ -309,8 +309,8 @@
   place-items: center;
   height: 30px;
   border-radius: 7px;
-  background: #f1f5f9;
-  color: #334155;
+  background: var(--k-paper);
+  color: var(--k-ink-2);
   font-size: 12px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -337,23 +337,23 @@
 .item-status {
   padding: 2px 8px;
   border-radius: 999px;
-  background: #fff5ed;
-  color: #c2410c;
+  background: color-mix(in srgb, var(--k-orange) 10%, #fff);
+  color: var(--k-orange);
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
   &[data-durum='3'],
   &[data-durum='4'] {
-    background: #e9f3ff;
-    color: #1d63c9;
+    background: color-mix(in srgb, var(--k-info) 10%, #fff);
+    color: var(--k-info);
   }
   &[data-durum='5'] {
-    background: #eeffe5;
-    color: #1e8308;
+    background: color-mix(in srgb, var(--k-success) 10%, #fff);
+    color: var(--k-success);
   }
   &[data-durum='6'] {
-    background: #f1f5f9;
-    color: #64748b;
+    background: var(--k-paper);
+    color: var(--k-muted);
   }
 }
 .item-amount {
@@ -389,7 +389,7 @@
   color: var(--dt-muted);
   font-size: 12.5px;
   &.is-error {
-    color: #d92d20;
+    color: var(--k-danger);
   }
 }
 .items-note {
@@ -453,15 +453,15 @@
   height: 8px;
   overflow: hidden;
   border-radius: 999px;
-  background: #eef1f5;
+  background: var(--k-line);
   span {
     display: block;
     height: 100%;
     border-radius: 999px;
-    background: linear-gradient(90deg, #8b89ff, var(--dt-primary));
+    background: linear-gradient(90deg, color-mix(in srgb, var(--k-green) 45%, #fff), var(--dt-primary));
   }
   &.is-expense span {
-    background: linear-gradient(90deg, #fdb47c, #fd5812);
+    background: linear-gradient(90deg, color-mix(in srgb, var(--k-orange) 45%, #fff), var(--k-orange));
   }
 }
 .category-share {
@@ -482,13 +482,13 @@
   }
   small {
     display: block;
-    color: #1e8308;
+    color: var(--k-success);
     font-size: 11px;
   }
 }
 .detail-foot-note {
   margin: 12px 0 0;
-  color: #94a3b8;
+  color: var(--k-faint);
   font-size: 11.5px;
 }
 .detail-empty {
@@ -497,7 +497,7 @@
   align-items: center;
   gap: 6px;
   padding: 28px 12px;
-  color: #94a3b8;
+  color: var(--k-faint);
   i {
     font-size: 26px;
   }

@@ -1,4 +1,5 @@
 import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { GRAFIK_SEMANTIK, GRAFIK_TONLAR } from '../../../core/constants/grafik-renkleri';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -343,9 +344,9 @@ export class UcKSandiklarComponent implements OnInit {
 
   getDurumColor(durum: string): string {
     const map: Record<string, string> = {
-      Bos: '#94A3B8', Hazirlaniyor: '#FD5812', 'Kapandı': '#25B003', Sevkedildi: '#3584FC',
+      Bos: GRAFIK_TONLAR.soluk, Hazirlaniyor: GRAFIK_TONLAR.turuncu, 'Kapandı': GRAFIK_SEMANTIK.basari, Sevkedildi: GRAFIK_SEMANTIK.bilgi,
     };
-    return map[durum] ?? '#94A3B8';
+    return map[durum] ?? GRAFIK_TONLAR.soluk;
   }
 
   getDurumIcon(durum: string): string {
@@ -406,7 +407,7 @@ export class UcKSandiklarComponent implements OnInit {
 
   getCardDurumColor(sandik: SandikDto): string {
     if (this.isSandikSahaUzerindenSevkEdildi(sandik)) return this.getDurumColor('Sevk Edildi');
-    return this.isSandikSahayaAktarildi(sandik) ? '#0F766E' : this.getDurumColor(sandik.durumMetni);
+    return this.isSandikSahayaAktarildi(sandik) ? GRAFIK_TONLAR.yesil : this.getDurumColor(sandik.durumMetni);
   }
 
   indirSandikDurumRaporu() {

@@ -28,7 +28,7 @@ import { ConfirmModalComponent } from '../../shared/components/confirm-modal/con
     .main-content {
       margin-left: 260px;
       min-height: 100dvh;
-      background: #F6F7F9;
+      background: var(--k-paper);
       transition: .3s ease;
       min-width: 0;
       overflow-x: hidden;

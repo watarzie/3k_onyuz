@@ -10,7 +10,7 @@
 }
 .search-box {
   input {
-    padding-left: 36px; background: #F6F7F9; border: 1px solid var(--borderColor);
+    padding-left: 36px; background: var(--k-paper); border: 1px solid var(--borderColor);
     border-radius: 8px; height: 38px; width: 220px; font-size: 13px;
     &:focus { border-color: var(--primaryColor); box-shadow: none; }
   }
@@ -20,15 +20,15 @@ table {
   th {
     font-size: 12px; text-transform: uppercase; letter-spacing: .5px;
     color: var(--bodyColor); font-weight: 600; padding: 12px 20px;
-    border-bottom: 1px solid var(--borderColor); background: #F8FAFC;
+    border-bottom: 1px solid var(--borderColor); background: var(--k-paper);
   }
   td { padding: 14px 20px; font-size: 13.5px; border-bottom: 1px solid var(--borderColor); }
   tr:last-child td { border-bottom: none; }
-  tr:hover { background: #F8FAFC; }
+  tr:hover { background: var(--k-paper); }
 }
-.progress { border-radius: 3px; background: #e2e8f0; }
+.progress { border-radius: 3px; background: var(--k-line); }
 .btn-action {
-  background: linear-gradient(135deg, #605DFF, #8B5CF6);
+  background: linear-gradient(135deg, var(--k-green), var(--k-purple));
   color: #fff; font-size: 12px; border-radius: 6px; padding: 4px 12px;
   &:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(96,93,255,.3); color: #fff; }
 }

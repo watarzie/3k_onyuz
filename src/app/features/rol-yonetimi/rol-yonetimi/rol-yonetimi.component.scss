@@ -12,11 +12,11 @@
   gap: 8px;
   margin-bottom: 20px;
   padding: 16px 22px;
-  border: 1px solid var(--borderColor, #e5e7eb);
+  border: 1px solid var(--borderColor, var(--k-line));
   border-radius: 14px;
   background: #fff;
 
-  h5 { margin: 0; color: var(--blackColor, #1e293b); font-weight: 700; }
+  h5 { margin: 0; color: var(--blackColor, var(--k-ink)); font-weight: 700; }
 
   .breadcrumb {
     display: flex;
@@ -25,11 +25,11 @@
     padding: 0;
     list-style: none;
 
-    li { color: #64748b; font-size: 13px; }
+    li { color: var(--k-muted); font-size: 13px; }
     li a { color: var(--primaryColor); text-decoration: none; }
     li a i { margin-right: 4px; vertical-align: middle; }
-    li.active { color: var(--blackColor, #1e293b); }
-    li + li::before { content: '›'; margin-right: 8px; color: #cbd5e1; }
+    li.active { color: var(--blackColor, var(--k-ink)); }
+    li + li::before { content: '›'; margin-right: 8px; color: var(--k-line-2); }
   }
 }
 
@@ -45,7 +45,7 @@
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--borderColor, #e5e7eb);
+  border: 1px solid var(--borderColor, var(--k-line));
   border-radius: 16px;
   background: #fff;
   animation: rol-gir .45s var(--ease) backwards;
@@ -75,8 +75,8 @@
   align-items: center;
   gap: 10px;
 
-  h6 { margin: 0; color: var(--blackColor, #1e293b); font-size: 15px; font-weight: 700; }
-  small { color: #94a3b8; font-size: 12px; font-weight: 600; }
+  h6 { margin: 0; color: var(--blackColor, var(--k-ink)); font-size: 15px; font-weight: 700; }
+  small { color: var(--k-faint); font-size: 12px; font-weight: 600; }
 }
 
 .panel-title__ikon {
@@ -98,16 +98,16 @@
     position: absolute;
     top: 50%;
     left: 12px;
-    color: #94a3b8;
+    color: var(--k-faint);
     transform: translateY(-50%);
   }
   input {
     width: 100%;
     height: 38px;
     padding: 0 12px 0 34px;
-    border: 1px solid var(--borderColor, #e5e7eb);
+    border: 1px solid var(--borderColor, var(--k-line));
     border-radius: 10px;
-    background: #f8fafc;
+    background: var(--k-paper);
     font-size: 13px;
     outline: 0;
     transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
@@ -155,7 +155,7 @@
   }
 
   &:hover {
-    background: #f6f7fb;
+    background: var(--k-paper);
     transform: translateX(2px);
 
     .role-actions { opacity: 1; }
@@ -165,7 +165,7 @@
     background: color-mix(in srgb, var(--rol) 9%, #fff);
 
     &::before { transform: scaleY(1); }
-    .role-name { color: var(--blackColor, #1e293b); font-weight: 700; }
+    .role-name { color: var(--blackColor, var(--k-ink)); font-weight: 700; }
     .role-avatar { box-shadow: 0 6px 14px -6px var(--rol); }
     .role-chevron { opacity: 1; color: var(--rol); }
   }
@@ -189,7 +189,7 @@
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
-  color: #334155;
+  color: var(--k-ink-2);
   font-size: 13.5px;
   font-weight: 600;
   white-space: nowrap;
@@ -197,7 +197,7 @@
 }
 
 .role-badge {
-  color: #7c3aed;
+  color: var(--k-purple);
   font-size: 15px;
 }
 
@@ -207,7 +207,7 @@
 }
 
 .role-chevron {
-  color: #94a3b8;
+  color: var(--k-faint);
   font-size: 18px;
   opacity: 0;
   transition: opacity .15s ease, color .15s ease;
@@ -221,7 +221,7 @@
 
   span {
     border-radius: 9px;
-    background: linear-gradient(90deg, #eef1f5, #f8f9fb, #eef1f5);
+    background: linear-gradient(90deg, var(--k-line), var(--k-paper), var(--k-line));
     background-size: 220% 100%;
     animation: rol-parilti 1.2s ease-in-out infinite;
   }
@@ -234,7 +234,7 @@
   justify-items: center;
   gap: 6px;
   padding: 28px 12px;
-  color: #94a3b8;
+  color: var(--k-faint);
   font-size: 13px;
 
   i { font-size: 24px; }
@@ -249,8 +249,8 @@
   padding: 60px 20px;
   text-align: center;
 
-  h5 { margin: 18px 0 6px; color: var(--blackColor, #1e293b); font-weight: 700; }
-  p { margin: 0; color: #64748b; font-size: 13.5px; }
+  h5 { margin: 18px 0 6px; color: var(--blackColor, var(--k-ink)); font-weight: 700; }
+  p { margin: 0; color: var(--k-muted); font-size: 13.5px; }
 }
 
 .empty-illus {
@@ -268,7 +268,7 @@
     width: 64px;
     height: 64px;
     border-radius: 20px;
-    background: linear-gradient(135deg, #7c78ff, #4f46e5);
+    background: linear-gradient(135deg, var(--k-green), var(--k-green));
     color: #fff;
     font-size: 30px;
     box-shadow: 0 16px 30px -12px rgba(79, 70, 229, .6);
@@ -293,7 +293,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 16px 20px;
-  border-bottom: 1px solid var(--borderColor, #e5e7eb);
+  border-bottom: 1px solid var(--borderColor, var(--k-line));
   background:
     radial-gradient(100% 140% at 0% 0%, color-mix(in srgb, var(--primaryColor) 6%, transparent), transparent 60%),
     #fff;
@@ -304,8 +304,8 @@
   align-items: center;
   gap: 12px;
 
-  h6 { margin: 0; color: var(--blackColor, #1e293b); font-size: 17px; font-weight: 800; }
-  small { color: #94a3b8; font-size: 12px; font-weight: 600; }
+  h6 { margin: 0; color: var(--blackColor, var(--k-ink)); font-size: 17px; font-weight: 800; }
+  small { color: var(--k-faint); font-size: 12px; font-weight: 600; }
 }
 
 .role-info__avatar {
@@ -338,8 +338,8 @@
   gap: 5px;
   padding: 4px 10px;
   border-radius: 999px;
-  background: #fff7e6;
-  color: #b45309;
+  background: color-mix(in srgb, var(--k-warning) 10%, #fff);
+  color: var(--k-warning);
   font-size: 12px;
   font-weight: 700;
   animation: rol-pop .3s var(--ease);
@@ -362,19 +362,19 @@
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border: 1px solid var(--borderColor, #e5e7eb);
+  border: 1px solid var(--borderColor, var(--k-line));
   border-radius: 12px;
-  background: #fafbfc;
+  background: var(--k-hover);
 
-  strong { display: block; color: var(--blackColor, #1e293b); font-size: 18px; font-weight: 800; line-height: 1.1; }
-  small { color: #64748b; font-size: 12px; font-weight: 600; }
+  strong { display: block; color: var(--blackColor, var(--k-ink)); font-size: 18px; font-weight: 800; line-height: 1.1; }
+  small { color: var(--k-muted); font-size: 12px; font-weight: 600; }
 }
 
 .perm-stat__kutu {
   flex: 0 0 auto;
   width: 20px;
   height: 20px;
-  border: 1.5px solid #cbd5e1;
+  border: 1.5px solid var(--k-line-2);
   border-radius: 6px;
   background: #fff center / 12px no-repeat;
 
@@ -384,8 +384,8 @@
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m5 10.5 3.2 3.2L15 7'/%3e%3c/svg%3e");
   }
   &--r {
-    border-color: #0ea5e9;
-    background-color: #0ea5e9;
+    border-color: var(--k-info);
+    background-color: var(--k-info);
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-width='3' d='M6 10h8'/%3e%3c/svg%3e");
   }
 }
@@ -396,11 +396,11 @@
   height: 6px;
   overflow: hidden;
   border-radius: 999px;
-  background: #eef2f7;
+  background: var(--k-line);
 
   span { height: 100%; transition: width .4s var(--ease); }
   &__w { background: var(--primaryColor); }
-  &__r { background: #0ea5e9; }
+  &__r { background: var(--k-info); }
 }
 
 .perm-toolbar {
@@ -418,7 +418,7 @@
   align-items: flex-start;
   gap: 6px;
   margin: 0;
-  color: #64748b;
+  color: var(--k-muted);
   font-size: 12.5px;
   line-height: 1.5;
 
@@ -433,16 +433,16 @@
     position: absolute;
     top: 50%;
     left: 12px;
-    color: #94a3b8;
+    color: var(--k-faint);
     transform: translateY(-50%);
   }
   input {
     width: 100%;
     height: 38px;
     padding: 0 12px 0 34px;
-    border: 1px solid var(--borderColor, #e5e7eb);
+    border: 1px solid var(--borderColor, var(--k-line));
     border-radius: 10px;
-    background: #f8fafc;
+    background: var(--k-paper);
     font-size: 13px;
     outline: 0;
 
@@ -462,7 +462,7 @@
   span {
     height: 44px;
     border-radius: 12px;
-    background: linear-gradient(90deg, #eef1f5, #f8f9fb, #eef1f5);
+    background: linear-gradient(90deg, var(--k-line), var(--k-paper), var(--k-line));
     background-size: 220% 100%;
     animation: rol-parilti 1.2s ease-in-out infinite;
   }

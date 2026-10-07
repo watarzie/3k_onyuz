@@ -1,10 +1,10 @@
 // Stok Yönetimi — Trezo sayfa düzeni: başlık, kart içinde arama + tablo, ortak sayfalayıcı.
 .stock-page {
-  --st-primary: var(--primaryColor, #605dff);
+  --st-primary: var(--primaryColor, var(--k-green));
   --st-soft: color-mix(in srgb, var(--st-primary) 8%, #fff);
-  --st-border: var(--borderColor, #eceef2);
-  --st-title: var(--blackColor, #3a4252);
-  --st-muted: var(--bodyColor, #64748b);
+  --st-border: var(--borderColor, var(--k-line));
+  --st-title: var(--blackColor, var(--k-ink-2));
+  --st-muted: var(--bodyColor, var(--k-muted));
 }
 
 .stock-actions {
@@ -19,10 +19,10 @@
   gap: 7px;
   min-height: 40px;
   padding: 0 16px;
-  border: 1px solid var(--borderColor, #eceef2);
+  border: 1px solid var(--borderColor, var(--k-line));
   border-radius: 10px;
   background: #fff;
-  color: var(--blackColor, #3a4252);
+  color: var(--blackColor, var(--k-ink-2));
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
@@ -31,24 +31,24 @@
     font-size: 16px;
   }
   &:hover:not(:disabled) {
-    border-color: color-mix(in srgb, var(--primaryColor, #605dff) 35%, transparent);
-    color: var(--primaryColor, #605dff);
+    border-color: color-mix(in srgb, var(--primaryColor, var(--k-green)) 35%, transparent);
+    color: var(--primaryColor, var(--k-green));
   }
   &:disabled {
     opacity: 0.65;
   }
   &--primary {
-    border-color: var(--primaryColor, #605dff);
-    background: var(--primaryColor, #605dff);
+    border-color: var(--primaryColor, var(--k-green));
+    background: var(--primaryColor, var(--k-green));
     color: #fff;
     &:hover:not(:disabled) {
-      background: color-mix(in srgb, var(--primaryColor, #605dff) 88%, #000);
+      background: color-mix(in srgb, var(--primaryColor, var(--k-green)) 88%, #000);
       color: #fff;
     }
   }
 }
 .stock-btn__pdf {
-  color: #e5372a;
+  color: var(--k-danger);
 }
 
 .stock-card {
@@ -100,7 +100,7 @@
     top: 50%;
     left: 13px;
     transform: translateY(-50%);
-    color: #94a3b8;
+    color: var(--k-faint);
     font-size: 16px;
     pointer-events: none;
   }
@@ -110,7 +110,7 @@
     padding: 0 14px 0 38px;
     border: 1px solid var(--st-border);
     border-radius: 10px;
-    background: #f6f7f9;
+    background: var(--k-paper);
     color: var(--st-title);
     font-size: 13px;
     outline: 0;
@@ -152,10 +152,10 @@
   width: 68px;
   height: 68px;
   border-radius: 50%;
-  background: #f1f5f9;
-  color: #94a3b8;
+  background: var(--k-paper);
+  color: var(--k-faint);
   font-size: 30px;
-  box-shadow: 0 0 0 10px #f8fafc;
+  box-shadow: 0 0 0 10px var(--k-paper);
 }
 
 .stock-table {
@@ -163,7 +163,7 @@
   border-collapse: collapse;
   th {
     padding: 13px 20px;
-    background: #f8fafc;
+    background: var(--k-paper);
     color: var(--st-muted);
     font-size: 12px;
     font-weight: 600;
@@ -180,7 +180,7 @@
   tbody tr {
     transition: background 0.15s ease;
     &:hover {
-      background: #fafbff;
+      background: var(--k-hover);
     }
     &:last-child td {
       border-bottom: 0;
@@ -190,11 +190,11 @@
   tr.is-depleted {
     .stock-item strong,
     .stock-qty strong {
-      color: #94a3b8;
+      color: var(--k-faint);
     }
     .stock-item__icon {
-      background: #f1f5f9;
-      color: #94a3b8;
+      background: var(--k-paper);
+      color: var(--k-faint);
     }
   }
 }
@@ -233,7 +233,7 @@
     font-size: 13px;
   }
   &.is-empty {
-    color: #b6c0cd;
+    color: var(--k-line-2);
     font-family: inherit;
   }
 }
@@ -262,19 +262,19 @@
   font-weight: 600;
 }
 .stock-reason {
-  color: #475569;
+  color: var(--k-ink-2);
 }
 .stock-location {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #475569;
+  color: var(--k-ink-2);
   i {
-    color: #94a3b8;
+    color: var(--k-faint);
   }
 }
 .stock-muted {
-  color: #b6c0cd;
+  color: var(--k-line-2);
 }
 .stock-status {
   display: inline-flex;
@@ -282,13 +282,13 @@
   gap: 6px;
   padding: 4px 10px;
   border-radius: 999px;
-  background: #fff1ef;
-  color: #d92d20;
+  background: color-mix(in srgb, var(--k-danger) 10%, #fff);
+  color: var(--k-danger);
   font-size: 12px;
   font-weight: 600;
   &.is-active {
-    background: #eeffe5;
-    color: #1e8308;
+    background: color-mix(in srgb, var(--k-success) 10%, #fff);
+    color: var(--k-success);
   }
 }
 .stock-status__dot {
@@ -318,9 +318,9 @@
     color: var(--st-primary);
   }
   &.is-danger:hover {
-    border-color: #ffd5ce;
-    background: #fff1ef;
-    color: #d92d20;
+    border-color: color-mix(in srgb, var(--k-danger) 22%, #fff);
+    background: color-mix(in srgb, var(--k-danger) 10%, #fff);
+    color: var(--k-danger);
   }
 }
 .stock-card__foot {
@@ -340,11 +340,11 @@
   .modal-header {
     align-items: flex-start;
     padding: 20px 24px;
-    border-bottom: 1px solid var(--borderColor, #eceef2);
+    border-bottom: 1px solid var(--borderColor, var(--k-line));
   }
   .modal-title {
     margin: 0;
-    color: var(--blackColor, #3a4252);
+    color: var(--blackColor, var(--k-ink-2));
     font-size: 16px;
     font-weight: 700;
   }
@@ -352,21 +352,21 @@
     padding: 22px 24px !important;
   }
   .form-label {
-    color: #475569;
+    color: var(--k-ink-2);
     font-size: 12.5px;
   }
   .form-control,
   .form-select {
     min-height: 40px;
-    border-color: var(--borderColor, #e2e8f0);
+    border-color: var(--borderColor, var(--k-line));
     border-radius: 9px;
     font-size: 13px;
   }
   .modal-footer {
     gap: 8px;
     padding: 14px 24px;
-    border-top: 1px solid var(--borderColor, #eceef2);
-    background: #fafbfc;
+    border-top: 1px solid var(--borderColor, var(--k-line));
+    background: var(--k-hover);
   }
 }
 .stock-modal__title {
@@ -375,7 +375,7 @@
   gap: 12px;
   p {
     margin: 2px 0 0;
-    color: var(--bodyColor, #64748b);
+    color: var(--bodyColor, var(--k-muted));
     font-size: 12.5px;
   }
 }
@@ -386,8 +386,8 @@
   width: 40px;
   height: 40px;
   border-radius: 11px;
-  background: color-mix(in srgb, var(--primaryColor, #605dff) 8%, #fff);
-  color: var(--primaryColor, #605dff);
+  background: color-mix(in srgb, var(--primaryColor, var(--k-green)) 8%, #fff);
+  color: var(--primaryColor, var(--k-green));
   font-size: 19px;
 }
 .stock-modal__note {
@@ -397,8 +397,8 @@
   margin-top: 20px;
   padding: 10px 14px;
   border-radius: 10px;
-  background: #f1f6ff;
-  color: #1d4ed8;
+  background: color-mix(in srgb, var(--k-info) 10%, #fff);
+  color: var(--k-info);
   font-size: 12.5px;
   i {
     font-size: 16px;

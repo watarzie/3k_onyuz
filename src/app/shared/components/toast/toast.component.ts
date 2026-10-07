@@ -2,6 +2,10 @@ import { Component, inject } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { ToastService } from '../../../core/services/toast.service';
 
+/**
+ * Bildirim kartı: gradyan yerine beyaz kart, 1px sıcak kenar, solda 4px ton şeridi ve yumuşak zeminli ikon çipi.
+ * Yüzen öğe olduğu için büyük gölgeyi taşır; tonlar global --k-* semantik token'larıdır.
+ */
 @Component({
   selector: 'app-toast',
   standalone: true,
@@ -19,7 +23,7 @@ import { ToastService } from '../../../core/services/toast.service';
             }
           </div>
           <span class="toast-message">{{ toast.message }}</span>
-          <button class="toast-close" (click)="toastService.dismiss(toast.id)">
+          <button class="toast-close" (click)="toastService.dismiss(toast.id)" aria-label="Kapat">
             <i class="ri-close-line"></i>
           </button>
         </div>
@@ -38,39 +42,66 @@ import { ToastService } from '../../../core/services/toast.service';
       pointer-events: none;
     }
     .toast-item {
+      --ton: var(--k-info);
       pointer-events: all;
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 12px 16px;
-      border-radius: 8px;
+      gap: 12px;
+      padding: 12px 12px 12px 14px;
+      border: 1px solid var(--k-line);
+      border-left: 4px solid var(--ton);
+      border-radius: 12px;
       min-width: 300px;
       max-width: 450px;
-      color: #fff;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-      animation: slideIn .3s ease;
-      font-size: 14px;
+      background: #fff;
+      color: var(--k-ink);
+      box-shadow: var(--k-shadow-lg);
+      animation: slideIn .22s var(--k-ease);
+      font-size: 13.5px;
+      line-height: 1.45;
     }
-    .toast-icon i { font-size: 20px; }
-    .toast-message { flex: 1; }
+    .toast-icon {
+      display: grid;
+      place-items: center;
+      flex: 0 0 34px;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--ton) 10%, #fff);
+      color: var(--ton);
+      i { font-size: 19px; }
+    }
+    .toast-message { flex: 1; overflow-wrap: anywhere; }
     .toast-close {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
       background: transparent;
       border: none;
-      color: rgba(255,255,255,0.7);
-      font-size: 16px;
+      border-radius: 8px;
+      color: var(--k-faint);
+      font-size: 17px;
       cursor: pointer;
       padding: 0;
-      &:hover { color: #fff; }
+      transition: background .15s var(--k-ease), color .15s var(--k-ease);
+      &:hover { background: var(--k-paper); color: var(--k-ink-2); }
     }
-    .toast-item.success { background: linear-gradient(135deg, #28a745, #20c997); }
-    .toast-item.error   { background: linear-gradient(135deg, #dc3545, #e74c6f); }
-    .toast-item.warning { background: linear-gradient(135deg, #ffc107, #fd7e14); color: #1a2035; }
-    .toast-item.warning .toast-close { color: rgba(0,0,0,0.5); }
-    .toast-item.info    { background: linear-gradient(135deg, #5a6acf, #7c8af5); }
+    .toast-item.success { --ton: var(--k-success); }
+    .toast-item.error   { --ton: var(--k-danger); }
+    .toast-item.warning { --ton: var(--k-warning); }
+    .toast-item.info    { --ton: var(--k-info); }
 
     @keyframes slideIn {
       from { opacity: 0; transform: translateX(40px); }
       to   { opacity: 1; transform: translateX(0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .toast-item { animation: none; }
+    }
+    @media (max-width: 575.98px) {
+      .toast-wrapper { left: 12px; right: 12px; bottom: 12px; }
+      .toast-item { min-width: 0; max-width: none; }
     }
   `],
 })

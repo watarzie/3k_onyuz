@@ -1,5 +1,6 @@
 <!-- Breadcrumb -->
 <div class="breadcrumb-card">
+  <span class="page-title-ikon" style="--ton: var(--k-info)" aria-hidden="true"><i class="ri-user-settings-line"></i></span>
   <h5>{{ 'USER.TITLE' | translate }}</h5>
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="ri-home-4-line"></i> {{ 'COMMON.DASHBOARD' | translate }}</a></li>
@@ -9,14 +10,14 @@
 
 <!-- Özet -->
 <div class="ku-stats" *ngIf="ozet() as o">
-  <div class="ku-stat" style="--ton: #605dff; --i: 0">
+  <div class="ku-stat" style="--ton: var(--k-green); --i: 0">
     <span class="ku-stat__ikon"><i class="ri-group-line"></i></span>
     <div class="ku-stat__metin">
       <strong>{{ isLoading() ? '–' : o.toplam }}</strong>
       <small>Toplam kullanıcı</small>
     </div>
   </div>
-  <div class="ku-stat" style="--ton: #16a34a; --i: 1">
+  <div class="ku-stat" style="--ton: var(--k-success); --i: 1">
     <span class="ku-stat__ikon"><i class="ri-shield-check-line"></i></span>
     <div class="ku-stat__metin">
       <strong>{{ isLoading() ? '–' : o.zorunlu }}<em>/ {{ o.toplam }}</em></strong>
@@ -24,7 +25,7 @@
     </div>
     <span class="ku-stat__bar"><span [style.width.%]="o.toplam ? o.zorunlu / o.toplam * 100 : 0"></span></span>
   </div>
-  <div class="ku-stat" style="--ton: #0ea5e9; --i: 2">
+  <div class="ku-stat" style="--ton: var(--k-info); --i: 2">
     <span class="ku-stat__ikon"><i class="ri-smartphone-line"></i></span>
     <div class="ku-stat__metin">
       <strong>{{ isLoading() ? '–' : o.kurulu }}<em>/ {{ o.toplam }}</em></strong>
@@ -32,7 +33,7 @@
     </div>
     <span class="ku-stat__bar"><span [style.width.%]="o.toplam ? o.kurulu / o.toplam * 100 : 0"></span></span>
   </div>
-  <div class="ku-stat" style="--ton: #e8890c; --i: 3">
+  <div class="ku-stat" style="--ton: var(--k-warning); --i: 3">
     <span class="ku-stat__ikon"><i class="ri-shield-user-line"></i></span>
     <div class="ku-stat__metin">
       <strong>{{ isLoading() ? '–' : o.rolSayisi }}</strong>

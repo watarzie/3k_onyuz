@@ -19,7 +19,7 @@ import { ToastComponent } from '../../shared/components/toast/toast.component';
       </div>
       <a class="auth-marka" routerLink="/" aria-label="3K Ahşap Ambalaj tanıtım sayfası">
         <img src="/images/3k-emblem.svg" alt="" />
-        <span><b>3K</b><small>Ahşap Ambalaj</small></span>
+        <span><b>3K</b></span>
       </a>
       <router-outlet />
     </div>
@@ -105,17 +105,9 @@ import { ToastComponent } from '../../shared/components/toast/toast.component';
     .auth-marka:hover img { transform: rotate(-6deg) scale(1.04); }
     .auth-marka span { display: grid; line-height: 1; }
     .auth-marka b {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: 'Sarabun', 'Inter', sans-serif;
       font-size: 20px;
       font-weight: 600;
-    }
-    .auth-marka small {
-      margin-top: 3px;
-      color: #69736d;
-      font-size: 9.5px;
-      font-weight: 600;
-      letter-spacing: .2em;
-      text-transform: uppercase;
     }
 
     @media (max-width: 640px) {

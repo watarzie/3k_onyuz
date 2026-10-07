@@ -1,7 +1,8 @@
 <div class="page-title-area mb-4">
   <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
     <div class="page-heading-block">
-      <h2 class="fw-bold mb-1"><i class="ri-database-2-line me-2"></i>Grid Ürün Takibi</h2>
+      <span class="page-title-ikon" style="--ton: var(--k-purple)" aria-hidden="true"><i class="ri-database-2-line"></i></span>
+      <h2 class="fw-bold mb-1">Grid Ürün Takibi</h2>
       <div class="project-context-pill" [title]="projeBaslik()">
         <i class="ri-folder-info-line"></i>
         <span class="project-context-label">Aktif Proje</span>
@@ -36,7 +37,7 @@
               <i class="ri-truck-line me-2 text-primary"></i>Toplu Sevk
             </a></li>
             <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('gridKapandi')">
-              <i class="ri-lock-line me-2" style="color:#37474F"></i>Toplu Grid Kapandı
+              <i class="ri-lock-line me-2" style="color: var(--k-steel)"></i>Toplu Grid Kapandı
             </a></li>
             <li><a class="dropdown-item" (click)="showTopluIslemlerMenu.set(false); openTopluIslemModal('iptal')">
               <i class="ri-close-circle-line me-2 text-warning"></i>Toplu İptal

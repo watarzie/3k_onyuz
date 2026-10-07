@@ -1,23 +1,200 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-// Tanıtım, giriş ve çıkış sayfalarının başlık yazı tipi (klasik serif).
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&display=swap');
+// Tek yazı tipi ailesi (panel, tanıtım, giriş, çıkış): Sarabun — gövde 400, etiket 500, başlık 700, ince detay 200.
+// Dosyalar public/fonts/sarabun altında (latin + latin-ext); derleme ve çalışma zamanı Google Fonts'a bağlı değildir.
+@font-face {
+  font-family: 'Sarabun';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/sarabun/sarabun-400-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sarabun';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/sarabun/sarabun-400-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Sarabun';
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url('/fonts/sarabun/sarabun-200-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sarabun';
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url('/fonts/sarabun/sarabun-200-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Sarabun';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/fonts/sarabun/sarabun-300-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sarabun';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/fonts/sarabun/sarabun-300-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Sarabun';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/sarabun/sarabun-400-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sarabun';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/sarabun/sarabun-400-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Sarabun';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/sarabun/sarabun-500-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sarabun';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/sarabun/sarabun-500-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Sarabun';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/sarabun/sarabun-600-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sarabun';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/sarabun/sarabun-600-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Sarabun';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/sarabun/sarabun-700-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sarabun';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/sarabun/sarabun-700-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Sarabun';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/fonts/sarabun/sarabun-800-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sarabun';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/fonts/sarabun/sarabun-800-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
+// ===== "Atölye" teması =====
+// Panel, tanıtım sayfasının dilini (kâğıt zemin, mürekkep metin, çam yeşili eylem, ahşap vurgu, Sarabun tipografi)
+// veri-yoğun ekranlara uyarlar. Tanıtımdan farkı: zemin bir ton koyu (--k-paper) ki beyaz kartlar ayrışsın, kabuk koyu
+// orman mürekkebi (--k-shell) ve beyaz üstünde AA kontrastı geçen semantik palet (--k-success …).
+// Eski Trezo adları (--primaryColor …) korunur ama değerleri bu token'lara bağlanır; 30'dan fazla dosya onları kullanır.
 :root {
-  --fontFamily: "Inter", sans-serif;
-  --blackColor: #3A4252;
+  /* yüzeyler */
+  --k-paper: #f3f1ea;
+  --k-paper-2: #ebe7dc;
+  --k-hover: #f9f7f1;
+  --k-surface: #ffffff;
+  --k-line: #e8e4da;
+  --k-line-2: #d9d3c4;
+  /* metin */
+  --k-ink: #141c17;
+  --k-ink-2: #36423a;
+  --k-muted: #69736d;
+  --k-faint: #9aa39d;
+  /* marka: --k-green-bright ve --k-wood* beyaz üstünde metin olmaz (kontrast 2.6–2.8); yalnız şerit, nokta, zemin türetme */
+  --k-green: #2d5f47;
+  --k-green-2: #1f4535;
+  --k-green-bright: #7fa98f;
+  --k-green-soft: #edf3ef;
+  --k-wood: #d9a96f;
+  --k-wood-2: #c48f55;
+  --k-wood-3: #a06a36;
+  --k-wood-4: #7a4e25;
+  --k-wood-soft: #f6ead8;
+  /* semantik (hepsi beyaz üstünde AA) */
+  --k-success: #1f7a44;
+  --k-warning: #9a6b22;
+  --k-danger: #c2402f;
+  --k-info: #3b6d9a;
+  --k-purple: #6d4fa3;
+  --k-orange: #b4531f;
+  --k-steel: #4f6276;
+  /* koyu kabuk (sidebar) */
+  --k-shell: #0f1f18;
+  --k-shell-2: #16291f;
+  --k-shell-text: #9fb3a7;
+  --k-shell-text-strong: #e6ece8;
+  /* tipografi (Sarabun: gövde 400, başlık 700, -.01em), hareket, biçim */
+  --k-display: "Sarabun", "Inter", sans-serif;
+  --k-ease: cubic-bezier(.2, .7, .2, 1);
+  --k-radius: 12px;
+  --k-radius-sm: 8px;
+  --k-shadow-sm: 0 1px 2px rgba(20, 28, 23, .04), 0 6px 16px -8px rgba(20, 28, 23, .10);
+  --k-shadow-lg: 0 30px 70px -40px rgba(60, 42, 18, .28), 0 12px 28px -18px rgba(20, 28, 23, .14);
+  --k-focus: 0 0 0 3px color-mix(in srgb, var(--k-green) 16%, transparent);
+
+  /* eski adlar (Trezo) → yeni değerler */
+  --fontFamily: "Sarabun", "Inter", sans-serif;
+  --blackColor: var(--k-ink);
   --whiteColor: #ffffff;
-  --bodyColor: #64748B;
-  --borderColor: #ECEEF2;
+  --bodyColor: var(--k-muted);
+  --borderColor: var(--k-line);
   --transition: .5s;
   --fontSize: 14px;
-  --primaryColor: #605DFF;
-  --secondaryColor: #3584FC;
-  --successColor: #25B003;
-  --dangerColor: #FF4023;
-  --warningColor: #ffc107;
-  --infoColor: #0dcaf0;
-  --purpleColor: #AD63F6;
-  --orangeColor: #FD5812;
+  --primaryColor: var(--k-green);
+  --secondaryColor: var(--k-steel);
+  --successColor: var(--k-success);
+  --dangerColor: var(--k-danger);
+  --warningColor: var(--k-warning);
+  --infoColor: var(--k-info);
+  --purpleColor: var(--k-purple);
+  --orangeColor: var(--k-orange);
 }
 
 *,
@@ -37,8 +214,9 @@ body {
   margin: 0;
   padding: 0;
   color: var(--bodyColor);
-  background-color: #F6F7F9;
+  background-color: var(--k-paper);
   font-size: var(--fontSize);
+  -webkit-font-smoothing: antialiased;
   font-family: var(--fontFamily);
   width: 100%;
   max-width: 100%;
@@ -71,7 +249,10 @@ a {
 h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   color: var(--blackColor);
   margin-bottom: 10px;
+  font-family: var(--k-display);
   font-weight: 700;
+  letter-spacing: -.01em;
+  line-height: 1.25;
 }
 
 .page-heading-block {
@@ -85,26 +266,26 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   max-width: min(560px, 100%);
   margin: 2px 0 7px;
   padding: 7px 10px;
-  border: 1px solid #DBEAFE;
+  border: 1px solid color-mix(in srgb, var(--k-green) 22%, transparent);
   border-radius: 8px;
-  background: #F8FAFF;
-  color: #334155;
+  background: var(--k-green-soft);
+  color: var(--k-ink-2);
   font-size: 12px;
   line-height: 1.2;
 
   i {
     flex: 0 0 auto;
-    color: #2563EB;
+    color: var(--k-green);
     font-size: 16px;
   }
 }
 
 .project-context-label {
   flex: 0 0 auto;
-  color: #64748B;
+  color: var(--k-muted);
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0;
+  letter-spacing: .06em;
   text-transform: uppercase;
 }
 
@@ -113,7 +294,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #1E293B;
+  color: var(--k-ink);
   font-size: 13px;
 }
 
@@ -148,7 +329,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   white-space: nowrap;
   text-decoration: none;
   cursor: pointer;
-  transition: border-color .15s ease, background .15s ease, color .15s ease, box-shadow .15s ease;
+  transition: border-color .15s var(--k-ease), background .15s var(--k-ease), color .15s var(--k-ease), box-shadow .15s var(--k-ease);
 
   > i {
     font-size: 16px;
@@ -156,10 +337,11 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   }
   &:hover:not(:disabled),
   &:focus-visible {
-    border-color: color-mix(in srgb, var(--primaryColor) 35%, transparent);
-    color: var(--primaryColor);
-    box-shadow: 0 4px 12px -8px rgba(96, 93, 255, .55);
+    border-color: color-mix(in srgb, var(--k-green) 35%, transparent);
+    color: var(--k-green);
+    box-shadow: 0 4px 12px -8px rgba(45, 95, 71, .55);
   }
+  &:focus-visible { outline: 0; box-shadow: var(--k-focus); }
   &:disabled,
   &.disabled {
     opacity: .5;
@@ -168,18 +350,21 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   }
   &.dropdown-toggle::after {
     margin-left: 2px;
-    color: #94a3b8;
+    color: var(--k-faint);
   }
 
+  // Tanıtımdaki lp-btn--primary gibi: dolu çam yeşili, üstte ince ışık çizgisi, hover'da bir ton koyu.
   &--primary {
-    border-color: var(--primaryColor);
-    background: var(--primaryColor);
+    border-color: var(--k-green);
+    background: var(--k-green);
     color: #fff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18);
     &:hover:not(:disabled),
     &:focus-visible {
-      border-color: var(--primaryColor);
-      background: color-mix(in srgb, var(--primaryColor) 88%, #000);
+      border-color: var(--k-green-2);
+      background: var(--k-green-2);
       color: #fff;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 10px 22px -14px rgba(45, 95, 71, .8);
     }
     &.dropdown-toggle::after { color: rgba(255, 255, 255, .8); }
   }
@@ -199,17 +384,17 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     > i { font-size: 15px; }
   }
   &--danger-hover:hover:not(:disabled) {
-    border-color: #ffd5ce;
-    background: #fff1ef;
-    color: #d92d20;
+    border-color: color-mix(in srgb, var(--k-danger) 30%, transparent);
+    background: color-mix(in srgb, var(--k-danger) 8%, #fff);
+    color: var(--k-danger);
   }
 }
-.tz-ico-primary { color: var(--primaryColor); }
-.tz-ico-danger { color: #e5372a; }
-.tz-ico-success { color: #1e8a3a; }
-.tz-ico-warning { color: #e8890c; }
-.tz-ico-info { color: #0e8fb5; }
-.tz-ico-dark { color: #334155; }
+.tz-ico-primary { color: var(--k-green); }
+.tz-ico-danger { color: var(--k-danger); }
+.tz-ico-success { color: var(--k-success); }
+.tz-ico-warning { color: var(--k-warning); }
+.tz-ico-info { color: var(--k-info); }
+.tz-ico-dark { color: var(--k-ink-2); }
 
 // Yükleniyor ikonu (ör. kaydederken ri-loader-4-line).
 .tz-spin {
@@ -226,15 +411,15 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   flex-wrap: wrap;
   gap: 4px;
   padding: 3px 3px 3px 10px;
-  border: 1px dashed #d5dbe5;
+  border: 1px dashed var(--k-line-2);
   border-radius: 12px;
-  background: #f8fafc;
-  transition: border-color .15s ease, background .15s ease;
+  background: var(--k-paper);
+  transition: border-color .15s var(--k-ease), background .15s var(--k-ease);
 
   &.has-selection {
     border-style: solid;
-    border-color: color-mix(in srgb, var(--primaryColor) 30%, transparent);
-    background: color-mix(in srgb, var(--primaryColor) 5%, #fff);
+    border-color: color-mix(in srgb, var(--k-green) 30%, transparent);
+    background: color-mix(in srgb, var(--k-green) 6%, #fff);
   }
   .tz-btn {
     min-height: 32px;
@@ -260,12 +445,13 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   height: 22px;
   padding: 0 6px;
   border-radius: 999px;
-  background: #e2e8f0;
-  color: #475569;
+  background: var(--k-paper-2);
+  color: var(--k-ink-2);
   font-size: 11.5px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
   .has-selection & {
-    background: var(--primaryColor);
+    background: var(--k-green);
     color: #fff;
   }
 }
@@ -278,12 +464,12 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   position: fixed;
   inset: 0;
   z-index: 1050;
-  background: rgba(15, 23, 42, .48);
+  background: rgba(20, 28, 23, .5);
   backdrop-filter: blur(3px);
-  animation: tz-modal-fade .18s ease;
+  animation: tz-modal-fade .18s var(--k-ease);
 }
 .tz-modal {
-  --tz-ton: var(--primaryColor);
+  --tz-ton: var(--k-green);
   position: fixed;
   top: 50%;
   left: 50%;
@@ -295,17 +481,17 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   overflow: hidden;
   border-radius: 18px;
   background: var(--whiteColor);
-  box-shadow: 0 30px 80px -20px rgba(15, 23, 42, .45), 0 0 0 1px rgba(15, 23, 42, .04);
+  box-shadow: var(--k-shadow-lg), 0 0 0 1px rgba(20, 28, 23, .05);
   transform: translate(-50%, -50%);
-  animation: tz-modal-in .22s cubic-bezier(.2, .7, .2, 1);
+  animation: tz-modal-in .22s var(--k-ease);
 
   &--sm { width: min(420px, calc(100vw - 32px)); }
   &--lg { width: min(640px, calc(100vw - 32px)); }
   &--xl { width: min(1080px, calc(100vw - 32px)); }
-  &[data-ton='success'] { --tz-ton: #1e9a3a; }
-  &[data-ton='info'] { --tz-ton: #0e8fb5; }
-  &[data-ton='warning'] { --tz-ton: #e8890c; }
-  &[data-ton='danger'] { --tz-ton: #e5372a; }
+  &[data-ton='success'] { --tz-ton: var(--k-success); }
+  &[data-ton='info'] { --tz-ton: var(--k-info); }
+  &[data-ton='warning'] { --tz-ton: var(--k-warning); }
+  &[data-ton='danger'] { --tz-ton: var(--k-danger); }
 }
 .tz-modal__header {
   display: flex;
@@ -352,11 +538,11 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   border: 0;
   border-radius: 9px;
   background: transparent;
-  color: #94a3b8;
+  color: var(--k-faint);
   font-size: 19px;
   cursor: pointer;
   transition: background .15s ease, color .15s ease;
-  &:hover { background: #f1f5f9; color: #334155; }
+  &:hover { background: var(--k-paper); color: var(--k-ink-2); }
 }
 .tz-modal__body {
   padding: 22px 24px;
@@ -369,7 +555,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   gap: 10px;
   padding: 16px 24px;
   border-top: 1px solid var(--borderColor);
-  background: #fafbfc;
+  background: var(--k-hover);
   .tz-btn { min-height: 42px; min-width: 110px; }
 }
 
@@ -381,12 +567,12 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   margin: 0;
   > span,
   > label {
-    color: #475569;
+    color: var(--k-ink-2);
     font-size: 12.5px;
     font-weight: 600;
-    b { color: #e5372a; font-weight: 700; }
+    b { color: var(--k-danger); font-weight: 700; }
   }
-  small { color: #94a3b8; font-size: 11.5px; }
+  small { color: var(--k-faint); font-size: 11.5px; }
   .form-control,
   .form-select {
     min-height: 42px;
@@ -396,12 +582,12 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     color: var(--blackColor);
     font-size: 13.5px;
     transition: border-color .15s ease, box-shadow .15s ease;
-    &:hover { border-color: #cbd5e1; }
+    &:hover { border-color: var(--k-line-2); }
     &:focus {
       border-color: var(--tz-ton, var(--primaryColor));
       box-shadow: 0 0 0 3px color-mix(in srgb, var(--tz-ton, var(--primaryColor)) 14%, transparent);
     }
-    &::placeholder { color: #a0abbb; }
+    &::placeholder { color: var(--k-faint); }
   }
   textarea.form-control { min-height: 84px; resize: vertical; }
 }
@@ -426,7 +612,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     top: 50%;
     left: 12px;
     transform: translateY(-50%);
-    color: #94a3b8;
+    color: var(--k-faint);
     font-size: 16px;
     pointer-events: none;
   }
@@ -440,7 +626,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   padding: 4px;
   border: 1px solid var(--borderColor);
   border-radius: 11px;
-  background: #f8fafc;
+  background: var(--k-paper);
   button {
     display: inline-flex;
     align-items: center;
@@ -457,8 +643,8 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     &:hover { color: var(--blackColor); }
     &.active {
       background: #fff;
-      color: var(--primaryColor);
-      box-shadow: 0 2px 6px rgba(23, 43, 77, .08);
+      color: var(--k-green);
+      box-shadow: var(--k-shadow-sm);
     }
   }
 }
@@ -473,7 +659,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     top: 50%;
     right: 12px;
     transform: translateY(-50%);
-    color: #94a3b8;
+    color: var(--k-faint);
     font-size: 12px;
     font-style: normal;
     font-weight: 600;
@@ -491,7 +677,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   font-size: 13px;
   font-weight: 700;
   i { color: var(--tz-ton, var(--primaryColor)); font-size: 16px; }
-  small { color: #94a3b8; font-size: 11.5px; font-weight: 500; }
+  small { color: var(--k-faint); font-size: 11.5px; font-weight: 500; }
   &::after {
     content: '';
     flex: 1 1 auto;
@@ -520,22 +706,26 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     background: #fff;
     color: var(--tz-ton);
     font-size: 17px;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, .06);
+    box-shadow: 0 1px 2px rgba(20, 28, 23, .06);
   }
   span { display: block; color: var(--bodyColor); font-size: 11.5px; font-weight: 600; }
   strong { display: block; color: var(--blackColor); font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
 }
-.tz-summary[data-ton='success'] { --tz-ton: #1e9a3a; }
-.tz-summary[data-ton='warning'] { --tz-ton: #e8890c; }
+.tz-summary[data-ton='success'] { --tz-ton: var(--k-success); }
+.tz-summary[data-ton='warning'] { --tz-ton: var(--k-warning); }
+.tz-summary[data-ton='info'] { --tz-ton: var(--k-info); }
+.tz-summary[data-ton='danger'] { --tz-ton: var(--k-danger); }
+// Bilgi notu: yumuşak zemin/rozet kalıbı (zemin %10, kenar %22, metin %85 ton).
 .tz-note {
   display: flex;
   align-items: flex-start;
   gap: 8px;
   margin-top: 16px;
   padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--k-info) 22%, transparent);
   border-radius: 10px;
-  background: #f1f6ff;
-  color: #1d4ed8;
+  background: color-mix(in srgb, var(--k-info) 10%, #fff);
+  color: color-mix(in srgb, var(--k-info) 85%, #000);
   font-size: 12.5px;
   line-height: 1.5;
   i { font-size: 15px; }
@@ -554,22 +744,24 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
 @media (prefers-reduced-motion: reduce) {
   .tz-modal,
   .tz-modal-backdrop { animation: none; }
+  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
 
-// Trezo card base
+// Kart: beyaz yüzey kâğıt zeminden 1px sıcak çizgiyle ayrılır. Çizgi box-shadow ile çizilir; şablonlardaki
+// Bootstrap `border-0` yardımcısı (border: 0 !important) onu silemez, gölge yalnız yüzen öğelerde ve hover'da kalır.
 .trezo-card {
   background: var(--whiteColor);
-  border-radius: 10px;
+  border-radius: var(--k-radius);
   border: none;
-  box-shadow: none;
+  box-shadow: 0 0 0 1px var(--k-line);
   min-width: 0;
 }
 
 // Custom scrollbar
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+::-webkit-scrollbar-thumb { background: var(--k-line-2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--k-faint); }
 
 // Table
 .table { margin-bottom: 0; }
@@ -582,21 +774,126 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     min-width: max-content;
   }
 }
+// Tablo standardı: kâğıt tonlu, küçük büyük harfli başlık; sıcak hover; ilk sütun mürekkep. Ekranların kendi tablo
+// stilleri daha özgül olduğundan bu kurallar ancak onlar sessiz kaldığında devreye girer.
+.table {
+  --bs-table-color: var(--k-ink-2);
+  --bs-table-bg: transparent;
+  --bs-table-border-color: var(--k-line);
+  --bs-table-hover-bg: var(--k-hover);
+  --bs-table-hover-color: var(--k-ink);
+  --bs-table-striped-bg: var(--k-hover);
+  > thead > tr > th {
+    background: var(--k-paper-2);
+    color: var(--k-muted);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    border-bottom-color: var(--k-line);
+  }
+  > tbody > tr > td { border-color: var(--k-line); font-variant-numeric: tabular-nums; }
+  > tbody > tr > td:first-child { color: var(--k-ink); font-weight: 600; }
+}
 
 // Utilities
 .fw-semibold { font-weight: 600; }
 .text-purple { color: var(--purpleColor); }
+// Sayısal hücreler: eşit genişlikli rakamlar; para/miktar sağa yaslı.
+.k-num { font-variant-numeric: tabular-nums; }
+td.k-num, th.k-num { text-align: right; }
+// Bölüm etiketi (tanıtımdaki lp-kicker eşi): önünde kısa çizgi, aralıklı küçük büyük harf.
+.k-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--k-green-2);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  &::before {
+    content: '';
+    width: 18px;
+    height: 1.5px;
+    background: var(--k-wood-2);
+  }
+}
+// Boş durum: halkalı ikon + başlık + tek cümle.
+.k-empty {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 36px 20px;
+  text-align: center;
+  color: var(--k-muted);
+  font-size: 13px;
+  > i {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    margin-bottom: 6px;
+    border-radius: 50%;
+    background: var(--k-green-soft);
+    color: var(--k-green);
+    font-size: 26px;
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--k-green) 5%, #fff);
+  }
+  > strong { color: var(--k-ink); font-size: 14px; font-weight: 600; }
+}
 
 // Bootstrap overrides
 .btn { font-size: 13px; border-radius: 8px; }
-.form-control { font-size: 14px; border-radius: 8px; }
-.form-control:focus { box-shadow: 0 0 0 3px rgba(96,93,255,.15); border-color: var(--primaryColor); }
+.form-control, .form-select { font-size: 14px; border-radius: 8px; border-color: var(--k-line); color: var(--k-ink); }
+.form-control:focus, .form-select:focus { box-shadow: var(--k-focus); border-color: var(--k-green); }
+.form-check-input:checked { background-color: var(--k-green); border-color: var(--k-green); }
+.form-check-input:focus { box-shadow: var(--k-focus); border-color: var(--k-green); }
+.text-primary { color: var(--k-green) !important; }
+.bg-primary { background-color: var(--k-green) !important; }
+.btn-primary { --bs-btn-bg: var(--k-green); --bs-btn-border-color: var(--k-green); --bs-btn-hover-bg: var(--k-green-2); --bs-btn-hover-border-color: var(--k-green-2); --bs-btn-active-bg: var(--k-green-2); --bs-btn-active-border-color: var(--k-green-2); }
+.btn-outline-primary { --bs-btn-color: var(--k-green); --bs-btn-border-color: var(--k-green); --bs-btn-hover-bg: var(--k-green); --bs-btn-hover-border-color: var(--k-green); --bs-btn-active-bg: var(--k-green-2); --bs-btn-active-border-color: var(--k-green-2); }
+.dropdown-menu { --bs-dropdown-border-color: var(--k-line); --bs-dropdown-link-hover-bg: var(--k-hover); --bs-dropdown-link-active-bg: var(--k-green); box-shadow: var(--k-shadow-lg); }
+.pagination { --bs-pagination-active-bg: var(--k-green); --bs-pagination-active-border-color: var(--k-green); --bs-pagination-color: var(--k-ink-2); --bs-pagination-border-color: var(--k-line); --bs-pagination-hover-bg: var(--k-hover); --bs-pagination-hover-color: var(--k-green); --bs-pagination-focus-box-shadow: var(--k-focus); }
+.spinner-border.text-primary { color: var(--k-green) !important; }
 
+// Sayfa amblemi: başlığın solunda modül rengiyle tonlanmış kare (proje listesindeki pl-hero__ikon ile aynı dil).
+// Şablonda `--ton` ile modül rengi verilir; float olduğu için başlık ve kırıntı yolu yanına akar, yerleşim değişmez.
+.page-title-ikon {
+  --ton: var(--k-green);
+  float: left;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 14px 0 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--ton), color-mix(in srgb, var(--ton) 62%, #fff));
+  box-shadow: 0 12px 24px -12px var(--ton), inset 0 1px 0 rgba(255, 255, 255, .25);
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+  > i { line-height: 1; }
+}
+.page-title-area .page-heading-block,
+.page-title-area .page-title-ikon + h2 { min-height: 48px; }
+@media (max-width: 575.98px) {
+  .page-title-ikon { width: 40px; height: 40px; margin-right: 12px; border-radius: 12px; font-size: 19px; }
+}
+
+// Sayfa başlığı: Sarabun 700, sıkı harf aralığı (örnek sitedeki h2 gibi); KPI sayıları ve sidebar kelime işareti aynı aileyi kullanır.
 .page-title-area {
   h2 {
-    font-size: clamp(18px, 2vw, 22px);
-    line-height: 1.25;
+    font-family: var(--k-display);
+    font-size: clamp(22px, 2vw, 27px);
+    font-weight: 700;
+    letter-spacing: -.01em;
+    line-height: 1.22;
+    color: var(--k-ink);
   }
+  h2 + p,
+  .page-heading-block > p,
+  .text-muted { color: var(--k-muted); }
 
   > .d-flex {
     min-width: 0;

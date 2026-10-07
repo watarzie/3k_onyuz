@@ -2,6 +2,7 @@
   <!-- ===== Başlık ===== -->
   <header class="depo-head">
     <div>
+      <span class="page-title-ikon" style="--ton: var(--k-steel)" aria-hidden="true"><i class="ri-building-2-line"></i></span>
       <h2>{{ 'MENU.DEPO_DURUMU' | translate }}</h2>
       <app-breadcrumb [items]="breadcrumb" />
     </div>
@@ -100,7 +101,7 @@
         <div class="donut-wrap">
           <div class="donut">
             <svg viewBox="0 0 42 42" aria-hidden="true">
-              <circle cx="21" cy="21" r="15.9155" fill="transparent" stroke="#eef2f7" stroke-width="5" />
+              <circle cx="21" cy="21" r="15.9155" fill="transparent" style="stroke: var(--k-line)" stroke-width="5" />
               @for (d of donutDilimleri(); track d.id) {
                 <circle class="donut__seg" cx="21" cy="21" r="15.9155" fill="transparent" stroke-width="5"
                         [attr.stroke]="d.renk" [attr.stroke-dasharray]="d.dash" [attr.stroke-dashoffset]="d.offset" />
@@ -291,7 +292,7 @@
                                   <td><app-status-badge [status]="s.durumMetni" [label]="s.durumMetni" /></td>
                                   <td>
                                     @if (s.depoLokasyonMetni) {
-                                      <span class="loc-chip" [style.--renk]="depoMetniRengi(s.depoLokasyonMetni) ?? '#0ea5e9'"><i class="ri-map-pin-2-fill"></i>{{ s.depoLokasyonMetni }}</span>
+                                      <span class="loc-chip" [style.--renk]="depoMetniRengi(s.depoLokasyonMetni) ?? 'var(--k-info)'"><i class="ri-map-pin-2-fill"></i>{{ s.depoLokasyonMetni }}</span>
                                     } @else {
                                       <span class="loc-chip is-unknown"><i class="ri-map-pin-line"></i>Belirsiz</span>
                                     }

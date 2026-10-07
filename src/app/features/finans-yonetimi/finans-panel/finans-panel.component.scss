@@ -1,12 +1,12 @@
 // Finans kontrol paneli — Trezo finans panosu düzeni: üstte KPI kartları, solda grafik ve tablolar,
 // sağda durum kartları. Kartlar açık gri zemin üstünde beyaz, ince kenarlı ve gölgesizdir.
 .finance-dashboard {
-  --v2-primary: var(--primaryColor, #605dff);
+  --v2-primary: var(--primaryColor, var(--k-green));
   --v2-soft: color-mix(in srgb, var(--v2-primary) 7%, var(--whiteColor, #fff));
-  --v2-muted: var(--bodyColor, #64748b);
-  --dash-bg: #f6f7f9;
-  --dash-border: var(--borderColor, #eceef2);
-  --dash-title: var(--blackColor, #3a4252);
+  --v2-muted: var(--bodyColor, var(--k-muted));
+  --dash-bg: var(--k-paper);
+  --dash-border: var(--borderColor, var(--k-line));
+  --dash-title: var(--blackColor, var(--k-ink-2));
   --dash-radius: 12px;
   padding: 24px;
   background: var(--dash-bg);
@@ -130,24 +130,24 @@
   border-radius: 50%;
   font-size: 24px;
   &[data-ton='primary'] {
-    color: #605dff;
-    background: #ecf0ff;
+    color: var(--k-green);
+    background: var(--k-green-soft);
   }
   &[data-ton='info'] {
-    color: #3584fc;
-    background: #e9f3ff;
+    color: var(--k-info);
+    background: color-mix(in srgb, var(--k-info) 10%, #fff);
   }
   &[data-ton='success'] {
-    color: #25b003;
-    background: #eeffe5;
+    color: var(--k-success);
+    background: color-mix(in srgb, var(--k-success) 10%, #fff);
   }
   &[data-ton='warning'] {
-    color: #fd5812;
-    background: #fff5ed;
+    color: var(--k-orange);
+    background: color-mix(in srgb, var(--k-orange) 10%, #fff);
   }
   &[data-ton='danger'] {
-    color: #ff4023;
-    background: #ffe8e4;
+    color: var(--k-danger);
+    background: color-mix(in srgb, var(--k-danger) 10%, #fff);
   }
 }
 .kpi-badges {
@@ -159,32 +159,32 @@
   display: inline-flex;
   align-items: center;
   padding: 2px 9px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--k-line);
   border-radius: 999px;
-  background: #f8fafc;
-  color: #475569;
+  background: var(--k-paper);
+  color: var(--k-ink-2);
   font-size: 11.5px;
   font-weight: 600;
   white-space: nowrap;
   &[data-ton='success'] {
-    border-color: #b7f3a4;
-    background: #eeffe5;
-    color: #1e8308;
+    border-color: color-mix(in srgb, var(--k-success) 45%, #fff);
+    background: color-mix(in srgb, var(--k-success) 10%, #fff);
+    color: var(--k-success);
   }
   &[data-ton='warning'] {
-    border-color: #ffdcbf;
-    background: #fff5ed;
-    color: #c2410c;
+    border-color: color-mix(in srgb, var(--k-orange) 22%, #fff);
+    background: color-mix(in srgb, var(--k-orange) 10%, #fff);
+    color: var(--k-orange);
   }
   &[data-ton='danger'] {
-    border-color: #ffcec6;
-    background: #ffe8e4;
-    color: #d92d20;
+    border-color: color-mix(in srgb, var(--k-danger) 22%, #fff);
+    background: color-mix(in srgb, var(--k-danger) 10%, #fff);
+    color: var(--k-danger);
   }
   &[data-ton='info'] {
-    border-color: #c7defe;
-    background: #e9f3ff;
-    color: #1d63c9;
+    border-color: color-mix(in srgb, var(--k-info) 22%, #fff);
+    background: color-mix(in srgb, var(--k-info) 10%, #fff);
+    color: var(--k-info);
   }
 }
 .kpi-skeleton {
@@ -194,7 +194,7 @@
     height: 12px;
     width: 45%;
     border-radius: 999px;
-    background: linear-gradient(90deg, #eef1f5, #f8f9fb, #eef1f5);
+    background: linear-gradient(90deg, var(--k-line), var(--k-paper), var(--k-line));
     background-size: 220% 100%;
     animation: dash-shimmer 1.2s ease-in-out infinite;
   }
@@ -262,7 +262,7 @@
   gap: 10px;
 }
 .dash-hint {
-  color: #94a3b8;
+  color: var(--k-faint);
   font-size: 17px;
   cursor: help;
 }
@@ -292,7 +292,7 @@
   align-items: center;
   gap: 6px;
   padding: 28px 12px;
-  color: #94a3b8;
+  color: var(--k-faint);
   text-align: center;
   i {
     font-size: 26px;
@@ -305,10 +305,10 @@
 .dash-empty-ok {
   padding: 18px 12px;
   i {
-    color: #25b003;
+    color: var(--k-success);
   }
   p {
-    color: #475569;
+    color: var(--k-ink-2);
     font-weight: 600;
   }
 }
@@ -351,10 +351,10 @@
   gap: 7px;
   min-height: 28px;
   padding: 0 11px 0 9px;
-  border: 1px solid var(--borderColor, #e5e7eb);
+  border: 1px solid var(--borderColor, var(--k-line));
   border-radius: 999px;
   background: #fff;
-  color: #334155;
+  color: var(--k-ink-2);
   font-size: 12px;
   font-weight: 600;
   line-height: 1;
@@ -369,11 +369,11 @@
   }
   &.is-off {
     border-style: dashed;
-    background: #f8fafc;
-    color: #94a3b8;
+    background: var(--k-paper);
+    color: var(--k-faint);
     .chart-legend__dot {
       background: transparent;
-      box-shadow: inset 0 0 0 2px #cbd5e1;
+      box-shadow: inset 0 0 0 2px var(--k-line-2);
     }
   }
 }
@@ -397,7 +397,7 @@
   font-size: 13px;
   th {
     padding: 10px 14px;
-    background: #f8fafc;
+    background: var(--k-paper);
     color: var(--v2-muted);
     font-size: 11.5px;
     font-weight: 600;
@@ -423,7 +423,7 @@
     small {
       display: block;
       margin-top: 3px;
-      color: #94a3b8;
+      color: var(--k-faint);
       font-size: 11px;
     }
   }
@@ -431,7 +431,7 @@
     border-bottom: 0;
   }
   .is-negative {
-    color: #d92d20;
+    color: var(--k-danger);
   }
 }
 .currency-chip {
@@ -448,13 +448,13 @@
   display: inline-flex;
   padding: 2px 8px;
   border-radius: 999px;
-  background: #eeffe5;
-  color: #1e8308;
+  background: color-mix(in srgb, var(--k-success) 10%, #fff);
+  color: var(--k-success);
   font-size: 12px;
   font-weight: 600;
   &.is-negative {
-    background: #ffe8e4;
-    color: #d92d20;
+    background: color-mix(in srgb, var(--k-danger) 10%, #fff);
+    color: var(--k-danger);
   }
 }
 
@@ -509,18 +509,18 @@
     overflow-wrap: anywhere;
   }
   &.is-danger {
-    border-color: #ffcec6;
-    background: #fff6f4;
+    border-color: color-mix(in srgb, var(--k-danger) 22%, #fff);
+    background: color-mix(in srgb, var(--k-danger) 10%, #fff);
     dd {
-      color: #d92d20;
+      color: var(--k-danger);
     }
   }
   &.is-warning {
-    border-color: #ffe2c7;
-    background: #fffaf5;
+    border-color: color-mix(in srgb, var(--k-orange) 22%, #fff);
+    background: color-mix(in srgb, var(--k-orange) 10%, #fff);
   }
   &.is-success dd {
-    color: #1e8308;
+    color: var(--k-success);
   }
 }
 
@@ -532,7 +532,7 @@
   margin-bottom: 18px;
   overflow: hidden;
   border-radius: 999px;
-  background: #eef1f5;
+  background: var(--k-line);
   span {
     min-width: 4px;
     border-radius: 999px;
@@ -563,7 +563,7 @@
     font-variant-numeric: tabular-nums;
   }
   small {
-    color: #94a3b8;
+    color: var(--k-faint);
     font-size: 11.5px;
     text-align: right;
   }
@@ -575,7 +575,7 @@
 }
 .legend-label {
   overflow: hidden;
-  color: #475569;
+  color: var(--k-ink-2);
   font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -598,7 +598,7 @@
     font-weight: 700;
   }
   small {
-    color: #94a3b8;
+    color: var(--k-faint);
     font-size: 11.5px;
   }
 }
@@ -608,20 +608,20 @@
   height: 8px;
   overflow: hidden;
   border-radius: 999px;
-  background: #eef1f5;
+  background: var(--k-line);
   span {
     min-width: 4px;
     border-radius: 999px;
   }
 }
 [data-ton='none'] {
-  --ton: #cbd5e1;
+  --ton: var(--k-line-2);
 }
 [data-ton='partial'] {
-  --ton: #fd9b45;
+  --ton: var(--k-orange);
 }
 [data-ton='full'] {
-  --ton: #25b003;
+  --ton: var(--k-success);
 }
 .coverage-bar span {
   background: var(--ton);
@@ -659,7 +659,7 @@
 .aging-label {
   display: block;
   margin-bottom: 8px;
-  color: #475569;
+  color: var(--k-ink-2);
   font-size: 12.5px;
   font-weight: 600;
 }
@@ -681,7 +681,7 @@
   text-align: left;
   transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
   span {
-    color: #94a3b8;
+    color: var(--k-faint);
     font-size: 11px;
     font-weight: 600;
   }
@@ -697,16 +697,16 @@
     transform: translateY(-1px);
   }
   &.is-old {
-    border-color: #ffcec6;
-    background: #fff6f4;
+    border-color: color-mix(in srgb, var(--k-danger) 22%, #fff);
+    background: color-mix(in srgb, var(--k-danger) 10%, #fff);
     strong {
-      color: #d92d20;
+      color: var(--k-danger);
     }
   }
   &.is-empty {
-    background: #fafbfc;
+    background: var(--k-hover);
     strong {
-      color: #cbd5e1;
+      color: var(--k-line-2);
     }
   }
   &:disabled {

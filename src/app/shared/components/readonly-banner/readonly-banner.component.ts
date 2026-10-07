@@ -26,11 +26,11 @@ import { PermissionService } from '../../../core/services/permission.service';
       gap: 6px;
       padding: 6px 16px;
       border-radius: 6px;
-      background: #FFF3E0;
-      color: #E65100;
+      background: color-mix(in srgb, var(--k-orange) 10%, #fff);
+      color: var(--k-orange);
       font-size: 13px;
       font-weight: 600;
-      border: 1px solid #FFE0B2;
+      border: 1px solid color-mix(in srgb, var(--k-orange) 22%, #fff);
       i { font-size: 16px; }
     }
   `],

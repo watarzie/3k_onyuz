@@ -2,7 +2,7 @@
 
 // Grid ekranı ortak iş listesi tasarımını kullanır; yalnız kimlik rengi turuncudur.
 .grid-worklist-page {
-  --ton: #e8590c;
+  --ton: var(--k-orange);
 }
 
 .project-type-pill {

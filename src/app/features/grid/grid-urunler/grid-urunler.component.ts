@@ -1,4 +1,5 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy, ChangeDetectionStrategy, WritableSignal, HostListener } from '@angular/core';
+import { GRAFIK_SEMANTIK, GRAFIK_TONLAR } from '../../../core/constants/grafik-renkleri';
 import { ActivatedRoute } from '@angular/router';
 import { DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -37,19 +38,19 @@ interface AmbarTalepItem {
 interface DurumSecenegi { id: number; value: string; label: string; color: string; bgClass: string; }
 
 const GRID_DURUMLARI: DurumSecenegi[] = [
-  { id: GridDurum.TamGeldi, value: 'Tam Geldi', label: 'TAM GELDİ', color: '#25B003', bgClass: 'row-tam-geldi' },
-  { id: GridDurum.EksikGeldi, value: 'Eksik Geldi', label: 'EKSİK GELDİ', color: '#FD5812', bgClass: 'row-eksik-geldi' },
-  { id: GridDurum.Gelmedi, value: 'Gelmedi', label: 'GELMEDİ', color: '#FF4023', bgClass: 'row-gelmedi' },
-  { id: GridDurum.TrafoSevk, value: 'Trafo Sevk', label: 'TRAFO SEVK', color: '#00BCD4', bgClass: 'row-trafo-sevk' },
-  { id: GridDurum.Iptal, value: 'İptal', label: 'İPTAL', color: '#FFB200', bgClass: 'row-iptal' },
-  { id: GridDurum.GridKapandi, value: 'Grid Kapandı', label: 'GRİD KAPANDI', color: '#37474F', bgClass: 'row-grid-kapandi' },
+  { id: GridDurum.TamGeldi, value: 'Tam Geldi', label: 'TAM GELDİ', color: GRAFIK_SEMANTIK.basari, bgClass: 'row-tam-geldi' },
+  { id: GridDurum.EksikGeldi, value: 'Eksik Geldi', label: 'EKSİK GELDİ', color: GRAFIK_TONLAR.turuncu, bgClass: 'row-eksik-geldi' },
+  { id: GridDurum.Gelmedi, value: 'Gelmedi', label: 'GELMEDİ', color: GRAFIK_SEMANTIK.hata, bgClass: 'row-gelmedi' },
+  { id: GridDurum.TrafoSevk, value: 'Trafo Sevk', label: 'TRAFO SEVK', color: GRAFIK_SEMANTIK.bilgi, bgClass: 'row-trafo-sevk' },
+  { id: GridDurum.Iptal, value: 'İptal', label: 'İPTAL', color: GRAFIK_SEMANTIK.uyari, bgClass: 'row-iptal' },
+  { id: GridDurum.GridKapandi, value: 'Grid Kapandı', label: 'GRİD KAPANDI', color: GRAFIK_TONLAR.celik, bgClass: 'row-grid-kapandi' },
 ];
 
 const SEVK_DURUMLARI: DurumSecenegi[] = [
-  { id: GridSevkDurum.SevkEdildi, value: 'Sevk Edildi', label: 'SEVK EDİLDİ', color: '#25B003', bgClass: '' },
-  { id: GridSevkDurum.Bekliyor, value: 'Bekliyor', label: 'BEKLİYOR', color: '#FD5812', bgClass: '' },
-  { id: GridSevkDurum.SevkEdilmedi, value: 'Sevk Edilmedi', label: 'SEVK EDİLMEDİ', color: '#FF4023', bgClass: '' },
-  { id: GridSevkDurum.YenidenSevkGerekli, value: 'Yeniden Sevk Gerekli', label: 'YENİDEN SEVK GEREKLİ', color: '#D97706', bgClass: '' },
+  { id: GridSevkDurum.SevkEdildi, value: 'Sevk Edildi', label: 'SEVK EDİLDİ', color: GRAFIK_SEMANTIK.basari, bgClass: '' },
+  { id: GridSevkDurum.Bekliyor, value: 'Bekliyor', label: 'BEKLİYOR', color: GRAFIK_TONLAR.turuncu, bgClass: '' },
+  { id: GridSevkDurum.SevkEdilmedi, value: 'Sevk Edilmedi', label: 'SEVK EDİLMEDİ', color: GRAFIK_SEMANTIK.hata, bgClass: '' },
+  { id: GridSevkDurum.YenidenSevkGerekli, value: 'Yeniden Sevk Gerekli', label: 'YENİDEN SEVK GEREKLİ', color: GRAFIK_SEMANTIK.uyari, bgClass: '' },
 ];
 
 @Component({
@@ -611,27 +612,27 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
 
   getDurumColor(value: string): string {
-    return GRID_DURUMLARI.find(d => d.value === value)?.color ?? '#64748B';
+    return GRID_DURUMLARI.find(d => d.value === value)?.color ?? GRAFIK_SEMANTIK.notr;
   }
 
   getSevkDurumColor(value: string): string {
-    return SEVK_DURUMLARI.find(d => d.value === value)?.color ?? '#64748B';
+    return SEVK_DURUMLARI.find(d => d.value === value)?.color ?? GRAFIK_SEMANTIK.notr;
   }
 
   // 3K Karşılama Tipi Renkleri
   getUckDurumColor(value: string): string {
     const KARSILAMA_RENKLERI: Record<string, string> = {
-      'Sevk Adeti Tam Geldi': '#25B003',
-      'Sevk Adeti Eksik Geldi': '#FD5812',
-      'Projeden Karşılandı': '#3584FC',
-      'Stoktan Karşılandı': '#9C27B0',
-      'Tedarikçiden Geldi': '#1B7D3A',
-      'Gelmedi': '#FF4023',
-      'Geri Gönderildi': '#D32F2F',
-      'Hatalı Ürün': '#E65100',
-      'Bekliyor': '#64748B',
+      'Sevk Adeti Tam Geldi': GRAFIK_SEMANTIK.basari,
+      'Sevk Adeti Eksik Geldi': GRAFIK_TONLAR.turuncu,
+      'Projeden Karşılandı': GRAFIK_SEMANTIK.bilgi,
+      'Stoktan Karşılandı': GRAFIK_TONLAR.mor,
+      'Tedarikçiden Geldi': GRAFIK_TONLAR.yesilKoyu,
+      'Gelmedi': GRAFIK_SEMANTIK.hata,
+      'Geri Gönderildi': GRAFIK_SEMANTIK.hata,
+      'Hatalı Ürün': GRAFIK_TONLAR.turuncu,
+      'Bekliyor': GRAFIK_SEMANTIK.notr,
     };
-    return KARSILAMA_RENKLERI[value] || '#64748B';
+    return KARSILAMA_RENKLERI[value] || GRAFIK_SEMANTIK.notr;
   }
 
   // ===== Side Panel — Durum Güncelle =====
@@ -1372,21 +1373,21 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   /** Kalite durumu rengi */
   getKaliteDurumColor(value?: string): string {
-    if (!value) return '#94a3b8';
-    return value === 'Onaylandı' ? '#25B003' : '#E65100';
+    if (!value) return GRAFIK_TONLAR.soluk;
+    return value === 'Onaylandı' ? GRAFIK_SEMANTIK.basari : GRAFIK_TONLAR.turuncu;
   }
 
   /** Süreç durumu rengi */
   getSurecDurumColor(value?: string): string {
     const renkler: Record<string, string> = {
-      'Ambar': '#607D8B',
-      'İmalat': '#3584FC',
-      'Tedarik': '#9C27B0',
-      'Tedarik 3K Teslim': '#1B7D3A',
-      'Siparişte': '#D97706',
-      'Tamamlandı': '#25B003',
+      'Ambar': GRAFIK_TONLAR.celik,
+      'İmalat': GRAFIK_SEMANTIK.bilgi,
+      'Tedarik': GRAFIK_TONLAR.mor,
+      'Tedarik 3K Teslim': GRAFIK_TONLAR.yesilKoyu,
+      'Siparişte': GRAFIK_SEMANTIK.uyari,
+      'Tamamlandı': GRAFIK_SEMANTIK.basari,
     };
-    return value ? (renkler[value] || '#94a3b8') : '#94a3b8';
+    return value ? (renkler[value] || GRAFIK_TONLAR.soluk) : GRAFIK_TONLAR.soluk;
   }
 
   /**
@@ -1588,8 +1589,8 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
           stack: [
             {
               canvas: [
-                { type: 'rect', x: 0, y: 0, w: 595.28, h: 85, color: '#1e3a5f' },
-                { type: 'rect', x: 0, y: 85, w: 595.28, h: 4, color: '#3b82f6' },
+                { type: 'rect', x: 0, y: 0, w: 595.28, h: 85, color: GRAFIK_TONLAR.yesilKoyu },
+                { type: 'rect', x: 0, y: 85, w: 595.28, h: 4, color: GRAFIK_SEMANTIK.bilgi },
               ],
             },
             {
@@ -1603,14 +1604,14 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
             {
               text: `Tarih: ${dateStr}  |  Saat: ${timeStr}`,
               fontSize: 10,
-              color: '#cbd5e1',
+              color: GRAFIK_TONLAR.cizgi,
               alignment: 'center',
               margin: [0, 6, 0, 0],
             },
             {
               text: `Toplam ${items.length} kalem`,
               fontSize: 9,
-              color: '#94a3b8',
+              color: GRAFIK_TONLAR.soluk,
               alignment: 'center',
               margin: [0, 4, 0, 0],
             },
@@ -1634,9 +1635,9 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
             layout: {
               hLineWidth: () => 0.5,
               vLineWidth: () => 0.5,
-              hLineColor: () => '#dbeafe',
-              vLineColor: () => '#dbeafe',
-              fillColor: () => '#f8fafc',
+              hLineColor: () => GRAFIK_TONLAR.cizgi,
+              vLineColor: () => GRAFIK_TONLAR.cizgi,
+              fillColor: () => GRAFIK_TONLAR.kagit,
               paddingLeft: () => 8,
               paddingRight: () => 8,
               paddingTop: () => 6,
@@ -1661,11 +1662,11 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
             layout: {
               hLineWidth: () => 0.5,
               vLineWidth: () => 0.5,
-              hLineColor: (i: number) => i === 1 ? '#3b82f6' : '#e2e8f0',
-              vLineColor: () => '#e2e8f0',
+              hLineColor: (i: number) => i === 1 ? GRAFIK_SEMANTIK.bilgi : GRAFIK_TONLAR.cizgi,
+              vLineColor: () => GRAFIK_TONLAR.cizgi,
               fillColor: (rowIndex: number) => {
-                if (rowIndex === 0) return '#1e3a5f';
-                return rowIndex % 2 === 0 ? '#f5f7fa' : null;
+                if (rowIndex === 0) return GRAFIK_TONLAR.yesilKoyu;
+                return rowIndex % 2 === 0 ? GRAFIK_TONLAR.kagit : null;
               },
               paddingLeft: () => 8,
               paddingRight: () => 8,
@@ -1676,8 +1677,8 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
         ],
         footer: (currentPage: number, pageCount: number) => ({
           columns: [
-            { text: 'Bu form sistem taraf\u0131ndan otomatik olu\u015fturulmu\u015ftur.', fontSize: 7, color: '#9ca3af', margin: [30, 0, 0, 0] },
-            { text: `Sayfa ${currentPage} / ${pageCount}`, fontSize: 7, color: '#9ca3af', alignment: 'right', margin: [0, 0, 30, 0] },
+            { text: 'Bu form sistem taraf\u0131ndan otomatik olu\u015fturulmu\u015ftur.', fontSize: 7, color: GRAFIK_TONLAR.soluk, margin: [30, 0, 0, 0] },
+            { text: `Sayfa ${currentPage} / ${pageCount}`, fontSize: 7, color: GRAFIK_TONLAR.soluk, alignment: 'right', margin: [0, 0, 30, 0] },
           ],
         }),
         styles: {
@@ -1689,17 +1690,17 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
           infoLabel: {
             bold: true,
             fontSize: 9,
-            color: '#64748b',
+            color: GRAFIK_SEMANTIK.notr,
           },
           infoValue: {
             bold: true,
             fontSize: 9,
-            color: '#111827',
+            color: GRAFIK_TONLAR.murekkep,
           },
         },
         defaultStyle: {
           fontSize: 9,
-          color: '#1e1e1e',
+          color: GRAFIK_TONLAR.murekkep,
         },
       };
 
@@ -1751,15 +1752,15 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   // ===== Toplu İşlem Modal Yönetimi =====
   private readonly topluIslemConfig: Record<string, { baslik: string; icon: string; renk: string; aciklama: string; onay: string }> = {
-    tamGeldi: { baslik: 'Toplu Tam Geldi', icon: 'ri-checkbox-circle-line', renk: '#25B003', aciklama: 'Seçili ürünler Tam Geldi olarak işaretlenecek.', onay: 'Tam Geldi Yap' },
-    gridKapandi: { baslik: 'Toplu Grid Kapandı', icon: 'ri-lock-line', renk: '#37474F', aciklama: 'Seçili ürünler Grid Kapandı olarak işaretlenecek.', onay: 'Grid Kapandı Yap' },
-    iptal: { baslik: 'Toplu İptal', icon: 'ri-close-circle-line', renk: '#FFB200', aciklama: 'Seçili ürünler İptal olarak işaretlenecek.', onay: 'İptal Et' },
-    geriAl: { baslik: 'Toplu Geri Al', icon: 'ri-arrow-go-back-line', renk: '#D32F2F', aciklama: 'Seçili ürünlerin Grid, Kalite ve Süreç durumları sıfırlanacak. 3K işlem yapılmış ürünler atlanacaktır.', onay: 'Geri Al' },
+    tamGeldi: { baslik: 'Toplu Tam Geldi', icon: 'ri-checkbox-circle-line', renk: GRAFIK_SEMANTIK.basari, aciklama: 'Seçili ürünler Tam Geldi olarak işaretlenecek.', onay: 'Tam Geldi Yap' },
+    gridKapandi: { baslik: 'Toplu Grid Kapandı', icon: 'ri-lock-line', renk: GRAFIK_TONLAR.celik, aciklama: 'Seçili ürünler Grid Kapandı olarak işaretlenecek.', onay: 'Grid Kapandı Yap' },
+    iptal: { baslik: 'Toplu İptal', icon: 'ri-close-circle-line', renk: GRAFIK_SEMANTIK.uyari, aciklama: 'Seçili ürünler İptal olarak işaretlenecek.', onay: 'İptal Et' },
+    geriAl: { baslik: 'Toplu Geri Al', icon: 'ri-arrow-go-back-line', renk: GRAFIK_SEMANTIK.hata, aciklama: 'Seçili ürünlerin Grid, Kalite ve Süreç durumları sıfırlanacak. 3K işlem yapılmış ürünler atlanacaktır.', onay: 'Geri Al' },
   };
 
   topluIslemBaslik = computed(() => this.topluIslemConfig[this.topluIslemTipi()]?.baslik ?? '');
   topluIslemIcon = computed(() => this.topluIslemConfig[this.topluIslemTipi()]?.icon ?? '');
-  topluIslemRenk = computed(() => this.topluIslemConfig[this.topluIslemTipi()]?.renk ?? '#333');
+  topluIslemRenk = computed(() => this.topluIslemConfig[this.topluIslemTipi()]?.renk ?? GRAFIK_TONLAR.murekkep2);
   topluIslemAciklamaMetni = computed(() => this.topluIslemConfig[this.topluIslemTipi()]?.aciklama ?? '');
   topluIslemOnayMetni = computed(() => this.topluIslemConfig[this.topluIslemTipi()]?.onay ?? '');
 

@@ -6,13 +6,12 @@
     <div class="lp-container lp-nav__inner">
       <a class="lp-brand" routerLink="/" aria-label="3K Ahşap Ambalaj">
         <span class="lp-brand__isaret"><img class="amblem" src="/images/3k-emblem.svg" alt="" /></span>
-        <span class="lp-brand__ad"><b>3K</b><small>Ahşap Ambalaj</small></span>
+        <span class="lp-brand__ad"><b>3K</b></span>
       </a>
       <nav class="lp-nav__links" aria-label="Sayfa bölümleri">
         <a href="#hakkimizda">Hakkımızda</a>
         <a href="#surec">Süreç</a>
         <a href="#hizmetler">Hizmetler</a>
-        <a href="#urunler">Ürünler</a>
         <a href="#platform">Platform</a>
         <a href="#iletisim">İletişim</a>
       </nav>
@@ -392,43 +391,6 @@
     </div>
   </section>
 
-  <!-- ===== Ürünler ===== -->
-  <section id="urunler" class="lp-section lp-section--alt">
-    <div class="lp-container">
-      <div class="lp-heading" data-reveal>
-        <span class="lp-kicker">Ürünler</span>
-        <h2>Her yüke uygun <em>bir sandık.</em></h2>
-        <p>Ağır makine parçasından deniz aşırı sevkiyata; ürünün ağırlığına, yoluna ve iklimine göre doğru ambalaj.</p>
-      </div>
-
-      <div class="urun-sekme" role="tablist" aria-label="Ürün grupları" data-reveal>
-        @for (g of urunGruplari; track g.ad; let i = $index) {
-          <button type="button" role="tab" [class.is-active]="aktifUrunGrubu() === i" [attr.aria-selected]="aktifUrunGrubu() === i" (click)="aktifUrunGrubu.set(i)">
-            <i [class]="g.ikon" aria-hidden="true"></i>{{ g.ad }}<span>{{ g.urunler.length }}</span>
-          </button>
-        }
-      </div>
-
-      @for (g of [urunGruplari[aktifUrunGrubu()]]; track g.ad) {
-        <div class="urunler" role="tabpanel">
-          @for (u of g.urunler; track u.ad; let i = $index) {
-            <article class="urun" [style.--i]="i">
-              <div class="urun__cizim" [attr.data-doku]="u.doku" aria-hidden="true">
-                <span class="urun__yuz"></span>
-                @if (u.doku.startsWith('palet')) {
-                  <span class="urun__takoz"></span>
-                }
-              </div>
-              <span class="urun__no">{{ sira(i) }}</span>
-              <h3>{{ u.ad }}</h3>
-              <p>{{ u.metin }}</p>
-            </article>
-          }
-        </div>
-      }
-    </div>
-  </section>
-
   <!-- ===== Dijital platform ===== -->
   <section id="platform" class="lp-section">
     <div class="lp-container platform">
@@ -583,7 +545,7 @@
 
   <footer class="lp-footer">
     <div class="lp-container lp-footer__inner">
-      <span class="lp-brand lp-brand--sm"><span class="lp-brand__isaret"><img class="amblem" src="/images/3k-emblem.svg" alt="" /></span><span class="lp-brand__ad"><b>3K</b><small>Ahşap Ambalaj</small></span></span>
+      <span class="lp-brand lp-brand--sm"><span class="lp-brand__isaret"><img class="amblem" src="/images/3k-emblem.svg" alt="" /></span><span class="lp-brand__ad"><b>3K</b></span></span>
       <span class="lp-footer__slogan">Ürünlerinizi güvenle sarıyoruz, işinizi güvenle taşıyoruz.</span>
       <span>© {{ yil }} 3K Ahşap Ambalaj. Tüm hakları saklıdır.</span>
     </div>

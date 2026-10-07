@@ -1,8 +1,7 @@
-$sidebar-bg: #0a1929;
+// Kabuk: koyu orman mürekkebi. Açık kâğıt yüzeyin "soluk" görünmemesi için panelin bir kenarı koyu kurulur
+// (tanıtımdaki .urun-sekme.is-active ve lp-btn--dark mantığı). Vurgu ahşap şeritte ve sage yeşili ikondadır;
+// sage yeşili ve ahşap yalnız koyu zemin üstünde kullanılır, beyaz üstünde metin olmaz.
 $sidebar-width: 260px;
-$sidebar-text: #94a3b8;
-$sidebar-active: #25B003;
-$sidebar-hover-bg: rgba(255,255,255,.06);
 
 .sidebar-area {
   width: $sidebar-width;
@@ -10,52 +9,89 @@ $sidebar-hover-bg: rgba(255,255,255,.06);
   height: 100vh;
   position: fixed;
   left: 0; top: 0;
-  background: $sidebar-bg;
+  background: var(--k-shell);
+  border-right: 1px solid rgba(255, 255, 255, .06);
   z-index: 999;
   overflow-y: auto;
-  transition: .3s ease;
+  transition: left .3s var(--k-ease);
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,.1) transparent;
+  scrollbar-color: rgba(255, 255, 255, .12) transparent;
+  &::-webkit-scrollbar { width: 5px; }
+  &::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .12); border-radius: 3px; }
 }
 .sidebar-header {
-  padding: 18px 20px;
-  border-bottom: 1px solid rgba(255,255,255,.08);
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
 }
 .logo {
   text-decoration: none;
   &-icon {
-    width: 36px; height: 36px; border-radius: 8px;
+    width: 34px; height: 34px; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
     overflow: hidden;
+    box-shadow: var(--k-shadow-sm);
 
     img {
       width: 100%;
       height: 100%;
       display: block;
+      object-fit: cover;
     }
   }
-  &-text { font-size: 22px; font-weight: 800; color: #fff; letter-spacing: 1px; }
+  // Kelime işareti: yalnız kalın "3K" (eski paneldeki gibi, alt yazı yok).
+  &-text {
+    display: grid;
+    line-height: 1;
+    b {
+      color: #fff;
+      font-family: var(--k-display);
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -.01em;
+    }
+    small {
+      margin-top: 3px;
+      color: var(--k-shell-text);
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+  }
 }
 .sidebar-nav {
   padding: 12px 0;
 }
 .nav-link {
+  position: relative;
   display: flex; align-items: center; gap: 12px;
   padding: 10px 20px;
-  color: $sidebar-text;
+  color: var(--k-shell-text);
   font-size: 13.5px;
+  font-weight: 500;
   cursor: pointer;
-  transition: .2s;
+  transition: background .15s var(--k-ease), color .15s var(--k-ease);
   text-decoration: none;
-  border-left: 3px solid transparent;
-  i { font-size: 18px; width: 20px; text-align: center; }
-  .arrow { margin-left: auto; transition: transform .2s; }
-  &:hover { background: $sidebar-hover-bg; color: #fff; }
+  i { font-size: 18px; width: 20px; text-align: center; color: inherit; }
+  .arrow { margin-left: auto; transition: transform .2s var(--k-ease); }
+  // Ahşap şerit: yalnız aktif öğede görünür; yerleşimi değiştirmesin diye mutlak konumlu.
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 8px; bottom: 8px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--k-wood);
+    opacity: 0;
+    transition: opacity .15s var(--k-ease);
+  }
+  &:hover { background: rgba(255, 255, 255, .05); color: var(--k-shell-text-strong); }
   &.active {
-    background: $sidebar-hover-bg;
-    color: $sidebar-active;
-    border-left-color: $sidebar-active;
+    background: rgba(127, 169, 143, .12);
+    color: #cfe3d6;
     font-weight: 600;
+    i { color: var(--k-green-bright); }
+    &::before { opacity: 1; }
   }
 }
 .nav-parent-row {
@@ -73,18 +109,18 @@ $sidebar-hover-bg: rgba(255,255,255,.06);
   flex: 0 0 44px;
   border: 0;
   background: transparent;
-  color: $sidebar-text;
+  color: var(--k-shell-text);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: .2s;
+  transition: background .15s var(--k-ease), color .15s var(--k-ease);
 
-  i { font-size: 18px; transition: transform .2s; }
+  i { font-size: 18px; transition: transform .2s var(--k-ease); }
 
   &:hover {
-    background: $sidebar-hover-bg;
-    color: #fff;
+    background: rgba(255, 255, 255, .05);
+    color: var(--k-shell-text-strong);
   }
 }
 .has-children {
@@ -94,36 +130,57 @@ $sidebar-hover-bg: rgba(255,255,255,.06);
     .sub-menu { display: block; }
   }
 }
+// Alt menü: solda ince kılavuz çizgisi (ikonun ortasından iner); aktif alt öğe önünde sage yeşili nokta.
 .sub-menu {
   display: none;
-  padding-left: 50px;
+  margin: 2px 8px 6px 30px;
+  padding-left: 12px;
+  border-left: 1px solid rgba(255, 255, 255, .08);
   .sub-link {
+    position: relative;
     display: block;
-    padding: 7px 16px;
+    padding: 7px 12px 7px 16px;
     font-size: 13px;
-    color: $sidebar-text;
+    color: var(--k-shell-text);
     text-decoration: none;
-    border-radius: 4px;
-    transition: .2s;
-    &:hover { color: #fff; }
-    &.active { color: $sidebar-active; font-weight: 600; }
+    border-radius: 6px;
+    transition: color .15s var(--k-ease), background .15s var(--k-ease);
+    &::before {
+      content: '';
+      position: absolute;
+      left: 2px; top: 50%;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--k-green-bright);
+      transform: translateY(-50%) scale(0);
+      transition: transform .15s var(--k-ease);
+    }
+    &:hover { color: var(--k-shell-text-strong); background: rgba(255, 255, 255, .04); }
+    &.active {
+      color: #cfe3d6;
+      font-weight: 700;
+      &::before { transform: translateY(-50%) scale(1); }
+    }
   }
 }
-.sidebar-close { color: #fff; font-size: 22px; }
+.sidebar-close { color: var(--k-shell-text-strong); font-size: 22px; }
 .sidebar-overlay {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.5);
+  background: rgba(20, 28, 23, .5);
   z-index: 998;
 }
 
 @media (max-width: 1199.98px) {
   .sidebar-area {
     left: -$sidebar-width;
-    box-shadow: 12px 0 30px rgba(0,0,0,.18);
+    box-shadow: 12px 0 30px rgba(0, 0, 0, .18);
     &.active { left: 0; }
   }
 
   .sidebar-overlay.active { display: block; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-area, .nav-link, .nav-toggle i, .sub-link::before { transition: none; }
 }

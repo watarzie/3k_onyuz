@@ -1,8 +1,9 @@
 import { Component, input } from '@angular/core';
 
 /**
- * Trezo KPI kartı: beyaz zemin, solda etiket ve büyük sayı, sağda renkli yuvarlak ikon. Renk yalnız ikonda ve
- * alt çizgidedir; sayfanın bütün özet kartları aynı dili konuşur (finans paneli KPI kartlarıyla aynı).
+ * KPI kartı ("Atölye" teması): beyaz zemin, solda etiket ve Sarabun 700 büyük sayı, sağda tonlu yuvarlak
+ * ikon. Renk yalnız ikonda ve alt çizgidedir; sayfanın bütün özet kartları aynı dili konuşur (finans paneli KPI
+ * kartlarıyla aynı). Tonlar global --k-* semantik token'larından gelir.
  */
 @Component({
   selector: 'app-stat-card',
@@ -32,8 +33,8 @@ import { Component, input } from '@angular/core';
       height: 100%;
     }
     .stat-card {
-      --ton: #605dff;
-      --ton-soft: #ecf0ff;
+      --ton: var(--k-green);
+      --ton-soft: color-mix(in srgb, var(--ton) 10%, #fff);
       position: relative;
       display: flex;
       align-items: center;
@@ -43,10 +44,11 @@ import { Component, input } from '@angular/core';
       height: 100%;
       padding: 20px 22px;
       overflow: hidden;
-      border: 1px solid var(--borderColor, #eceef2);
-      border-radius: 12px;
+      border: 1px solid var(--k-line);
+      border-radius: var(--k-radius);
       background: var(--whiteColor, #fff);
-      transition: border-color .18s ease, box-shadow .18s ease;
+      box-shadow: none;
+      transition: border-color .15s var(--k-ease), box-shadow .15s var(--k-ease);
       &::after {
         content: '';
         position: absolute;
@@ -56,38 +58,40 @@ import { Component, input } from '@angular/core';
         height: 3px;
         border-radius: 3px 3px 0 0;
         background: var(--ton);
-        opacity: .85;
+        opacity: .9;
       }
       &:hover {
-        border-color: color-mix(in srgb, var(--ton) 30%, var(--borderColor, #eceef2));
-        box-shadow: 0 10px 28px -18px rgba(23, 43, 77, .35);
+        border-color: color-mix(in srgb, var(--ton) 28%, var(--k-line));
+        box-shadow: var(--k-shadow-sm);
       }
     }
-    .stat-card[data-ton='success'] { --ton: #25b003; --ton-soft: #eeffe5; }
-    .stat-card[data-ton='info'] { --ton: #3584fc; --ton-soft: #e9f3ff; }
-    .stat-card[data-ton='danger'] { --ton: #ff4023; --ton-soft: #ffe8e4; }
-    .stat-card[data-ton='warning'] { --ton: #fd5812; --ton-soft: #fff5ed; }
-    .stat-card[data-ton='secondary'] { --ton: #64748b; --ton-soft: #f1f5f9; }
+    .stat-card[data-ton='success'] { --ton: var(--k-success); }
+    .stat-card[data-ton='info'] { --ton: var(--k-info); }
+    .stat-card[data-ton='danger'] { --ton: var(--k-danger); }
+    .stat-card[data-ton='warning'] { --ton: var(--k-warning); }
+    .stat-card[data-ton='secondary'] { --ton: var(--k-steel); }
     .stat-text { min-width: 0; }
     .stat-label {
       display: block;
-      color: var(--bodyColor, #64748b);
-      font-size: 13px;
-      font-weight: 500;
+      color: var(--k-muted);
+      font-size: 12.5px;
+      font-weight: 600;
       line-height: 1.3;
       overflow-wrap: anywhere;
     }
+    // Sayı: Sarabun 700, eşit genişlikli rakam; sayı ortasından kırılmaz, dar kartta yazı küçülür.
     .stat-value {
       margin: 6px 0 0;
-      color: var(--blackColor, #3a4252);
-      font-size: clamp(22px, 2.2vw, 28px);
+      color: var(--k-ink);
+      font-family: var(--k-display);
+      font-size: clamp(22px, 1.9vw, 28px);
       font-weight: 700;
       line-height: 1.1;
       letter-spacing: -.02em;
       font-variant-numeric: tabular-nums;
-      overflow-wrap: anywhere;
+      white-space: nowrap;
     }
-    .stat-hint { margin-left: 4px; font-size: 13px; cursor: help; color: #94a3b8; }
+    .stat-hint { margin-left: 4px; font-size: 13px; cursor: help; color: var(--k-faint); }
     .stat-icon {
       display: grid;
       place-items: center;
@@ -109,7 +113,7 @@ import { Component, input } from '@angular/core';
     .stat-skeleton-label {
       display: block;
       border-radius: 999px;
-      background: linear-gradient(90deg, #eef1f5, #f8f9fb, #eef1f5);
+      background: linear-gradient(90deg, var(--k-paper-2), var(--k-paper), var(--k-paper-2));
       background-size: 220% 100%;
       animation: stat-skeleton-shimmer 1.15s ease-in-out infinite;
     }
@@ -124,6 +128,7 @@ import { Component, input } from '@angular/core';
       .stat-card::after { left: 16px; right: 16px; }
       .stat-icon { flex-basis: 42px; width: 42px; height: 42px; font-size: 19px; }
       .stat-label { font-size: 12px; }
+      .stat-value { font-size: 24px; }
     }
     @media (prefers-reduced-motion: reduce) {
       .stat-skeleton-number, .stat-skeleton-label { animation: none; }

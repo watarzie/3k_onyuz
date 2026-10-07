@@ -24,7 +24,7 @@
 .server-pager__summary {
   flex-wrap: wrap;
   gap: 10px;
-  color: #64748b;
+  color: var(--k-muted);
   font-size: 13px;
   font-weight: 600;
 }
@@ -64,7 +64,7 @@
   padding: 0 8px;
   border: 1px solid var(--borderColor);
   border-radius: 8px;
-  color: #64748b;
+  color: var(--k-muted);
   background: var(--whiteColor);
   display: inline-flex;
   align-items: center;
