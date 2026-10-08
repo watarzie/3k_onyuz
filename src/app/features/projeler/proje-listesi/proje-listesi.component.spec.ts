@@ -92,6 +92,50 @@ describe('Proje listesi: sevk edilen saha/yedek görünürlüğü (G1) ve toplu 
     expect(c.kilidiAcabilir(saha)).toBeTrue();
   });
 
+  it('Aktif Projeler satırın gerçek tipinin sevk iznine bakar; toplu sevk yalnız seçili projeleri pencereye verir (C-08)', () => {
+    yazma.add(YETKI.SAHA.SEVK_ET);
+    const { c, fixture } = setup({ menuKod: YETKI.PROJE.AKTIF_PROJELER });
+    expect(c.canSevkEtProje(saha)).toBeTrue();
+    expect(c.canSevkEtProje(yedek)).toBeFalse();
+    expect(c.canSevkEtProje(proje(1, ProjeTipi.Normal))).toBeFalse();
+    expect(c.canUseTopluSevk()).toBeTrue();
+    expect(c.canUseBulkSecim()).toBeTrue();
+    expect(fixture.nativeElement.querySelector('.toplu-sevk-trigger')).not.toBeNull();
+
+    c.openTopluSevk();
+    expect(c.topluSevkProjeleri()).toBeNull();
+    expect(toast.warning).toHaveBeenCalled();
+    c.toggleEksikRaporProjeSelection(yedek.id);
+    c.openTopluSevk();
+    expect(c.topluSevkProjeleri()).toEqual([yedek]);
+
+    c.onTopluSevkEdildi({ seferId: 1, seferNo: '2026-000001', projeSayisi: 1, sandikSayisi: 2 });
+    expect(c.topluSevkProjeleri()).toBeNull();
+    expect(toast.success).toHaveBeenCalledWith('Sefer 2026-000001: 1 projenin 2 sandığı sevk edildi.');
+    expect(projeApi.getProjeListesi).toHaveBeenCalledTimes(2);
+    expect(c.selectedEksikRaporCount()).toBe(0);
+  });
+
+  it('toplu sevk sevk edilmemiş saha/yedek listelerinde ekranın sevk izniyle açılır; normal sandık yönetimi ve Sevk Edilen dışarıda', () => {
+    yazma.add(YETKI.PROJE.SEVK_ET);
+    yazma.add(YETKI.SAHA.SEVK_ET);
+    expect(setup({ menuKod: YETKI.SAHA.YONETIMI, projeTipi: ProjeTipi.Saha }).c.canUseTopluSevk()).toBeTrue();
+    TestBed.resetTestingModule();
+    expect(setup({ menuKod: YETKI.YEDEK.YONETIMI, projeTipi: ProjeTipi.Yedek }).c.canUseTopluSevk()).toBeFalse();
+    TestBed.resetTestingModule();
+    expect(setup({ menuKod: YETKI.SANDIK.YONETIMI, projeTipi: ProjeTipi.Normal }).c.canUseTopluSevk()).toBeFalse();
+    TestBed.resetTestingModule();
+    expect(setup({ menuKod: YETKI.PROJE.SEVK_EDILEN }).c.canUseTopluSevk()).toBeFalse();
+  });
+
+  it('modül listesinde kilit açma sunucu kuralına uyar: sevk izni yetmez, projenin tipinin proje yönetimi W gerekir', () => {
+    yazma.add(YETKI.SAHA.SEVK_ET);
+    const { c } = setup({ menuKod: YETKI.SAHA.YONETIMI, projeTipi: ProjeTipi.Saha });
+    expect(c.kilidiAcabilir(saha)).toBeFalse();
+    yazma.add(YETKI.SAHA.YONETIMI);
+    expect(c.kilidiAcabilir(saha)).toBeTrue();
+  });
+
   it('toplu talep formu ekranın proje tipindeki Grid iznini ister ve seçili projeleri tek istekte gönderir', () => {
     const kisitli = setup({ menuKod: YETKI.SAHA.YONETIMI, projeTipi: ProjeTipi.Saha }).c;
     expect(kisitli.canUseBulkTalepFormu()).toBeFalse();

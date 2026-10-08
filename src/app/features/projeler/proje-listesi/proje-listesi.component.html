@@ -102,7 +102,7 @@
       <span class="pl-sayac">{{ totalCount() }}</span>
     </div>
     <div class="project-list-header-actions">
-      @if (canUseBulkEksikRapor() || canUseBulkTalepFormu()) {
+      @if (canUseBulkSecim()) {
         <div class="toolbar-group" role="group" aria-label="Seçili projeler için toplu işlemler" [class.has-selection]="selectedEksikRaporCount() > 0">
           <span class="toolbar-group-label" title="Toplu işlemler seçili projelere uygulanır">
             <span class="toolbar-count">{{ selectedEksikRaporCount() }}</span>seçili
@@ -133,6 +133,15 @@
                 <i class="ri-file-excel-2-line toolbar-icon is-success"></i>
               }
               <span>Talep Formu Excel</span>
+            </button>
+          }
+          @if (canUseTopluSevk()) {
+            <button type="button" class="toolbar-btn toplu-sevk-trigger"
+              [disabled]="selectedEksikRaporCount() === 0"
+              (click)="openTopluSevk()"
+              title="Seçilen projelerin sevke hazır sandıklarını tek tır seferinde sevk et">
+              <i class="ri-truck-line toolbar-icon is-warning"></i>
+              <span>Toplu Sevk Et</span>
             </button>
           }
         </div>
@@ -234,7 +243,7 @@
               @if (canUseBulkSecim()) {
                 <th class="bulk-report-select-column">
                   <input type="checkbox" class="form-check-input"
-                    aria-label="Bu sayfadaki projeleri rapor için seç"
+                    aria-label="Bu sayfadaki projeleri toplu işlem için seç"
                     [checked]="allCurrentPageSelectedForEksikRapor()"
                     [indeterminate]="someCurrentPageSelectedForEksikRapor()"
                     [disabled]="bulkEksikRaporDownloading() !== null || projeler().length > 25"
@@ -271,7 +280,7 @@
                     <input type="checkbox" class="form-check-input"
                       [checked]="isEksikRaporProjeSelected(p.id)"
                       [disabled]="bulkEksikRaporDownloading() !== null"
-                      [attr.aria-label]="p.projeNo + ' projesini rapor için seç'"
+                      [attr.aria-label]="p.projeNo + ' projesini toplu işlem için seç'"
                       (click)="$event.stopPropagation()"
                       (change)="toggleEksikRaporProjeSelection(p.id)" />
                   </td>
@@ -478,7 +487,7 @@
                           <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
                         </button>
                       }
-                      @if ((canSevkEtCurrent() || canUpdatePlanlananSevkTarihiCurrent()) && (!isSandikMode() || isSahaYonetimi() || isYedekYonetimi())) {
+                      @if (!isSandikMode() || isSahaYonetimi() || isYedekYonetimi()) {
                         @if (p.durumMetni === 'SevkEdildi' || p.durumMetni === 'Sevk Edildi') {
                           @if (!isSevkEdilen() && kilidiAcabilir(p)) {
                             <button class="btn btn-sm btn-outline-primary" (click)="openKilitAcModal(p)">
@@ -491,12 +500,12 @@
                               <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
                             </button>
                           }
-                          @if (canUpdatePlanlananSevkTarihiCurrent()) {
+                          @if (canUpdatePlanlananSevkTarihiProje(p)) {
                             <button class="btn btn-sm btn-warning" (click)="openSevkTarihiModal(p)" title="Planlanan Sevk Tarihi Gir">
                               <i class="ri-calendar-event-line me-1"></i>Planlanan Sevk Tarihi
                             </button>
                           }
-                          @if (canSevkEtCurrent()) {
+                          @if (canSevkEtProje(p)) {
                             <button class="btn btn-sm btn-warning" (click)="openSevkEtModal(p)" title="Projeyi Sevk Et">
                               <i class="ri-truck-line me-1"></i>
                               {{ p.durumMetni === 'EksikSevkEdildi' || p.durumMetni === 'Eksik Sevk Edildi' ? 'Kalanı Sevk Et' : 'Sevk Et' }}
@@ -881,6 +890,10 @@
 }
 
 <!-- ===== SEVK ET MODAL ===== -->
+@if (topluSevkProjeleri(); as topluSevkListesi) {
+  <app-toplu-sevk [projeler]="topluSevkListesi" (kapandi)="closeTopluSevk()" (sevkEdildi)="onTopluSevkEdildi($event)" />
+}
+
 @if (showSevkEtModal()) {
   <div class="modal-backdrop fade show" (click)="closeSevkEtModal()"></div>
   <div class="modal d-block fade show" tabindex="-1">

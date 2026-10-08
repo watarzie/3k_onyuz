@@ -13,6 +13,8 @@ export const YETKI = {
     KOK: 'projeler',
     AKTIF_PROJELER: 'aktif-projeler',
     SEVK_EDILEN: 'sevk-edilen',
+    /** Sevkiyatlar sayfası: tır seferleri ve sevkiyat istatistikleri (R). */
+    SEVKIYATLAR: 'sevkiyatlar',
     SEVK_ET: 'proje-sevk-et',
     SIL: 'proje-sil',
     CEKI_YUKLE: 'ceki-yukle',

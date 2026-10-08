@@ -1,0 +1,156 @@
+<div class="tz-modal-backdrop" (click)="kapat()"></div>
+<div class="tz-modal tz-modal--xl toplu-sevk" data-ton="warning" role="dialog" aria-modal="true" aria-labelledby="toplu-sevk-baslik"
+  (keydown.escape)="kapat()">
+  <header class="tz-modal__header">
+    <span class="tz-modal__icon"><i class="ri-truck-line"></i></span>
+    <div class="tz-modal__title">
+      <h5 id="toplu-sevk-baslik">{{ t('SHIPMENTS.BULK_TITLE') }}</h5>
+      <p>{{ t('SHIPMENTS.BULK_SUBTITLE') }}</p>
+    </div>
+    <button type="button" class="tz-modal__close" [disabled]="gonderiliyor()" (click)="kapat()" [attr.aria-label]="t('ACTIONS.CANCEL')">
+      <i class="ri-close-line"></i>
+    </button>
+  </header>
+
+  <div class="tz-modal__body ts-govde" [attr.aria-busy]="gonderiliyor() || yukleniyor()">
+    <section class="ts-sefer" aria-labelledby="ts-sefer-baslik">
+      <h6 id="ts-sefer-baslik" class="tz-section"><i class="ri-steering-2-line"></i>{{ t('SHIPMENTS.BULK_TRIP') }}</h6>
+      <div class="ts-sefer-alanlar">
+        <label class="tz-field">
+          <span>{{ t('SHIPMENTS.DATE') }} <b>*</b></span>
+          <input type="datetime-local" class="form-control ts-tarih" step="60" [value]="sevkTarihi()" [disabled]="gonderiliyor()"
+            (input)="sevkTarihi.set($any($event.target).value)" />
+        </label>
+        <label class="tz-field">
+          <span>{{ t('SHIPMENTS.PLATE') }} <b>*</b></span>
+          <input type="text" class="form-control ts-plaka" [attr.maxlength]="plakaEnFazla" autocomplete="off" placeholder="34 ABC 123"
+            [value]="aracPlaka()" [disabled]="gonderiliyor()" (input)="aracPlaka.set($any($event.target).value)" />
+          @if (plakaOnizleme() && plakaOnizleme() !== aracPlaka().trim()) {
+            <small>{{ t('SHIPMENTS.BULK_PLATE_SAVED_AS') }} <strong>{{ plakaOnizleme() }}</strong></small>
+          }
+        </label>
+        <label class="tz-field">
+          <span>{{ t('SHIPMENTS.DRIVER') }}</span>
+          <input type="text" class="form-control ts-sofor" [attr.maxlength]="soforEnFazla" [value]="sofor()" [disabled]="gonderiliyor()"
+            (input)="sofor.set($any($event.target).value)" />
+        </label>
+        <label class="tz-field">
+          <span>{{ t('SHIPMENTS.TRAILER') }}</span>
+          <input type="text" class="form-control ts-dorse" [attr.maxlength]="plakaEnFazla" autocomplete="off" [value]="dorsePlaka()"
+            [disabled]="gonderiliyor()" (input)="dorsePlaka.set($any($event.target).value)" />
+        </label>
+      </div>
+      <label class="tz-field mt-3">
+        <span>{{ t('SHIPMENTS.NOTE') }}</span>
+        <textarea class="form-control ts-aciklama" rows="2" [attr.maxlength]="aciklamaEnFazla" [value]="aciklama()" [disabled]="gonderiliyor()"
+          (input)="aciklama.set($any($event.target).value)"></textarea>
+      </label>
+    </section>
+
+    <section aria-labelledby="ts-projeler-baslik">
+      <div class="ts-projeler-baslik">
+        <h6 id="ts-projeler-baslik" class="tz-section"><i class="ri-folder-3-line"></i>{{ t('SHIPMENTS.BULK_PROJECTS') }}</h6>
+        @if (sevkEdilebilirSatirlar().length > 1) {
+          <button type="button" class="btn btn-link btn-sm ts-hepsini-ac" (click)="hepsiniAcKapat()">
+            {{ t(hepsiAcik() ? 'SHIPMENTS.COLLAPSE_ALL' : 'SHIPMENTS.EXPAND_ALL') }}
+          </button>
+        }
+      </div>
+
+      @if (sorunlar().length) {
+        <div class="ts-sorunlar" role="alert">
+          <strong><i class="ri-error-warning-line"></i>{{ hata() }}</strong>
+          <ul>
+            @for (sorun of sorunlar(); track sorun.projeId) {
+              <li><b>{{ sorun.projeNo || ('#' + sorun.projeId) }}</b>: {{ sorun.mesaj }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      <div class="ts-proje-listesi">
+        @for (satir of satirlar(); track satir.proje.id) {
+          @if (satir.yukleniyor) {
+            <div class="ts-proje is-loading">
+              <span class="spinner-border spinner-border-sm text-warning"></span>
+              <strong>{{ satir.proje.projeNo }}</strong>
+              <small>{{ t('SHIPMENTS.BULK_CRATES_LOADING') }}</small>
+            </div>
+          } @else if (sevkEdilebilir(satir)) {
+            <div class="ts-proje" [class.is-excluded]="seciliSayisi(satir.proje.id) === 0"
+              [class.has-issue]="sorunluProjeler().has(satir.proje.id)" [attr.data-proje-id]="satir.proje.id">
+              <div class="ts-proje-ust">
+                <input type="checkbox" class="form-check-input ts-proje-sec"
+                  [checked]="seciliSayisi(satir.proje.id) > 0"
+                  [indeterminate]="seciliSayisi(satir.proje.id) > 0 && seciliSayisi(satir.proje.id) < satir.adaylar.length"
+                  [disabled]="gonderiliyor()"
+                  [attr.aria-label]="satir.proje.projeNo + ' ' + t('SHIPMENTS.BULK_INCLUDE_PROJECT')"
+                  (change)="projeDegistir(satir, $any($event.target).checked)" />
+                <button type="button" class="ts-proje-ac" (click)="acKapat(satir.proje.id)"
+                  [attr.aria-expanded]="acikProjeler().has(satir.proje.id)">
+                  <strong>{{ satir.proje.projeNo }}</strong>
+                  <span class="ts-tip" [attr.data-tip]="satir.proje.projeTipiId">{{ projeTipiAdi(satir.proje.projeTipiId) }}</span>
+                  @if (satir.proje.musteri) { <small class="ts-musteri">{{ satir.proje.musteri }}</small> }
+                  <span class="ts-sayac">{{ t('SHIPMENTS.BULK_SELECTED_OF', { n: seciliSayisi(satir.proje.id), toplam: satir.adaylar.length }) }}</span>
+                  <i class="ri-arrow-down-s-line ts-chevron" [class.open]="acikProjeler().has(satir.proje.id)"></i>
+                </button>
+              </div>
+              @if (sorunluProjeler().get(satir.proje.id); as sorun) {
+                <p class="ts-proje-sorun"><i class="ri-error-warning-line"></i>{{ sorun.mesaj }}</p>
+              }
+              @if (acikProjeler().has(satir.proje.id)) {
+                <div class="ts-sandiklar">
+                  @for (sandik of satir.adaylar; track sandik.id) {
+                    <label class="ts-sandik" [class.has-issue]="sorunluSandiklar().has(sandik.id)">
+                      <input type="checkbox" class="form-check-input" [checked]="sandikSeciliMi(satir.proje.id, sandik.id)"
+                        [disabled]="gonderiliyor()"
+                        (change)="sandikDegistir(satir.proje.id, sandik.id, $any($event.target).checked)" />
+                      <span class="ts-sandik-no">{{ sandik.sandikNo }}</span>
+                      <span class="ts-sandik-ad" [title]="sandik.ad || ''">{{ sandik.ad || '—' }}</span>
+                      <span class="ts-sandik-meta">{{ t('SHIPMENTS.BULK_PRODUCTS', { n: sandik.urunSayisi }) }}</span>
+                    </label>
+                  }
+                  @if (satir.digerSandikSayisi > 0) {
+                    <small class="ts-diger">{{ t('SHIPMENTS.BULK_NOT_READY', { n: satir.digerSandikSayisi }) }}</small>
+                  }
+                </div>
+              }
+            </div>
+          }
+        }
+      </div>
+
+      @if (disaridaKalanlar().length) {
+        <div class="ts-disarida">
+          <strong><i class="ri-forbid-2-line"></i>{{ t('SHIPMENTS.BULK_EXCLUDED') }}</strong>
+          <ul>
+            @for (satir of disaridaKalanlar(); track satir.proje.id) {
+              <li><b>{{ satir.proje.projeNo }}</b> · {{ disaridaKalmaNedeni(satir) }}</li>
+            }
+          </ul>
+        </div>
+      }
+    </section>
+
+    <p class="tz-note"><i class="ri-information-line"></i>{{ t('SHIPMENTS.BULK_ATOMIC_NOTE') }}</p>
+    @if (hata() && !sorunlar().length) {
+      <div role="alert" class="alert alert-danger mt-3 mb-0 ts-hata">{{ hata() }}</div>
+    }
+  </div>
+
+  <footer class="tz-modal__footer">
+    <span class="ts-ozet me-auto">
+      @if (yukleniyor()) {
+        {{ t('SHIPMENTS.BULK_CRATES_LOADING') }}
+      } @else {
+        <strong>{{ t('SHIPMENTS.BULK_SUMMARY', { proje: dahilSatirlar().length, sandik: toplamSandik() }) }}</strong>
+        @if (engel(); as neden) { <small>{{ neden }}</small> }
+      }
+    </span>
+    <button type="button" class="tz-btn" [disabled]="gonderiliyor()" (click)="kapat()">{{ t('ACTIONS.CANCEL') }}</button>
+    <button type="button" class="tz-btn tz-btn--primary ts-gonder" [disabled]="gonderiliyor() || yukleniyor() || !!engel()" (click)="gonder()">
+      <i [class]="gonderiliyor() ? 'ri-loader-4-line tz-spin' : 'ri-truck-line'"></i>
+      {{ t(gonderiliyor() ? 'SHIPMENTS.BULK_SENDING' : 'SHIPMENTS.BULK_CONFIRM') }}
+    </button>
+  </footer>
+</div>

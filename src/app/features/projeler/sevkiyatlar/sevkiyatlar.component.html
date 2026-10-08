@@ -1,0 +1,306 @@
+<div class="sv-page">
+  <div class="page-title-area mb-4">
+    <h2 class="fw-bold mb-1">{{ t('MENU.SEVKIYATLAR') }}</h2>
+    <app-breadcrumb [items]="breadcrumb" />
+  </div>
+
+  <div class="sv-kpi" [attr.aria-busy]="istatistikYukleniyor()">
+    <app-stat-card [loading]="istatistikYukleniyor()" [value]="istatistik()?.seferSayisi ?? '—'" [label]="t('SHIPMENTS.KPI_TRIPS')"
+      icon="ri-truck-line" color="warning" />
+    <app-stat-card [loading]="istatistikYukleniyor()" [value]="istatistik()?.sandikSayisi ?? '—'" [label]="t('SHIPMENTS.KPI_CRATES')"
+      icon="ri-archive-line" color="primary" />
+    <app-stat-card [loading]="istatistikYukleniyor()" [value]="istatistik()?.projeSayisi ?? '—'" [label]="t('SHIPMENTS.KPI_PROJECTS')"
+      icon="ri-folder-3-line" color="info" />
+    <app-stat-card [loading]="istatistikYukleniyor()" [value]="istatistik()?.buAySeferSayisi ?? '—'" [label]="t('SHIPMENTS.KPI_THIS_MONTH')"
+      icon="ri-calendar-check-line" color="success" />
+    <app-stat-card [loading]="istatistikYukleniyor()" [value]="istatistik()?.enCokKullanilanPlaka || '—'" [label]="t('SHIPMENTS.KPI_TOP_PLATE')"
+      [hint]="t('SHIPMENTS.KPI_TOP_PLATE_HINT')" icon="ri-steering-2-line" color="secondary" />
+  </div>
+  @if (istatistikHatasi()) {
+    <div class="alert alert-warning py-2 sv-istatistik-hata" role="alert">{{ istatistikHatasi() }}</div>
+  }
+
+  <section class="sv-card">
+    <header class="sv-card__head">
+      <div class="sv-card__title">
+        <span class="sv-card__icon" aria-hidden="true"><i class="ri-route-line"></i></span>
+        <div>
+          <h3>{{ t('SHIPMENTS.TRIPS_TITLE') }}</h3>
+          <p>{{ t('SHIPMENTS.TRIPS_SUBTITLE') }}</p>
+        </div>
+      </div>
+      <div class="tz-segmented sv-gorunum" role="tablist" [attr.aria-label]="t('SHIPMENTS.VIEW')">
+        <button type="button" role="tab" [class.active]="gorunum() === 'seferler'" [attr.aria-selected]="gorunum() === 'seferler'"
+          (click)="gorunum.set('seferler')"><i class="ri-route-line" aria-hidden="true"></i>{{ t('SHIPMENTS.VIEW_TRIPS') }}</button>
+        <button type="button" role="tab" [class.active]="gorunum() === 'plaka'" [attr.aria-selected]="gorunum() === 'plaka'"
+          (click)="gorunum.set('plaka')"><i class="ri-steering-2-line" aria-hidden="true"></i>{{ t('SHIPMENTS.VIEW_PLATE') }}</button>
+        <button type="button" role="tab" [class.active]="gorunum() === 'proje'" [attr.aria-selected]="gorunum() === 'proje'"
+          (click)="gorunum.set('proje')"><i class="ri-folder-3-line" aria-hidden="true"></i>{{ t('SHIPMENTS.VIEW_PROJECT') }}</button>
+        <button type="button" role="tab" [class.active]="gorunum() === 'aylik'" [attr.aria-selected]="gorunum() === 'aylik'"
+          (click)="gorunum.set('aylik')"><i class="ri-bar-chart-2-line" aria-hidden="true"></i>{{ t('SHIPMENTS.VIEW_MONTHLY') }}</button>
+      </div>
+    </header>
+
+    <div class="sv-filtreler">
+      <label class="tz-field">
+        <span>{{ t('SHIPMENTS.FROM') }}</span>
+        <input type="date" class="form-control sv-baslangic" [value]="baslangic()" (change)="tarihDegisti('baslangic', $any($event.target).value)" />
+      </label>
+      <label class="tz-field">
+        <span>{{ t('SHIPMENTS.TO') }}</span>
+        <input type="date" class="form-control sv-bitis" [value]="bitis()" (change)="tarihDegisti('bitis', $any($event.target).value)" />
+      </label>
+      @if (gorunum() === 'seferler') {
+        <label class="tz-field">
+          <span>{{ t('SHIPMENTS.PLATE') }}</span>
+          <input type="search" class="form-control sv-plaka" placeholder="34 ABC 123" [value]="plaka()"
+            (input)="metinFiltresiDegisti('plaka', $any($event.target).value)" />
+        </label>
+        <label class="tz-field">
+          <span>{{ t('SHIPMENTS.PROJECT_NO') }}</span>
+          <input type="search" class="form-control sv-proje-no" [value]="projeNo()"
+            (input)="metinFiltresiDegisti('projeNo', $any($event.target).value)" />
+        </label>
+        <label class="tz-field">
+          <span>{{ t('SHIPMENTS.PROJECT_TYPE') }}</span>
+          <select class="form-select sv-proje-tipi" [value]="projeTipiId() ?? ''" (change)="projeTipiDegisti($any($event.target).value)">
+            @for (secenek of projeTipiSecenekleri; track secenek.deger) {
+              <option [value]="secenek.deger ?? ''" [selected]="secenek.deger === projeTipiId()">{{ t(secenek.etiket) }}</option>
+            }
+          </select>
+        </label>
+      }
+      @if (filtreVar()) {
+        <button type="button" class="tz-btn sv-temizle" (click)="filtreleriTemizle()"><i class="ri-filter-off-line"></i>{{ t('SHIPMENTS.CLEAR_FILTERS') }}</button>
+      }
+    </div>
+    @if (gorunum() !== 'seferler') {
+      <p class="sv-not"><i class="ri-information-line"></i>{{ t('SHIPMENTS.STATS_DATE_ONLY') }}</p>
+    }
+
+    @switch (gorunum()) {
+      @case ('seferler') {
+        @if (seferlerYukleniyor()) {
+          <div class="sv-state" role="status"><span class="spinner-border spinner-border-sm text-warning"></span>{{ t('SHIPMENTS.LOADING') }}</div>
+        } @else if (seferHatasi()) {
+          <div class="sv-state sv-state--hata" role="alert"><i class="ri-error-warning-line"></i>{{ seferHatasi() }}</div>
+        } @else if (seferler().length === 0) {
+          <div class="sv-empty">
+            <span class="sv-empty__icon" aria-hidden="true"><i class="ri-truck-line"></i></span>
+            <h4>{{ t('SHIPMENTS.EMPTY_TITLE') }}</h4>
+            <p>{{ t(filtreVar() ? 'SHIPMENTS.EMPTY_FILTERED' : 'SHIPMENTS.EMPTY') }}</p>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="sv-table sv-seferler">
+              <thead>
+                <tr>
+                  <th>{{ t('SHIPMENTS.TRIP_NO') }}</th>
+                  <th>{{ t('SHIPMENTS.DATE') }}</th>
+                  <th>{{ t('SHIPMENTS.PLATE') }}</th>
+                  <th>{{ t('SHIPMENTS.DRIVER') }}</th>
+                  <th class="text-end">{{ t('SHIPMENTS.PROJECTS') }}</th>
+                  <th class="text-end">{{ t('SHIPMENTS.CRATES') }}</th>
+                  <th class="text-end">{{ t('SHIPMENTS.GROSS_KG') }}</th>
+                  <th>{{ t('SHIPMENTS.PROJECT_NOS') }}</th>
+                  <th aria-hidden="true"></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (sefer of seferler(); track sefer.anahtar) {
+                  <tr class="sv-satir" [class.is-open]="acikSefer() === sefer.anahtar" (click)="seferAcKapat(sefer)">
+                    <td>
+                      <button type="button" class="sv-sefer-no" [attr.aria-expanded]="acikSefer() === sefer.anahtar"
+                        (click)="$event.stopPropagation(); seferAcKapat(sefer)">
+                        @if (sefer.eskiKayit) {
+                          <span class="sv-rozet sv-rozet--eski" [title]="t('SHIPMENTS.LEGACY_HINT')">{{ t('SHIPMENTS.LEGACY') }}</span>
+                        } @else {
+                          <strong>{{ sefer.seferNo }}</strong>
+                        }
+                      </button>
+                      @if (sefer.duzeltmesiAcikSandikVar) {
+                        <span class="sv-rozet sv-rozet--uyari" [title]="t('SHIPMENTS.CORRECTION_OPEN_HINT')"><i class="ri-tools-line"></i></span>
+                      }
+                    </td>
+                    <td>{{ sefer.sevkTarihi | date: (sefer.eskiKayit ? 'dd.MM.yyyy' : 'dd.MM.yyyy HH:mm') }}</td>
+                    <td><span class="sv-plaka-etiket">{{ sefer.aracPlaka || '—' }}</span>
+                      @if (sefer.dorsePlaka) { <small class="sv-dorse">+ {{ sefer.dorsePlaka }}</small> }</td>
+                    <td>{{ sefer.sofor || '—' }}</td>
+                    <td class="text-end">{{ sefer.projeSayisi }}</td>
+                    <td class="text-end">{{ sefer.sandikSayisi }}</td>
+                    <td class="text-end">{{ sefer.brutKg == null ? '—' : (sefer.brutKg | number: '1.0-1') }}</td>
+                    <td class="sv-projeler">
+                      @for (no of sefer.projeNolari.slice(0, 3); track no) { <span class="sv-chip">{{ no }}</span> }
+                      @if (sefer.projeNolari.length > 3) { <span class="sv-chip sv-chip--more">+{{ sefer.projeNolari.length - 3 }}</span> }
+                    </td>
+                    <td class="text-end"><i class="ri-arrow-down-s-line sv-chevron" [class.open]="acikSefer() === sefer.anahtar"></i></td>
+                  </tr>
+                  @if (acikSefer() === sefer.anahtar) {
+                    <tr class="sv-detay-satir">
+                      <td colspan="9">
+                        @switch (detay(sefer.anahtar)?.durum) {
+                          @case ('yukleniyor') {
+                            <div class="sv-state" role="status"><span class="spinner-border spinner-border-sm text-warning"></span>{{ t('SHIPMENTS.LOADING') }}</div>
+                          }
+                          @case ('hata') {
+                            @if (detay(sefer.anahtar); as d) {
+                              @if (d.durum === 'hata') { <div class="sv-state sv-state--hata" role="alert">{{ d.mesaj }}</div> }
+                            }
+                          }
+                          @case ('hazir') {
+                            @if (detay(sefer.anahtar); as d) {
+                              @if (d.durum === 'hazir') {
+                                <div class="sv-detay">
+                                  <div class="sv-detay__bilgi">
+                                    @if (d.detay.kullaniciAdSoyad) {
+                                      <span><i class="ri-user-line"></i>{{ d.detay.kullaniciAdSoyad }}</span>
+                                    }
+                                    <span><i class="ri-archive-line"></i>{{ t('SHIPMENTS.DETAIL_SUMMARY', { proje: d.detay.projeler.length, sandik: seferSandikSayisi(d.detay) }) }}</span>
+                                    @if (d.detay.aciklama) {
+                                      <span class="sv-detay__aciklama"><i class="ri-chat-3-line"></i>{{ d.detay.aciklama }}</span>
+                                    }
+                                  </div>
+                                  @for (proje of d.detay.projeler; track proje.projeId + '-' + proje.sevkiyatNo) {
+                                    <div class="sv-detay__proje">
+                                      <div class="sv-detay__proje-ust">
+                                        <strong>{{ proje.projeNo }}</strong>
+                                        <span class="sv-tip" [attr.data-tip]="proje.projeTipiId">{{ projeTipiAdi(proje.projeTipiId) }}</span>
+                                        <small>{{ t('SHIPMENTS.SHIPMENT_NO', { n: proje.sevkiyatNo }) }}</small>
+                                        <small class="ms-auto">{{ t('SHIPMENTS.CRATE_COUNT', { n: proje.sandiklar.length }) }}</small>
+                                      </div>
+                                      <div class="sv-detay__sandiklar">
+                                        @for (sandik of proje.sandiklar; track sandik.sandikId) {
+                                          <span class="sv-sandik" [class.is-duzeltme]="sandik.sevkiyatDuzeltmeAcikMi"
+                                            [title]="sandik.sandikAdi || ''">
+                                            <b>{{ sandik.sandikNo }}</b>
+                                            @if (sandik.sandikAdi) { <span>{{ sandik.sandikAdi }}</span> }
+                                            @if (sandik.brutKg != null) { <small>{{ sandik.brutKg | number: '1.0-1' }} kg</small> }
+                                            @if (sandik.sevkiyatDuzeltmeAcikMi) { <i class="ri-tools-line" [attr.aria-label]="t('SHIPMENTS.CORRECTION_OPEN_HINT')"></i> }
+                                          </span>
+                                        }
+                                      </div>
+                                    </div>
+                                  }
+                                </div>
+                              }
+                            }
+                          }
+                        }
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="sv-card__foot">
+            <app-server-pager
+              [pageNumber]="sayfa()"
+              [pageSize]="sayfaBoyutu()"
+              [totalCount]="toplamKayit()"
+              [totalPages]="toplamSayfa()"
+              [hasPreviousPage]="sayfa() > 1"
+              [hasNextPage]="sayfa() < toplamSayfa()"
+              (pageChange)="sayfaDegisti($event)"
+              (pageSizeChange)="sayfaBoyutuDegisti($event)"
+            />
+          </div>
+        }
+      }
+
+      @case ('plaka') {
+        @if (istatistikYukleniyor()) {
+          <div class="sv-state" role="status"><span class="spinner-border spinner-border-sm text-warning"></span>{{ t('SHIPMENTS.LOADING') }}</div>
+        } @else if (!istatistik()?.plakalar?.length) {
+          <div class="sv-empty"><span class="sv-empty__icon" aria-hidden="true"><i class="ri-steering-2-line"></i></span><p>{{ t('SHIPMENTS.EMPTY') }}</p></div>
+        } @else {
+          <div class="table-responsive">
+            <table class="sv-table sv-plakalar">
+              <thead>
+                <tr>
+                  <th>{{ t('SHIPMENTS.PLATE') }}</th>
+                  <th class="text-end">{{ t('SHIPMENTS.TRIPS') }}</th>
+                  <th class="text-end">{{ t('SHIPMENTS.CRATES') }}</th>
+                  <th class="text-end">{{ t('SHIPMENTS.PROJECTS') }}</th>
+                  <th>{{ t('SHIPMENTS.LAST_SHIPMENT') }}</th>
+                  <th aria-hidden="true"></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (satir of istatistik()!.plakalar; track satir.plaka) {
+                  <tr>
+                    <td><span class="sv-plaka-etiket">{{ satir.plaka }}</span></td>
+                    <td class="text-end">{{ satir.seferSayisi }}</td>
+                    <td class="text-end">{{ satir.sandikSayisi }}</td>
+                    <td class="text-end">{{ satir.projeSayisi }}</td>
+                    <td>{{ satir.sonSevk | date: 'dd.MM.yyyy' }}</td>
+                    <td class="text-end">
+                      <button type="button" class="btn btn-link btn-sm sv-git" (click)="plakaSeferleri(satir)">{{ t('SHIPMENTS.SHOW_TRIPS') }}</button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+
+      @case ('proje') {
+        @if (istatistikYukleniyor()) {
+          <div class="sv-state" role="status"><span class="spinner-border spinner-border-sm text-warning"></span>{{ t('SHIPMENTS.LOADING') }}</div>
+        } @else if (!istatistik()?.projeler?.length) {
+          <div class="sv-empty"><span class="sv-empty__icon" aria-hidden="true"><i class="ri-folder-3-line"></i></span><p>{{ t('SHIPMENTS.EMPTY') }}</p></div>
+        } @else {
+          <div class="table-responsive">
+            <table class="sv-table sv-projeler-tablo">
+              <thead>
+                <tr>
+                  <th>{{ t('SHIPMENTS.PROJECT_NO') }}</th>
+                  <th>{{ t('SHIPMENTS.PROJECT_TYPE') }}</th>
+                  <th class="text-end">{{ t('SHIPMENTS.TRIPS') }}</th>
+                  <th class="text-end">{{ t('SHIPMENTS.CRATES') }}</th>
+                  <th>{{ t('SHIPMENTS.PLATES') }}</th>
+                  <th>{{ t('SHIPMENTS.TRIP_NOS') }}</th>
+                  <th aria-hidden="true"></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (satir of istatistik()!.projeler; track satir.projeId) {
+                  <tr>
+                    <td><strong>{{ satir.projeNo }}</strong></td>
+                    <td><span class="sv-tip" [attr.data-tip]="satir.projeTipiId">{{ projeTipiAdi(satir.projeTipiId) }}</span></td>
+                    <td class="text-end">{{ satir.seferSayisi }}</td>
+                    <td class="text-end">{{ satir.sandikSayisi }}</td>
+                    <td class="sv-projeler">@for (p of satir.plakalar; track p) { <span class="sv-plaka-etiket">{{ p }}</span> } @empty { — }</td>
+                    <td class="sv-projeler">@for (no of satir.seferNolari; track no) { <span class="sv-chip">{{ no }}</span> } @empty { <span class="sv-rozet sv-rozet--eski">{{ t('SHIPMENTS.LEGACY') }}</span> }</td>
+                    <td class="text-end">
+                      <button type="button" class="btn btn-link btn-sm sv-git" (click)="projeSeferleri(satir)">{{ t('SHIPMENTS.SHOW_TRIPS') }}</button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+
+      @case ('aylik') {
+        @if (istatistikYukleniyor()) {
+          <div class="sv-state" role="status"><span class="spinner-border spinner-border-sm text-warning"></span>{{ t('SHIPMENTS.LOADING') }}</div>
+        } @else if (!aylik().length) {
+          <div class="sv-empty"><span class="sv-empty__icon" aria-hidden="true"><i class="ri-bar-chart-2-line"></i></span><p>{{ t('SHIPMENTS.EMPTY') }}</p></div>
+        } @else {
+          <ul class="sv-aylik">
+            @for (ay of aylik(); track ay.yil * 100 + ay.ay) {
+              <li>
+                <span class="sv-aylik__ad">{{ ayAdi(ay.yil, ay.ay) }}</span>
+                <span class="sv-aylik__cubuk" aria-hidden="true"><span [style.width.%]="ay.oran"></span></span>
+                <span class="sv-aylik__deger">{{ t('SHIPMENTS.MONTH_VALUE', { sefer: ay.seferSayisi, sandik: ay.sandikSayisi }) }}</span>
+              </li>
+            }
+          </ul>
+        }
+      }
+    }
+  </section>
+</div>

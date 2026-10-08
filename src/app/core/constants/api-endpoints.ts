@@ -38,6 +38,14 @@ export const API = {
     SEVK_TARIHI_GUNCELLE: `${BASE}/proje/sevk-tarihi-guncelle`,
     DELETE: (id: number) => `${BASE}/proje/${id}`,
   },
+  /** Tır seferi (çok projeli toplu sevk), sefer listesi ve sevkiyat istatistikleri. */
+  SEVKIYAT: {
+    TOPLU_SEVK: `${BASE}/sevkiyat/toplu-sevk`,
+    SEFERLER: `${BASE}/sevkiyat/seferler`,
+    SEFER_DETAY: (seferId: number) => `${BASE}/sevkiyat/seferler/${seferId}/detay`,
+    ESKI_SEFER_DETAY: `${BASE}/sevkiyat/seferler/eski-detay`,
+    ISTATISTIK: `${BASE}/sevkiyat/istatistik`,
+  },
   AMBALAJ: {
     FORM_SURUMLERI: `${BASE}/ambalaj/uretim-formlari`,
     FORM_SURUM_DOSYA: (id: number, format: string) => `${BASE}/ambalaj/uretim-formlari/${id}/dosya?format=${format}`,
