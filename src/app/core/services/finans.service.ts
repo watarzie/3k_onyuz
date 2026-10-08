@@ -23,6 +23,8 @@ import {
   FinansListelemeRequest,
   FinansOzelIsKaydetRequest,
   FinansHacimGirRequest,
+  FinansProjeSandikKirilimi,
+  FinansSandikKirilimiRequest,
   FinansSayfaliSonuc,
   FinansSiparis,
   FinansSiparisDetay,
@@ -256,6 +258,17 @@ export class FinansService {
     const params = this.listelemeParametreleri(request).set('yil', yil).set('ay', ay);
     return this.api.get<FinansAylikSayfaliSonuc>(API.FINANS.AYLIK_ISLER, { params });
   }
+  /** Projenin sandık kırılımı (sayfalamasız, sunucuda gruplanmış); yil/ay verilirse yalnız o finans dönemi. */
+  projeSandikKirilimi(request: FinansSandikKirilimiRequest) {
+    let params = new HttpParams();
+    if (request.projeId) params = params.set('projeId', request.projeId);
+    if (request.projeNo?.trim()) params = params.set('projeNo', request.projeNo.trim());
+    if (request.musteri?.trim()) params = params.set('musteri', request.musteri.trim());
+    if (request.yil && request.ay) params = params.set('yil', request.yil).set('ay', request.ay);
+    if (request.sandikNo?.trim()) params = params.set('sandikNo', request.sandikNo.trim());
+    if (request.iptalEdilenleriDahilEt) params = params.set('iptalEdilenleriDahilEt', true);
+    return this.api.get<FinansProjeSandikKirilimi>(API.FINANS.PROJE_SANDIK_KIRILIMI, { params });
+  }
   ozelIsOlustur(request: FinansOzelIsKaydetRequest) {
     return this.api.post<FinansIsKaydi>(API.FINANS.OZEL_ISLER, request);
   }
@@ -439,6 +452,7 @@ export class FinansService {
     if (request.arama?.trim()) params = params.set('arama', request.arama.trim());
     if (request.projeNo?.trim()) params = params.set('projeNo', request.projeNo.trim());
     if (request.poNumarasi?.trim()) params = params.set('poNumarasi', request.poNumarasi.trim());
+    if (request.sandikNo?.trim()) params = params.set('sandikNo', request.sandikNo.trim());
     if (request.baslangic) params = params.set('baslangic', request.baslangic);
     if (request.bitis) params = params.set('bitis', request.bitis);
     for (const key of [

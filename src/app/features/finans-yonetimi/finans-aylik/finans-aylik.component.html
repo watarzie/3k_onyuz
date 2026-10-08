@@ -210,10 +210,10 @@
                 @if (satir.sandikAdedi) {
                   <small>{{ satir.sandikAdedi }} sandık@if (satir.ahsapM3) { · {{ t('WOOD_M3') }} {{ satir.ahsapM3 | number: '1.0-3' }} }@if (satir.kontraM3) { · {{ t('PLYWOOD_M3') }} {{ satir.kontraM3 | number: '1.0-3' }} }@if (satir.ahsapM3 && satir.kontraM3) { · {{ t('COMPOSITE_M3') }} {{ hacimBilesik(satir.ahsapM3, satir.kontraM3) | number: '1.0-3' }} }</small>
                 }
-                @if (satir.projeNo && satir.isKaydiIds.length) {
+                @if (satir.kaynakTuru === 'Proje' && satir.isKaydiIds.length) {
                   <button type="button" class="crate-toggle" [attr.aria-expanded]="sandiklarAcik(satir)" (click)="sandiklariAcKapat(satir)">
                     <i [class]="sandiklarAcik(satir) ? 'ri-arrow-up-s-line' : 'ri-archive-line'" aria-hidden="true"></i>
-                    {{ sandiklarAcik(satir) ? 'Sandıkları gizle' : 'Sandıklar (' + satir.isKaydiIds.length + ')' }}
+                    {{ sandiklarAcik(satir) ? t('CRATES_HIDE') : t('CRATES') + ' (' + satir.isKaydiIds.length + ')' }}
                   </button>
                 }
               </div>
@@ -317,36 +317,36 @@
         @if (projeli && sandiklarAcik(satir)) {
           <tr class="crate-breakdown-row">
             <td colspan="20">
-              @if (sandikYukleniyor().has(satir.projeNo)) {
-                <div class="crate-breakdown-empty"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Sandıklar yükleniyor…</div>
+              @if (kirilimYukleniyor().has(satir.projeBirimAnahtari)) {
+                <div class="crate-breakdown-empty"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> {{ t('CRATES_LOADING') }}</div>
               } @else {
                 @let sandiklar = kategoriSandiklari(satir);
                 @if (sandiklar.length) {
                   <table class="crate-breakdown">
                     <thead>
                       <tr>
-                        <th>Sandık</th>
+                        <th>{{ t('CRATE') }}</th>
                         <th>Finans tarihi</th>
                         <th>Miktar</th>
                         @if (parasal(izin.TutarGoruntule)) {
-                          <th class="text-end">Net</th>
+                          <th class="text-end">{{ t('AMOUNT') }}</th>
                         }
-                        <th>PO / Fatura</th>
+                        <th>PO / {{ t('INVOICE') }}</th>
                         <th class="text-end">İşlem</th>
                       </tr>
                     </thead>
                     <tbody>
-                      @for (k of sandiklar; track k.id) {
-                        <tr [class.cancelled]="k.iptalEdildi">
-                          <td><strong>{{ k.sandikNo || '—' }}</strong> <small>{{ k.sandikAdi || k.isAdi }}@if (k.sandikTipi) { · {{ k.sandikTipi }} }</small></td>
-                          <td>{{ k.finansTarihi | date: 'dd.MM.yyyy' }}</td>
-                          <td>{{ k.adet | number: '1.0-3' }} adet@if (k.toplamM3) { · {{ k.toplamM3 | number: '1.0-3' }} m³ }</td>
+                      @for (x of sandiklar; track x.kayit.id) {
+                        <tr [class.cancelled]="!x.kayit.aktif">
+                          <td><strong>{{ x.sandik.sandikNo || '—' }}</strong><small class="crate-name">{{ x.sandik.sandikAdi || x.kayit.isAdi }}@if (x.sandik.sandikTipi) { · {{ x.sandik.sandikTipi }} }</small></td>
+                          <td>{{ x.kayit.finansTarihi | date: 'dd.MM.yyyy' }}</td>
+                          <td>{{ x.kayit.adet | number: '1.0-3' }} adet@if (x.kayit.toplamM3) { · {{ x.kayit.toplamM3 | number: '1.0-3' }} m³ }</td>
                           @if (parasal(izin.TutarGoruntule)) {
-                            <td class="text-end">{{ k.netTutar | number: '1.2-2' }} {{ k.paraBirimi }}</td>
+                            <td class="text-end">{{ x.kayit.netTutar | number: '1.2-2' }} {{ x.kayit.paraBirimi }}</td>
                           }
-                          <td><small>PO: {{ k.poNumaralari.join(', ') || '—' }} · Fatura: {{ k.faturaNumaralari.join(', ') || '—' }}</small></td>
+                          <td><small>PO: {{ x.kayit.poNumaralari.join(', ') || '—' }} · {{ t('INVOICE') }}: {{ x.kayit.faturaNumaralari.join(', ') || '—' }}</small></td>
                           <td class="text-end">
-                            <button type="button" class="btn btn-outline-primary btn-sm" (click)="detayHedef.set({ tur: 'IsKaydi', id: k.id })">Detay</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm" (click)="detayHedef.set({ tur: 'IsKaydi', id: x.kayit.id })">{{ t('DETAIL') }}</button>
                           </td>
                         </tr>
                       }
@@ -414,7 +414,7 @@
                               {{ blok.projeNo }}
                             </button></strong
                           >
-                          <small>{{ blok.musteri }} · {{ blok.satirlar.length }} kategori</small>
+                          <small>{{ blok.musteri }} · {{ blok.satirlar.length }} kategori@if (blok.ozelIsler.length) { · {{ blok.ozelIsler.length }} {{ t('PROJECT_SPECIAL_WORKS_SHORT') }} }</small>
                           @if (blok.ozet; as ozet) {
                             @if (ozet.ahsapM3 || ozet.kontraM3) {
                               <small>@if (ozet.ahsapM3) { {{ t('WOOD_M3') }} {{ ozet.ahsapM3 | number: '1.0-3' }} }@if (ozet.ahsapM3 && ozet.kontraM3) { · }@if (ozet.kontraM3) { {{ t('PLYWOOD_M3') }} {{ ozet.kontraM3 | number: '1.0-3' }} }@if (ozet.ahsapM3 && ozet.kontraM3) { · {{ t('COMPOSITE_M3') }} {{ hacimBilesik(ozet.ahsapM3, ozet.kontraM3) | number: '1.0-3' }} }</small>
@@ -423,6 +423,15 @@
                               <small class="attention-value">{{ ozet.fiyatBekleyenKalem }} kalem fiyat bekliyor</small>
                             }
                           }
+                          <button
+                            type="button"
+                            class="crate-toggle project-crates-toggle"
+                            [attr.aria-expanded]="projeSandiklariAcik(blok)"
+                            (click)="$event.stopPropagation(); projeSandiklariAcKapat(blok)"
+                          >
+                            <i [class]="projeSandiklariAcik(blok) ? 'ri-arrow-up-s-line' : 'ri-archive-line'" aria-hidden="true"></i>
+                            {{ projeSandiklariAcik(blok) ? t('CRATES_HIDE') : t('CRATES') }}@if (projeKirilimi(blok.anahtar); as kirilim) { ({{ kirilim.sandiklar.length }}) }
+                          </button>
                         </div>
                       </td>
                       <td>
@@ -479,12 +488,108 @@
                         </div>
                       </td>
                     </tr>
+                    @if (projeSandiklariAcik(blok)) {
+                      <tr class="crate-breakdown-row project-crates-row">
+                        <td colspan="20">
+                          @if (kirilimYukleniyor().has(blok.anahtar)) {
+                            <div class="crate-breakdown-empty"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> {{ t('CRATES_LOADING') }}</div>
+                          } @else if (projeKirilimi(blok.anahtar); as kirilim) {
+                            @if (kirilim.sandiklar.length) {
+                              <p class="crate-note"><i class="ri-information-line" aria-hidden="true"></i>{{ t('CRATES_NOTE') }}</p>
+                              <table class="crate-breakdown project-crates">
+                                <thead>
+                                  <tr>
+                                    <th>{{ t('CRATE') }}</th>
+                                    <th>Miktar</th>
+                                    @if (parasal(izin.TutarGoruntule)) {
+                                      <th class="text-end">{{ t('AMOUNT') }}</th>
+                                      <th class="text-end">PO / {{ t('INVOICE') }}</th>
+                                    }
+                                    <th>PO / {{ t('INVOICE') }} no</th>
+                                    <th>{{ t('STATUS') }}</th>
+                                    <th class="text-end"></th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  @for (s of gorunenSandiklar(blok); track s.anahtar) {
+                                    <tr class="crate-summary-row" [class.expanded]="sandikSatiriAcik(blok, s)" [class.cancelled]="s.durum === 6">
+                                      <td>
+                                        <button type="button" class="crate-row-toggle" [attr.aria-expanded]="sandikSatiriAcik(blok, s)" (click)="sandikSatiriAcKapat(blok, s)">
+                                          <i [class]="sandikSatiriAcik(blok, s) ? 'ri-arrow-down-s-line' : 'ri-arrow-right-s-line'" aria-hidden="true"></i>
+                                          <strong>{{ s.sandikNo || t('CRATE_NONE') }}</strong>
+                                        </button>
+                                        <small>{{ s.sandikAdi }}@if (s.sandikTipi) { · {{ s.sandikTipi }} } · {{ s.kayitSayisi }} {{ t('RECORDS_COUNT') }}</small>
+                                        @if (s.fiyatBekleyenKayitSayisi) {
+                                          <small class="attention-value">{{ s.fiyatBekleyenKayitSayisi }} {{ t('PRICE_PENDING_RECORDS') }}</small>
+                                        }
+                                      </td>
+                                      <td>
+                                        {{ s.adet | number: '1.0-3' }} adet@if (s.toplamM3 != null && s.toplamM3) { · {{ s.toplamM3 | number: '1.0-3' }} m³ }
+                                        @if (s.ahsapM3 && s.kontraM3) {
+                                          <small>{{ t('WOOD_M3') }} {{ s.ahsapM3 | number: '1.0-3' }} · {{ t('PLYWOOD_M3') }} {{ s.kontraM3 | number: '1.0-3' }}</small>
+                                        }
+                                      </td>
+                                      @if (parasal(izin.TutarGoruntule)) {
+                                        <td class="text-end nowrap">{{ s.netTutar | number: '1.2-2' }} {{ s.paraBirimi }}</td>
+                                        <td class="text-end nowrap"><small>{{ s.siparisNetTutar | number: '1.2-2' }} / {{ s.faturalananNetTutar | number: '1.2-2' }}</small></td>
+                                      }
+                                      <td><small>PO: {{ s.poNumaralari.join(', ') || '—' }} · {{ t('INVOICE') }}: {{ s.faturaNumaralari.join(', ') || '—' }}</small></td>
+                                      <td><span [class]="'status ' + sandikDurumSinifi(s.durum)">{{ t(isDurumuAnahtari(s.durum)) }}</span></td>
+                                      <td class="text-end"></td>
+                                    </tr>
+                                    @if (sandikSatiriAcik(blok, s)) {
+                                      @for (k of s.kayitlar; track k.id) {
+                                        <tr class="crate-record-row" [class.cancelled]="!k.aktif">
+                                          <td>
+                                            <span class="source-pill" [class.is-sarf]="sarfKaydi(k)">{{ sarfKaydi(k) ? t('SOURCE_SARF') : t('SOURCE_NET') }}</span>
+                                            {{ t(kategoriAnahtari(k.kategori)) }}<small>{{ k.isAdi }} · {{ k.finansTarihi | date: 'dd.MM.yyyy' }}</small>
+                                          </td>
+                                          <td>{{ k.adet | number: '1.0-3' }} adet@if (k.toplamM3) { · {{ k.toplamM3 | number: '1.0-3' }} m³ }</td>
+                                          @if (parasal(izin.TutarGoruntule)) {
+                                            <td class="text-end nowrap">{{ k.netTutar | number: '1.2-2' }} {{ k.paraBirimi }}</td>
+                                            <td class="text-end nowrap"><small>{{ k.siparisNetTutar | number: '1.2-2' }} / {{ k.faturalananNetTutar | number: '1.2-2' }}</small></td>
+                                          }
+                                          <td>
+                                            @for (po of k.poNumaralari; track po) { <span class="ref-pill">PO {{ po }}</span> }
+                                            @for (ft of k.faturaNumaralari; track ft) { <span class="ref-pill is-invoice">{{ ft }}</span> }
+                                            @if (!k.poNumaralari.length && !k.faturaNumaralari.length) { <small>—</small> }
+                                          </td>
+                                          <td><span [class]="'status ' + sandikDurumSinifi(k.durum)">{{ t(isDurumuAnahtari(k.durum)) }}</span></td>
+                                          <td class="text-end">
+                                            <button type="button" class="btn btn-outline-primary btn-sm" (click)="detayHedef.set({ tur: 'IsKaydi', id: k.id })">{{ t('DETAIL') }}</button>
+                                          </td>
+                                        </tr>
+                                      }
+                                    }
+                                  }
+                                </tbody>
+                              </table>
+                              @if (kirilim.sandiklar.length > kirilimIlkSatir) {
+                                <button type="button" class="btn btn-link btn-sm crate-show-all" (click)="tumSandiklariAcKapat(blok)">
+                                  {{ tumSandiklarAcik().has(blok.anahtar) ? t('PANEL_DETAIL_SHOW_LESS') : t('PANEL_DETAIL_SHOW_ALL').replace('{0}', '' + kirilim.sandiklar.length) }}
+                                </button>
+                              }
+                            } @else {
+                              <div class="crate-breakdown-empty">{{ t('CRATES_EMPTY') }}</div>
+                            }
+                          }
+                        </td>
+                      </tr>
+                    }
                     @if (projeAcik(blok.anahtar)) {
                       @for (
                         satir of blok.satirlar;
                         track satir.kaynakTuru + '-' + satir.isTuru + '-' + satir.isKaydiIds.join('-')
                       ) {
                         <ng-container *ngTemplateOutlet="isSatiri; context: { $implicit: satir, projeli: true }" />
+                      }
+                      @if (blok.ozelIsler.length) {
+                        <tr class="project-subgroup-row">
+                          <td colspan="20"><i class="ri-briefcase-4-line" aria-hidden="true"></i>{{ t('PROJECT_SPECIAL_WORKS') }} ({{ blok.ozelIsler.length }})</td>
+                        </tr>
+                        @for (satir of blok.ozelIsler; track 'ozel-' + satir.ozelIsId) {
+                          <ng-container *ngTemplateOutlet="isSatiri; context: { $implicit: satir, projeli: true }" />
+                        }
                       }
                     }
                   }

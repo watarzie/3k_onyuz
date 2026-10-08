@@ -10,7 +10,43 @@ import { ToastService } from '../../../core/services/toast.service';
 import { TranslationService } from '../../../core/services/translation.service';
 import { FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
 import { FinansIsKategorisi, FinansKarsilanma, FinansOdemeFiltresi } from '../../../core/constants/enums';
-import { FinansAylikIs, FinansAylikProjeOzeti, FinansGider } from '../../../shared/models/finans.model';
+import {
+  FinansAylikIs,
+  FinansAylikProjeOzeti,
+  FinansGider,
+  FinansProjeSandikKirilimi,
+  FinansSandikKirilimKalemi,
+  FinansSandikKirilimSatiri,
+} from '../../../shared/models/finans.model';
+
+function kalem(id: number, ek: Partial<FinansSandikKirilimKalemi> = {}): FinansSandikKirilimKalemi {
+  return {
+    id, isTuru: 1, kategori: FinansIsKategorisi.AnaAmbalaj, kaynakBileseni: 'NET', isAdi: 'Normal Ambalaj',
+    finansTarihi: '2026-09-05', adet: 1, toplamM3: 1, ahsapM3: 1, kontraM3: 0, paraBirimi: 'EUR', netTutar: 350,
+    siparisNetTutar: 0, faturalananNetTutar: 0, durum: 1, aktif: true, poNumaralari: [], faturaNumaralari: [], ...ek,
+  };
+}
+
+function sandik(sandikNo: string, kayitlar: FinansSandikKirilimKalemi[]): FinansSandikKirilimSatiri {
+  return {
+    anahtar: sandikNo + '|EUR', sandikNo, sandikAdi: 'Sandık ' + sandikNo, sandikTipi: 'Ahşap Kapalı', sandikCinsi: 1,
+    sandikMalzemesi: 1, kayitSayisi: kayitlar.length, fiyatBekleyenKayitSayisi: 0, adet: 1, toplamM3: 1, ahsapM3: 1,
+    kontraM3: 0, paraBirimi: 'EUR', netTutar: 350, siparisNetTutar: 0, faturalananNetTutar: 0, durum: 1,
+    ilkTarih: '2026-09-05', sonTarih: '2026-09-05', poNumaralari: [], faturaNumaralari: [], kayitlar,
+  };
+}
+
+/** Proje 1'in kırılımı: sandık 1 = NET (11) + SARF (13), sandık 2 = NET (12); ek sandıklar yalnız satır sayısı için. */
+function kirilim(ekSandik = 0): FinansProjeSandikKirilimi {
+  return {
+    projeId: 1, projeNo: 'PA727-03', musteri: 'GE', kayitSayisi: 3 + ekSandik,
+    sandiklar: [
+      sandik('2', [kalem(12)]),
+      sandik('1', [kalem(11, { poNumaralari: ['PO-1'] }), kalem(13, { isTuru: 9, kategori: FinansIsKategorisi.SarfKereste, kaynakBileseni: 'SARF' })]),
+      ...Array.from({ length: ekSandik }, (_, i) => sandik(String(10 + i), [kalem(100 + i)])),
+    ],
+  };
+}
 
 function satir(ek: Partial<FinansAylikIs>): FinansAylikIs {
   return {
@@ -46,7 +82,7 @@ describe('Finans aylık görünüm PO/fatura akışı', () => {
   beforeEach(() => {
     reads.set(new Set([FINANS_YETKI.Modul, FINANS_YETKI.KayitGoruntule, FINANS_YETKI.SiparisOperasyonGoruntule]));
     writes.set(new Set([FINANS_YETKI.PoGir, FINANS_YETKI.FaturaGir]));
-    api = jasmine.createSpyObj('FinansService', ['aylikIsler', 'giderKategorileri', 'giderKalemleri', 'giderGuncelle', 'giderler', 'paraBirimleri', 'vadeUyarilari', 'faturalar', 'ozelIsAylikDegerGuncelle', 'genelArama']);
+    api = jasmine.createSpyObj('FinansService', ['aylikIsler', 'giderKategorileri', 'giderKalemleri', 'giderGuncelle', 'giderler', 'paraBirimleri', 'vadeUyarilari', 'faturalar', 'ozelIsAylikDegerGuncelle', 'genelArama', 'projeSandikKirilimi']);
     api.ozelIsAylikDegerGuncelle.and.returnValue(of({ isSuccess: true }));
     api.vadeUyarilari.and.returnValue(of({ isSuccess: true, value: { vadeUyariGunu: 7, vadesiGecenAdet: 0, yaklasanAdet: 0, kalemler: [] } }));
     api.paraBirimleri.and.returnValue(of({ isSuccess: true, value: [
@@ -96,21 +132,78 @@ describe('Finans aylık görünüm PO/fatura akışı', () => {
     expect(c.aylikTarifeDuzenlenebilir(satir)).toBeFalse();
   });
 
-  it('kategori satırında sandıklar isteğe bağlı açılır; proje kalemleri bir kez yüklenir', () => {
-    api.genelArama.and.returnValue(of({ isSuccess: true, value: { pageNumber: 1, pageSize: 250, totalCount: 3, totalPages: 1, hasPreviousPage: false, hasNextPage: false, items: [
-      { id: 12, projeNo: 'PA727-03', sandikNo: '2', poNumaralari: [], faturaNumaralari: [] },
-      { id: 11, projeNo: 'PA727-03', sandikNo: '1', poNumaralari: [], faturaNumaralari: [] },
-      { id: 13, projeNo: 'PA727-03', sandikNo: '3', poNumaralari: [], faturaNumaralari: [] },
-    ] as never, toplamlar: [] } }));
+  it('kategori satırında sandıklar sunucu kırılımından gelir (250 sınırı yok); proje kırılımı bir kez yüklenir', () => {
+    api.projeSandikKirilimi.and.returnValue(of({ isSuccess: true, value: kirilim() }));
     const { c } = setup();
     expect(c.sandiklarAcik(ana)).toBeFalse();
     c.sandiklariAcKapat(ana);
-    expect(api.genelArama).toHaveBeenCalledOnceWith({ pageNumber: 1, pageSize: 250, projeNo: 'PA727-03' });
-    expect(c.kategoriSandiklari(ana).map((k) => k.sandikNo)).toEqual(['1', '2']);
+    const donem = c.seciliDonem();
+    expect(api.projeSandikKirilimi).toHaveBeenCalledOnceWith(jasmine.objectContaining({
+      projeId: 1, yil: donem.getFullYear(), ay: donem.getMonth() + 1, iptalEdilenleriDahilEt: false,
+    }));
+    expect(c.kategoriSandiklari(ana).map((x) => [x.sandik.sandikNo, x.kayit.id])).toEqual([['1', 11], ['2', 12]]);
     c.sandiklariAcKapat(ana);
     c.sandiklariAcKapat(sarf);
-    expect(api.genelArama).toHaveBeenCalledTimes(1);
-    expect(c.kategoriSandiklari(sarf).map((k) => k.id)).toEqual([13]);
+    expect(api.projeSandikKirilimi).toHaveBeenCalledTimes(1);
+    expect(c.kategoriSandiklari(sarf).map((x) => x.kayit.id)).toEqual([13]);
+    expect(api.genelArama).not.toHaveBeenCalled();
+  });
+
+  it('proje bloğunda "Sandıklar" ilk sekiz sandığı gösterir; sandık açılınca NET/SARF kayıtları, kayıttan detay açılır', () => {
+    api.projeSandikKirilimi.and.returnValue(of({ isSuccess: true, value: kirilim(10) }));
+    const { fixture, c, el } = setup();
+    (el.querySelector('tr.project-row .project-crates-toggle') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(c.projeAcik('P:1')).toBeFalse();
+    const ozetSatirlari = () => el.querySelectorAll('.project-crates tr.crate-summary-row');
+    expect(ozetSatirlari().length).toBe(8);
+    expect(ozetSatirlari()[0].querySelector('strong')?.textContent?.trim()).toBe('1');
+    (el.querySelector('.crate-show-all') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(ozetSatirlari().length).toBe(12);
+
+    (ozetSatirlari()[0].querySelector('.crate-row-toggle') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const kayitlar = el.querySelectorAll('.project-crates tr.crate-record-row');
+    expect(kayitlar.length).toBe(2);
+    expect(kayitlar[0].querySelector('.source-pill')?.textContent?.trim()).toBe('Sandık');
+    expect(kayitlar[1].querySelector('.source-pill.is-sarf')?.textContent?.trim()).toBe('Sarf');
+    expect(kayitlar[0].textContent).toContain('PO PO-1');
+    (kayitlar[1].querySelector('button.btn-outline-primary') as HTMLButtonElement).click();
+    expect(c.detayHedef()).toEqual({ tur: 'IsKaydi', id: 13 });
+  });
+
+  it('liste yenilenince kırılım önbelleği düşer; açık proje paneli yeni veriyle yeniden yüklenir', () => {
+    api.projeSandikKirilimi.and.returnValue(of({ isSuccess: true, value: kirilim() }));
+    const { c } = setup();
+    const [blok] = c.aylikProjeBloklari();
+    c.projeSandiklariAcKapat(blok);
+    c.sandiklariAcKapat(ana);
+    expect(api.projeSandikKirilimi).toHaveBeenCalledTimes(1);
+    c.aylikListeyiYukle();
+    expect(api.projeSandikKirilimi).toHaveBeenCalledTimes(2);
+    expect(c.projeSandiklariAcik(blok)).toBeTrue();
+    expect(c.sandiklarAcik(ana)).toBeFalse();
+  });
+
+  it('projeye bağlı özel iş proje bloğunun "Özel / Düzenli İşler" alt grubunda da listelenir; sandık düğmesi yoktur', () => {
+    const projeOzel = satir({ kaynakTuru: 'OzelIs', ozelIsId: 60, isGrubu: 'Özel İş', isAdi: 'Forklift kiralama', isTuru: 8,
+      kategori: FinansIsKategorisi.OzelIs, isKaydiIds: [60] });
+    api.aylikIsler.and.returnValue(of({ isSuccess: true, value: {
+      pageNumber: 1, pageSize: 25, totalCount: 3, totalPages: 1, hasPreviousPage: false, hasNextPage: false,
+      items: [sarf, kira, ana, projeOzel], projeler: [ozet], projeOzelIsleri: [projeOzel], finansOzeti: [], grupToplamlari: [],
+    } }));
+    const { fixture, c, el } = setup();
+    const [blok] = c.aylikProjeBloklari();
+    expect(blok.ozelIsler.map((x) => x.ozelIsId)).toEqual([60]);
+    expect(c.aylikGruplar().find((g) => g.ad === 'Özel ve Düzenli İşler')?.satirlar.map((x) => x.ozelIsId)).toEqual([60]);
+    c.projeDegistir('P:1');
+    fixture.detectChanges();
+    expect(el.querySelector('tr.project-subgroup-row')?.textContent).toContain('Özel / Düzenli İşler (1)');
+    const detaylar = el.querySelectorAll('tr.project-detail-row');
+    expect(detaylar.length).toBe(3);
+    expect(detaylar[2].textContent).toContain('Forklift kiralama');
+    expect(detaylar[2].querySelector('.crate-toggle')).toBeNull();
   });
 
   it('vade uyarısı fatura okuyana gösterilir; uyarıdan vadesi geçen faturaların listesi açılır (D3)', () => {

@@ -1,6 +1,7 @@
 import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { finansHacimBilesik, finansHacimGecerli } from '../ortak/finans-hacim';
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { KIRILIM_ILK_SATIR, ilkSatirlar, kategoriKirilimKayitlari, kirilimSandiklari, sarfKaydi } from '../ortak/finans-kirilim';
+import { Component, DestroyRef, OnInit, WritableSignal, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { EMPTY, Subject, debounceTime, distinctUntilChanged, finalize, forkJoin, of, switchMap } from 'rxjs';
@@ -53,6 +54,9 @@ import {
   FinansAylikIs,
   FinansAylikProjeOzeti,
   FinansIsKaydi,
+  FinansProjeSandikKirilimi,
+  FinansSandikKirilimKalemi,
+  FinansSandikKirilimSatiri,
   FinansAylikFinansOzeti,
   FinansAylikGrupToplami,
   FinansDuzenliIs,
@@ -89,11 +93,14 @@ interface AylikGrup {
 /** Aylık PO/fatura görünümünde proje satırı; kategori satırları altında açılır (F5). */
 interface AylikProjeBlogu {
   anahtar: string;
+  projeId: number | null;
   projeNo: string;
   musteri: string;
   /** Projenin ayın bütün aktif kalemlerinden türetilen birleşik durumu (F7); iptal satırlarında yoktur. */
   ozet: FinansAylikProjeOzeti | null;
   satirlar: FinansAylikIs[];
+  /** Projeye bağlı özel/düzenli işler; proje durumuna katılmaz, ayrı alt grupta listelenir. */
+  ozelIsler: FinansAylikIs[];
 }
 
 /** Sunucuda sipariş/fatura dağıtımı yapılamayan, önce miktar veya fiyat bekleyen satır durumları. */
@@ -219,6 +226,7 @@ export class FinansYonetimiComponent implements OnInit {
   /** Açık proje satırları; proje satırı kategori kırılımına açılır. */
   acikProjeler = signal(new Set<string>());
   aylikProjeler = signal<FinansAylikProjeOzeti[]>([]);
+  aylikProjeOzelIsleri = signal<FinansAylikIs[]>([]);
 
   aylikPageNumber = signal(1);
   aylikPageSize = signal(25);
@@ -354,20 +362,29 @@ export class FinansYonetimiComponent implements OnInit {
   aylikProjeBloklari = computed<AylikProjeBlogu[]>(() => {
     const bloklar = new Map<string, AylikProjeBlogu>();
     for (const ozet of this.aylikProjeler())
-      bloklar.set(ozet.projeBirimAnahtari, { anahtar: ozet.projeBirimAnahtari, projeNo: ozet.projeNo, musteri: ozet.musteri, ozet, satirlar: [] });
+      bloklar.set(ozet.projeBirimAnahtari, {
+        anahtar: ozet.projeBirimAnahtari, projeId: ozet.projeId, projeNo: ozet.projeNo, musteri: ozet.musteri,
+        ozet, satirlar: [], ozelIsler: [],
+      });
     for (const satir of this.aylikIsler().filter(x => x.kaynakTuru === 'Proje')) {
       const blok = bloklar.get(satir.projeBirimAnahtari)
-        ?? { anahtar: satir.projeBirimAnahtari, projeNo: satir.projeNo, musteri: satir.musteri, ozet: null, satirlar: [] };
+        ?? { anahtar: satir.projeBirimAnahtari, projeId: satir.projeId, projeNo: satir.projeNo, musteri: satir.musteri, ozet: null, satirlar: [], ozelIsler: [] };
       blok.satirlar.push(satir);
       bloklar.set(blok.anahtar, blok);
     }
+    // Projeye bağlı özel/düzenli işler (sunucunun ayrı listesi) projenin "Özel / Düzenli" alt grubunda da görünür.
+    for (const satir of this.aylikProjeOzelIsleri()) bloklar.get(satir.projeBirimAnahtari)?.ozelIsler.push(satir);
     const sira = (satir: FinansAylikIs) => {
       const index = FINANS_KATEGORILERI.findIndex(k => k.deger === satir.kategori);
       return index < 0 ? FINANS_KATEGORILERI.length : index;
     };
     return [...bloklar.values()]
       .filter(blok => blok.satirlar.length > 0)
-      .map(blok => ({ ...blok, satirlar: [...blok.satirlar].sort((a, b) => sira(a) - sira(b) || a.isAdi.localeCompare(b.isAdi, 'tr-TR')) }));
+      .map(blok => ({
+        ...blok,
+        satirlar: [...blok.satirlar].sort((a, b) => sira(a) - sira(b) || a.isAdi.localeCompare(b.isAdi, 'tr-TR')),
+        ozelIsler: [...blok.ozelIsler].sort((a, b) => sira(a) - sira(b) || a.isAdi.localeCompare(b.isAdi, 'tr-TR')),
+      }));
   });
   /** Proje dışı işler: sabit işler (kira, sevkiyat) ile diğer özel ve düzenli işler. */
   aylikGruplar = computed<AylikGrup[]>(() => {
@@ -548,43 +565,105 @@ export class FinansYonetimiComponent implements OnInit {
     this.urunListeIstekleri.next();
   }
 
-  /** Kategori satırının sandık kırılımı: isteğe bağlı açılır; proje kalemleri bir kez yüklenip önbellekte tutulur. */
+  /**
+   * Proje → sandık kırılımı: proje bloğundaki "Sandıklar" ve kategori satırlarının sandık dökümü aynı sunucu
+   * kırılımını kullanır (sayfalamasız, sunucuda gruplanmış). Kırılım proje başına bir kez yüklenip önbellekte
+   * tutulur; liste yenilenince önbellek düşer ve açık proje panelleri yeniden yüklenir.
+   */
+  readonly projeKirilimlari = signal(new Map<string, FinansProjeSandikKirilimi>());
+  readonly kirilimYukleniyor = signal(new Set<string>());
+  readonly acikProjeSandiklari = signal(new Set<string>());
+  readonly tumSandiklarAcik = signal(new Set<string>());
+  readonly acikSandikSatirlari = signal(new Set<string>());
   readonly acikSandiklar = signal(new Set<string>());
-  readonly sandikYukleniyor = signal(new Set<string>());
-  private readonly projeKalemleri = signal(new Map<string, FinansIsKaydi[]>());
-  private sandikAnahtari(satir: FinansAylikIs): string {
-    return satir.projeNo + ':' + satir.isKaydiIds.join(',');
+  readonly kirilimIlkSatir = KIRILIM_ILK_SATIR;
+  readonly sarfKaydi = sarfKaydi;
+  private kirilimNesli = 0;
+
+  private kirilimYukle(anahtar: string, proje: { projeId: number | null; projeNo: string; musteri: string }): void {
+    if (this.projeKirilimlari().has(anahtar) || this.kirilimYukleniyor().has(anahtar)) return;
+    this.kirilimYukleniyor.update(x => new Set(x).add(anahtar));
+    const nesil = this.kirilimNesli;
+    const tarih = this.seciliDonem();
+    this.service.projeSandikKirilimi({
+      projeId: proje.projeId,
+      projeNo: proje.projeId ? undefined : proje.projeNo,
+      musteri: proje.projeId ? undefined : proje.musteri,
+      yil: tarih.getFullYear(),
+      ay: tarih.getMonth() + 1,
+      iptalEdilenleriDahilEt: this.iptalEdilenleriGoster(),
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(result => {
+      // Dönem veya liste bu arada değiştiyse eski cevap yeni önbelleğe yazılmaz.
+      if (nesil !== this.kirilimNesli) return;
+      this.kirilimYukleniyor.update(x => { const y = new Set(x); y.delete(anahtar); return y; });
+      if (!result.isSuccess || !result.value) {
+        this.toast.error(result.error ?? this.t('CRATES_LOAD_ERROR'));
+        return;
+      }
+      this.projeKirilimlari.update(x => new Map(x).set(anahtar, result.value!));
+    });
   }
-  sandiklarAcik(satir: FinansAylikIs): boolean {
-    return this.acikSandiklar().has(this.sandikAnahtari(satir));
+  /** Liste yenilendi: kırılım önbelleği düşer; açık proje panelleri yeni dönemin/sayfanın verisiyle yeniden yüklenir. */
+  private kirilimlariYenile(): void {
+    this.kirilimNesli++;
+    this.projeKirilimlari.set(new Map());
+    this.kirilimYukleniyor.set(new Set());
+    this.acikSandiklar.set(new Set());
+    this.acikSandikSatirlari.set(new Set());
+    const bloklar = new Map(this.aylikProjeBloklari().map(blok => [blok.anahtar, blok]));
+    const acik = [...this.acikProjeSandiklari()].filter(anahtar => bloklar.has(anahtar));
+    this.acikProjeSandiklari.set(new Set(acik));
+    for (const anahtar of acik) this.kirilimYukle(anahtar, bloklar.get(anahtar)!);
   }
-  sandiklariAcKapat(satir: FinansAylikIs): void {
-    const anahtar = this.sandikAnahtari(satir);
-    this.acikSandiklar.update(mevcut => {
+  private aciKapat(sinyal: WritableSignal<Set<string>>, anahtar: string): void {
+    sinyal.update(mevcut => {
       const sonraki = new Set(mevcut);
       if (sonraki.has(anahtar)) sonraki.delete(anahtar); else sonraki.add(anahtar);
       return sonraki;
     });
-    const projeNo = satir.projeNo;
-    if (!this.sandiklarAcik(satir) || this.projeKalemleri().has(projeNo) || this.sandikYukleniyor().has(projeNo)) return;
-    this.sandikYukleniyor.update(x => new Set(x).add(projeNo));
-    this.service.genelArama({ pageNumber: 1, pageSize: 250, projeNo })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(result => {
-        this.sandikYukleniyor.update(x => { const y = new Set(x); y.delete(projeNo); return y; });
-        if (!result.isSuccess) {
-          this.toast.error(result.error ?? 'Sandıklar yüklenemedi.');
-          return;
-        }
-        this.projeKalemleri.update(x => new Map(x).set(projeNo, result.value?.items ?? []));
-      });
   }
-  /** Satırın (proje × kategori) iş kayıtları, sandık numarasına göre sıralı. */
-  kategoriSandiklari(satir: FinansAylikIs): FinansIsKaydi[] {
-    const ids = new Set(satir.isKaydiIds);
-    return (this.projeKalemleri().get(satir.projeNo) ?? [])
-      .filter(k => ids.has(k.id))
-      .sort((a, b) => (a.sandikNo ?? '').localeCompare(b.sandikNo ?? '', 'tr-TR', { numeric: true }));
+
+  projeSandiklariAcik(blok: AylikProjeBlogu): boolean {
+    return this.acikProjeSandiklari().has(blok.anahtar);
+  }
+  projeSandiklariAcKapat(blok: AylikProjeBlogu): void {
+    this.aciKapat(this.acikProjeSandiklari, blok.anahtar);
+    if (this.projeSandiklariAcik(blok)) this.kirilimYukle(blok.anahtar, blok);
+  }
+  projeKirilimi(anahtar: string): FinansProjeSandikKirilimi | undefined {
+    return this.projeKirilimlari().get(anahtar);
+  }
+  /** Proje panelinde görünen sandıklar: ilk sekiz, "Tümünü göster" ile hepsi. */
+  gorunenSandiklar(blok: AylikProjeBlogu): readonly FinansSandikKirilimSatiri[] {
+    return ilkSatirlar(kirilimSandiklari(this.projeKirilimi(blok.anahtar)?.sandiklar ?? []), this.tumSandiklarAcik().has(blok.anahtar));
+  }
+  tumSandiklariAcKapat(blok: AylikProjeBlogu): void {
+    this.aciKapat(this.tumSandiklarAcik, blok.anahtar);
+  }
+  sandikSatiriAcik(blok: AylikProjeBlogu, sandik: FinansSandikKirilimSatiri): boolean {
+    return this.acikSandikSatirlari().has(blok.anahtar + '\u001e' + sandik.anahtar);
+  }
+  sandikSatiriAcKapat(blok: AylikProjeBlogu, sandik: FinansSandikKirilimSatiri): void {
+    this.aciKapat(this.acikSandikSatirlari, blok.anahtar + '\u001e' + sandik.anahtar);
+  }
+  sandikDurumSinifi(durum: number): string {
+    return durum === 5 ? 'complete' : durum === 6 ? 'cancel-status' : durum > 1 ? 'partial' : '';
+  }
+
+  private sandikAnahtari(satir: FinansAylikIs): string {
+    return satir.projeBirimAnahtari + ':' + satir.isTuru + ':' + satir.isKaydiIds.join(',');
+  }
+  sandiklarAcik(satir: FinansAylikIs): boolean {
+    return this.acikSandiklar().has(this.sandikAnahtari(satir));
+  }
+  /** Kategori satırının sandık dökümü; projenin kırılımı yüklenmemişse yüklenir. */
+  sandiklariAcKapat(satir: FinansAylikIs): void {
+    this.aciKapat(this.acikSandiklar, this.sandikAnahtari(satir));
+    if (this.sandiklarAcik(satir)) this.kirilimYukle(satir.projeBirimAnahtari, satir);
+  }
+  /** Satırın (proje × kategori) kayıtları sandığıyla, sandık numarasının doğal sırasıyla. */
+  kategoriSandiklari(satir: FinansAylikIs): { sandik: FinansSandikKirilimSatiri; kayit: FinansSandikKirilimKalemi }[] {
+    return kategoriKirilimKayitlari(this.projeKirilimi(satir.projeBirimAnahtari)?.sandiklar ?? [], satir.isKaydiIds);
   }
 
   projeAcik(anahtar: string): boolean { return this.acikProjeler().has(anahtar); }
@@ -1518,6 +1597,8 @@ export class FinansYonetimiComponent implements OnInit {
       const value = result.value;
       this.aylikIsler.set(value.items ?? []);
       this.aylikProjeler.set(value.projeler ?? []);
+      this.aylikProjeOzelIsleri.set(value.projeOzelIsleri ?? []);
+      this.kirilimlariYenile();
       this.aylikFinansOzeti.set(value.finansOzeti ?? []);
       this.aylikGrupToplamlari.set(value.grupToplamlari ?? []);
       this.aylikPageNumber.set(value.pageNumber);

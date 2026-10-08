@@ -48,6 +48,8 @@ export interface FinansListelemeRequest {
   kategoriler?: FinansIsKategorisi[];
   /** Fatura listesi ödeme/vade filtresi (D3). */
   odemeDurumu?: FinansOdemeFiltresi;
+  /** Sandık no içinde geçen metin (sunucuda büyük/küçük harf duyarsız). */
+  sandikNo?: string;
 }
 
 export interface FinansDuzenliIsListelemeRequest {
@@ -187,7 +189,13 @@ export interface FinansIsKaydi {
   finansTarihi?: string;
   finansDonemi?: string;
   uretimTarihi?: string;
+  /** Kaynak bileşeni: sandığın kendi satırı "NET", sarf kereste payı "SARF". */
   kaynakBileseni?: string;
+  /** Kaydın kaynağı (ör. AMBALAJURETIM, Manuel, OzelIs) ve kaynak kaydın kimliği (üretim iş akışı). */
+  kaynakTuru?: string;
+  kaynakKayitId?: string | null;
+  ozelIsTuru?: string | null;
+  raporGrubu?: string | null;
   birimFiyat?: number | null;
   fiyatlandirmaBirimi?: FinansFiyatlandirmaBirimi;
   fiyatlandirmaHazir?: boolean;
@@ -229,6 +237,73 @@ export interface FinansIsKaydi {
   poNumaralari: string[];
   faturaNumaralari: string[];
   kaynakAktif: boolean;
+}
+
+/** İş Takibi proje → sandık kırılımı isteği: proje kimliği ya da sisteme bağlı olmayan proje için no + müşteri. */
+export interface FinansSandikKirilimiRequest {
+  projeId?: number | null;
+  projeNo?: string;
+  musteri?: string;
+  yil?: number;
+  ay?: number;
+  iptalEdilenleriDahilEt?: boolean;
+  sandikNo?: string;
+}
+
+/** Sandığın altındaki iş kaydı; sarf kereste payı kaynakBileseni = "SARF" ile ayrılır. */
+export interface FinansSandikKirilimKalemi {
+  id: number;
+  isTuru: number;
+  kategori: FinansIsKategorisi;
+  kaynakBileseni: string;
+  isAdi: string;
+  finansTarihi: string;
+  adet: number;
+  toplamM3: number | null;
+  ahsapM3: number | null;
+  kontraM3: number | null;
+  paraBirimi: string;
+  netTutar: number | null;
+  siparisNetTutar: number | null;
+  faturalananNetTutar: number | null;
+  durum: number;
+  aktif: boolean;
+  poNumaralari: string[];
+  faturaNumaralari: string[];
+}
+
+/** Bir sandığın özeti: tutarlar NET + SARF, adet ve m³ yalnız sandığın kendi kayıtları; durum en düşük iş durumu. */
+export interface FinansSandikKirilimSatiri {
+  anahtar: string;
+  sandikNo: string | null;
+  sandikAdi: string | null;
+  sandikTipi: string | null;
+  sandikCinsi: number | null;
+  sandikMalzemesi: FinansSandikMalzemesi | 0;
+  kayitSayisi: number;
+  fiyatBekleyenKayitSayisi: number;
+  adet: number;
+  toplamM3: number | null;
+  ahsapM3: number | null;
+  kontraM3: number | null;
+  paraBirimi: string;
+  netTutar: number | null;
+  siparisNetTutar: number | null;
+  faturalananNetTutar: number | null;
+  durum: number;
+  ilkTarih: string;
+  sonTarih: string;
+  poNumaralari: string[];
+  faturaNumaralari: string[];
+  kayitlar: FinansSandikKirilimKalemi[];
+}
+
+export interface FinansProjeSandikKirilimi {
+  projeId: number | null;
+  projeNo: string;
+  musteri: string;
+  kayitSayisi: number;
+  sandiklar: FinansSandikKirilimSatiri[];
 }
 
 export interface FinansDagitimRequest {
@@ -666,6 +741,8 @@ export interface FinansAylikSayfaliSonuc {
   items: FinansAylikIs[];
   /** Sayfadaki proje birimlerinin (özel işler hariç) birleşik sipariş/fatura durumu. */
   projeler?: FinansAylikProjeOzeti[];
+  /** Sayfadaki projelere bağlı özel/düzenli işler; proje bloğunun "Özel / Düzenli" alt grubunda da gösterilir. */
+  projeOzelIsleri?: FinansAylikIs[];
   finansOzeti: FinansAylikFinansOzeti[];
   grupToplamlari: FinansAylikGrupToplami[];
   pageNumber: number;

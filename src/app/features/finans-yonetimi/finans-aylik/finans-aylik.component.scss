@@ -122,6 +122,24 @@
 .crate-breakdown td small { color: var(--bodyColor); }
 .crate-breakdown tr.cancelled td { opacity: .55; text-decoration: line-through; }
 .crate-breakdown-empty { padding: 12px; color: var(--bodyColor); font-size: 12px; }
+// Proje → sandık kırılımı (P6): sandık özeti satırı açılınca NET/SARF kayıtları; PO/fatura rozetleri.
+.project-crates-toggle { margin-top: 4px; }
+.project-crates-row > td { padding-top: 10px !important; }
+.crate-note { display: flex; gap: 6px; align-items: flex-start; margin: 0 0 8px; color: var(--bodyColor); font-size: 11.5px; }
+.crate-row-toggle { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: inherit; i { color: var(--finance-primary); font-size: 16px; } }
+.project-crates td small { display: block; }
+.crate-breakdown td small.attention-value { color: #9a6700; font-weight: 650; }
+.crate-breakdown td .crate-name { margin-left: 6px; }
+.crate-summary-row.expanded > td { background: #f8f9fc; }
+.crate-record-row > td { background: #fcfcfe; font-size: 11.5px; }
+.crate-record-row > td:first-child { padding-left: 34px; }
+.source-pill { display: inline-block; margin-right: 6px; padding: 1px 6px; border-radius: 5px; background: #eef2f7; color: #475569; font-size: 10px; font-weight: 600; }
+.source-pill.is-sarf { background: #fff6db; color: #9a6700; }
+.ref-pill { display: inline-block; margin: 0 4px 2px 0; padding: 1px 6px; border: 1px solid var(--finance-border); border-radius: 999px; background: var(--whiteColor); font-size: 10.5px; }
+.ref-pill.is-invoice { border-color: #b7e4c7; background: #edf8f1; color: #198754; }
+.crate-show-all { margin-top: 6px; padding-left: 0; }
+.project-crates .nowrap { white-space: nowrap; }
+.monthly-table .project-subgroup-row > td { padding: 8px 16px 6px 40px; background: var(--finance-soft); color: var(--bodyColor); font-size: 11.5px; font-weight: 600; i { margin-right: 6px; color: var(--finance-primary); } }
 .workspace-views { display: inline-flex; gap: 4px; margin-left: auto; padding: 4px; border: 1px solid var(--finance-border); border-radius: 10px; background: var(--finance-soft); }
 .workspace-views button { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border: 0; border-radius: 7px; background: transparent; color: var(--bodyColor); font-size: 12px; font-weight: 600; white-space: nowrap; }
 .workspace-views button.active { background: var(--whiteColor); color: var(--finance-primary); box-shadow: 0 2px 5px #172b4d12; }

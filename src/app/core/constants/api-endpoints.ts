@@ -97,6 +97,7 @@ export const API = {
     FATURA_ODEME: (faturaId: number) => `${BASE}/finans/faturalar/${faturaId}/odeme`,
     VADE_UYARILARI: `${BASE}/finans/vade-uyarilari`,
     AYLIK_ISLER: `${BASE}/finans/aylik-isler`,
+    PROJE_SANDIK_KIRILIMI: `${BASE}/finans/proje-sandik-kirilimi`,
     OZEL_ISLER: `${BASE}/finans/ozel-isler`,
     OZEL_IS_AYLIK_DEGER: (ozelIsId: number) => `${BASE}/finans/ozel-isler/${ozelIsId}/aylik-deger`,
     OZEL_IS_IPTAL: (ozelIsId: number) => `${BASE}/finans/ozel-isler/${ozelIsId}/iptal`,
