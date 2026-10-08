@@ -223,6 +223,8 @@ export interface FinansIsKaydi {
   icSandikSablonId?: number | null;
   isTuru: number;
   adet: number;
+  /** Miktar birimi (Adet, m³, Hizmet…). */
+  birim?: string;
   birimM3: number;
   toplamM3: number;
   /** Ahşap ve kontra/katlanır m³ payı (F11); m³ izni yoksa sunucudan null gelir. */
@@ -237,6 +239,31 @@ export interface FinansIsKaydi {
   poNumaralari: string[];
   faturaNumaralari: string[];
   kaynakAktif: boolean;
+}
+
+/** Münferit iş formunun ürün seçeneği; fiyat taşımaz (kayıt ürünün iş tarihindeki tarifesiyle fiyatlanır). */
+export interface FinansUrunSecenegi {
+  id: number;
+  kod: string;
+  ad: string;
+  fiyatlandirmaBirimi: FinansFiyatlandirmaBirimi;
+}
+
+/** "Yeni Münferit İş" isteği: fiyat alanı yoktur; ürün m³ ile fiyatlanıyorsa ahşap/kontra m³ gönderilir. */
+export interface FinansMunferitIsKaydetRequest {
+  finansUrunId: number;
+  isAdi: string;
+  ozelIsTuru?: string | null;
+  musteri: string;
+  projeId?: number | null;
+  adet: number;
+  birim: string;
+  isTarihi: string;
+  ahsapM3?: number | null;
+  kontraM3?: number | null;
+  aciklama?: string | null;
+  talepEdenKisi?: string | null;
+  talepEdenBolum?: string | null;
 }
 
 /** İş Takibi proje → sandık kırılımı isteği: proje kimliği ya da sisteme bağlı olmayan proje için no + müşteri. */
@@ -566,6 +593,9 @@ export interface FinansUrun {
   aktif: boolean;
   sira: number;
   eslesmeler: FinansUrunEslesmesi[];
+  /** İstenen tarihte (varsayılan bugün) geçerli tarifenin fiyatı; tarife yoksa veya izin yoksa null. */
+  guncelBirimFiyat?: number | null;
+  guncelParaBirimi?: string | null;
   /** Bugün geçerli tarife sürümünün başlangıç ve bitişi. */
   guncelGecerlilikBaslangici?: string | null;
   guncelGecerlilikBitisi?: string | null;

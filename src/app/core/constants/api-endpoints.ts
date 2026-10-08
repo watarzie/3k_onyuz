@@ -98,6 +98,8 @@ export const API = {
     VADE_UYARILARI: `${BASE}/finans/vade-uyarilari`,
     AYLIK_ISLER: `${BASE}/finans/aylik-isler`,
     PROJE_SANDIK_KIRILIMI: `${BASE}/finans/proje-sandik-kirilimi`,
+    MUNFERIT_ISLER: `${BASE}/finans/munferit-isler`,
+    URUN_SECENEKLERI: `${BASE}/finans/urun-secenekleri`,
     OZEL_ISLER: `${BASE}/finans/ozel-isler`,
     OZEL_IS_AYLIK_DEGER: (ozelIsId: number) => `${BASE}/finans/ozel-isler/${ozelIsId}/aylik-deger`,
     OZEL_IS_IPTAL: (ozelIsId: number) => `${BASE}/finans/ozel-isler/${ozelIsId}/iptal`,

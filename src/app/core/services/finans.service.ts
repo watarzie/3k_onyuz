@@ -24,6 +24,8 @@ import {
   FinansOzelIsKaydetRequest,
   FinansHacimGirRequest,
   FinansProjeSandikKirilimi,
+  FinansMunferitIsKaydetRequest,
+  FinansUrunSecenegi,
   FinansSandikKirilimiRequest,
   FinansSayfaliSonuc,
   FinansSiparis,
@@ -268,6 +270,21 @@ export class FinansService {
     if (request.sandikNo?.trim()) params = params.set('sandikNo', request.sandikNo.trim());
     if (request.iptalEdilenleriDahilEt) params = params.set('iptalEdilenleriDahilEt', true);
     return this.api.get<FinansProjeSandikKirilimi>(API.FINANS.PROJE_SANDIK_KIRILIMI, { params });
+  }
+  /** Münferit İşler sekmesi: elle açılmış özel işler (tarih aralığı, arama, iptaller). */
+  munferitIsler(request: FinansListelemeRequest) {
+    return this.liste<FinansIsKaydi>(API.FINANS.MUNFERIT_ISLER, request);
+  }
+  /** Yeni münferit iş: fiyat ürünün iş tarihindeki tarifesinden gelir. */
+  munferitIsOlustur(request: FinansMunferitIsKaydetRequest) {
+    return this.api.post<FinansIsKaydi>(API.FINANS.MUNFERIT_ISLER, request);
+  }
+  /** Münferit iş formunun ürün seçenekleri (aktif, fiyatsız, en fazla 50). */
+  urunSecenekleri(arama?: string, isTuru?: number) {
+    let params = new HttpParams();
+    if (arama?.trim()) params = params.set('arama', arama.trim());
+    if (isTuru) params = params.set('isTuru', isTuru);
+    return this.api.get<FinansUrunSecenegi[]>(API.FINANS.URUN_SECENEKLERI, { params });
   }
   ozelIsOlustur(request: FinansOzelIsKaydetRequest) {
     return this.api.post<FinansIsKaydi>(API.FINANS.OZEL_ISLER, request);

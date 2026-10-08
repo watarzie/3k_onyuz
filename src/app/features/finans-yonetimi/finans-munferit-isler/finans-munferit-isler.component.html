@@ -1,0 +1,187 @@
+<article class="v2-card v2-list-card adhoc-jobs">
+  <header class="record-search-head">
+    <div class="adhoc-title">
+      <h3><i class="ri-briefcase-4-line" aria-hidden="true"></i>{{ t('ADHOC_TITLE') }}</h3>
+      <p class="v2-note"><i class="ri-information-line" aria-hidden="true"></i>{{ t('ADHOC_NOTE') }}</p>
+    </div>
+    @if (ekleyebilir()) {
+      <button type="button" class="btn btn-primary btn-sm adhoc-new" (click)="yeniAc()">
+        <i class="ri-add-line" aria-hidden="true"></i>{{ t('ADHOC_NEW') }}
+      </button>
+    }
+  </header>
+
+  <div class="filter-bar">
+    <label class="filter-field filter-grow">
+      <span>{{ t('SEARCH') }}</span>
+      <span class="filter-input"
+        ><i class="ri-search-line" aria-hidden="true"></i
+        ><input type="search" [attr.aria-label]="t('SEARCH')" [(ngModel)]="arama" (ngModelChange)="aramaDegisti()" [placeholder]="t('ADHOC_SEARCH_HINT')"
+      /></span>
+    </label>
+    <label class="filter-field">
+      <span>{{ t('START') }}</span>
+      <input type="date" [(ngModel)]="baslangic" (change)="filtrele()" />
+    </label>
+    <label class="filter-field">
+      <span>{{ t('END') }}</span>
+      <input type="date" [(ngModel)]="bitis" (change)="filtrele()" />
+    </label>
+    <label class="filter-check">
+      <input type="checkbox" [(ngModel)]="iptalleriGoster" (change)="filtrele()" />{{ t('ADHOC_INCLUDE_CANCELLED') }}
+    </label>
+  </div>
+
+  @if (loading()) {
+    <div class="v2-empty" role="status"><span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>{{ t('PANEL_LOADING') }}</div>
+  } @else {
+    <div class="table-responsive">
+      <table class="table v2-table">
+        <thead>
+          <tr>
+            <th>{{ t('ADHOC_JOB') }}</th>
+            <th>{{ t('ADHOC_DATE') }}</th>
+            <th>{{ t('ADHOC_QUANTITY') }}</th>
+            @if (tutarGorunur()) {
+              <th class="text-end">{{ t('AMOUNT') }}</th>
+            }
+            <th>PO / {{ t('INVOICE') }}</th>
+            <th class="text-end">{{ t('ACTIONS') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of sonuc()?.items; track row.id) {
+            <tr class="adhoc-row" [class.is-cancelled]="row.iptalEdildi">
+              <td>
+                <strong>{{ row.isAdi }}</strong>
+                <small>{{ row.musteri }}@if (row.projeNo) { · {{ row.projeNo }} }@if (row.ozelIsTuru) { · {{ row.ozelIsTuru }} }</small>
+                @if (row.iptalEdildi) {
+                  <span class="v2-status is-danger">{{ t('FLOW_CANCELLED') }}</span>
+                }
+              </td>
+              <td>{{ row.finansTarihi | date: 'dd.MM.yyyy' }}</td>
+              <td>{{ row.adet | number: '1.0-3' }} {{ row.birim }}@if (row.toplamM3) { · {{ row.toplamM3 | number: '1.0-3' }} m³ }</td>
+              @if (tutarGorunur()) {
+                <td class="text-end v2-nowrap">{{ row.netTutar | number: '1.2-2' }} {{ row.paraBirimi }}</td>
+              }
+              <td><small>PO: {{ row.poNumaralari.join(', ') || '—' }} · {{ t('INVOICE') }}: {{ row.faturaNumaralari.join(', ') || '—' }}</small></td>
+              <td class="text-end">
+                <app-islemler-menusu [etiket]="t('ACTIONS')">
+                  <button type="button" (click)="kayitAc.emit({ tur: 'IsKaydi', id: row.id })">
+                    <i class="ri-file-search-line" aria-hidden="true"></i>{{ t('DETAIL') }}
+                  </button>
+                  @if (poAcabilir() && !row.iptalEdildi && !row.poNumaralari.length) {
+                    <button type="button" (click)="poAc(row)"><i class="ri-file-add-line" aria-hidden="true"></i>{{ t('ADHOC_OPEN_PO') }}</button>
+                  }
+                  @if (iptalEdebilir() && !row.iptalEdildi) {
+                    <button type="button" class="danger" (click)="iptal(row)"><i class="ri-close-circle-line" aria-hidden="true"></i>{{ t('ADHOC_CANCEL') }}</button>
+                  }
+                  @if (iptalEdebilir() && row.iptalEdildi) {
+                    <button type="button" (click)="geriAl(row)"><i class="ri-arrow-go-back-line" aria-hidden="true"></i>{{ t('ADHOC_RESTORE') }}</button>
+                  }
+                </app-islemler-menusu>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6">
+                <div class="v2-empty"><i class="ri-inbox-2-line" aria-hidden="true"></i><p>{{ t('ADHOC_EMPTY') }}</p></div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (sonuc(); as page) {
+      <div class="v2-pager">
+        <app-server-pager
+          [pageNumber]="page.pageNumber"
+          [pageSize]="page.pageSize"
+          [totalCount]="page.totalCount"
+          [totalPages]="page.totalPages"
+          [hasPreviousPage]="page.hasPreviousPage"
+          [hasNextPage]="page.hasNextPage"
+          (pageChange)="sayfa($event)"
+          (pageSizeChange)="boyut($event)"
+        />
+      </div>
+    }
+  }
+</article>
+
+@if (formAcik()) {
+  <div class="tz-modal-backdrop" (click)="formAcik.set(false)"></div>
+  <div class="tz-modal tz-modal--lg adhoc-modal" role="dialog" aria-modal="true" aria-labelledby="munferit-baslik" (keydown.escape)="formAcik.set(false)">
+    <header class="tz-modal__header">
+      <span class="tz-modal__icon"><i class="ri-briefcase-4-line"></i></span>
+      <div class="tz-modal__title">
+        <h5 id="munferit-baslik">{{ t('ADHOC_NEW') }}</h5>
+        <p>{{ t('ADHOC_PRICE_FROM_TARIFF') }}</p>
+      </div>
+      <button type="button" class="tz-modal__close" (click)="formAcik.set(false)" [attr.aria-label]="t('CLOSE')"><i class="ri-close-line"></i></button>
+    </header>
+    <div class="tz-modal__body tz-form">
+      <div class="tz-field">
+        <span>{{ t('ADHOC_PRODUCT') }} <b>*</b></span>
+        @if (secilenUrun(); as urun) {
+          <div class="adhoc-selected">
+            <span><strong>{{ urun.kod }}</strong> · {{ urun.ad }} <small>({{ t(urun.fiyatlandirmaBirimi === 2 ? 'ADHOC_UNIT_M3' : urun.fiyatlandirmaBirimi === 1 ? 'ADHOC_UNIT_PIECE' : 'ADHOC_UNIT_FIXED') }})</small></span>
+            <button type="button" class="tz-btn" (click)="urunSec(null)">{{ t('ADHOC_CHANGE') }}</button>
+          </div>
+        } @else {
+          <input class="form-control adhoc-product-search" type="search" [(ngModel)]="urunArama" (ngModelChange)="urunAramaDegisti()" [placeholder]="t('ADHOC_PRODUCT_SEARCH')" [attr.aria-label]="t('ADHOC_PRODUCT')" />
+          <div class="adhoc-options" role="listbox">
+            @for (urun of urunSecenekleri(); track urun.id) {
+              <button type="button" role="option" class="adhoc-option" (click)="urunSec(urun)"><strong>{{ urun.kod }}</strong> · {{ urun.ad }}</button>
+            } @empty {
+              <small>{{ t('ADHOC_PRODUCT_EMPTY') }}</small>
+            }
+          </div>
+        }
+      </div>
+      <div class="tz-field-grid">
+        <label class="tz-field"><span>{{ t('ADHOC_JOB_NAME') }} <b>*</b></span><input class="form-control" [(ngModel)]="form.isAdi" maxlength="250" /></label>
+        <label class="tz-field"
+          ><span>{{ t('ADHOC_JOB_TYPE') }}</span
+          ><input class="form-control" list="munferit-turler" [(ngModel)]="form.ozelIsTuru" maxlength="150" /><datalist id="munferit-turler"
+            >@for (tur of turSecenekleri; track tur) {<option [value]="tur"></option>}</datalist
+          ></label>
+        <label class="tz-field"><span>{{ t('ADHOC_CUSTOMER') }} <b>*</b></span><input class="form-control" [(ngModel)]="form.musteri" maxlength="250" /></label>
+        <div class="tz-field"><span>{{ t('PROJECT') }}</span><app-finans-proje-secici [projeId]="form.projeId" [etiket]="projeEtiketi" (secildi)="projeSec($event)" /></div>
+        <label class="tz-field"><span>{{ t('ADHOC_DATE') }} <b>*</b></span><input class="form-control" type="date" [(ngModel)]="form.isTarihi" (change)="fiyatOnizlemeYukle()" /></label>
+        <div class="tz-field-grid">
+          <label class="tz-field"><span>{{ t('ADHOC_QUANTITY') }} <b>*</b></span><input class="form-control" type="number" min="0" step="any" [(ngModel)]="form.adet" /></label>
+          <label class="tz-field"><span>{{ t('ADHOC_UNIT') }} <b>*</b></span><input class="form-control" [(ngModel)]="form.birim" maxlength="30" /></label>
+        </div>
+      </div>
+      @if (m3Urun()) {
+        <div class="tz-field-grid tz-field-grid--3 adhoc-volume">
+          <label class="tz-field"><span>{{ t('WOOD_M3') }}</span><input class="form-control adhoc-wood" type="number" min="0" step="any" [(ngModel)]="form.ahsapM3" /></label>
+          <label class="tz-field"><span>{{ t('PLYWOOD_M3') }}</span><input class="form-control adhoc-plywood" type="number" min="0" step="any" [(ngModel)]="form.kontraM3" /></label>
+          <label class="tz-field"><span>{{ t('COMPOSITE_M3') }}</span><input class="form-control adhoc-composite" type="number" readonly [value]="hacimBilesik(form.ahsapM3, form.kontraM3)" /></label>
+        </div>
+      }
+      <div class="tz-field-grid">
+        <label class="tz-field"><span>{{ t('ADHOC_REQUESTED_BY') }}</span><input class="form-control" [(ngModel)]="form.talepEdenKisi" maxlength="200" /></label>
+        <label class="tz-field"><span>{{ t('ADHOC_REQUESTED_DEPT') }}</span><input class="form-control" [(ngModel)]="form.talepEdenBolum" maxlength="200" /></label>
+      </div>
+      <label class="tz-field"><span>{{ t('ADHOC_DESCRIPTION') }}</span><textarea class="form-control" [(ngModel)]="form.aciklama" maxlength="2000"></textarea></label>
+      @if (fiyatOnizleme(); as fiyat) {
+        <p class="adhoc-preview">
+          <i class="ri-price-tag-3-line" aria-hidden="true"></i>{{ t('ADHOC_PRICE_PREVIEW') }}:
+          <strong>{{ fiyat.birimFiyat | number: '1.2-4' }} {{ fiyat.paraBirimi }}</strong>
+          @if (onizlemeTutari() !== null) { → <strong>{{ onizlemeTutari() | number: '1.2-2' }} {{ fiyat.paraBirimi }}</strong> }
+        </p>
+      }
+      @if (hata()) {
+        <p class="v2-error" role="alert">{{ hata() }}</p>
+      }
+    </div>
+    <footer class="tz-modal__footer">
+      <button type="button" class="tz-btn" (click)="formAcik.set(false)" [disabled]="kaydediliyor()">{{ t('CANCEL') }}</button>
+      <button type="button" class="tz-btn tz-btn--primary adhoc-save" (click)="kaydet()" [disabled]="kaydediliyor()">
+        <i [class]="kaydediliyor() ? 'ri-loader-4-line tz-spin' : 'ri-save-3-line'"></i>{{ t('SAVE') }}
+      </button>
+    </footer>
+  </div>
+}

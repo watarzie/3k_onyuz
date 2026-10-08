@@ -72,6 +72,7 @@ describe('Finans izinleri sunucu kurallarının aynası', () => {
     const ekranIzinleri: Record<string, string[]> = {
       panel: [],
       akis: [FINANS_YETKI.KayitGoruntule],
+      munferit: [FINANS_YETKI.KayitGoruntule],
       giderler: [FINANS_YETKI.GiderGoruntule],
       ayarlar: [FINANS_YETKI.DuzenliIsYonet],
       belgeler: [FINANS_YETKI.KayitGoruntule, FINANS_YETKI.SiparisOperasyonGoruntule],

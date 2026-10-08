@@ -38,6 +38,11 @@ export function finansBelgesiIndirilebilir(izinler: Izinler): boolean {
   return izinler.hasAccess(FINANS_YETKI.BelgeIndir) && tumFinansAlanlariGorunur(izinler);
 }
 
+/** Münferit iş tarifeden fiyatlanır: sekme ve iş ekleme yazma izni yeter, fiyat değiştirme izni gerekmez. */
+export function finansMunferitIsEklenebilir(izinler: Izinler): boolean {
+  return izinler.canWrite(FINANS_YETKI.SekmeMunferitIsler) && izinler.canWrite(FINANS_YETKI.ManuelIsEkle);
+}
+
 /** Tek seferlik iş her zaman elle fiyat taşır; sunucu fiyat değiştirme iznini de ister. */
 export function finansOzelIsiEklenebilir(izinler: Izinler): boolean {
   return (
@@ -69,13 +74,14 @@ export function finansFaturaGirilebilir(izinler: Izinler): boolean {
 }
 
 /** Finans ana sekmeleri; dizi ekrandaki sıradır, varsayılan sekme erişilebilen ilk sekmedir. */
-export type FinansSekme = 'panel' | 'akis' | 'giderler' | 'ayarlar' | 'belgeler' | 'raporlar' | 'kategoriler';
-export const FINANS_SEKME_SIRASI: readonly FinansSekme[] = ['panel', 'akis', 'giderler', 'ayarlar', 'belgeler', 'raporlar', 'kategoriler'];
+export type FinansSekme = 'panel' | 'akis' | 'munferit' | 'giderler' | 'ayarlar' | 'belgeler' | 'raporlar' | 'kategoriler';
+export const FINANS_SEKME_SIRASI: readonly FinansSekme[] = ['panel', 'akis', 'munferit', 'giderler', 'ayarlar', 'belgeler', 'raporlar', 'kategoriler'];
 
 /** Her sekmenin rol ağacındaki düğümü (R sekmeyi gösterir, W sekmedeki işlemlerin tavanıdır). */
 export const FINANS_SEKME_KODLARI: Readonly<Record<FinansSekme, string>> = {
   panel: FINANS_YETKI.SekmePanel,
   akis: FINANS_YETKI.SekmeIsTakibi,
+  munferit: FINANS_YETKI.SekmeMunferitIsler,
   giderler: FINANS_YETKI.SekmeGiderler,
   ayarlar: FINANS_YETKI.SekmeTanimlar,
   belgeler: FINANS_YETKI.SekmePoFatura,
@@ -106,6 +112,7 @@ export function finansSekmeAcik(izinler: Izinler, sekme: FinansSekme): boolean {
     case 'panel':
       return true;
     case 'akis':
+    case 'munferit':
       return izinler.hasAccess(FINANS_YETKI.KayitGoruntule);
     case 'giderler':
       return izinler.hasAccess(FINANS_YETKI.GiderGoruntule);

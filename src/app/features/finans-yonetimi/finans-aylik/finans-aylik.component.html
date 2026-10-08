@@ -64,6 +64,11 @@
       <i class="ri-calendar-check-line" aria-hidden="true"></i>Finans İş Takibi
     </button>
     }
+    @if (sekmeAcik('munferit')) {
+    <button type="button" [class.active]="activeTab() === 'munferit'" (click)="selectTab('munferit')">
+      <i class="ri-briefcase-4-line" aria-hidden="true"></i>{{ t('ADHOC_TAB') }}
+    </button>
+    }
     @if (sekmeAcik('giderler')) {
     <button type="button" [class.active]="activeTab() === 'giderler'" (click)="selectTab('giderler')">
       <i class="ri-wallet-3-line" aria-hidden="true"></i>Giderler
@@ -86,6 +91,7 @@
     }
   }
   @if (activeTab() === 'raporlar' && sekmeAcik('raporlar')) {<app-finans-raporlar />}
+  @if (activeTab() === 'munferit' && sekmeAcik('munferit')) {<app-finans-munferit-isler (kayitAc)="detayHedef.set($event)" (siparisAc)="topluSiparisAc($event)" />}
   @if (activeTab() === 'kategoriler' && sekmeAcik('kategoriler')) {<app-finans-kategoriler (degisti)="kategorileriYenile()" />}
 
   @if (activeTab() === 'akis' && sekmeAcik('akis')) {

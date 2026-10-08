@@ -20,6 +20,7 @@ import { FinansKategorilerComponent } from '../finans-kategoriler/finans-kategor
 import { FinansParametrelerComponent } from '../finans-parametreler/finans-parametreler.component';
 import { FinansProjeDetayComponent } from '../finans-proje-detay/finans-proje-detay.component';
 import { FinansProjeSeciciComponent } from '../finans-proje-secici/finans-proje-secici.component';
+import { FinansMunferitIslerComponent } from '../finans-munferit-isler/finans-munferit-isler.component';
 import {
   FinansSekme,
   FinansTanimGorunumu,
@@ -120,7 +121,7 @@ type RaporFormati = 'pdf' | 'excel' | 'ayri';
   standalone: true,
   imports: [BreadcrumbComponent, DatePipe, DecimalPipe, NgTemplateOutlet, FormsModule, ServerPagerComponent,
     FinansPanelComponent, FinansKayitAramaComponent, FinansDagitimComponent, FinansKayitDetayComponent, FinansBelgelerListesiComponent,
-    CanWriteDirective, CanAccessDirective, FinansRaporlarComponent, FinansKategorilerComponent, FinansProjeSeciciComponent,
+    CanWriteDirective, CanAccessDirective, FinansRaporlarComponent, FinansKategorilerComponent, FinansProjeSeciciComponent, FinansMunferitIslerComponent,
     FinansParametrelerComponent, FinansProjeDetayComponent, IslemlerMenusuComponent],
   templateUrl: './finans-aylik.component.html',
   styleUrl: './finans-aylik.component.scss',
