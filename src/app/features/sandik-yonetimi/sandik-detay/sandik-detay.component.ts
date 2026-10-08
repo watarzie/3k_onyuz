@@ -102,6 +102,11 @@ export class SandikDetayComponent implements OnInit {
   tumTasimaIcerikleriSecili = computed(() => this.tasinabilirIcerikler().length > 0 &&
     this.tasinabilirIcerikler().every(item => this.seciliTasimaIcerikleri().has(item.id)));
 
+  // Kalıcı ürün bilgisi (seri no, SKT, lot)
+  urunBilgisiTaslak = signal('');
+  urunBilgisiSaving = signal(false);
+  readonly urunBilgisiEnFazla = 1000;
+
   // Konulma güncelleme
   guncelKonulanAdet = signal(0);
   guncelleSaving = signal(false);
@@ -347,7 +352,54 @@ export class SandikDetayComponent implements OnInit {
   selectUrun(item: SandikIcerikDto) {
     this.selectedUrun.set(item);
     this.guncelKonulanAdet.set(item.konulanAdet);
+    this.urunBilgisiTaslak.set(item.urunBilgisi ?? '');
     this.showDetailPanel.set(true);
+  }
+
+  /** Ürün bilgisi yalnız sandık yazma izniyle ve sevk kilidi yokken düzenlenir; sunucu aynı kuralı uygular. */
+  urunBilgisiDuzenlenebilir(): boolean {
+    return this.canWriteSandik() && !this.isSandikKilitli();
+  }
+
+  urunBilgisiDegisti(): boolean {
+    return this.urunBilgisiTaslak().trim() !== (this.selectedUrun()?.urunBilgisi ?? '').trim();
+  }
+
+  urunBilgisiKaydet() {
+    const urun = this.selectedUrun();
+    if (!urun || this.urunBilgisiSaving() || !this.ensureCanWriteSandik()) return;
+    if (this.isSandikKilitli()) {
+      this.toast.error(this.ts.translate('MESSAGES.URUN_BILGISI_KILITLI'));
+      return;
+    }
+    const bilgi = this.urunBilgisiTaslak().trim();
+    if (bilgi.length > this.urunBilgisiEnFazla) {
+      this.toast.error(this.ts.translate('MESSAGES.URUN_BILGISI_UZUN'));
+      return;
+    }
+    this.urunBilgisiSaving.set(true);
+    this.sandikService.icerikBilgisiGuncelle({
+      projeId: this.projeId(),
+      sandikId: this.sandikId(),
+      sandikIcerikId: urun.id,
+      urunBilgisi: bilgi || null,
+    }).subscribe({
+      next: (res) => {
+        this.urunBilgisiSaving.set(false);
+        if (res.isSuccess) {
+          const guncel = { ...urun, urunBilgisi: bilgi || null };
+          this.selectedUrun.set(guncel);
+          this.sandik.update(s => s ? { ...s, icerikler: s.icerikler.map(i => i.id === urun.id ? guncel : i) } : s);
+          this.toast.success(this.ts.translate('MESSAGES.URUN_BILGISI_KAYDEDILDI'));
+        } else {
+          this.toast.error(res.error ?? this.ts.translate('MESSAGES.URUN_BILGISI_KAYDEDILEMEDI'));
+        }
+      },
+      error: () => {
+        this.urunBilgisiSaving.set(false);
+        this.toast.error(this.ts.translate('MESSAGES.URUN_BILGISI_KAYDEDILEMEDI'));
+      }
+    });
   }
 
   closePanel() {

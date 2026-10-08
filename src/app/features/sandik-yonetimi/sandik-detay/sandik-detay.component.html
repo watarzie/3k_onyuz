@@ -200,6 +200,9 @@
                       @if (item.kaynakProjeNo) {
                         <small class="d-block text-primary fw-semibold"><i class="ri-folder-line me-1"></i>{{ item.kaynakProjeNo }}</small>
                       }
+                      @if (item.urunBilgisi) {
+                        <small class="urun-bilgisi-meta" [title]="item.urunBilgisi"><i class="ri-price-tag-3-line"></i>{{ item.urunBilgisi }}</small>
+                      }
                       @if (getSandikTransferOzeti(item)) {
                         <small class="sandik-transfer-pill" [title]="getSandikTransferOzeti(item)">
                           <i class="ri-route-line"></i>{{ getSandikTransferOzeti(item) }}
@@ -286,6 +289,27 @@
             <i class="ri-route-line"></i>
             <span>{{ getSandikTransferOzeti(selectedUrun()!) }}</span>
           </div>
+        }
+
+        <hr />
+        <label class="fw-semibold mb-1 d-block" for="urunBilgisi">{{ 'LABELS.URUN_BILGISI' | translate }}</label>
+        <small class="text-muted d-block mb-2">{{ 'LABELS.URUN_BILGISI_IPUCU' | translate }}</small>
+        <textarea id="urunBilgisi" class="form-control urun-bilgisi-input" rows="3" [attr.maxlength]="urunBilgisiEnFazla"
+          [placeholder]="'LABELS.URUN_BILGISI_ORNEK' | translate"
+          [ngModel]="urunBilgisiTaslak()" (ngModelChange)="urunBilgisiTaslak.set($event)"
+          [disabled]="!urunBilgisiDuzenlenebilir() || urunBilgisiSaving()"></textarea>
+        @if (canWriteSandik()) {
+          <div class="d-flex align-items-center justify-content-between mt-2">
+            <small class="text-muted">{{ urunBilgisiTaslak().length }} / {{ urunBilgisiEnFazla }}</small>
+            <button type="button" class="btn btn-save btn-sm urun-bilgisi-kaydet" (click)="urunBilgisiKaydet()"
+              [disabled]="!urunBilgisiDuzenlenebilir() || urunBilgisiSaving() || !urunBilgisiDegisti()">
+              @if (urunBilgisiSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+              {{ 'ACTIONS.SAVE' | translate }}
+            </button>
+          </div>
+          @if (isSandikKilitli()) {
+            <small class="text-muted d-block mt-1"><i class="ri-lock-line me-1"></i>{{ 'MESSAGES.URUN_BILGISI_KILITLI' | translate }}</small>
+          }
         }
 
         @if (canWriteSandik()) {

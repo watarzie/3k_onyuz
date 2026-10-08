@@ -164,6 +164,7 @@ export const API = {
     CEKI_SATIRI_GUNCELLE: `${BASE}/sandik/ceki-satiri-guncelle`,
     CEKI_SATIRLARI_SIL: `${BASE}/sandik/ceki-satirlari-sil`,
     OZELLIK_GUNCELLE: `${BASE}/sandik/ozellik-guncelle`,
+    ICERIK_BILGISI_GUNCELLE: `${BASE}/sandik/icerik-bilgisi-guncelle`,
     KAPAT: `${BASE}/sandik/kapat`,
     TOPLU_KAPAT: `${BASE}/sandik/toplu-kapat`,
     LOKASYON_GUNCELLE: `${BASE}/sandik/lokasyon-guncelle`,

@@ -5,7 +5,7 @@ import { API } from '../constants/api-endpoints';
 import { SandikUrunleriTopluTasiDto } from '../../shared/models/sandik-toplu-tasima.model';
 import {
   ApiResult, SandikDto, SandikDetayDto, SandikEkleDto, ManuelUrunEkleDto,
-  UrunGuncelleDto, UrunTasiDto, SandikOzellikGuncelleDto,
+  UrunGuncelleDto, UrunTasiDto, SandikOzellikGuncelleDto, SandikIcerikBilgisiGuncelleDto,
   CekiSatiriAnaVeriGuncelleDto, CekiSatirlariSilDto, CekiSatirlariSilResultDto,
   EksikUrunForSandikDto
 } from '../../shared/models/index';
@@ -56,6 +56,11 @@ export class SandikService {
 
   ozellikGuncelle(dto: SandikOzellikGuncelleDto): Observable<ApiResult<unknown>> {
     return this.api.put<unknown>(API.SANDIK.OZELLIK_GUNCELLE, dto);
+  }
+
+  /** Ürün satırının kalıcı ürün bilgisini (seri no, SKT, lot) kaydeder. */
+  icerikBilgisiGuncelle(dto: SandikIcerikBilgisiGuncelleDto): Observable<ApiResult<unknown>> {
+    return this.api.put<unknown>(API.SANDIK.ICERIK_BILGISI_GUNCELLE, dto);
   }
 
   // ===== Ekleme =====

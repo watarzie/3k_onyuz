@@ -21,6 +21,8 @@ export interface UcKUrunDto {
   kaynakCekiSatiriId?: number;
   kaynakProjeNo?: string;
   kaynakSandikNo?: string;
+  /** Seçili sandık satırının kalıcı ürün bilgisi (seri no, SKT, lot); salt okunur gösterilir. */
+  urunBilgisi?: string | null;
   kaynakSiraNo?: number;
   sahaTamamlamalari: SahaTamamlamaIzDto[];
   siraNo: number;

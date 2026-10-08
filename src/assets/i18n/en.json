@@ -701,6 +701,10 @@
     "REZERVE": "Reserved"
   },
   "LABELS": {
+    "URUN_BILGISI": "Product info (serial no, expiry, lot)",
+    "URUN_BILGISI_IPUCU": "Permanent details such as serial number and expiry date. 3K operations and undo actions do not clear this field; it moves with the product between crates.",
+    "URUN_BILGISI_ORNEK": "E.g. SN: A-1001, Exp: 03.2027, Lot: L-42",
+    "ISLEM_ACIKLAMASI_IPUCU": "Operation note — use the Product info field on the crate screen for serial no/expiry",
     "PROJE_NO": "Project No",
     "MUSTERI": "Customer",
     "DURUM": "Status",
@@ -750,6 +754,10 @@
     "PASSWORD_WEAK": "Password must be at least 6 characters"
   },
   "MESSAGES": {
+    "URUN_BILGISI_KAYDEDILDI": "Product info saved.",
+    "URUN_BILGISI_KAYDEDILEMEDI": "Product info could not be saved.",
+    "URUN_BILGISI_KILITLI": "Product info cannot be changed in a shipped crate.",
+    "URUN_BILGISI_UZUN": "Product info can be at most 1000 characters.",
     "LOGIN_SUCCESS": "Login successful",
     "LOGIN_FAIL": "Invalid email or password",
     "UNAUTHORIZED": "Unauthorized access",

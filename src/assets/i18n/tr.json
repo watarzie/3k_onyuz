@@ -701,6 +701,10 @@
     "REZERVE": "Rezerve"
   },
   "LABELS": {
+    "URUN_BILGISI": "Ürün bilgisi (seri no, SKT, lot)",
+    "URUN_BILGISI_IPUCU": "Seri numarası, son kullanma tarihi gibi kalıcı bilgiler. 3K işlemleri ve geri almalar bu alanı silmez; sandık taşımasında ürünle birlikte taşınır.",
+    "URUN_BILGISI_ORNEK": "Örn. SN: A-1001, SKT: 03.2027, Lot: L-42",
+    "ISLEM_ACIKLAMASI_IPUCU": "İşlem açıklaması — seri no/SKT için sandık ekranındaki Ürün bilgisi alanını kullanın",
     "PROJE_NO": "Proje No",
     "MUSTERI": "Müşteri",
     "DURUM": "Durum",
@@ -750,6 +754,10 @@
     "PASSWORD_WEAK": "Şifre en az 6 karakter olmalıdır"
   },
   "MESSAGES": {
+    "URUN_BILGISI_KAYDEDILDI": "Ürün bilgisi kaydedildi.",
+    "URUN_BILGISI_KAYDEDILEMEDI": "Ürün bilgisi kaydedilemedi.",
+    "URUN_BILGISI_KILITLI": "Sevk edilmiş sandıkta ürün bilgisi değiştirilemez.",
+    "URUN_BILGISI_UZUN": "Ürün bilgisi en fazla 1000 karakter olabilir.",
     "LOGIN_SUCCESS": "Giriş başarılı",
     "LOGIN_FAIL": "E-posta veya şifre hatalı",
     "UNAUTHORIZED": "Yetkisiz erişim",

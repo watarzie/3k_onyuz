@@ -145,6 +145,9 @@
                   <span class="badge bg-secondary-subtle text-secondary" style="font-size:10px">Manuel</span>
                   }
                 </div>
+                @if (u.urunBilgisi) {
+                <small class="urun-bilgisi-meta" [title]="u.urunBilgisi"><i class="ri-price-tag-3-line"></i>{{ u.urunBilgisi }}</small>
+                }
                 <div class="saha-inline-meta">
                   @if (hasKaynakSahaIz(u)) {
                   <span class="saha-source-pill" [title]="getKaynakSahaLabel(u)">
@@ -553,6 +556,9 @@
         <span class="ozet-chip"><i class="ri-barcode-line"></i> {{ panelUrun()!.barkodNo }}</span>
         <span class="ozet-chip"><i class="ri-archive-line"></i> {{ panelUrun()!.sandikNo }}</span>
         <span class="ozet-chip"><i class="ri-stack-line"></i> Bu sandıkta: {{ formatMiktar(getSandikMiktari(panelUrun()!)) }} {{ panelUrun()!.birim }}</span>
+        @if (panelUrun()!.urunBilgisi) {
+        <span class="ozet-chip urun-bilgisi-chip" [title]="ts.translate('LABELS.URUN_BILGISI')"><i class="ri-price-tag-3-line"></i> {{ panelUrun()!.urunBilgisi }}</span>
+        }
         @if (hasAnaToplamFarki(panelUrun()!)) {
         <span class="ozet-chip"><i class="ri-file-list-3-line"></i> Ana toplam: {{ formatMiktar(getAnaIstenenAdet(panelUrun()!)) }} {{ panelUrun()!.birim }}</span>
         }
@@ -773,7 +779,7 @@
         Açıklama
         @if (isAciklamaZorunlu) { <span class="text-danger">*</span> }
       </label>
-      <textarea class="form-control" rows="2" placeholder="Detay girin..." [ngModel]="panelAciklama()"
+      <textarea class="form-control" rows="2" [placeholder]="ts.translate('LABELS.ISLEM_ACIKLAMASI_IPUCU')" [ngModel]="panelAciklama()"
         (ngModelChange)="panelAciklama.set($event)"></textarea>
     </div>
 
