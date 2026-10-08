@@ -152,6 +152,7 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
       'kaliciSil',
       'isDetay',
       'fiyatlandir',
+      'hacimGir',
       'faturaOdeme',
       'paraBirimleri',
       'downloadErrorMessage',
@@ -164,6 +165,7 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
     api.kaliciSil.and.returnValue(of({ isSuccess: true }));
     api.isDetay.and.returnValue(of({ isSuccess: true, value: work }));
     api.fiyatlandir.and.returnValue(of({ isSuccess: true }));
+    api.hacimGir.and.returnValue(of({ isSuccess: true }));
     api.faturaOdeme.and.returnValue(of({ isSuccess: true }));
     api.paraBirimleri.and.returnValue(of({ isSuccess: true, value: paraBirimleri }));
     toast = jasmine.createSpyObj<ToastService>('ToastService', ['success', 'info']);
@@ -218,6 +220,64 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
         ],
       }),
     );
+  });
+
+  describe('Hacim (ahşap / kontra m³)', () => {
+    const kontraIs: FinansIsKaydi = {
+      ...work, id: 41, sandikTipi: 'Kontrplak Sandık', sandikMalzemesi: FinansSandikMalzemesi.Kontra,
+      adet: 2, birimM3: 0, toplamM3: 0, ahsapM3: 0, kontraM3: 0, fiyatlandirmaBirimi: 2, birimFiyat: 100,
+    };
+
+    it('kontra sandıkta iki m³ girilir, bileşik toplam gösterilir ve gerekçeyle gönderilir', () => {
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: kontraIs }));
+      const { fixture, component } = setup('IsKaydi');
+      const el = fixture.nativeElement as HTMLElement;
+      expect((el.querySelector('.hacim-ahsap') as HTMLInputElement).readOnly).toBeFalse();
+      component.hacim.ahsapM3 = 1.2;
+      component.hacim.kontraM3 = 0.8;
+      fixture.detectChanges();
+      expect((el.querySelector('.hacim-bilesik') as HTMLInputElement).value).toBe('2');
+
+      component.hacimKaydet();
+      expect(api.hacimGir).not.toHaveBeenCalled();
+      component.hacim.aciklama = 'Kontra ölçüsü girildi';
+      component.hacimKaydet();
+      expect(api.hacimGir).toHaveBeenCalledOnceWith(41, { ahsapM3: 1.2, kontraM3: 0.8, aciklama: 'Kontra ölçüsü girildi' });
+    });
+
+    it('ahşap sandıkta ahşap m³ üretimden gelir ve salt okunurdur; geçersiz hacim gönderilmez', () => {
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: { ...kontraIs, sandikMalzemesi: FinansSandikMalzemesi.Ahsap, ahsapM3: 2.5 } }));
+      const { fixture, component } = setup('IsKaydi');
+      expect((fixture.nativeElement.querySelector('.hacim-ahsap') as HTMLInputElement).readOnly).toBeTrue();
+      expect(component.hacim.ahsapM3).toBe(2.5);
+      component.hacim = { ahsapM3: 0, kontraM3: 0, aciklama: 'Geçersiz hacim' };
+      component.hacimKaydet();
+      expect(api.hacimGir).not.toHaveBeenCalled();
+      expect(component.hata()).toBeTruthy();
+    });
+
+    it('PO bağlı işte, m³ görme veya fiyatlandırma yazma izni yokken bölüm açılmaz', () => {
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: { ...kontraIs, poNumaralari: ['PO-1'] } }));
+      expect(setup('IsKaydi').fixture.nativeElement.querySelector('.finans-hacim-karti')).toBeNull();
+
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: kontraIs }));
+      permissions.hasAccess.and.callFake((kod: string) => kod !== AMBALAJ_YETKI.M3Goruntule);
+      expect(setup('IsKaydi').fixture.nativeElement.querySelector('.finans-hacim-karti')).toBeNull();
+
+      permissions.hasAccess.and.returnValue(true);
+      permissions.canWrite.and.callFake((kod: string) => kod !== FINANS_YETKI.FiyatlandirmaDegistir);
+      expect(setup('IsKaydi').fixture.nativeElement.querySelector('.finans-hacim-karti')).toBeNull();
+    });
+
+    it('elle girilmiş hacimde fiyatlandırmadaki birim m³ salt okunur kalır', () => {
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: { ...kontraIs, hacimManuel: true, birimM3: 1, toplamM3: 2 } }));
+      const { fixture, component } = setup('IsKaydi');
+      component.tab('fiyat');
+      fixture.detectChanges();
+      const birimM3 = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('label'))
+        .find((l) => l.textContent?.includes('Finans birim m³'))!.querySelector('input') as HTMLInputElement;
+      expect(birimM3.readOnly).toBeTrue();
+    });
   });
 
   it('bileşen özeti satır tutarlarını toplar ve m³ satırlarını malzemeye göre ayırır', () => {

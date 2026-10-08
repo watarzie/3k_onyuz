@@ -3,7 +3,7 @@ import { Component, DestroyRef, OnInit, inject, input, output, signal } from '@a
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, finalize } from 'rxjs';
-import { FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
+import { AMBALAJ_YETKI, FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
 import { FinansService } from '../../../core/services/finans.service';
 import { FinansParaBirimiService } from '../../../core/services/finans-para-birimi.service';
 import { PermissionService } from '../../../core/services/permission.service';
@@ -37,6 +37,7 @@ import {
   uretimKategorisi,
 } from '../ortak/finans-etiketleri';
 import { TranslationService } from '../../../core/services/translation.service';
+import { finansAhsapUretimden, finansHacimBilesik, finansHacimGecerli } from '../ortak/finans-hacim';
 import { FinansIsKategorisi, FinansSandikMalzemesi } from '../../../core/constants/enums';
 
 import { onayaAlindi } from '../../../shared/models';
@@ -115,9 +116,43 @@ export class FinansKayitDetayComponent implements OnInit {
     aciklama: '',
     bilesenler: [],
   };
+  /** Ahşap ve kontra m³ girişi (kontra sandıkta Ambalaj m³ hesaplamaz); bileşik toplam fiyatlandırma miktarıdır. */
+  hacim = { ahsapM3: 0, kontraM3: 0, aciklama: '' };
+  readonly hacimBilesik = finansHacimBilesik;
   ngOnInit(): void {
     this.paraBirimleri.yukle();
     this.yukle();
+  }
+  m3Gorunur(): boolean {
+    return this.permissions.hasAccess(AMBALAJ_YETKI.M3Goruntule);
+  }
+  /** Ahşap sandıkta ahşap m³ üretimden gelir, salt okunurdur; kontra/belirsiz işte iki değer de girilir. */
+  ahsapUretimden(): boolean {
+    return finansAhsapUretimden(this.kayit()?.sandikMalzemesi);
+  }
+  /** Hacim girişi: m³ görünür, fiyatlandırma değiştirme yazma izni var, iş aktif ve PO'ya bağlı değil. */
+  hacimDuzenlenebilir(): boolean {
+    const k = this.kayit();
+    return !!k && !k.iptalEdildi && k.kaynakAktif !== false && k.poNumaralari.length === 0
+      && this.m3Gorunur() && this.permissions.canWrite(this.izin.FiyatlandirmaDegistir);
+  }
+  hacimKaydet(): void {
+    const k = this.kayit();
+    if (!k || !this.hacimDuzenlenebilir()) return;
+    const ahsapM3 = Number(this.hacim.ahsapM3) || 0;
+    const kontraM3 = Number(this.hacim.kontraM3) || 0;
+    if (!finansHacimGecerli(ahsapM3, kontraM3)) {
+      this.hata.set(this.t('VOLUME_INVALID'));
+      return;
+    }
+    if (this.hacim.aciklama.trim().length < 5) {
+      this.hata.set(this.t('VOLUME_REASON_REQUIRED'));
+      return;
+    }
+    this.uygula(
+      this.service.hacimGir(k.id, { ahsapM3, kontraM3, aciklama: this.hacim.aciklama.trim() }),
+      this.t('VOLUME_SAVED'),
+    );
   }
   parasal(kod: string): boolean {
     return (
@@ -231,6 +266,7 @@ export class FinansKayitDetayComponent implements OnInit {
         const k = result.value;
         this.kayit.set(k);
         this.finansTarihi = k.finansTarihi?.slice(0, 10) ?? '';
+        this.hacim = { ahsapM3: k.ahsapM3 ?? 0, kontraM3: k.kontraM3 ?? 0, aciklama: '' };
         if (this.fiyatDuzenlenebilir()) {
           this.fiyat = {
             fiyatlandirmaBirimi: k.fiyatlandirmaBirimi ?? 1,

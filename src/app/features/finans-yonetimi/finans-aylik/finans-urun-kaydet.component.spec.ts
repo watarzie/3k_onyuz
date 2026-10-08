@@ -25,7 +25,7 @@ describe('Finans ürün ve tarife kaydı', () => {
   const yazma = new Set<string>([FINANS_YETKI.IsKutuphanesiYonet]);
 
   beforeEach(() => {
-    api = jasmine.createSpyObj('FinansService', ['aylikIsler', 'urunler', 'urunGuncelle', 'urunSil', 'giderKategorileri']);
+    api = jasmine.createSpyObj('FinansService', ['aylikIsler', 'urunler', 'urunGuncelle', 'urunOlustur', 'urunSil', 'giderKategorileri', 'ozelIsOlustur']);
     const sayfa = { items: [], toplamlar: [], pageNumber: 1, pageSize: 25, totalCount: 0, totalPages: 0, hasPreviousPage: false, hasNextPage: false };
     api.aylikIsler.and.returnValue(of({ isSuccess: true, value: { ...sayfa, finansOzeti: [], grupToplamlari: [] } }));
     api.urunler.and.returnValue(of({ isSuccess: true, value: sayfa }));
@@ -68,6 +68,34 @@ describe('Finans ürün ve tarife kaydı', () => {
     expect(id).toBe(3);
     expect(istek.eslesmeler).toEqual([jasmine.objectContaining({ id: 2, aktif: true, isTuru: 1 })]);
     expect(c.urunEslesmeMetni(urun)).not.toContain('Eski');
+  });
+
+  it('üretim iş türünde isteğe bağlı sandık tipi (Kontrplak) tarifeyle gönderilir; boş seçim bütün tiplere uyar', () => {
+    api.urunOlustur.and.returnValue(of({ isSuccess: true }));
+    const c = TestBed.createComponent(FinansYonetimiComponent).componentInstance;
+    c.urunForm = { ...c.urunForm, kod: 'KONTRA', ad: 'Kontra ambalaj', isTuru: 1 };
+    c.urunSandikTipiSecildi('Kontrplak Sandık');
+    expect(c.urunForm.fiyatlandirmaBirimi).toBe(2);
+    c.urunKaydet();
+    expect(api.urunOlustur.calls.mostRecent().args[0].eslesmeler[0]).toEqual(jasmine.objectContaining({ isTuru: 1, sandikTipi: 'Kontrplak Sandık' }));
+
+    c.urunSandikTipiSecildi('');
+    c.urunKaydet();
+    expect(api.urunOlustur.calls.mostRecent().args[0].eslesmeler[0].sandikTipi).toBeNull();
+  });
+
+  it('tek seferlik işte m³ yönteminde ahşap ve kontra m³ gönderilir; hacimsiz istek gönderilmez', () => {
+    api.ozelIsOlustur.and.returnValue(of({ isSuccess: true }));
+    const c = TestBed.createComponent(FinansYonetimiComponent).componentInstance;
+    c.ozelIsForm = { ...c.ozelIsForm, isAdi: 'Kontra kasa', isTuru: 'SKIT', raporGrubu: 'SKIT', miktar: 2, birimFiyat: 150, hesaplamaYontemi: 4 };
+
+    c.ozelIsKaydet();
+    expect(api.ozelIsOlustur).not.toHaveBeenCalled();
+
+    c.ozelIsForm = { ...c.ozelIsForm, ahsapM3: 1.2, kontraM3: 0.8 };
+    c.ozelIsKaydet();
+    expect(api.ozelIsOlustur).toHaveBeenCalledWith(jasmine.objectContaining({ hesaplamaYontemi: 4, ahsapM3: 1.2, kontraM3: 0.8 }));
+    expect(c.hacimBilesik(c.ozelIsForm.ahsapM3, c.ozelIsForm.kontraM3)).toBe(2);
   });
 
   it('onaya düşen silmeyi başarılı saymaz', async () => {

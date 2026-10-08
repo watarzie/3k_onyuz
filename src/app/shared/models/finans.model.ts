@@ -1,4 +1,4 @@
-import { FinansIsKategorisi, FinansKarsilanma, FinansOdemeDurumu, FinansOdemeFiltresi } from '../../core/constants/enums';
+import { FinansIsKategorisi, FinansKarsilanma, FinansOdemeDurumu, FinansOdemeFiltresi, FinansSandikMalzemesi } from '../../core/constants/enums';
 
 export type FinansFiyatlandirmaBirimi = 1 | 2 | 3 | 4;
 
@@ -176,6 +176,10 @@ export interface FinansFaturaGrupKalemi {
 }
 
 export interface FinansIsKaydi {
+  /** Ahşap/kontra m³ "Hacim" bölümünden elle girildi; üretim aktarımı ezmez. */
+  hacimManuel?: boolean;
+  /** Sandık malzemesi (1 ahşap, 2 kontra/katlanır, 0 bilinmiyor); hacim girişinin biçimini belirler. */
+  sandikMalzemesi?: FinansSandikMalzemesi | 0;
   manuelNetTutar?: number | null;
   bilesenler?: import('./finans-v2.model').FinansFiyatBileseni[] | null;
   isAdi?: string;
@@ -524,6 +528,16 @@ export interface FinansOzelIsKaydetRequest {
   birimFiyat: number;
   paraBirimi: string;
   kdvOrani: number;
+  /** m³ yönteminde zorunlu; birim m³ = (ahşap + kontra) / miktar. */
+  ahsapM3?: number | null;
+  kontraM3?: number | null;
+}
+
+/** Kayıt detayındaki "Hacim" bölümünün isteği. */
+export interface FinansHacimGirRequest {
+  ahsapM3: number;
+  kontraM3: number;
+  aciklama: string;
 }
 
 export interface FinansAylikIs {

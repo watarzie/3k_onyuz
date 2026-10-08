@@ -73,6 +73,7 @@ export const API = {
     YASLANDIRMA: `${BASE}/finans/yaslandirma`,
     FINANS_TARIHI: (id: number) => `${BASE}/finans/is-kayitlari/${id}/finans-tarihi`,
     FIYATLANDIRMA: (id: number) => `${BASE}/finans/is-kayitlari/${id}/fiyatlandirma`,
+    HACIM: (id: number) => `${BASE}/finans/is-kayitlari/${id}/hacim`,
     PARA_BIRIMLERI: `${BASE}/finans/para-birimleri`,
     PARA_BIRIMI: (id: number) => `${BASE}/finans/para-birimleri/${id}`,
     PARAMETRELER: `${BASE}/finans/parametreler`,

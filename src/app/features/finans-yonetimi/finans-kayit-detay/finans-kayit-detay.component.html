@@ -280,6 +280,14 @@
               <dd>{{ t(kategoriAnahtari(k.kategori)) }}</dd>
               <dt>Adet / cins</dt>
               <dd>{{ k.adet }} · {{ k.sandikTipi }}</dd>
+              @if (m3Gorunur()) {
+                <dt>{{ t('VOLUME_SPLIT') }}</dt>
+                <dd class="finans-hacim-ozet">
+                  {{ t('WOOD_M3') }} {{ k.ahsapM3 | number: '1.0-6' }} · {{ t('PLYWOOD_M3') }} {{ k.kontraM3 | number: '1.0-6' }}
+                  · <strong>{{ t('COMPOSITE_M3') }} {{ hacimBilesik(k.ahsapM3, k.kontraM3) | number: '1.0-6' }}</strong>
+                  @if (k.hacimManuel) { <span class="v2-tag">{{ t('VOLUME_MANUAL_BADGE') }}</span> }
+                </dd>
+              }
               <dt>Kaynak bileşeni</dt>
               <dd>{{ k.kaynakBileseni }}</dd>
               @if (parasal(izin.TutarGoruntule)) {
@@ -296,6 +304,27 @@
               <dd>{{ k.faturaNumaralari.join(', ') || '—' }}</dd>
             </dl>
           </div>
+          @if (hacimDuzenlenebilir()) {
+            <div class="v2-card finans-hacim-karti">
+              <h4 class="v2-dialog-card-title">
+                <i class="ri-ruler-2-line" aria-hidden="true"></i>{{ t('VOLUME_SECTION') }}
+              </h4>
+              <p>{{ t(ahsapUretimden() ? 'VOLUME_HELP_WOOD' : 'VOLUME_HELP_PLYWOOD') }}</p>
+              <div class="v2-fields">
+                <label>{{ t('WOOD_M3') }}@if (ahsapUretimden()) { <small>({{ t('VOLUME_FROM_PRODUCTION') }})</small> }<input
+                    type="number" min="0" step="0.000001" class="hacim-ahsap"
+                    [(ngModel)]="hacim.ahsapM3" [readonly]="ahsapUretimden()" /></label
+                ><label>{{ t('PLYWOOD_M3') }}<input
+                    type="number" min="0" step="0.000001" class="hacim-kontra"
+                    [(ngModel)]="hacim.kontraM3" /></label
+                ><label>{{ t('COMPOSITE_M3') }}<input class="hacim-bilesik" [value]="hacimBilesik(hacim.ahsapM3, hacim.kontraM3)" readonly /></label
+                ><label>{{ t('VOLUME_REASON') }}<input [(ngModel)]="hacim.aciklama" maxlength="2000" /></label>
+              </div>
+              <button class="btn btn-outline-primary mt-3 hacim-kaydet" [disabled]="saving()" (click)="hacimKaydet()">
+                <i class="ri-check-line" aria-hidden="true"></i>{{ t('VOLUME_SAVE') }}
+              </button>
+            </div>
+          }
           @if (permissions.canWrite(izin.TarihDegistir)) {
             <div class="v2-card">
               <h4 class="v2-dialog-card-title">
@@ -375,7 +404,9 @@
                 type="number"
                 min="0"
                 step="0.000001"
-                [(ngModel)]="fiyat.birimM3" /></label
+                [readonly]="kayit()?.hacimManuel"
+                [title]="kayit()?.hacimManuel ? t('VOLUME_PRICING_HINT') : ''"
+                [(ngModel)]="fiyat.birimM3" />@if (kayit()?.hacimManuel) {<small class="v2-note">{{ t('VOLUME_PRICING_HINT') }}</small>}</label
             ><label
               >Birim fiyat<input
                 type="number"

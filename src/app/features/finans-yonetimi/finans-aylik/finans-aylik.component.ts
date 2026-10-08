@@ -1,4 +1,5 @@
 import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
+import { finansHacimBilesik, finansHacimGecerli } from '../ortak/finans-hacim';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -173,6 +174,7 @@ export class FinansYonetimiComponent implements OnInit {
   readonly ozelIsGrubuSecenekleri = ['Haliade-X', 'SKIT', 'Diğer'];
   readonly birimler = ['Adet', 'm³', 'Ay', 'Sefer', 'Hizmet'];
   readonly sandikTipleri = ['Ahşap Kapalı', 'Kafes Sandık', 'Kontrplak Sandık', 'Katlanır Sandık'];
+  readonly hacimBilesik = finansHacimBilesik;
   readonly sayfaBoyutuSecenekleri = [25, 50, 100] as const;
   readonly isTuruSecenekleri = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(id => ({ id, ad: this.isTuruMetni(id) }));
 
@@ -787,8 +789,15 @@ export class FinansYonetimiComponent implements OnInit {
       this.ozelIsHatasi.set('Zorunlu alanları ve seçili aya ait geçerli tarih/tutar bilgilerini kontrol edin.');
       return;
     }
+    const m3Yontemi = form.hesaplamaYontemi === 4;
+    if (m3Yontemi && !finansHacimGecerli(form.ahsapM3, form.kontraM3)) {
+      this.ozelIsHatasi.set(this.t('VOLUME_INVALID'));
+      return;
+    }
     const request: FinansOzelIsKaydetRequest = {
       ...form,
+      ahsapM3: m3Yontemi ? Number(form.ahsapM3) || 0 : null,
+      kontraM3: m3Yontemi ? Number(form.kontraM3) || 0 : null,
       isAdi: form.isAdi.trim(),
       isTuru: form.isTuru.trim(),
       raporGrubu,
@@ -1330,7 +1339,7 @@ export class FinansYonetimiComponent implements OnInit {
       this.urunHatasi.set('Fiyatın geçerli olacağı başlangıç tarihi zorunludur.');
       return;
     }
-    const request: FinansUrunKaydetRequest = { kod: form.kod.trim(), ad: form.ad.trim(), fiyatlandirmaBirimi: form.fiyatlandirmaBirimi, birimFiyat: Number(form.birimFiyat), paraBirimi: form.paraBirimi, kdvOrani: Number(form.kdvOrani), gecerlilikBaslangici: form.gecerlilikBaslangici, aktif: form.aktif, sira: form.sira, eslesmeler: form.isTuru ? [{ id: form.eslesmeId, aktif: true, isTuru: form.isTuru, sandikAdi: form.isTuru === 3 || ozelSandik ? null : this.temizle(form.sandikAdi), icSandikSablonId: form.isTuru === 3 ? form.icSandikSablonId : null, sandikTipi: ozelSandik ? form.sandikTipi : null, boy: katlanir ? Number(form.boy) : null, en: katlanir ? Number(form.en) : null, yukseklik: katlanir ? Number(form.yukseklik) : null }] : [] };
+    const request: FinansUrunKaydetRequest = { kod: form.kod.trim(), ad: form.ad.trim(), fiyatlandirmaBirimi: form.fiyatlandirmaBirimi, birimFiyat: Number(form.birimFiyat), paraBirimi: form.paraBirimi, kdvOrani: Number(form.kdvOrani), gecerlilikBaslangici: form.gecerlilikBaslangici, aktif: form.aktif, sira: form.sira, eslesmeler: form.isTuru ? [{ id: form.eslesmeId, aktif: true, isTuru: form.isTuru, sandikAdi: form.isTuru === 3 || ozelSandik ? null : this.temizle(form.sandikAdi), icSandikSablonId: form.isTuru === 3 ? form.icSandikSablonId : null, sandikTipi: form.isTuru === 3 ? null : this.temizle(form.sandikTipi), boy: katlanir ? Number(form.boy) : null, en: katlanir ? Number(form.en) : null, yukseklik: katlanir ? Number(form.yukseklik) : null }] : [] };
     this.urunKaydediliyor.set(true);
     const operation = id ? this.service.urunGuncelle(id, request) : this.service.urunOlustur(request);
     operation.subscribe(result => {
@@ -1389,6 +1398,15 @@ export class FinansYonetimiComponent implements OnInit {
     this.urunForm.en = null;
     this.urunForm.yukseklik = null;
     this.urunForm.icSandikSablonId = null;
+  }
+
+  /**
+   * Üretim iş türlerinde (4/5 dışı) isteğe bağlı sandık tipi: boş seçim bütün tiplere uyar; Kontrplak gibi bir tip
+   * seçilirse tarife yalnız o tipe eşleşir ve fiyatlandırma birimi tipe göre önerilir.
+   */
+  urunSandikTipiSecildi(sandikTipi: string): void {
+    this.urunForm.sandikTipi = sandikTipi;
+    if (sandikTipi) this.urunForm.fiyatlandirmaBirimi = sandikTipi === 'Katlanır Sandık' ? 1 : 2;
   }
 
   urunSandikTipiDegisti(sandikTipi: string): void {

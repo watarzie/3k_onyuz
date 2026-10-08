@@ -38,7 +38,7 @@
               <i class="ri-stack-line" aria-hidden="true"></i>{{ t(kategoriAnahtari(grup.kategori)) }}
               <span class="v2-tag">{{ grup.kalemler.length }}</span>
               @if (m3Gorunur()) {
-                <span class="v2-tag">{{ t('MATERIAL_WOOD') }} {{ grup.ahsapM3 | number: '1.0-3' }} m³ · {{ t('PLYWOOD_FOLDING') }} {{ grup.kontraM3 | number: '1.0-3' }} m³</span>
+                <span class="v2-tag">{{ t('MATERIAL_WOOD') }} {{ grup.ahsapM3 | number: '1.0-3' }} m³ · {{ t('PLYWOOD_FOLDING') }} {{ grup.kontraM3 | number: '1.0-3' }} m³ · {{ t('COMPOSITE_M3') }} {{ (grup.ahsapM3 || 0) + (grup.kontraM3 || 0) | number: '1.0-3' }}</span>
               }
             </h4>
             <div class="v2-dialog-table-wrap">

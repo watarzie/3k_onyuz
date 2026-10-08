@@ -208,7 +208,7 @@
                   <small>{{ satir.boy }} × {{ satir.en }} × {{ satir.yukseklik }} mm</small>
                 }
                 @if (satir.sandikAdedi) {
-                  <small>{{ satir.sandikAdedi }} sandık@if (satir.ahsapM3) { · Ahşap {{ satir.ahsapM3 | number: '1.0-3' }} m³ }@if (satir.kontraM3) { · Kontra {{ satir.kontraM3 | number: '1.0-3' }} m³ }</small>
+                  <small>{{ satir.sandikAdedi }} sandık@if (satir.ahsapM3) { · {{ t('WOOD_M3') }} {{ satir.ahsapM3 | number: '1.0-3' }} }@if (satir.kontraM3) { · {{ t('PLYWOOD_M3') }} {{ satir.kontraM3 | number: '1.0-3' }} }@if (satir.ahsapM3 && satir.kontraM3) { · {{ t('COMPOSITE_M3') }} {{ hacimBilesik(satir.ahsapM3, satir.kontraM3) | number: '1.0-3' }} }</small>
                 }
                 @if (satir.projeNo && satir.isKaydiIds.length) {
                   <button type="button" class="crate-toggle" [attr.aria-expanded]="sandiklarAcik(satir)" (click)="sandiklariAcKapat(satir)">
@@ -417,7 +417,7 @@
                           <small>{{ blok.musteri }} · {{ blok.satirlar.length }} kategori</small>
                           @if (blok.ozet; as ozet) {
                             @if (ozet.ahsapM3 || ozet.kontraM3) {
-                              <small>@if (ozet.ahsapM3) { Ahşap {{ ozet.ahsapM3 | number: '1.0-3' }} m³ }@if (ozet.ahsapM3 && ozet.kontraM3) { · }@if (ozet.kontraM3) { Kontra {{ ozet.kontraM3 | number: '1.0-3' }} m³ }</small>
+                              <small>@if (ozet.ahsapM3) { {{ t('WOOD_M3') }} {{ ozet.ahsapM3 | number: '1.0-3' }} }@if (ozet.ahsapM3 && ozet.kontraM3) { · }@if (ozet.kontraM3) { {{ t('PLYWOOD_M3') }} {{ ozet.kontraM3 | number: '1.0-3' }} }@if (ozet.ahsapM3 && ozet.kontraM3) { · {{ t('COMPOSITE_M3') }} {{ hacimBilesik(ozet.ahsapM3, ozet.kontraM3) | number: '1.0-3' }} }</small>
                             }
                             @if (ozet.fiyatBekleyenKalem) {
                               <small class="attention-value">{{ ozet.fiyatBekleyenKalem }} kalem fiyat bekliyor</small>
@@ -1096,6 +1096,18 @@
           ><input class="form-control" [(ngModel)]="ozelRaporGrubu"
         /></label>
       }
+      @if (ozelIsForm.hesaplamaYontemi === 4) {
+        <label class="field"
+          ><span>{{ t('WOOD_M3') }}</span
+          ><input class="form-control ozel-ahsap-m3" type="number" min="0" step="0.000001" [(ngModel)]="ozelIsForm.ahsapM3" /></label
+        ><label class="field"
+          ><span>{{ t('PLYWOOD_M3') }}</span
+          ><input class="form-control ozel-kontra-m3" type="number" min="0" step="0.000001" [(ngModel)]="ozelIsForm.kontraM3" /></label
+        ><label class="field"
+          ><span>{{ t('COMPOSITE_M3') }}</span
+          ><input class="form-control ozel-bilesik-m3" [value]="hacimBilesik(ozelIsForm.ahsapM3, ozelIsForm.kontraM3)" readonly /><small class="money-note">{{ t('COMPOSITE_M3_HELP') }}</small></label
+        >
+      }
       <label class="field"
         ><span>Miktar *</span
         ><input
@@ -1482,6 +1494,17 @@
             [disabled]="urunForm.isTuru === 0"
             [(ngModel)]="urunForm.sandikAdi" /></label
         >
+        @if (urunForm.isTuru !== 0 && urunForm.isTuru !== 8) {
+          <label class="field"
+            ><span>{{ t('CRATE_TYPE_OPTIONAL') }}</span
+            ><select class="form-select tarife-sandik-tipi" [ngModel]="urunForm.sandikTipi" (ngModelChange)="urunSandikTipiSecildi($event)">
+              <option value="">{{ t('ALL_CRATE_TYPES') }}</option>
+              @for (tip of sandikTipleri; track tip) {
+                <option [value]="tip">{{ tip }}</option>
+              }
+            </select><small class="money-note">{{ t('CRATE_TYPE_OPTIONAL_HELP') }}</small></label
+          >
+        }
       }
       <label class="check wide"><input type="checkbox" [(ngModel)]="urunForm.aktif" />Aktif</label>
       @if (duzenlenenUrunTarifeleri().length) {

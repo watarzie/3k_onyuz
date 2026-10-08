@@ -22,6 +22,7 @@ import {
   FinansIsKaydi,
   FinansListelemeRequest,
   FinansOzelIsKaydetRequest,
+  FinansHacimGirRequest,
   FinansSayfaliSonuc,
   FinansSiparis,
   FinansSiparisDetay,
@@ -93,6 +94,10 @@ export class FinansService {
   }
   fiyatlandir(id: number, request: FinansFiyatlandirma) {
     return this.api.post<void>(API.FINANS.FIYATLANDIRMA(id), request);
+  }
+  /** Ahşap ve kontra m³'ü elle girer; bileşik toplam işin m³ miktarı olur. */
+  hacimGir(id: number, request: FinansHacimGirRequest) {
+    return this.api.post<void>(API.FINANS.HACIM(id), request);
   }
   /** Para birimi tanımları (F1); seçim listeleri yalnız aktif olanları kullanır. */
   paraBirimleri(sadeceAktif = false) {
