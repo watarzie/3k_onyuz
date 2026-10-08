@@ -142,4 +142,16 @@ export const FINANS_YETKI = {
   FiyatlandirmaDegistir: 'finans-fiyatlandirma-degistir',
   /** Faturayı ödendi/ödenmedi işaretleme (D3). */
   OdemeKaydet: 'finans-odeme-kaydet',
+  /**
+   * Sekme düğümleri (sunucudaki YetkiKodlari.Finans.Sekme*): R sekmeyi gösterir, W sekmedeki işlemlerin tavanıdır.
+   * Yalnız o sekmeye ait işlem kodları ağaçta sekme düğümünün altındadır.
+   */
+  SekmePanel: 'finans-sekme-panel',
+  SekmeIsTakibi: 'finans-sekme-is-takibi',
+  SekmePoFatura: 'finans-sekme-po-fatura',
+  SekmeGiderler: 'finans-sekme-giderler',
+  SekmeGiderKategorileri: 'finans-sekme-gider-kategorileri',
+  SekmeTanimlar: 'finans-sekme-tanimlar',
+  SekmeRaporlar: 'finans-sekme-raporlar',
+  SekmeMunferitIsler: 'finans-sekme-munferit-isler',
 } as const;

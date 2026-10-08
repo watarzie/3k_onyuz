@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, DestroyRef } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, DestroyRef, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -46,6 +46,13 @@ export class RolYonetimiComponent implements OnInit {
   newRoleName = signal('');
   /** İzin ağacında görünüm süzgeci (izinleri değiştirmez). */
   izinAramasi = signal('');
+  /** İzin ağacı: alt düzeyler kapalı başlar; "Tümünü aç/kapat" bütün dallara uygulanır. */
+  @ViewChild(MenuTreeComponent) izinAgaci?: MenuTreeComponent;
+
+  agaciAcKapat(): void {
+    const agac = this.izinAgaci;
+    if (agac) agac.tumunuAc(!agac.hepsiAcik());
+  }
   /** Son yüklenen/kaydedilen izin dağılımı; kaydedilmemiş değişikliği göstermek için. */
   private kayitliIzinler = '';
 

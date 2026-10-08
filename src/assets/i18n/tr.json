@@ -484,7 +484,13 @@
     "FULL_ACCESS": "Yazma yetkisi",
     "READ_ONLY": "Sadece okuma",
     "NO_ACCESS": "Yetkisiz",
-    "PERMISSION_TYPE_HELP": "Ekran, işlem ve alan izinleri aynı şekilde çalışır: alt izin üst izninin seviyesini aşamaz; üst iznin yazma olması alt izinleri kendiliğinden açmaz."
+    "PERMISSION_TYPE_HELP": "Ekran, işlem ve alan izinleri aynı şekilde çalışır: alt izin üst izninin seviyesini aşamaz; üst iznin yazma olması alt izinleri kendiliğinden açmaz.",
+    "TAB_NODE_HELP": "R: sekme görünür · W: sekme işlemleri",
+    "EXPAND_ALL": "Tümünü aç",
+    "COLLAPSE_ALL": "Tümünü kapat",
+    "TAB_OFF_TITLE": "Sekme izni kapatılsın mı?",
+    "TAB_OFF_MESSAGE": "Bu sekmenin altındaki seçili izinler de kapanır; kaydettiğinizde rolden kaldırılır.",
+    "TAB_OFF_CONFIRM": "Kapat"
   },
   "BULK_CRATE_MOVE": {
     "TITLE": "Seçili ürünleri başka sandığa taşı",
@@ -684,7 +690,15 @@
     "FINANS_BELGE_INDIR": "PDF belge indirme",
     "FINANS_DENETIM_GOR": "Finans değişiklik geçmişi",
     "FINANS_FIYATLANDIRMA_DEGISTIR": "Fiyatlandırma değiştirme",
-    "FINANS_ODEME_KAYDET": "Fatura ödemesi işaretleme"
+    "FINANS_ODEME_KAYDET": "Fatura ödemesi işaretleme",
+    "FINANS_SEKME_PANEL": "Kontrol Paneli (sekme)",
+    "FINANS_SEKME_IS_TAKIBI": "Finans İş Takibi (sekme)",
+    "FINANS_SEKME_PO_FATURA": "PO ve Faturalar (sekme)",
+    "FINANS_SEKME_GIDERLER": "Giderler (sekme)",
+    "FINANS_SEKME_GIDER_KATEGORILERI": "Gider Kategorileri (sekme)",
+    "FINANS_SEKME_TANIMLAR": "İş ve Tarife Tanımları (sekme)",
+    "FINANS_SEKME_RAPORLAR": "Raporlar (sekme)",
+    "FINANS_SEKME_MUNFERIT_ISLER": "Münferit İşler (sekme)"
   },
   "ACTIONS": {
     "SAVE": "Kaydet",

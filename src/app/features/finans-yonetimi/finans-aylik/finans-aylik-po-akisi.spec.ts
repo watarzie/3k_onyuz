@@ -80,7 +80,7 @@ describe('Finans aylık görünüm PO/fatura akışı', () => {
     isGrubu: 'Kira', isAdi: '3K Seymen Kira', isTuru: 8, kategori: FinansIsKategorisi.DuzenliIs, isKaydiIds: [50] });
 
   beforeEach(() => {
-    reads.set(new Set([FINANS_YETKI.Modul, FINANS_YETKI.KayitGoruntule, FINANS_YETKI.SiparisOperasyonGoruntule]));
+    reads.set(new Set([FINANS_YETKI.Modul, FINANS_YETKI.SekmeIsTakibi, FINANS_YETKI.SekmePoFatura, FINANS_YETKI.KayitGoruntule, FINANS_YETKI.SiparisOperasyonGoruntule]));
     writes.set(new Set([FINANS_YETKI.PoGir, FINANS_YETKI.FaturaGir]));
     api = jasmine.createSpyObj('FinansService', ['aylikIsler', 'giderKategorileri', 'giderKalemleri', 'giderGuncelle', 'giderler', 'paraBirimleri', 'vadeUyarilari', 'faturalar', 'ozelIsAylikDegerGuncelle', 'genelArama', 'projeSandikKirilimi']);
     api.ozelIsAylikDegerGuncelle.and.returnValue(of({ isSuccess: true }));

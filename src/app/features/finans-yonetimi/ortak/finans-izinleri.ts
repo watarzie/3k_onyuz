@@ -67,3 +67,60 @@ export function finansOdemeKaydedilebilir(izinler: Izinler): boolean {
 export function finansFaturaGirilebilir(izinler: Izinler): boolean {
   return izinler.canWrite(FINANS_YETKI.FaturaGir) && finansSiparisFaturaOkunabilir(izinler);
 }
+
+/** Finans ana sekmeleri; dizi ekrandaki sıradır, varsayılan sekme erişilebilen ilk sekmedir. */
+export type FinansSekme = 'panel' | 'akis' | 'giderler' | 'ayarlar' | 'belgeler' | 'raporlar' | 'kategoriler';
+export const FINANS_SEKME_SIRASI: readonly FinansSekme[] = ['panel', 'akis', 'giderler', 'ayarlar', 'belgeler', 'raporlar', 'kategoriler'];
+
+/** Her sekmenin rol ağacındaki düğümü (R sekmeyi gösterir, W sekmedeki işlemlerin tavanıdır). */
+export const FINANS_SEKME_KODLARI: Readonly<Record<FinansSekme, string>> = {
+  panel: FINANS_YETKI.SekmePanel,
+  akis: FINANS_YETKI.SekmeIsTakibi,
+  giderler: FINANS_YETKI.SekmeGiderler,
+  ayarlar: FINANS_YETKI.SekmeTanimlar,
+  belgeler: FINANS_YETKI.SekmePoFatura,
+  raporlar: FINANS_YETKI.SekmeRaporlar,
+  kategoriler: FINANS_YETKI.SekmeGiderKategorileri,
+};
+
+export type FinansTanimGorunumu = 'duzenli' | 'tarifeler' | 'parametreler';
+
+/**
+ * İş ve Tarife Tanımları alt görünümü: sunucudaki okuma izinleriyle aynı. Tarife listesi birim fiyat görmeyi de
+ * ister; vade parametreleri iş kütüphanesi iznine bağlıdır.
+ */
+export function finansTanimOkunabilir(izinler: Izinler, gorunum: FinansTanimGorunumu): boolean {
+  if (!izinler.hasAccess(FINANS_YETKI.Modul)) return false;
+  if (gorunum === 'duzenli') return izinler.hasAccess(FINANS_YETKI.DuzenliIsYonet);
+  if (gorunum === 'parametreler') return izinler.hasAccess(FINANS_YETKI.IsKutuphanesiYonet);
+  return izinler.hasAccess(FINANS_YETKI.IsKutuphanesiYonet) && izinler.hasAccess(FINANS_YETKI.BirimFiyatGoruntule);
+}
+
+/**
+ * Sekme görünür mü: modül, sekme düğümü ve sekmenin ekranındaki okuma izinleri birlikte (sunucu kapılarının
+ * aynası). Gider kategorileri okuma izniyle açılır; ekleme/düzenleme düğmeleri yazma izni ister.
+ */
+export function finansSekmeAcik(izinler: Izinler, sekme: FinansSekme): boolean {
+  if (!izinler.hasAccess(FINANS_YETKI.Modul) || !izinler.hasAccess(FINANS_SEKME_KODLARI[sekme])) return false;
+  switch (sekme) {
+    case 'panel':
+      return true;
+    case 'akis':
+      return izinler.hasAccess(FINANS_YETKI.KayitGoruntule);
+    case 'giderler':
+      return izinler.hasAccess(FINANS_YETKI.GiderGoruntule);
+    case 'ayarlar':
+      return (['duzenli', 'tarifeler', 'parametreler'] as const).some((g) => finansTanimOkunabilir(izinler, g));
+    case 'belgeler':
+      return finansSiparisFaturaOkunabilir(izinler);
+    case 'raporlar':
+      return izinler.hasAccess(FINANS_YETKI.RaporGoruntule);
+    case 'kategoriler':
+      return izinler.hasAccess(FINANS_YETKI.GiderKutuphanesiYonet);
+  }
+}
+
+/** Açılışta gösterilecek sekme: ekran sırasıyla erişilebilen ilk sekme; hiçbiri yoksa null. */
+export function finansIlkSekme(izinler: Izinler): FinansSekme | null {
+  return FINANS_SEKME_SIRASI.find((sekme) => finansSekmeAcik(izinler, sekme)) ?? null;
+}

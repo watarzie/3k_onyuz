@@ -4,6 +4,7 @@ import { FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
 import { FinansService } from '../../../core/services/finans.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { TranslationService } from '../../../core/services/translation.service';
 import { FinansKayitAramaComponent } from './finans-kayit-arama.component';
 
 describe('Finans İş Takibi kalem listesi (tüm dönemler / bekleyen işler)', () => {
@@ -26,6 +27,8 @@ describe('Finans İş Takibi kalem listesi (tüm dönemler / bekleyen işler)', 
         { provide: PermissionService, useValue: { hasAccess: (k: string) => izinler.has(k), canWrite: () => true } },
       ],
     });
+    // Diğer specler dili değiştirebilir; etiket beklentileri Türkçedir.
+    TestBed.inject(TranslationService).switchLanguage('tr');
   });
 
   it('varsayılan bütün dönemlerde arar; para birimi filtresi boşsa bütün para birimlerini ister', () => {

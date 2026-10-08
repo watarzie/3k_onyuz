@@ -17,6 +17,7 @@ describe('Hatalı tarife düzeltme', () => {
   let toast: jasmine.SpyObj<ToastService>;
   const okuma = new Set<string>([
     FINANS_YETKI.Modul,
+    FINANS_YETKI.SekmeTanimlar,
     FINANS_YETKI.IsKutuphanesiYonet,
     FINANS_YETKI.BirimFiyatGoruntule,
     FINANS_YETKI.ParasalVeriGoruntule,

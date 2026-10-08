@@ -58,38 +58,37 @@
 
 <section class="finance-shell">
   <nav class="main-tabs" aria-label="Finans bölümleri">
-    <button type="button" [class.active]="activeTab() === 'panel'" (click)="selectTab('panel')"><i class="ri-dashboard-line" aria-hidden="true"></i>Kontrol Paneli</button>
-    <button *appCanAccess="[izin.KayitGoruntule]" type="button" [class.active]="activeTab() === 'akis'" (click)="selectTab('akis')">
+    @if (sekmeAcik('panel')) {<button type="button" [class.active]="activeTab() === 'panel'" (click)="selectTab('panel')"><i class="ri-dashboard-line" aria-hidden="true"></i>Kontrol Paneli</button>}
+    @if (sekmeAcik('akis')) {
+    <button type="button" [class.active]="activeTab() === 'akis'" (click)="selectTab('akis')">
       <i class="ri-calendar-check-line" aria-hidden="true"></i>Finans İş Takibi
     </button>
-    <button
-      type="button"
-      *appCanAccess="[izin.GiderGoruntule]"
-      [class.active]="activeTab() === 'giderler'"
-      (click)="selectTab('giderler')"
-    >
+    }
+    @if (sekmeAcik('giderler')) {
+    <button type="button" [class.active]="activeTab() === 'giderler'" (click)="selectTab('giderler')">
       <i class="ri-wallet-3-line" aria-hidden="true"></i>Giderler
     </button>
-    @if (ayarOkuyabilir('duzenli') || ayarOkuyabilir('tarifeler') || ayarOkuyabilir('parametreler')) {
+    }
+    @if (sekmeAcik('ayarlar')) {
     <button type="button" [class.active]="activeTab() === 'ayarlar'" (click)="selectTab('ayarlar')">
       <i class="ri-settings-3-line" aria-hidden="true"></i>İş ve Tarife Tanımları
     </button>
     }
-    @if (permissions.hasAccess(izin.SiparisOperasyonGoruntule) && permissions.hasAccess(izin.KayitGoruntule)) {<button type="button" [class.active]="activeTab() === 'belgeler'" (click)="selectTab('belgeler')"><i class="ri-file-list-3-line" aria-hidden="true"></i>PO ve Faturalar</button>}
-    @if (permissions.hasAccess(izin.RaporGoruntule)) {<button type="button" [class.active]="activeTab() === 'raporlar'" (click)="selectTab('raporlar')"><i class="ri-file-chart-line" aria-hidden="true"></i>Raporlar</button>}
-    @if (permissions.canWrite(izin.GiderKutuphanesiYonet)) {<button type="button" [class.active]="activeTab() === 'kategoriler'" (click)="selectTab('kategoriler')"><i class="ri-folder-settings-line" aria-hidden="true"></i>Gider Kategorileri</button>}
+    @if (sekmeAcik('belgeler')) {<button type="button" [class.active]="activeTab() === 'belgeler'" (click)="selectTab('belgeler')"><i class="ri-file-list-3-line" aria-hidden="true"></i>PO ve Faturalar</button>}
+    @if (sekmeAcik('raporlar')) {<button type="button" [class.active]="activeTab() === 'raporlar'" (click)="selectTab('raporlar')"><i class="ri-file-chart-line" aria-hidden="true"></i>Raporlar</button>}
+    @if (sekmeAcik('kategoriler')) {<button type="button" [class.active]="activeTab() === 'kategoriler'" (click)="selectTab('kategoriler')"><i class="ri-folder-settings-line" aria-hidden="true"></i>Gider Kategorileri</button>}
   </nav>
 
-  @if (activeTab() === 'panel') {<app-finans-panel (bekleyenAc)="bekleyenleriAc($event)" (kayitAc)="detayHedef.set($event)" />}
-  @if (activeTab() === 'belgeler' && permissions.hasAccess(izin.SiparisOperasyonGoruntule) && permissions.hasAccess(izin.KayitGoruntule)) {
+  @if (activeTab() === 'panel' && sekmeAcik('panel')) {<app-finans-panel (bekleyenAc)="bekleyenleriAc($event)" (kayitAc)="detayHedef.set($event)" />}
+  @if (activeTab() === 'belgeler' && sekmeAcik('belgeler')) {
     @for (gorunum of [belgeGorunumu()]; track gorunum.anahtar) {
       <app-finans-belgeler-listesi [baslangicTuru]="gorunum.tur" [baslangicOdemeFiltresi]="gorunum.odeme" (detayAc)="detayHedef.set($event)" (faturaAc)="faturaAc($event)" (siparisAc)="poFormunuAc($event)" />
     }
   }
-  @if (activeTab() === 'raporlar' && permissions.hasAccess(izin.RaporGoruntule)) {<app-finans-raporlar />}
-  @if (activeTab() === 'kategoriler' && permissions.canWrite(izin.GiderKutuphanesiYonet)) {<app-finans-kategoriler (degisti)="kategorileriYenile()" />}
+  @if (activeTab() === 'raporlar' && sekmeAcik('raporlar')) {<app-finans-raporlar />}
+  @if (activeTab() === 'kategoriler' && sekmeAcik('kategoriler')) {<app-finans-kategoriler (degisti)="kategorileriYenile()" />}
 
-  @if (activeTab() === 'akis' && permissions.hasAccess(izin.KayitGoruntule)) {
+  @if (activeTab() === 'akis' && sekmeAcik('akis')) {
     <div class="finance-workspace monthly-workspace">
     <div class="workspace-heading">
       <span class="workspace-icon"><i class="ri-calendar-check-line" aria-hidden="true"></i></span>
@@ -675,7 +674,7 @@
     </div>
   }
 
-  @if (activeTab() === 'giderler' && permissions.hasAccess(izin.GiderGoruntule)) {
+  @if (activeTab() === 'giderler' && sekmeAcik('giderler')) {
     <div class="finance-workspace expenses-workspace">
     <header class="section-toolbar">
       <div class="workspace-heading">
@@ -780,7 +779,7 @@
     </div>
   }
 
-  @if (activeTab() === 'ayarlar' && (ayarOkuyabilir('duzenli') || ayarOkuyabilir('tarifeler') || ayarOkuyabilir('parametreler'))) {
+  @if (activeTab() === 'ayarlar' && sekmeAcik('ayarlar')) {
     <div class="finance-workspace settings-workspace">
     <div class="workspace-heading">
       <span class="workspace-icon"><i class="ri-settings-3-line" aria-hidden="true"></i></span>

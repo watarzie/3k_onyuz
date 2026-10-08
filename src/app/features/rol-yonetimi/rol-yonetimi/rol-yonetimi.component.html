@@ -122,10 +122,17 @@
 
           <div class="perm-toolbar">
             <p class="permission-type-help"><i class="ri-information-line"></i>{{ 'PERMISSIONS.PERMISSION_TYPE_HELP' | translate }}</p>
-            <div class="perm-search">
-              <i class="ri-search-line"></i>
-              <input type="search" placeholder="İzin ara..." aria-label="İzin ara"
-                     [ngModel]="izinAramasi()" (ngModelChange)="izinAramasi.set($event)">
+            <div class="perm-tools">
+              <button type="button" class="btn btn-light btn-sm tree-toggle-all" *ngIf="!isDetailLoading() && rol.menuAgaci?.length"
+                      (click)="agaciAcKapat()">
+                <i [class]="izinAgaci?.hepsiAcik() ? 'ri-contract-up-down-line' : 'ri-expand-up-down-line'" aria-hidden="true"></i>
+                {{ (izinAgaci?.hepsiAcik() ? 'PERMISSIONS.COLLAPSE_ALL' : 'PERMISSIONS.EXPAND_ALL') | translate }}
+              </button>
+              <div class="perm-search">
+                <i class="ri-search-line"></i>
+                <input type="search" placeholder="İzin ara..." aria-label="İzin ara"
+                       [ngModel]="izinAramasi()" (ngModelChange)="izinAramasi.set($event)">
+              </div>
             </div>
           </div>
 

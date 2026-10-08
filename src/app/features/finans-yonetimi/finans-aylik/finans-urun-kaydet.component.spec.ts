@@ -17,6 +17,7 @@ describe('Finans ürün ve tarife kaydı', () => {
   let onay: jasmine.SpyObj<ConfirmService>;
   const okuma = new Set<string>([
     FINANS_YETKI.Modul,
+    FINANS_YETKI.SekmeTanimlar,
     FINANS_YETKI.IsKutuphanesiYonet,
     FINANS_YETKI.BirimFiyatGoruntule,
     FINANS_YETKI.ParasalVeriGoruntule,

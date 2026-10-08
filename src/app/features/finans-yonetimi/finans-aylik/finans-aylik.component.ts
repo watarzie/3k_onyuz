@@ -1,7 +1,7 @@
 import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { finansHacimBilesik, finansHacimGecerli } from '../ortak/finans-hacim';
 import { KIRILIM_ILK_SATIR, ilkSatirlar, kategoriKirilimKayitlari, kirilimSandiklari, sarfKaydi } from '../ortak/finans-kirilim';
-import { Component, DestroyRef, OnInit, WritableSignal, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, WritableSignal, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { EMPTY, Subject, debounceTime, distinctUntilChanged, finalize, forkJoin, of, switchMap } from 'rxjs';
@@ -21,8 +21,13 @@ import { FinansParametrelerComponent } from '../finans-parametreler/finans-param
 import { FinansProjeDetayComponent } from '../finans-proje-detay/finans-proje-detay.component';
 import { FinansProjeSeciciComponent } from '../finans-proje-secici/finans-proje-secici.component';
 import {
+  FinansSekme,
+  FinansTanimGorunumu,
   finansFaturaGirilebilir,
+  finansIlkSekme,
   finansOzelIsiEklenebilir,
+  finansSekmeAcik,
+  finansTanimOkunabilir,
   finansPoGirilebilir,
   finansRaporuIndirilebilir,
   finansSiparisFaturaOkunabilir,
@@ -106,8 +111,8 @@ interface AylikProjeBlogu {
 /** Sunucuda sipariş/fatura dağıtımı yapılamayan, önce miktar veya fiyat bekleyen satır durumları. */
 const DAGITIM_BEKLEYEN_DURUMLAR = ['miktar bekliyor', 'fiyatlandırma bekliyor'];
 
-type AnaSekme = 'panel' | 'akis' | 'giderler' | 'ayarlar' | 'belgeler' | 'raporlar' | 'kategoriler';
-type AyarGorunumu = 'duzenli' | 'tarifeler' | 'parametreler';
+type AnaSekme = FinansSekme;
+type AyarGorunumu = FinansTanimGorunumu;
 type RaporFormati = 'pdf' | 'excel' | 'ayri';
 
 @Component({
@@ -187,7 +192,8 @@ export class FinansYonetimiComponent implements OnInit {
 
   loading = signal(true);
   aylikLoading = signal(false);
-  activeTab = signal<AnaSekme>('panel');
+  /** Açılış sekmesi: rolün erişebildiği ilk sekme (sekme düğümleri rol ağacından gelir). */
+  activeTab = signal<AnaSekme>(finansIlkSekme(this.permissions) ?? 'panel');
   /** Finans İş Takibi: aylık görünüm veya bütün dönemlerdeki kalem listesi (arama / bekleyen işler). */
   readonly akisGorunumu = signal<'aylik' | 'kayitlar'>('aylik');
   readonly kayitAramaAcilisi = signal<FinansKayitAramaAcilisi>({ anahtar: 0, gorunum: 'arama' });
@@ -401,6 +407,21 @@ export class FinansYonetimiComponent implements OnInit {
   raporGruplari = computed(() => [...new Set(this.aylikGrupToplamlari().map(item => this.grupAdi(item.grup)))]
     .sort((a, b) => this.raporGrubuSirasi(a) - this.raporGrubuSirasi(b) || a.localeCompare(b, 'tr-TR')));
 
+  constructor() {
+    // Açık sekmenin izni kaldırılırsa (rol değişikliği oturumda yansır) erişilebilen ilk sekmeye geçilir.
+    effect(() => {
+      const aktif = this.activeTab();
+      if (this.sekmeAcik(aktif)) return;
+      const ilk = finansIlkSekme(this.permissions);
+      if (ilk) untracked(() => this.selectTab(ilk));
+    });
+  }
+
+  /** Sekme görünür mü: modül, sekme düğümü ve sekmenin ekran izinleri (ortak/finans-izinleri). */
+  sekmeAcik(sekme: AnaSekme): boolean {
+    return finansSekmeAcik(this.permissions, sekme);
+  }
+
   ngOnInit(): void {
     this.listeAkislariniKur();
     forkJoin({
@@ -414,12 +435,13 @@ export class FinansYonetimiComponent implements OnInit {
     });
     this.paraBirimleri.yukle();
     this.vadeUyarilariniYukle();
-    this.donemiYukle();
+    // Yalnız açılış sekmesinin verisi yüklenir; diğer sekmeler seçildiklerinde yüklenir.
+    this.selectTab(this.activeTab());
   }
 
-  /** Vade uyarıları yalnız faturaları okuyabilen kullanıcıya gösterilir. */
+  /** Vade uyarıları yalnız PO ve Faturalar sekmesini görebilen (faturaları okuyabilen) kullanıcıya gösterilir. */
   vadeUyarilariniYukle(): void {
-    if (!finansSiparisFaturaOkunabilir(this.permissions)) return;
+    if (!this.sekmeAcik('belgeler')) return;
     this.service.vadeUyarilari(10).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(result => {
       this.vadeUyarilari.set(result.isSuccess ? (result.value ?? null) : null);
     });
@@ -427,16 +449,13 @@ export class FinansYonetimiComponent implements OnInit {
 
   /** Uyarıdan fatura listesine geçer: vadesi geçen veya yaklaşan faturalar, bütün dönemler. */
   vadeTakibiniAc(filtre: FinansOdemeFiltresi): void {
-    if (!finansSiparisFaturaOkunabilir(this.permissions)) return;
+    if (!this.sekmeAcik('belgeler')) return;
     this.belgeGorunumu.update(mevcut => ({ anahtar: mevcut.anahtar + 1, tur: 'Fatura', odeme: filtre }));
     this.selectTab('belgeler');
   }
 
   selectTab(tab: AnaSekme): void {
-    if (!this.permissions.hasAccess(this.izin.Modul)) return;
-    if (tab === 'akis' && !this.permissions.hasAccess(this.izin.KayitGoruntule) ||
-        tab === 'giderler' && !this.permissions.hasAccess(this.izin.GiderGoruntule) ||
-        tab === 'ayarlar' && !this.ayarOkuyabilir('duzenli') && !this.ayarOkuyabilir('tarifeler') && !this.ayarOkuyabilir('parametreler')) return;
+    if (!this.sekmeAcik(tab)) return;
     this.activeTab.set(tab);
     if (tab === 'akis') this.aylikListeyiYukle();
     if (tab === 'giderler' && !this.giderlerYuklendi) {
@@ -485,7 +504,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   aylikListeyiYukle(): void {
-    if (!this.permissions.hasAccess(this.izin.KayitGoruntule)) return;
+    if (!this.sekmeAcik('akis')) return;
     this.aylikListeIstekleri.next();
   }
 
@@ -990,13 +1009,9 @@ export class FinansYonetimiComponent implements OnInit {
     return this.permissions.hasAccess(this.izin.Modul) && this.permissions.hasAccess(this.izin.ParasalVeriGoruntule) && this.permissions.hasAccess(kod);
   }
 
+  /** Tanımlar alt görünümü: tanımlar sekme düğümü ve görünümün sunucudaki okuma izinleri. */
   ayarOkuyabilir(gorunum: AyarGorunumu): boolean {
-    if (!this.permissions.hasAccess(this.izin.Modul)) return false;
-    // Ürün ve tarife listesi sunucuda birim fiyat görme iznini de ister; para birimi ve vade tanımları
-    // finans tanımlarıdır (okuma finans modülüyle açıktır, yönetim iş kütüphanesi iznine bağlıdır).
-    if (gorunum === 'duzenli') return this.permissions.hasAccess(this.izin.DuzenliIsYonet);
-    if (gorunum === 'parametreler') return this.permissions.hasAccess(this.izin.IsKutuphanesiYonet);
-    return this.permissions.hasAccess(this.izin.IsKutuphanesiYonet) && this.permissions.hasAccess(this.izin.BirimFiyatGoruntule);
+    return this.permissions.hasAccess(this.izin.SekmeTanimlar) && finansTanimOkunabilir(this.permissions, gorunum);
   }
 
   ayarYazabilir(gorunum: AyarGorunumu): boolean {
@@ -1578,7 +1593,7 @@ export class FinansYonetimiComponent implements OnInit {
   private listeAkislariniKur(): void {
     this.aylikListeIstekleri.pipe(
       switchMap(() => {
-        if (!this.permissions.hasAccess(this.izin.Modul) || !this.permissions.hasAccess(this.izin.KayitGoruntule)) return EMPTY;
+        if (!this.sekmeAcik('akis')) return EMPTY;
         const tarih = this.seciliDonem();
         this.aylikLoading.set(true);
         return this.service.aylikIsler(tarih.getFullYear(), tarih.getMonth() + 1, {
@@ -1611,7 +1626,7 @@ export class FinansYonetimiComponent implements OnInit {
 
     this.giderListeIstekleri.pipe(
       switchMap(() => {
-        if (!this.permissions.hasAccess(this.izin.Modul) || !this.permissions.hasAccess(this.izin.GiderGoruntule)) return EMPTY;
+        if (!this.sekmeAcik('giderler')) return EMPTY;
         this.giderLoading.set(true);
         return this.service.giderler({
           pageNumber: this.giderPageNumber(),

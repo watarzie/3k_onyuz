@@ -484,7 +484,13 @@
     "FULL_ACCESS": "Write access",
     "READ_ONLY": "Read only",
     "NO_ACCESS": "No access",
-    "PERMISSION_TYPE_HELP": "Screen, action and field permissions work the same way: a child cannot exceed its parent's level, and write access on a parent does not grant its children automatically."
+    "PERMISSION_TYPE_HELP": "Screen, action and field permissions work the same way: a child cannot exceed its parent's level, and write access on a parent does not grant its children automatically.",
+    "TAB_NODE_HELP": "R: tab visible · W: tab actions",
+    "EXPAND_ALL": "Expand all",
+    "COLLAPSE_ALL": "Collapse all",
+    "TAB_OFF_TITLE": "Turn off the tab permission?",
+    "TAB_OFF_MESSAGE": "Selected permissions under this tab will also be turned off and removed from the role when you save.",
+    "TAB_OFF_CONFIRM": "Turn off"
   },
   "BULK_CRATE_MOVE": {
     "TITLE": "Move selected contents to another crate",
@@ -684,7 +690,15 @@
     "FINANS_DENETIM_GOR": "Finance change history",
     "FINANS_FIYATLANDIRMA_DEGISTIR": "Change pricing",
     "SAHA_GERCEKLESEN_CEKI_RAPORU": "Site Actual Packing List Report",
-    "FINANS_ODEME_KAYDET": "Mark invoice payments"
+    "FINANS_ODEME_KAYDET": "Mark invoice payments",
+    "FINANS_SEKME_PANEL": "Dashboard (tab)",
+    "FINANS_SEKME_IS_TAKIBI": "Finance Work Tracking (tab)",
+    "FINANS_SEKME_PO_FATURA": "POs and Invoices (tab)",
+    "FINANS_SEKME_GIDERLER": "Expenses (tab)",
+    "FINANS_SEKME_GIDER_KATEGORILERI": "Expense Categories (tab)",
+    "FINANS_SEKME_TANIMLAR": "Work and Tariff Definitions (tab)",
+    "FINANS_SEKME_RAPORLAR": "Reports (tab)",
+    "FINANS_SEKME_MUNFERIT_ISLER": "One-off Jobs (tab)"
   },
   "ACTIONS": {
     "SAVE": "Save",
