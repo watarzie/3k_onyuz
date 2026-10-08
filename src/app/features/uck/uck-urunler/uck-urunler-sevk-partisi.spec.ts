@@ -134,6 +134,33 @@ describe('3K aktif Grid sevk partisi', () => {
     expect(component.validatePanel()).toContain('aktif Grid sevk partisinde bekleyen miktardan');
   });
 
+  it('tedarikçi teslimi kalanı aşabilir; aşan adet ön izlenir ve stoka aktarma onayı istenir (K-061)', () => {
+    const row = urun({ gridDurumuId: GridDurum.EksikGeldi, kalan: 1.25 });
+    component.panelUrun.set(row);
+    component.panelTip.set('Tedarikçiden Geldi');
+    component.panelGelenAdet.set(2);
+
+    expect(component.panelAdetUstSiniri).toBeNull();
+    expect(component.tedarikciFazlaOnizleme).toBe(0.75);
+    expect(component.validatePanel()).toBeNull();
+
+    component.panelFazlaStogaAktar.set(false);
+    expect(component.validatePanel()).toBe('Fazla gelen adet stoka aktarılmalıdır.');
+
+    component.panelGelenAdet.set(1);
+    expect(component.tedarikciFazlaOnizleme).toBe(0);
+    expect(component.validatePanel()).toBeNull();
+  });
+
+  it('tedarikçi dışındaki kaynak karşılamada kalanı aşan adet hâlâ reddedilir', () => {
+    component.panelUrun.set(urun({ gridDurumuId: GridDurum.EksikGeldi, kalan: 1 }));
+    component.panelTip.set('Stoktan Karşılandı');
+    component.panelStokKaydiId.set(5);
+    component.panelGelenAdet.set(2);
+    expect(component.tedarikciFazlaOnizleme).toBe(0);
+    expect(component.validatePanel()).toBe('Gelen adet kalandan büyük olamaz.');
+  });
+
   it('önceden işlenmiş olay satırını açınca kümülatif geleni yeni olay miktarı yapmaz', () => {
     for (const tip of ['Sevk Adeti Eksik Geldi', 'Fazla Geldi', 'Geri Gönderildi', 'Tedarikçiden Geldi']) {
       const row = urun({

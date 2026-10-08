@@ -1090,7 +1090,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   get panelAdetUstSiniri(): number | null {
     const u = this.panelUrun();
-    if (!u || this.panelTip() === 'Fazla Geldi') return null;
+    // K-061: tedarikçi teslimi kalanı aşabilir; aşan adet fazla teslim olarak stoka aktarılır.
+    if (!u || this.panelTip() === 'Fazla Geldi' || this.panelTip() === 'Tedarikçiden Geldi') return null;
     if (this.panelTip() === 'Geri Gönderildi') {
       return this.getGridGeriGonderilebilirMiktar(u);
     }
@@ -1117,6 +1118,17 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     }
 
     return Math.max(gelen, aktifSevk);
+  }
+
+  /**
+   * K-061 ön izlemesi: tedarikçi teslimi ekrandaki sandık kalanını aşarsa aşan adet stoka aktarılacak gösterilir.
+   * Kesin ayrımı sunucu satır kalanı ve sandık kapasitesiyle yapar.
+   */
+  get tedarikciFazlaOnizleme(): number {
+    const u = this.panelUrun();
+    if (!u || this.panelTip() !== 'Tedarikçiden Geldi') return 0;
+    const fazla = Number(this.panelGelenAdet() || 0) - Math.max(u.kalan, 0);
+    return fazla > 0 ? Math.round(fazla * 10_000) / 10_000 : 0;
   }
 
   validatePanel(): string | null {
@@ -1240,7 +1252,11 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
     // KURAL 3 (Dumb UI): Overflow kontrolü backend'de yapılır.
     // Frontend sadece basit validasyonları (boş alan kontrolü) yapar.
-    if (this.panelGelenAdet() > u.kalan && tip !== 'Sevk Adeti Tam Geldi' && tip !== 'Geri Gönderildi' && tip !== 'Fazla Geldi') return 'Gelen adet kalandan büyük olamaz.';
+    if (tip === 'Tedarikçiden Geldi' && this.tedarikciFazlaOnizleme > 0 && !this.panelFazlaStogaAktar()) {
+      return 'Fazla gelen adet stoka aktarılmalıdır.';
+    }
+    if (this.panelGelenAdet() > u.kalan && tip !== 'Sevk Adeti Tam Geldi' && tip !== 'Geri Gönderildi' && tip !== 'Fazla Geldi'
+      && tip !== 'Tedarikçiden Geldi') return 'Gelen adet kalandan büyük olamaz.';
 
     return null;
   }
@@ -1266,7 +1282,10 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       stokKaydiId: this.panelStokKaydiId() || undefined,
       aciklama: _aciklama ? _aciklama.trim() : '',
       geriGonderilmeSebebiId: tip === 'Geri Gönderildi' ? +this.panelGeriGonderilmeSebebi() : undefined,
-      stogaAktar: tip === 'Fazla Geldi' ? this.panelFazlaStogaAktar() : undefined,
+      // Tedarikçide onay yalnız kullanıcı aşan adedi ekranda gördüğünde gönderilir; sunucu fazlayı farklı hesaplarsa reddeder.
+      stogaAktar: tip === 'Fazla Geldi'
+        ? this.panelFazlaStogaAktar()
+        : tip === 'Tedarikçiden Geldi' ? this.tedarikciFazlaOnizleme > 0 && this.panelFazlaStogaAktar() : undefined,
       urunAdi: u.aciklama || u.barkodNo,
       mevcutProjeNo: this.projeler().find(p => p.id === this.projeId())?.projeNo || this.projeId().toString(),
       mevcutSandikNo: u.sandikNo || this.sandikNo(),

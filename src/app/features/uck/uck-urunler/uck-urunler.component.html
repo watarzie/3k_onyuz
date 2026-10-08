@@ -614,6 +614,9 @@
       @if (panelTip() === 'Fazla Geldi') {
       <small class="text-muted">Buraya yalnızca fazla teslim edilen adet girilir.</small>
       }
+      @if (panelTip() === 'Tedarikçiden Geldi') {
+      <small class="text-muted">Tedarikçiden gelen toplam adet girilir; kalanı aşan kısım stoka aktarılabilir.</small>
+      }
     </div>
 
     <!-- Kalan Gösterge -->
@@ -641,7 +644,7 @@
     </div>
     }
 
-    @if (panelTip() === 'Fazla Geldi') {
+    @if (panelTip() === 'Fazla Geldi' || tedarikciFazlaOnizleme > 0) {
     <div class="fazla-geldi-card mb-3">
       <div class="fazla-icon"><i class="ri-inbox-archive-line"></i></div>
       <div class="fazla-content">
@@ -649,8 +652,13 @@
           <input class="form-check-input mt-1" type="checkbox" [ngModel]="panelFazlaStogaAktar()"
             (ngModelChange)="panelFazlaStogaAktar.set($event)" />
           <span>
+            @if (panelTip() === 'Tedarikçiden Geldi') {
+            <strong class="tedarikci-fazla-ozet">Stoka aktar: {{ formatMiktar(tedarikciFazlaOnizleme) }} adet stoğa aktarılacak</strong>
+            <small>Kalan kadarı karşılanır; aşan adet stok giriş nedeni "Tedarikçi fazla teslim" ile ayrı stok kaydı olur.</small>
+            } @else {
             <strong>Stoka aktar</strong>
             <small>Stok giriş nedeni: Fazla teslim</small>
+            }
           </span>
         </label>
       </div>
