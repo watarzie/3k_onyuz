@@ -19,7 +19,7 @@ import { StatCardComponent } from '../../../shared/components/stat-card/stat-car
 import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
 import { UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, UcKTopluSecimDto, ProjeDropdownDto, GridUrunDto, StokKaydiDto, CekiSatiriAnaVeriGuncelleDto, SahaTamamlamaIzDto, onayaAlindi } from '../../../shared/models/index';
-import { UcKDurum, GridSevkDurum, GridDurum, ProjeTipi } from '../../../core/constants/enums';
+import { UcKDurum, GridSevkDurum, GridDurum, ProjeTipi, StokDurum } from '../../../core/constants/enums';
 import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
 import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
@@ -307,11 +307,12 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   loadStokDropdownList() {
     // 3K Dropdown'u için büyük bir sayfa boyutu ile aktif stokları çek
-    this.stokService.getStokListesi(undefined, 1, 500).subscribe((res: any) => {
+    // Yalnız aktif stoklar sunucuda filtrelenir; 500 kayıt sınırı tükenmiş kayıtlarla dolmaz (U-132/U-133).
+    this.stokService.getStokListesi(undefined, 1, 500, StokDurum.Aktif).subscribe((res: any) => {
       if (res.isSuccess && res.value) {
         // value is PaginatedList due to recent changes
         const m = res.value.items || res.value;
-        this.stoklar.set(m.filter((s: StokKaydiDto) => s.miktar > 0 && s.durumMetni === 'Aktif'));
+        this.stoklar.set(m.filter((s: StokKaydiDto) => s.miktar > 0 && s.durumId === StokDurum.Aktif));
       }
     });
   }

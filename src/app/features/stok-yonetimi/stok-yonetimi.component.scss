@@ -422,3 +422,16 @@
     }
   }
 }
+
+/* Aktif Stok / Tükendiler sekmeleri (sunucu filtresi). */
+.stock-tabs { flex-shrink: 0; }
+.stock-tab-count {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, .06);
+  color: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}

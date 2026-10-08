@@ -200,6 +200,7 @@ export const API = {
   },
   STOK: {
     LIST: `${BASE}/stok`,
+    SAYILAR: `${BASE}/stok/sayilar`,
     CREATE: `${BASE}/stok`,
     DELETE: (id: number) => `${BASE}/stok/${id}`,
   },
@@ -244,7 +245,7 @@ export const API = {
     SAHA_GERCEKLESEN_CEKI_LISTESI: (projeId: number) => `${BASE}/pdf/saha-gerceklesen-ceki-listesi/${projeId}`,
     SAHA_GERCEKLESEN_CEKI_LISTESI_EXCEL: (projeId: number) => `${BASE}/pdf/saha-gerceklesen-ceki-listesi/${projeId}/excel`,
     UCK_SANDIK_DURUM: (projeId: number) => `${BASE}/pdf/uck-sandik-durum/${projeId}`,
-    STOK: `${BASE}/pdf/stok`,
+    STOK: (durumId?: number | null) => `${BASE}/pdf/stok${durumId ? `?durumId=${durumId}` : ''}`,
     DEPO_SANDIK: (projeTipiId?: number | null) =>
       projeTipiId ? `${BASE}/pdf/depo-sandik?projeTipiId=${projeTipiId}` : `${BASE}/pdf/depo-sandik`,
     DEPO_SANDIK_PROJE: (projeId: number) => `${BASE}/pdf/depo-sandik/proje/${projeId}`,

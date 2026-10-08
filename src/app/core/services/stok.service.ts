@@ -3,7 +3,7 @@ import { Observable, Subject } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, StokKaydiDto, StokKaydiOlusturDto } from '../../shared/models/index';
+import { ApiResult, StokDurumSayilariDto, StokKaydiDto, StokKaydiOlusturDto } from '../../shared/models/index';
 import { PaginatedList } from '../../shared/models/common.model';
 
 /**
@@ -33,7 +33,8 @@ export class StokService {
     this.channel.postMessage('STOK_UPDATED');
   }
 
-  getStokListesi(searchTerm?: string, pageNumber: number = 1, pageSize: number = 15): Observable<ApiResult<PaginatedList<StokKaydiDto>>> {
+  /** Sunucu sayfalı liste; durum verilirse yalnız o durumdaki kayıtlar döner, verilmezse hepsi. */
+  getStokListesi(searchTerm?: string, pageNumber: number = 1, pageSize: number = 15, durumId?: number): Observable<ApiResult<PaginatedList<StokKaydiDto>>> {
     let params = new HttpParams()
       .set('pageNumber', pageNumber.toString())
       .set('pageSize', pageSize.toString());
@@ -41,9 +42,18 @@ export class StokService {
     if (searchTerm) {
       params = params.set('searchTerm', searchTerm);
     }
+    if (durumId) {
+      params = params.set('durumId', durumId.toString());
+    }
     
     // BaseApiService accepts params in HttpOptions 
     return this.api.get<PaginatedList<StokKaydiDto>>(API.STOK.LIST, { params });
+  }
+
+  /** Aktif Stok / Tükendiler sekme sayaçları; arama listeyle aynı uygulanır. */
+  getStokSayilari(searchTerm?: string): Observable<ApiResult<StokDurumSayilariDto>> {
+    const params = searchTerm ? new HttpParams().set('searchTerm', searchTerm) : undefined;
+    return this.api.get<StokDurumSayilariDto>(API.STOK.SAYILAR, params ? { params } : undefined);
   }
 
   stokOlustur(dto: StokKaydiOlusturDto): Observable<ApiResult<unknown>> {

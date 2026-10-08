@@ -12,6 +12,8 @@ import { PermissionService } from '../../core/services/permission.service';
 import { ConfirmService, duzMetin } from '../../core/services/confirm.service';
 import { YETKI } from '../../core/constants/yetki-kodlari';
 import { dosyayiKaydet } from '../../core/services/dosya-kaydet';
+import { StokDurum } from '../../core/constants/enums';
+import { TranslationService } from '../../core/services/translation.service';
 
 @Component({
   selector: 'app-stok-yonetimi',
@@ -27,6 +29,8 @@ export class StokYonetimiComponent implements OnInit {
   private projeService = inject(ProjeService);
   private permissionService = inject(PermissionService);
   private confirmService = inject(ConfirmService);
+  private translation = inject(TranslationService);
+  readonly StokDurum = StokDurum;
 
   // Veriler
   projeler = signal<ProjeDropdownDto[]>([]);
@@ -35,6 +39,9 @@ export class StokYonetimiComponent implements OnInit {
   loading = signal<boolean>(false);
   downloadingPdf = signal<boolean>(false);
   searchTerm = signal<string>('');
+  /** Liste sunucuda sayfalandığı için sekme bir sunucu filtresidir; istemcide bölünmez. */
+  durumSekmesi = signal<StokDurum>(StokDurum.Aktif);
+  sayilar = signal<{ aktif: number; tukendi: number } | null>(null);
 
   // Pagination State
   currentPage = signal<number>(1);
@@ -66,7 +73,34 @@ export class StokYonetimiComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadStoklar();
+    this.loadSayilar();
     this.loadProjeler();
+  }
+
+  durumSekmesiDegistir(durum: StokDurum) {
+    if (this.durumSekmesi() === durum) return;
+    this.durumSekmesi.set(durum);
+    this.currentPage.set(1);
+    this.loadStoklar();
+  }
+
+  loadSayilar() {
+    this.stokService.getStokSayilari(this.searchTerm() || undefined).subscribe({
+      next: (res) => {
+        if (res.isSuccess && res.value) this.sayilar.set(res.value);
+      }
+    });
+  }
+
+  durumEtiketi(durumId: number): string {
+    const anahtar = durumId === StokDurum.Aktif ? 'AKTIF' : durumId === StokDurum.Tukendi ? 'TUKENDI' : 'REZERVE';
+    return this.translation.translate(`STATUS.${anahtar}`);
+  }
+
+  /** Listeyi ve sekme sayaçlarını birlikte yeniler (ekleme, düzenleme, silme sonrası). */
+  private yenile() {
+    this.loadStoklar();
+    this.loadSayilar();
   }
 
   loadProjeler() {
@@ -81,7 +115,7 @@ export class StokYonetimiComponent implements OnInit {
 
   loadStoklar() {
     this.loading.set(true);
-    this.stokService.getStokListesi(this.searchTerm(), this.currentPage(), this.pageSize()).subscribe({
+    this.stokService.getStokListesi(this.searchTerm(), this.currentPage(), this.pageSize(), this.durumSekmesi()).subscribe({
       next: (res: any) => {
         if (res.isSuccess && res.value) {
           // Pagination data binding
@@ -104,7 +138,7 @@ export class StokYonetimiComponent implements OnInit {
 
   onSearchChange() {
     this.currentPage.set(1);
-    this.loadStoklar();
+    this.yenile();
   }
 
   onPageChange(page: number) {
@@ -195,7 +229,7 @@ export class StokYonetimiComponent implements OnInit {
             if (res.isSuccess) {
               this.toastService.success('Stok başarıyla güncellendi.');
               this.closeAddModal();
-              this.loadStoklar();
+              this.yenile();
               this.stokService.notifyStokUpdated();
             } else {
               this.toastService.error(res.error || 'Stok güncellenemedi.');
@@ -210,7 +244,7 @@ export class StokYonetimiComponent implements OnInit {
            if (res.isSuccess) {
              this.toastService.success('Stok başarıyla eklendi.');
              this.closeAddModal();
-             this.loadStoklar();
+             this.yenile();
              this.stokService.notifyStokUpdated();
            } else {
              this.toastService.error(res.error || 'Stok eklenemedi.');
@@ -241,7 +275,7 @@ export class StokYonetimiComponent implements OnInit {
       next: (res) => {
         if (res.isSuccess) {
           this.toastService.success('Stok kaydı başarıyla silindi.');
-          this.loadStoklar();
+          this.yenile();
           this.stokService.notifyStokUpdated();
         } else {
           this.toastService.error(res.error || 'Stok kaydı silinemedi.');
@@ -254,7 +288,7 @@ export class StokYonetimiComponent implements OnInit {
   // ===== Stok PDF Raporu =====
   indirStokPdf() {
     this.downloadingPdf.set(true);
-    this.pdfService.stokPdf().subscribe({
+    this.pdfService.stokPdf(this.durumSekmesi()).subscribe({
       next: (blob) => {
         this.downloadingPdf.set(false);
         const tarih = new Date().toISOString().split('T')[0].replace(/-/g, '');
