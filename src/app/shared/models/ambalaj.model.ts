@@ -1,7 +1,17 @@
+import type { ApiResult } from './common.model';
+
+/** Tamamlama için gerekli sandık adedinin grup kırılımı (Normal, İlave, İç, özel sandık). */
+export interface AmbalajGrupSandikAdediDto {
+  grup: string;
+  adet: number;
+  tamamlananAdet: number;
+}
+
 export interface AmbalajProjeOzetDto {
   genelUretimDurumu?: UretimDurumId;
   gerekliSandikAdedi?: number;
   tamamlananSandikAdedi?: number;
+  gerekliSandikKirilimi?: AmbalajGrupSandikAdediDto[] | null;
   projeId: number;
   projeNo: string;
   fbNo?: string;
@@ -67,10 +77,28 @@ export interface AmbalajProjeUretimDurumuSonucDto {
   projeDurumu: number;
 }
 
+/** Proje tamamlamayı engelleyen sandık; satır kayıt kimliğiyle, kaydı yoksa kaynak sandıkla eşlenir. */
+export interface AmbalajTamamlamaEngeli {
+  kayitId: number;
+  kaynakSandikId?: number | null;
+  sandikNo: string;
+  grupMetni: string;
+  /** Özel Sandıklar listesindeki bağımsız kayıt; plan çekmecesinde satırı yoktur. */
+  ozelSandik: boolean;
+  neden: 'FormYok' | 'UretimeAlinmadi' | 'OlcuEksik';
+  mesaj: string;
+}
+
+/** Proje tamamlama yanıtı; 409 reddinde engelleyen sandıklar issues listesinde gelir. */
+export interface AmbalajProjeUretimDurumuApiResult extends ApiResult<AmbalajProjeUretimDurumuSonucDto> {
+  issues?: AmbalajTamamlamaEngeli[];
+}
+
 export interface AmbalajUretimPlanDto {
   genelUretimDurumu?: UretimDurumId;
   gerekliSandikAdedi?: number;
   tamamlananSandikAdedi?: number;
+  gerekliSandikKirilimi?: AmbalajGrupSandikAdediDto[] | null;
   projeId: number;
   projeNo: string;
   fbNo?: string;
@@ -111,6 +139,8 @@ export interface AmbalajUretimKalemDto {
   hacimM3: number | null;
   ambalajaDahilMi: boolean | null;
   ambalajKarariOneriliyor: boolean;
+  /** Sunucuda form ve tamamlamanın ölçü kuralıyla hesaplanır (ahşap/kafes kaynak sandıkta dış ölçü 92/92/255 mm üstü). */
+  olcuHazir?: boolean;
 }
 
 export interface AmbalajKalemKaydetRequest {

@@ -81,7 +81,7 @@ describe('Üretim planı tek temalı seçim akışı', () => {
       'ambalaj-m3-goruntule',
       'ambalaj-olcu-goruntule',
     ].forEach((x) => allowed.add(x));
-    plans = jasmine.createSpyObj('AmbalajService', ['planKaydet']);
+    plans = jasmine.createSpyObj('AmbalajService', ['planKaydet', 'ambalajKarariKaydet']);
     plans.planKaydet.and.returnValue(of({ isSuccess: true, statusCode: 202 }));
     lifecycle = jasmine.createSpyObj('AmbalajYasamDongusuService', [
       'formlar',
@@ -249,6 +249,65 @@ describe('Üretim planı tek temalı seçim akışı', () => {
     expect(checkbox.checked).toBeFalse();
     child.olustur();
     expect(lifecycle.formOlustur.calls.mostRecent().args[0].kayitIdleri).toEqual([11]);
+  });
+
+  it('normal çekmecede İlave ve İç kayıtlar rozetle görünür; varsayılan seçim Normal grupta kalır, form ve "Yapılmaz" çalışır (707-02)', () => {
+    allowed.add('ambalaj-haric-tut');
+    plans.ambalajKarariKaydet.and.returnValue(of({ isSuccess: true, statusCode: 202 }));
+    const fixture = TestBed.createComponent(AmbalajUretimListesiComponent);
+    fixture.componentInstance.planOpen.set(true);
+    fixture.componentInstance.plan.set({
+      ...structuredClone(plan),
+      kalemler: [
+        structuredClone(plan.kalemler[0]),
+        { ...structuredClone(plan.kalemler[0]), id: 31, kaynakSandikId: 51, tur: 2, turMetni: 'İlave Sandık', sandikNo: '12',
+          uretimeAlindi: false, uretimDurumu: 1, olcuHazir: false },
+        { ...structuredClone(plan.kalemler[0]), id: 32, kaynakSandikId: undefined, tur: 3, turMetni: 'İç Sandık',
+          sandikNo: '12-IC', ad: 'İç', uretimeAlindi: false, uretimDurumu: 1 },
+      ],
+    });
+    fixture.detectChanges();
+    const drawer = fixture.nativeElement.querySelector('.plan-drawer') as HTMLElement;
+    const child = fixture.debugElement.queryAll(By.directive(UretimYasamDongusuComponent))
+      .map((e) => e.componentInstance as UretimYasamDongusuComponent).find((c) => c.entegre())!;
+
+    const satirlar = drawer.querySelectorAll('.crate-table tbody tr');
+    expect(satirlar.length).toBe(2);
+    expect(satirlar[0].querySelector('.group-badge')).toBeNull();
+    expect(satirlar[1].querySelector('.group-badge')!.textContent).toContain('İlave Sandık');
+    expect(satirlar[1].querySelector('.measure-missing')).not.toBeNull();
+    expect(drawer.querySelector('.manual-crate .crate-type')!.textContent).toContain('İç Sandık');
+    expect(child.secim()).toEqual([11]);
+
+    const ilave = satirlar[1].querySelector('input') as HTMLInputElement;
+    ilave.checked = true;
+    ilave.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    child.olustur();
+    expect(lifecycle.formOlustur.calls.mostRecent().args[0].kayitIdleri).toEqual([11, 31]);
+
+    const yapilmaz = Array.from(satirlar[1].querySelectorAll('button')).find((b) => b.textContent?.includes('Yapılmaz'))!;
+    yapilmaz.click();
+    expect(plans.ambalajKarariKaydet).toHaveBeenCalledWith(51, false, '');
+  });
+
+  it('tamamlama engelleri satırda vurgulanır; plan yenilenince giderilen engel düşer, özel sandık listede kalır', () => {
+    const { fixture, component, drawer } = render();
+    component.tamamlamaEngelleri.set({ projeId: 1, engeller: [
+      { kayitId: 11, kaynakSandikId: 41, sandikNo: '1', grupMetni: 'Normal', ozelSandik: false, neden: 'FormYok', mesaj: '1 (Normal): üretim formu yok' },
+      { kayitId: 90, kaynakSandikId: null, sandikNo: 'OZEL-1', grupMetni: 'İlave özel sandık', ozelSandik: true, neden: 'FormYok',
+        mesaj: 'OZEL-1 (İlave özel sandık): üretim formu yok' },
+    ] });
+    fixture.detectChanges();
+    expect(drawer.querySelectorAll('.crate-table tbody tr.blocking-row').length).toBe(1);
+    expect(drawer.querySelector('.blocking-reason')!.textContent).toContain('Üretim formu yok');
+    expect(drawer.querySelector('.completion-blockers')!.textContent).toContain('OZEL-1');
+
+    // 11 numaralı kayıt artık üretimde ve üretime alınmış: form engeli giderilmiştir.
+    component.planYuklendi(structuredClone(plan));
+    fixture.detectChanges();
+    expect(drawer.querySelector('.crate-table tbody tr.blocking-row')).toBeNull();
+    expect(component.tamamlamaEngelleri()!.engeller.map((e) => e.kayitId)).toEqual([90]);
   });
 
   it('ölçü/m³ ve tamamlama izni olmayan kullanıcıda alanlar ve işlem gizlenir', () => {

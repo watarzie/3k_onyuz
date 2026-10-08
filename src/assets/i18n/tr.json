@@ -432,7 +432,19 @@
     "CREATE_AS_PDF": "PDF olarak indir",
     "CREATE_AS_EXCEL": "Excel olarak indir",
     "FORM_DOWNLOADED": "Üretim formu oluşturuldu ve indirildi.",
-    "FORM_DOWNLOAD_FAILED": "Üretim formu oluşturuldu ancak dosya indirilemedi; tekrar deneyebilirsiniz."
+    "FORM_DOWNLOAD_FAILED": "Üretim formu oluşturuldu ancak dosya indirilemedi; tekrar deneyebilirsiniz.",
+    "BLOCKERS_TITLE": "Tamamlamayı engelleyen sandıklar",
+    "BLOCKERS_HELP": "Satırlar aşağıda işaretlendi. Formu olmayan sandıkları seçip üretim formu oluşturun ve eksik ölçüleri tamamlayın; ambalaj yapılmayacak kaynak sandığı \"Yapılmaz\" olarak işaretleyin. Ardından listede \"Üretimi tamamla\"yı yeniden deneyin.",
+    "BLOCKERS_SPECIAL": "Özel Sandıklar sekmesinde",
+    "BLOCK_NO_FORM": "Üretim formu yok",
+    "BLOCK_NOT_IN_PRODUCTION": "Üretime alınmamış",
+    "BLOCK_MEASURE": "Ölçü veya manuel m³ eksik",
+    "MEASURE_MISSING": "Ölçü eksik",
+    "MEASURE_MISSING_HELP": "Üretim formu için ölçü yetersiz: ahşap kapalı ve kafes kaynak sandıkta dış ölçü 92 × 92 × 255 mm'den büyük olmalı, diğer sandıklarda boy, en ve yükseklik girilmelidir.",
+    "ALL_GROUPS_HELP": "Tamamlama için gerekli İlave ve İç sandıklar da rozetiyle listelenir; varsayılan seçim proje sandıklarıdır.",
+    "OTHER_CRATES_TITLE": "Manuel, İlave ve İç Sandıklar",
+    "OTHER_CRATES_HELP": "Projenin tamamlanması için bu sandıkların da forma alınması veya ambalaj dışı bırakılması gerekir.",
+    "COMPLETE_SOURCE_FORBIDDEN": "Kaynak modülden gelen sandıkları tamamlamak için kaynak müdahalesi yazma yetkisi gerekir."
   },
   "PERMISSIONS": {
     "FULL_ACCESS": "Yazma yetkisi",

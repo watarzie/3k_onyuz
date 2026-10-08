@@ -45,6 +45,11 @@ export class UretimYasamDongusuComponent {
   bagimsiz = input<AmbalajBagimsizSandikDto | null>(null);
   entegre = input(false);
   grup = input<number | null>(null);
+  /**
+   * Bütün gruplar listelenirken (grup null) ilk açılışta ve yeni satırda varsayılan seçilecek grup; diğer gruplardaki
+   * satırlar görünür ve seçilebilir ama kendiliğinden seçilmez. Boşsa bütün dahil satırlar seçilir.
+   */
+  varsayilanGrup = input<number | null>(null);
   islemGerekcesi = input('');
   /**
    * Form oluşturulmadan hemen önce çalışan isteğe bağlı adım (entegre planda kaydedilmemiş fırın parti numarasını
@@ -141,6 +146,7 @@ export class UretimYasamDongusuComponent {
       const b = this.bagimsiz();
       const rows = this.satirlar();
       const kapsam = b ? `K:${b.id}` : p ? `P:${p.projeId}:G:${this.grup()}` : null;
+      const varsayilan = this.varsayilanGrup();
       const oncekiSecim = untracked(this.secim);
       const eskiKararlar = new Map(
         this.oncekiSatirlar.map((k) => [
@@ -155,10 +161,9 @@ export class UretimYasamDongusuComponent {
         rows
           .filter((k) => {
             const eski = eskiKararlar.get(this.kalemAnahtari(k));
-            return (
-              k.ambalajaDahilMi !== false &&
-              (kapsam !== this.secimKapsami || !eski || eski.haric || eski.secili)
-            );
+            if (k.ambalajaDahilMi === false) return false;
+            if (kapsam !== this.secimKapsami || !eski) return varsayilan === null || k.tur === varsayilan;
+            return eski.haric || eski.secili;
           })
           .map((k) => this.secimKimligi(k)),
       );

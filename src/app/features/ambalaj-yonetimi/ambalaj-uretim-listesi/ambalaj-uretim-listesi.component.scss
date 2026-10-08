@@ -1794,3 +1794,21 @@ table tbody tr.completed-project:hover > td {
 }
 .status-ready { background: #ecfdf3; color: #15803d; }
 .status-missing { background: #fff7e6; color: #b45309; }
+
+/* A2: tamamlamayı engelleyen sandıklar, normal çekmecedeki grup rozeti ve sunucu ölçü durumu. */
+.completion-blockers { margin: 12px 24px 0; padding: 12px 14px; border: 1px solid #f5c2b8; border-radius: 8px; background: #fff6f4; color: #7a271a; font-size: 12px; line-height: 1.55; }
+.completion-blockers header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 13px; }
+.completion-blockers header i { color: var(--dangerColor); font-size: 16px; }
+.completion-blockers p { margin: 0 0 6px; }
+.completion-blockers ul { margin: 0; padding-left: 18px; }
+.completion-blockers li small { margin-left: 6px; color: #9a6700; font-weight: 600; }
+.group-badge { display: inline-flex; margin-left: 6px; padding: 1px 6px; border: 1px solid #83b69a; border-radius: 4px; color: #1f6842; font-size: 10px; font-weight: 700; vertical-align: middle; }
+.group-help { margin: 4px 0 0; color: var(--bodyColor); font-size: 11px; }
+.crate-table tbody tr.blocking-row > td { background: #fff6f4; }
+.crate-table tbody tr.blocking-row > td:first-child { box-shadow: inset 3px 0 0 var(--dangerColor); }
+.manual-crate.blocking-row { box-shadow: inset 3px 0 0 var(--dangerColor); background: #fff6f4; }
+/* td small kuralı (display: block) kapsüllemede daha özgül olduğundan hücre içi seçici de yazılır. */
+.blocking-reason, .measure-missing, td small.blocking-reason, td small.measure-missing { display: flex; align-items: center; gap: 4px; margin-top: 3px; font-size: 10px; font-weight: 700; }
+.blocking-reason { color: #b42318; }
+.measure-missing { color: #9a6700; }
+.required-crates i { margin-left: 3px; color: var(--primaryColor); }

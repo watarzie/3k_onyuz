@@ -323,7 +323,7 @@
               <td>
                 <strong>{{ durumMetni(projeDurumId(proje)) }}</strong>
                 <small>Proje geneli: {{ durumMetni(proje.genelUretimDurumu || 1) }}</small>
-                <small>{{ proje.tamamlananSandikAdedi || 0 }} / {{ proje.gerekliSandikAdedi || 0 }} gerekli sandık tamamlandı</small>
+                <small class="required-crates" [attr.title]="gerekliSandikKirilimi(proje) || null">{{ proje.tamamlananSandikAdedi || 0 }} / {{ proje.gerekliSandikAdedi || 0 }} gerekli sandık tamamlandı @if (gerekliSandikKirilimi(proje)) {<i class="ri-information-line" aria-hidden="true"></i>}</small>
               </td>
               <td>
                 <div class="batch-field" [class.is-dirty]="firinPartiDegisti(proje)">
@@ -352,8 +352,8 @@
                     <button *appCanAccess="[izin.FormIndir]" type="button" [title]="downloadingProjectId() === proje.projeId ? 'PDF hazırlanıyor' : 'Tüm üretim formunu indir'" [disabled]="downloadingProjectId() !== null" [attr.aria-busy]="downloadingProjectId() === proje.projeId" (click)="uretimFormuIndir(proje)">
                       <i [class]="downloadingProjectId() === proje.projeId ? 'ri-loader-4-line spin' : 'ri-file-pdf-2-line'"></i><span>Üretim formu (PDF)</span>
                     </button>
-                    @if (projeTamamlanabilir(proje)) {
-                      <button type="button" title="Ambalaja dahil bütün sandıkların üretimini tamamla" [disabled]="projeDurumuKaydediliyor() !== null" (click)="projeyiTamamla(proje)">
+                    @if (projeTamamlamaGorunur(proje)) {
+                      <button type="button" [title]="projeTamamlamaEngeli(proje) ?? 'Ambalaja dahil bütün sandıkların üretimini tamamla'" [disabled]="projeDurumuKaydediliyor() !== null || !!projeTamamlamaEngeli(proje)" (click)="projeyiTamamla(proje)">
                         <i [class]="projeDurumuKaydediliyor() === proje.projeId ? 'ri-loader-4-line spin' : 'ri-check-double-line'"></i><span>Üretimi tamamla</span>
                       </button>
                     }
@@ -419,7 +419,18 @@
         </section>
         <p class="plan-selection-help">{{ t('PLAN_SELECTION_HELP') }}</p>
 
-        <app-uretim-yasam-dongusu #yasam [plan]="plan()" [grup]="planGrup()" [entegre]="true" [formOncesi]="formOncesiPartiKaydi" (degisti)="yasamDongusuDegisti()" />
+        @if (cekmeceEngelleri().length) {
+          <section class="completion-blockers" role="alert">
+            <header><i class="ri-error-warning-line" aria-hidden="true"></i><strong>{{ t('BLOCKERS_TITLE') }}</strong></header>
+            <p>{{ t('BLOCKERS_HELP') }}</p>
+            <ul>
+              @for (engel of cekmeceEngelleri(); track engel.kayitId) {
+                <li [class.special-crate]="engel.ozelSandik">{{ engel.mesaj }}@if (engel.ozelSandik) { <small>{{ t('BLOCKERS_SPECIAL') }}</small> }</li>
+              }
+            </ul>
+          </section>
+        }
+        <app-uretim-yasam-dongusu #yasam [plan]="plan()" [grup]="cekmeceGrubu()" [varsayilanGrup]="tumGruplar() ? planGrup() : null" [entegre]="true" [formOncesi]="formOncesiPartiKaydi" (degisti)="yasamDongusuDegisti()" />
         <p class="plan-selection-help">{{ t('COMPLETE_FROM_LIST_HELP') }}</p>
 
         <div class="plan-metrics">
@@ -431,7 +442,7 @@
         @if (planGrup() !== 3) {
         <section class="plan-section">
           <div class="section-heading">
-            <div><h3>{{ planGrup() === 2 ? 'İlave Sandıklar' : 'Proje Sandıkları' }}</h3><p>Sandık Yönetimi'nden gelen üretim sandıklarını seçin.</p></div>
+            <div><h3>{{ planGrup() === 2 ? 'İlave Sandıklar' : 'Proje Sandıkları' }}</h3><p>Sandık Yönetimi'nden gelen üretim sandıklarını seçin.</p>@if (tumGruplar()) {<p class="group-help">{{ t('ALL_GROUPS_HELP') }}</p>}</div>
             <div class="selection-actions">
               @if (yasam.secimYetkili()) {<button type="button" [disabled]="yasam.islemde()" (click)="yasam.hepsiniSec(true)">{{ t('SELECT_ALL') }}</button><button type="button" [disabled]="yasam.islemde()" (click)="yasam.hepsiniSec(false)">{{ t('CLEAR_SELECTION') }}</button>}
               @if (manuelSandikEklenebilir()) { <button *appCanWrite="izin.KayitEkle" type="button" class="add-crate" (click)="kalemFormuAc(aktifManuelTur())"><i class="ri-add-line"></i> Manuel sandık</button> }
@@ -442,10 +453,10 @@
               <thead><tr><th></th><th>Sandık</th><th>Adet</th><th>Ölçüler (mm)</th><th>Hacim</th><th>Ambalaj kararı</th><th>{{ t('STATUS_ACTION') }}</th></tr></thead>
               <tbody>
                 @for (kalem of kaynakKalemler(); track kalem.kaynakSandikId) {
-                  <tr [class.selected]="yasam.secim().includes(yasam.secimKimligi(kalem))" [class.packaging-excluded]="kalem.ambalajaDahilMi === false">
+                  <tr [class.selected]="yasam.secim().includes(yasam.secimKimligi(kalem))" [class.packaging-excluded]="kalem.ambalajaDahilMi === false" [class.blocking-row]="!!kalemEngeli(kalem)">
                     <td><input type="checkbox" [attr.aria-label]="kalem.sandikNo + ' ' + t('SELECT')" [checked]="yasam.secim().includes(yasam.secimKimligi(kalem))" [disabled]="kalem.ambalajaDahilMi === false || yasam.islemde() || !yasam.secimYetkili()" (change)="yasam.sec(yasam.secimKimligi(kalem), $any($event.target).checked)" /></td>
-                    <td><strong>{{ kalem.sandikNo }}</strong><small>{{ kalem.ad || '-' }}</small></td>
-                    <td>{{ kalem.adet }}</td><td><span *appCanAccess="[izin.OlcuGoruntule]">{{ kalem.boy }} × {{ kalem.en }} × {{ kalem.yukseklik }}</span></td><td><span *appCanAccess="[izin.M3Goruntule]">{{ kalem.m3HesaplanabilirMi === false ? t('NOT_APPLICABLE') : kalem.hacimM3 === null ? '—' : (kalem.hacimM3 | number:'1.3-3') + ' m³' }}</span></td>
+                    <td><strong>{{ kalem.sandikNo }}</strong>@if (tumGruplar() && kalem.tur !== 1) { <span class="group-badge">{{ kalem.turMetni }}</span> }<small>{{ kalem.ad || '-' }}</small>@if (kalemEngeli(kalem); as engel) { <small class="blocking-reason"><i class="ri-error-warning-line" aria-hidden="true"></i>{{ engelNedeni(engel) }}</small> }</td>
+                    <td>{{ kalem.adet }}</td><td><span *appCanAccess="[izin.OlcuGoruntule]">{{ kalem.boy }} × {{ kalem.en }} × {{ kalem.yukseklik }}</span>@if (kalem.olcuHazir === false) { <small class="measure-missing" [title]="t('MEASURE_MISSING_HELP')"><i class="ri-ruler-line" aria-hidden="true"></i>{{ t('MEASURE_MISSING') }}</small> }</td><td><span *appCanAccess="[izin.M3Goruntule]">{{ kalem.m3HesaplanabilirMi === false ? t('NOT_APPLICABLE') : kalem.hacimM3 === null ? '—' : (kalem.hacimM3 | number:'1.3-3') + ' m³' }}</span></td>
                     <td>
                       @if (kalem.ambalajKarariOneriliyor || kalem.ambalajaDahilMi !== null) {
                         <div class="packaging-decision">
@@ -468,17 +479,17 @@
         </section>
         }
 
-        @if (planGrup() !== 1 || manuelSandikEklenebilir()) {
+        @if (planGrup() !== 1 || manuelSandikEklenebilir() || manuelKalemler().length > 0) {
         <section class="plan-section">
           <div class="section-heading">
             <div>
-              <h3>{{ planGrup() === 1 ? 'Manuel Proje Sandıkları' : planGrup() === 2 ? 'İlave Sandıklar' : 'İç Sandıklar' }}</h3>
-              <p>{{ planGrup() === 3 ? 'Kayıtlı bir tipi seçerek farklı projelere aynı iç sandığı hızlıca ekleyin.' : 'Bu projeye özel manuel üretim sandıklarını yönetin.' }}</p>
+              <h3>{{ tumGruplar() && !manuelSandikEklenebilir() ? t('OTHER_CRATES_TITLE') : planGrup() === 1 ? 'Manuel Proje Sandıkları' : planGrup() === 2 ? 'İlave Sandıklar' : 'İç Sandıklar' }}</h3>
+              <p>{{ tumGruplar() && !manuelSandikEklenebilir() ? t('OTHER_CRATES_HELP') : planGrup() === 3 ? 'Kayıtlı bir tipi seçerek farklı projelere aynı iç sandığı hızlıca ekleyin.' : 'Bu projeye özel manuel üretim sandıklarını yönetin.' }}</p>
             </div>
             <div class="add-actions">
               @if (planGrup() === 3 && yasam.secimYetkili()) {<button type="button" [disabled]="yasam.islemde()" (click)="yasam.hepsiniSec(true)">{{ t('SELECT_ALL') }}</button><button type="button" [disabled]="yasam.islemde()" (click)="yasam.hepsiniSec(false)">{{ t('CLEAR_SELECTION') }}</button>}
               @if (planGrup() === 3) { <button type="button" class="secondary-add" (click)="sablonFormOpen.set(!sablonFormOpen())"><i class="ri-bookmark-line"></i> Tip kaydet</button> }
-              <button *appCanWrite="izin.KayitEkle" type="button" (click)="kalemFormuAc(aktifManuelTur())"><i class="ri-add-line"></i> {{ planGrup() === 3 ? 'İç sandık' : 'Sandık ekle' }}</button>
+              @if (planGrup() !== 1 || manuelSandikEklenebilir()) { <button *appCanWrite="izin.KayitEkle" type="button" (click)="kalemFormuAc(aktifManuelTur())"><i class="ri-add-line"></i> {{ planGrup() === 3 ? 'İç sandık' : 'Sandık ekle' }}</button> }
             </div>
           </div>
 
@@ -534,10 +545,10 @@
 
           <div class="manual-crates">
             @for (kalem of manuelKalemler(); track kalem.id) {
-              <article class="manual-crate lifecycle-manual-crate" [class.inner]="kalem.tur === 3" [class.selected]="yasam.secim().includes(yasam.secimKimligi(kalem))">
+              <article class="manual-crate lifecycle-manual-crate" [class.inner]="kalem.tur === 3" [class.selected]="yasam.secim().includes(yasam.secimKimligi(kalem))" [class.blocking-row]="!!kalemEngeli(kalem)">
                 <label class="manual-selection-field"><input class="manual-selection" type="checkbox" [attr.aria-label]="kalem.sandikNo + ' ' + t('MANUAL_FORM_SELECTION')" [checked]="yasam.secim().includes(yasam.secimKimligi(kalem))" [disabled]="kalem.ambalajaDahilMi === false || yasam.islemde() || !yasam.secimYetkili()" (change)="yasam.sec(yasam.secimKimligi(kalem), $any($event.target).checked)" /><span>{{ t('MANUAL_FORM_SELECTION') }}</span></label>
                 <div class="crate-type">{{ kalem.turMetni }}</div>
-                <div class="crate-main"><strong>{{ kalem.sandikNo }} · {{ kalem.ad }}</strong><span>{{ kalem.sandikTipi }}{{ kalem.kullanimAmaci ? ' · ' + kalem.kullanimAmaci : '' }}</span><small><span *appCanAccess="[izin.OlcuGoruntule]">{{ kalem.boy }} × {{ kalem.en }} × {{ kalem.yukseklik }} mm · </span>{{ kalem.adet }} adet <span *appCanAccess="[izin.M3Goruntule]">· {{ kalem.m3HesaplanabilirMi === false ? 'Hesaplanmaz' : kalem.hacimM3 === null ? '—' : (kalem.hacimM3 | number:'1.3-3') + ' m³' }}</span></small></div>
+                <div class="crate-main"><strong>{{ kalem.sandikNo }} · {{ kalem.ad }}</strong>@if (kalemEngeli(kalem); as engel) { <small class="blocking-reason"><i class="ri-error-warning-line" aria-hidden="true"></i>{{ engelNedeni(engel) }}</small> }@if (kalem.olcuHazir === false) { <small class="measure-missing" [title]="t('MEASURE_MISSING_HELP')"><i class="ri-ruler-line" aria-hidden="true"></i>{{ t('MEASURE_MISSING') }}</small> }<span>{{ kalem.sandikTipi }}{{ kalem.kullanimAmaci ? ' · ' + kalem.kullanimAmaci : '' }}</span><small><span *appCanAccess="[izin.OlcuGoruntule]">{{ kalem.boy }} × {{ kalem.en }} × {{ kalem.yukseklik }} mm · </span>{{ kalem.adet }} adet <span *appCanAccess="[izin.M3Goruntule]">· {{ kalem.m3HesaplanabilirMi === false ? 'Hesaplanmaz' : kalem.hacimM3 === null ? '—' : (kalem.hacimM3 | number:'1.3-3') + ' m³' }}</span></small></div>
                 <div class="crate-owner"><span>İsteyen</span><strong>{{ kalem.talimatVeren || '-' }}</strong><ng-container *ngTemplateOutlet="durumAksiyonlari; context: { $implicit: kalem }" /></div>
                 <div class="crate-row-actions"><button *appCanWrite="izin.KayitDuzenle" type="button" title="Düzenle" (click)="kalemFormuAc($any(kalem.tur), kalem)"><i class="ri-pencil-line"></i></button><button *appCanWrite="izin.KayitSil" type="button" class="danger" title="Sil" (click)="kalemSil(kalem)"><i class="ri-delete-bin-line"></i></button></div>
               </article>

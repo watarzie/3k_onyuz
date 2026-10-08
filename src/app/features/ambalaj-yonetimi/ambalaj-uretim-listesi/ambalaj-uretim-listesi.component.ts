@@ -29,7 +29,9 @@ import {
   AmbalajOzelSandikKaydetRequest,
   AmbalajPlanlamaProjeFiltreOzetiDto,
   AmbalajProjeOzetDto,
+  AmbalajProjeUretimDurumuApiResult,
   AmbalajSandikSecenegiDto,
+  AmbalajTamamlamaEngeli,
   AmbalajUretimKalemDto,
   AmbalajUretimPlanDto,
   OzelSandikTur,
@@ -72,6 +74,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
   planYuklendi(plan: AmbalajUretimPlanDto): void {
     this.sunucuPlani = plan;
     this.plan.set(plan);
+    this.giderilenEngelleriDusur(plan);
   }
   /**
    * Üretim formu öncesi adım (A2): fırın parti numarası değiştirilip plan kaydedilmediyse, planın kayıtlı seçimi
@@ -214,12 +217,25 @@ export class AmbalajUretimListesiComponent implements OnInit {
     ? this.bagimsizFiltreOzeti().toplamHacimM3
     : this.projeFiltreOzeti().toplamHacimM3);
   eksikProje = computed(() => this.projeFiltreOzeti().eksikOlculuProjeSayisi);
-  kaynakKalemler = computed(() => this.plan()?.kalemler.filter(kalem => kalem.kaynakSandikId && kalem.tur === this.planGrup()) ?? []);
-  manuelKalemler = computed(() => this.plan()?.kalemler.filter(kalem => !kalem.kaynakSandikId && kalem.tur === this.planGrup()) ?? []);
+  /**
+   * Normal proje çekmecesi tamamlama için zorunlu bütün grupları (Normal, İlave, İç) tek listede rozetle gösterir;
+   * sunucu projeyi bu kayıtların hepsi bitmeden tamamlamaz. Varsayılan seçim ve plan kaydı yalnız Normal gruptadır.
+   */
+  tumGruplar = computed(() => this.planGrup() === 1);
+  /** Yaşam döngüsü bileşenine verilen satır grubu; bütün gruplar listelenirken boştur. */
+  cekmeceGrubu = computed<AmbalajGrup | null>(() => this.tumGruplar() ? null : this.planGrup());
+  kaynakKalemler = computed(() => this.plan()?.kalemler.filter(kalem => kalem.kaynakSandikId && this.cekmecedeMi(kalem)) ?? []);
+  manuelKalemler = computed(() => this.plan()?.kalemler.filter(kalem => !kalem.kaynakSandikId && this.cekmecedeMi(kalem)) ?? []);
   seciliAdet = computed(() => this.plan()?.kalemler.filter(k => k.tur === this.planGrup() && k.uretimeAlindi).reduce((sum, k) => sum + k.adet, 0) ?? 0);
   seciliHacim = computed(() => {
     const kalemler = this.plan()?.kalemler.filter(k => k.tur === this.planGrup() && k.uretimeAlindi) ?? [];
     return kalemler.some(k => k.hacimM3 !== null) ? kalemler.reduce((sum, k) => sum + (k.hacimM3 ?? 0), 0) : null;
+  });
+  /** Son reddedilen tamamlamanın engelleyen sandıkları (A2); çekmecede satırlar vurgulanır. */
+  tamamlamaEngelleri = signal<{ projeId: number; engeller: AmbalajTamamlamaEngeli[] } | null>(null);
+  cekmeceEngelleri = computed(() => {
+    const engel = this.tamamlamaEngelleri();
+    return engel && engel.projeId === this.plan()?.projeId ? engel.engeller : [];
   });
   ilaveKalemSayisi = computed(() => this.plan()?.kalemler.filter(k => k.tur === 2).length ?? 0);
   icKalemSayisi = computed(() => this.plan()?.kalemler.filter(k => k.tur === 3).length ?? 0);
@@ -442,13 +458,35 @@ export class AmbalajUretimListesiComponent implements OnInit {
     };
   }
 
-  /** A2: FB listesindeki "Tamamla"; projenin ambalaja dahil bütün sandıklarının üretimini tamamlar. */
-  projeTamamlanabilir(proje: AmbalajProjeOzetDto): boolean {
+  /** A2: FB listesindeki "Tamamla" düğmesi görünür mü (tamamlanacak sandık, tamamlama ve durum düzenleme izni). */
+  projeTamamlamaGorunur(proje: AmbalajProjeOzetDto): boolean {
     return this.aktifKuyruk() === 'normal'
       && (proje.gerekliSandikAdedi ?? 0) > 0
       && (proje.tamamlananSandikAdedi ?? 0) < (proje.gerekliSandikAdedi ?? 0)
       && this.permissions.canWrite(AMBALAJ_YETKI.UretimiTamamla)
       && this.permissions.canWrite(AMBALAJ_YETKI.DurumDuzenle);
+  }
+
+  /**
+   * Sunucu kaynak modülden gelen sandıkları tamamlarken kaynak müdahalesi yazma izni de ister; izin yoksa düğme
+   * gizlenmez, nedeniyle birlikte devre dışı kalır. Planda dahil kaynak sandık varsa proje kaynaklı sayılır.
+   */
+  projeTamamlamaEngeli(proje: AmbalajProjeOzetDto): string | null {
+    return (proje.toplamSandikAdedi ?? 0) > 0 && !this.permissions.canWrite(AMBALAJ_YETKI.KaynakMudahalesi)
+      ? this.t('COMPLETE_SOURCE_FORBIDDEN')
+      : null;
+  }
+
+  /** A2: FB listesindeki "Tamamla"; projenin ambalaja dahil bütün sandıklarının üretimini tamamlar. */
+  projeTamamlanabilir(proje: AmbalajProjeOzetDto): boolean {
+    return this.projeTamamlamaGorunur(proje) && !this.projeTamamlamaEngeli(proje);
+  }
+
+  /** "X / Y gerekli sandık" ipucu: Y'nin grup kırılımı (Normal, İlave, İç, özel sandık) ve tamamlananlar. */
+  gerekliSandikKirilimi(proje: AmbalajProjeOzetDto): string {
+    return (proje.gerekliSandikKirilimi ?? [])
+      .map(grup => `${grup.grup}: ${grup.tamamlananAdet} / ${grup.adet}`)
+      .join(' · ');
   }
 
   /** A3: tamamlanan projenin geri alınması; finans kalemleri PO/faturaya bağlıysa sunucu engeller. */
@@ -500,14 +538,59 @@ export class AmbalajUretimListesiComponent implements OnInit {
         }
         if (!result.isSuccess) {
           this.toastService.error(result.error ?? (tamamla ? 'Proje üretimi tamamlanamadı.' : 'Tamamlama geri alınamadı.'));
+          const engeller = tamamla ? this.engelleriOku(result) : [];
+          if (engeller.length) {
+            this.tamamlamaEngelleri.set({ projeId: proje.projeId, engeller });
+            this.planAc(proje);
+          }
           return;
         }
+        if (tamamla) this.tamamlamaEngelleri.set(null);
         this.toastService.success(tamamla
           ? `${result.value?.degisenKayit ?? 0} sandığın üretimi tamamlandı; proje "Üretimi Tamamlanan" sekmesine taşındı.`
           : `${result.value?.degisenKayit ?? 0} sandığın tamamlanması geri alındı.`);
         this.geriAlinacakProje.set(null);
         this.loadProjects();
       });
+  }
+
+  /** 409 yanıtındaki engel listesi; beklenmeyen biçimdeki öğeler atlanır. */
+  private engelleriOku(result: AmbalajProjeUretimDurumuApiResult): AmbalajTamamlamaEngeli[] {
+    return Array.isArray(result.issues)
+      ? result.issues.filter(engel => typeof engel?.kayitId === 'number' && typeof engel?.sandikNo === 'string')
+      : [];
+  }
+
+  /** Satırın tamamlama engeli; satır kayıt kimliğiyle, kaydı henüz yoksa kaynak sandıkla eşlenir. */
+  kalemEngeli(kalem: AmbalajUretimKalemDto): AmbalajTamamlamaEngeli | undefined {
+    return this.cekmeceEngelleri().find(engel => !engel.ozelSandik && (kalem.id > 0
+      ? engel.kayitId === kalem.id
+      : !!kalem.kaynakSandikId && engel.kaynakSandikId === kalem.kaynakSandikId));
+  }
+
+  engelNedeni(engel: AmbalajTamamlamaEngeli): string {
+    return this.t(engel.neden === 'FormYok' ? 'BLOCK_NO_FORM' : engel.neden === 'UretimeAlinmadi' ? 'BLOCK_NOT_IN_PRODUCTION' : 'BLOCK_MEASURE');
+  }
+
+  /**
+   * Plan yenilenince giderilen engeller listeden düşer: forma alınıp üretime giren, "Yapılmaz" denen, silinen veya
+   * ölçüsü tamamlanan satır. Özel sandıklar çekmecede olmadığından yeniden tamamlama denemesine kadar kalır.
+   */
+  private giderilenEngelleriDusur(plan: AmbalajUretimPlanDto): void {
+    const mevcut = this.tamamlamaEngelleri();
+    if (!mevcut || mevcut.projeId !== plan.projeId) return;
+    const kalan = mevcut.engeller.filter(engel => {
+      if (engel.ozelSandik) return true;
+      const kalem = plan.kalemler.find(k => k.id === engel.kayitId);
+      if (!kalem || kalem.ambalajaDahilMi === false) return false;
+      if (engel.neden === 'OlcuEksik') return kalem.olcuHazir === false;
+      return !(kalem.uretimeAlindi && (kalem.uretimDurumu ?? 1) >= 2);
+    });
+    this.tamamlamaEngelleri.set(kalan.length ? { ...mevcut, engeller: kalan } : null);
+  }
+
+  private cekmecedeMi(kalem: AmbalajUretimKalemDto): boolean {
+    return this.tumGruplar() || kalem.tur === this.planGrup();
   }
 
   /** Normal sekmede tamamlananlar düşülmüş net kalan ihtiyaç, tamamlanan sekmesinde tamamlanan projelerin çamı gösterilir. */

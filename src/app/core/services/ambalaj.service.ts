@@ -15,6 +15,7 @@ import {
   AmbalajKalemKaydetRequest,
   AmbalajOzelSandikKaydetRequest,
   AmbalajProjeListelemeRequest,
+  AmbalajProjeUretimDurumuApiResult,
   AmbalajProjeUretimDurumuSonucDto,
   AmbalajPlanlamaProjeleriSayfasiDto,
   AmbalajSandikSecenegiDto,
@@ -49,7 +50,8 @@ export class AmbalajService {
   }
 
   /** FB listesinden proje üretimini tamamlar (A2) veya tamamlanmayı geri alır (A3). */
-  projeUretimDurumu(projeId: number, tamamla: boolean, aciklama?: string): Observable<ApiResult<AmbalajProjeUretimDurumuSonucDto>> {
+  /** 409 reddinde engelleyen sandıklar sonucun issues alanında gelir. */
+  projeUretimDurumu(projeId: number, tamamla: boolean, aciklama?: string): Observable<AmbalajProjeUretimDurumuApiResult> {
     return this.api.put<AmbalajProjeUretimDurumuSonucDto>(API.AMBALAJ.PROJE_URETIM_DURUMU(projeId), {
       tamamla,
       ...(aciklama?.trim() ? { aciklama: aciklama.trim() } : {}),

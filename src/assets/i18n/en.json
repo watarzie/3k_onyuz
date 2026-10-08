@@ -432,7 +432,19 @@
     "CREATE_AS_PDF": "Download as PDF",
     "CREATE_AS_EXCEL": "Download as Excel",
     "FORM_DOWNLOADED": "Production form created and downloaded.",
-    "FORM_DOWNLOAD_FAILED": "The production form was created but the file could not be downloaded; you can try again."
+    "FORM_DOWNLOAD_FAILED": "The production form was created but the file could not be downloaded; you can try again.",
+    "BLOCKERS_TITLE": "Crates blocking completion",
+    "BLOCKERS_HELP": "The rows are marked below. Select crates without a form, create the production form and complete missing dimensions; mark a source crate that will not be packed as \"Excluded\". Then retry \"Complete production\" in the list.",
+    "BLOCKERS_SPECIAL": "in the Special Crates tab",
+    "BLOCK_NO_FORM": "No production form",
+    "BLOCK_NOT_IN_PRODUCTION": "Not taken into production",
+    "BLOCK_MEASURE": "Dimensions or manual m³ missing",
+    "MEASURE_MISSING": "Dimensions missing",
+    "MEASURE_MISSING_HELP": "Dimensions are not sufficient for the production form: wooden closed and crate-type source crates need outer dimensions above 92 × 92 × 255 mm; other crates need length, width and height.",
+    "ALL_GROUPS_HELP": "Additional and inner crates required for completion are listed with a badge; the default selection is the project crates.",
+    "OTHER_CRATES_TITLE": "Manual, Additional and Inner Crates",
+    "OTHER_CRATES_HELP": "These crates must also be put on a form or excluded from packaging before the project can be completed.",
+    "COMPLETE_SOURCE_FORBIDDEN": "Completing crates that come from a source module requires write permission for source intervention."
   },
   "PERMISSIONS": {
     "FULL_ACCESS": "Write access",
