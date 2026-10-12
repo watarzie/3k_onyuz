@@ -1719,6 +1719,15 @@ table tbody tr.completed-project:hover > td {
   gap: 8px;
 }
 
+// Özel sandığın finans ilişkisi: üretim formu oluşana kadar finansta iş kaydı yoktur.
+.finance-hint {
+  display: block;
+  margin-top: 2px;
+  color: #b45309;
+  font-size: 11px;
+  font-weight: 600;
+  &.is-active { color: #1e7a37; }
+}
 // Özel sandık satırında durum metninin altındaki yaşam döngüsü düğmesi.
 .lifecycle-open {
   display: flex;

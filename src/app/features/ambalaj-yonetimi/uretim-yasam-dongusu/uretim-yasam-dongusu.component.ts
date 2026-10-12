@@ -99,6 +99,8 @@ export class UretimYasamDongusuComponent {
     ambalajaDahilMi?: boolean | null;
   }[] = [];
   formlar = signal<AmbalajFormSurumu[]>([]);
+  /** Özel sandıkta geri alma (Bekleyene al / Yeniden aç) hedefi; gerekçe alanı yalnız o an açılır. */
+  geriAlHedefi = signal<1 | 2 | null>(null);
   rapor = signal<AmbalajGerceklesenRapor | null>(null);
   islemde = signal(false);
   raporYukleniyor = signal(false);
@@ -193,6 +195,19 @@ export class UretimYasamDongusuComponent {
     return secili.some((k) =>
       this.permissions.hasAccess(AMBALAJ_YETKI.FormGoruntule) ? formlu.has(k.id) : (k.uretimDurumu ?? 1) > 1,
     );
+  });
+  /**
+   * Özel sandığın tek bakışta durumu: yapılmaz, form bekliyor (finans kaydı henüz yok), form var ama bekletiliyor,
+   * üretimde, tamamlandı. Form geçmişi okunamıyorsa üretime alınmış (durumu 1'den büyük) kayıt formlu sayılır.
+   */
+  tekilDurum = computed((): 'haric' | 'formBekliyor' | 'bekletiliyor' | 'uretimde' | 'tamamlandi' => {
+    const b = this.bagimsiz();
+    if (!b || b.ambalajaDahilMi === false) return 'haric';
+    const durum = b.uretimDurumu ?? 1;
+    if (durum === 3) return 'tamamlandi';
+    if (durum === 2) return 'uretimde';
+    const formuVar = this.permissions.hasAccess(AMBALAJ_YETKI.FormGoruntule) && this.formluKayitlar().has(b.id);
+    return formuVar ? 'bekletiliyor' : 'formBekliyor';
   });
   /** A5: gerçekleşen üretim raporundan aylık üretilen çam (ahşap kapalı + kafes) net ve sarf m³. */
   camGrafigi = computed(() => {
@@ -340,7 +355,9 @@ export class UretimYasamDongusuComponent {
   }
   durum(id: number, durum: number) {
     if (this.islemde()) return;
-    if (durum !== 3 && !this.gerekce.trim()) {
+    // Gerekçe yalnız geri almada (Bekleyene al, Yeniden aç) istenir; ileri adımlar kritik değildir.
+    const mevcut = this.satirlar().find((k) => k.id === id)?.uretimDurumu ?? 1;
+    if (durum < mevcut && !this.gerekce.trim()) {
       this.toast.warning(this.t('REASON_REQUIRED'));
       return;
     }
@@ -354,6 +371,8 @@ export class UretimYasamDongusuComponent {
       .subscribe((r) => {
         if (this.uygulandi(r)) {
           this.toast.success(this.t('STATUS_SAVED'));
+          this.geriAlHedefi.set(null);
+          this.gerekceyiDegistir('');
           this.degisti.emit();
         }
       });

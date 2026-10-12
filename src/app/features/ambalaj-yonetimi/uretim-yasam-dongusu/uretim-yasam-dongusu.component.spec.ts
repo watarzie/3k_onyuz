@@ -116,6 +116,8 @@ describe('Üretim V2 gerçek işlem UI sözleşmesi', () => {
   });
 
   it('durum 202 ve gerekçesiz yeniden açma uygulanmış gibi görünmez', () => {
+    fixture.componentRef.setInput('plan', { ...plan, kalemler: [{ ...plan.kalemler[0], uretimDurumu: 3 }] });
+    fixture.detectChanges();
     const changed = spyOn(component.degisti, 'emit');
     component.durum(1, 2);
     expect(api.durum).not.toHaveBeenCalled();
@@ -123,6 +125,57 @@ describe('Üretim V2 gerçek işlem UI sözleşmesi', () => {
     component.durum(1, 2);
     expect(changed).not.toHaveBeenCalled();
     expect(toast.info).toHaveBeenCalled();
+  });
+
+  describe('özel sandık (tek sandık) görünümü', () => {
+    const ozel = {
+      ...plan.kalemler[0], id: 9, projeId: 1, projeNo: 'SENTETIK-1', musteri: 'Test', bagimsizKayitMi: true,
+      ad: 'Saha sandığı', talimatVeren: 'Planlama', uretimeAlindi: false, uretimDurumu: 1,
+    } as never;
+    const ac = (degisiklik: Record<string, unknown> = {}) => {
+      fixture.componentRef.setInput('plan', null);
+      fixture.componentRef.setInput('bagimsiz', { ...(ozel as object), ...degisiklik });
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    };
+
+    it('form yokken tek adım gösterilir: form oluştur, finans henüz yok ve kontrplak m³ notu; seçim tablosu ve gerekçe yoktur', () => {
+      const el = ac();
+      expect(component.tekilDurum()).toBe('formBekliyor');
+      expect(el.querySelector('table')).toBeNull();
+      expect(el.querySelector('.ozel-gerekce')).toBeNull();
+      expect(el.querySelector('.ozel-adimlar li.aktif')?.textContent).toContain('STEP_FORM');
+      expect(el.querySelector('.ozel-finans')?.textContent).toContain('FINANCE_NOT_YET');
+      expect(el.querySelector('.ozel-finans-hacim')).not.toBeNull();
+      expect(el.querySelector('.ozel-finans-tarihi')).not.toBeNull();
+    });
+
+    it('üretimde tamamla gerekçe istemez; bekleyene al gerekçe alanını açar ve gerekçesiz gönderilmez', () => {
+      api.durum.and.returnValue(of({ isSuccess: true }));
+      const el = ac({ uretimeAlindi: true, uretimDurumu: 2 });
+      expect(el.querySelector('.ozel-finans')?.textContent).toContain('FINANCE_ACTIVE');
+      (el.querySelector('.ozel-tamamla') as HTMLButtonElement).click();
+      expect(api.durum).toHaveBeenCalledOnceWith(9, 3, '');
+
+      api.durum.calls.reset();
+      (el.querySelector('.ozel-geri-al') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect((el.querySelector('.ozel-geri-al-onay') as HTMLButtonElement).disabled).toBeTrue();
+      component.durum(9, 1);
+      expect(api.durum).not.toHaveBeenCalled();
+      component.gerekceyiDegistir('Ölçü hatalı');
+      component.durum(9, 1);
+      expect(api.durum).toHaveBeenCalledOnceWith(9, 1, 'Ölçü hatalı');
+    });
+
+    it('formu olan bekletilen sandık gerekçesiz üretime alınır', () => {
+      api.formlar.and.returnValue(of({ isSuccess: true, value: [{ id: 3, form: { kalemler: [{ kayitId: 9 }] } }] as never }));
+      api.durum.and.returnValue(of({ isSuccess: true }));
+      const el = ac({ id: 9, uretimeAlindi: true, uretimDurumu: 1 });
+      expect(component.tekilDurum()).toBe('bekletiliyor');
+      (el.querySelector('.ozel-uretime-al') as HTMLButtonElement).click();
+      expect(api.durum).toHaveBeenCalledOnceWith(9, 2, '');
+    });
   });
 
   it('nonwood hacmi sıfır yerine hesaplanmaz gösterir', () => {

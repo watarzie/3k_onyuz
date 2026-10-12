@@ -37,7 +37,7 @@ import {
   uretimKategorisi,
 } from '../ortak/finans-etiketleri';
 import { TranslationService } from '../../../core/services/translation.service';
-import { finansAhsapUretimden, finansHacimBilesik, finansHacimGecerli } from '../ortak/finans-hacim';
+import { finansAhsapUretimden, finansHacimBilesik, finansHacimElleGirilir, finansHacimGecerli } from '../ortak/finans-hacim';
 import { FinansIsKategorisi, FinansSandikMalzemesi } from '../../../core/constants/enums';
 
 import { onayaAlindi } from '../../../shared/models';
@@ -119,6 +119,8 @@ export class FinansKayitDetayComponent implements OnInit {
   /** Ahşap ve kontra m³ girişi (kontra sandıkta Ambalaj m³ hesaplamaz); bileşik toplam fiyatlandırma miktarıdır. */
   hacim = { ahsapM3: 0, kontraM3: 0, aciklama: '' };
   readonly hacimBilesik = finansHacimBilesik;
+  /** Hacimle fiyatlanan işte elle fiyatlandırma kartı yalnız kullanıcı açarsa görünür (yanlışlıkla tarifeyi ezmemek için). */
+  readonly elleFiyatAcik = signal(false);
   ngOnInit(): void {
     this.paraBirimleri.yukle();
     this.yukle();
@@ -130,11 +132,40 @@ export class FinansKayitDetayComponent implements OnInit {
   ahsapUretimden(): boolean {
     return finansAhsapUretimden(this.kayit()?.sandikMalzemesi);
   }
-  /** Hacim girişi: m³ görünür, fiyatlandırma değiştirme yazma izni var, iş aktif ve PO'ya bağlı değil. */
+  /**
+   * Hacim girişi (Fiyatlandırma sekmesinde): kontrplak/katlanır sandık veya önceden elle girilmiş hacim; m³ görünür,
+   * fiyatlandırma değiştirme yazma izni var, iş aktif ve PO'ya bağlı değil. Ahşap sandığın m³'ü üretimden gelir.
+   */
   hacimDuzenlenebilir(): boolean {
     const k = this.kayit();
     return !!k && !k.iptalEdildi && k.kaynakAktif !== false && k.poNumaralari.length === 0
+      && finansHacimElleGirilir(k.sandikMalzemesi, k.hacimManuel)
       && this.m3Gorunur() && this.permissions.canWrite(this.izin.FiyatlandirmaDegistir);
+  }
+  /** Fiyatlandırma sekmesi: tam fiyatlandırma formu veya yalnız hacim girişi. */
+  fiyatSekmesiVar(): boolean {
+    return this.hedef().tur === 'IsKaydi' && (this.fiyatDuzenlenebilir() || this.hacimDuzenlenebilir());
+  }
+  /** Hacmi henüz girilmemiş kontrplak/katlanır iş: Bilgiler sekmesinde Fiyatlandırma'ya yönlendirilir. */
+  hacimBekliyor(): boolean {
+    const k = this.kayit();
+    return !!k && this.hacimDuzenlenebilir() && finansHacimBilesik(k.ahsapM3, k.kontraM3) <= 0;
+  }
+  /**
+   * Hacim girilince oluşacak tutar: iş m³ ile fiyatlanıyorsa kayıtlı tarife birim fiyatı × bileşik m³. Birim fiyat
+   * veya tutar görülemiyorsa ya da iş adetle fiyatlanıyorsa önizleme gösterilmez.
+   */
+  hacimOnizleme(): { birimFiyat: number; paraBirimi: string; tutar: number } | null {
+    const k = this.kayit();
+    if (!k || k.fiyatlandirmaBirimi !== 2 || !(k.birimFiyat && k.birimFiyat > 0)) return null;
+    if (!this.parasal(this.izin.BirimFiyatGoruntule) || !this.parasal(this.izin.TutarGoruntule)) return null;
+    const bilesik = finansHacimBilesik(this.hacim.ahsapM3, this.hacim.kontraM3);
+    return { birimFiyat: k.birimFiyat, paraBirimi: k.paraBirimi ?? '', tutar: Math.round(k.birimFiyat * bilesik * 100) / 100 };
+  }
+  /** İş adet/sabit bedelle fiyatlanıyorsa girilen m³ fiyatı değiştirmez; yalnız raporlanır. */
+  hacimFiyataEtkisiz(): boolean {
+    const birim = this.kayit()?.fiyatlandirmaBirimi;
+    return birim !== undefined && birim !== null && birim !== 2;
   }
   hacimKaydet(): void {
     const k = this.kayit();

@@ -55,8 +55,25 @@
                 <th class="detail-chevron-col"></th>
               </tr>
             </thead>
-            <tbody>
-              @for (p of gorunenProjeler(); track projeAnahtari(p)) {
+            @for (g of gruplar(); track g.grup) {
+            <tbody class="project-group" [attr.data-grup]="g.grup">
+              <tr class="group-row">
+                <td>
+                  <span class="group-title"><i [class]="g.grup === 4 ? 'ri-briefcase-4-line' : g.grup === 2 ? 'ri-tools-line' : g.grup === 3 ? 'ri-box-3-line' : 'ri-building-2-line'" aria-hidden="true"></i>{{ t(g.anahtar) }}</span>
+                  <small class="group-count">{{ g.projeler.length }} {{ t(g.grup === 4 ? 'PANEL_GROUP_ROWS' : 'PANEL_PROJECTS') }}</small>
+                </td>
+                <td class="text-end"><span class="num">{{ g.isKaydi }}</span></td>
+                @if (tutarGorunur()) {
+                  <td class="text-end"><span class="num strong">{{ g.isBedeli | number: '1.2-2' }}</span></td>
+                }
+                <td></td>
+                <td></td>
+                @if (giderGorunur()) {
+                  <td class="text-end"><span class="num">{{ g.gider ? (g.gider | number: '1.2-2') : '—' }}</span></td>
+                }
+                <td class="detail-chevron-col"></td>
+              </tr>
+              @for (p of g.gorunen; track projeAnahtari(p)) {
                 <tr class="project-row" [class.is-open]="projeAcik(p)" [class.is-clickable]="kayitGorunur()" (click)="projeAcKapat(p)">
                   <td>
                     <div class="project-cell">
@@ -143,6 +160,7 @@
                 }
               }
             </tbody>
+            }
             @if (tutarGorunur() || giderGorunur()) {
               <tfoot>
                 <tr>
@@ -165,7 +183,7 @@
             }
           </table>
         </div>
-        @if (projeler().length > 8) {
+        @if (kisaltildi()) {
           <button type="button" class="show-more" (click)="tumu.set(!tumu())">
             {{ tumu() ? t('PANEL_DETAIL_SHOW_LESS') : t('PANEL_DETAIL_SHOW_ALL').replace('{0}', '' + projeler().length) }}
             <i [class]="tumu() ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'" aria-hidden="true"></i>

@@ -12,8 +12,9 @@ import { FinansPanel, FinansPanelProjeOzeti } from '../../../shared/models/finan
 describe('Finans paneli detay dökümü', () => {
   let api: jasmine.SpyObj<FinansService>;
   const izinler = signal<string[]>([]);
-  const proje = (no: string, isBedeli: number, para = 'EUR'): FinansPanelProjeOzeti => ({
-    projeNo: no, musteri: 'GE', paraBirimi: para, isKaydi: 2, isBedeli, siparisNetTutar: isBedeli / 2,
+  const proje = (no: string, isBedeli: number, para = 'EUR', ek: Partial<FinansPanelProjeOzeti> = {}): FinansPanelProjeOzeti => ({
+    ...ek as object,
+    projeNo: no, musteri: ek.musteri ?? 'GE', paraBirimi: para, isKaydi: 2, isBedeli, siparisNetTutar: isBedeli / 2,
     faturalananNetTutar: 0, kalanSiparisNetTutar: isBedeli / 2, kalanFaturaNetTutar: isBedeli / 2, gider: null,
     siparis: FinansKarsilanma.Kismi, fatura: FinansKarsilanma.Yok,
   });
@@ -48,10 +49,10 @@ describe('Finans paneli detay dökümü', () => {
     return fixture;
   }
 
-  it('ilk 8 projeyi gösterir, "Tümünü göster" ile hepsini açar; tutar izni yoksa tutar sütunları yoktur', () => {
+  it('her grupta ilk 5 projeyi gösterir, "Tümünü göster" ile hepsini açar; tutar izni yoksa tutar sütunları yoktur', () => {
     const fixture = olustur(Array.from({ length: 11 }, (_, i) => proje(`PA-${i + 1}`, 100 * (11 - i))));
     const satirlar = () => fixture.nativeElement.querySelectorAll('.project-row').length;
-    expect(satirlar()).toBe(8);
+    expect(satirlar()).toBe(5);
     expect(fixture.nativeElement.textContent).not.toContain('İş bedeli');
     (fixture.nativeElement.querySelector('.show-more') as HTMLButtonElement).click();
     fixture.detectChanges();
@@ -88,6 +89,37 @@ describe('Finans paneli detay dökümü', () => {
     (fixture.nativeElement.querySelector('.project-row') as HTMLElement).click();
     fixture.detectChanges();
     expect(api.genelArama).toHaveBeenCalledTimes(1);
+  });
+
+  it('projeler Normal → Saha → Yedek → Bağımsız gruplarında ara toplamla gösterilir; boş grup yoktur', () => {
+    izinler.set([FINANS_YETKI.KayitGoruntule, FINANS_YETKI.ParasalVeriGoruntule, FINANS_YETKI.TutarGoruntule]);
+    const fixture = olustur([
+      proje('PA-N', 300, 'EUR', { projeGrubu: 1 }), proje('PA-N2', 100, 'EUR', { projeGrubu: 1 }),
+      proje('PA-Y', 500, 'EUR', { projeGrubu: 3 }),
+      proje('BAĞIMSIZ', 70, 'EUR', { projeGrubu: 4, musteri: 'ACME' }), proje('BAĞIMSIZ', 50, 'EUR', { projeGrubu: 4, musteri: 'GE Vernova' }),
+    ]);
+    const el = fixture.nativeElement as HTMLElement;
+    const basliklar = Array.from(el.querySelectorAll('.group-title')).map((x) => x.textContent!.trim());
+    expect(basliklar).toEqual(['Normal projeler', 'Yedek projeleri', 'Bağımsız işler']);
+    const normal = el.querySelector('.project-group[data-grup="1"] .group-row')!.textContent!;
+    expect(normal).toContain('400.00');
+    const bagimsiz = Array.from(el.querySelectorAll('.project-group[data-grup="4"] .project-cell small')).map((x) => x.textContent!.trim());
+    expect(bagimsiz).toEqual(['ACME', 'GE Vernova']);
+  });
+
+  it('bağımsız satır açılınca yalnız o müşterinin kalemleri listelenir', () => {
+    api.genelArama.and.returnValue(of({ isSuccess: true, value: {
+      items: [
+        { id: 1, projeNo: 'BAĞIMSIZ', musteri: 'ACME', paraBirimi: 'EUR', sandikNo: '', isAdi: 'ACME işi', kaynakAktif: true, finansTarihi: '2026-09-12', kategori: 8, durum: 1, poNumaralari: [], faturaNumaralari: [] },
+        { id: 2, projeNo: 'BAĞIMSIZ', musteri: 'GE Vernova', paraBirimi: 'EUR', sandikNo: '', isAdi: 'GE işi', kaynakAktif: true, finansTarihi: '2026-09-12', kategori: 8, durum: 1, poNumaralari: [], faturaNumaralari: [] },
+      ],
+      totalCount: 2, pageNumber: 1, pageSize: 250, totalPages: 1, hasPreviousPage: false, hasNextPage: false,
+    } }) as never);
+    const fixture = olustur([proje('BAĞIMSIZ', 70, 'EUR', { projeGrubu: 4, musteri: 'ACME' }), proje('BAĞIMSIZ', 50, 'EUR', { projeGrubu: 4, musteri: 'GE Vernova' })]);
+    (fixture.nativeElement.querySelector('.project-row') as HTMLElement).click();
+    fixture.detectChanges();
+    const kalemler = Array.from(fixture.nativeElement.querySelectorAll('.item-main strong') as NodeListOf<HTMLElement>).map((x) => x.textContent!.trim());
+    expect(kalemler).toEqual(['ACME işi']);
   });
 
   it('kayıt izni yoksa proje satırı açılmaz; kategoriler pay sırasıyla listelenir', () => {

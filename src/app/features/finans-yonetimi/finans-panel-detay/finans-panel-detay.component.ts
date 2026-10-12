@@ -7,7 +7,7 @@ import { FinansService } from '../../../core/services/finans.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { TranslationService } from '../../../core/services/translation.service';
 import { FinansIsKaydi } from '../../../shared/models/finans.model';
-import { FinansPanel, FinansPanelProjeOzeti, FinansVarlikTuru } from '../../../shared/models/finans-v2.model';
+import { FinansPanel, FinansPanelProjeGrubu, FinansPanelProjeOzeti, FinansVarlikTuru } from '../../../shared/models/finans-v2.model';
 import {
   faturaKarsilanmaAnahtari,
   isDurumuAnahtari,
@@ -19,8 +19,25 @@ export type FinansPanelDetaySekmesi = 'projeler' | 'kategoriler' | 'giderler';
 
 /** Proje satırı açıldığında yüklenen kalemler; tek istekle en fazla bu kadar kalem getirilir. */
 const KALEM_SINIRI = 250;
-/** Liste ilk açılışta bu kadar satır gösterir; gerisi "Tümünü göster" ile açılır. */
-const ILK_SATIR = 8;
+/** Her grup ilk açılışta bu kadar satır gösterir; gerisi "Tümünü göster" ile açılır. */
+const ILK_SATIR = 5;
+/** Grup sırası ve başlıkları (sunucu satırları bu sırayla ve grup içinde iş bedeline göre gönderir). */
+const GRUPLAR: readonly { grup: FinansPanelProjeGrubu; anahtar: string }[] = [
+  { grup: 1, anahtar: 'PANEL_GROUP_NORMAL' },
+  { grup: 2, anahtar: 'PANEL_GROUP_FIELD' },
+  { grup: 3, anahtar: 'PANEL_GROUP_SPARE' },
+  { grup: 4, anahtar: 'PANEL_GROUP_INDEPENDENT' },
+];
+
+export interface FinansPanelProjeGrubuSatiri {
+  grup: FinansPanelProjeGrubu;
+  anahtar: string;
+  projeler: FinansPanelProjeOzeti[];
+  gorunen: FinansPanelProjeOzeti[];
+  isKaydi: number;
+  isBedeli: number;
+  gider: number;
+}
 
 interface ProjeKalemleri {
   yukleniyor: boolean;
@@ -89,7 +106,23 @@ export class FinansPanelDetayComponent {
         (!aranan || `${x.projeNo} ${x.musteri}`.toLocaleLowerCase('tr-TR').includes(aranan)),
     );
   });
-  readonly gorunenProjeler = computed(() => (this.tumu() ? this.projeler() : this.projeler().slice(0, ILK_SATIR)));
+  /** Normal → Saha → Yedek → Bağımsız grupları; boş grup gösterilmez, her grubun ara toplamı vardır. */
+  readonly gruplar = computed((): FinansPanelProjeGrubuSatiri[] =>
+    GRUPLAR.map(({ grup, anahtar }) => {
+      const projeler = this.projeler().filter((x) => (x.projeGrubu ?? 1) === grup);
+      return {
+        grup,
+        anahtar,
+        projeler,
+        gorunen: this.tumu() ? projeler : projeler.slice(0, ILK_SATIR),
+        isKaydi: projeler.reduce((a, x) => a + x.isKaydi, 0),
+        isBedeli: projeler.reduce((a, x) => a + (x.isBedeli ?? 0), 0),
+        gider: projeler.reduce((a, x) => a + (x.gider ?? 0), 0),
+      };
+    }).filter((g) => g.projeler.length > 0),
+  );
+  /** Gruplarda gizlenen satır var mı ("Tümünü göster" düğmesi). */
+  readonly kisaltildi = computed(() => this.gruplar().some((g) => g.projeler.length > ILK_SATIR));
   readonly projeToplami = computed(() =>
     this.projeler().reduce(
       (a, x) => ({
@@ -147,8 +180,9 @@ export class FinansPanelDetayComponent {
   oran(pay: number | null, payda: number | null): number {
     return pay && payda ? Math.min(100, Math.max(0, (pay / payda) * 100)) : 0;
   }
+  /** Bağımsız grupta aynı proje numarası müşteriye göre ayrı satırdır; anahtar müşteriyi de içerir. */
   projeAnahtari(p: FinansPanelProjeOzeti): string {
-    return `${p.projeNo}|${p.paraBirimi}`;
+    return p.projeGrubu === 4 ? `${p.projeNo}|${p.paraBirimi}|${p.musteri}` : `${p.projeNo}|${p.paraBirimi}`;
   }
   projeAcik(p: FinansPanelProjeOzeti): boolean {
     return this.acikProjeler().has(this.projeAnahtari(p));
@@ -186,6 +220,8 @@ export class FinansPanelDetayComponent {
           // Genel arama bütün dönemleri tarar; panelle aynı kalemler için dönem ve aktif kaynak süzülür.
           const kalemler = sonuc.value.items
             .filter((x) => x.projeNo === p.projeNo && x.paraBirimi === p.paraBirimi && x.kaynakAktif !== false)
+            // Bağımsız satır tek müşterinin işleridir (sunucu projesiz işleri müşteriye göre ayırır).
+            .filter((x) => p.projeGrubu !== 4 || (x.musteri ?? '').trim() === p.musteri)
             .filter((x) => {
               const tarih = (x.finansTarihi ?? '').slice(0, 10);
               return !tarih || ((!ilk || tarih >= ilk) && (!son || tarih <= son));

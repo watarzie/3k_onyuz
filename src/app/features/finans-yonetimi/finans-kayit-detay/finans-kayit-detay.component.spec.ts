@@ -228,15 +228,20 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
       adet: 2, birimM3: 0, toplamM3: 0, ahsapM3: 0, kontraM3: 0, fiyatlandirmaBirimi: 2, birimFiyat: 100,
     };
 
-    it('kontra sandıkta iki m³ girilir, bileşik toplam gösterilir ve gerekçeyle gönderilir', () => {
+    it('kontrplak sandıkta hacim Fiyatlandırma sekmesinde girilir; tarife × bileşik önizlenir ve gerekçeyle gönderilir', () => {
       api.isDetay.and.returnValue(of({ isSuccess: true, value: kontraIs }));
       const { fixture, component } = setup('IsKaydi');
       const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('.finans-hacim-karti')).toBeNull();
+      (el.querySelector('.hacim-bekliyor') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(component.sekme()).toBe('fiyat');
       expect((el.querySelector('.hacim-ahsap') as HTMLInputElement).readOnly).toBeFalse();
       component.hacim.ahsapM3 = 1.2;
       component.hacim.kontraM3 = 0.8;
       fixture.detectChanges();
       expect((el.querySelector('.hacim-bilesik') as HTMLInputElement).value).toBe('2');
+      expect(el.querySelector('.hacim-onizleme')?.textContent).toContain('200.00');
 
       component.hacimKaydet();
       expect(api.hacimGir).not.toHaveBeenCalled();
@@ -245,9 +250,18 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
       expect(api.hacimGir).toHaveBeenCalledOnceWith(41, { ahsapM3: 1.2, kontraM3: 0.8, aciklama: 'Kontra ölçüsü girildi' });
     });
 
-    it('ahşap sandıkta ahşap m³ üretimden gelir ve salt okunurdur; geçersiz hacim gönderilmez', () => {
+    it('ahşap sandıkta hacim girişi yoktur; daha önce elle girilmişse ahşap m³ salt okunur ve geçersiz hacim gönderilmez', () => {
       api.isDetay.and.returnValue(of({ isSuccess: true, value: { ...kontraIs, sandikMalzemesi: FinansSandikMalzemesi.Ahsap, ahsapM3: 2.5 } }));
+      const ilk = setup('IsKaydi');
+      expect(ilk.component.hacimDuzenlenebilir()).toBeFalse();
+      ilk.component.tab('fiyat');
+      ilk.fixture.detectChanges();
+      expect(ilk.fixture.nativeElement.querySelector('.finans-hacim-karti')).toBeNull();
+
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: { ...kontraIs, sandikMalzemesi: FinansSandikMalzemesi.Ahsap, ahsapM3: 2.5, hacimManuel: true } }));
       const { fixture, component } = setup('IsKaydi');
+      component.tab('fiyat');
+      fixture.detectChanges();
       expect((fixture.nativeElement.querySelector('.hacim-ahsap') as HTMLInputElement).readOnly).toBeTrue();
       expect(component.hacim.ahsapM3).toBe(2.5);
       component.hacim = { ahsapM3: 0, kontraM3: 0, aciklama: 'Geçersiz hacim' };
@@ -257,26 +271,65 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
     });
 
     it('PO bağlı işte, m³ görme veya fiyatlandırma yazma izni yokken bölüm açılmaz', () => {
+      const fiyatSekmesinde = () => {
+        const { fixture, component } = setup('IsKaydi');
+        component.tab('fiyat');
+        fixture.detectChanges();
+        return fixture.nativeElement.querySelector('.finans-hacim-karti');
+      };
       api.isDetay.and.returnValue(of({ isSuccess: true, value: { ...kontraIs, poNumaralari: ['PO-1'] } }));
-      expect(setup('IsKaydi').fixture.nativeElement.querySelector('.finans-hacim-karti')).toBeNull();
+      expect(fiyatSekmesinde()).toBeNull();
 
       api.isDetay.and.returnValue(of({ isSuccess: true, value: kontraIs }));
       permissions.hasAccess.and.callFake((kod: string) => kod !== AMBALAJ_YETKI.M3Goruntule);
-      expect(setup('IsKaydi').fixture.nativeElement.querySelector('.finans-hacim-karti')).toBeNull();
+      expect(fiyatSekmesinde()).toBeNull();
 
       permissions.hasAccess.and.returnValue(true);
       permissions.canWrite.and.callFake((kod: string) => kod !== FINANS_YETKI.FiyatlandirmaDegistir);
-      expect(setup('IsKaydi').fixture.nativeElement.querySelector('.finans-hacim-karti')).toBeNull();
+      expect(fiyatSekmesinde()).toBeNull();
     });
 
-    it('elle girilmiş hacimde fiyatlandırmadaki birim m³ salt okunur kalır', () => {
+    it('adetle fiyatlanan katlanır işte m³ girilir ama tutarı değiştirmediği söylenir; tam fiyat izni yokken de sekme yalnız hacimle açılır', () => {
+      const katlanir = { ...kontraIs, sandikTipi: 'Katlanır Sandık', fiyatlandirmaBirimi: 1 as const };
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: katlanir }));
+      permissions.hasAccess.and.callFake((kod: string) => kod !== FINANS_YETKI.GiderGoruntule);
+      const { fixture, component } = setup('IsKaydi');
+      expect(component.fiyatDuzenlenebilir()).toBeFalse();
+      const el = fixture.nativeElement as HTMLElement;
+      (el.querySelector('.fiyat-sekmesi') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(el.querySelector('.hacim-adet-notu')).not.toBeNull();
+      expect(el.querySelector('.v2-pricing-card')).toBeNull();
+    });
+
+    it('hacimle fiyatlanan işte birim m³ sorulmaz; elle fiyatlandırma kapalıdır ve yalnız bilinçli açılır', () => {
       api.isDetay.and.returnValue(of({ isSuccess: true, value: { ...kontraIs, hacimManuel: true, birimM3: 1, toplamM3: 2 } }));
       const { fixture, component } = setup('IsKaydi');
       component.tab('fiyat');
       fixture.detectChanges();
-      const birimM3 = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('label'))
-        .find((l) => l.textContent?.includes('Finans birim m³'))!.querySelector('input') as HTMLInputElement;
-      expect(birimM3.readOnly).toBeTrue();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('.finans-hacim-karti')).not.toBeNull();
+      expect(el.querySelector('.v2-pricing-card')).toBeNull();
+      expect(el.querySelector('.finans-birim-m3')).toBeNull();
+
+      (el.querySelector('.elle-fiyat-ac') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(el.querySelector('.v2-pricing-card')).not.toBeNull();
+      expect(el.querySelector('.elle-fiyat-uyari')).not.toBeNull();
+      expect(el.querySelector('.finans-birim-m3')).toBeNull();
+      (el.querySelector('.elle-fiyat-kapat') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(el.querySelector('.v2-pricing-card')).toBeNull();
+    });
+
+    it('hacimsiz (ahşap/özel) işte elle fiyatlandırma doğrudan açıktır ve birim m³ girilir', () => {
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: { ...kontraIs, sandikMalzemesi: FinansSandikMalzemesi.Ahsap } }));
+      const { fixture, component } = setup('IsKaydi');
+      component.tab('fiyat');
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('.v2-pricing-card')).not.toBeNull();
+      expect((el.querySelector('.finans-birim-m3') as HTMLInputElement).readOnly).toBeFalse();
     });
   });
 

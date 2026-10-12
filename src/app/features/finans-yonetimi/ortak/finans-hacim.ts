@@ -17,6 +17,14 @@ export function finansHacimGecerli(ahsap: number | null | undefined, kontra: num
 }
 
 /**
+ * Ahşap/kontra m³ elle girilebilir mi (sunucudaki FinansHacimKurallari.ElleGirilebilir ile aynı): Ambalaj'ın m³
+ * hesaplamadığı kontrplak/katlanır sandıkta; daha önce elle girilmiş hacim (ör. özel iş) düzeltilebilir kalır.
+ */
+export function finansHacimElleGirilir(malzeme: FinansSandikMalzemesi | 0 | null | undefined, hacimManuel: boolean | null | undefined): boolean {
+  return hacimManuel === true || malzeme === FinansSandikMalzemesi.Kontra;
+}
+
+/**
  * Ahşap sandıkta ahşap m³ üretimden gelir ve ekranda salt okunur kalır; kontra/katlanır ve malzemesi belirsiz
  * işlerde (ör. özel iş) iki değer de elle girilir.
  */

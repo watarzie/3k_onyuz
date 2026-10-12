@@ -253,6 +253,24 @@
             </form>
           }
 
+          @if (bagimsizYasam(); as yasam) {
+            <!-- Özel sandığın üretim adımları satıra bağlı pencerede açılır (tablonun altında kaybolmaz). -->
+            <div class="tz-modal-backdrop" (click)="bagimsizYasam.set(null)"></div>
+            <div class="tz-modal tz-modal--lg ozel-uretim-modal" role="dialog" aria-modal="true" aria-labelledby="ozel-uretim-baslik" (keydown.escape)="bagimsizYasam.set(null)">
+              <header class="tz-modal__header">
+                <span class="tz-modal__icon"><i class="ri-route-line"></i></span>
+                <div class="tz-modal__title">
+                  <h5 id="ozel-uretim-baslik">{{ yasam.turMetni }} · {{ yasam.sandikNo }} — Üretim işlemleri</h5>
+                  <p>{{ yasam.projeNo || 'Proje seçilmemiş' }} · {{ yasam.ad }} · {{ yasam.sandikTipi }} · {{ yasam.adet }} adet</p>
+                </div>
+                <button type="button" class="tz-modal__close" aria-label="Kapat" (click)="bagimsizYasam.set(null)"><i class="ri-close-line"></i></button>
+              </header>
+              <div class="tz-modal__body">
+                <app-uretim-yasam-dongusu [bagimsiz]="yasam" (degisti)="bagimsizSandiklariYukle()" />
+              </div>
+            </div>
+          }
+
           <div class="crate-table-wrap">
             <table class="crate-table table table-hover align-middle mb-0">
               <thead><tr><th>Tür / Sandık</th><th>Proje / Kaynak</th><th>Yapı</th><th>Adet</th><th>Ölçüler (mm)</th><th>Hacim</th><th>İsteyen</th><th>Durum</th><th class="actions-column">İşlemler</th></tr></thead>
@@ -268,7 +286,7 @@
                       <td><span *appCanAccess="[izin.OlcuGoruntule]">{{ sandik.boy }} × {{ sandik.en }} × {{ sandik.yukseklik }}</span></td>
                       <td><span *appCanAccess="[izin.M3Goruntule]">{{ sandik.m3HesaplanabilirMi === false ? 'Hesaplanmaz' : sandik.hacimM3 === null ? '—' : (sandik.hacimM3 | number:'1.3-3') + ' m³' }}</span></td>
                       <td>{{ sandik.talimatVeren || '-' }}</td>
-                      <td><strong>{{ durumMetni(sandik.uretimDurumu || 1) }}</strong><button type="button" class="tz-btn tz-btn--sm lifecycle-open" (click)="bagimsizYasam.set(sandik)"><i class="ri-route-line tz-ico-primary"></i>Üretim işlemleri</button></td>
+                      <td><strong>{{ durumMetni(sandik.uretimDurumu || 1) }}</strong><small class="finance-hint" [class.is-active]="sandik.uretimeAlindi">{{ sandik.uretimeAlindi ? 'Finansta' : 'Form bekliyor' }}</small><button type="button" class="tz-btn tz-btn--sm lifecycle-open" (click)="bagimsizYasam.set(sandik)"><i class="ri-route-line tz-ico-primary"></i>Üretim işlemleri</button></td>
                       <td class="actions-cell"><div class="actions"><button *appCanWrite="izin.KayitDuzenle" type="button" class="tz-btn tz-btn--sm" title="Özel sandığı düzenle" (click)="bagimsizFormuAc(sandik)"><i class="ri-edit-line tz-ico-primary"></i>Düzenle</button><button *appCanWrite="izin.KayitSil" type="button" class="tz-btn tz-btn--icon tz-btn--danger-hover" title="Sil" aria-label="Sil" (click)="bagimsizSandikSil(sandik)"><i class="ri-delete-bin-line"></i></button></div></td>
                     </tr>
                   } @empty { <tr><td colspan="9" class="empty-state">Bu filtrede özel sandık bulunamadı.</td></tr> }
@@ -277,9 +295,6 @@
             </table>
           </div>
           @if (!bagimsizLoading()) {
-            @if (bagimsizYasam()) {
-              <app-uretim-yasam-dongusu [bagimsiz]="bagimsizYasam()" (degisti)="bagimsizSandiklariYukle()" />
-            }
             <app-server-pager
               [pageNumber]="bagimsizPageNumber()"
               [pageSize]="bagimsizPageSize()"

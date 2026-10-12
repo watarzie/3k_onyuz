@@ -75,6 +75,9 @@ describe('Finans ürün ve tarife kaydı', () => {
     api.urunOlustur.and.returnValue(of({ isSuccess: true }));
     const c = TestBed.createComponent(FinansYonetimiComponent).componentInstance;
     c.urunForm = { ...c.urunForm, kod: 'KONTRA', ad: 'Kontra ambalaj', isTuru: 1 };
+    c.urunSandikTipiSecildi('Katlanır Sandık');
+    expect(c.urunForm.fiyatlandirmaBirimi).toBe(2);
+    c.urunForm = { ...c.urunForm, fiyatlandirmaBirimi: 1 };
     c.urunSandikTipiSecildi('Kontrplak Sandık');
     expect(c.urunForm.fiyatlandirmaBirimi).toBe(2);
     c.urunKaydet();

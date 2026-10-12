@@ -1497,16 +1497,17 @@ export class FinansYonetimiComponent implements OnInit {
 
   /**
    * Üretim iş türlerinde (4/5 dışı) isteğe bağlı sandık tipi: boş seçim bütün tiplere uyar; Kontrplak gibi bir tip
-   * seçilirse tarife yalnız o tipe eşleşir ve fiyatlandırma birimi tipe göre önerilir.
+   * seçilirse tarife yalnız o tipe eşleşir ve fiyatlandırma birimi m³ önerilir (kontrplak/katlanır sandıkta m³ işin
+   * Fiyatlandırma sekmesinde ahşap + kontra olarak girilir). Kullanıcı birimi değiştirebilir.
    */
   urunSandikTipiSecildi(sandikTipi: string): void {
     this.urunForm.sandikTipi = sandikTipi;
-    if (sandikTipi) this.urunForm.fiyatlandirmaBirimi = sandikTipi === 'Katlanır Sandık' ? 1 : 2;
+    if (sandikTipi) this.urunForm.fiyatlandirmaBirimi = 2;
   }
 
   urunSandikTipiDegisti(sandikTipi: string): void {
     this.urunForm.sandikTipi = sandikTipi;
-    this.urunForm.fiyatlandirmaBirimi = sandikTipi === 'Katlanır Sandık' ? 1 : 2;
+    this.urunForm.fiyatlandirmaBirimi = 2;
     if (sandikTipi !== 'Katlanır Sandık') {
       this.urunForm.boy = null;
       this.urunForm.en = null;

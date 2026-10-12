@@ -94,7 +94,11 @@ export interface FinansPanelProjeOzeti {
   gider: number | null;
   siparis: FinansKarsilanma;
   fatura: FinansKarsilanma;
+  /** Grup ve sıralama: 1 Normal, 2 Saha, 3 Yedek proje, 4 Bağımsız iş (projesiz; müşteriye göre ayrı satır). */
+  projeGrubu?: FinansPanelProjeGrubu;
 }
+/** Sunucudaki FinansPanelProjeGrubu ile aynı sıra. */
+export type FinansPanelProjeGrubu = 1 | 2 | 3 | 4;
 export interface FinansPanelKategoriOzeti {
   kategori: FinansIsKategorisi;
   paraBirimi: string;
