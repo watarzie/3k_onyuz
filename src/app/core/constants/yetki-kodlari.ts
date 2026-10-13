@@ -108,46 +108,13 @@ export const AMBALAJ_YETKI = {
   KayitEkle: 'ambalaj-kayit-ekle',
   KayitSil: 'ambalaj-kayit-sil',
 } as const;
+/**
+ * Finans yetkisi yalnız sekme düzeyindedir (sunucudaki YetkiKodlari.Finans): sekmenin R izni sekmedeki bütün verileri
+ * (tutar, fiyat, gelir, gider, kârlılık, ölçü, m³) gösterir, W izni sekmedeki bütün işlemleri yapar. Alt işlem ve alan
+ * izni yoktur; birden çok sekmede açılan ortak işlemler için ortak/finans-izinleri.ts'deki sekme kümelerine bakın.
+ */
 export const FINANS_YETKI = {
   Modul: 'finans-yonetimi',
-  GelirGoruntule: 'finans-gelir-goruntule',
-  GiderGoruntule: 'finans-gider-goruntule',
-  SiparisOperasyonGoruntule: 'finans-siparis-goruntule',
-  RaporGoruntule: 'finans-rapor-goruntule',
-  ManuelIsEkle: 'finans-is-ekle',
-  IsIptal: 'finans-is-iptal',
-  TarihDegistir: 'finans-tarih-degistir',
-  PoGir: 'finans-po-gir',
-  PoDegistir: 'finans-po-degistir',
-  BirimFiyatGoruntule: 'finans-birim-fiyat-goruntule',
-  BirimFiyatDegistir: 'finans-birim-fiyat-degistir',
-  KarlilikGoruntule: 'finans-karlilik-goruntule',
-  ExcelAktar: 'finans-excel-aktar',
-  PdfAktar: 'finans-pdf-aktar',
-  GiderEkle: 'finans-gider-ekle',
-  GiderDuzenle: 'finans-gider-duzenle',
-  GiderKutuphanesiYonet: 'finans-gider-kutuphanesi-yonet',
-  IsKutuphanesiYonet: 'finans-is-kutuphanesi-yonet',
-  DuzenliIsYonet: 'finans-duzenli-is-yonet',
-  ParasalVeriGoruntule: 'finans-parasal-veri-goruntule',
-  TutarGoruntule: 'finans-tutar-goruntule',
-  KayitGoruntule: 'finans-kayit-goruntule',
-  FaturaGir: 'finans-fatura-gir',
-  FaturaDegistir: 'finans-fatura-degistir',
-  FaturaIptal: 'finans-fatura-iptal',
-  PoIptal: 'finans-po-iptal',
-  GiderIptal: 'finans-gider-iptal',
-  KaliciSil: 'finans-kalici-sil',
-  BelgeYukle: 'finans-belge-yukle',
-  BelgeIndir: 'finans-belge-indir',
-  DenetimGor: 'finans-denetim-gor',
-  FiyatlandirmaDegistir: 'finans-fiyatlandirma-degistir',
-  /** Faturayı ödendi/ödenmedi işaretleme (D3). */
-  OdemeKaydet: 'finans-odeme-kaydet',
-  /**
-   * Sekme düğümleri (sunucudaki YetkiKodlari.Finans.Sekme*): R sekmeyi gösterir, W sekmedeki işlemlerin tavanıdır.
-   * Yalnız o sekmeye ait işlem kodları ağaçta sekme düğümünün altındadır.
-   */
   SekmePanel: 'finans-sekme-panel',
   SekmeIsTakibi: 'finans-sekme-is-takibi',
   SekmePoFatura: 'finans-sekme-po-fatura',
@@ -156,4 +123,6 @@ export const FINANS_YETKI = {
   SekmeTanimlar: 'finans-sekme-tanimlar',
   SekmeRaporlar: 'finans-sekme-raporlar',
   SekmeMunferitIsler: 'finans-sekme-munferit-isler',
+  /** İş Takibi'nin üstündeki vade uyarısı (vadesi geçen/yaklaşan faturalar); yalnız R. */
+  VadeUyarisi: 'finans-vade-uyarisi',
 } as const;

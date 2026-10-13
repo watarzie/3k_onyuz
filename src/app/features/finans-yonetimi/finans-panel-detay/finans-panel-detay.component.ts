@@ -2,7 +2,7 @@ import { DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
+import { finansKayitOkunabilir } from '../ortak/finans-izinleri';
 import { FinansService } from '../../../core/services/finans.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { TranslationService } from '../../../core/services/translation.service';
@@ -66,7 +66,6 @@ export class FinansPanelDetayComponent {
   private readonly service = inject(FinansService);
   private readonly destroyRef = inject(DestroyRef);
   readonly permissions = inject(PermissionService);
-  readonly izin = FINANS_YETKI;
 
   readonly panel = input.required<FinansPanel>();
   readonly kayitAc = output<{ tur: FinansVarlikTuru; id: number }>();
@@ -83,9 +82,8 @@ export class FinansPanelDetayComponent {
   readonly faturaKarsilanmaAnahtari = faturaKarsilanmaAnahtari;
   readonly isDurumuAnahtari = isDurumuAnahtari;
 
-  readonly kayitGorunur = computed(() => this.permissions.hasAccess(FINANS_YETKI.KayitGoruntule));
-  readonly tutarGorunur = computed(() => this.parasal(FINANS_YETKI.TutarGoruntule));
-  readonly giderGorunur = computed(() => this.parasal(FINANS_YETKI.GiderGoruntule));
+  /** Projenin kalemleri genel aramayla yüklenir: kayıt sekmelerinden biri (Kontrol Paneli dahil). */
+  readonly kayitGorunur = computed(() => finansKayitOkunabilir(this.permissions));
 
   /** Detayda bulunan para birimleri; projeler, kategoriler ve gider türlerinin birleşimi. */
   readonly paraKodlari = computed(() => {
@@ -136,15 +134,14 @@ export class FinansPanelDetayComponent {
     ),
   );
 
-  /** Kategori satırları; pay, iş bedeli (tutar izni yoksa kalem sayısı) üzerinden hesaplanır. */
+  /** Kategori satırları; pay iş bedeli üzerinden hesaplanır. */
   readonly kategoriler = computed(() => {
     const satirlar = (this.panel().kategoriOzetleri ?? []).filter((x) => x.paraBirimi === this.para());
-    const tutarla = this.tutarGorunur();
-    const toplam = satirlar.reduce((a, x) => a + (tutarla ? (x.isBedeli ?? 0) : x.isKaydi), 0);
+    const toplam = satirlar.reduce((a, x) => a + (x.isBedeli ?? 0), 0);
     return satirlar
       .map((x) => ({
         ...x,
-        pay: toplam ? ((tutarla ? (x.isBedeli ?? 0) : x.isKaydi) / toplam) * 100 : 0,
+        pay: toplam ? ((x.isBedeli ?? 0) / toplam) * 100 : 0,
         faturaOrani: x.isBedeli ? ((x.faturalananNetTutar ?? 0) / x.isBedeli) * 100 : 0,
       }))
       .sort((a, b) => b.pay - a.pay);
@@ -170,9 +167,6 @@ export class FinansPanelDetayComponent {
     });
   }
 
-  parasal(alan: string): boolean {
-    return this.permissions.hasAccess(FINANS_YETKI.ParasalVeriGoruntule) && this.permissions.hasAccess(alan);
-  }
   sekmeSec(sekme: FinansPanelDetaySekmesi): void {
     this.sekme.set(sekme);
     this.tumu.set(false);

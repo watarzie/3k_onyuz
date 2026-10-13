@@ -62,6 +62,9 @@ export interface FinansPanel {
   projeOzetleri?: FinansPanelProjeOzeti[] | null;
   /** Detay dökümü: kategori × para birimi. */
   kategoriOzetleri?: FinansPanelKategoriOzeti[] | null;
+  /** Dönemdeki münferit işler (en yeni 20; tamamı Münferit İşler sekmesinde) ve toplam sayısı. */
+  munferitIsler?: FinansPanelMunferitIs[] | null;
+  munferitIsSayisi?: number;
   siparisBekleyen: number;
   kismiSiparis: number;
   siparisTam: number;
@@ -96,6 +99,19 @@ export interface FinansPanelProjeOzeti {
   fatura: FinansKarsilanma;
   /** Grup ve sıralama: 1 Normal, 2 Saha, 3 Yedek proje, 4 Bağımsız iş (projesiz; müşteriye göre ayrı satır). */
   projeGrubu?: FinansPanelProjeGrubu;
+}
+/** Ana paneldeki münferit iş satırı; netTutar yetkiye göre null olabilir. */
+export interface FinansPanelMunferitIs {
+  id: number;
+  finansTarihi: string;
+  projeNo: string;
+  musteri: string;
+  isAdi: string;
+  adet: number;
+  birim: string;
+  netTutar: number | null;
+  paraBirimi: string;
+  durum: number;
 }
 /** Sunucudaki FinansPanelProjeGrubu ile aynı sıra. */
 export type FinansPanelProjeGrubu = 1 | 2 | 3 | 4;

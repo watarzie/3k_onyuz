@@ -27,7 +27,7 @@ import {
   siparisKarsilanmaAnahtari,
   uretimKategorisi,
 } from '../ortak/finans-etiketleri';
-import { finansFaturaGirilebilir, finansPoGirilebilir } from '../ortak/finans-izinleri';
+import { finansPoGirilebilir, finansSiparisFaturaYazilabilir } from '../ortak/finans-izinleri';
 
 /** PO'ya bağlanmak üzere seçilen proje × kategori / düzenli iş grubu ve girilen net tutar. */
 interface GrupSecimi {
@@ -189,7 +189,7 @@ export class FinansDagitimComponent implements OnInit {
   izinli(): boolean {
     return this.tur() === 'Siparis'
       ? finansPoGirilebilir(this.permissions)
-      : finansFaturaGirilebilir(this.permissions);
+      : finansSiparisFaturaYazilabilir(this.permissions);
   }
 
   // ----- PO: hedef seçimi -----

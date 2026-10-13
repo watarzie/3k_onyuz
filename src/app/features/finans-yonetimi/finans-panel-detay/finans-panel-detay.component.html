@@ -12,11 +12,9 @@
         <button type="button" role="tab" [class.active]="sekme() === 'kategoriler'" [attr.aria-selected]="sekme() === 'kategoriler'" (click)="sekmeSec('kategoriler')">
           <i class="ri-stack-line" aria-hidden="true"></i>{{ t('PANEL_DETAIL_CATEGORIES') }}
         </button>
-        @if (giderGorunur()) {
-          <button type="button" role="tab" [class.active]="sekme() === 'giderler'" [attr.aria-selected]="sekme() === 'giderler'" (click)="sekmeSec('giderler')">
-            <i class="ri-wallet-3-line" aria-hidden="true"></i>{{ t('PANEL_DETAIL_EXPENSES') }}
-          </button>
-        }
+        <button type="button" role="tab" [class.active]="sekme() === 'giderler'" [attr.aria-selected]="sekme() === 'giderler'" (click)="sekmeSec('giderler')">
+          <i class="ri-wallet-3-line" aria-hidden="true"></i>{{ t('PANEL_DETAIL_EXPENSES') }}
+        </button>
       </div>
       @if (paraKodlari().length > 1) {
         <select class="detail-currency" [attr.aria-label]="t('CURRENCY')" [ngModel]="para()" (ngModelChange)="para.set($event)">
@@ -44,14 +42,10 @@
               <tr>
                 <th>{{ t('PROJECT') }}</th>
                 <th class="text-end">{{ t('PANEL_DETAIL_ITEMS') }}</th>
-                @if (tutarGorunur()) {
-                  <th class="text-end">{{ t('PANEL_DETAIL_JOB_VALUE') }}</th>
-                }
+                <th class="text-end">{{ t('PANEL_DETAIL_JOB_VALUE') }}</th>
                 <th>{{ t('PANEL_DETAIL_ORDERED') }}</th>
                 <th>{{ t('PANEL_DETAIL_INVOICED') }}</th>
-                @if (giderGorunur()) {
-                  <th class="text-end">{{ t('PANEL_DETAIL_EXPENSE') }}</th>
-                }
+                <th class="text-end">{{ t('PANEL_DETAIL_EXPENSE') }}</th>
                 <th class="detail-chevron-col"></th>
               </tr>
             </thead>
@@ -63,14 +57,10 @@
                   <small class="group-count">{{ g.projeler.length }} {{ t(g.grup === 4 ? 'PANEL_GROUP_ROWS' : 'PANEL_PROJECTS') }}</small>
                 </td>
                 <td class="text-end"><span class="num">{{ g.isKaydi }}</span></td>
-                @if (tutarGorunur()) {
-                  <td class="text-end"><span class="num strong">{{ g.isBedeli | number: '1.2-2' }}</span></td>
-                }
+                <td class="text-end"><span class="num strong">{{ g.isBedeli | number: '1.2-2' }}</span></td>
                 <td></td>
                 <td></td>
-                @if (giderGorunur()) {
-                  <td class="text-end"><span class="num">{{ g.gider ? (g.gider | number: '1.2-2') : '—' }}</span></td>
-                }
+                <td class="text-end"><span class="num">{{ g.gider ? (g.gider | number: '1.2-2') : '—' }}</span></td>
                 <td class="detail-chevron-col"></td>
               </tr>
               @for (p of g.gorunen; track projeAnahtari(p)) {
@@ -85,30 +75,22 @@
                     </div>
                   </td>
                   <td class="text-end"><span class="num">{{ p.isKaydi }}</span></td>
-                  @if (tutarGorunur()) {
-                    <td class="text-end"><span class="num strong">{{ p.isBedeli | number: '1.2-2' }}</span></td>
-                  }
+                  <td class="text-end"><span class="num strong">{{ p.isBedeli | number: '1.2-2' }}</span></td>
                   <td>
                     <div class="coverage-cell">
                       <span class="coverage-pill" [attr.data-ton]="p.siparis">{{ t(siparisKarsilanmaAnahtari(p.siparis)) }}</span>
-                      @if (tutarGorunur()) {
-                        <div class="mini-bar"><span [style.width.%]="oran(p.siparisNetTutar, p.isBedeli)"></span></div>
-                        <small>{{ p.siparisNetTutar | number: '1.2-2' }}</small>
-                      }
+                      <div class="mini-bar"><span [style.width.%]="oran(p.siparisNetTutar, p.isBedeli)"></span></div>
+                      <small>{{ p.siparisNetTutar | number: '1.2-2' }}</small>
                     </div>
                   </td>
                   <td>
                     <div class="coverage-cell">
                       <span class="coverage-pill" [attr.data-ton]="p.fatura">{{ t(faturaKarsilanmaAnahtari(p.fatura)) }}</span>
-                      @if (tutarGorunur()) {
-                        <div class="mini-bar is-invoice"><span [style.width.%]="oran(p.faturalananNetTutar, p.isBedeli)"></span></div>
-                        <small>{{ p.faturalananNetTutar | number: '1.2-2' }}</small>
-                      }
+                      <div class="mini-bar is-invoice"><span [style.width.%]="oran(p.faturalananNetTutar, p.isBedeli)"></span></div>
+                      <small>{{ p.faturalananNetTutar | number: '1.2-2' }}</small>
                     </div>
                   </td>
-                  @if (giderGorunur()) {
-                    <td class="text-end"><span class="num">{{ p.gider ? (p.gider | number: '1.2-2') : '—' }}</span></td>
-                  }
+                  <td class="text-end"><span class="num">{{ p.gider ? (p.gider | number: '1.2-2') : '—' }}</span></td>
                   <td class="detail-chevron-col">
                     @if (kayitGorunur()) {
                       <button type="button" class="chevron-btn" [attr.aria-expanded]="projeAcik(p)" [attr.aria-label]="p.projeNo + ' ' + t('PANEL_DETAIL_OPEN_ITEMS')" (click)="$event.stopPropagation(); projeAcKapat(p)">
@@ -119,7 +101,7 @@
                 </tr>
                 @if (projeAcik(p)) {
                   <tr class="items-row">
-                    <td [attr.colspan]="4 + (tutarGorunur() ? 1 : 0) + (giderGorunur() ? 1 : 0) + 1">
+                    <td [attr.colspan]="7">
                       @if (kalemDurumu(p); as d) {
                         @if (d.yukleniyor) {
                           <div class="items-state"><span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>{{ t('PANEL_DETAIL_LOADING') }}</div>
@@ -141,9 +123,7 @@
                                   </small>
                                 </div>
                                 <span class="item-status" [attr.data-durum]="k.durum">{{ t(isDurumuAnahtari(k.durum)) }}</span>
-                                @if (tutarGorunur()) {
-                                  <span class="item-amount">{{ k.netTutar | number: '1.2-2' }}</span>
-                                }
+                                <span class="item-amount">{{ k.netTutar | number: '1.2-2' }}</span>
                                 <button type="button" class="item-open" [title]="t('DETAIL')" [attr.aria-label]="t('DETAIL')" (click)="kayitAc.emit({ tur: 'IsKaydi', id: k.id })">
                                   <i class="ri-arrow-right-up-line" aria-hidden="true"></i>
                                 </button>
@@ -161,26 +141,17 @@
               }
             </tbody>
             }
-            @if (tutarGorunur() || giderGorunur()) {
-              <tfoot>
-                <tr>
-                  <td>{{ t('PANEL_DETAIL_TOTAL') }} · {{ para() }}</td>
-                  <td class="text-end">{{ projeToplami().isKaydi }}</td>
-                  @if (tutarGorunur()) {
-                    <td class="text-end">{{ projeToplami().isBedeli | number: '1.2-2' }}</td>
-                    <td>{{ projeToplami().siparis | number: '1.2-2' }}</td>
-                    <td>{{ projeToplami().fatura | number: '1.2-2' }}</td>
-                  } @else {
-                    <td></td>
-                    <td></td>
-                  }
-                  @if (giderGorunur()) {
-                    <td class="text-end">{{ projeToplami().gider | number: '1.2-2' }}</td>
-                  }
-                  <td></td>
-                </tr>
-              </tfoot>
-            }
+            <tfoot>
+              <tr>
+                <td>{{ t('PANEL_DETAIL_TOTAL') }} · {{ para() }}</td>
+                <td class="text-end">{{ projeToplami().isKaydi }}</td>
+                <td class="text-end">{{ projeToplami().isBedeli | number: '1.2-2' }}</td>
+                <td>{{ projeToplami().siparis | number: '1.2-2' }}</td>
+                <td>{{ projeToplami().fatura | number: '1.2-2' }}</td>
+                <td class="text-end">{{ projeToplami().gider | number: '1.2-2' }}</td>
+                <td></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
         @if (kisaltildi()) {
@@ -207,16 +178,14 @@
                 <span [style.width.%]="k.pay"></span>
               </div>
               <span class="category-share">{{ k.pay | number: '1.0-1' }}%</span>
-              @if (tutarGorunur()) {
-                <div class="category-amounts">
-                  <strong>{{ k.isBedeli | number: '1.2-2' }}</strong>
-                  <small>{{ t('PANEL_DETAIL_INVOICED') }} {{ k.faturaOrani | number: '1.0-0' }}%</small>
-                </div>
-              }
+              <div class="category-amounts">
+                <strong>{{ k.isBedeli | number: '1.2-2' }}</strong>
+                <small>{{ t('PANEL_DETAIL_INVOICED') }} {{ k.faturaOrani | number: '1.0-0' }}%</small>
+              </div>
             </div>
           }
         </div>
-        <p class="detail-foot-note">{{ t(tutarGorunur() ? 'PANEL_DETAIL_SHARE_AMOUNT' : 'PANEL_DETAIL_SHARE_COUNT') }}</p>
+        <p class="detail-foot-note">{{ t('PANEL_DETAIL_SHARE_AMOUNT') }}</p>
       } @else {
         <div class="detail-empty"><i class="ri-stack-line" aria-hidden="true"></i><p>{{ t('PANEL_DETAIL_EMPTY') }}</p></div>
       }

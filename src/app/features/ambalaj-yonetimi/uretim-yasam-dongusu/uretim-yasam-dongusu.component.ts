@@ -43,6 +43,14 @@ type FormBicimi = 'pdf' | 'xlsx';
 export class UretimYasamDongusuComponent {
   plan = input<AmbalajUretimPlanDto | null>(null);
   bagimsiz = input<AmbalajBagimsizSandikDto | null>(null);
+  /** Finansa aktar / geri al yanıtındaki güncel özel sandık; liste yenilenene kadar panel bunu gösterir. */
+  private ozelGuncel = signal<AmbalajBagimsizSandikDto | null>(null);
+  /** Ekrandaki özel sandık: işlem yanıtı varsa o, yoksa girdi. */
+  ozel = computed(() => {
+    const b = this.bagimsiz();
+    const g = this.ozelGuncel();
+    return b && g?.id === b.id ? g : b;
+  });
   entegre = input(false);
   grup = input<number | null>(null);
   /**
@@ -99,8 +107,8 @@ export class UretimYasamDongusuComponent {
     ambalajaDahilMi?: boolean | null;
   }[] = [];
   formlar = signal<AmbalajFormSurumu[]>([]);
-  /** Özel sandıkta geri alma (Bekleyene al / Yeniden aç) hedefi; gerekçe alanı yalnız o an açılır. */
-  geriAlHedefi = signal<1 | 2 | null>(null);
+  /** Özel sandıkta "Finanstan geri al" onayı; isteğe bağlı gerekçe alanı yalnız o an açılır. */
+  finansGeriAlAcik = signal(false);
   rapor = signal<AmbalajGerceklesenRapor | null>(null);
   islemde = signal(false);
   raporYukleniyor = signal(false);
@@ -171,12 +179,20 @@ export class UretimYasamDongusuComponent {
       );
       this.oncekiSatirlar = rows;
       this.secimKapsami = kapsam;
-      const formKapsami = (p || b) && this.permissions.hasAccess(AMBALAJ_YETKI.FormGoruntule) ? kapsam : null;
+      // Özel sandıkta üretim formu yoktur; form geçmişi yalnız plan için okunur.
+      const formKapsami = p && !b && this.permissions.hasAccess(AMBALAJ_YETKI.FormGoruntule) ? kapsam : null;
       if (formKapsami !== this.formKapsami) {
         this.formlar.set([]);
         this.formKapsami = formKapsami;
-        if (formKapsami) this.formIstekleri.next(b ? { kayitId: b.id } : { projeId: p!.projeId });
+        if (formKapsami) this.formIstekleri.next({ projeId: p!.projeId });
       }
+    });
+    effect(() => {
+      this.bagimsiz();
+      untracked(() => {
+        this.ozelGuncel.set(null);
+        this.finansGeriAlAcik.set(false);
+      });
     });
     effect(() => {
       this.gerekce = this.islemGerekcesi();
@@ -197,18 +213,21 @@ export class UretimYasamDongusuComponent {
     );
   });
   /**
-   * Özel sandığın tek bakışta durumu: yapılmaz, form bekliyor (finans kaydı henüz yok), form var ama bekletiliyor,
-   * üretimde, tamamlandı. Form geçmişi okunamıyorsa üretime alınmış (durumu 1'den büyük) kayıt formlu sayılır.
+   * Özel sandığın tek bakışta durumu. Üretim formu ve üretim adımları yoktur: kaydedilen sandık "Finansa aktar" ile
+   * finansa iş kaydı olarak aktarılır, proje tamamlanınca tamamlanır.
    */
-  tekilDurum = computed((): 'haric' | 'formBekliyor' | 'bekletiliyor' | 'uretimde' | 'tamamlandi' => {
-    const b = this.bagimsiz();
+  tekilDurum = computed((): 'haric' | 'aktarilmadi' | 'aktarildi' | 'tamamlandi' => {
+    const b = this.ozel();
     if (!b || b.ambalajaDahilMi === false) return 'haric';
-    const durum = b.uretimDurumu ?? 1;
-    if (durum === 3) return 'tamamlandi';
-    if (durum === 2) return 'uretimde';
-    const formuVar = this.permissions.hasAccess(AMBALAJ_YETKI.FormGoruntule) && this.formluKayitlar().has(b.id);
-    return formuVar ? 'bekletiliyor' : 'formBekliyor';
+    if ((b.uretimDurumu ?? 1) === 3) return 'tamamlandi';
+    return b.uretimeAlindi ? 'aktarildi' : 'aktarilmadi';
   });
+  ozelAktarYetkili(): boolean {
+    return this.permissions.canWrite(AMBALAJ_YETKI.DurumDuzenle);
+  }
+  ozelGeriAlYetkili(): boolean {
+    return this.permissions.canWrite(AMBALAJ_YETKI.DurumDuzenle) && this.permissions.canWrite(AMBALAJ_YETKI.DurumuGeriAl);
+  }
   /** A5: gerçekleşen üretim raporundan aylık üretilen çam (ahşap kapalı + kafes) net ve sarf m³. */
   camGrafigi = computed(() => {
     const r = this.rapor();
@@ -371,10 +390,48 @@ export class UretimYasamDongusuComponent {
       .subscribe((r) => {
         if (this.uygulandi(r)) {
           this.toast.success(this.t('STATUS_SAVED'));
-          this.geriAlHedefi.set(null);
           this.gerekceyiDegistir('');
           this.degisti.emit();
         }
+      });
+  }
+  /** Özel sandığı finansa aktarır; Finans iş kaydı açılır ve tarifesiyle fiyatlanır. */
+  finansaAktar() {
+    const b = this.ozel();
+    if (!b || this.islemde() || !this.ozelAktarYetkili()) return;
+    this.islemde.set(true);
+    this.api
+      .finansaAktar(b.id, this.finansTarihi || null)
+      .pipe(
+        finalize(() => this.islemde.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((r) => {
+        if (!this.uygulandi(r)) return;
+        if (r.value) this.ozelGuncel.set(r.value);
+        this.finansTarihi = '';
+        this.toast.success(this.t('FINANCE_TRANSFERRED'));
+        this.degisti.emit();
+      });
+  }
+  /** Özel sandığı finanstan geri alır (PO yoksa); gerekçe isteğe bağlıdır. */
+  finanstanGeriAl() {
+    const b = this.ozel();
+    if (!b || this.islemde() || !this.ozelGeriAlYetkili()) return;
+    this.islemde.set(true);
+    this.api
+      .finanstanGeriAl(b.id, this.gerekce.trim())
+      .pipe(
+        finalize(() => this.islemde.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((r) => {
+        if (!this.uygulandi(r)) return;
+        if (r.value) this.ozelGuncel.set(r.value);
+        this.finansGeriAlAcik.set(false);
+        this.gerekceyiDegistir('');
+        this.toast.success(this.t('FINANCE_REVERTED'));
+        this.degisti.emit();
       });
   }
   raporGetir() {

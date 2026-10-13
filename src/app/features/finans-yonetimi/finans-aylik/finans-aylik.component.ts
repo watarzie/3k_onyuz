@@ -22,16 +22,17 @@ import { FinansProjeDetayComponent } from '../finans-proje-detay/finans-proje-de
 import { FinansProjeSeciciComponent } from '../finans-proje-secici/finans-proje-secici.component';
 import { FinansMunferitIslerComponent } from '../finans-munferit-isler/finans-munferit-isler.component';
 import {
+  FINANS_GIDER_TANIM_SEKMELERI,
   FinansSekme,
-  FinansTanimGorunumu,
-  finansFaturaGirilebilir,
+  finansHerhangiSekmeAcik,
   finansIlkSekme,
-  finansOzelIsiEklenebilir,
-  finansSekmeAcik,
-  finansTanimOkunabilir,
+  finansIsDuzenlenebilir,
+  finansKayitOkunabilir,
   finansPoGirilebilir,
-  finansRaporuIndirilebilir,
-  finansSiparisFaturaOkunabilir,
+  finansSekmeAcik,
+  finansSekmeYazilabilir,
+  finansSiparisFaturaYazilabilir,
+  finansVadeUyarisiGorunur,
 } from '../ortak/finans-izinleri';
 import {
   FINANS_KATEGORILERI,
@@ -50,8 +51,6 @@ import {
 } from '../../../shared/models/finans-v2.model';
 import { FinansParaBirimiService } from '../../../core/services/finans-para-birimi.service';
 import { ApiResult } from '../../../shared/models/common.model';
-import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
-import { CanAccessDirective } from '../../../shared/directives/can-access.directive';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { ServerPagerComponent } from '../../../shared/components/server-pager/server-pager.component';
 import { IslemlerMenusuComponent } from '../../../shared/components/islemler-menusu/islemler-menusu.component';
@@ -113,7 +112,8 @@ interface AylikProjeBlogu {
 const DAGITIM_BEKLEYEN_DURUMLAR = ['miktar bekliyor', 'fiyatlandırma bekliyor'];
 
 type AnaSekme = FinansSekme;
-type AyarGorunumu = FinansTanimGorunumu;
+/** İş ve Tarife Tanımları alt görünümleri; üçü de tanımlar sekmesinin iznine bağlıdır. */
+type AyarGorunumu = 'duzenli' | 'tarifeler' | 'parametreler';
 type RaporFormati = 'pdf' | 'excel' | 'ayri';
 
 @Component({
@@ -121,7 +121,7 @@ type RaporFormati = 'pdf' | 'excel' | 'ayri';
   standalone: true,
   imports: [BreadcrumbComponent, DatePipe, DecimalPipe, NgTemplateOutlet, FormsModule, ServerPagerComponent,
     FinansPanelComponent, FinansKayitAramaComponent, FinansDagitimComponent, FinansKayitDetayComponent, FinansBelgelerListesiComponent,
-    CanWriteDirective, CanAccessDirective, FinansRaporlarComponent, FinansKategorilerComponent, FinansProjeSeciciComponent, FinansMunferitIslerComponent,
+    FinansRaporlarComponent, FinansKategorilerComponent, FinansProjeSeciciComponent, FinansMunferitIslerComponent,
     FinansParametrelerComponent, FinansProjeDetayComponent, IslemlerMenusuComponent],
   templateUrl: './finans-aylik.component.html',
   styleUrl: './finans-aylik.component.scss',
@@ -135,10 +135,10 @@ export class FinansYonetimiComponent implements OnInit {
   readonly permissions = inject(PermissionService);
   readonly paraBirimleri = inject(FinansParaBirimiService);
   readonly izin = FINANS_YETKI;
-  readonly alanIzni = AMBALAJ_YETKI;
   /** Vade uyarısı (D3): vadesi geçen ve uyarı penceresinde vadesi gelen ödenmemiş faturalar. */
   readonly vadeUyarilari = signal<FinansVadeUyarilari | null>(null);
-  readonly vadeUyariAcik = signal(false);
+  /** Vade uyarıları varsayılan açık: her fatura kalan günüyle tek tek görünür; kullanıcı gizleyebilir. */
+  readonly vadeUyariAcik = signal(true);
   /** PO ve Faturalar sekmesinin açılış görünümü; uyarıdan gelindiğinde fatura listesi ve ödeme filtresi. */
   readonly belgeGorunumu = signal<{ anahtar: number; tur: 'Siparis' | 'Fatura'; odeme: FinansOdemeFiltresi | null }>({
     anahtar: 0,
@@ -418,15 +418,25 @@ export class FinansYonetimiComponent implements OnInit {
     });
   }
 
-  /** Sekme görünür mü: modül, sekme düğümü ve sekmenin ekran izinleri (ortak/finans-izinleri). */
+  /** Sekme görünür mü (R): modül ve sekme düğümü (ortak/finans-izinleri). */
   sekmeAcik(sekme: AnaSekme): boolean {
     return finansSekmeAcik(this.permissions, sekme);
+  }
+
+  /** Sekmedeki işlemler yapılabilir mi (W). */
+  sekmeYazilabilir(sekme: AnaSekme): boolean {
+    return finansSekmeYazilabilir(this.permissions, sekme);
+  }
+
+  /** Vade uyarısı sekmelerin üstünde, modül genelindedir; sekme izninden bağımsız kendi iznine bağlıdır. */
+  vadeUyarisiGorunur(): boolean {
+    return finansVadeUyarisiGorunur(this.permissions);
   }
 
   ngOnInit(): void {
     this.listeAkislariniKur();
     forkJoin({
-      kategoriler: this.permissions.hasAccess(this.izin.Modul) && this.permissions.hasAccess(this.izin.GiderGoruntule) ? this.service.giderKategorileri() : of({ isSuccess: true, value: [] }),
+      kategoriler: this.giderKategorileriOkunabilir() ? this.service.giderKategorileri() : of({ isSuccess: true, value: [] }),
       icSandikSablonlari: this.permissions.hasAccess(AMBALAJ_YETKI.Listele) && this.permissions.hasAccess(AMBALAJ_YETKI.PlanGoruntule)
         ? this.ambalajService.getIcSandikSablonlari() : of({ isSuccess: true, value: [] }),
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(result => {
@@ -440,15 +450,23 @@ export class FinansYonetimiComponent implements OnInit {
     this.selectTab(this.activeTab());
   }
 
-  /** Vade uyarıları yalnız PO ve Faturalar sekmesini görebilen (faturaları okuyabilen) kullanıcıya gösterilir. */
+  /** Vade uyarıları ayrı vade uyarısı iznine bağlıdır (PO ve Faturalar sekmesi kapalı olsa da görülebilir). */
   vadeUyarilariniYukle(): void {
-    if (!this.sekmeAcik('belgeler')) return;
+    if (!this.vadeUyarisiGorunur()) return;
     this.service.vadeUyarilari(10).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(result => {
       this.vadeUyarilari.set(result.isSuccess ? (result.value ?? null) : null);
     });
   }
 
   /** Uyarıdan fatura listesine geçer: vadesi geçen veya yaklaşan faturalar, bütün dönemler. */
+  /** Uyarı satırları en acilden (en çok geciken / en az gün kalan) başlayarak. */
+  vadeKalemleri(uyari: FinansVadeUyarilari): FinansVadeUyarilari['kalemler'] {
+    return [...uyari.kalemler].sort((a, b) => a.kalanGun - b.kalanGun || a.faturaId - b.faturaId);
+  }
+  /** Rozet rengi: gecikmiş, bir hafta içinde, uyarı süresi içinde. */
+  vadeAciliyeti(kalanGun: number): 'gecikti' | 'acil' | 'yaklasiyor' {
+    return kalanGun < 0 ? 'gecikti' : kalanGun <= 7 ? 'acil' : 'yaklasiyor';
+  }
   vadeTakibiniAc(filtre: FinansOdemeFiltresi): void {
     if (!this.sekmeAcik('belgeler')) return;
     this.belgeGorunumu.update(mevcut => ({ anahtar: mevcut.anahtar + 1, tur: 'Fatura', odeme: filtre }));
@@ -463,14 +481,16 @@ export class FinansYonetimiComponent implements OnInit {
       this.giderlerYuklendi = true;
       this.giderListeIstekleri.next();
     }
-    if (tab === 'ayarlar') {
-      if (!this.ayarOkuyabilir(this.ayarGorunumu()))
-        this.ayarGorunumu.set((['duzenli', 'tarifeler', 'parametreler'] as const).find(x => this.ayarOkuyabilir(x)) ?? 'duzenli');
-      this.ayarListesiniYukle();
-    }
+    if (tab === 'ayarlar') this.ayarListesiniYukle();
   }
+
+  /** Gider formundaki kategori/kalem listesi: Giderler, Gider Kategorileri veya Raporlar sekmesinden biri. */
+  giderKategorileriOkunabilir(): boolean {
+    return finansHerhangiSekmeAcik(this.permissions, FINANS_GIDER_TANIM_SEKMELERI);
+  }
+
   kategorileriYenile(): void {
-    if (!this.permissions.hasAccess(this.izin.GiderGoruntule)) return;
+    if (!this.giderKategorileriOkunabilir()) return;
     this.service.giderKategorileri().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(r => {
       if (r.isSuccess) this.giderKategorileri.set((r.value ?? []).filter(x => x.aktif));
     });
@@ -548,7 +568,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   ayarGorunumuDegistir(gorunum: AyarGorunumu): void {
-    if (!this.ayarOkuyabilir(gorunum)) return;
+    if (!this.sekmeAcik('ayarlar')) return;
     this.ayarGorunumu.set(gorunum);
     this.ayarListesiniYukle();
   }
@@ -686,6 +706,16 @@ export class FinansYonetimiComponent implements OnInit {
     return kategoriKirilimKayitlari(this.projeKirilimi(satir.projeBirimAnahtari)?.sandiklar ?? [], satir.isKaydiIds);
   }
 
+  /** Proje satırına tıklama: kategori satırları ve sandık paneli birlikte açılır/kapanır (ok düğmesine gerek yok). */
+  projeSatiriAcKapat(blok: AylikProjeBlogu): void {
+    const acilacak = !this.projeAcik(blok.anahtar);
+    if (acilacak !== this.projeAcik(blok.anahtar)) this.projeDegistir(blok.anahtar);
+    if (acilacak !== this.projeSandiklariAcik(blok)) this.projeSandiklariAcKapat(blok);
+  }
+  /** Sandık dökümü olan kategori satırı (projeden gelen kayıtlar). */
+  sandikliSatir(satir: FinansAylikIs): boolean {
+    return satir.kaynakTuru === 'Proje' && satir.isKaydiIds.length > 0;
+  }
   projeAcik(anahtar: string): boolean { return this.acikProjeler().has(anahtar); }
   projeDegistir(anahtar: string): void {
     this.acikProjeler.update(mevcut => {
@@ -938,7 +968,12 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   poIzni(): boolean { return finansPoGirilebilir(this.permissions); }
-  faturaIzni(): boolean { return finansFaturaGirilebilir(this.permissions); }
+  /** Fatura girişi PO/Fatura sekmesinin W iznine bağlıdır. */
+  faturaIzni(): boolean { return finansSiparisFaturaYazilabilir(this.permissions); }
+  /** İş kaydı iptal/geri alma: İş Takibi veya Münferit İşler sekmesinin W izni. */
+  isDuzenlenebilir(): boolean { return finansIsDuzenlenebilir(this.permissions); }
+  /** Kayıt (fatura) detayı: kayıt sekmelerinden biri; vade uyarısındaki fatura bağlantısı buna bağlıdır. */
+  kayitOkunabilir(): boolean { return finansKayitOkunabilir(this.permissions); }
 
   siparisFormunuAc(satir: FinansAylikIs): void {
     this.topluSiparisAc(satir.isKaydiIds);
@@ -993,7 +1028,6 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   projeDetayAc(blok: AylikProjeBlogu): void {
-    if (!this.permissions.hasAccess(this.izin.KayitGoruntule)) return;
     this.projeDetay.set({ projeNo: blok.projeNo, musteri: blok.musteri });
   }
   projeDetayindanKayitAc(hedef: {tur: FinansVarlikTuru; id: number}): void {
@@ -1006,21 +1040,13 @@ export class FinansYonetimiComponent implements OnInit {
     if (hedef.tur === 'Fatura') this.vadeUyarilariniYukle();
   }
 
-  parasal(kod: string): boolean {
-    return this.permissions.hasAccess(this.izin.Modul) && this.permissions.hasAccess(this.izin.ParasalVeriGoruntule) && this.permissions.hasAccess(kod);
-  }
-
-  /** Tanımlar alt görünümü: tanımlar sekme düğümü ve görünümün sunucudaki okuma izinleri. */
-  ayarOkuyabilir(gorunum: AyarGorunumu): boolean {
-    return this.permissions.hasAccess(this.izin.SekmeTanimlar) && finansTanimOkunabilir(this.permissions, gorunum);
-  }
-
-  ayarYazabilir(gorunum: AyarGorunumu): boolean {
-    return this.ayarOkuyabilir(gorunum) && this.permissions.canWrite(gorunum === 'duzenli' ? this.izin.DuzenliIsYonet : this.izin.IsKutuphanesiYonet);
+  /** Düzenli iş, tarife, yeniden fiyatlama, tarife düzeltme, para birimi ve parametreler: tanımlar sekmesinin W izni. */
+  tanimYazilabilir(): boolean {
+    return this.sekmeYazilabilir('ayarlar');
   }
 
   yenidenFiyatlaAc(urun: FinansUrun): void {
-    if (!this.permissions.canWrite(this.izin.BirimFiyatDegistir)) return;
+    if (!this.tanimYazilabilir()) return;
     this.yenidenFiyatlaUrun.set(urun);
     this.yenidenFiyatlaAciklama = '';
     this.yenidenFiyatlaHatasi.set('');
@@ -1048,7 +1074,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   tarifeDuzeltilebilir(): boolean {
-    return !!this.duzenlenenUrunId() && this.permissions.canWrite(this.izin.BirimFiyatDegistir);
+    return !!this.duzenlenenUrunId() && this.tanimYazilabilir();
   }
 
   tarifeDuzeltmeAc(surum: FinansTarifeSurumu): void {
@@ -1117,42 +1143,29 @@ export class FinansYonetimiComponent implements OnInit {
       });
   }
 
-  raporIndirilebilir(bicim: 'pdf' | 'excel'): boolean {
-    return finansRaporuIndirilebilir(this.permissions, bicim);
+  /** Gider raporu dosyası: Giderler veya Raporlar sekmesinden birinin R izni. */
+  giderRaporuIndirilebilir(): boolean {
+    return this.sekmeAcik('giderler') || this.sekmeAcik('raporlar');
   }
 
+  /** Tek seferlik iş ve aylık değer düzeltmesi yalnız İş Takibi'nde yapılır: İş Takibi sekmesinin W izni. */
   ozelIsEklenebilir(): boolean {
-    return finansOzelIsiEklenebilir(this.permissions);
-  }
-
-  miktarGorebilir(birim: string | undefined, isTuru?: number): boolean {
-    const m3 = birim === 'm³' || birim === 'm3' || isTuru === 9;
-    return !m3 || this.permissions.hasAccess(this.alanIzni.M3Goruntule) && (isTuru !== 9 || this.permissions.hasAccess(this.alanIzni.SarfGoruntule));
-  }
-
-  giderAlanlariniGorebilir(): boolean {
-    return this.parasal(this.izin.BirimFiyatGoruntule) && this.parasal(this.izin.TutarGoruntule) && this.permissions.hasAccess(this.izin.GiderGoruntule);
-  }
-
-  giderDuzenlenebilir(gider: FinansGider): boolean {
-    return this.permissions.canWrite(this.izin.GiderDuzenle) && this.giderAlanlariniGorebilir() &&
-      this.miktarGorebilir(gider.birim) && Number.isFinite(gider.miktar) && Number.isFinite(gider.birimFiyat) && Number.isFinite(gider.kdvOrani);
+    return this.sekmeYazilabilir('akis');
   }
 
   aylikDegerDuzenlenebilir(satir: FinansAylikIs | null): boolean {
-    if (!satir || !this.permissions.hasAccess(this.izin.Modul) || !this.permissions.canWrite(this.izin.FiyatlandirmaDegistir)) return false;
+    if (!satir || !this.sekmeYazilabilir('akis')) return false;
     return this.aylikMiktarDuzenlenebilir(satir) || this.aylikTarifeDuzenlenebilir(satir);
   }
 
-  /** Bu ayın miktarı: sunucu izin verdiyse ve miktar görülebiliyorsa. */
+  /** Bu ayın miktarı: sunucu izin verdiyse. */
   aylikMiktarDuzenlenebilir(satir: FinansAylikIs | null): boolean {
-    return !!satir && satir.miktarDuzenlenebilir && this.miktarGorebilir(satir.birim, satir.isTuru) && Number.isFinite(satir.miktar);
+    return !!satir && satir.miktarDuzenlenebilir && Number.isFinite(satir.miktar);
   }
 
-  /** Bu ayın tarifesi (birim fiyat): görme ve birim fiyat değiştirme izniyle (sunucu kuralının aynası). */
+  /** Bu ayın tarifesi (birim fiyat): sunucu izin verdiyse. */
   aylikTarifeDuzenlenebilir(satir: FinansAylikIs | null): boolean {
-    return !!satir && satir.tutarDuzenlenebilir && this.parasal(this.izin.BirimFiyatGoruntule) &&
-      this.permissions.canWrite(this.izin.BirimFiyatDegistir) && Number.isFinite(satir.birimFiyat);
+    return !!satir && satir.tutarDuzenlenebilir && Number.isFinite(satir.birimFiyat);
   }
 
   /** Penceredeki değerlerle yeni net tutar önizlemesi. */
@@ -1183,10 +1196,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   giderDuzenle(gider: FinansGider): void {
-    if (!this.giderDuzenlenebilir(gider)) {
-      this.toast.error('Gizlenmiş tutar veya miktar içeren gider düzenlenemez. Gerekli alan izinlerini kontrol edin.');
-      return;
-    }
+    if (!this.sekmeYazilabilir('giderler')) return;
     this.giderProjeEtiketi = gider.projeNo;
     this.duzenlenenGiderId.set(gider.id);
     this.giderForm = { tarih: gider.tarih.slice(0, 10), kategoriId: gider.kategoriId, giderKalemiId: gider.giderKalemiId ?? null, altKategori: gider.altKategori ?? null, firmaVeyaKisi: gider.firmaVeyaKisi ?? null, aciklama: gider.aciklama, tutar: gider.tutar, paraBirimi: gider.paraBirimi, kdvDahil: gider.kdvDahil, kdvOrani: gider.kdvOrani, projeId: gider.projeId ?? null, isTuru: gider.isTuru ?? null,
@@ -1247,8 +1257,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   giderKaydet(): void {
-    if (this.giderKaydediliyor() || this.giderKalemLoading() || !this.permissions.canWrite(this.duzenlenenGiderId() ? this.izin.GiderDuzenle : this.izin.GiderEkle)) return;
-    if (!this.permissions.hasAccess(this.izin.Modul) || this.duzenlenenGiderId() && (!this.giderAlanlariniGorebilir() || !this.miktarGorebilir(this.giderForm.birim))) return;
+    if (this.giderKaydediliyor() || this.giderKalemLoading() || !this.sekmeYazilabilir('giderler')) return;
     if (this.giderEskiKategori() || this.giderEskiKalem() || this.giderKalemHatasi()) {
       this.giderHatasi.set('Aktif kategori/kalem seçin veya eski kalem bağlantısını açıkça kaldırın. Kalem listesi alınamadıysa yeniden deneyin.');
       return;
@@ -1274,9 +1283,9 @@ export class FinansYonetimiComponent implements OnInit {
     }, error: () => this.giderHatasi.set('Gider kaydedilemedi.') });
   }
 
-  /** PO listesi okunabiliyorsa gider formunda PO seçimi gösterilir. */
+  /** PO listesi (PO/Fatura sekmesi R) okunabiliyorsa gider formunda PO seçimi gösterilir. */
   giderPoSecilebilir(): boolean {
-    return finansSiparisFaturaOkunabilir(this.permissions);
+    return this.sekmeAcik('belgeler');
   }
 
   giderPoAra(value: string): void {
@@ -1306,7 +1315,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   donemUretFormunuAc(is: FinansDuzenliIs): void {
-    if (!this.ayarYazabilir('duzenli') || !is.aktif) return;
+    if (!this.tanimYazilabilir() || !is.aktif) return;
     const yilSonu = `${new Date().getFullYear()}-12-31`;
     const bitis = is.bitisTarihi?.slice(0, 10);
     this.donemUretBitis = bitis && bitis < yilSonu ? bitis : yilSonu;
@@ -1316,7 +1325,7 @@ export class FinansYonetimiComponent implements OnInit {
 
   donemUret(): void {
     const is = this.donemUretIs();
-    if (!is || this.donemUretiliyor() || !this.ayarYazabilir('duzenli')) return;
+    if (!is || this.donemUretiliyor() || !this.tanimYazilabilir()) return;
     if (!this.donemUretBitis) {
       this.donemUretHatasi.set('Bitiş tarihi zorunludur.');
       return;
@@ -1346,7 +1355,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   yeniDuzenliIs(): void {
-    if (!this.ayarYazabilir('duzenli')) return;
+    if (!this.tanimYazilabilir()) return;
     this.duzenliProjeEtiketi = '';
     this.duzenlenenDuzenliIsId.set(null);
     this.duzenliIsForm = this.bosDuzenliIsFormu();
@@ -1355,7 +1364,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   duzenliIsDuzenle(is: FinansDuzenliIs): void {
-    if (!this.ayarYazabilir('duzenli') || !this.parasal(this.izin.BirimFiyatGoruntule) || !this.parasal(this.izin.TutarGoruntule) || !this.miktarGorebilir(is.birim) || !Number.isFinite(is.birimFiyat) || !Number.isFinite(is.kdvOrani) || !Number.isFinite(is.miktar)) return;
+    if (!this.tanimYazilabilir()) return;
     this.duzenlenenDuzenliIsId.set(is.id);
     this.duzenliProjeEtiketi = '';
     this.duzenliIsForm = { projeId: is.projeId ?? null, isAdi: is.isAdi, isTuru: is.isTuru, musteri: is.musteri, aciklama: is.aciklama, tekrarSikligi: is.tekrarSikligi, baslangicTarihi: is.baslangicTarihi.slice(0, 10), bitisTarihi: is.bitisTarihi?.slice(0, 10) ?? null, olusturmaGunu: is.olusturmaGunu, miktar: is.miktar, birim: is.birim, birimFiyat: is.birimFiyat, paraBirimi: is.paraBirimi, kdvOrani: is.kdvOrani, aktif: is.aktif, hesaplamaYontemi: is.hesaplamaYontemi, raporGrubu: is.raporGrubu };
@@ -1364,8 +1373,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   duzenliIsKaydet(): void {
-    if (!this.ayarYazabilir('duzenli') || this.duzenliIsKaydediliyor()) return;
-    if (this.duzenlenenDuzenliIsId() && (!this.parasal(this.izin.BirimFiyatGoruntule) || !this.parasal(this.izin.TutarGoruntule) || !this.miktarGorebilir(this.duzenliIsForm.birim))) return;
+    if (!this.tanimYazilabilir() || this.duzenliIsKaydediliyor()) return;
     const form = this.duzenliIsForm;
     if (!form.isAdi.trim() || !form.isTuru.trim() || !form.baslangicTarihi || !Number.isFinite(form.miktar) || !Number.isFinite(form.birimFiyat) || !Number.isFinite(form.kdvOrani) || form.olusturmaGunu < 1 || form.olusturmaGunu > 31 || form.miktar <= 0 || form.birimFiyat < 0 || form.kdvOrani < 0 || form.kdvOrani > 100) {
       this.duzenliIsHatasi.set('İş adı, tür, tarih, gün, miktar, fiyat ve KDV alanlarını kontrol edin.');
@@ -1388,7 +1396,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   yeniUrun(): void {
-    if (!this.ayarYazabilir('tarifeler')) return;
+    if (!this.tanimYazilabilir()) return;
     this.duzenlenenUrunId.set(null);
     this.duzenlenenUrunTarifeleri.set([]);
     this.urunForm = this.bosUrunFormu();
@@ -1397,19 +1405,17 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   urunDuzenle(urun: FinansUrun): void {
-    if (!this.ayarYazabilir('tarifeler') || !this.parasal(this.izin.BirimFiyatGoruntule) || !this.parasal(this.izin.TutarGoruntule) || !Number.isFinite(urun.birimFiyat) || !Number.isFinite(urun.kdvOrani)) return;
-    if (urun.eslesmeler.some(e => e.sandikTipi === 'Katlanır Sandık') && !this.permissions.hasAccess(this.alanIzni.OlcuGoruntule)) return;
+    if (!this.tanimYazilabilir()) return;
     const eslesme = urun.eslesmeler.find(e => e.aktif !== false) ?? urun.eslesmeler.at(-1);
     this.duzenlenenUrunId.set(urun.id);
     this.duzenlenenUrunTarifeleri.set(urun.tarifeler ?? []);
-    this.urunForm = { kod: urun.kod, ad: urun.ad, fiyatlandirmaBirimi: urun.fiyatlandirmaBirimi, birimFiyat: urun.birimFiyat, paraBirimi: urun.paraBirimi, kdvOrani: urun.kdvOrani, gecerlilikBaslangici: this.tarihMetni(new Date()), aktif: urun.aktif, sira: urun.sira, eslesmeId: eslesme?.id ?? null, isTuru: eslesme?.isTuru ?? 0, sandikAdi: eslesme?.sandikAdi ?? '', sandikTipi: eslesme?.sandikTipi ?? '', boy: eslesme?.boy ?? null, en: eslesme?.en ?? null, yukseklik: eslesme?.yukseklik ?? null, icSandikSablonId: eslesme?.icSandikSablonId ?? null };
+    this.urunForm = { kod: urun.kod, ad: urun.ad, fiyatlandirmaBirimi: urun.fiyatlandirmaBirimi, birimFiyat: urun.birimFiyat, paraBirimi: urun.paraBirimi, kdvOrani: urun.kdvOrani, gecerlilikBaslangici: this.tarihMetni(new Date()), aktif: urun.aktif, sira: urun.sira, eslesmeId: eslesme?.id ?? null, isTuru: eslesme?.isTuru ?? 0, sandikAdi: eslesme?.sandikAdi ?? '', sandikTipi: eslesme?.sandikTipi ?? '', malzeme: eslesme?.malzeme ?? null, icSandikSablonId: eslesme?.icSandikSablonId ?? null };
     this.urunHatasi.set('');
     this.urunAcik.set(true);
   }
 
   urunKaydet(): void {
-    if (!this.ayarYazabilir('tarifeler') || this.urunKaydediliyor()) return;
-    if (this.duzenlenenUrunId() && (!this.parasal(this.izin.BirimFiyatGoruntule) || !this.parasal(this.izin.TutarGoruntule) || this.urunForm.sandikTipi === 'Katlanır Sandık' && !this.permissions.hasAccess(this.alanIzni.OlcuGoruntule))) return;
+    if (!this.tanimYazilabilir() || this.urunKaydediliyor()) return;
     const form = this.urunForm;
     if (!form.kod.trim() || !form.ad.trim() || !Number.isFinite(form.birimFiyat) || !Number.isFinite(form.kdvOrani) || form.birimFiyat < 0 || form.kdvOrani < 0 || form.kdvOrani > 100) {
       this.urunHatasi.set('Kod, ad, geçerli fiyat ve KDV zorunludur.');
@@ -1423,18 +1429,18 @@ export class FinansYonetimiComponent implements OnInit {
       this.urunHatasi.set('Saha ve yedek sandık tarifesinde sandık tipi zorunludur.');
       return;
     }
-    if (form.sandikTipi === 'Katlanır Sandık' && (!form.boy || !form.en || !form.yukseklik)) {
-      this.urunHatasi.set('Katlanır sandık tarifesinde boy, en ve yükseklik zorunludur.');
+    const malzeme = this.urunMalzemesiSecilebilir() ? form.malzeme : null;
+    if (malzeme && form.fiyatlandirmaBirimi !== 2) {
+      this.urunHatasi.set('Ahşap veya kontra malzemeli tarife m³ ile fiyatlanır.');
       return;
     }
     const id = this.duzenlenenUrunId();
     const ozelSandik = [4, 5].includes(form.isTuru);
-    const katlanir = ozelSandik && form.sandikTipi === 'Katlanır Sandık';
     if (!form.gecerlilikBaslangici) {
       this.urunHatasi.set('Fiyatın geçerli olacağı başlangıç tarihi zorunludur.');
       return;
     }
-    const request: FinansUrunKaydetRequest = { kod: form.kod.trim(), ad: form.ad.trim(), fiyatlandirmaBirimi: form.fiyatlandirmaBirimi, birimFiyat: Number(form.birimFiyat), paraBirimi: form.paraBirimi, kdvOrani: Number(form.kdvOrani), gecerlilikBaslangici: form.gecerlilikBaslangici, aktif: form.aktif, sira: form.sira, eslesmeler: form.isTuru ? [{ id: form.eslesmeId, aktif: true, isTuru: form.isTuru, sandikAdi: form.isTuru === 3 || ozelSandik ? null : this.temizle(form.sandikAdi), icSandikSablonId: form.isTuru === 3 ? form.icSandikSablonId : null, sandikTipi: form.isTuru === 3 ? null : this.temizle(form.sandikTipi), boy: katlanir ? Number(form.boy) : null, en: katlanir ? Number(form.en) : null, yukseklik: katlanir ? Number(form.yukseklik) : null }] : [] };
+    const request: FinansUrunKaydetRequest = { kod: form.kod.trim(), ad: form.ad.trim(), fiyatlandirmaBirimi: form.fiyatlandirmaBirimi, birimFiyat: Number(form.birimFiyat), paraBirimi: form.paraBirimi, kdvOrani: Number(form.kdvOrani), gecerlilikBaslangici: form.gecerlilikBaslangici, aktif: form.aktif, sira: form.sira, eslesmeler: form.isTuru ? [{ id: form.eslesmeId, aktif: true, isTuru: form.isTuru, sandikAdi: form.isTuru === 3 || ozelSandik ? null : this.temizle(form.sandikAdi), icSandikSablonId: form.isTuru === 3 ? form.icSandikSablonId : null, sandikTipi: form.isTuru === 3 ? null : this.temizle(form.sandikTipi), malzeme }] : [] };
     this.urunKaydediliyor.set(true);
     const operation = id ? this.service.urunGuncelle(id, request) : this.service.urunOlustur(request);
     operation.subscribe(result => {
@@ -1450,7 +1456,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   async urunSil(urun: FinansUrun): Promise<void> {
-    if (!this.ayarYazabilir('tarifeler')) return;
+    if (!this.tanimYazilabilir()) return;
     const onay = await this.confirmService.ask({
       title: 'Tarifeyi Sil',
       message: `<strong>${duzMetin(urun.kod)} · ${duzMetin(urun.ad)}</strong> tarifesini silmek istediğinize emin misiniz?<br><br><small class="text-muted">Sipariş geçmişinde kullanılmış tarifeler silinemez; düzenlenerek pasif duruma getirilebilir.</small>`,
@@ -1475,9 +1481,9 @@ export class FinansYonetimiComponent implements OnInit {
   urunEslesmeMetni(urun: FinansUrun): string {
     return urun.eslesmeler.filter(eslesme => eslesme.aktif !== false).map(eslesme => {
       const tur = eslesme.sandikTipi ? ` · ${eslesme.sandikTipi}` : '';
-      const olcu = eslesme.sandikTipi === 'Katlanır Sandık' && this.permissions.hasAccess(this.alanIzni.OlcuGoruntule) ? ` · ${eslesme.boy}×${eslesme.en}×${eslesme.yukseklik} mm` : '';
+      const malzeme = eslesme.malzeme === 1 ? ` · ${this.t('WOOD_M3')}` : eslesme.malzeme === 2 ? ` · ${this.t('PLYWOOD_M3')}` : '';
       const detay = eslesme.icSandikSablonId ? ` · ${this.icSandikSablonAdi(eslesme.icSandikSablonId)}` : eslesme.sandikAdi ? ` · ${eslesme.sandikAdi}` : '';
-      return `${this.isTuruMetni(eslesme.isTuru)}${tur}${olcu}${detay}`;
+      return `${this.isTuruMetni(eslesme.isTuru)}${tur}${malzeme}${detay}`;
     }).join(', ') || 'Manuel seçim';
   }
 
@@ -1489,10 +1495,23 @@ export class FinansYonetimiComponent implements OnInit {
     this.urunForm.isTuru = Number(isTuru);
     this.urunForm.sandikAdi = '';
     this.urunForm.sandikTipi = '';
-    this.urunForm.boy = null;
-    this.urunForm.en = null;
-    this.urunForm.yukseklik = null;
+    this.urunForm.malzeme = null;
     this.urunForm.icSandikSablonId = null;
+  }
+
+  /**
+   * Malzeme (ahşap/kontra m³ tarifesi) seçilebilir mi: iç sandık ve özel iş dışındaki eşleşmede, sandık tipi boş ya da
+   * kontrplak/katlanır iken. Ahşap kapalı/kafes sandığın m³'ü tek tarifeyle fiyatlanır (ahşap tarifesi de uyar).
+   */
+  urunMalzemesiSecilebilir(): boolean {
+    const f = this.urunForm;
+    return f.isTuru !== 0 && f.isTuru !== 3 && f.isTuru !== 8 && ['', 'Kontrplak Sandık', 'Katlanır Sandık'].includes(f.sandikTipi);
+  }
+
+  /** Malzemeli tarife m³ fiyatıdır; seçilince fiyatlandırma m³'e sabitlenir. */
+  urunMalzemesiSecildi(malzeme: 1 | 2 | null): void {
+    this.urunForm.malzeme = malzeme;
+    if (malzeme) this.urunForm.fiyatlandirmaBirimi = 2;
   }
 
   /**
@@ -1503,16 +1522,14 @@ export class FinansYonetimiComponent implements OnInit {
   urunSandikTipiSecildi(sandikTipi: string): void {
     this.urunForm.sandikTipi = sandikTipi;
     if (sandikTipi) this.urunForm.fiyatlandirmaBirimi = 2;
+    if (!this.urunMalzemesiSecilebilir()) this.urunForm.malzeme = null;
   }
 
+  /** Saha/yedek sandık tipi: katlanır sandık da kontrplak gibi ahşap/kontra m³ ile fiyatlanır; boyut istenmez. */
   urunSandikTipiDegisti(sandikTipi: string): void {
     this.urunForm.sandikTipi = sandikTipi;
     this.urunForm.fiyatlandirmaBirimi = 2;
-    if (sandikTipi !== 'Katlanır Sandık') {
-      this.urunForm.boy = null;
-      this.urunForm.en = null;
-      this.urunForm.yukseklik = null;
-    }
+    if (!this.urunMalzemesiSecilebilir()) this.urunForm.malzeme = null;
   }
 
   isTuruMetni(isTuru: number): string {
@@ -1563,7 +1580,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   private ayarListesiniYukle(): void {
-    if (!this.ayarOkuyabilir(this.ayarGorunumu()) || this.ayarGorunumu() === 'parametreler') return;
+    if (!this.sekmeAcik('ayarlar') || this.ayarGorunumu() === 'parametreler') return;
     if (this.ayarGorunumu() === 'duzenli') {
       if (!this.duzenliIslerYuklendi) {
         this.duzenliIslerYuklendi = true;
@@ -1655,7 +1672,7 @@ export class FinansYonetimiComponent implements OnInit {
 
     this.duzenliListeIstekleri.pipe(
       switchMap(() => {
-        if (!this.ayarOkuyabilir('duzenli')) return EMPTY;
+        if (!this.sekmeAcik('ayarlar')) return EMPTY;
         this.duzenliLoading.set(true);
         return this.service.duzenliIsler({
           pageNumber: this.duzenliPageNumber(),
@@ -1681,7 +1698,7 @@ export class FinansYonetimiComponent implements OnInit {
 
     this.urunListeIstekleri.pipe(
       switchMap(() => {
-        if (!this.ayarOkuyabilir('tarifeler')) return EMPTY;
+        if (!this.sekmeAcik('ayarlar')) return EMPTY;
         this.urunLoading.set(true);
         return this.service.urunler({
           pageNumber: this.urunPageNumber(),
@@ -1753,7 +1770,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
   private bosGiderFormu(): FinansGiderKaydetRequest { return { finansSiparisId: null, tarih: this.tarihMetni(new Date()), finansTarihi: this.tarihMetni(new Date()), miktar: 1, birim: 'Adet', birimFiyat: 0, belgeNo: null, avansMi: false, mahsupEdilenAvansId: null, kategoriId: 0, giderKalemiId: null, altKategori: null, firmaVeyaKisi: null, aciklama: '', tutar: 0, paraBirimi: 'TRY', kdvDahil: false, kdvOrani: 20, projeId: null, isTuru: null }; }
   private bosDuzenliIsFormu(): FinansDuzenliIsKaydetRequest { return { projeId: null, isAdi: '', isTuru: '', musteri: this.finansMusterisi, aciklama: null, tekrarSikligi: 'Aylık', baslangicTarihi: this.tarihMetni(new Date()), bitisTarihi: null, olusturmaGunu: 1, miktar: 1, birim: 'Hizmet', birimFiyat: 0, paraBirimi: 'EUR', kdvOrani: 20, aktif: true }; }
-  private bosUrunFormu() { return { kod: '', ad: '', fiyatlandirmaBirimi: 2 as 1 | 2 | 3 | 4, birimFiyat: 0, paraBirimi: 'EUR', kdvOrani: 20, gecerlilikBaslangici: this.tarihMetni(new Date()), aktif: true, sira: 0, eslesmeId: null as number | null, isTuru: 0, sandikAdi: '', sandikTipi: '', boy: null as number | null, en: null as number | null, yukseklik: null as number | null, icSandikSablonId: null as number | null }; }
+  private bosUrunFormu() { return { kod: '', ad: '', fiyatlandirmaBirimi: 2 as 1 | 2 | 3 | 4, birimFiyat: 0, paraBirimi: 'EUR', kdvOrani: 20, gecerlilikBaslangici: this.tarihMetni(new Date()), aktif: true, sira: 0, eslesmeId: null as number | null, isTuru: 0, sandikAdi: '', sandikTipi: '', malzeme: null as 1 | 2 | null, icSandikSablonId: null as number | null }; }
   private ayinIlkGunu(tarih: Date): Date { return new Date(tarih.getFullYear(), tarih.getMonth(), 1); }
   private tarihMetni(tarih: Date): string { return `${tarih.getFullYear()}-${String(tarih.getMonth() + 1).padStart(2, '0')}-${String(tarih.getDate()).padStart(2, '0')}`; }
   private temizle(value: string | null | undefined): string | null { const temiz = value?.trim(); return temiz || null; }

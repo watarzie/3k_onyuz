@@ -279,11 +279,12 @@ export class FinansService {
   munferitIsOlustur(request: FinansMunferitIsKaydetRequest) {
     return this.api.post<FinansIsKaydi>(API.FINANS.MUNFERIT_ISLER, request);
   }
-  /** Münferit iş formunun ürün seçenekleri (aktif, fiyatsız, en fazla 50). */
-  urunSecenekleri(arama?: string, isTuru?: number) {
+  /** Münferit iş formunun tarife seçenekleri (aktif, en fazla 50) ve verilen iş tarihindeki tarife fiyatı. */
+  urunSecenekleri(arama?: string, isTuru?: number, tarih?: string) {
     let params = new HttpParams();
     if (arama?.trim()) params = params.set('arama', arama.trim());
     if (isTuru) params = params.set('isTuru', isTuru);
+    if (tarih) params = params.set('tarih', tarih);
     return this.api.get<FinansUrunSecenegi[]>(API.FINANS.URUN_SECENEKLERI, { params });
   }
   ozelIsOlustur(request: FinansOzelIsKaydetRequest) {

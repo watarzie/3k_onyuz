@@ -42,9 +42,7 @@
             <th>{{ t('ADHOC_JOB') }}</th>
             <th>{{ t('ADHOC_DATE') }}</th>
             <th>{{ t('ADHOC_QUANTITY') }}</th>
-            @if (tutarGorunur()) {
-              <th class="text-end">{{ t('AMOUNT') }}</th>
-            }
+            <th class="text-end">{{ t('AMOUNT') }}</th>
             <th>PO / {{ t('INVOICE') }}</th>
             <th class="text-end">{{ t('ACTIONS') }}</th>
           </tr>
@@ -54,16 +52,14 @@
             <tr class="adhoc-row" [class.is-cancelled]="row.iptalEdildi">
               <td>
                 <strong>{{ row.isAdi }}</strong>
-                <small>{{ row.musteri }}@if (row.projeNo) { · {{ row.projeNo }} }@if (row.ozelIsTuru) { · {{ row.ozelIsTuru }} }</small>
+                <small>{{ row.projeNo }}@if (row.musteri && row.musteri !== row.projeNo) { · {{ row.musteri }} }@if (row.ozelIsTuru) { · {{ row.ozelIsTuru }} }</small>
                 @if (row.iptalEdildi) {
                   <span class="v2-status is-danger">{{ t('FLOW_CANCELLED') }}</span>
                 }
               </td>
               <td>{{ row.finansTarihi | date: 'dd.MM.yyyy' }}</td>
               <td>{{ row.adet | number: '1.0-3' }} {{ row.birim }}@if (row.toplamM3) { · {{ row.toplamM3 | number: '1.0-3' }} m³ }</td>
-              @if (tutarGorunur()) {
-                <td class="text-end v2-nowrap">{{ row.netTutar | number: '1.2-2' }} {{ row.paraBirimi }}</td>
-              }
+              <td class="text-end v2-nowrap">{{ row.netTutar | number: '1.2-2' }} {{ row.paraBirimi }}</td>
               <td><small>PO: {{ row.poNumaralari.join(', ') || '—' }} · {{ t('INVOICE') }}: {{ row.faturaNumaralari.join(', ') || '—' }}</small></td>
               <td class="text-end">
                 <app-islemler-menusu [etiket]="t('ACTIONS')">
@@ -121,38 +117,45 @@
       <button type="button" class="tz-modal__close" (click)="formAcik.set(false)" [attr.aria-label]="t('CLOSE')"><i class="ri-close-line"></i></button>
     </header>
     <div class="tz-modal__body tz-form">
+      <!-- 1) Tarife: İş ve Tarife Tanımları'ndan; fiyat seçilen iş tarihindeki tarife sürümüdür. -->
       <div class="tz-field">
-        <span>{{ t('ADHOC_PRODUCT') }} <b>*</b></span>
-        @if (secilenUrun(); as urun) {
-          <div class="adhoc-selected">
-            <span><strong>{{ urun.kod }}</strong> · {{ urun.ad }} <small>({{ t(urun.fiyatlandirmaBirimi === 2 ? 'ADHOC_UNIT_M3' : urun.fiyatlandirmaBirimi === 1 ? 'ADHOC_UNIT_PIECE' : 'ADHOC_UNIT_FIXED') }})</small></span>
-            <button type="button" class="tz-btn" (click)="urunSec(null)">{{ t('ADHOC_CHANGE') }}</button>
-          </div>
-        } @else {
-          <input class="form-control adhoc-product-search" type="search" [(ngModel)]="urunArama" (ngModelChange)="urunAramaDegisti()" [placeholder]="t('ADHOC_PRODUCT_SEARCH')" [attr.aria-label]="t('ADHOC_PRODUCT')" />
-          <div class="adhoc-options" role="listbox">
+        <span>{{ t('ADHOC_TARIFF') }} <b>*</b></span>
+        <div class="adhoc-tariff-row">
+          <input class="form-control adhoc-product-search" type="search" [(ngModel)]="urunArama" (ngModelChange)="secenekleriYukle()" [placeholder]="t('ADHOC_PRODUCT_SEARCH')" [attr.aria-label]="t('ADHOC_PRODUCT_SEARCH')" />
+          <select class="form-select adhoc-tariff" [ngModel]="secilenUrun()?.id ?? null" (ngModelChange)="urunSecId($event)" [attr.aria-label]="t('ADHOC_TARIFF')">
+            <option [ngValue]="null">{{ t(seceneklerYukleniyor() ? 'PANEL_LOADING' : 'ADHOC_TARIFF_SELECT') }}</option>
             @for (urun of urunSecenekleri(); track urun.id) {
-              <button type="button" role="option" class="adhoc-option" (click)="urunSec(urun)"><strong>{{ urun.kod }}</strong> · {{ urun.ad }}</button>
-            } @empty {
-              <small>{{ t('ADHOC_PRODUCT_EMPTY') }}</small>
+              <option [ngValue]="urun.id">{{ secenekEtiketi(urun) }}</option>
             }
-          </div>
+          </select>
+        </div>
+        @if (secenekHatasi()) {
+          <small class="v2-error adhoc-options-error" role="alert">{{ secenekHatasi() }}</small>
+        } @else if (!seceneklerYukleniyor() && !urunSecenekleri().length) {
+          <small class="money-note">{{ t('ADHOC_PRODUCT_EMPTY') }}</small>
         }
       </div>
-      <div class="tz-field-grid">
-        <label class="tz-field"><span>{{ t('ADHOC_JOB_NAME') }} <b>*</b></span><input class="form-control" [(ngModel)]="form.isAdi" maxlength="250" /></label>
-        <label class="tz-field"
-          ><span>{{ t('ADHOC_JOB_TYPE') }}</span
-          ><input class="form-control" list="munferit-turler" [(ngModel)]="form.ozelIsTuru" maxlength="150" /><datalist id="munferit-turler"
-            >@for (tur of turSecenekleri; track tur) {<option [value]="tur"></option>}</datalist
-          ></label>
-        <label class="tz-field"><span>{{ t('ADHOC_CUSTOMER') }} <b>*</b></span><input class="form-control" [(ngModel)]="form.musteri" maxlength="250" /></label>
-        <div class="tz-field"><span>{{ t('PROJECT') }}</span><app-finans-proje-secici [projeId]="form.projeId" [etiket]="projeEtiketi" (secildi)="projeSec($event)" /></div>
-        <label class="tz-field"><span>{{ t('ADHOC_DATE') }} <b>*</b></span><input class="form-control" type="date" [(ngModel)]="form.isTarihi" (change)="fiyatOnizlemeYukle()" /></label>
-        <div class="tz-field-grid">
-          <label class="tz-field"><span>{{ t('ADHOC_QUANTITY') }} <b>*</b></span><input class="form-control" type="number" min="0" step="any" [(ngModel)]="form.adet" /></label>
-          <label class="tz-field"><span>{{ t('ADHOC_UNIT') }} <b>*</b></span><input class="form-control" [(ngModel)]="form.birim" maxlength="30" /></label>
+
+      <!-- 2) Proje: sistemden seçilir (müşteri projeden gelir) ya da serbest proje adı yazılır. -->
+      <div class="tz-field">
+        <span>{{ t('PROJECT') }} <b>*</b></span>
+        <div class="adhoc-project-source" role="radiogroup" [attr.aria-label]="t('PROJECT')">
+          <label><input type="radio" name="munferit-proje" [checked]="form.projeKaynagi === 'sistem'" (change)="projeKaynagiSec('sistem')" />{{ t('ADHOC_PROJECT_SYSTEM') }}</label>
+          <label><input type="radio" name="munferit-proje" class="adhoc-project-free-toggle" [checked]="form.projeKaynagi === 'serbest'" (change)="projeKaynagiSec('serbest')" />{{ t('ADHOC_PROJECT_FREE') }}</label>
         </div>
+        @if (form.projeKaynagi === 'sistem') {
+          <app-finans-proje-secici [projeId]="form.projeId" [etiket]="projeEtiketi" (secildi)="projeSec($event)" />
+        } @else {
+          <input class="form-control adhoc-project-name" [(ngModel)]="form.projeAdi" maxlength="100" [placeholder]="t('ADHOC_PROJECT_FREE_HINT')" />
+        }
+      </div>
+
+      <!-- 3) Tarih ve tarifenin birimine göre miktar. -->
+      <div class="tz-field-grid">
+        <label class="tz-field"><span>{{ t('ADHOC_DATE') }} <b>*</b></span><input class="form-control adhoc-date" type="date" [(ngModel)]="form.isTarihi" (change)="secenekleriYukle()" /></label>
+        @if (adetUrun()) {
+          <label class="tz-field"><span>{{ t('ADHOC_QUANTITY') }} ({{ t('ADHOC_PIECE') }}) <b>*</b></span><input class="form-control adhoc-quantity" type="number" min="0" step="any" [(ngModel)]="form.adet" /></label>
+        }
       </div>
       @if (m3Urun()) {
         <div class="tz-field-grid tz-field-grid--3 adhoc-volume">
@@ -161,17 +164,18 @@
           <label class="tz-field"><span>{{ t('COMPOSITE_M3') }}</span><input class="form-control adhoc-composite" type="number" readonly [value]="hacimBilesik(form.ahsapM3, form.kontraM3)" /></label>
         </div>
       }
-      <div class="tz-field-grid">
-        <label class="tz-field"><span>{{ t('ADHOC_REQUESTED_BY') }}</span><input class="form-control" [(ngModel)]="form.talepEdenKisi" maxlength="200" /></label>
-        <label class="tz-field"><span>{{ t('ADHOC_REQUESTED_DEPT') }}</span><input class="form-control" [(ngModel)]="form.talepEdenBolum" maxlength="200" /></label>
-      </div>
-      <label class="tz-field"><span>{{ t('ADHOC_DESCRIPTION') }}</span><textarea class="form-control" [(ngModel)]="form.aciklama" maxlength="2000"></textarea></label>
-      @if (fiyatOnizleme(); as fiyat) {
-        <p class="adhoc-preview">
-          <i class="ri-price-tag-3-line" aria-hidden="true"></i>{{ t('ADHOC_PRICE_PREVIEW') }}:
-          <strong>{{ fiyat.birimFiyat | number: '1.2-4' }} {{ fiyat.paraBirimi }}</strong>
-          @if (onizlemeTutari() !== null) { → <strong>{{ onizlemeTutari() | number: '1.2-2' }} {{ fiyat.paraBirimi }}</strong> }
-        </p>
+
+      @if (secilenUrun(); as urun) {
+        @if (tarifesizTarih()) {
+          <p class="v2-error adhoc-no-tariff" role="alert"><i class="ri-error-warning-line" aria-hidden="true"></i>{{ t('ADHOC_NO_TARIFF_ON_DATE') }}</p>
+        } @else if (urun.birimFiyat != null) {
+          <p class="adhoc-preview">
+            <i class="ri-price-tag-3-line" aria-hidden="true"></i>{{ t('ADHOC_PRICE_PREVIEW') }}:
+            <strong>{{ urun.birimFiyat | number: '1.2-4' }} {{ urun.paraBirimi }}</strong>
+            @if (onizlemeTutari() !== null) { → <strong>{{ onizlemeTutari() | number: '1.2-2' }} {{ urun.paraBirimi }}</strong> }
+            <small>({{ t('ADHOC_JOB_NAME_FROM_TARIFF') }} "{{ urun.ad }}")</small>
+          </p>
+        }
       }
       @if (hata()) {
         <p class="v2-error" role="alert">{{ hata() }}</p>

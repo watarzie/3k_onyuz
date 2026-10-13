@@ -15,15 +15,8 @@ describe('Finans ürün ve tarife kaydı', () => {
   let api: jasmine.SpyObj<FinansService>;
   let toast: jasmine.SpyObj<ToastService>;
   let onay: jasmine.SpyObj<ConfirmService>;
-  const okuma = new Set<string>([
-    FINANS_YETKI.Modul,
-    FINANS_YETKI.SekmeTanimlar,
-    FINANS_YETKI.IsKutuphanesiYonet,
-    FINANS_YETKI.BirimFiyatGoruntule,
-    FINANS_YETKI.ParasalVeriGoruntule,
-    FINANS_YETKI.TutarGoruntule,
-  ]);
-  const yazma = new Set<string>([FINANS_YETKI.IsKutuphanesiYonet]);
+  const okuma = new Set<string>([FINANS_YETKI.Modul, FINANS_YETKI.SekmeTanimlar]);
+  const yazma = new Set<string>([FINANS_YETKI.SekmeTanimlar]);
 
   beforeEach(() => {
     api = jasmine.createSpyObj('FinansService', ['aylikIsler', 'urunler', 'urunGuncelle', 'urunOlustur', 'urunSil', 'giderKategorileri', 'ozelIsOlustur']);
@@ -86,6 +79,32 @@ describe('Finans ürün ve tarife kaydı', () => {
     c.urunSandikTipiSecildi('');
     c.urunKaydet();
     expect(api.urunOlustur.calls.mostRecent().args[0].eslesmeler[0].sandikTipi).toBeNull();
+  });
+
+  it('katlanır sandık tarifesi boyut istemez; malzeme (ahşap/kontra) m³ ile gönderilir, ahşap kapalıda malzeme kalkar', () => {
+    api.urunOlustur.and.returnValue(of({ isSuccess: true }));
+    const c = TestBed.createComponent(FinansYonetimiComponent).componentInstance;
+    c.urunForm = { ...c.urunForm, kod: 'KAT-AHS', ad: 'Katlanır ahşap m³' };
+    c.urunIsTuruDegisti(4);
+    c.urunSandikTipiDegisti('Katlanır Sandık');
+    expect(c.urunMalzemesiSecilebilir()).toBeTrue();
+    c.urunForm = { ...c.urunForm, fiyatlandirmaBirimi: 1 };
+    c.urunMalzemesiSecildi(1);
+    expect(c.urunForm.fiyatlandirmaBirimi).toBe(2);
+    c.urunKaydet();
+
+    const eslesme = api.urunOlustur.calls.mostRecent().args[0].eslesmeler[0];
+    expect(eslesme).toEqual(jasmine.objectContaining({ isTuru: 4, sandikTipi: 'Katlanır Sandık', malzeme: 1 }));
+    expect('boy' in eslesme).toBeFalse();
+    expect(c.urunHatasi()).toBe('');
+    expect(c.urunEslesmeMetni({ ...urun, eslesmeler: [{ isTuru: 4, sandikAdi: null, sandikTipi: 'Katlanır Sandık', malzeme: 1 }] }))
+      .toBe('SAHA SANDIĞI · Katlanır Sandık · ' + c.t('WOOD_M3'));
+
+    // Ahşap kapalı sandık tek tarifeyle fiyatlanır; malzeme seçimi gizlenir ve gönderilmez.
+    c.urunAcik.set(true);
+    c.urunSandikTipiDegisti('Ahşap Kapalı');
+    expect(c.urunMalzemesiSecilebilir()).toBeFalse();
+    expect(c.urunForm.malzeme).toBeNull();
   });
 
   it('tek seferlik işte m³ yönteminde ahşap ve kontra m³ gönderilir; hacimsiz istek gönderilmez', () => {

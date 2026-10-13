@@ -65,6 +65,8 @@ export const API = {
     AMBALAJ_KARARI: (sandikId: number) => `${BASE}/ambalaj/sandiklar/${sandikId}/ambalaj-karari`,
     BAGIMSIZ_SANDIKLAR: (tur?: number) => `${BASE}/ambalaj/bagimsiz-sandiklar${tur ? `?tur=${tur}` : ''}`,
     BAGIMSIZ_SANDIK: (sandikId: number) => `${BASE}/ambalaj/bagimsiz-sandiklar/${sandikId}`,
+    OZEL_SANDIK_FINANSA_AKTAR: (sandikId: number) => `${BASE}/ambalaj/bagimsiz-sandiklar/${sandikId}/finansa-aktar`,
+    OZEL_SANDIK_FINANSTAN_GERI_AL: (sandikId: number) => `${BASE}/ambalaj/bagimsiz-sandiklar/${sandikId}/finanstan-geri-al`,
     ILAVE_SANDIK_ADAYLARI: (projeId: number, mevcutKayitId?: number | null) =>
       `${BASE}/ambalaj/projeler/${projeId}/ilave-sandik-adaylari${mevcutKayitId ? `?mevcutKayitId=${mevcutKayitId}` : ''}`,
     SANDIK_SECENEKLERI: (projeId: number) => `${BASE}/ambalaj/projeler/${projeId}/sandik-secenekleri`,

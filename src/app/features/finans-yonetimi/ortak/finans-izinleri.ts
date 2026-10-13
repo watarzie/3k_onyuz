@@ -1,83 +1,19 @@
-import { AMBALAJ_YETKI, FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
+import { FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
 import { PermissionService } from '../../../core/services/permission.service';
 
 /**
- * Sunucunun finans izin kurallarının istemci aynası: düğmeler yalnız sunucunun kabul
- * edeceği işlemler için gösterilir. Asıl kontrol her zaman sunucudadır.
+ * Sunucudaki finans yetki kurallarının istemci aynası (3K.Core/Constants/FinansSekmeleri.cs): Finans'ta yalnız sekme
+ * izni vardır. Sekmenin R izni sekmedeki bütün verileri gösterir (alan maskesi yoktur), W izni sekmedeki bütün işlemleri
+ * yapar. Birden çok sekmede açılan ortak işlemler aşağıdaki sekme kümelerinden herhangi birinin izniyle yapılır.
+ * Düğmeler yalnız sunucunun kabul edeceği işlemler için gösterilir; asıl kontrol her zaman sunucudadır.
  */
 type Izinler = Pick<PermissionService, 'hasAccess' | 'canWrite'>;
-
-/** Bütün mali ve ölçü alanlarını birlikte taşıyan rapor, belge ve fiyat verisi için gereken alan izinleri. */
-export const FINANS_TUM_ALAN_IZINLERI: readonly string[] = [
-  FINANS_YETKI.ParasalVeriGoruntule,
-  FINANS_YETKI.BirimFiyatGoruntule,
-  FINANS_YETKI.TutarGoruntule,
-  FINANS_YETKI.GelirGoruntule,
-  FINANS_YETKI.GiderGoruntule,
-  FINANS_YETKI.KarlilikGoruntule,
-  AMBALAJ_YETKI.OlcuGoruntule,
-  AMBALAJ_YETKI.M3Goruntule,
-  AMBALAJ_YETKI.SarfGoruntule,
-];
-
-export function tumFinansAlanlariGorunur(izinler: Izinler): boolean {
-  return FINANS_TUM_ALAN_IZINLERI.every((kod) => izinler.hasAccess(kod));
-}
-
-/** Rapor dosyası: rapor görme, biçimin dışa aktarma izni ve bütün alan izinleri. Ayrı ZIP PDF iznine bağlıdır. */
-export function finansRaporuIndirilebilir(izinler: Izinler, bicim: 'pdf' | 'excel'): boolean {
-  return (
-    izinler.hasAccess(FINANS_YETKI.RaporGoruntule) &&
-    izinler.hasAccess(bicim === 'excel' ? FINANS_YETKI.ExcelAktar : FINANS_YETKI.PdfAktar) &&
-    tumFinansAlanlariGorunur(izinler)
-  );
-}
-
-/** Yüklenmiş PDF belgesi bütün alanları içerebileceği için rapor dosyasıyla aynı alan kuralına tabidir. */
-export function finansBelgesiIndirilebilir(izinler: Izinler): boolean {
-  return izinler.hasAccess(FINANS_YETKI.BelgeIndir) && tumFinansAlanlariGorunur(izinler);
-}
-
-/** Münferit iş tarifeden fiyatlanır: sekme ve iş ekleme yazma izni yeter, fiyat değiştirme izni gerekmez. */
-export function finansMunferitIsEklenebilir(izinler: Izinler): boolean {
-  return izinler.canWrite(FINANS_YETKI.SekmeMunferitIsler) && izinler.canWrite(FINANS_YETKI.ManuelIsEkle);
-}
-
-/** Tek seferlik iş her zaman elle fiyat taşır; sunucu fiyat değiştirme iznini de ister. */
-export function finansOzelIsiEklenebilir(izinler: Izinler): boolean {
-  return (
-    izinler.canWrite(FINANS_YETKI.ManuelIsEkle) && izinler.canWrite(FINANS_YETKI.BirimFiyatDegistir)
-  );
-}
-
-/** PO ve fatura kayıtlarını okumak: sunucu kayıt ve sipariş operasyonu görüntüleme izinlerini birlikte ister. */
-export function finansSiparisFaturaOkunabilir(izinler: Izinler): boolean {
-  return (
-    izinler.hasAccess(FINANS_YETKI.KayitGoruntule) &&
-    izinler.hasAccess(FINANS_YETKI.SiparisOperasyonGoruntule)
-  );
-}
-
-/** PO girmek veya PO'ya kalem eklemek: yazma izni ile PO grup seçicisini okuma izinleri. */
-export function finansPoGirilebilir(izinler: Izinler): boolean {
-  return izinler.canWrite(FINANS_YETKI.PoGir) && finansSiparisFaturaOkunabilir(izinler);
-}
-
-/** Ödeme işaretlemek (D3): yazma izni ile faturaları okuma izinleri. */
-export function finansOdemeKaydedilebilir(izinler: Izinler): boolean {
-  return izinler.canWrite(FINANS_YETKI.OdemeKaydet) && finansSiparisFaturaOkunabilir(izinler);
-}
-
-/** Fatura girmek: yazma izni ile faturalanacak PO ve kalemlerini okuma izinleri. */
-export function finansFaturaGirilebilir(izinler: Izinler): boolean {
-  return izinler.canWrite(FINANS_YETKI.FaturaGir) && finansSiparisFaturaOkunabilir(izinler);
-}
 
 /** Finans ana sekmeleri; dizi ekrandaki sıradır, varsayılan sekme erişilebilen ilk sekmedir. */
 export type FinansSekme = 'panel' | 'akis' | 'munferit' | 'giderler' | 'ayarlar' | 'belgeler' | 'raporlar' | 'kategoriler';
 export const FINANS_SEKME_SIRASI: readonly FinansSekme[] = ['panel', 'akis', 'munferit', 'giderler', 'ayarlar', 'belgeler', 'raporlar', 'kategoriler'];
 
-/** Her sekmenin rol ağacındaki düğümü (R sekmeyi gösterir, W sekmedeki işlemlerin tavanıdır). */
+/** Her sekmenin rol ağacındaki düğümü. */
 export const FINANS_SEKME_KODLARI: Readonly<Record<FinansSekme, string>> = {
   panel: FINANS_YETKI.SekmePanel,
   akis: FINANS_YETKI.SekmeIsTakibi,
@@ -89,42 +25,85 @@ export const FINANS_SEKME_KODLARI: Readonly<Record<FinansSekme, string>> = {
   kategoriler: FINANS_YETKI.SekmeGiderKategorileri,
 };
 
-export type FinansTanimGorunumu = 'duzenli' | 'tarifeler' | 'parametreler';
+/** İş kaydı, PO ve fatura detayını, hareketleri ve genel aramayı gösteren sekmeler (FinansSekmeleri.Kayit). */
+export const FINANS_KAYIT_SEKMELERI: readonly FinansSekme[] = ['akis', 'panel', 'belgeler', 'munferit', 'raporlar'];
+/** Kayıt sekmeleri ve Giderler: belgeler ve değişiklik geçmişi (FinansSekmeleri.KayitVeGider). */
+export const FINANS_KAYIT_VE_GIDER_SEKMELERI: readonly FinansSekme[] = [...FINANS_KAYIT_SEKMELERI, 'giderler'];
+/** İş kaydını değiştiren işlemler: fiyatlandırma, hacim, finans tarihi, iptal/geri alma (FinansSekmeleri.IsDuzenleme). */
+export const FINANS_IS_DUZENLEME_SEKMELERI: readonly FinansSekme[] = ['akis', 'munferit'];
+/** PO açma (FinansSekmeleri.SiparisAcma). */
+export const FINANS_SIPARIS_ACMA_SEKMELERI: readonly FinansSekme[] = ['belgeler', 'akis', 'munferit'];
+/** Gider kategori/kalem listesi (FinansSekmeleri.GiderTanimlari). */
+export const FINANS_GIDER_TANIM_SEKMELERI: readonly FinansSekme[] = ['giderler', 'kategoriler', 'raporlar'];
 
-/**
- * İş ve Tarife Tanımları alt görünümü: sunucudaki okuma izinleriyle aynı. Tarife listesi birim fiyat görmeyi de
- * ister; vade parametreleri iş kütüphanesi iznine bağlıdır.
- */
-export function finansTanimOkunabilir(izinler: Izinler, gorunum: FinansTanimGorunumu): boolean {
-  if (!izinler.hasAccess(FINANS_YETKI.Modul)) return false;
-  if (gorunum === 'duzenli') return izinler.hasAccess(FINANS_YETKI.DuzenliIsYonet);
-  if (gorunum === 'parametreler') return izinler.hasAccess(FINANS_YETKI.IsKutuphanesiYonet);
-  return izinler.hasAccess(FINANS_YETKI.IsKutuphanesiYonet) && izinler.hasAccess(FINANS_YETKI.BirimFiyatGoruntule);
+/** Belge yükleme ve kalıcı silmede hedef kaydın sekmeleri (FinansSekmeleri.Varlik). */
+export function finansVarlikSekmeleri(varlikTuru: string | null | undefined): readonly FinansSekme[] {
+  switch (varlikTuru) {
+    case 'Siparis':
+    case 'Fatura':
+      return ['belgeler'];
+    case 'Gider':
+      return ['giderler'];
+    case 'IsKaydi':
+      return FINANS_IS_DUZENLEME_SEKMELERI;
+    default:
+      return ['akis'];
+  }
 }
 
-/**
- * Sekme görünür mü: modül, sekme düğümü ve sekmenin ekranındaki okuma izinleri birlikte (sunucu kapılarının
- * aynası). Gider kategorileri okuma izniyle açılır; ekleme/düzenleme düğmeleri yazma izni ister.
- */
+/** Sekme görünür mü (R): modül ve sekme düğümünün okuma izni. */
 export function finansSekmeAcik(izinler: Izinler, sekme: FinansSekme): boolean {
-  if (!izinler.hasAccess(FINANS_YETKI.Modul) || !izinler.hasAccess(FINANS_SEKME_KODLARI[sekme])) return false;
-  switch (sekme) {
-    case 'panel':
-      return true;
-    case 'akis':
-    case 'munferit':
-      return izinler.hasAccess(FINANS_YETKI.KayitGoruntule);
-    case 'giderler':
-      return izinler.hasAccess(FINANS_YETKI.GiderGoruntule);
-    case 'ayarlar':
-      return (['duzenli', 'tarifeler', 'parametreler'] as const).some((g) => finansTanimOkunabilir(izinler, g));
-    case 'belgeler':
-      return finansSiparisFaturaOkunabilir(izinler);
-    case 'raporlar':
-      return izinler.hasAccess(FINANS_YETKI.RaporGoruntule);
-    case 'kategoriler':
-      return izinler.hasAccess(FINANS_YETKI.GiderKutuphanesiYonet);
-  }
+  return izinler.hasAccess(FINANS_YETKI.Modul) && izinler.hasAccess(FINANS_SEKME_KODLARI[sekme]);
+}
+
+/** Sekmedeki işlemler yapılabilir mi (W). */
+export function finansSekmeYazilabilir(izinler: Izinler, sekme: FinansSekme): boolean {
+  return finansSekmeAcik(izinler, sekme) && izinler.canWrite(FINANS_SEKME_KODLARI[sekme]);
+}
+
+/** Sekmelerden herhangi biri görünür mü. */
+export function finansHerhangiSekmeAcik(izinler: Izinler, sekmeler: readonly FinansSekme[]): boolean {
+  return sekmeler.some((sekme) => finansSekmeAcik(izinler, sekme));
+}
+
+/** Sekmelerden herhangi birinde işlem yapılabilir mi. */
+export function finansHerhangiSekmeYazilabilir(izinler: Izinler, sekmeler: readonly FinansSekme[]): boolean {
+  return sekmeler.some((sekme) => finansSekmeYazilabilir(izinler, sekme));
+}
+
+/** İş kaydı / PO / fatura detayı, hareketler ve genel arama okunabilir mi. */
+export function finansKayitOkunabilir(izinler: Izinler): boolean {
+  return finansHerhangiSekmeAcik(izinler, FINANS_KAYIT_SEKMELERI);
+}
+
+/** Belgeler (listeleme/indirme) ve değişiklik geçmişi okunabilir mi. */
+export function finansBelgeOkunabilir(izinler: Izinler): boolean {
+  return finansHerhangiSekmeAcik(izinler, FINANS_KAYIT_VE_GIDER_SEKMELERI);
+}
+
+/** İş kaydı değiştirilebilir mi (fiyatlandırma, hacim, finans tarihi, iptal/geri alma). */
+export function finansIsDuzenlenebilir(izinler: Izinler): boolean {
+  return finansHerhangiSekmeYazilabilir(izinler, FINANS_IS_DUZENLEME_SEKMELERI);
+}
+
+/** PO açılabilir / PO'ya kalem eklenebilir mi. */
+export function finansPoGirilebilir(izinler: Izinler): boolean {
+  return finansHerhangiSekmeYazilabilir(izinler, FINANS_SIPARIS_ACMA_SEKMELERI);
+}
+
+/** PO düzeltme/iptal, fatura girişi/düzeltme/iptal ve ödeme işaretleme: PO/Fatura sekmesinin W izni. */
+export function finansSiparisFaturaYazilabilir(izinler: Izinler): boolean {
+  return finansSekmeYazilabilir(izinler, 'belgeler');
+}
+
+/** Hedef kayda belge yüklenebilir veya kayıt kalıcı silinebilir mi. */
+export function finansVarlikYazilabilir(izinler: Izinler, varlikTuru: string | null | undefined): boolean {
+  return finansHerhangiSekmeYazilabilir(izinler, finansVarlikSekmeleri(varlikTuru));
+}
+
+/** İş Takibi'nin üstündeki vade uyarısı görünür mü (ayrı izin). */
+export function finansVadeUyarisiGorunur(izinler: Izinler): boolean {
+  return izinler.hasAccess(FINANS_YETKI.Modul) && izinler.hasAccess(FINANS_YETKI.VadeUyarisi);
 }
 
 /** Açılışta gösterilecek sekme: ekran sırasıyla erişilebilen ilk sekme; hiçbiri yoksa null. */

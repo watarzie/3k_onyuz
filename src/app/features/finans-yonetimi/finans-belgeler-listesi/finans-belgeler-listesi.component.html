@@ -87,13 +87,11 @@
               <th>{{ t('DOCUMENT') }}</th>
               <th>{{ t('PROJECT') }}</th>
               <th>{{ t('DATE') }}</th>
-              @if (parasal(izin.TutarGoruntule)) {
-                <th class="text-end">{{ t('AMOUNT') }}</th>
-              }
-              @if (tur === 'Siparis' && parasal(izin.GelirGoruntule)) {
+              <th class="text-end">{{ t('AMOUNT') }}</th>
+              @if (tur === 'Siparis') {
                 <th class="text-end">{{ t('PANEL_INVOICED') }}</th>
               }
-              @if (tur === 'Siparis' && parasal(izin.KarlilikGoruntule)) {
+              @if (tur === 'Siparis') {
                 <th class="text-end">{{ t('PO_NET_RESULT') }}</th>
               }
               @if (tur === 'Fatura') {
@@ -122,34 +120,28 @@
                 </td>
                 <td>{{ row.projeNo || '—' }}</td>
                 <td class="v2-nowrap">{{ tarih(row) | date: 'dd.MM.yyyy' }}</td>
-                @if (parasal(izin.TutarGoruntule)) {
+                <td class="text-end v2-nowrap">
+                  @for (tutar of row.tutarlar ?? []; track tutar.paraBirimi) {
+                    <div>{{ tutar.netTutar | number: '1.2-2' }} {{ tutar.paraBirimi }}</div>
+                  }
+                </td>
+                @if (siparis(row); as po) {
                   <td class="text-end v2-nowrap">
-                    @for (tutar of row.tutarlar ?? []; track tutar.paraBirimi) {
+                    @for (tutar of po.faturalananTutarlar ?? []; track tutar.paraBirimi) {
                       <div>{{ tutar.netTutar | number: '1.2-2' }} {{ tutar.paraBirimi }}</div>
+                    } @empty {
+                      —
                     }
                   </td>
-                }
-                @if (siparis(row); as po) {
-                  @if (parasal(izin.GelirGoruntule)) {
-                    <td class="text-end v2-nowrap">
-                      @for (tutar of po.faturalananTutarlar ?? []; track tutar.paraBirimi) {
-                        <div>{{ tutar.netTutar | number: '1.2-2' }} {{ tutar.paraBirimi }}</div>
-                      } @empty {
-                        —
-                      }
-                    </td>
-                  }
-                  @if (parasal(izin.KarlilikGoruntule)) {
-                    <td class="text-end v2-nowrap">
-                      @for (net of po.netler ?? []; track net.paraBirimi) {
-                        <div [class.text-danger]="net.net != null && net.net < 0">
-                          {{ net.net | number: '1.2-2' }} {{ net.paraBirimi }}
-                        </div>
-                      } @empty {
-                        —
-                      }
-                    </td>
-                  }
+                  <td class="text-end v2-nowrap">
+                    @for (net of po.netler ?? []; track net.paraBirimi) {
+                      <div [class.text-danger]="net.net != null && net.net < 0">
+                        {{ net.net | number: '1.2-2' }} {{ net.paraBirimi }}
+                      </div>
+                    } @empty {
+                      —
+                    }
+                  </td>
                   <td>
                     <span class="v2-status" [class.is-active]="po.durum === 3">{{
                       po.iptalEdildi ? t('PO_CANCELLED') : t(poDurumuAnahtari(po.durum))

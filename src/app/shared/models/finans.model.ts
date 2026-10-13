@@ -197,6 +197,9 @@ export interface FinansIsKaydi {
   ozelIsTuru?: string | null;
   raporGrubu?: string | null;
   birimFiyat?: number | null;
+  /** Malzemeli fiyatta ahşap m³ fiyatı; doluysa birimFiyat kontra m³ fiyatıdır (net = kontra × birimFiyat + ahşap × bu). */
+  ahsapBirimFiyat?: number | null;
+  ahsapFinansUrunId?: number | null;
   fiyatlandirmaBirimi?: FinansFiyatlandirmaBirimi;
   fiyatlandirmaHazir?: boolean;
   paraBirimi?: string;
@@ -242,28 +245,29 @@ export interface FinansIsKaydi {
 }
 
 /** Münferit iş formunun ürün seçeneği; fiyat taşımaz (kayıt ürünün iş tarihindeki tarifesiyle fiyatlanır). */
+/** Münferit iş tarife seçeneği; fiyat alanları istenen iş tarihindeki tarife sürümüdür (yoksa null). */
 export interface FinansUrunSecenegi {
   id: number;
   kod: string;
   ad: string;
   fiyatlandirmaBirimi: FinansFiyatlandirmaBirimi;
+  birimFiyat?: number | null;
+  paraBirimi?: string | null;
+  kdvOrani?: number | null;
 }
 
-/** "Yeni Münferit İş" isteği: fiyat alanı yoktur; ürün m³ ile fiyatlanıyorsa ahşap/kontra m³ gönderilir. */
+/**
+ * "Yeni Münferit İş" isteği: tarife + proje (sistem projesi ya da serbest ad, biri) + tarih + miktar. İş adı tarifenin
+ * adıdır, fiyat tarifeden gelir; adet tarifesinde adet, m³ tarifesinde ahşap/kontra m³ gönderilir.
+ */
 export interface FinansMunferitIsKaydetRequest {
   finansUrunId: number;
-  isAdi: string;
-  ozelIsTuru?: string | null;
-  musteri: string;
   projeId?: number | null;
-  adet: number;
-  birim: string;
+  projeAdi?: string | null;
   isTarihi: string;
+  adet?: number;
   ahsapM3?: number | null;
   kontraM3?: number | null;
-  aciklama?: string | null;
-  talepEdenKisi?: string | null;
-  talepEdenBolum?: string | null;
 }
 
 /** İş Takibi proje → sandık kırılımı isteği: proje kimliği ya da sisteme bağlı olmayan proje için no + müşteri. */
@@ -565,10 +569,12 @@ export interface FinansUrunEslesmesi {
   isTuru: number;
   sandikAdi: string | null;
   sandikTipi?: string | null;
-  boy?: number | null;
-  en?: number | null;
-  yukseklik?: number | null;
   icSandikSablonId?: number | null;
+  /**
+   * Malzemeli m³ tarifesi (1 ahşap, 2 kontra; boş = genel tek m³ tarifesi). Kontrplak/katlanır sandıkta ahşap m³
+   * ahşap, kontra m³ kontra tarifesiyle fiyatlanır. Katlanır sandık boyutla eşleşmez.
+   */
+  malzeme?: FinansSandikMalzemesi | null;
   aktif?: boolean;
 }
 
@@ -614,7 +620,7 @@ export interface FinansUrunKaydetRequest {
   gecerlilikBaslangici?: string | null;
   aktif: boolean;
   sira: number;
-  eslesmeler: { id?: number | null; aktif: boolean; isTuru: number; sandikAdi: string | null; icSandikSablonId?: number | null; sandikTipi?: string | null; boy?: number | null; en?: number | null; yukseklik?: number | null }[];
+  eslesmeler: { id?: number | null; aktif: boolean; isTuru: number; sandikAdi: string | null; icSandikSablonId?: number | null; sandikTipi?: string | null; malzeme?: FinansSandikMalzemesi | null }[];
 }
 
 export interface FinansOzelIsKaydetRequest {
@@ -642,7 +648,8 @@ export interface FinansOzelIsKaydetRequest {
 export interface FinansHacimGirRequest {
   ahsapM3: number;
   kontraM3: number;
-  aciklama: string;
+  /** İsteğe bağlı gerekçe. */
+  aciklama?: string;
 }
 
 export interface FinansAylikIs {
@@ -665,6 +672,8 @@ export interface FinansAylikIs {
   miktar: number;
   birim: string;
   birimFiyat: number;
+  /** Malzemeli fiyatta ahşap m³ fiyatı (birimFiyat kontra m³ fiyatıdır). */
+  ahsapBirimFiyat?: number | null;
   kdvOrani: number;
   netTutar: number;
   kdvTutari: number;

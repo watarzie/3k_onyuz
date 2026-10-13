@@ -1,111 +1,118 @@
-import { AMBALAJ_YETKI, FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
+import { FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
 import {
-  FINANS_TUM_ALAN_IZINLERI,
-  finansBelgesiIndirilebilir,
+  FINANS_GIDER_TANIM_SEKMELERI,
   FINANS_SEKME_KODLARI,
   FINANS_SEKME_SIRASI,
-  finansFaturaGirilebilir,
+  FinansSekme,
+  finansBelgeOkunabilir,
+  finansHerhangiSekmeAcik,
+  finansHerhangiSekmeYazilabilir,
   finansIlkSekme,
-  finansOdemeKaydedilebilir,
-  finansOzelIsiEklenebilir,
+  finansIsDuzenlenebilir,
+  finansKayitOkunabilir,
   finansPoGirilebilir,
-  finansRaporuIndirilebilir,
   finansSekmeAcik,
-  finansTanimOkunabilir,
-  tumFinansAlanlariGorunur,
+  finansSekmeYazilabilir,
+  finansSiparisFaturaYazilabilir,
+  finansVadeUyarisiGorunur,
+  finansVarlikYazilabilir,
 } from './finans-izinleri';
 
-describe('Finans izinleri sunucu kurallarının aynası', () => {
+describe('Finans izinleri sunucu kurallarının aynası (yalnız sekme izni)', () => {
+  /** Rol ağacının istemci görünümü: R kodları okunur, W kodları hem okunur hem yazılır. */
   function izinler(okuma: string[], yazma: string[] = []) {
     return {
       hasAccess: (kod: string) => okuma.includes(kod) || yazma.includes(kod),
       canWrite: (kod: string) => yazma.includes(kod),
     };
   }
-  const tumAlanlar = [...FINANS_TUM_ALAN_IZINLERI];
-
-  it('tek bir mali veya ölçü alanı eksikse dosya içeriği görünür sayılmaz', () => {
-    expect(tumFinansAlanlariGorunur(izinler(tumAlanlar))).toBeTrue();
-    for (const eksik of tumAlanlar) {
-      expect(tumFinansAlanlariGorunur(izinler(tumAlanlar.filter((kod) => kod !== eksik)))).toBeFalse();
-    }
-  });
-
-  it('rapor dosyası rapor görme, biçim izni ve bütün alan izinlerini birlikte ister', () => {
-    const tam = [...tumAlanlar, FINANS_YETKI.RaporGoruntule, FINANS_YETKI.PdfAktar];
-    expect(finansRaporuIndirilebilir(izinler(tam), 'pdf')).toBeTrue();
-    expect(finansRaporuIndirilebilir(izinler(tam), 'excel')).toBeFalse();
-    expect(finansRaporuIndirilebilir(izinler(tam.filter((kod) => kod !== FINANS_YETKI.RaporGoruntule)), 'pdf')).toBeFalse();
-    expect(finansRaporuIndirilebilir(izinler(tam.filter((kod) => kod !== AMBALAJ_YETKI.SarfGoruntule)), 'pdf')).toBeFalse();
-  });
-
-  it('belge indirme belge izni ve bütün alan izinlerini ister', () => {
-    expect(finansBelgesiIndirilebilir(izinler([...tumAlanlar, FINANS_YETKI.BelgeIndir]))).toBeTrue();
-    expect(finansBelgesiIndirilebilir(izinler([FINANS_YETKI.BelgeIndir]))).toBeFalse();
-  });
-
-  it('tek seferlik iş fiyat taşıdığı için birim fiyat değiştirme yazma iznini de ister', () => {
-    expect(finansOzelIsiEklenebilir(izinler([], [FINANS_YETKI.ManuelIsEkle]))).toBeFalse();
-    expect(
-      finansOzelIsiEklenebilir(izinler([], [FINANS_YETKI.ManuelIsEkle, FINANS_YETKI.BirimFiyatDegistir])),
-    ).toBeTrue();
-  });
-
-  it('PO ve fatura girişi yazma izniyle birlikte kayıt ve sipariş görüntüleme izinlerini ister', () => {
-    const okuma = [FINANS_YETKI.KayitGoruntule, FINANS_YETKI.SiparisOperasyonGoruntule];
-    expect(finansPoGirilebilir(izinler(okuma, [FINANS_YETKI.PoGir]))).toBeTrue();
-    expect(finansPoGirilebilir(izinler([FINANS_YETKI.KayitGoruntule], [FINANS_YETKI.PoGir]))).toBeFalse();
-    expect(finansPoGirilebilir(izinler(okuma))).toBeFalse();
-    expect(finansFaturaGirilebilir(izinler(okuma, [FINANS_YETKI.FaturaGir]))).toBeTrue();
-    expect(finansFaturaGirilebilir(izinler([FINANS_YETKI.SiparisOperasyonGoruntule], [FINANS_YETKI.FaturaGir]))).toBeFalse();
-  });
-
-  it('ödeme işareti ayrı ödeme yazma izniyle birlikte fatura okuma izinlerini ister (D3)', () => {
-    const okuma = [FINANS_YETKI.KayitGoruntule, FINANS_YETKI.SiparisOperasyonGoruntule];
-    expect(finansOdemeKaydedilebilir(izinler(okuma, [FINANS_YETKI.OdemeKaydet]))).toBeTrue();
-    expect(finansOdemeKaydedilebilir(izinler(okuma, [FINANS_YETKI.FaturaGir]))).toBeFalse();
-    expect(finansOdemeKaydedilebilir(izinler([...okuma, FINANS_YETKI.OdemeKaydet]))).toBeFalse();
-    expect(finansOdemeKaydedilebilir(izinler([FINANS_YETKI.KayitGoruntule], [FINANS_YETKI.OdemeKaydet]))).toBeFalse();
-  });
+  const modul = FINANS_YETKI.Modul;
+  const okur = (...sekmeler: FinansSekme[]) => izinler([modul, ...sekmeler.map((s) => FINANS_SEKME_KODLARI[s])]);
+  const yazar = (...sekmeler: FinansSekme[]) => izinler([modul], sekmeler.map((s) => FINANS_SEKME_KODLARI[s]));
 
   describe('sekme düğümleri', () => {
-    const ekranIzinleri: Record<string, string[]> = {
-      panel: [],
-      akis: [FINANS_YETKI.KayitGoruntule],
-      munferit: [FINANS_YETKI.KayitGoruntule],
-      giderler: [FINANS_YETKI.GiderGoruntule],
-      ayarlar: [FINANS_YETKI.DuzenliIsYonet],
-      belgeler: [FINANS_YETKI.KayitGoruntule, FINANS_YETKI.SiparisOperasyonGoruntule],
-      raporlar: [FINANS_YETKI.RaporGoruntule],
-      kategoriler: [FINANS_YETKI.GiderKutuphanesiYonet],
-    };
-
-    it('her sekme modülü, kendi sekme düğümünü ve ekranının okuma iznini birlikte ister', () => {
+    it('her sekme yalnız modül ve kendi sekme düğümünün R iznini ister; ek ekran veya alan izni yoktur', () => {
       for (const sekme of FINANS_SEKME_SIRASI) {
-        const tam = [FINANS_YETKI.Modul, FINANS_SEKME_KODLARI[sekme], ...ekranIzinleri[sekme]];
-        expect(finansSekmeAcik(izinler(tam), sekme)).withContext(sekme).toBeTrue();
-        expect(finansSekmeAcik(izinler(tam.filter((k) => k !== FINANS_SEKME_KODLARI[sekme])), sekme)).withContext(sekme + ' düğümsüz').toBeFalse();
-        expect(finansSekmeAcik(izinler(tam.filter((k) => k !== FINANS_YETKI.Modul)), sekme)).withContext(sekme + ' modülsüz').toBeFalse();
-        for (const kod of ekranIzinleri[sekme])
-          expect(finansSekmeAcik(izinler(tam.filter((k) => k !== kod)), sekme)).withContext(sekme + ' ' + kod).toBeFalse();
+        expect(finansSekmeAcik(okur(sekme), sekme)).withContext(sekme).toBeTrue();
+        expect(finansSekmeAcik(izinler([FINANS_SEKME_KODLARI[sekme]]), sekme)).withContext(sekme + ' modülsüz').toBeFalse();
+        expect(finansSekmeAcik(izinler([modul]), sekme)).withContext(sekme + ' düğümsüz').toBeFalse();
       }
     });
 
-    it('gider kategorileri okuma izniyle açılır; tanımlar alt görünümleri sunucunun okuma izinlerini ister', () => {
-      const kategori = [FINANS_YETKI.Modul, FINANS_YETKI.SekmeGiderKategorileri, FINANS_YETKI.GiderKutuphanesiYonet];
-      expect(finansSekmeAcik(izinler(kategori), 'kategoriler')).toBeTrue();
-      const tarife = [FINANS_YETKI.Modul, FINANS_YETKI.IsKutuphanesiYonet];
-      expect(finansTanimOkunabilir(izinler(tarife), 'parametreler')).toBeTrue();
-      expect(finansTanimOkunabilir(izinler(tarife), 'tarifeler')).toBeFalse();
-      expect(finansTanimOkunabilir(izinler([...tarife, FINANS_YETKI.BirimFiyatGoruntule]), 'tarifeler')).toBeTrue();
-      expect(finansTanimOkunabilir(izinler(tarife), 'duzenli')).toBeFalse();
+    it('sekmedeki işlemler sekme düğümünün W iznini ister; R sekmeyi gösterir ama işlem açmaz', () => {
+      for (const sekme of FINANS_SEKME_SIRASI) {
+        expect(finansSekmeYazilabilir(yazar(sekme), sekme)).withContext(sekme).toBeTrue();
+        expect(finansSekmeYazilabilir(okur(sekme), sekme)).withContext(sekme + ' yalnız R').toBeFalse();
+        expect(finansSekmeYazilabilir(izinler([], [FINANS_SEKME_KODLARI[sekme]]), sekme)).withContext(sekme + ' modülsüz').toBeFalse();
+      }
+    });
+
+    it('bir sekmenin izni başka sekmeyi açmaz', () => {
+      expect(finansSekmeAcik(okur('akis'), 'belgeler')).toBeFalse();
+      expect(finansSekmeYazilabilir(yazar('akis'), 'giderler')).toBeFalse();
+    });
+
+    it('herhangi biri yardımcıları kümedeki sekmelerden birini yeterli sayar', () => {
+      expect(finansHerhangiSekmeAcik(okur('raporlar'), FINANS_GIDER_TANIM_SEKMELERI)).toBeTrue();
+      expect(finansHerhangiSekmeAcik(okur('akis'), FINANS_GIDER_TANIM_SEKMELERI)).toBeFalse();
+      expect(finansHerhangiSekmeYazilabilir(yazar('kategoriler'), FINANS_GIDER_TANIM_SEKMELERI)).toBeTrue();
+      expect(finansHerhangiSekmeYazilabilir(okur(...FINANS_GIDER_TANIM_SEKMELERI), FINANS_GIDER_TANIM_SEKMELERI)).toBeFalse();
     });
 
     it('açılış sekmesi ekran sırasıyla erişilebilen ilk sekmedir; hiçbiri yoksa null', () => {
-      const raporcu = [FINANS_YETKI.Modul, FINANS_YETKI.SekmeRaporlar, FINANS_YETKI.RaporGoruntule, FINANS_YETKI.SekmeGiderler, FINANS_YETKI.GiderGoruntule];
-      expect(finansIlkSekme(izinler(raporcu))).toBe('giderler');
-      expect(finansIlkSekme(izinler([...raporcu, FINANS_YETKI.SekmePanel]))).toBe('panel');
-      expect(finansIlkSekme(izinler([FINANS_YETKI.Modul, FINANS_YETKI.KayitGoruntule]))).toBeNull();
+      expect(finansIlkSekme(okur('raporlar', 'giderler'))).toBe('giderler');
+      expect(finansIlkSekme(okur('raporlar', 'giderler', 'panel'))).toBe('panel');
+      expect(finansIlkSekme(izinler([modul, FINANS_YETKI.VadeUyarisi]))).toBeNull();
+    });
+  });
+
+  describe('ortak işlemler (FinansSekmeleri kümeleri)', () => {
+    it('kayıt detayı, hareketler ve genel arama kayıt sekmelerinden biriyle okunur; Giderler ve Tanımlar yetmez', () => {
+      for (const sekme of ['akis', 'panel', 'belgeler', 'munferit', 'raporlar'] as const)
+        expect(finansKayitOkunabilir(okur(sekme))).withContext(sekme).toBeTrue();
+      for (const sekme of ['giderler', 'ayarlar', 'kategoriler'] as const)
+        expect(finansKayitOkunabilir(okur(sekme))).withContext(sekme).toBeFalse();
+    });
+
+    it('belgeler ve değişiklik geçmişi kayıt sekmeleri veya Giderler ile okunur', () => {
+      expect(finansBelgeOkunabilir(okur('giderler'))).toBeTrue();
+      expect(finansBelgeOkunabilir(okur('belgeler'))).toBeTrue();
+      expect(finansBelgeOkunabilir(okur('kategoriler'))).toBeFalse();
+    });
+
+    it('iş kaydı düzenleme İş Takibi veya Münferit İşler W ister', () => {
+      expect(finansIsDuzenlenebilir(yazar('akis'))).toBeTrue();
+      expect(finansIsDuzenlenebilir(yazar('munferit'))).toBeTrue();
+      expect(finansIsDuzenlenebilir(yazar('belgeler'))).toBeFalse();
+      expect(finansIsDuzenlenebilir(okur('akis', 'munferit'))).toBeFalse();
+    });
+
+    it('PO açma PO/Fatura, İş Takibi veya Münferit İşler W ister; PO/fatura düzeltme yalnız PO/Fatura W', () => {
+      for (const sekme of ['belgeler', 'akis', 'munferit'] as const)
+        expect(finansPoGirilebilir(yazar(sekme))).withContext(sekme).toBeTrue();
+      expect(finansPoGirilebilir(okur('belgeler', 'akis', 'munferit'))).toBeFalse();
+      expect(finansSiparisFaturaYazilabilir(yazar('belgeler'))).toBeTrue();
+      expect(finansSiparisFaturaYazilabilir(yazar('akis', 'munferit'))).toBeFalse();
+      expect(finansSiparisFaturaYazilabilir(okur('belgeler'))).toBeFalse();
+    });
+
+    it('belge yükleme ve kalıcı silme hedef kaydın sekmesinin W iznini ister', () => {
+      expect(finansVarlikYazilabilir(yazar('belgeler'), 'Siparis')).toBeTrue();
+      expect(finansVarlikYazilabilir(yazar('belgeler'), 'Fatura')).toBeTrue();
+      expect(finansVarlikYazilabilir(yazar('akis'), 'Fatura')).toBeFalse();
+      expect(finansVarlikYazilabilir(yazar('giderler'), 'Gider')).toBeTrue();
+      expect(finansVarlikYazilabilir(yazar('belgeler'), 'Gider')).toBeFalse();
+      expect(finansVarlikYazilabilir(yazar('munferit'), 'IsKaydi')).toBeTrue();
+      expect(finansVarlikYazilabilir(yazar('akis'), 'IsKaydi')).toBeTrue();
+      // Bilinmeyen tür sunucuda İş Takibi sayılır.
+      expect(finansVarlikYazilabilir(yazar('akis'), undefined)).toBeTrue();
+      expect(finansVarlikYazilabilir(yazar('munferit'), null)).toBeFalse();
+    });
+
+    it('vade uyarısı ayrı izindir: modül ve vade uyarısı R; PO/Fatura sekmesi ne yeter ne gerekir', () => {
+      expect(finansVadeUyarisiGorunur(izinler([modul, FINANS_YETKI.VadeUyarisi]))).toBeTrue();
+      expect(finansVadeUyarisiGorunur(izinler([FINANS_YETKI.VadeUyarisi]))).toBeFalse();
+      expect(finansVadeUyarisiGorunur(okur('belgeler'))).toBeFalse();
     });
   });
 });

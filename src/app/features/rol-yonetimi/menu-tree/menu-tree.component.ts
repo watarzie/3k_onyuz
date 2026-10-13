@@ -74,7 +74,7 @@ export class MenuTreeComponent {
     return altDallar.length > 0 && altDallar.every(d => this.acikDurumlar.get(d.id) === true);
   }
 
-  /** Sekme düğümü (ör. finans-sekme-po-fatura): R sekmeyi gösterir, W sekmedeki işlemlerin tavanıdır. */
+  /** Sekme düğümü (ör. finans-sekme-po-fatura): R sekmeyi ve içindeki bütün verileri gösterir, W sekmedeki bütün işlemleri verir. */
   sekmeDugumu(node: MenuTreeDto): boolean {
     return (node.kod ?? '').includes('-sekme-');
   }

@@ -3,7 +3,7 @@ import { Component, DestroyRef, OnInit, computed, inject, input, output, signal 
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, Subject, debounceTime, distinctUntilChanged, finalize, switchMap } from 'rxjs';
-import { FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
+import { finansHerhangiSekmeAcik, finansPoGirilebilir } from '../ortak/finans-izinleri';
 import { FinansService } from '../../../core/services/finans.service';
 import { FinansParaBirimiService } from '../../../core/services/finans-para-birimi.service';
 import { PermissionService } from '../../../core/services/permission.service';
@@ -48,7 +48,6 @@ export class FinansKayitAramaComponent implements OnInit {
   private readonly toast = inject(ToastService);
   readonly permissions = inject(PermissionService);
   readonly paraBirimleri = inject(FinansParaBirimiService);
-  readonly izin = FINANS_YETKI;
   readonly acilis = input<FinansKayitAramaAcilisi>({ anahtar: 0, gorunum: 'arama' });
   readonly kayitAc = output<{ tur: FinansVarlikTuru; id: number }>();
   readonly siparisAc = output<number[]>();
@@ -59,7 +58,8 @@ export class FinansKayitAramaComponent implements OnInit {
   readonly sonuclar = signal<FinansSayfaliSonuc<FinansIsKaydi> | null>(null);
   readonly bekleyenler = signal<FinansSayfaliSonuc<FinansBekleyen> | null>(null);
   readonly secilenler = signal(new Set<number>());
-  readonly bekleyenGorunur = computed(() => this.permissions.hasAccess(FINANS_YETKI.RaporGoruntule));
+  /** Bekleyen işler (yaşlandırma): Kontrol Paneli, İş Takibi veya Raporlar sekmesinden biri. */
+  readonly bekleyenGorunur = computed(() => finansHerhangiSekmeAcik(this.permissions, ['panel', 'akis', 'raporlar']));
   readonly pager = computed(() => (this.gorunum() === 'arama' ? this.sonuclar() : this.bekleyenler()));
   readonly kategoriAnahtari = kategoriAnahtari;
   readonly sarfKaydi = sarfKaydi;
@@ -172,8 +172,9 @@ export class FinansKayitAramaComponent implements OnInit {
     this.refresh.next();
   }
 
-  parasal(alan: string): boolean {
-    return this.permissions.hasAccess(FINANS_YETKI.ParasalVeriGoruntule) && this.permissions.hasAccess(alan);
+  /** PO açma / seçili kalemlerle PO: PO/Fatura, İş Takibi veya Münferit İşler sekmesinin W izni. */
+  poGirilebilir(): boolean {
+    return finansPoGirilebilir(this.permissions);
   }
   gorunumSec(value: FinansKayitAramaGorunumu): void {
     if (value === this.gorunum() || (value === 'bekleyen' && !this.bekleyenGorunur())) return;

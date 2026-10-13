@@ -14,7 +14,7 @@ describe('Finans İş Takibi kalem listesi (tüm dönemler / bekleyen işler)', 
 
   beforeEach(() => {
     izinler.clear();
-    [FINANS_YETKI.Modul, FINANS_YETKI.KayitGoruntule, FINANS_YETKI.RaporGoruntule].forEach((x) => izinler.add(x));
+    [FINANS_YETKI.Modul, FINANS_YETKI.SekmeIsTakibi].forEach((x) => izinler.add(x));
     api = jasmine.createSpyObj<FinansService>('FinansService', ['genelArama', 'yaslandirma', 'paraBirimleri']);
     api.genelArama.and.returnValue(of({ isSuccess: true, value: bos }));
     api.yaslandirma.and.returnValue(of({ isSuccess: true, value: bos }));
@@ -83,8 +83,6 @@ describe('Finans İş Takibi kalem listesi (tüm dönemler / bekleyen işler)', 
   });
 
   it('proje seçici ve sandık no sunucu filtresidir; sonuç proje → sandık başlıklarında alt toplamlarla açılır', fakeAsync(() => {
-    izinler.add(FINANS_YETKI.ParasalVeriGoruntule);
-    izinler.add(FINANS_YETKI.TutarGoruntule);
     const kalem = (id: number, sandikNo: string, net: number, ek: object = {}) =>
       ({ id, projeId: 5, projeNo: 'PA-5', musteri: 'GE', sandikNo, sandikAdi: 'Sandık ' + sandikNo, kaynakKayitId: 'K' + sandikNo,
          kategori: 1, isTuru: 1, netTutar: net, paraBirimi: 'EUR', poNumaralari: [], faturaNumaralari: [], ...ek });
@@ -120,8 +118,9 @@ describe('Finans İş Takibi kalem listesi (tüm dönemler / bekleyen işler)', 
     expect(c.etkinFiltre()).toBe(0);
   }));
 
-  it('rapor görme izni yoksa bekleyen işler görünümü açılmaz', () => {
-    izinler.delete(FINANS_YETKI.RaporGoruntule);
+  it('Kontrol Paneli, İş Takibi ve Raporlar sekmeleri kapalıysa bekleyen işler görünümü açılmaz', () => {
+    izinler.delete(FINANS_YETKI.SekmeIsTakibi);
+    izinler.add(FINANS_YETKI.SekmePoFatura);
     const fixture = TestBed.createComponent(FinansKayitAramaComponent);
     fixture.componentRef.setInput('acilis', { anahtar: 1, gorunum: 'bekleyen' });
     fixture.detectChanges();

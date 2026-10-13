@@ -85,7 +85,8 @@ export interface AmbalajTamamlamaEngeli {
   grupMetni: string;
   /** Özel Sandıklar listesindeki bağımsız kayıt; plan çekmecesinde satırı yoktur. */
   ozelSandik: boolean;
-  neden: 'FormYok' | 'UretimeAlinmadi' | 'OlcuEksik';
+  /** FinansaAktarilmadi: özel sandıkta form yoktur; tamamlamayı yalnız finansa aktarılmamış olması engeller. */
+  neden: 'FormYok' | 'UretimeAlinmadi' | 'OlcuEksik' | 'FinansaAktarilmadi';
   mesaj: string;
 }
 

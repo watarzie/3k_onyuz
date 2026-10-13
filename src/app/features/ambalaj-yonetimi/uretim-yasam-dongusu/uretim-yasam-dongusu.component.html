@@ -1,15 +1,15 @@
-@if (bagimsiz(); as b) {
-  <!-- Özel sandık: tek sandığın üretim adımları (Form → Üretimde → Tamamlandı) ve finans ilişkisi. -->
+@if (ozel(); as b) {
+  <!-- Özel sandık: üretim formu yoktur. Kaydedilen sandık "Finansa aktar" ile Finans iş kaydı olur. -->
   @let adim = tekilDurum();
   <section class="ozel-uretim" [attr.aria-label]="t('SINGLE_TITLE')">
     <ol class="ozel-adimlar">
-      <li [class.aktif]="adim === 'formBekliyor'" [class.tamam]="adim === 'bekletiliyor' || adim === 'uretimde' || adim === 'tamamlandi'">
-        <span class="ozel-adim-no"><i class="ri-file-list-3-line"></i></span>{{ t('STEP_FORM') }}
+      <li class="tamam">
+        <span class="ozel-adim-no"><i class="ri-save-3-line"></i></span>{{ t('STEP_SAVED') }}
       </li>
-      <li [class.aktif]="adim === 'uretimde' || adim === 'bekletiliyor'" [class.tamam]="adim === 'tamamlandi'">
-        <span class="ozel-adim-no"><i class="ri-hammer-line"></i></span>{{ t('STEP_PRODUCTION') }}
+      <li [class.aktif]="adim === 'aktarilmadi'" [class.tamam]="adim === 'aktarildi' || adim === 'tamamlandi'">
+        <span class="ozel-adim-no"><i class="ri-money-euro-circle-line"></i></span>{{ t('STEP_FINANCE') }}
       </li>
-      <li [class.aktif]="adim === 'tamamlandi'" [class.tamam]="adim === 'tamamlandi'">
+      <li [class.aktif]="adim === 'aktarildi'" [class.tamam]="adim === 'tamamlandi'">
         <span class="ozel-adim-no"><i class="ri-check-double-line"></i></span>{{ t('STEP_DONE') }}
       </li>
     </ol>
@@ -20,22 +20,20 @@
           <h4>{{ t('EXCLUDED') }}</h4>
           <p>{{ t('SINGLE_EXCLUDED_HELP') }}</p>
         }
-        @case ('formBekliyor') {
-          <h4>{{ t('SINGLE_WAITING_FORM_TITLE') }}</h4>
-          <p>{{ t('SINGLE_WAITING_FORM_HELP') }}</p>
-          <label class="ozel-alan">
-            <span>{{ t('FINANCE_DATE') }}</span>
-            <input type="date" class="ozel-finans-tarihi" [(ngModel)]="finansTarihi" />
-            <small>{{ t('FINANCE_DATE_SINGLE_HELP') }}</small>
-          </label>
+        @case ('aktarilmadi') {
+          <h4>{{ t('SINGLE_NOT_TRANSFERRED_TITLE') }}</h4>
+          <p>{{ t('SINGLE_NOT_TRANSFERRED_HELP') }}</p>
+          @if (ozelAktarYetkili()) {
+            <label class="ozel-alan">
+              <span>{{ t('FINANCE_DATE') }}</span>
+              <input type="date" class="ozel-finans-tarihi" [(ngModel)]="finansTarihi" />
+              <small>{{ t('FINANCE_DATE_SINGLE_HELP') }}</small>
+            </label>
+          }
         }
-        @case ('bekletiliyor') {
-          <h4>{{ t('SINGLE_ON_HOLD_TITLE') }}</h4>
-          <p>{{ t('SINGLE_ON_HOLD_HELP') }}</p>
-        }
-        @case ('uretimde') {
-          <h4>{{ t('SINGLE_IN_PRODUCTION_TITLE') }}</h4>
-          <p>{{ t('SINGLE_IN_PRODUCTION_HELP') }}</p>
+        @case ('aktarildi') {
+          <h4>{{ t('SINGLE_TRANSFERRED_TITLE') }}</h4>
+          <p>{{ t('SINGLE_TRANSFERRED_HELP') }}</p>
         }
         @case ('tamamlandi') {
           <h4>{{ t('SINGLE_DONE_TITLE') }}</h4>
@@ -44,56 +42,28 @@
       }
 
       <div class="ozel-eylemler">
-        @if (adim === 'formBekliyor' && formYetkili()) {
-          @let bicimler = indirmeBicimleri();
-          @if (bicimler.length > 1) {
-            <app-islemler-menusu
-              [etiket]="t(islemde() ? 'SAVING' : 'CREATE')"
-              [ikon]="islemde() ? 'ri-loader-4-line spin' : 'ri-file-add-line'"
-              [birincil]="true"
-              [disabled]="islemde() || !secim().length"
-            >
-              <button type="button" (click)="olustur('pdf')"><i class="ri-file-pdf-2-line"></i><span>{{ t('CREATE_AS_PDF') }}</span></button>
-              <button type="button" (click)="olustur('xlsx')"><i class="ri-file-excel-2-line"></i><span>{{ t('CREATE_AS_EXCEL') }}</span></button>
-            </app-islemler-menusu>
-          } @else {
-            <button type="button" class="primary-action ozel-form-olustur" [disabled]="islemde() || !secim().length" (click)="olustur(bicimler.length ? bicimler[0] : null)">
-              <i [class]="islemde() ? 'ri-loader-4-line spin' : 'ri-file-add-line'"></i>{{ t(islemde() ? 'SAVING' : 'CREATE') }}
-            </button>
-          }
-        }
-        @if (adim === 'bekletiliyor' && permissions.canWrite(izin.DurumDuzenle)) {
-          <button type="button" class="primary-action ozel-uretime-al" [disabled]="islemde()" (click)="durum(b.id, 2)">
-            <i class="ri-play-line"></i>{{ t('START_PRODUCTION') }}
+        @if (adim === 'aktarilmadi' && ozelAktarYetkili()) {
+          <button type="button" class="primary-action ozel-finansa-aktar" [disabled]="islemde()" (click)="finansaAktar()">
+            <i [class]="islemde() ? 'ri-loader-4-line spin' : 'ri-send-plane-line'"></i>{{ t(islemde() ? 'SAVING' : 'FINANCE_TRANSFER') }}
           </button>
         }
-        @if (adim === 'uretimde' && permissions.canWrite(izin.UretimiTamamla) && permissions.canWrite(izin.DurumDuzenle)) {
-          <button type="button" class="success-action ozel-tamamla" [disabled]="islemde()" (click)="durum(b.id, 3)">
-            <i class="ri-check-line"></i>{{ t('COMPLETE') }}
+        @if (adim === 'aktarildi' && ozelGeriAlYetkili() && !finansGeriAlAcik()) {
+          <button type="button" class="link-action ozel-finanstan-geri-al" [disabled]="islemde()" (click)="finansGeriAlAcik.set(true)">
+            {{ t('FINANCE_REVERT') }}
           </button>
-        }
-        @if ((adim === 'uretimde' || adim === 'tamamlandi' || adim === 'bekletiliyor') && permissions.canWrite(izin.FormYenidenOlustur) && indirmeBicimleri().length) {
-          <button type="button" class="ozel-yeniden" [disabled]="islemde()" (click)="olustur(indirmeBicimleri()[0])">
-            <i class="ri-refresh-line"></i>{{ t('REGENERATE') }}
-          </button>
-        }
-        @if (adim === 'uretimde' && permissions.canWrite(izin.DurumuGeriAl) && permissions.canWrite(izin.DurumDuzenle)) {
-          <button type="button" class="link-action ozel-geri-al" [disabled]="islemde()" (click)="geriAlHedefi.set(1)">{{ t('BACKWARD') }}</button>
-        }
-        @if (adim === 'tamamlandi' && permissions.canWrite(izin.UretimiYenidenAc) && permissions.canWrite(izin.DurumuGeriAl) && permissions.canWrite(izin.DurumDuzenle)) {
-          <button type="button" class="link-action ozel-yeniden-ac" [disabled]="islemde()" (click)="geriAlHedefi.set(2)">{{ t('REOPEN') }}</button>
         }
       </div>
 
-      @if (geriAlHedefi(); as hedef) {
+      @if (finansGeriAlAcik() && adim === 'aktarildi') {
         <div class="ozel-geri-alma">
+          <p class="ozel-geri-alma-notu">{{ t('FINANCE_REVERT_HELP') }}</p>
           <label class="ozel-alan">
-            <span>{{ t('BACKWARD_REASON_TITLE') }} <b>*</b></span>
+            <span>{{ t('FINANCE_REVERT_REASON') }}</span>
             <input class="ozel-gerekce" [ngModel]="gerekce" (ngModelChange)="gerekceyiDegistir($event)" maxlength="1000" />
           </label>
           <div class="ozel-eylemler">
-            <button type="button" [disabled]="islemde()" (click)="geriAlHedefi.set(null)">{{ t('CANCEL') }}</button>
-            <button type="button" class="primary-action ozel-geri-al-onay" [disabled]="islemde() || !gerekce.trim()" (click)="durum(b.id, hedef)">{{ t('CONFIRM') }}</button>
+            <button type="button" [disabled]="islemde()" (click)="finansGeriAlAcik.set(false)">{{ t('CANCEL') }}</button>
+            <button type="button" class="primary-action ozel-finanstan-geri-al-onay" [disabled]="islemde()" (click)="finanstanGeriAl()">{{ t('CONFIRM') }}</button>
           </div>
         </div>
       }

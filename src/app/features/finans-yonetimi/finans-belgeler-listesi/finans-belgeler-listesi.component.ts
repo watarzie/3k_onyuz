@@ -9,7 +9,6 @@ import { FinansService } from '../../../core/services/finans.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { FinansOdemeFiltresi } from '../../../core/constants/enums';
-import { FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
 import {
   FinansFatura,
   FinansListelemeRequest,
@@ -20,7 +19,7 @@ import {
 import { FinansVarlikTuru } from '../../../shared/models/finans-v2.model';
 import { ServerPagerComponent } from '../../../shared/components/server-pager/server-pager.component';
 import { IslemlerMenusuComponent } from '../../../shared/components/islemler-menusu/islemler-menusu.component';
-import { finansFaturaGirilebilir, finansOdemeKaydedilebilir, finansPoGirilebilir } from '../ortak/finans-izinleri';
+import { finansPoGirilebilir, finansSiparisFaturaYazilabilir } from '../ortak/finans-izinleri';
 import { odemeDurumuAnahtari, odemeDurumuSinifi, poDurumuAnahtari } from '../ortak/finans-etiketleri';
 import { onayaAlindi } from '../../../shared/models';
 
@@ -44,7 +43,6 @@ export class FinansBelgelerListesiComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly toast = inject(ToastService);
   readonly permissions = inject(PermissionService);
-  readonly izin = FINANS_YETKI;
   readonly poDurumuAnahtari = poDurumuAnahtari;
   readonly odemeDurumuAnahtari = odemeDurumuAnahtari;
   readonly odemeDurumuSinifi = odemeDurumuSinifi;
@@ -139,21 +137,19 @@ export class FinansBelgelerListesiComponent implements OnInit {
   fatura(r: FinansSiparis | FinansFatura): FinansFatura | null {
     return 'faturaNumarasi' in r ? r : null;
   }
-  parasal(kod: string): boolean {
-    return this.permissions.hasAccess(this.izin.ParasalVeriGoruntule) && this.permissions.hasAccess(kod);
-  }
   poGirilebilir(): boolean {
     return finansPoGirilebilir(this.permissions);
   }
+  /** Fatura girişi, PO/fatura düzeltme-iptal ve ödeme: PO/Fatura sekmesinin W izni. */
   faturaGirilebilir(): boolean {
-    return finansFaturaGirilebilir(this.permissions);
+    return finansSiparisFaturaYazilabilir(this.permissions);
   }
   /** Kalem eklenebilir: PO iptal değil (fatura durumu kalem eklemeyi engellemez). */
   kalemEklenebilir(po: FinansSiparis): boolean {
     return !po.iptalEdildi && po.durum !== 4;
   }
   odemeKaydedilebilir(f: FinansFatura): boolean {
-    return !f.iptalEdildi && f.durum !== 2 && finansOdemeKaydedilebilir(this.permissions);
+    return !f.iptalEdildi && f.durum !== 2 && finansSiparisFaturaYazilabilir(this.permissions);
   }
   /** Ödendi kutusu: işaretli faturada işareti kaldırma (gerekçeli), işaretsizde ödeme tarihi girişi açılır. */
   odemePaneliniAc(f: FinansFatura): void {

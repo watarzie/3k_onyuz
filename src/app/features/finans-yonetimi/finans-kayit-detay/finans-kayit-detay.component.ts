@@ -3,7 +3,6 @@ import { Component, DestroyRef, OnInit, inject, input, output, signal } from '@a
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, finalize } from 'rxjs';
-import { AMBALAJ_YETKI, FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
 import { FinansService } from '../../../core/services/finans.service';
 import { FinansParaBirimiService } from '../../../core/services/finans-para-birimi.service';
 import { PermissionService } from '../../../core/services/permission.service';
@@ -24,10 +23,12 @@ import {
 } from '../../../shared/models/finans-v2.model';
 import { ServerPagerComponent } from '../../../shared/components/server-pager/server-pager.component';
 import {
-  finansFaturaGirilebilir,
-  finansOdemeKaydedilebilir,
+  finansBelgeOkunabilir,
+  finansIsDuzenlenebilir,
   finansPoGirilebilir,
-  tumFinansAlanlariGorunur,
+  finansSekmeYazilabilir,
+  finansSiparisFaturaYazilabilir,
+  finansVarlikYazilabilir,
 } from '../ortak/finans-izinleri';
 import {
   kategoriAnahtari,
@@ -46,7 +47,7 @@ import { onayaAlindi } from '../../../shared/models';
   standalone: true,
   imports: [FormsModule, DatePipe, DecimalPipe, ServerPagerComponent],
   templateUrl: './finans-kayit-detay.component.html',
-  styleUrls: ['../ortak/finans-v2.scss', '../ortak/finans-islem-dialoglari.scss'],
+  styleUrls: ['../ortak/finans-v2.scss', '../ortak/finans-islem-dialoglari.scss', './finans-kayit-detay.component.scss'],
 })
 export class FinansKayitDetayComponent implements OnInit {
   private readonly translation = inject(TranslationService);
@@ -69,7 +70,6 @@ export class FinansKayitDetayComponent implements OnInit {
   private readonly toast = inject(ToastService);
   readonly permissions = inject(PermissionService);
   readonly paraBirimleri = inject(FinansParaBirimiService);
-  readonly izin = FINANS_YETKI;
   readonly malzeme = FinansSandikMalzemesi;
   readonly kayit = signal<FinansIsKaydi | null>(null);
   readonly siparis = signal<FinansSiparis | null>(null);
@@ -79,7 +79,6 @@ export class FinansKayitDetayComponent implements OnInit {
   odemeForm = { odendi: false, tarih: '', aciklama: '' };
   /**
    * PO/fatura satırları: işin toplam bedeli, bu belgedeki tutar, faturalanan ve kalan tutarlar (R1 §18).
-   * Tutarlar izin yoksa sunucudan null gelir ve düzenlenemez.
    */
   belgeKalemleri: {
     id: number;
@@ -125,22 +124,19 @@ export class FinansKayitDetayComponent implements OnInit {
     this.paraBirimleri.yukle();
     this.yukle();
   }
-  m3Gorunur(): boolean {
-    return this.permissions.hasAccess(AMBALAJ_YETKI.M3Goruntule);
-  }
   /** Ahşap sandıkta ahşap m³ üretimden gelir, salt okunurdur; kontra/belirsiz işte iki değer de girilir. */
   ahsapUretimden(): boolean {
     return finansAhsapUretimden(this.kayit()?.sandikMalzemesi);
   }
   /**
-   * Hacim girişi (Fiyatlandırma sekmesinde): kontrplak/katlanır sandık veya önceden elle girilmiş hacim; m³ görünür,
-   * fiyatlandırma değiştirme yazma izni var, iş aktif ve PO'ya bağlı değil. Ahşap sandığın m³'ü üretimden gelir.
+   * Hacim girişi (Fiyatlandırma sekmesinde): kontrplak/katlanır sandık veya önceden elle girilmiş hacim; iş kaydını
+   * düzenleme izni var (İş Takibi veya Münferit İşler W), iş aktif ve PO'ya bağlı değil. Ahşap sandığın m³'ü üretimden gelir.
    */
   hacimDuzenlenebilir(): boolean {
     const k = this.kayit();
     return !!k && !k.iptalEdildi && k.kaynakAktif !== false && k.poNumaralari.length === 0
       && finansHacimElleGirilir(k.sandikMalzemesi, k.hacimManuel)
-      && this.m3Gorunur() && this.permissions.canWrite(this.izin.FiyatlandirmaDegistir);
+      && finansIsDuzenlenebilir(this.permissions);
   }
   /** Fiyatlandırma sekmesi: tam fiyatlandırma formu veya yalnız hacim girişi. */
   fiyatSekmesiVar(): boolean {
@@ -152,15 +148,17 @@ export class FinansKayitDetayComponent implements OnInit {
     return !!k && this.hacimDuzenlenebilir() && finansHacimBilesik(k.ahsapM3, k.kontraM3) <= 0;
   }
   /**
-   * Hacim girilince oluşacak tutar: iş m³ ile fiyatlanıyorsa kayıtlı tarife birim fiyatı × bileşik m³. Birim fiyat
-   * veya tutar görülemiyorsa ya da iş adetle fiyatlanıyorsa önizleme gösterilmez.
+   * Girilen hacmin tarifeyle tutarı. Malzemeli fiyatta (ahşap ve kontra ayrı tarife) kontra m³ × kontra fiyatı +
+   * ahşap m³ × ahşap fiyatı; değilse bileşik m³ × birim fiyat. Kayıt sunucuda güncel tarifeyle yeniden fiyatlanır.
    */
-  hacimOnizleme(): { birimFiyat: number; paraBirimi: string; tutar: number } | null {
+  hacimOnizleme(): { birimFiyat: number; ahsapBirimFiyat: number | null; paraBirimi: string; tutar: number } | null {
     const k = this.kayit();
     if (!k || k.fiyatlandirmaBirimi !== 2 || !(k.birimFiyat && k.birimFiyat > 0)) return null;
-    if (!this.parasal(this.izin.BirimFiyatGoruntule) || !this.parasal(this.izin.TutarGoruntule)) return null;
-    const bilesik = finansHacimBilesik(this.hacim.ahsapM3, this.hacim.kontraM3);
-    return { birimFiyat: k.birimFiyat, paraBirimi: k.paraBirimi ?? '', tutar: Math.round(k.birimFiyat * bilesik * 100) / 100 };
+    const ahsapFiyat = k.ahsapBirimFiyat ?? null;
+    const tutar = ahsapFiyat !== null
+      ? k.birimFiyat * (Number(this.hacim.kontraM3) || 0) + ahsapFiyat * (Number(this.hacim.ahsapM3) || 0)
+      : k.birimFiyat * finansHacimBilesik(this.hacim.ahsapM3, this.hacim.kontraM3);
+    return { birimFiyat: k.birimFiyat, ahsapBirimFiyat: ahsapFiyat, paraBirimi: k.paraBirimi ?? '', tutar: Math.round(tutar * 100) / 100 };
   }
   /** İş adet/sabit bedelle fiyatlanıyorsa girilen m³ fiyatı değiştirmez; yalnız raporlanır. */
   hacimFiyataEtkisiz(): boolean {
@@ -176,28 +174,23 @@ export class FinansKayitDetayComponent implements OnInit {
       this.hata.set(this.t('VOLUME_INVALID'));
       return;
     }
-    if (this.hacim.aciklama.trim().length < 5) {
-      this.hata.set(this.t('VOLUME_REASON_REQUIRED'));
-      return;
-    }
+    // Gerekçe isteğe bağlıdır; yazılmışsa değişiklik geçmişine eklenir.
+    const aciklama = this.hacim.aciklama.trim() || undefined;
     this.uygula(
-      this.service.hacimGir(k.id, { ahsapM3, kontraM3, aciklama: this.hacim.aciklama.trim() }),
+      this.service.hacimGir(k.id, { ahsapM3, kontraM3, aciklama }),
       this.t('VOLUME_SAVED'),
     );
   }
-  parasal(kod: string): boolean {
-    return (
-      this.permissions.hasAccess(this.izin.ParasalVeriGoruntule) && this.permissions.hasAccess(kod)
-    );
-  }
+  /** Fiyatlandırma ve finans tarihi: iş kaydını düzenleme izni (İş Takibi veya Münferit İşler W). */
   fiyatDuzenlenebilir(): boolean {
-    // Dinamik alanlar tüm mali/ölçü izinleri olmadığında sunucuda bütünüyle maskelenir.
-    // Görülemeyen eski snapshot'ı boş bileşen/0 ile üzerine yazmayız.
-    return (
-      !!this.kayit() &&
-      this.permissions.canWrite(this.izin.FiyatlandirmaDegistir) &&
-      tumFinansAlanlariGorunur(this.permissions)
-    );
+    return !!this.kayit() && finansIsDuzenlenebilir(this.permissions);
+  }
+  isDuzenlenebilir(): boolean {
+    return finansIsDuzenlenebilir(this.permissions);
+  }
+  /** Değişiklik geçmişi: kayıt sekmeleri veya Giderler sekmesinden biri. */
+  gecmisGorunur(): boolean {
+    return finansBelgeOkunabilir(this.permissions);
   }
   yukle(): void {
     if (this.hedef().tur === 'Siparis') {
@@ -323,7 +316,7 @@ export class FinansKayitDetayComponent implements OnInit {
   }
   poFaturalanabilir(): boolean {
     const po = this.siparis();
-    return !!po && !po.iptalEdildi && po.durum !== 4 && po.durum !== 3 && finansFaturaGirilebilir(this.permissions);
+    return !!po && !po.iptalEdildi && po.durum !== 4 && po.durum !== 3 && finansSiparisFaturaYazilabilir(this.permissions);
   }
   isePoAcilabilir(): boolean {
     const k = this.kayit();
@@ -332,12 +325,12 @@ export class FinansKayitDetayComponent implements OnInit {
   private kalemAdi(projeNo: string | undefined, ad: string): string {
     return projeNo && !ad.startsWith(projeNo) ? `${projeNo} · ${ad}` : ad;
   }
+  /** PO ve fatura düzeltme: PO/Fatura sekmesinin W izni. */
   belgeDuzenlemeIzni(): boolean {
-    return this.permissions.canWrite(
-      this.hedef().tur === 'Siparis' ? this.izin.PoDegistir : this.izin.FaturaDegistir,
-    );
+    return finansSiparisFaturaYazilabilir(this.permissions);
   }
   belgeKaydet(): void {
+    if (!this.belgeDuzenlemeIzni()) return;
     const form = this.belgeForm;
     if (!form.numara.trim() || !form.tarih || !form.gerekce.trim()) {
       this.hata.set('Belge numarası, tarih ve değişiklik gerekçesi zorunludur.');
@@ -345,8 +338,7 @@ export class FinansKayitDetayComponent implements OnInit {
     }
     if (
       this.tutarlariDuzenle &&
-      (!this.parasal(this.izin.TutarGoruntule) ||
-        !this.belgeKalemleri.length ||
+      (!this.belgeKalemleri.length ||
         this.belgeKalemleri.some(
           (x) => x.netTutar == null || !Number.isFinite(x.netTutar) || x.netTutar <= 0,
         ))
@@ -400,7 +392,7 @@ export class FinansKayitDetayComponent implements OnInit {
   }
   odemeKaydedilebilir(): boolean {
     const f = this.fatura();
-    return !!f && !f.iptalEdildi && f.durum !== 2 && finansOdemeKaydedilebilir(this.permissions);
+    return !!f && !f.iptalEdildi && f.durum !== 2 && finansSiparisFaturaYazilabilir(this.permissions);
   }
   odemeKaydet(): void {
     const f = this.fatura();
@@ -460,7 +452,7 @@ export class FinansKayitDetayComponent implements OnInit {
   fiyatKaydet(): void {
     if (!this.fiyatDuzenlenebilir()) {
       this.hata.set(
-        'Fiyatlandırma için kayıt ve mali/ölçü alanlarına erişim gerekir. Gizlenmiş değerlerin üzerine yazılamaz.',
+        'Fiyatlandırma için İş Takibi veya Münferit İşler sekmesinde işlem (W) izni gerekir.',
       );
       return;
     }
@@ -509,13 +501,21 @@ export class FinansKayitDetayComponent implements OnInit {
         else this.hata.set(r.error ?? 'Geçmiş alınamadı.');
       });
   }
-  iptalIzni(): string {
-    return {
-      IsKaydi: this.izin.IsIptal,
-      Siparis: this.izin.PoIptal,
-      Fatura: this.izin.FaturaIptal,
-      Gider: this.izin.GiderIptal,
-    }[this.hedef().tur];
+  /** İptal, kaydın kendi sekmesinin W iznine bağlıdır: iş kaydı İş Takibi/Münferit İşler, PO/fatura PO/Fatura, gider Giderler. */
+  iptalEdilebilir(): boolean {
+    switch (this.hedef().tur) {
+      case 'IsKaydi':
+        return finansIsDuzenlenebilir(this.permissions);
+      case 'Siparis':
+      case 'Fatura':
+        return finansSiparisFaturaYazilabilir(this.permissions);
+      case 'Gider':
+        return finansSekmeYazilabilir(this.permissions, 'giderler');
+    }
+  }
+  /** Kalıcı silme: hedef kaydın sekmesinin W izni (sunucudaki FinansSekmeleri.Varlik). */
+  kaliciSilinebilir(): boolean {
+    return finansVarlikYazilabilir(this.permissions, this.hedef().tur);
   }
   iptal(): void {
     if (!this.iptalNedeni.trim()) {

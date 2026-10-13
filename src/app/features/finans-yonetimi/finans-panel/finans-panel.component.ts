@@ -1,9 +1,9 @@
 import { TranslationService } from '../../../core/services/translation.service';
-import { DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, OnInit, computed, inject, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subject, finalize, switchMap } from 'rxjs';
+import { Subject, debounceTime, finalize, switchMap } from 'rxjs';
 import {
   NgApexchartsModule,
   ApexAxisChartSeries,
@@ -28,8 +28,7 @@ import {
   FinansVarlikTuru,
   FinansYaslandirmaKovasi,
 } from '../../../shared/models/finans-v2.model';
-import { FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
-import { finansSiparisFaturaOkunabilir } from '../ortak/finans-izinleri';
+import { finansSekmeAcik } from '../ortak/finans-izinleri';
 import { isTuruAdiAnahtari } from '../ortak/finans-etiketleri';
 import { FinansPanelDetayComponent } from '../finans-panel-detay/finans-panel-detay.component';
 
@@ -73,10 +72,28 @@ type FinansPanelGrafik =
 
 const GRAFIK_TERCIHI = '3k_finans_panel_grafik';
 
+/**
+ * Panel tarih aralığı denetimi (sunucudaki FinansTarihKurallari.GecerliAralik ile aynı): iki tarih tam (yyyy-MM-dd),
+ * yıl 2000–2200, başlangıç bitişten sonra değil ve aralık en fazla on yıl (3660 gün). Geçerliyse null, değilse
+ * çeviri anahtarı döner.
+ */
+export function finansPanelAralikHatasi(baslangic: string, bitis: string): string | null {
+  const tam = /^\d{4}-\d{2}-\d{2}$/;
+  if (!tam.test(baslangic ?? '') || !tam.test(bitis ?? '')) return 'DATE_RANGE_INCOMPLETE';
+  const yilGecerli = (t: string) => { const y = Number(t.slice(0, 4)); return y >= 2000 && y <= 2200; };
+  if (!yilGecerli(baslangic) || !yilGecerli(bitis)) return 'DATE_RANGE_YEAR';
+  const bas = Date.parse(baslangic + 'T00:00:00Z');
+  const bit = Date.parse(bitis + 'T00:00:00Z');
+  if (Number.isNaN(bas) || Number.isNaN(bit)) return 'DATE_RANGE_INCOMPLETE';
+  if (bas > bit) return 'DATE_RANGE_ORDER';
+  if ((bit - bas) / 86_400_000 > 3660) return 'DATE_RANGE_TOO_LONG';
+  return null;
+}
+
 @Component({
   selector: 'app-finans-panel',
   standalone: true,
-  imports: [FormsModule, DecimalPipe, NgApexchartsModule, FinansPanelDetayComponent],
+  imports: [FormsModule, DatePipe, DecimalPipe, NgApexchartsModule, FinansPanelDetayComponent],
   templateUrl: './finans-panel.component.html',
   styleUrls: ['../ortak/finans-v2.scss', './finans-panel.component.scss'],
 })
@@ -90,21 +107,21 @@ export class FinansPanelComponent implements OnInit {
   private readonly toast = inject(ToastService);
   readonly permissions = inject(PermissionService);
   private readonly paraBirimleri = inject(FinansParaBirimiService);
-  readonly izin = FINANS_YETKI;
-  readonly kayitGorunur = computed(() => this.permissions.hasAccess(FINANS_YETKI.KayitGoruntule));
-  /** PO, fatura ve alacak bilgileri faturalardan türetildiği için fatura okuma izniyle gösterilir (RR Q6). */
-  readonly alacakGorunur = computed(() => finansSiparisFaturaOkunabilir(this.permissions));
   /** Para birimi seçenekleri: panelin para birimleri (aktif tanımlar + verideki kodlar), yoksa tanım tablosu. */
   readonly paraKodlari = computed(() => {
     const paneldekiler = this.panel()?.tutarlar.map((x) => x.paraBirimi) ?? [];
     return paneldekiler.length ? paneldekiler : this.paraBirimleri.aktifKodlar();
   });
   readonly yaslandirmaEsikleri = [15, 30, 60, 90];
-  readonly yaslandirmaGorunur = computed(() => this.permissions.hasAccess(FINANS_YETKI.RaporGoruntule));
+  /** Yaşlandırma kovası bekleyen işleri İş Takibi'nde açar; o sekme kapalıysa kova tıklanamaz. */
+  readonly bekleyenlerAcilabilir = computed(() => finansSekmeAcik(this.permissions, 'akis'));
   /** Yaşlandırma kovası tıklanınca kalem listesi Finans İş Takibi'nde açılır. */
   readonly bekleyenAc = output<{ asama: FinansBekleyenAsama; minimumGun: number }>();
   /** Detay dökümünde bir kalem seçilince kayıt detayı finans sayfasında açılır. */
   readonly kayitAc = output<{ tur: FinansVarlikTuru; id: number }>();
+  /** Paneldeki münferit iş kartının "Tümü" düğmesi: Münferit İşler sekmesine geçilir. */
+  readonly munferitAc = output<void>();
+  readonly munferitSekmesiAcik = computed(() => finansSekmeAcik(this.permissions, 'munferit'));
   private readonly refresh = new Subject<void>();
   readonly loading = signal(false);
   readonly panel = signal<FinansPanel | null>(null);
@@ -122,16 +139,11 @@ export class FinansPanelComponent implements OnInit {
   readonly donemler = ['tum', 'yil', 'ay', 'ozel'] as const;
   baslangic = '';
   bitis = '';
+  /** Özel aralıkta tamamlanmamış/geçersiz tarih için satır içi uyarı (bildirim yağmuru yerine). */
+  readonly tarihHatasi = signal<string | null>(null);
+  private readonly tarihDegisimi = new Subject<void>();
 
-  readonly tutarGorunur = computed(
-    () =>
-      this.parasal(FINANS_YETKI.TutarGoruntule) ||
-      this.parasal(FINANS_YETKI.GelirGoruntule) ||
-      this.parasal(FINANS_YETKI.GiderGoruntule),
-  );
-  readonly karGorunur = computed(() => this.parasal(FINANS_YETKI.KarlilikGoruntule));
-
-  /** Genel durum kartları: iş kalemi her zaman; PO, fatura ve tahsilat fatura okuma izniyle. */
+  /** Genel durum kartları: iş kalemi, PO, fatura ve tahsilat. */
   readonly kpiKartlari = computed<FinansPanelKpi[]>(() => {
     const p = this.panel();
     if (!p) return [];
@@ -149,7 +161,7 @@ export class FinansPanelComponent implements OnInit {
         ],
       },
     ];
-    if (s && this.alacakGorunur()) {
+    if (s) {
       kartlar.push(
         {
           anahtar: 'po',
@@ -176,7 +188,7 @@ export class FinansPanelComponent implements OnInit {
         },
       );
     }
-    if (this.alacakGorunur() && p.alacaklar?.length) {
+    if (p.alacaklar?.length) {
       const toplam = (alan: 'bekleyenAdet' | 'vadesiGecenAdet' | 'yaklasanAdet') =>
         p.alacaklar!.reduce((a, x) => a + x[alan], 0);
       const gecen = toplam('vadesiGecenAdet');
@@ -280,16 +292,14 @@ export class FinansPanelComponent implements OnInit {
       const seriler: FinansPanelSeri[] = [
         { anahtar: 'is', ad: this.t('PANEL_KPI_ITEMS'), renk: '#605dff', data: aylar.map((x) => x.isKaydi) },
       ];
-      if (this.alacakGorunur())
-        seriler.push(
-          { anahtar: 'po', ad: this.t('PANEL_KPI_PO'), renk: '#3584fc', data: aylar.map((x) => x.po) },
-          { anahtar: 'fatura', ad: this.t('PANEL_KPI_INVOICES'), renk: '#25b003', data: aylar.map((x) => x.fatura) },
-        );
+      seriler.push(
+        { anahtar: 'po', ad: this.t('PANEL_KPI_PO'), renk: '#3584fc', data: aylar.map((x) => x.po) },
+        { anahtar: 'fatura', ad: this.t('PANEL_KPI_INVOICES'), renk: '#25b003', data: aylar.map((x) => x.fatura) },
+      );
       return seriler;
     }
     const grafik = this.grafik();
     if (grafik === 'siparis' || grafik === 'fatura') {
-      if (!this.parasal(FINANS_YETKI.TutarGoruntule)) return [];
       const p = this.panel()?.tutarlar.find((x) => x.paraBirimi === this.para());
       if (!p) return [];
       // Kartların sunucu toplamları kullanılır; mevcut sayfa mali otorite değildir.
@@ -304,14 +314,14 @@ export class FinansPanelComponent implements OnInit {
     }
     const rows = this.grafikVerileri();
     const result: FinansPanelSeri[] = [];
-    if (this.parasal(FINANS_YETKI.GelirGoruntule) && rows.some((x) => x.gelir != null))
+    if (rows.some((x) => x.gelir != null))
       result.push({
         anahtar: 'gelir',
         ad: grafik === 'beklenenTahsilat' ? this.t('PANEL_EXPECTED_COLLECTION') : this.t('NET_INCOME'),
         renk: '#605dff',
         data: rows.map((x) => x.gelir),
       });
-    if (this.parasal(FINANS_YETKI.GiderGoruntule) && rows.some((x) => x.gider != null))
+    if (rows.some((x) => x.gider != null))
       result.push({ anahtar: 'gider', ad: this.t('NET_EXPENSE'), renk: '#fd9b45', data: rows.map((x) => x.gider) });
     return result;
   });
@@ -404,12 +414,22 @@ export class FinansPanelComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((result) => {
-        this.panel.set(result.isSuccess ? (result.value ?? null) : null);
+        // Hatalı istekte önceki panel korunur; ekran boşalmaz, yalnız hata bildirilir.
+        if (result.isSuccess) this.panel.set(result.value ?? null);
         const kodlar = this.paraKodlari();
         if (kodlar.length && !kodlar.includes(this.para())) this.para.set(kodlar[0]);
         if (!result.isSuccess) this.toast.error(result.error ?? this.t('PANEL_LOAD_ERROR'));
       });
+    // Tarih kutusuna yazarken (yıl 0002 → 2026 gibi) her tuşta istek gitmez: yazma bitince ve tarih geçerliyse yüklenir.
+    this.tarihDegisimi.pipe(debounceTime(600), takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      const hata = finansPanelAralikHatasi(this.baslangic, this.bitis);
+      this.tarihHatasi.set(hata);
+      if (!hata) this.refresh.next();
+    });
     this.donemSec('tum');
+  }
+  tarihDegisti(): void {
+    this.tarihDegisimi.next();
   }
   /** Hazır dönem seçimi; "Özel aralık" seçilince mevcut tarihler korunur ve kullanıcı değiştirir. */
   donemSec(donem: 'tum' | 'yil' | 'ay' | 'ozel'): void {
@@ -455,20 +475,13 @@ export class FinansPanelComponent implements OnInit {
       // Tarayıcı depolaması kapalıysa tercih yalnız bu oturumda geçerlidir.
     }
   }
-  parasal(alan: string): boolean {
-    return (
-      this.permissions.hasAccess(FINANS_YETKI.ParasalVeriGoruntule) &&
-      this.permissions.hasAccess(alan)
-    );
-  }
   /** Panel kovası (R1 §5): kovanın aşaması ve eşiğiyle bekleme listesi Finans İş Takibi'nde açılır. */
   kovaAc(kova: FinansYaslandirmaKovasi): void {
-    if (!this.kayitGorunur() || !this.yaslandirmaGorunur()) return;
+    if (!this.bekleyenlerAcilabilir()) return;
     this.bekleyenAc.emit({ asama: kova.asama, minimumGun: kova.minGun });
   }
-  /** Kovanın kalan net tutarı (tutar izniyle), ipucu olarak gösterilir. */
+  /** Kovanın kalan net tutarı, ipucu olarak gösterilir. */
   kovaTutari(kova: FinansYaslandirmaKovasi): string {
-    if (!this.parasal(FINANS_YETKI.TutarGoruntule)) return '';
     const bicim = new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return kova.tutarlar.map((x) => `${bicim.format(x.netTutar ?? 0)} ${x.paraBirimi}`).join(' · ');
   }
@@ -476,8 +489,10 @@ export class FinansPanelComponent implements OnInit {
     return this.panel()?.yaslandirma?.find((x) => x.asama === asama && x.minGun === minGun);
   }
   yenile(): void {
-    if (!this.baslangic || !this.bitis || this.baslangic > this.bitis) {
-      this.toast.error(this.t('DATE_RANGE_ERROR'));
+    const hata = finansPanelAralikHatasi(this.baslangic, this.bitis);
+    this.tarihHatasi.set(hata);
+    if (hata) {
+      this.toast.error(this.t(hata));
       return;
     }
     this.refresh.next();

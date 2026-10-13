@@ -569,7 +569,8 @@ export class AmbalajUretimListesiComponent implements OnInit {
   }
 
   engelNedeni(engel: AmbalajTamamlamaEngeli): string {
-    return this.t(engel.neden === 'FormYok' ? 'BLOCK_NO_FORM' : engel.neden === 'UretimeAlinmadi' ? 'BLOCK_NOT_IN_PRODUCTION' : 'BLOCK_MEASURE');
+    return this.t(engel.neden === 'FormYok' ? 'BLOCK_NO_FORM' : engel.neden === 'UretimeAlinmadi' ? 'BLOCK_NOT_IN_PRODUCTION'
+      : engel.neden === 'FinansaAktarilmadi' ? 'BLOCK_NOT_TRANSFERRED' : 'BLOCK_MEASURE');
   }
 
   /**

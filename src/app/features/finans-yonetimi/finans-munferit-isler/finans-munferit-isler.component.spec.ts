@@ -7,7 +7,8 @@ import { FinansService } from '../../../core/services/finans.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { TranslationService } from '../../../core/services/translation.service';
-import { FinansIsKaydi } from '../../../shared/models/finans.model';
+import { FinansIsKaydi, FinansUrunSecenegi } from '../../../shared/models/finans.model';
+import { ApiResult } from '../../../shared/models/common.model';
 import { FinansMunferitIslerComponent } from './finans-munferit-isler.component';
 
 describe('Finans Münferit İşler sekmesi', () => {
@@ -27,12 +28,13 @@ describe('Finans Münferit İşler sekmesi', () => {
   beforeEach(() => {
     okuma.clear();
     yazma.clear();
-    [FINANS_YETKI.Modul, FINANS_YETKI.SekmeMunferitIsler, FINANS_YETKI.KayitGoruntule].forEach((k) => okuma.add(k));
-    api = jasmine.createSpyObj<FinansService>('FinansService', ['munferitIsler', 'munferitIsOlustur', 'urunSecenekleri', 'urunler', 'ozelIsIptal', 'ozelIsGeriAl']);
+    [FINANS_YETKI.Modul, FINANS_YETKI.SekmeMunferitIsler].forEach((k) => okuma.add(k));
+    api = jasmine.createSpyObj<FinansService>('FinansService', ['munferitIsler', 'munferitIsOlustur', 'urunSecenekleri', 'ozelIsIptal', 'ozelIsGeriAl']);
     api.munferitIsler.and.returnValue(of({ isSuccess: true, value: sayfa([kayit(1), kayit(2, { iptalEdildi: true })]) }));
     api.urunSecenekleri.and.returnValue(of({ isSuccess: true, value: [
-      { id: 7, kod: 'HX-KASA', ad: 'Haliade-X kasa', fiyatlandirmaBirimi: 1 },
-      { id: 8, kod: 'SKIT-M3', ad: 'SKIT kontra', fiyatlandirmaBirimi: 2 },
+      // Sekme R izniyle tarife fiyatı her zaman gelir (alan maskesi yoktur).
+      { id: 7, kod: 'HX-KASA', ad: 'Haliade-X kasa', fiyatlandirmaBirimi: 1, birimFiyat: 1250, paraBirimi: 'EUR' },
+      { id: 8, kod: 'SKIT-M3', ad: 'SKIT kontra', fiyatlandirmaBirimi: 2, birimFiyat: 300, paraBirimi: 'EUR' },
     ] }));
     api.munferitIsOlustur.and.returnValue(of({ isSuccess: true, value: kayit(3) }));
     api.ozelIsIptal.and.returnValue(of({ isSuccess: true }));
@@ -55,7 +57,7 @@ describe('Finans Münferit İşler sekmesi', () => {
     return { fixture, c: fixture.componentInstance, el: fixture.nativeElement as HTMLElement };
   }
 
-  it('ayın aralığında münferit işleri listeler; iptalleri göster sunucuya gider; yazma izni yoksa yeni iş düğmesi yoktur', () => {
+  it('ayın aralığında münferit işleri listeler; iptalleri göster sunucuya gider; sekmede W izni yoksa yeni iş düğmesi yoktur', () => {
     const { fixture, c, el } = olustur();
     const istek = api.munferitIsler.calls.mostRecent().args[0];
     expect(istek.baslangic).toMatch(/^\d{4}-\d{2}-01$/);
@@ -68,28 +70,38 @@ describe('Finans Münferit İşler sekmesi', () => {
     c.filtrele();
     expect(api.munferitIsler.calls.mostRecent().args[0].iptalEdilenleriDahilEt).toBeTrue();
 
-    yazma.add(FINANS_YETKI.ManuelIsEkle);
+    // Başka sekmenin W izni Münferit İşler'de iş eklemez.
+    yazma.add(FINANS_YETKI.SekmeIsTakibi);
     fixture.detectChanges();
     expect(c.ekleyebilir()).toBeFalse();
     yazma.add(FINANS_YETKI.SekmeMunferitIsler);
+    fixture.detectChanges();
     expect(c.ekleyebilir()).toBeTrue();
+    expect(el.querySelector('.adhoc-new')).not.toBeNull();
   });
 
-  it('m³ ile fiyatlanan tanımda ahşap/kontra m³ zorunludur; istek fiyat alanı taşımaz', fakeAsync(() => {
-    yazma.add(FINANS_YETKI.ManuelIsEkle);
+  it('form yalnız tarife + proje + tarih ister; m³ tarifesinde ahşap/kontra m³ zorunludur; istek iş adı ve fiyat taşımaz', fakeAsync(() => {
     yazma.add(FINANS_YETKI.SekmeMunferitIsler);
     const { fixture, c, el } = olustur();
     c.yeniAc();
     tick(300);
     fixture.detectChanges();
-    expect(el.querySelectorAll('.adhoc-option').length).toBe(2);
+    expect(api.urunSecenekleri).toHaveBeenCalledWith('', undefined, c.form.isTarihi);
+    expect(el.querySelectorAll('select.adhoc-tariff option').length).toBe(3);
 
     c.kaydet();
-    expect(c.hata()).toBe('İş/ürün tanımı seçin.');
-    c.urunSec(c.urunSecenekleri()[1]);
-    c.form = { ...c.form, isAdi: 'Kontra kasa', ozelIsTuru: 'SKIT' };
+    expect(c.hata()).toBe('Tarife seçin.');
+    c.urunSecId(8);
+    fixture.detectChanges();
+    c.kaydet();
+    expect(c.hata()).toBe('Sistemden bir proje seçin veya proje adını yazın.');
+
+    // Serbest proje adı: sistemde olmayan proje.
+    c.projeKaynagiSec('serbest');
+    c.form = { ...c.form, projeAdi: '  Rüzgar Sahası ' };
     fixture.detectChanges();
     expect(el.querySelector('.adhoc-volume')).not.toBeNull();
+    expect(el.querySelector('.adhoc-quantity')).toBeNull();
     c.kaydet();
     expect(c.hata()).toContain('m³');
     expect(api.munferitIsOlustur).not.toHaveBeenCalled();
@@ -99,41 +111,77 @@ describe('Finans Münferit İşler sekmesi', () => {
     expect((el.querySelector('.adhoc-composite') as HTMLInputElement).value).toBe('2');
     c.kaydet();
     const istek = api.munferitIsOlustur.calls.mostRecent().args[0];
-    expect(istek).toEqual(jasmine.objectContaining({ finansUrunId: 8, isAdi: 'Kontra kasa', ozelIsTuru: 'SKIT', ahsapM3: 1.2, kontraM3: 0.8, adet: 1 }));
-    expect(Object.keys(istek).some((k) => /fiyat|paraBirimi|kdv/i.test(k))).toBeFalse();
+    expect(istek).toEqual({ finansUrunId: 8, projeId: null, projeAdi: 'Rüzgar Sahası', isTarihi: c.form.isTarihi, adet: 1, ahsapM3: 1.2, kontraM3: 0.8 });
+    expect(Object.keys(istek).some((k) => /fiyat|paraBirimi|kdv|isAdi|musteri/i.test(k))).toBeFalse();
     expect(c.formAcik()).toBeFalse();
-    // Fiyat önizlemesi tarifeleri görme izni olmadan istenmez.
-    expect(api.urunler).not.toHaveBeenCalled();
   }));
 
-  it('tarifeleri ve birim fiyatı görebilen kullanıcıya iş tarihindeki tarife fiyatıyla önizleme gösterilir', () => {
-    yazma.add(FINANS_YETKI.ManuelIsEkle);
+  it('adet tarifesinde sistem projesiyle adet gönderilir; tarih değişince fiyat o tarihe göre yenilenir, tarifesiz tarih engellenir', fakeAsync(() => {
     yazma.add(FINANS_YETKI.SekmeMunferitIsler);
-    [FINANS_YETKI.ParasalVeriGoruntule, FINANS_YETKI.BirimFiyatGoruntule, FINANS_YETKI.SekmeTanimlar, FINANS_YETKI.IsKutuphanesiYonet]
-      .forEach((k) => okuma.add(k));
-    api.urunler.and.returnValue(of({ isSuccess: true, value: { ...sayfa([]), items: [{ id: 7, guncelBirimFiyat: 1250, guncelParaBirimi: 'EUR' }] as never } }));
-    const { c } = olustur();
+    api.urunSecenekleri.and.returnValue(of({ isSuccess: true, value: [
+      { id: 7, kod: 'HX-KASA', ad: 'Haliade-X kasa', fiyatlandirmaBirimi: 1, birimFiyat: 1250, paraBirimi: 'EUR', kdvOrani: 20 },
+    ] }));
+    const { fixture, c, el } = olustur();
     c.yeniAc();
-    c.form = { ...c.form, adet: 2, isTarihi: '2026-10-06' };
-    c.urunSec({ id: 7, kod: 'HX-KASA', ad: 'Haliade-X kasa', fiyatlandirmaBirimi: 1 });
-    expect(api.urunler).toHaveBeenCalledOnceWith(jasmine.objectContaining({ arama: 'HX-KASA', tarifeTarihi: '2026-10-06' }));
-    expect(c.fiyatOnizleme()).toEqual({ birimFiyat: 1250, paraBirimi: 'EUR' });
+    tick(300);
+    c.urunSecId(7);
+    c.projeSec({ projeId: 3, projeNo: 'PA-3', musteri: 'GE Vernova' });
+    c.form = { ...c.form, adet: 2 };
+    fixture.detectChanges();
+    expect(c.secenekEtiketi(c.urunSecenekleri()[0])).toContain('1.250,00 EUR/adet');
     expect(c.onizlemeTutari()).toBe(2500);
-  });
+    expect(el.querySelector('.adhoc-preview')?.textContent).toContain('Haliade-X kasa');
 
-  it('iptal gerekçeyle yapılır; PO aç yalnız PO girme izniyle ve PO\'suz işte', async () => {
-    yazma.add(FINANS_YETKI.IsIptal);
+    // Yeni tarihte tarife yok: seçili tarifenin fiyatı yenilenir ve kayıt engellenir.
+    api.urunSecenekleri.and.returnValue(of({ isSuccess: true, value: [
+      { id: 7, kod: 'HX-KASA', ad: 'Haliade-X kasa', fiyatlandirmaBirimi: 1, birimFiyat: null, paraBirimi: null, kdvOrani: null },
+    ] }));
+    c.form = { ...c.form, isTarihi: '2026-01-05' };
+    c.secenekleriYukle();
+    tick(300);
+    fixture.detectChanges();
+    expect(api.urunSecenekleri).toHaveBeenCalledWith('', undefined, '2026-01-05');
+    expect(c.tarifesizTarih()).toBeTrue();
+    expect(el.querySelector('.adhoc-no-tariff')).not.toBeNull();
+    c.kaydet();
+    expect(api.munferitIsOlustur).not.toHaveBeenCalled();
+
+    api.urunSecenekleri.and.returnValue(of({ isSuccess: true, value: [
+      { id: 7, kod: 'HX-KASA', ad: 'Haliade-X kasa', fiyatlandirmaBirimi: 1, birimFiyat: 1250, paraBirimi: 'EUR', kdvOrani: 20 },
+    ] }));
+    c.form = { ...c.form, isTarihi: '2026-10-06' };
+    c.secenekleriYukle();
+    tick(300);
+    c.kaydet();
+    expect(api.munferitIsOlustur).toHaveBeenCalledOnceWith(
+      { finansUrunId: 7, projeId: 3, projeAdi: null, isTarihi: '2026-10-06', adet: 2, ahsapM3: null, kontraM3: null });
+  }));
+
+  it('tarife listesi yüklenemezse sessizce boş kalmaz; hata formda gösterilir', fakeAsync(() => {
+    yazma.add(FINANS_YETKI.SekmeMunferitIsler);
+    api.urunSecenekleri.and.returnValue(of({ isSuccess: false, error: 'Yetkiniz yok', statusCode: 403 } as ApiResult<FinansUrunSecenegi[]>));
+    const { fixture, c, el } = olustur();
+    c.yeniAc();
+    tick(300);
+    fixture.detectChanges();
+    expect(c.secenekHatasi()).toBe('Yetkiniz yok');
+    expect(el.querySelector('.adhoc-options-error')?.textContent).toContain('Yetkiniz yok');
+  }));
+
+  it('iptal gerekçeyle yapılır; iptal ve PO aç yalnız sekmenin W izniyle açılır', async () => {
     const { c } = olustur();
     confirm.askWithReason.and.returnValue(Promise.resolve('Mükerrer kayıt'));
-    await c.iptal(kayit(1));
-    expect(api.ozelIsIptal).toHaveBeenCalledOnceWith(1, 'Mükerrer kayıt');
-
     const acilan: number[][] = [];
     c.siparisAc.subscribe((ids) => acilan.push(ids));
+    // Yalnız R: iptal ve PO aç kapalı.
+    await c.iptal(kayit(1));
     c.poAc(kayit(1));
+    expect(api.ozelIsIptal).not.toHaveBeenCalled();
     expect(acilan).toEqual([]);
-    okuma.add(FINANS_YETKI.SiparisOperasyonGoruntule);
-    yazma.add(FINANS_YETKI.PoGir);
+
+    yazma.add(FINANS_YETKI.SekmeMunferitIsler);
+    await c.iptal(kayit(1));
+    expect(api.ozelIsIptal).toHaveBeenCalledOnceWith(1, 'Mükerrer kayıt');
     c.poAc(kayit(1));
     expect(acilan).toEqual([[1]]);
   });

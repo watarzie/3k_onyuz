@@ -30,7 +30,7 @@ describe('Finans paneli detay dökümü', () => {
     }) as unknown as FinansPanel;
 
   beforeEach(() => {
-    izinler.set([FINANS_YETKI.KayitGoruntule]);
+    izinler.set([FINANS_YETKI.Modul, FINANS_YETKI.SekmePanel]);
     api = jasmine.createSpyObj('FinansService', ['genelArama']);
     TestBed.configureTestingModule({
       imports: [FinansPanelDetayComponent],
@@ -49,18 +49,15 @@ describe('Finans paneli detay dökümü', () => {
     return fixture;
   }
 
-  it('her grupta ilk 5 projeyi gösterir, "Tümünü göster" ile hepsini açar; tutar izni yoksa tutar sütunları yoktur', () => {
+  it('her grupta ilk 5 projeyi gösterir, "Tümünü göster" ile hepsini açar; panel R kullanıcısı tutar sütunlarını görür', () => {
     const fixture = olustur(Array.from({ length: 11 }, (_, i) => proje(`PA-${i + 1}`, 100 * (11 - i))));
     const satirlar = () => fixture.nativeElement.querySelectorAll('.project-row').length;
     expect(satirlar()).toBe(5);
-    expect(fixture.nativeElement.textContent).not.toContain('İş bedeli');
+    expect(fixture.nativeElement.textContent).toContain('İş bedeli');
+    expect(fixture.nativeElement.textContent).toContain('1,100.00');
     (fixture.nativeElement.querySelector('.show-more') as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(satirlar()).toBe(11);
-
-    izinler.set([FINANS_YETKI.KayitGoruntule, FINANS_YETKI.ParasalVeriGoruntule, FINANS_YETKI.TutarGoruntule]);
-    fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('İş bedeli');
   });
 
   it('proje açılınca kalemleri bir kez yükler, dönem dışı ve pasif kalemleri süzer, kalemden kayıt detayı açar', () => {
@@ -92,7 +89,6 @@ describe('Finans paneli detay dökümü', () => {
   });
 
   it('projeler Normal → Saha → Yedek → Bağımsız gruplarında ara toplamla gösterilir; boş grup yoktur', () => {
-    izinler.set([FINANS_YETKI.KayitGoruntule, FINANS_YETKI.ParasalVeriGoruntule, FINANS_YETKI.TutarGoruntule]);
     const fixture = olustur([
       proje('PA-N', 300, 'EUR', { projeGrubu: 1 }), proje('PA-N2', 100, 'EUR', { projeGrubu: 1 }),
       proje('PA-Y', 500, 'EUR', { projeGrubu: 3 }),
@@ -122,8 +118,8 @@ describe('Finans paneli detay dökümü', () => {
     expect(kalemler).toEqual(['ACME işi']);
   });
 
-  it('kayıt izni yoksa proje satırı açılmaz; kategoriler pay sırasıyla listelenir', () => {
-    izinler.set([]);
+  it('kayıt sekmelerinden hiçbiri açık değilse proje satırı açılmaz; kategoriler iş bedeli payıyla sıralanır', () => {
+    izinler.set([FINANS_YETKI.Modul, FINANS_YETKI.SekmeGiderler]);
     const fixture = olustur([proje('PA-1', 500)]);
     (fixture.nativeElement.querySelector('.project-row') as HTMLElement).click();
     fixture.detectChanges();

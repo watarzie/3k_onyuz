@@ -882,6 +882,42 @@ dd {
     background: var(--v2-soft, #f7f7ff);
   }
 }
+.adhoc-tariff-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(0, 2fr);
+  gap: 8px;
+}
+@media (max-width: 640px) {
+  .adhoc-tariff-row {
+    grid-template-columns: 1fr;
+  }
+}
+.adhoc-project-source {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  label {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+  // Formun genel input kuralları radyoyu büyütmesin.
+  input[type='radio'] {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    min-height: 0;
+    margin: 0;
+    accent-color: var(--primaryColor);
+  }
+}
+.adhoc-no-tariff i {
+  margin-right: 4px;
+}
 .adhoc-preview {
   display: flex;
   flex-wrap: wrap;

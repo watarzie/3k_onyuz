@@ -15,14 +15,7 @@ import { FinansTarifeDuzeltmeOnizleme } from '../../../shared/models/finans-v2.m
 describe('Hatalı tarife düzeltme', () => {
   let api: jasmine.SpyObj<FinansService>;
   let toast: jasmine.SpyObj<ToastService>;
-  const okuma = new Set<string>([
-    FINANS_YETKI.Modul,
-    FINANS_YETKI.SekmeTanimlar,
-    FINANS_YETKI.IsKutuphanesiYonet,
-    FINANS_YETKI.BirimFiyatGoruntule,
-    FINANS_YETKI.ParasalVeriGoruntule,
-    FINANS_YETKI.TutarGoruntule,
-  ]);
+  const okuma = new Set<string>([FINANS_YETKI.Modul, FINANS_YETKI.SekmeTanimlar]);
   const yazma = new Set<string>();
 
   const hatali: FinansTarifeSurumu = {
@@ -49,7 +42,7 @@ describe('Hatalı tarife düzeltme', () => {
 
   beforeEach(() => {
     yazma.clear();
-    yazma.add(FINANS_YETKI.IsKutuphanesiYonet);
+    yazma.add(FINANS_YETKI.SekmeTanimlar);
     api = jasmine.createSpyObj('FinansService', ['aylikIsler', 'urunler', 'giderKategorileri', 'tarifeDuzeltmeOnizle', 'tarifeDuzelt']);
     const sayfa = { items: [], toplamlar: [], pageNumber: 1, pageSize: 25, totalCount: 0, totalPages: 0, hasPreviousPage: false, hasNextPage: false };
     api.aylikIsler.and.returnValue(of({ isSuccess: true, value: { ...sayfa, finansOzeti: [], grupToplamlari: [] } }));
@@ -79,7 +72,8 @@ describe('Hatalı tarife düzeltme', () => {
     return c;
   }
 
-  it('birim fiyat değiştirme yazma yetkisi yoksa düzeltme açılmaz', () => {
+  it('tanımlar sekmesinde yalnız R izni olan kullanıcı tarife düzeltmesini açamaz', () => {
+    yazma.clear();
     const c = duzenlenenTarife();
 
     c.tarifeDuzeltmeAc(hatali);
@@ -89,7 +83,6 @@ describe('Hatalı tarife düzeltme', () => {
   });
 
   it('önce etkisi gösterilir; değer değişince önizleme düşer ve gerekçeyle görülen değer uygulanır', () => {
-    yazma.add(FINANS_YETKI.BirimFiyatDegistir);
     api.tarifeDuzelt.and.returnValue(of({ isSuccess: true, value: { tarifeId: 12, duzeltilenKalemSayisi: 1, korunanKalemSayisi: 1 } }));
     const c = duzenlenenTarife();
 
@@ -125,7 +118,6 @@ describe('Hatalı tarife düzeltme', () => {
   });
 
   it('geçersiz değerde önizleme istenmez; sunucu reddi panelde gösterilir', () => {
-    yazma.add(FINANS_YETKI.BirimFiyatDegistir);
     api.tarifeDuzeltmeOnizle.and.returnValue(of({ isSuccess: false, error: 'Yeni birim fiyat ve KDV, sürümün mevcut değerleriyle aynı.' }));
     const c = duzenlenenTarife();
     c.tarifeDuzeltmeAc(hatali);
@@ -141,7 +133,6 @@ describe('Hatalı tarife düzeltme', () => {
   });
 
   it('onaya düşen düzeltme başarılı sayılmaz', () => {
-    yazma.add(FINANS_YETKI.BirimFiyatDegistir);
     api.tarifeDuzelt.and.returnValue(of({ isSuccess: true, statusCode: 202 }));
     const c = duzenlenenTarife();
     c.tarifeDuzeltmeAc(hatali);

@@ -80,8 +80,8 @@ describe('Finans aylık görünüm PO/fatura akışı', () => {
     isGrubu: 'Kira', isAdi: '3K Seymen Kira', isTuru: 8, kategori: FinansIsKategorisi.DuzenliIs, isKaydiIds: [50] });
 
   beforeEach(() => {
-    reads.set(new Set([FINANS_YETKI.Modul, FINANS_YETKI.SekmeIsTakibi, FINANS_YETKI.SekmePoFatura, FINANS_YETKI.KayitGoruntule, FINANS_YETKI.SiparisOperasyonGoruntule]));
-    writes.set(new Set([FINANS_YETKI.PoGir, FINANS_YETKI.FaturaGir]));
+    reads.set(new Set([FINANS_YETKI.Modul, FINANS_YETKI.SekmeIsTakibi, FINANS_YETKI.SekmePoFatura, FINANS_YETKI.VadeUyarisi]));
+    writes.set(new Set([FINANS_YETKI.SekmeIsTakibi, FINANS_YETKI.SekmePoFatura]));
     api = jasmine.createSpyObj('FinansService', ['aylikIsler', 'giderKategorileri', 'giderKalemleri', 'giderGuncelle', 'giderler', 'paraBirimleri', 'vadeUyarilari', 'faturalar', 'ozelIsAylikDegerGuncelle', 'genelArama', 'projeSandikKirilimi']);
     api.ozelIsAylikDegerGuncelle.and.returnValue(of({ isSuccess: true }));
     api.vadeUyarilari.and.returnValue(of({ isSuccess: true, value: { vadeUyariGunu: 7, vadesiGecenAdet: 0, yaklasanAdet: 0, kalemler: [] } }));
@@ -116,8 +116,6 @@ describe('Finans aylık görünüm PO/fatura akışı', () => {
   }
 
   it('özel/düzenli işte bu ayın miktarı ve tarifesi birlikte düzenlenir; yalnız değişen değer gönderilir', () => {
-    reads.set(new Set([...reads(), FINANS_YETKI.ParasalVeriGoruntule, FINANS_YETKI.BirimFiyatGoruntule, FINANS_YETKI.TutarGoruntule]));
-    writes.set(new Set([...writes(), FINANS_YETKI.FiyatlandirmaDegistir, FINANS_YETKI.BirimFiyatDegistir]));
     const { c } = setup();
     const satir = { ...kira, birim: 'Hizmet', miktar: 1, birimFiyat: 360000, miktarDuzenlenebilir: true, tutarDuzenlenebilir: true };
     c.aylikDegerDuzenle(satir);
@@ -128,8 +126,9 @@ describe('Finans aylık görünüm PO/fatura akışı', () => {
     c.aylikDegerKaydet();
     expect(api.ozelIsAylikDegerGuncelle).toHaveBeenCalledOnceWith(50, { netBirimFiyat: 380000 });
 
-    writes.set(new Set([FINANS_YETKI.FiyatlandirmaDegistir]));
-    expect(c.aylikTarifeDuzenlenebilir(satir)).toBeFalse();
+    // İş Takibi'nde yalnız R olan kullanıcı aylık değeri düzenleyemez.
+    writes.set(new Set([FINANS_YETKI.SekmePoFatura]));
+    expect(c.aylikDegerDuzenlenebilir(satir)).toBeFalse();
   });
 
   it('kategori satırında sandıklar sunucu kırılımından gelir (250 sınırı yok); proje kırılımı bir kez yüklenir', () => {
@@ -206,7 +205,7 @@ describe('Finans aylık görünüm PO/fatura akışı', () => {
     expect(detaylar[2].querySelector('.crate-toggle')).toBeNull();
   });
 
-  it('vade uyarısı fatura okuyana gösterilir; uyarıdan vadesi geçen faturaların listesi açılır (D3)', () => {
+  it('vade uyarısı kendi izniyle gösterilir; uyarıdan vadesi geçen faturaların listesi açılır (D3)', () => {
     api.vadeUyarilari.and.returnValue(of({ isSuccess: true, value: { vadeUyariGunu: 7, vadesiGecenAdet: 2, yaklasanAdet: 1, kalemler: [] } }));
     const { fixture, c, el } = setup();
     expect(api.vadeUyarilari).toHaveBeenCalledOnceWith(10);
@@ -221,12 +220,46 @@ describe('Finans aylık görünüm PO/fatura akışı', () => {
     expect(api.faturalar.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({ odemeDurumu: FinansOdemeFiltresi.VadesiGecen }));
   });
 
-  it('vadesi dolan fatura yoksa uyarı gösterilmez; fatura okuma izni yoksa uyarı istenmez', () => {
+  it('vadesi dolan fatura yoksa uyarı gösterilmez; vade uyarısı izni yoksa PO/Fatura sekmesi açık olsa da istenmez', () => {
     expect(setup().el.querySelector('.due-alert')).toBeNull();
-    reads.set(new Set([FINANS_YETKI.Modul, FINANS_YETKI.KayitGoruntule]));
+    reads.update(x => new Set([...x].filter(k => k !== FINANS_YETKI.VadeUyarisi)));
     api.vadeUyarilari.calls.reset();
     setup();
     expect(api.vadeUyarilari).not.toHaveBeenCalled();
+  });
+
+  it('PO/Fatura sekmesi kapalı kullanıcı vade uyarısını görür; fatura listesine geçiş düğmeleri gösterilmez', () => {
+    reads.set(new Set([FINANS_YETKI.Modul, FINANS_YETKI.SekmeIsTakibi, FINANS_YETKI.VadeUyarisi]));
+    writes.set(new Set());
+    api.vadeUyarilari.and.returnValue(of({ isSuccess: true, value: { vadeUyariGunu: 7, vadesiGecenAdet: 1, yaklasanAdet: 1, kalemler: [
+      { faturaId: 5, faturaNumarasi: 'FT-5', poNumarasi: 'PO-5', projeNo: 'PA727-03', faturaTarihi: '2026-08-01',
+        vadeTarihi: '2026-09-01', kalanGun: -3, odemeDurumu: 1, toplamTutar: 120, paraBirimi: 'EUR' },
+    ] } }));
+    const { c, el } = setup();
+    const uyari = el.querySelector('.due-alert') as HTMLElement;
+    expect(uyari).not.toBeNull();
+    expect(uyari.querySelector('.btn-danger')).toBeNull();
+    expect(uyari.querySelector('.btn-outline-warning')).toBeNull();
+    c.vadeTakibiniAc(FinansOdemeFiltresi.VadesiGecen);
+    expect(c.activeTab()).toBe('akis');
+    // Fatura detayı kayıt sekmesi (İş Takibi) iznindedir; bağlantı açılır.
+    (uyari.querySelector('.due-invoice') as HTMLButtonElement).click();
+    expect(c.detayHedef()).toEqual({ tur: 'Fatura', id: 5 });
+  });
+
+  it('İş Takibi araç çubuğu: R kullanıcısı işlem düğmesi görmez; W düğmeleri sekme kurallarına göre açar', () => {
+    const dugmeler = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll('.monthly-toolbar .toolbar-actions button')).map(x => x.textContent?.trim());
+    writes.set(new Set());
+    const { fixture, el } = setup();
+    expect(dugmeler(el)).toEqual(['Rapor']);
+    // İş Takibi W: PO açma ve tek seferlik iş; fatura girişi PO/Fatura W ister.
+    writes.set(new Set([FINANS_YETKI.SekmeIsTakibi]));
+    fixture.detectChanges();
+    expect(dugmeler(el)).toEqual(['Rapor', 'Sipariş Aç', 'Tek Seferlik İş']);
+    writes.set(new Set([FINANS_YETKI.SekmeIsTakibi, FINANS_YETKI.SekmePoFatura]));
+    fixture.detectChanges();
+    expect(dugmeler(el)).toEqual(['Rapor', 'Fatura Gir', 'Sipariş Aç', 'Tek Seferlik İş']);
   });
 
   it('projeyi satır, kategorileri alt satır olarak gösterir; özel/düzenli işler ayrı gruptadır', () => {
@@ -265,8 +298,8 @@ describe('Finans aylık görünüm PO/fatura akışı', () => {
     expect(c.dagitim()?.donem).toEqual({ baslangic: c.donemBaslangici(), bitis: c.donemBitisi() });
   });
 
-  it('PO veya kayıt görüntüleme izni yoksa PO ekranı açılmaz (sunucu izin aynası)', () => {
-    reads.update(x => new Set([...x].filter(k => k !== FINANS_YETKI.SiparisOperasyonGoruntule)));
+  it('yalnız R izni olan kullanıcı PO ve fatura ekranını açamaz (sunucu izin aynası)', () => {
+    writes.set(new Set());
     const { c } = setup();
     c.topluSiparisAc([11]);
     c.faturaAc(null);
@@ -274,8 +307,8 @@ describe('Finans aylık görünüm PO/fatura akışı', () => {
   });
 
   it('gider düzenlenirken PO bağlantısını korur', () => {
-    reads.update(x => new Set([...x, FINANS_YETKI.GiderGoruntule, FINANS_YETKI.ParasalVeriGoruntule, FINANS_YETKI.BirimFiyatGoruntule, FINANS_YETKI.TutarGoruntule]));
-    writes.set(new Set([FINANS_YETKI.GiderDuzenle]));
+    reads.update(x => new Set([...x, FINANS_YETKI.SekmeGiderler]));
+    writes.set(new Set([FINANS_YETKI.SekmeGiderler]));
     const { c } = setup();
     c.giderDuzenle({ id: 4, tarih: '2026-09-19', finansTarihi: '2026-09-19', kategoriId: 1, kategori: 'Araç', aciklama: 'Nakliye',
       miktar: 1, birim: 'Adet', birimFiyat: 100, tutar: 100, paraBirimi: 'EUR', kdvOrani: 20, kdvDahil: false, matrah: 100,

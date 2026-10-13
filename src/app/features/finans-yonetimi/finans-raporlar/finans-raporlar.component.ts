@@ -3,15 +3,12 @@ import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
-import { FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
 import { FinansService } from '../../../core/services/finans.service';
 import { FinansParaBirimiService } from '../../../core/services/finans-para-birimi.service';
 import { FinansOdemeFiltresi } from '../../../core/constants/enums';
-import { PermissionService } from '../../../core/services/permission.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { FinansGiderKategori, FinansListelemeRequest } from '../../../shared/models/finans.model';
 import { FinansRaporOnizleme } from '../../../shared/models/finans-v2.model';
-import { finansRaporuIndirilebilir, finansSiparisFaturaOkunabilir, tumFinansAlanlariGorunur } from '../ortak/finans-izinleri';
 import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 
 @Component({
@@ -21,6 +18,10 @@ import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
   templateUrl: './finans-raporlar.component.html',
   styleUrl: '../ortak/finans-v2.scss',
 })
+/**
+ * Yalnız Raporlar sekmesinde açılır: sekmenin R izni bütün rapor türlerini (alacak dahil), önizlemeyi, PDF/Excel
+ * dışa aktarmayı ve gider kategorisi filtresini kapsar; ayrı alan veya biçim izni yoktur.
+ */
 export class FinansRaporlarComponent implements OnInit {
   private readonly translation = inject(TranslationService);
   t(key: string): string {
@@ -29,21 +30,12 @@ export class FinansRaporlarComponent implements OnInit {
   private readonly service = inject(FinansService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly toast = inject(ToastService);
-  readonly permissions = inject(PermissionService);
   readonly paraBirimleri = inject(FinansParaBirimiService);
-  readonly izin = FINANS_YETKI;
   readonly odemeFiltreleri = FinansOdemeFiltresi;
   readonly loading = signal(false);
   readonly kategoriler = signal<FinansGiderKategori[]>([]);
   tur = 'is';
   filtre: FinansListelemeRequest = { pageNumber: 1, pageSize: 25 };
-  indirilebilir(bicim: 'pdf' | 'excel'): boolean {
-    return finansRaporuIndirilebilir(this.permissions, bicim) && (this.tur !== 'alacak' || this.alacakRaporuGorunur());
-  }
-  /** Alacak raporu faturalardan üretilir; fatura okuma izni de gerekir (RR Q6). */
-  alacakRaporuGorunur(): boolean {
-    return finansSiparisFaturaOkunabilir(this.permissions);
-  }
   filtreleriTemizle(): void {
     this.filtre = { pageNumber: 1, pageSize: 25 };
   }
@@ -52,11 +44,6 @@ export class FinansRaporlarComponent implements OnInit {
   readonly onizleme = signal<FinansRaporOnizleme | null>(null);
   readonly onizlemeYukleniyor = signal(false);
   private onizlemeImzasi = '';
-  /** Rapor dosyasının okuma izinleri (biçim izni hariç). */
-  onizlemeGorulebilir(): boolean {
-    return this.permissions.hasAccess(this.izin.RaporGoruntule) && tumFinansAlanlariGorunur(this.permissions) &&
-      (this.tur !== 'alacak' || this.alacakRaporuGorunur());
-  }
   /** Önizlemeden sonra rapor türü veya filtre değiştiyse gösterilen satırlar indirilecek dosyayı yansıtmaz. */
   onizlemeEski(): boolean {
     return !!this.onizleme() && this.onizlemeImzasi !== this.imza();
@@ -65,7 +52,7 @@ export class FinansRaporlarComponent implements OnInit {
     return JSON.stringify([this.tur, this.filtre]);
   }
   onizle(): void {
-    if (this.onizlemeYukleniyor() || !this.onizlemeGorulebilir()) return;
+    if (this.onizlemeYukleniyor()) return;
     if (this.filtre.baslangic && this.filtre.bitis && this.filtre.baslangic > this.filtre.bitis) {
       this.toast.error(this.t('REPORT_DATES_ERROR'));
       return;
@@ -90,7 +77,6 @@ export class FinansRaporlarComponent implements OnInit {
 
   ngOnInit(): void {
     this.paraBirimleri.yukle();
-    if (!this.permissions.hasAccess(this.izin.GiderGoruntule)) return;
     this.service
       .giderKategorileri()
       .pipe(takeUntilDestroyed(this.destroyRef))

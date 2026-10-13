@@ -3,7 +3,6 @@ import { Component, DestroyRef, OnInit, computed, inject, output, signal } from 
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, finalize, switchMap } from 'rxjs';
-import { FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
 import { ConfirmService } from '../../../core/services/confirm.service';
 import { FinansService } from '../../../core/services/finans.service';
 import { PermissionService } from '../../../core/services/permission.service';
@@ -21,26 +20,22 @@ import {
 import { FinansVarlikTuru } from '../../../shared/models/finans-v2.model';
 import { FinansProjeSeciciComponent } from '../finans-proje-secici/finans-proje-secici.component';
 import { finansHacimBilesik, finansHacimGecerli } from '../ortak/finans-hacim';
-import { finansMunferitIsEklenebilir, finansPoGirilebilir } from '../ortak/finans-izinleri';
+import { finansIsDuzenlenebilir, finansPoGirilebilir, finansSekmeYazilabilir } from '../ortak/finans-izinleri';
 
+/** Münferit iş formu: proje sistemden seçilir ya da serbest ad yazılır; miktar tarifenin birimine göredir. */
 interface MunferitIsFormu {
-  isAdi: string;
-  ozelIsTuru: string;
-  musteri: string;
+  projeKaynagi: 'sistem' | 'serbest';
   projeId: number | null;
-  adet: number;
-  birim: string;
+  projeAdi: string;
   isTarihi: string;
+  adet: number;
   ahsapM3: number | null;
   kontraM3: number | null;
-  aciklama: string;
-  talepEdenKisi: string;
-  talepEdenBolum: string;
 }
 
 /**
- * Münferit İşler sekmesi (iskelet): elle açılmış tek seferlik işlerin listesi ve tarifeden fiyatlanan yeni iş
- * formu. Fiyat yazılmaz; kayıt seçilen iş/ürün tanımının iş tarihindeki tarifesiyle fiyatlanır.
+ * Münferit İşler sekmesi: elle açılmış tek seferlik işlerin listesi ve yeni iş formu. Form yalnız tarife (İş ve Tarife
+ * Tanımları), proje ve tarih ister; iş adı tarifenin adıdır ve fiyat tarifenin iş tarihindeki sürümünden otomatik gelir.
  */
 @Component({
   selector: 'app-finans-munferit-isler',
@@ -59,25 +54,16 @@ export class FinansMunferitIslerComponent implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
   readonly permissions = inject(PermissionService);
-  readonly izin = FINANS_YETKI;
   readonly kayitAc = output<{ tur: FinansVarlikTuru; id: number }>();
   readonly siparisAc = output<number[]>();
 
-  /** Eski "Tek Seferlik İş" formuyla aynı iş türü önerileri. */
-  readonly turSecenekleri = ['Haliade-X', 'SKIT', 'Diğer'];
   readonly hacimBilesik = finansHacimBilesik;
 
-  readonly ekleyebilir = computed(() => finansMunferitIsEklenebilir(this.permissions));
-  readonly iptalEdebilir = computed(() => this.permissions.canWrite(FINANS_YETKI.IsIptal));
+  /** Münferit iş tarifeden fiyatlanır: Münferit İşler sekmesinin W izni yeter. */
+  readonly ekleyebilir = computed(() => finansSekmeYazilabilir(this.permissions, 'munferit'));
+  /** İptal/geri alma: İş Takibi veya Münferit İşler sekmesinin W izni (iş kaydı düzenleme). */
+  readonly iptalEdebilir = computed(() => finansIsDuzenlenebilir(this.permissions));
   readonly poAcabilir = computed(() => finansPoGirilebilir(this.permissions));
-  readonly tutarGorunur = computed(() => this.parasal(FINANS_YETKI.TutarGoruntule));
-  /** Fiyat önizlemesi tarife listesinden okunur; yalnız tarifeleri ve birim fiyatı görebilen kullanıcıya. */
-  readonly fiyatOnizlemeGorunur = computed(
-    () =>
-      this.parasal(FINANS_YETKI.BirimFiyatGoruntule) &&
-      this.permissions.hasAccess(FINANS_YETKI.SekmeTanimlar) &&
-      this.permissions.hasAccess(FINANS_YETKI.IsKutuphanesiYonet),
-  );
 
   // Liste
   baslangic = '';
@@ -100,8 +86,9 @@ export class FinansMunferitIslerComponent implements OnInit {
   urunArama = '';
   readonly secilenUrun = signal<FinansUrunSecenegi | null>(null);
   readonly urunSecenekleri = signal<FinansUrunSecenegi[]>([]);
-  readonly fiyatOnizleme = signal<{ birimFiyat: number; paraBirimi: string } | null>(null);
-  private readonly urunAramalari = new Subject<string>();
+  readonly seceneklerYukleniyor = signal(false);
+  readonly secenekHatasi = signal('');
+  private readonly secenekIstekleri = new Subject<{ arama: string; tarih: string }>();
 
   ngOnInit(): void {
     const bugun = new Date();
@@ -131,19 +118,30 @@ export class FinansMunferitIslerComponent implements OnInit {
     this.aramaIstekleri
       .pipe(debounceTime(350), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.filtrele());
-    this.urunAramalari
+    // Tarife seçenekleri iş tarihindeki fiyatla gelir; yükleme hatası sessizce boş listeye dönmez, formda gösterilir.
+    this.secenekIstekleri
       .pipe(
-        debounceTime(250),
-        distinctUntilChanged(),
-        switchMap((arama) => this.service.urunSecenekleri(arama)),
+        debounceTime(200),
+        switchMap(({ arama, tarih }) => {
+          this.seceneklerYukleniyor.set(true);
+          return this.service.urunSecenekleri(arama, undefined, tarih).pipe(finalize(() => this.seceneklerYukleniyor.set(false)));
+        }),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe((r) => this.urunSecenekleri.set(r.isSuccess ? (r.value ?? []) : []));
+      .subscribe((r) => {
+        if (!r.isSuccess) {
+          this.urunSecenekleri.set([]);
+          this.secenekHatasi.set(r.error ?? this.t('ADHOC_OPTIONS_ERROR'));
+          return;
+        }
+        this.secenekHatasi.set('');
+        const liste = r.value ?? [];
+        this.urunSecenekleri.set(liste);
+        // Tarih değişince seçili tarifenin fiyatı yeni tarihe göre yenilenir.
+        const secili = this.secilenUrun();
+        if (secili) this.secilenUrun.set(liste.find((x) => x.id === secili.id) ?? secili);
+      });
     this.listeIstekleri.next();
-  }
-
-  parasal(alan: string): boolean {
-    return this.permissions.hasAccess(FINANS_YETKI.ParasalVeriGoruntule) && this.permissions.hasAccess(alan);
   }
 
   filtrele(): void {
@@ -168,13 +166,16 @@ export class FinansMunferitIslerComponent implements OnInit {
     this.projeEtiketi = '';
     this.urunArama = '';
     this.secilenUrun.set(null);
-    this.fiyatOnizleme.set(null);
     this.hata.set('');
     this.formAcik.set(true);
-    this.urunAramalari.next('');
+    this.secenekleriYukle();
   }
-  urunAramaDegisti(): void {
-    this.urunAramalari.next(this.urunArama.trim());
+  /** Tarife listesini arama metni ve iş tarihiyle (fiyat o tarihe göre) yeniden okur. */
+  secenekleriYukle(): void {
+    this.secenekIstekleri.next({ arama: this.urunArama.trim(), tarih: this.form.isTarihi });
+  }
+  urunSecId(id: number | null): void {
+    this.urunSec(this.urunSecenekleri().find((x) => x.id === id) ?? null);
   }
   urunSec(urun: FinansUrunSecenegi | null): void {
     this.secilenUrun.set(urun);
@@ -182,63 +183,66 @@ export class FinansMunferitIslerComponent implements OnInit {
       this.form.ahsapM3 = null;
       this.form.kontraM3 = null;
     }
-    this.fiyatOnizlemeYukle();
+  }
+  projeKaynagiSec(kaynak: 'sistem' | 'serbest'): void {
+    this.form.projeKaynagi = kaynak;
+    this.form.projeId = null;
+    this.form.projeAdi = '';
+    this.projeEtiketi = '';
   }
   projeSec(proje: { projeId: number; projeNo: string; musteri: string } | null): void {
     this.form.projeId = proje?.projeId ?? null;
     this.projeEtiketi = proje ? `${proje.projeNo} · ${proje.musteri}` : '';
-    if (proje?.musteri) this.form.musteri = proje.musteri;
   }
-  /** Seçilen ürün m³ ile fiyatlanıyor mu (fiyatlandırma birimi 2): ahşap/kontra m³ zorunludur. */
+  /** Tarife seçeneğinin etiketi: kod · ad ve iş tarihindeki fiyat ya da "tarife yok". */
+  secenekEtiketi(urun: FinansUrunSecenegi): string {
+    const ad = `${urun.kod} · ${urun.ad}`;
+    if (urun.birimFiyat == null) return `${ad} — ${this.t('ADHOC_NO_TARIFF_SHORT')}`;
+    const birim = urun.fiyatlandirmaBirimi === 2 ? '/m³' : urun.fiyatlandirmaBirimi === 1 ? `/${this.t('ADHOC_PIECE')}` : '';
+    const fiyat = new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(urun.birimFiyat);
+    return `${ad} — ${fiyat} ${urun.paraBirimi ?? ''}${birim}`;
+  }
+  /** Seçilen tarife m³ ile fiyatlanıyor mu (birim 2): ahşap/kontra m³ zorunludur. */
   m3Urun(): boolean {
     return this.secilenUrun()?.fiyatlandirmaBirimi === 2;
   }
-  /** İş tarihindeki tarife fiyatı (yalnız tarifeleri görebilen kullanıcıya); tarih değişince yeniden okunur. */
-  fiyatOnizlemeYukle(): void {
-    this.fiyatOnizleme.set(null);
-    const urun = this.secilenUrun();
-    if (!urun || !this.fiyatOnizlemeGorunur() || !this.form.isTarihi) return;
-    this.service
-      .urunler({ pageNumber: 1, pageSize: 10, sadeceAktif: true, arama: urun.kod, tarifeTarihi: this.form.isTarihi })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((r) => {
-        const bulunan = r.isSuccess ? r.value?.items.find((x) => x.id === urun.id) : undefined;
-        if (bulunan?.guncelBirimFiyat != null)
-          this.fiyatOnizleme.set({ birimFiyat: bulunan.guncelBirimFiyat, paraBirimi: bulunan.guncelParaBirimi ?? '' });
-      });
+  /** Seçilen tarife adetle fiyatlanıyor mu (birim 1): adet girilir; sabit tutarda miktar sorulmaz. */
+  adetUrun(): boolean {
+    return this.secilenUrun()?.fiyatlandirmaBirimi === 1;
   }
-  /** Önizleme tutarı: birim fiyat × fiyatlandırma miktarı (adet, bileşik m³ ya da sabit/toplam için 1). */
-  onizlemeTutari(): number | null {
-    const fiyat = this.fiyatOnizleme();
+  /** Seçilen tarifenin iş tarihinde fiyatı yok. */
+  tarifesizTarih(): boolean {
     const urun = this.secilenUrun();
-    if (!fiyat || !urun) return null;
+    return !!urun && urun.birimFiyat == null;
+  }
+  /** Önizleme tutarı: tarife fiyatı × fiyatlandırma miktarı (adet, bileşik m³ ya da sabit tutar için 1). */
+  onizlemeTutari(): number | null {
+    const urun = this.secilenUrun();
+    if (!urun || urun.birimFiyat == null) return null;
     const miktar = urun.fiyatlandirmaBirimi === 1
       ? Number(this.form.adet) || 0
       : urun.fiyatlandirmaBirimi === 2 ? finansHacimBilesik(this.form.ahsapM3, this.form.kontraM3) : 1;
-    return Math.round(fiyat.birimFiyat * miktar * 100) / 100;
+    return Math.round(urun.birimFiyat * miktar * 100) / 100;
   }
 
   kaydet(): void {
     const urun = this.secilenUrun();
     const f = this.form;
     if (!urun) return this.hata.set(this.t('ADHOC_PRODUCT_REQUIRED'));
-    if (!f.isAdi.trim() || !f.musteri.trim() || !f.birim.trim() || !f.isTarihi || !(Number(f.adet) > 0))
-      return this.hata.set(this.t('ADHOC_REQUIRED_FIELDS'));
+    const projeAdi = f.projeAdi.trim();
+    if (f.projeKaynagi === 'sistem' ? !f.projeId : !projeAdi) return this.hata.set(this.t('ADHOC_PROJECT_REQUIRED'));
+    if (!f.isTarihi) return this.hata.set(this.t('ADHOC_DATE_REQUIRED'));
+    if (this.adetUrun() && !(Number(f.adet) > 0)) return this.hata.set(this.t('ADHOC_QUANTITY_REQUIRED'));
     if (this.m3Urun() && !finansHacimGecerli(f.ahsapM3, f.kontraM3)) return this.hata.set(this.t('ADHOC_M3_REQUIRED'));
+    if (this.tarifesizTarih()) return this.hata.set(this.t('ADHOC_NO_TARIFF_ON_DATE'));
     const istek: FinansMunferitIsKaydetRequest = {
       finansUrunId: urun.id,
-      isAdi: f.isAdi.trim(),
-      ozelIsTuru: f.ozelIsTuru.trim() || null,
-      musteri: f.musteri.trim(),
-      projeId: f.projeId,
-      adet: Number(f.adet),
-      birim: f.birim.trim(),
+      projeId: f.projeKaynagi === 'sistem' ? f.projeId : null,
+      projeAdi: f.projeKaynagi === 'serbest' ? projeAdi : null,
       isTarihi: f.isTarihi,
+      adet: this.adetUrun() ? Number(f.adet) : 1,
       ahsapM3: this.m3Urun() ? Number(f.ahsapM3) || 0 : null,
       kontraM3: this.m3Urun() ? Number(f.kontraM3) || 0 : null,
-      aciklama: f.aciklama.trim() || null,
-      talepEdenKisi: f.talepEdenKisi.trim() || null,
-      talepEdenBolum: f.talepEdenBolum.trim() || null,
     };
     this.hata.set('');
     this.kaydediliyor.set(true);
@@ -294,8 +298,7 @@ export class FinansMunferitIslerComponent implements OnInit {
   }
   private bosForm(): MunferitIsFormu {
     return {
-      isAdi: '', ozelIsTuru: '', musteri: 'GE Vernova', projeId: null, adet: 1, birim: 'Adet',
-      isTarihi: this.tarihMetni(new Date()), ahsapM3: null, kontraM3: null, aciklama: '', talepEdenKisi: '', talepEdenBolum: '',
+      projeKaynagi: 'sistem', projeId: null, projeAdi: '', isTarihi: this.tarihMetni(new Date()), adet: 1, ahsapM3: null, kontraM3: null,
     };
   }
   private tarihMetni(d: Date): string {

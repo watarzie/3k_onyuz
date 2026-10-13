@@ -47,12 +47,12 @@
           <i class="ri-price-tag-3-line" aria-hidden="true"></i>Fiyatlandırma
         </button>
       }
-      @if (permissions.hasAccess(izin.DenetimGor)) {
+      @if (gecmisGorunur()) {
         <button (click)="tab('gecmis')" [class.active]="sekme() === 'gecmis'">
           <i class="ri-history-line" aria-hidden="true"></i>Değişiklik geçmişi
         </button>
       }
-      @if (permissions.canWrite(iptalIzni()) || permissions.canWrite(izin.KaliciSil)) {
+      @if (iptalEdilebilir() || kaliciSilinebilir()) {
         <button (click)="tab('islemler')" [class.active]="sekme() === 'islemler'">
           <i class="ri-shield-line" aria-hidden="true"></i>İptal / silme
         </button>
@@ -111,104 +111,102 @@
                 [disabled]="!belgeDuzenlemeIzni()"
               ></textarea>
             </label>
-            @if (parasal(izin.TutarGoruntule)) {
-              @if (belgeDuzenlemeIzni()) {
-                <label class="v2-check mt-3"
-                  ><input type="checkbox" [(ngModel)]="tutarlariDuzenle" />Kalemlerin net tutarını
-                  düzenle</label
-                >
-              }
+            @if (belgeDuzenlemeIzni()) {
+              <label class="v2-check mt-3"
+                ><input type="checkbox" [(ngModel)]="tutarlariDuzenle" />Kalemlerin net tutarını
+                düzenle</label
+              >
+            }
+            <p class="v2-note">
+              Miktar ve üretim geçmişi değişmez. KDV, bakiyeler ve belge tavanları sunucuda
+              yeniden doğrulanır.
+            </p>
+            <div class="v2-dialog-table-wrap">
+              <table class="table v2-table">
+                <thead>
+                  <tr>
+                    <th>Kalem / iş</th>
+                    @if (siparis()) {
+                      <th>İş bedeli</th>
+                    }
+                    <th>{{ siparis() ? 'Bu PO\'daki net' : 'Net tutar' }}</th>
+                    @if (siparis()) {
+                      <th>Faturalanan</th>
+                      <th>Fatura bekleyen</th>
+                      <th>Sipariş bekleyen</th>
+                    }
+                    <th>Para birimi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (k of belgeKalemleri; track k.id) {
+                    <tr>
+                      <td>
+                        {{ k.ad }}<small
+                          >@if (kategoriEtiketi(k.kategori)) {
+                            {{ kategoriEtiketi(k.kategori) }} ·
+                          }İş #{{ k.isKaydiId }}</small
+                        >
+                      </td>
+                      @if (siparis()) {
+                        <td>{{ k.isBedeli | number: '1.2-2' }}</td>
+                      }
+                      <td>
+                        <input
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          [(ngModel)]="k.netTutar"
+                          [disabled]="!tutarlariDuzenle || !belgeDuzenlemeIzni()"
+                        />
+                      </td>
+                      @if (siparis()) {
+                        <td>{{ k.faturalanan | number: '1.2-2' }}</td>
+                        <td>{{ k.kalanFatura | number: '1.2-2' }}</td>
+                        <td>{{ k.kalanSiparis | number: '1.2-2' }}</td>
+                      }
+                      <td>{{ k.paraBirimi }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            @if (siparis()?.netler?.length) {
+              <h4 class="v2-dialog-card-title mt-3">
+                <i class="ri-scales-3-line" aria-hidden="true"></i>PO net sonucu
+              </h4>
               <p class="v2-note">
-                Miktar ve üretim geçmişi değişmez. KDV, bakiyeler ve belge tavanları sunucuda
-                yeniden doğrulanır.
+                Net = faturalanan net − PO ile ilişkili giderler; tahmini kâr = sipariş net − giderler.
+                Para birimleri ayrı gösterilir, çevrilmez.
               </p>
               <div class="v2-dialog-table-wrap">
                 <table class="table v2-table">
                   <thead>
                     <tr>
-                      <th>Kalem / iş</th>
-                      @if (siparis()) {
-                        <th>İş bedeli</th>
-                      }
-                      <th>{{ siparis() ? 'Bu PO\'daki net' : 'Net tutar' }}</th>
-                      @if (siparis()) {
-                        <th>Faturalanan</th>
-                        <th>Fatura bekleyen</th>
-                        <th>Sipariş bekleyen</th>
-                      }
                       <th>Para birimi</th>
+                      <th>Sipariş net</th>
+                      <th>Faturalanan</th>
+                      <th>Gider</th>
+                      <th>Net</th>
+                      <th>Tahmini kâr</th>
                     </tr>
                   </thead>
                   <tbody>
-                    @for (k of belgeKalemleri; track k.id) {
+                    @for (n of siparis()?.netler ?? []; track n.paraBirimi) {
                       <tr>
-                        <td>
-                          {{ k.ad }}<small
-                            >@if (kategoriEtiketi(k.kategori)) {
-                              {{ kategoriEtiketi(k.kategori) }} ·
-                            }İş #{{ k.isKaydiId }}</small
-                          >
+                        <td>{{ n.paraBirimi }}</td>
+                        <td>{{ n.siparisNetTutar | number: '1.2-2' }}</td>
+                        <td>{{ n.faturalananNetTutar | number: '1.2-2' }}</td>
+                        <td>{{ n.gider | number: '1.2-2' }}</td>
+                        <td [class.text-danger]="n.net != null && n.net < 0">
+                          <strong>{{ n.net | number: '1.2-2' }}</strong>
                         </td>
-                        @if (siparis()) {
-                          <td>{{ k.isBedeli | number: '1.2-2' }}</td>
-                        }
-                        <td>
-                          <input
-                            type="number"
-                            min="0.01"
-                            step="0.01"
-                            [(ngModel)]="k.netTutar"
-                            [disabled]="!tutarlariDuzenle || !belgeDuzenlemeIzni()"
-                          />
-                        </td>
-                        @if (siparis()) {
-                          <td>{{ k.faturalanan | number: '1.2-2' }}</td>
-                          <td>{{ k.kalanFatura | number: '1.2-2' }}</td>
-                          <td>{{ k.kalanSiparis | number: '1.2-2' }}</td>
-                        }
-                        <td>{{ k.paraBirimi }}</td>
+                        <td>{{ n.tahminiKar | number: '1.2-2' }}</td>
                       </tr>
                     }
                   </tbody>
                 </table>
               </div>
-              @if (siparis()?.netler?.length) {
-                <h4 class="v2-dialog-card-title mt-3">
-                  <i class="ri-scales-3-line" aria-hidden="true"></i>PO net sonucu
-                </h4>
-                <p class="v2-note">
-                  Net = faturalanan net − PO ile ilişkili giderler; tahmini kâr = sipariş net − giderler.
-                  Para birimleri ayrı gösterilir, çevrilmez.
-                </p>
-                <div class="v2-dialog-table-wrap">
-                  <table class="table v2-table">
-                    <thead>
-                      <tr>
-                        <th>Para birimi</th>
-                        <th>Sipariş net</th>
-                        <th>Faturalanan</th>
-                        <th>Gider</th>
-                        <th>Net</th>
-                        <th>Tahmini kâr</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (n of siparis()?.netler ?? []; track n.paraBirimi) {
-                        <tr>
-                          <td>{{ n.paraBirimi }}</td>
-                          <td>{{ n.siparisNetTutar | number: '1.2-2' }}</td>
-                          <td>{{ n.faturalananNetTutar | number: '1.2-2' }}</td>
-                          <td>{{ n.gider | number: '1.2-2' }}</td>
-                          <td [class.text-danger]="n.net != null && n.net < 0">
-                            <strong>{{ n.net | number: '1.2-2' }}</strong>
-                          </td>
-                          <td>{{ n.tahminiKar | number: '1.2-2' }}</td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-              }
             }
             @if (belgeDuzenlemeIzni()) {
               <label class="v2-dialog-reason"
@@ -270,6 +268,37 @@
           </article>
         }
         @if (kayit(); as k) {
+          @if (hacimDuzenlenebilir() || k.hacimManuel || k.ahsapM3 || k.kontraM3) {
+            <!-- Hacim özeti: ahşap, kontra ve fiyatlandırma miktarı olan bileşik m³ ayrı kutucuklarda. -->
+            <section class="hacim-ozet" [class.is-bos]="hacimBekliyor()" aria-label="Hacim">
+              <div class="hacim-ozet__kutu">
+                <span>{{ t('WOOD_M3') }}</span>
+                <strong>{{ (k.ahsapM3 ?? 0) | number: '1.0-6' }}</strong>
+              </div>
+              <span class="hacim-ozet__isaret" aria-hidden="true">+</span>
+              <div class="hacim-ozet__kutu">
+                <span>{{ t('PLYWOOD_M3') }}</span>
+                <strong>{{ (k.kontraM3 ?? 0) | number: '1.0-6' }}</strong>
+              </div>
+              <span class="hacim-ozet__isaret" aria-hidden="true">=</span>
+              <div class="hacim-ozet__kutu is-bilesik">
+                <span>{{ t('COMPOSITE_M3') }}</span>
+                <strong>{{ hacimBilesik(k.ahsapM3, k.kontraM3) | number: '1.0-6' }}</strong>
+              </div>
+              <div class="hacim-ozet__durum">
+                @if (hacimBekliyor()) {
+                  <span class="hacim-ozet__uyari"><i class="ri-error-warning-line" aria-hidden="true"></i>{{ t('VOLUME_NOT_ENTERED') }}</span>
+                } @else if (k.hacimManuel) {
+                  <span class="v2-tag">{{ t('VOLUME_MANUAL_BADGE') }}</span>
+                }
+                @if (hacimDuzenlenebilir()) {
+                  <button type="button" class="btn btn-sm hacim-bekliyor" [class.btn-primary]="hacimBekliyor()" [class.btn-outline-primary]="!hacimBekliyor()" (click)="tab('fiyat')">
+                    <i class="ri-ruler-2-line" aria-hidden="true"></i>{{ t(hacimBekliyor() ? 'VOLUME_ENTER' : 'VOLUME_EDIT') }}
+                  </button>
+                }
+              </div>
+            </section>
+          }
           <div class="v2-card v2-record-summary">
             <dl class="v2-dialog-definition">
               <dt>Üretim tarihi</dt>
@@ -280,34 +309,21 @@
               <dd>{{ t(kategoriAnahtari(k.kategori)) }}</dd>
               <dt>Adet / cins</dt>
               <dd>{{ k.adet }} · {{ k.sandikTipi }}</dd>
-              @if (m3Gorunur()) {
-                <dt>{{ t('VOLUME_SPLIT') }}</dt>
-                <dd class="finans-hacim-ozet">
-                  {{ t('WOOD_M3') }} {{ k.ahsapM3 | number: '1.0-6' }} · {{ t('PLYWOOD_M3') }} {{ k.kontraM3 | number: '1.0-6' }}
-                  · <strong>{{ t('COMPOSITE_M3') }} {{ hacimBilesik(k.ahsapM3, k.kontraM3) | number: '1.0-6' }}</strong>
-                  @if (k.hacimManuel) { <span class="v2-tag">{{ t('VOLUME_MANUAL_BADGE') }}</span> }
-                  @if (hacimBekliyor()) {
-                    <button type="button" class="btn btn-link btn-sm p-0 ms-1 hacim-bekliyor" (click)="tab('fiyat')">{{ t('VOLUME_PENDING') }}</button>
-                  }
-                </dd>
-              }
               <dt>Kaynak bileşeni</dt>
               <dd>{{ k.kaynakBileseni }}</dd>
-              @if (parasal(izin.TutarGoruntule)) {
-                <dt>İş net bedeli</dt>
-                <dd>{{ k.netTutar | number: '1.2-2' }} {{ k.paraBirimi }}</dd>
-                <dt>Sipariş bekleyen</dt>
-                <dd>{{ k.kalanSiparisNetTutar | number: '1.2-2' }} {{ k.paraBirimi }}</dd>
-                <dt>Fatura bekleyen</dt>
-                <dd>{{ k.kalanFaturaNetTutar | number: '1.2-2' }} {{ k.paraBirimi }}</dd>
-              }
+              <dt>İş net bedeli</dt>
+              <dd>{{ k.netTutar | number: '1.2-2' }} {{ k.paraBirimi }}</dd>
+              <dt>Sipariş bekleyen</dt>
+              <dd>{{ k.kalanSiparisNetTutar | number: '1.2-2' }} {{ k.paraBirimi }}</dd>
+              <dt>Fatura bekleyen</dt>
+              <dd>{{ k.kalanFaturaNetTutar | number: '1.2-2' }} {{ k.paraBirimi }}</dd>
               <dt>PO numaraları</dt>
               <dd>{{ k.poNumaralari.join(', ') || '—' }}</dd>
               <dt>Faturalar</dt>
               <dd>{{ k.faturaNumaralari.join(', ') || '—' }}</dd>
             </dl>
           </div>
-          @if (permissions.canWrite(izin.TarihDegistir)) {
+          @if (isDuzenlenebilir()) {
             <div class="v2-card">
               <h4 class="v2-dialog-card-title">
                 <i class="ri-calendar-line" aria-hidden="true"></i>Finans tarihini değiştir
@@ -376,9 +392,18 @@
           @if (hacimOnizleme(); as o) {
             <p class="v2-note hacim-onizleme">
               <i class="ri-calculator-line" aria-hidden="true"></i>{{ t('VOLUME_PRICE_PREVIEW') }}:
-              {{ o.birimFiyat | number: '1.2-4' }} {{ o.paraBirimi }}/m³ × {{ hacimBilesik(hacim.ahsapM3, hacim.kontraM3) | number: '1.0-6' }} m³ =
+              @if (o.ahsapBirimFiyat !== null) {
+                {{ t('PLYWOOD_M3') }} {{ (hacim.kontraM3 || 0) | number: '1.0-6' }} × {{ o.birimFiyat | number: '1.2-4' }} +
+                {{ t('WOOD_M3') }} {{ (hacim.ahsapM3 || 0) | number: '1.0-6' }} × {{ o.ahsapBirimFiyat | number: '1.2-4' }} {{ o.paraBirimi }}/m³ =
+              } @else {
+                {{ o.birimFiyat | number: '1.2-4' }} {{ o.paraBirimi }}/m³ × {{ hacimBilesik(hacim.ahsapM3, hacim.kontraM3) | number: '1.0-6' }} m³ =
+              }
               <strong>{{ o.tutar | number: '1.2-2' }} {{ o.paraBirimi }}</strong>
             </p>
+            @if (o.ahsapBirimFiyat === 0 && (hacim.ahsapM3 || 0) > 0) {
+              <!-- Malzemeli fiyatta ahşap tarifesi bulunamadı (veya para birimi farklı): ahşap m³ tutara katılmaz. -->
+              <p class="v2-note is-warning hacim-ahsap-tarifesiz"><i class="ri-error-warning-line" aria-hidden="true"></i>{{ t('VOLUME_NO_WOOD_TARIFF') }}</p>
+            }
           } @else if (hacimFiyataEtkisiz()) {
             <p class="v2-note hacim-adet-notu"><i class="ri-information-line" aria-hidden="true"></i>{{ t('VOLUME_PIECE_PRICED') }}</p>
           }
@@ -515,7 +540,7 @@
           </footer>
         </article>
       }
-      @if (sekme() === 'gecmis' && permissions.hasAccess(izin.DenetimGor)) {
+      @if (sekme() === 'gecmis' && gecmisGorunur()) {
         <div class="v2-dialog-table-wrap v2-audit-table">
           <table class="table v2-table">
             <thead>
@@ -555,7 +580,7 @@
         }
       }
       @if (sekme() === 'islemler') {
-        @if (permissions.canWrite(iptalIzni())) {
+        @if (iptalEdilebilir()) {
           <article class="v2-card">
             <h4 class="v2-dialog-card-title">
               <i class="ri-forbid-line" aria-hidden="true"></i>Kaydı iptal et
@@ -571,7 +596,7 @@
             </button>
           </article>
         }
-        @if (permissions.canWrite(izin.KaliciSil)) {
+        @if (kaliciSilinebilir()) {
           <article class="v2-card v2-danger">
             <h4 class="v2-dialog-card-title">
               <i class="ri-delete-bin-line" aria-hidden="true"></i>Kalıcı silme

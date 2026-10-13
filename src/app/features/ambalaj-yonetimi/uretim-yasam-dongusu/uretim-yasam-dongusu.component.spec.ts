@@ -14,7 +14,7 @@ describe('Üretim V2 gerçek işlem UI sözleşmesi', () => {
   let component: UretimYasamDongusuComponent;
   let api: jasmine.SpyObj<AmbalajYasamDongusuService>;
   let toast: jasmine.SpyObj<ToastService>;
-  /** Testin kapattığı okuma izinleri; yazma izinleri açıktır. */
+  /** Testin kapattığı izinler (okuma ve yazma); diğerleri açıktır. */
   const reddedilen = new Set<string>();
   const plan: AmbalajUretimPlanDto = {
     projeId: 1,
@@ -56,6 +56,8 @@ describe('Üretim V2 gerçek işlem UI sözleşmesi', () => {
       'durum',
       'rapor',
       'duzelt',
+      'finansaAktar',
+      'finanstanGeriAl',
     ]);
     api.formlar.and.returnValue(of({ isSuccess: true, value: [] }));
     api.formOlustur.and.returnValue(of({ isSuccess: false, error: 'Geçici hata' }));
@@ -67,7 +69,7 @@ describe('Üretim V2 gerçek işlem UI sözleşmesi', () => {
         { provide: AmbalajYasamDongusuService, useValue: api },
         {
           provide: PermissionService,
-          useValue: { hasAccess: (kod: string) => !reddedilen.has(kod), canWrite: () => true },
+          useValue: { hasAccess: (kod: string) => !reddedilen.has(kod), canWrite: (kod: string) => !reddedilen.has(kod) },
         },
         { provide: ToastService, useValue: toast },
         {
@@ -139,42 +141,56 @@ describe('Üretim V2 gerçek işlem UI sözleşmesi', () => {
       return fixture.nativeElement as HTMLElement;
     };
 
-    it('form yokken tek adım gösterilir: form oluştur, finans henüz yok ve kontrplak m³ notu; seçim tablosu ve gerekçe yoktur', () => {
+    it('aktarılmamış özel sandıkta form yoktur: Finansa aktar ve isteğe bağlı finans tarihi gösterilir, form geçmişi istenmez', () => {
+      api.formlar.calls.reset();
       const el = ac();
-      expect(component.tekilDurum()).toBe('formBekliyor');
+      expect(component.tekilDurum()).toBe('aktarilmadi');
+      expect(api.formlar).not.toHaveBeenCalled();
       expect(el.querySelector('table')).toBeNull();
-      expect(el.querySelector('.ozel-gerekce')).toBeNull();
-      expect(el.querySelector('.ozel-adimlar li.aktif')?.textContent).toContain('STEP_FORM');
+      expect(el.querySelector('.ozel-form-olustur')).toBeNull();
+      expect(el.querySelector('.ozel-adimlar li.aktif')?.textContent).toContain('STEP_FINANCE');
       expect(el.querySelector('.ozel-finans')?.textContent).toContain('FINANCE_NOT_YET');
       expect(el.querySelector('.ozel-finans-hacim')).not.toBeNull();
       expect(el.querySelector('.ozel-finans-tarihi')).not.toBeNull();
     });
 
-    it('üretimde tamamla gerekçe istemez; bekleyene al gerekçe alanını açar ve gerekçesiz gönderilmez', () => {
-      api.durum.and.returnValue(of({ isSuccess: true }));
-      const el = ac({ uretimeAlindi: true, uretimDurumu: 2 });
-      expect(el.querySelector('.ozel-finans')?.textContent).toContain('FINANCE_ACTIVE');
-      (el.querySelector('.ozel-tamamla') as HTMLButtonElement).click();
-      expect(api.durum).toHaveBeenCalledOnceWith(9, 3, '');
-
-      api.durum.calls.reset();
-      (el.querySelector('.ozel-geri-al') as HTMLButtonElement).click();
+    it('Finansa aktar tarihi gönderir; yanıttaki güncel sandık panelde hemen aktarıldı olarak görünür', () => {
+      const changed = jasmine.createSpy('degisti');
+      component.degisti.subscribe(changed);
+      api.finansaAktar.and.returnValue(of({ isSuccess: true, value: { ...(ozel as object), uretimeAlindi: true, uretimDurumu: 2 } as never }));
+      const el = ac();
+      component.finansTarihi = '2026-09-30';
+      (el.querySelector('.ozel-finansa-aktar') as HTMLButtonElement).click();
       fixture.detectChanges();
-      expect((el.querySelector('.ozel-geri-al-onay') as HTMLButtonElement).disabled).toBeTrue();
-      component.durum(9, 1);
-      expect(api.durum).not.toHaveBeenCalled();
-      component.gerekceyiDegistir('Ölçü hatalı');
-      component.durum(9, 1);
-      expect(api.durum).toHaveBeenCalledOnceWith(9, 1, 'Ölçü hatalı');
+
+      expect(api.finansaAktar).toHaveBeenCalledOnceWith(9, '2026-09-30');
+      expect(changed).toHaveBeenCalled();
+      expect(component.tekilDurum()).toBe('aktarildi');
+      expect(el.querySelector('.ozel-finans')?.textContent).toContain('FINANCE_ACTIVE');
+      expect(el.querySelector('.ozel-finanstan-geri-al')).not.toBeNull();
     });
 
-    it('formu olan bekletilen sandık gerekçesiz üretime alınır', () => {
-      api.formlar.and.returnValue(of({ isSuccess: true, value: [{ id: 3, form: { kalemler: [{ kayitId: 9 }] } }] as never }));
-      api.durum.and.returnValue(of({ isSuccess: true }));
-      const el = ac({ id: 9, uretimeAlindi: true, uretimDurumu: 1 });
-      expect(component.tekilDurum()).toBe('bekletiliyor');
-      (el.querySelector('.ozel-uretime-al') as HTMLButtonElement).click();
-      expect(api.durum).toHaveBeenCalledOnceWith(9, 2, '');
+    it('Finanstan geri al onayla açılır, gerekçe isteğe bağlıdır; sunucu reddederse durum değişmez', () => {
+      api.finanstanGeriAl.and.returnValue(of({ isSuccess: false, error: "PO'ya bağlı", statusCode: 409 } as ApiResult<never>));
+      const el = ac({ uretimeAlindi: true, uretimDurumu: 2 });
+      (el.querySelector('.ozel-finanstan-geri-al') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      (el.querySelector('.ozel-finanstan-geri-al-onay') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(api.finanstanGeriAl).toHaveBeenCalledOnceWith(9, '');
+      expect(toast.error).toHaveBeenCalled();
+      expect(component.tekilDurum()).toBe('aktarildi');
+    });
+
+    it('tamamlanmış özel sandıkta işlem düğmesi yoktur; yazma izni yoksa Finansa aktar görünmez', () => {
+      let el = ac({ uretimeAlindi: true, uretimDurumu: 3 });
+      expect(component.tekilDurum()).toBe('tamamlandi');
+      expect(el.querySelector('.ozel-finanstan-geri-al')).toBeNull();
+
+      reddedilen.add(AMBALAJ_YETKI.DurumDuzenle);
+      el = ac({ uretimeAlindi: false, uretimDurumu: 1 });
+      expect(el.querySelector('.ozel-finansa-aktar')).toBeNull();
     });
   });
 

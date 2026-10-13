@@ -777,3 +777,26 @@
     animation: none !important;
   }
 }
+
+// Özel aralıkta eksik/geçersiz tarih uyarısı: istek atılmaz, kullanıcı satır içinde uyarılır.
+.tarih-hatasi {
+  flex-basis: 100%;
+  color: #b45309;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* Paneldeki münferit iş kartı: satır tıklanınca iş detayı açılır. */
+.panel-adhoc-table tbody tr.is-clickable {
+  cursor: pointer;
+  &:hover td {
+    background: var(--k-zemin-hafif, #f8fafc);
+  }
+  small {
+    color: #64748b;
+  }
+}
+.dashboard-adhoc .dash-card-head h4 i {
+  color: var(--v2-primary, #605dff);
+}
