@@ -82,7 +82,7 @@
           <strong>{{ t(kategoriAnahtari(satir.kategori)) }}</strong>
           <small>{{ satir.isAdi }}</small>
           @if (satir.sandikAdedi) {
-            <small>{{ satir.sandikAdedi }} sandık@if (satir.ahsapM3) { · {{ t('WOOD_M3') }} {{ satir.ahsapM3 | number: '1.0-3' }} }@if (satir.kontraM3) { · {{ t('PLYWOOD_M3') }} {{ satir.kontraM3 | number: '1.0-3' }} }@if (satir.ahsapM3 && satir.kontraM3) { · {{ t('COMPOSITE_M3') }} {{ hacimBilesik(satir.ahsapM3, satir.kontraM3) | number: '1.0-3' }} }</small>
+            <small>{{ satir.sandikAdedi }} sandık@if (satir.ahsapM3) { · {{ t('WOOD_M3') }} {{ satir.ahsapM3 | number: '1.0-3' }} }@if (satir.kontraM3) { · {{ t('PLYWOOD_M3') }} {{ satir.kontraM3 | number: '1.0-3' }} }</small>
           }
           @if (sandikliSatir(satir)) {
             <button type="button" class="crate-toggle" (click)="$event.stopPropagation(); kategoriSandiklariniGoster(satir)">
@@ -999,7 +999,6 @@
             <span>{{ t(siparisKarsilanmaAnahtari(ozet.siparisKarsilanma)) }} · {{ t(faturaKarsilanmaAnahtari(ozet.faturaKarsilanma)) }}</span>
             @if (ozet.ahsapM3) { <span class="note-chip">{{ t('WOOD_M3') }} {{ ozet.ahsapM3 | number: '1.0-3' }}</span> }
             @if (ozet.kontraM3) { <span class="note-chip">{{ t('PLYWOOD_M3') }} {{ ozet.kontraM3 | number: '1.0-3' }}</span> }
-            @if (ozet.ahsapM3 && ozet.kontraM3) { <span class="note-chip">{{ t('COMPOSITE_M3') }} {{ hacimBilesik(ozet.ahsapM3, ozet.kontraM3) | number: '1.0-3' }}</span> }
             @if (ozet.fiyatBekleyenKalem) {
               <span class="note-chip is-attention"><i class="ri-error-warning-line" aria-hidden="true"></i>{{ ozet.fiyatBekleyenKalem }} kalem fiyat bekliyor</span>
             }
@@ -1421,9 +1420,6 @@
         ><label class="field"
           ><span>{{ t('PLYWOOD_M3') }}</span
           ><input class="form-control ozel-kontra-m3" type="number" min="0" step="0.000001" [(ngModel)]="ozelIsForm.kontraM3" /></label
-        ><label class="field"
-          ><span>{{ t('COMPOSITE_M3') }}</span
-          ><input class="form-control ozel-bilesik-m3" [value]="hacimBilesik(ozelIsForm.ahsapM3, ozelIsForm.kontraM3)" readonly /><small class="money-note">{{ t('COMPOSITE_M3_HELP') }}</small></label
         >
       }
       <label class="field"

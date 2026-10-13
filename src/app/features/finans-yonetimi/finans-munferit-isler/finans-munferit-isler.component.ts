@@ -57,7 +57,6 @@ export class FinansMunferitIslerComponent implements OnInit {
   readonly kayitAc = output<{ tur: FinansVarlikTuru; id: number }>();
   readonly siparisAc = output<number[]>();
 
-  readonly hacimBilesik = finansHacimBilesik;
 
   /** Münferit iş tarifeden fiyatlanır: Münferit İşler sekmesinin W izni yeter. */
   readonly ekleyebilir = computed(() => finansSekmeYazilabilir(this.permissions, 'munferit'));

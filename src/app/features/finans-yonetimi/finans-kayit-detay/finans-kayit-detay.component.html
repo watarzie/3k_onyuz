@@ -269,22 +269,18 @@
         }
         @if (kayit(); as k) {
           @if (hacimDuzenlenebilir() || k.hacimManuel || k.ahsapM3 || k.kontraM3) {
-            <!-- Hacim özeti: ahşap, kontra ve fiyatlandırma miktarı olan bileşik m³ ayrı kutucuklarda. -->
+            <!-- Hacim özeti: ahşap kapalı sandıkta yalnız ahşap m³, kontra sandıkta ahşap ve kontra m³ ayrı kutucuklarda (toplam gösterilmez). -->
             <section class="hacim-ozet" [class.is-bos]="hacimBekliyor()" aria-label="Hacim">
               <div class="hacim-ozet__kutu">
                 <span>{{ t('WOOD_M3') }}</span>
                 <strong>{{ (k.ahsapM3 ?? 0) | number: '1.0-6' }}</strong>
               </div>
-              <span class="hacim-ozet__isaret" aria-hidden="true">+</span>
-              <div class="hacim-ozet__kutu">
-                <span>{{ t('PLYWOOD_M3') }}</span>
-                <strong>{{ (k.kontraM3 ?? 0) | number: '1.0-6' }}</strong>
-              </div>
-              <span class="hacim-ozet__isaret" aria-hidden="true">=</span>
-              <div class="hacim-ozet__kutu is-bilesik">
-                <span>{{ t('COMPOSITE_M3') }}</span>
-                <strong>{{ hacimBilesik(k.ahsapM3, k.kontraM3) | number: '1.0-6' }}</strong>
-              </div>
+              @if (kontraGosterilir(k)) {
+                <div class="hacim-ozet__kutu hacim-ozet__kontra">
+                  <span>{{ t('PLYWOOD_M3') }}</span>
+                  <strong>{{ (k.kontraM3 ?? 0) | number: '1.0-6' }}</strong>
+                </div>
+              }
               <div class="hacim-ozet__durum">
                 @if (hacimBekliyor()) {
                   <span class="hacim-ozet__uyari"><i class="ri-error-warning-line" aria-hidden="true"></i>{{ t('VOLUME_NOT_ENTERED') }}</span>
@@ -385,7 +381,6 @@
             ><label>{{ t('PLYWOOD_M3') }}<input
                 type="number" min="0" step="0.000001" class="hacim-kontra"
                 [(ngModel)]="hacim.kontraM3" /></label
-            ><label>{{ t('COMPOSITE_M3') }}<input class="hacim-bilesik" [value]="hacimBilesik(hacim.ahsapM3, hacim.kontraM3)" readonly /></label
             ><label>{{ t('VOLUME_REASON') }}<input class="hacim-gerekce" [(ngModel)]="hacim.aciklama" maxlength="2000" /></label>
           </div>
           <p class="v2-note hacim-toplam-notu"><i class="ri-information-line" aria-hidden="true"></i>{{ t('VOLUME_TOTAL_HINT') }}</p>
@@ -396,7 +391,7 @@
                 {{ t('PLYWOOD_M3') }} {{ (hacim.kontraM3 || 0) | number: '1.0-6' }} × {{ o.birimFiyat | number: '1.2-4' }} +
                 {{ t('WOOD_M3') }} {{ (hacim.ahsapM3 || 0) | number: '1.0-6' }} × {{ o.ahsapBirimFiyat | number: '1.2-4' }} {{ o.paraBirimi }}/m³ =
               } @else {
-                {{ o.birimFiyat | number: '1.2-4' }} {{ o.paraBirimi }}/m³ × {{ hacimBilesik(hacim.ahsapM3, hacim.kontraM3) | number: '1.0-6' }} m³ =
+                {{ o.birimFiyat | number: '1.2-4' }} {{ o.paraBirimi }}/m³ × ({{ t('WOOD_M3') }} {{ (hacim.ahsapM3 || 0) | number: '1.0-6' }}@if ((hacim.kontraM3 || 0) > 0) { + {{ t('PLYWOOD_M3') }} {{ hacim.kontraM3 | number: '1.0-6' }} }) =
               }
               <strong>{{ o.tutar | number: '1.2-2' }} {{ o.paraBirimi }}</strong>
             </p>

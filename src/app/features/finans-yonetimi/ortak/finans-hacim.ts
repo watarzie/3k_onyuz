@@ -3,7 +3,15 @@ import { FinansSandikMalzemesi } from '../../../core/constants/enums';
 /** Sunucudaki FinansHacimKurallari.EnFazlaM3 ile aynı üst sınır. */
 export const FINANS_HACIM_EN_FAZLA = 999_999;
 
-/** Bileşik toplam = ahşap m³ + kontra m³ (altı ondalık); boş değer 0 sayılır. */
+/**
+ * Hacim gösterimi: ahşap kapalı sandıkta yalnız ahşap m³; kontrplak/katlanır sandıkta ahşap ve kontra m³ ayrı ayrı
+ * (ahşap sandığa ek kontra girildiyse o da görünür). Ahşap ve kontra ekranda toplanıp tek değer olarak gösterilmez.
+ */
+export function finansKontraGosterilir(malzeme: FinansSandikMalzemesi | 0 | null | undefined, kontraM3: number | null | undefined): boolean {
+  return malzeme === FinansSandikMalzemesi.Kontra || (Number(kontraM3) || 0) > 0;
+}
+
+/** Fiyatlandırma miktarı = ahşap m³ + kontra m³ (altı ondalık); boş değer 0 sayılır. Yalnız hesapta kullanılır, gösterilmez. */
 export function finansHacimBilesik(ahsap: number | null | undefined, kontra: number | null | undefined): number {
   return Math.round(((Number(ahsap) || 0) + (Number(kontra) || 0)) * 1_000_000) / 1_000_000;
 }

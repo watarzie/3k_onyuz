@@ -237,9 +237,6 @@
                         @if (grup.kontraM3) {
                           · {{ t('PLYWOOD_M3') }} {{ grup.kontraM3 | number: '1.0-3' }}
                         }
-                        @if (grup.ahsapM3 && grup.kontraM3) {
-                          · {{ t('COMPOSITE_M3') }} {{ grup.ahsapM3 + grup.kontraM3 | number: '1.0-3' }}
-                        }
                       </small>
                       <small>{{ t(siparisKarsilanmaAnahtari(grup.siparisKarsilanma)) }}@if (grup.fiyatBekleyenKalem) {
                           · {{ grup.fiyatBekleyenKalem }} {{ t('ALLOC_PRICE_PENDING') }}

@@ -37,6 +37,7 @@ import { PdfService } from '../../../core/services/pdf.service';
 import { ProjeTipi, SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
 import { PROJE_TIPI_BAGLAMLARI, projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
+import { fotografBaglantisiGecerli, fotografBaglantisiNormalize, fotografSitesi } from './proje-fotograf-baglantisi';
 import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 
 interface SahaAktarimGrubu {
@@ -181,6 +182,7 @@ export class ProjeListesiComponent implements OnInit {
       this.canUpdatePlanlananSevkTarihiCurrent() || this.canDeleteProjectCurrent())
   );
   hasActionColumn = computed(() =>
+    (this.fotografBaglantisiDuzenlenebilir() && this.projeler().some(p => !!p.fotografBaglantisi)) ||
     this.projeler().some(proje => this.canSeeRevizyonGecmisi(proje)) ||
     this.hasSandikYonetimiActions() ||
     this.hasSahaYonetimiActions() ||
@@ -543,7 +545,8 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   shouldShowActions(p: ProjeDto): boolean {
-    if (this.canSeeRevizyonGecmisi(p)) return true;
+    // Bağlantı ekleme satırdaki "+" düğmesindedir; menüde yalnız kayıtlı bağlantıyı düzenleme/kaldırma bulunur.
+    if ((this.fotografBaglantisiDuzenlenebilir() && !!p.fotografBaglantisi) || this.canSeeRevizyonGecmisi(p)) return true;
     if (this.isSahaYonetimi()) return this.hasSahaYonetimiActions();
     if (this.isYedekYonetimi()) return this.hasYedekYonetimiActions();
     if (this.isSandikYonetimi()) return this.hasSandikYonetimiActions();
@@ -1139,6 +1142,85 @@ export class ProjeListesiComponent implements OnInit {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+
+  // ===== Fotoğraf Bağlantısı =====
+  // Tek izin kodu, proje tipinden bağımsız: R bağlantıyı görür ve açar, W ekler/düzenler/kaldırır. Sunucu bağlantıyı
+  // listede yalnız R izniyle döndürür; ön yüz kontrolü yalnız görünürlük içindir.
+
+  readonly fotografSitesi = fotografSitesi;
+  readonly fotografProje = signal<ProjeDto | null>(null);
+  readonly fotografTaslak = signal('');
+  readonly fotografKaydediliyor = signal(false);
+  /** Yazılan adresin kaydedilecek hali (şemasızsa https eklenmiş); geçersizse kaydet kapalıdır. */
+  readonly fotografOnizleme = computed(() => fotografBaglantisiNormalize(this.fotografTaslak()));
+  readonly fotografTaslakGecerli = computed(() => fotografBaglantisiGecerli(this.fotografTaslak()));
+
+  fotografBaglantisiGorunur(): boolean {
+    return this.permissions.hasAccess(YETKI.PROJE.FOTOGRAF_BAGLANTISI);
+  }
+
+  fotografBaglantisiDuzenlenebilir(): boolean {
+    return this.permissions.canWrite(YETKI.PROJE.FOTOGRAF_BAGLANTISI);
+  }
+
+  fotografPenceresiniAc(proje: ProjeDto): void {
+    if (!this.fotografBaglantisiDuzenlenebilir()) return;
+    this.fotografProje.set(proje);
+    this.fotografTaslak.set(proje.fotografBaglantisi ?? '');
+  }
+
+  fotografPenceresiniKapat(): void {
+    if (this.fotografKaydediliyor()) return;
+    this.fotografProje.set(null);
+    this.fotografTaslak.set('');
+  }
+
+  fotografBaglantisiKaydet(): void {
+    const adres = this.fotografOnizleme();
+    if (!adres || !this.fotografTaslakGecerli()) {
+      this.toastService.error('Geçerli bir web adresi girin (ör. https://ornek.com/proje).');
+      return;
+    }
+    this.fotografBaglantisiGonder(adres, 'Fotoğraf bağlantısı kaydedildi.');
+  }
+
+  async fotografBaglantisiKaldir(): Promise<void> {
+    const proje = this.fotografProje();
+    if (!proje?.fotografBaglantisi || this.fotografKaydediliyor()) return;
+    const onay = await this.confirmService.ask({
+      title: 'Fotoğraf Bağlantısını Kaldır',
+      message: `${proje.projeNo} projesinin fotoğraf bağlantısı kaldırılacak. Fotoğraflar sitede kalır; yalnız bağlantı silinir.`,
+      confirmText: 'Bağlantıyı Kaldır',
+      cancelText: 'Vazgeç',
+      type: 'warning'
+    });
+    if (!onay) return;
+    this.fotografBaglantisiGonder(null, 'Fotoğraf bağlantısı kaldırıldı.');
+  }
+
+  private fotografBaglantisiGonder(adres: string | null, basariMesaji: string): void {
+    const proje = this.fotografProje();
+    if (!proje || !this.fotografBaglantisiDuzenlenebilir() || this.fotografKaydediliyor()) return;
+    this.fotografKaydediliyor.set(true);
+    this.projeService.fotografBaglantisiGuncelle(proje.id, adres).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.fotografKaydediliyor.set(false);
+        if (!res.isSuccess) {
+          this.toastService.error(res.error || 'Fotoğraf bağlantısı kaydedilemedi.');
+          return;
+        }
+        // Liste yeniden yüklenmeden satır güncellenir (sayfa ve kaydırma yerinde kalır).
+        const kaydedilen = res.value ?? null;
+        this.projeler.update(liste => liste.map(p => p.id === proje.id ? { ...p, fotografBaglantisi: kaydedilen } : p));
+        this.toastService.success(basariMesaji);
+        this.fotografPenceresiniKapat();
+      },
+      error: () => {
+        this.fotografKaydediliyor.set(false);
+        this.toastService.error('Sunucu hatası oluştu.');
+      }
+    });
   }
 
   // ===== Sevk Tarihi Güncelle =====

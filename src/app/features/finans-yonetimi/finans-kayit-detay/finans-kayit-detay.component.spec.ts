@@ -228,11 +228,14 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
       adet: 2, birimM3: 0, toplamM3: 0, ahsapM3: 0, kontraM3: 0, fiyatlandirmaBirimi: 2, birimFiyat: 100,
     };
 
-    it('kontrplak sandıkta hacim Fiyatlandırma sekmesinde girilir; tarife × bileşik önizlenir ve gerekçeyle gönderilir', () => {
+    it('kontrplak sandıkta hacim Fiyatlandırma sekmesinde girilir; tarife × (ahşap + kontra) önizlenir ve gerekçeyle gönderilir', () => {
       api.isDetay.and.returnValue(of({ isSuccess: true, value: kontraIs }));
       const { fixture, component } = setup('IsKaydi');
       const el = fixture.nativeElement as HTMLElement;
       expect(el.querySelector('.finans-hacim-karti')).toBeNull();
+      // Kontra sandıkta özet ahşap ve kontra m³'ü ayrı kutularda gösterir; ikisi toplanmaz.
+      expect(el.querySelectorAll('.hacim-ozet__kutu').length).toBe(2);
+      expect(el.querySelector('.hacim-ozet__kontra')).not.toBeNull();
       (el.querySelector('.hacim-bekliyor') as HTMLButtonElement).click();
       fixture.detectChanges();
       expect(component.sekme()).toBe('fiyat');
@@ -240,8 +243,11 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
       component.hacim.ahsapM3 = 1.2;
       component.hacim.kontraM3 = 0.8;
       fixture.detectChanges();
-      expect((el.querySelector('.hacim-bilesik') as HTMLInputElement).value).toBe('2');
-      expect(el.querySelector('.hacim-onizleme')?.textContent).toContain('200.00');
+      // Ahşap ve kontra toplanıp ayrı bir "bileşik" değer olarak gösterilmez.
+      expect(el.querySelector('.hacim-bilesik')).toBeNull();
+      const onizleme = el.querySelector('.hacim-onizleme')?.textContent ?? '';
+      expect(onizleme).toContain('200.00');
+      expect(onizleme).toMatch(/1\.2\s*\+\s*\S+ m³\s*0\.8\s*\)/);
 
       // Gerekçe isteğe bağlıdır: boşken de gönderilir, yazılırsa iletilir.
       component.hacimKaydet();
@@ -256,6 +262,11 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
       api.isDetay.and.returnValue(of({ isSuccess: true, value: { ...kontraIs, sandikMalzemesi: FinansSandikMalzemesi.Ahsap, ahsapM3: 2.5 } }));
       const ilk = setup('IsKaydi');
       expect(ilk.component.hacimDuzenlenebilir()).toBeFalse();
+      // Ahşap kapalı sandıkta özet yalnız ahşap m³ gösterir.
+      const kutular = ilk.fixture.nativeElement.querySelectorAll('.hacim-ozet__kutu') as NodeListOf<HTMLElement>;
+      expect(kutular.length).toBe(1);
+      expect(kutular[0].textContent).toContain('2.5');
+      expect(ilk.fixture.nativeElement.querySelector('.hacim-ozet__kontra')).toBeNull();
       ilk.component.tab('fiyat');
       ilk.fixture.detectChanges();
       expect(ilk.fixture.nativeElement.querySelector('.finans-hacim-karti')).toBeNull();

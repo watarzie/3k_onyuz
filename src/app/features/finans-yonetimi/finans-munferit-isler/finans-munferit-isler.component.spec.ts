@@ -108,7 +108,8 @@ describe('Finans Münferit İşler sekmesi', () => {
 
     c.form = { ...c.form, ahsapM3: 1.2, kontraM3: 0.8 };
     fixture.detectChanges();
-    expect((el.querySelector('.adhoc-composite') as HTMLInputElement).value).toBe('2');
+    // Ahşap ve kontra ayrı girilir; toplam ("bileşik") alanı yoktur.
+    expect(el.querySelector('.adhoc-composite')).toBeNull();
     c.kaydet();
     const istek = api.munferitIsOlustur.calls.mostRecent().args[0];
     expect(istek).toEqual({ finansUrunId: 8, projeId: null, projeAdi: 'Rüzgar Sahası', isTarihi: c.form.isTarihi, adet: 1, ahsapM3: 1.2, kontraM3: 0.8 });

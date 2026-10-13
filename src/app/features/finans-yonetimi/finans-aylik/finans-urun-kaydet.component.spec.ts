@@ -118,7 +118,6 @@ describe('Finans ürün ve tarife kaydı', () => {
     c.ozelIsForm = { ...c.ozelIsForm, ahsapM3: 1.2, kontraM3: 0.8 };
     c.ozelIsKaydet();
     expect(api.ozelIsOlustur).toHaveBeenCalledWith(jasmine.objectContaining({ hesaplamaYontemi: 4, ahsapM3: 1.2, kontraM3: 0.8 }));
-    expect(c.hacimBilesik(c.ozelIsForm.ahsapM3, c.ozelIsForm.kontraM3)).toBe(2);
   });
 
   it('onaya düşen silmeyi başarılı saymaz', async () => {

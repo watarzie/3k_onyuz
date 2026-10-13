@@ -127,6 +127,11 @@ export class ProjeService {
     );
   }
 
+  /** Fotoğraf sayfası bağlantısını kaydeder; boş (null) bağlantıyı kaldırır. Dönen değer kaydedilen adrestir. */
+  fotografBaglantisiGuncelle(projeId: number, baglanti: string | null): Observable<ApiResult<string | null>> {
+    return this.api.put<string | null>(API.PROJE.FOTOGRAF_BAGLANTISI(projeId), { baglanti });
+  }
+
   sevkTarihiGuncelle(projeId: number, planlananSevkTarihi: string | null): Observable<ApiResult<boolean>> {
     return this.api.put<boolean>(
       API.PROJE.SEVK_TARIHI_GUNCELLE,

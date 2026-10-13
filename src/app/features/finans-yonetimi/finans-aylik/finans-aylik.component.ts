@@ -1,5 +1,5 @@
 import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
-import { finansHacimBilesik, finansHacimGecerli } from '../ortak/finans-hacim';
+import { finansHacimGecerli } from '../ortak/finans-hacim';
 import { kategoriKirilimKayitlari, kirilimSandiklari, sarfKaydi } from '../ortak/finans-kirilim';
 import { Component, DestroyRef, OnInit, WritableSignal, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -224,7 +224,6 @@ export class FinansYonetimiComponent implements OnInit {
   readonly ozelIsGrubuSecenekleri = ['Haliade-X', 'SKIT', 'Diğer'];
   readonly birimler = ['Adet', 'm³', 'Ay', 'Sefer', 'Hizmet'];
   readonly sandikTipleri = ['Ahşap Kapalı', 'Kafes Sandık', 'Kontrplak Sandık', 'Katlanır Sandık'];
-  readonly hacimBilesik = finansHacimBilesik;
   readonly sayfaBoyutuSecenekleri = [25, 50, 100] as const;
   readonly isTuruSecenekleri = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(id => ({ id, ad: this.isTuruMetni(id) }));
 

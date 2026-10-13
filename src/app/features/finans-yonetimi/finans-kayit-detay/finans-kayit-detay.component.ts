@@ -40,7 +40,7 @@ import {
   uretimKategorisi,
 } from '../ortak/finans-etiketleri';
 import { TranslationService } from '../../../core/services/translation.service';
-import { finansAhsapUretimden, finansHacimBilesik, finansHacimElleGirilir, finansHacimGecerli } from '../ortak/finans-hacim';
+import { finansAhsapUretimden, finansHacimBilesik, finansHacimElleGirilir, finansHacimGecerli, finansKontraGosterilir } from '../ortak/finans-hacim';
 import { FinansIsKategorisi, FinansSandikMalzemesi } from '../../../core/constants/enums';
 
 import { onayaAlindi } from '../../../shared/models';
@@ -119,7 +119,6 @@ export class FinansKayitDetayComponent implements OnInit {
   };
   /** Ahşap ve kontra m³ girişi (kontra sandıkta Ambalaj m³ hesaplamaz); bileşik toplam fiyatlandırma miktarıdır. */
   hacim = { ahsapM3: 0, kontraM3: 0, aciklama: '' };
-  readonly hacimBilesik = finansHacimBilesik;
   /** Hacimle fiyatlanan işte elle fiyatlandırma kartı yalnız kullanıcı açarsa görünür (yanlışlıkla tarifeyi ezmemek için). */
   readonly elleFiyatAcik = signal(false);
   ngOnInit(): void {
@@ -127,6 +126,10 @@ export class FinansKayitDetayComponent implements OnInit {
     this.yukle();
   }
   /** Ahşap sandıkta ahşap m³ üretimden gelir, salt okunurdur; kontra/belirsiz işte iki değer de girilir. */
+  /** Özette kontra m³ kutusu: kontra sandıkta veya kontra girildiyse; ahşap kapalı sandıkta yalnız ahşap m³. */
+  kontraGosterilir(k: FinansIsKaydi): boolean {
+    return finansKontraGosterilir(k.sandikMalzemesi, k.kontraM3);
+  }
   ahsapUretimden(): boolean {
     return finansAhsapUretimden(this.kayit()?.sandikMalzemesi);
   }
@@ -151,7 +154,7 @@ export class FinansKayitDetayComponent implements OnInit {
   }
   /**
    * Girilen hacmin tarifeyle tutarı. Malzemeli fiyatta (ahşap ve kontra ayrı tarife) kontra m³ × kontra fiyatı +
-   * ahşap m³ × ahşap fiyatı; değilse bileşik m³ × birim fiyat. Kayıt sunucuda güncel tarifeyle yeniden fiyatlanır.
+   * ahşap m³ × ahşap fiyatı; değilse (ahşap + kontra) m³ × birim fiyat. Kayıt sunucuda güncel tarifeyle yeniden fiyatlanır.
    */
   hacimOnizleme(): { birimFiyat: number; ahsapBirimFiyat: number | null; paraBirimi: string; tutar: number } | null {
     const k = this.kayit();

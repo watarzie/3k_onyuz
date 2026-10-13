@@ -158,10 +158,9 @@
         }
       </div>
       @if (m3Urun()) {
-        <div class="tz-field-grid tz-field-grid--3 adhoc-volume">
+        <div class="tz-field-grid adhoc-volume">
           <label class="tz-field"><span>{{ t('WOOD_M3') }}</span><input class="form-control adhoc-wood" type="number" min="0" step="any" [(ngModel)]="form.ahsapM3" /></label>
           <label class="tz-field"><span>{{ t('PLYWOOD_M3') }}</span><input class="form-control adhoc-plywood" type="number" min="0" step="any" [(ngModel)]="form.kontraM3" /></label>
-          <label class="tz-field"><span>{{ t('COMPOSITE_M3') }}</span><input class="form-control adhoc-composite" type="number" readonly [value]="hacimBilesik(form.ahsapM3, form.kontraM3)" /></label>
         </div>
       }
 

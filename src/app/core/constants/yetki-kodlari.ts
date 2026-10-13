@@ -19,6 +19,8 @@ export const YETKI = {
     SIL: 'proje-sil',
     CEKI_YUKLE: 'ceki-yukle',
     PLANLANAN_SEVK_TARIHI: 'planlanan-sevk-tarihi',
+    /** Proje fotoğraf bağlantısı; bütün proje listelerinde aynı kod: R görür ve açar, W ekler/düzenler/kaldırır. */
+    FOTOGRAF_BAGLANTISI: 'proje-fotograf-baglantisi',
   },
   SANDIK: {
     YONETIMI: 'sandik-yonetimi',
