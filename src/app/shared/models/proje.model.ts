@@ -43,6 +43,11 @@ export interface ProjeDto {
   fotografBaglantisi?: string | null;
 }
 
+/** Fotoğraf bağlantısı kaydının sonucu (sunucu JSON nesnesi döndürür). */
+export interface ProjeFotografBaglantisiSonucu {
+  fotografBaglantisi: string | null;
+}
+
 export interface ProjeOlusturDto {
   projeNo: string;
   musteri: string;

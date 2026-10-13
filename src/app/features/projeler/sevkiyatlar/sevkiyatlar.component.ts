@@ -6,6 +6,8 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { ServerPagerComponent } from '../../../shared/components/server-pager/server-pager.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { SevkiyatService } from '../../../core/services/sevkiyat.service';
+import { ToastService } from '../../../core/services/toast.service';
+import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 import { TranslationService } from '../../../core/services/translation.service';
 import { ProjeTipi } from '../../../core/constants/enums';
 import { projeTipiBaglami } from '../../../core/constants/proje-tipi';
@@ -38,6 +40,7 @@ export class SevkiyatlarComponent implements OnInit {
   private readonly service = inject(SevkiyatService);
   private readonly ts = inject(TranslationService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly toast = inject(ToastService);
   private readonly metinDegisti = new Subject<void>();
   private seferIstekSurumu = 0;
   private istatistikIstekSurumu = 0;
@@ -71,6 +74,11 @@ export class SevkiyatlarComponent implements OnInit {
   readonly istatistik = signal<SevkiyatIstatistik | null>(null);
   readonly istatistikYukleniyor = signal(true);
   readonly istatistikHatasi = signal('');
+
+  /** İnen dönem raporu biçimi; aynı anda tek indirme. */
+  readonly raporIndiriliyor = signal<'pdf' | 'excel' | null>(null);
+  /** PDF'i inen seferin anahtarı. */
+  readonly seferRaporuIndiriliyor = signal<string | null>(null);
 
   readonly acikSefer = signal<string | null>(null);
   readonly detaylar = signal<Record<string, SeferDetayDurumu>>({});
@@ -146,6 +154,57 @@ export class SevkiyatlarComponent implements OnInit {
     this.plaka.set('');
     this.gorunum.set('seferler');
     this.seferleriYenile();
+  }
+
+  // ===== Raporlar =====
+
+  /**
+   * Rapor, ekranda görünen süzgeçlerle alınır: sefer listesinde tarih, plaka, proje no ve proje tipi; istatistik
+   * görünümlerinde (yalnız tarih süzgeci) tarih aralığı.
+   */
+  raporFiltresi(): SevkSeferiFiltre {
+    const filtre = this.filtre();
+    return this.gorunum() === 'seferler'
+      ? filtre
+      : { baslangic: filtre.baslangic, bitis: filtre.bitis, projeTipiId: null };
+  }
+
+  raporIndir(format: 'pdf' | 'excel'): void {
+    if (this.raporIndiriliyor()) return;
+    this.raporIndiriliyor.set(format);
+    this.service.donemRaporu(format, this.raporFiltresi()).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: dosya => {
+        this.raporIndiriliyor.set(null);
+        dosyayiKaydet(dosya, `Sevkiyat_Raporu_${this.bugun()}.${format === 'pdf' ? 'pdf' : 'xlsx'}`);
+      },
+      error: async hata => {
+        this.raporIndiriliyor.set(null);
+        this.toast.error(await this.service.indirmeHatasi(hata, this.t('SHIPMENTS.REPORT_FAILED')));
+      },
+    });
+  }
+
+  seferRaporuIndir(sefer: SevkSeferiOzet): void {
+    if (this.seferRaporuIndiriliyor()) return;
+    this.seferRaporuIndiriliyor.set(sefer.anahtar);
+    const ad = sefer.eskiKayit
+      ? `Sevkiyat_${(sefer.aracPlaka || 'Plakasiz').replace(/\s+/g, '')}_${sefer.sevkTarihi.slice(0, 10).replace(/-/g, '')}.pdf`
+      : `Sefer_${sefer.seferNo}.pdf`;
+    this.service.seferRaporu(sefer).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: dosya => {
+        this.seferRaporuIndiriliyor.set(null);
+        dosyayiKaydet(dosya, ad);
+      },
+      error: async hata => {
+        this.seferRaporuIndiriliyor.set(null);
+        this.toast.error(await this.service.indirmeHatasi(hata, this.t('SHIPMENTS.REPORT_FAILED')));
+      },
+    });
+  }
+
+  private bugun(): string {
+    const simdi = new Date();
+    return `${simdi.getFullYear()}${String(simdi.getMonth() + 1).padStart(2, '0')}${String(simdi.getDate()).padStart(2, '0')}`;
   }
 
   // ===== Sefer listesi ve detay =====

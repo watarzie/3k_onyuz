@@ -73,6 +73,14 @@
       @if (filtreVar()) {
         <button type="button" class="tz-btn sv-temizle" (click)="filtreleriTemizle()"><i class="ri-filter-off-line"></i>{{ t('SHIPMENTS.CLEAR_FILTERS') }}</button>
       }
+      <div class="sv-rapor" role="group" [attr.aria-label]="t('SHIPMENTS.REPORTS')" [title]="t('SHIPMENTS.REPORT_HINT')">
+        <button type="button" class="tz-btn sv-rapor-pdf" [disabled]="raporIndiriliyor() !== null" (click)="raporIndir('pdf')">
+          <i [class]="raporIndiriliyor() === 'pdf' ? 'ri-loader-4-line tz-spin' : 'ri-file-pdf-2-line tz-ico-danger'"></i>{{ t('SHIPMENTS.REPORT_PDF') }}
+        </button>
+        <button type="button" class="tz-btn sv-rapor-excel" [disabled]="raporIndiriliyor() !== null" (click)="raporIndir('excel')">
+          <i [class]="raporIndiriliyor() === 'excel' ? 'ri-loader-4-line tz-spin' : 'ri-file-excel-2-line tz-ico-success'"></i>{{ t('SHIPMENTS.REPORT_EXCEL') }}
+        </button>
+      </div>
     </div>
     @if (gorunum() !== 'seferler') {
       <p class="sv-not"><i class="ri-information-line"></i>{{ t('SHIPMENTS.STATS_DATE_ONLY') }}</p>
@@ -156,6 +164,10 @@
                                       <span><i class="ri-user-line"></i>{{ d.detay.kullaniciAdSoyad }}</span>
                                     }
                                     <span><i class="ri-archive-line"></i>{{ t('SHIPMENTS.DETAIL_SUMMARY', { proje: d.detay.projeler.length, sandik: seferSandikSayisi(d.detay) }) }}</span>
+                                    <button type="button" class="tz-btn tz-btn--sm sv-sefer-rapor" [disabled]="seferRaporuIndiriliyor() !== null"
+                                      (click)="seferRaporuIndir(sefer)">
+                                      <i [class]="seferRaporuIndiriliyor() === sefer.anahtar ? 'ri-loader-4-line tz-spin' : 'ri-printer-line tz-ico-primary'"></i>{{ t('SHIPMENTS.TRIP_REPORT') }}
+                                    </button>
                                     @if (d.detay.aciklama) {
                                       <span class="sv-detay__aciklama"><i class="ri-chat-3-line"></i>{{ d.detay.aciklama }}</span>
                                     }

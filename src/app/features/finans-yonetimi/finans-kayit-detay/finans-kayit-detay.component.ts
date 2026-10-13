@@ -126,6 +126,45 @@ export class FinansKayitDetayComponent implements OnInit {
     this.yukle();
   }
   /** Ahşap sandıkta ahşap m³ üretimden gelir, salt okunurdur; kontra/belirsiz işte iki değer de girilir. */
+  /**
+   * Fiyatlandırma formunda yalnız seçilen yöntemin tutara giren alanları görünür (sunucudaki
+   * FinansTutarKurallari.FiyatlandirmaMiktari): adet → adet × birim fiyat; m³ → adet × birim m³ × birim fiyat (hacmi
+   * Hacim bölümünden girilen işte birim m³ orada düzenlenir); sabit → birim fiyat tek başına net bedeldir; manuel →
+   * girilen net bedel. Gizlenen alanın değeri silinmez, olduğu gibi gönderilir.
+   */
+  fiyatAlani(alan: 'adet' | 'birimM3' | 'birimFiyat' | 'manuel'): boolean {
+    const yontem = this.fiyat.fiyatlandirmaBirimi;
+    switch (alan) {
+      case 'adet':
+        return yontem === 1 || yontem === 2;
+      case 'birimM3':
+        return yontem === 2 && !this.kayit()?.hacimManuel && !this.hacimDuzenlenebilir();
+      case 'birimFiyat':
+        return yontem !== 4;
+      case 'manuel':
+        return yontem === 4;
+    }
+  }
+  birimFiyatEtiketi(): string {
+    const yontem = this.fiyat.fiyatlandirmaBirimi;
+    return yontem === 2 ? 'm³ birim fiyatı' : yontem === 3 ? 'Sabit net bedel' : 'Adet birim fiyatı';
+  }
+  /** Seçilen yöntemin net bedeli nasıl hesapladığı. */
+  fiyatYontemiNotu(): string {
+    switch (this.fiyat.fiyatlandirmaBirimi) {
+      case 2:
+        return this.kayit()?.hacimManuel || this.hacimDuzenlenebilir()
+          ? 'Net bedel = Hacim bölümünde girilen m³ × m³ birim fiyatı.'
+          : 'Net bedel = finans adedi × finans birim m³ × m³ birim fiyatı.';
+      case 3:
+        return 'Net bedel = sabit net bedel (adet ve m³ tutarı değiştirmez).';
+      case 4:
+        return 'Net bedel = girilen manuel net bedel.';
+      default:
+        return 'Net bedel = finans adedi × adet birim fiyatı.';
+    }
+  }
+
   /** Özette kontra m³ kutusu: kontra sandıkta veya kontra girildiyse; ahşap kapalı sandıkta yalnız ahşap m³. */
   kontraGosterilir(k: FinansIsKaydi): boolean {
     return finansKontraGosterilir(k.sandikMalzemesi, k.kontraM3);

@@ -441,38 +441,39 @@
                   <option [ngValue]="kod">{{ kod }}</option>
                 }
               </select></label
-            ><label
+            >@if (fiyatAlani('adet')) {<label
               >Finans adedi<input
                 type="number"
                 min="0"
                 step="0.0001"
+                class="finans-adet"
                 [(ngModel)]="fiyat.adet" /></label
-            >@if (!kayit()?.hacimManuel && !hacimDuzenlenebilir()) {<label
+            >}@if (fiyatAlani('birimM3')) {<label
               >Finans birim m³<input
                 type="number"
                 min="0"
                 step="0.000001"
                 class="finans-birim-m3"
                 [(ngModel)]="fiyat.birimM3" /></label
-            >}<label
-              >Birim fiyat<input
+            >}@if (fiyatAlani('birimFiyat')) {<label
+              >{{ birimFiyatEtiketi() }}<input
                 type="number"
                 min="0"
                 step="0.01"
+                class="finans-birim-fiyat"
                 [(ngModel)]="fiyat.birimFiyat" /></label
-            ><label
+            >}@if (fiyatAlani('manuel')) {<label
+              >Manuel net bedel<input
+                type="number"
+                min="0"
+                step="0.01"
+                class="finans-manuel-net"
+                [(ngModel)]="fiyat.manuelNetTutar" /></label
+            >}<label
               >KDV %<input type="number" min="0" max="100" [(ngModel)]="fiyat.kdvOrani"
             /></label>
-            @if (fiyat.fiyatlandirmaBirimi === 4) {
-              <label
-                >Manuel net bedel<input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  [(ngModel)]="fiyat.manuelNetTutar"
-              /></label>
-            }
           </div>
+          <p class="v2-note fiyat-yontem-notu"><i class="ri-information-line" aria-hidden="true"></i>{{ fiyatYontemiNotu() }}</p>
           <div class="v2-toolbar v2-dialog-section-heading">
             <h4 class="v2-dialog-card-title">
               <i class="ri-stack-line" aria-hidden="true"></i>Fiyat bileşenleri

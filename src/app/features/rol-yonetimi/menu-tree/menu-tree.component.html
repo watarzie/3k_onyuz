@@ -21,7 +21,8 @@
                [attr.aria-label]="(node.labelKey | translate) + ': ' + (seviyeAnahtari(node) | translate)"
                (change)="onPermissionChange(node, permissionCheckbox)">
 
-        <span *ngIf="node.icon" class="node-icon"><i class="{{ node.icon }}"></i></span>
+        <!-- İkon yalnız ana düğümde: alt düğümlerin ikonları kenar menüye aittir ve rol ağacında hizayı bozar. -->
+        <span *ngIf="node.icon && derinlik === 0" class="node-icon"><i class="{{ node.icon }}"></i></span>
         <span class="node-label">{{ node.labelKey | translate }}</span>
         <small *ngIf="sekmeDugumu(node)" class="node-help">{{ 'PERMISSIONS.TAB_NODE_HELP' | translate }}</small>
 

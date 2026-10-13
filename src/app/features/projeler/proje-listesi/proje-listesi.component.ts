@@ -1211,7 +1211,7 @@ export class ProjeListesiComponent implements OnInit {
           return;
         }
         // Liste yeniden yüklenmeden satır güncellenir (sayfa ve kaydırma yerinde kalır).
-        const kaydedilen = res.value ?? null;
+        const kaydedilen = res.value?.fotografBaglantisi ?? null;
         this.projeler.update(liste => liste.map(p => p.id === proje.id ? { ...p, fotografBaglantisi: kaydedilen } : p));
         this.toastService.success(basariMesaji);
         this.fotografPenceresiniKapat();

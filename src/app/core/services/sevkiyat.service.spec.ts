@@ -37,6 +37,23 @@ describe('SevkiyatService ve sevk kuralları', () => {
     eski.flush({});
   });
 
+  it('dönem raporu sefer listesinin süzgeçleriyle dosya olarak, sefer raporu kimlik veya plaka + günle istenir', () => {
+    service.donemRaporu('excel', { bitis: '2026-10-13', plaka: ' 34 abc ', projeNo: ' ', projeTipiId: null }).subscribe();
+    const donem = http.expectOne(r => r.url === API.SEVKIYAT.RAPOR('excel'));
+    expect(donem.request.responseType).toBe('blob');
+    expect(donem.request.params.keys().sort()).toEqual(['bitis', 'plaka']);
+    expect(donem.request.params.get('plaka')).toBe('34 abc');
+    donem.flush(new Blob(['x']));
+
+    const ozet = { seferId: 7, eskiKayit: false, aracPlaka: '34 ABC 123', sevkTarihi: '2026-10-08T09:30:00' } as SevkSeferiOzet;
+    service.seferRaporu(ozet).subscribe();
+    expect(http.expectOne(API.SEVKIYAT.SEFER_RAPOR(7)).request.responseType).toBe('blob');
+    service.seferRaporu({ ...ozet, seferId: null, eskiKayit: true }).subscribe();
+    const eski = http.expectOne(r => r.url === API.SEVKIYAT.ESKI_SEFER_RAPOR);
+    expect([eski.request.params.get('plaka'), eski.request.params.get('tarih')]).toEqual(['34 ABC 123', '2026-10-08']);
+    eski.flush(new Blob(['x']));
+  });
+
   it('toplu sevkin 409 engelleri sonucun issues alanında gelir', () => {
     let sonuc: any;
     service.topluSevk({ islemAnahtari: 'a', sevkTarihi: '2026-10-08T09:30:00', aracPlaka: '34ABC123', projeler: [] })

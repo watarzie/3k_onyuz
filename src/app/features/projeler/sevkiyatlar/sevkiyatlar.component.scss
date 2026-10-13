@@ -67,7 +67,11 @@
   background: #fafbfc;
   .tz-field { width: 170px; }
   .sv-temizle { min-height: 42px; }
+  // Rapor düğmeleri süzgeçlerin sağında; dar ekranda alta iner.
+  .sv-rapor { display: flex; gap: 8px; margin-left: auto; }
+  .sv-rapor .tz-btn { min-height: 42px; }
 }
+.sv-sefer-rapor { margin-left: auto; }
 .sv-not {
   display: flex;
   gap: 6px;

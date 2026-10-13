@@ -387,7 +387,9 @@ describe('Finans aylık görünüm PO/fatura akışı', () => {
     reads.set(new Set([FINANS_YETKI.Modul, ...aylikYazma, FINANS_YETKI.SekmePoFatura, FINANS_YETKI.SekmePoFaturaPo]));
     api.siparisler.calls.reset();
     api.faturalar.calls.reset();
+    // Panel kapanınca belge listesi kaldırılır; yeniden açılan panel listeyi baştan yükler.
     c.projePaneliniKapat();
+    fixture.detectChanges();
     c.projePaneliniAc(c.aylikProjeBloklari()[0]);
     c.projePaneliSekmesiSec('belgeler');
     fixture.detectChanges();

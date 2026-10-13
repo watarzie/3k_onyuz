@@ -64,7 +64,7 @@
                 <td class="detail-chevron-col"></td>
               </tr>
               @for (p of g.gorunen; track projeAnahtari(p)) {
-                <tr class="project-row" [class.is-open]="projeAcik(p)" [class.is-clickable]="kayitGorunur()" (click)="projeAcKapat(p)">
+                <tr class="project-row" [class.is-open]="seciliMi(p)" [class.is-clickable]="kayitGorunur()" (click)="projeSec(p)">
                   <td>
                     <div class="project-cell">
                       <span class="project-avatar" aria-hidden="true">{{ p.projeNo.slice(0, 2) }}</span>
@@ -93,51 +93,12 @@
                   <td class="text-end"><span class="num">{{ p.gider ? (p.gider | number: '1.2-2') : '—' }}</span></td>
                   <td class="detail-chevron-col">
                     @if (kayitGorunur()) {
-                      <button type="button" class="chevron-btn" [attr.aria-expanded]="projeAcik(p)" [attr.aria-label]="p.projeNo + ' ' + t('PANEL_DETAIL_OPEN_ITEMS')" (click)="$event.stopPropagation(); projeAcKapat(p)">
-                        <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+                      <button type="button" class="chevron-btn project-open-btn" [attr.aria-expanded]="seciliMi(p)" [attr.aria-label]="p.projeNo + ' ' + t('DRAWER_OPEN')" [title]="t('DRAWER_OPEN')" (click)="$event.stopPropagation(); projeSec(p)">
+                        <i class="ri-side-bar-line" aria-hidden="true"></i>
                       </button>
                     }
                   </td>
                 </tr>
-                @if (projeAcik(p)) {
-                  <tr class="items-row">
-                    <td [attr.colspan]="7">
-                      @if (kalemDurumu(p); as d) {
-                        @if (d.yukleniyor) {
-                          <div class="items-state"><span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>{{ t('PANEL_DETAIL_LOADING') }}</div>
-                        } @else if (d.hata) {
-                          <div class="items-state is-error"><i class="ri-error-warning-line" aria-hidden="true"></i>{{ t('LIST_LOAD_ERROR') }}</div>
-                        } @else if (!d.kalemler.length) {
-                          <div class="items-state">{{ t('PANEL_DETAIL_ITEMS_EMPTY') }}</div>
-                        } @else {
-                          <div class="items-list">
-                            @for (k of d.kalemler; track k.id) {
-                              <div class="item">
-                                <span class="item-crate">{{ k.sandikNo || '—' }}</span>
-                                <div class="item-main">
-                                  <strong>{{ k.isAdi || k.sandikAdi }}</strong>
-                                  <small>
-                                    {{ t(kategoriAnahtari(k.kategori)) }}
-                                    @if (k.poNumaralari.length) { · PO {{ k.poNumaralari.join(', ') }} }
-                                    @if (k.faturaNumaralari.length) { · {{ t('INVOICE') }} {{ k.faturaNumaralari.join(', ') }} }
-                                  </small>
-                                </div>
-                                <span class="item-status" [attr.data-durum]="k.durum">{{ t(isDurumuAnahtari(k.durum)) }}</span>
-                                <span class="item-amount">{{ k.netTutar | number: '1.2-2' }}</span>
-                                <button type="button" class="item-open" [title]="t('DETAIL')" [attr.aria-label]="t('DETAIL')" (click)="kayitAc.emit({ tur: 'IsKaydi', id: k.id })">
-                                  <i class="ri-arrow-right-up-line" aria-hidden="true"></i>
-                                </button>
-                              </div>
-                            }
-                          </div>
-                          @if (d.kesildi) {
-                            <p class="items-note"><i class="ri-information-line" aria-hidden="true"></i>{{ t('PANEL_DETAIL_TRUNCATED') }}</p>
-                          }
-                        }
-                      }
-                    </td>
-                  </tr>
-                }
               }
             </tbody>
             }
@@ -214,3 +175,12 @@
     }
   }
 </article>
+
+@if (seciliProje(); as secili) {
+  <app-finans-panel-proje-paneli
+    [proje]="secili"
+    [baslangic]="panel().baslangic"
+    [bitis]="panel().bitis"
+    (kapat)="seciliProje.set(null)"
+    (kayitAc)="kayitAc.emit($event)" />
+}

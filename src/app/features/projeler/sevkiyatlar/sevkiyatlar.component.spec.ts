@@ -1,14 +1,16 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { ProjeTipi } from '../../../core/constants/enums';
 import { SevkiyatService } from '../../../core/services/sevkiyat.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { TranslationService } from '../../../core/services/translation.service';
 import { SevkSeferiDetay, SevkSeferiOzet, SevkiyatIstatistik } from '../../../shared/models';
 import { SevkiyatlarComponent } from './sevkiyatlar.component';
 
 describe('Sevkiyatlar sayfası (C-10)', () => {
   let api: jasmine.SpyObj<SevkiyatService>;
+  let toast: jasmine.SpyObj<ToastService>;
   const sefer = (anahtar: string, ek: Partial<SevkSeferiOzet> = {}) =>
     ({ anahtar, seferId: 7, seferNo: '2026-000007', eskiKayit: false, aracPlaka: '34 ABC 123', sofor: 'Ahmet', dorsePlaka: null,
        sevkTarihi: '2026-10-08T09:30:00', projeSayisi: 2, sandikSayisi: 3, brutKg: 1250.5, duzeltmesiAcikSandikVar: false,
@@ -29,7 +31,10 @@ describe('Sevkiyatlar sayfası (C-10)', () => {
   };
 
   function setup() {
-    api = jasmine.createSpyObj<SevkiyatService>('SevkiyatService', ['seferler', 'seferDetay', 'istatistik']);
+    api = jasmine.createSpyObj<SevkiyatService>('SevkiyatService', ['seferler', 'seferDetay', 'istatistik', 'donemRaporu', 'seferRaporu', 'indirmeHatasi']);
+    api.donemRaporu.and.returnValue(of(new Blob(['rapor'])));
+    api.seferRaporu.and.returnValue(of(new Blob(['sefer'])));
+    toast = jasmine.createSpyObj<ToastService>('ToastService', ['success', 'error', 'warning', 'info']);
     api.seferler.and.returnValue(of({ isSuccess: true, value: {
       items: [yeni, eski], pageNumber: 1, pageSize: 25, totalCount: 2, totalPages: 1, hasPreviousPage: false, hasNextPage: false,
     } }));
@@ -37,7 +42,7 @@ describe('Sevkiyatlar sayfası (C-10)', () => {
     api.seferDetay.and.returnValue(of({ isSuccess: true, value: detay }));
     TestBed.configureTestingModule({
       imports: [SevkiyatlarComponent],
-      providers: [provideRouter([]), { provide: SevkiyatService, useValue: api }],
+      providers: [provideRouter([]), { provide: SevkiyatService, useValue: api }, { provide: ToastService, useValue: toast }],
     });
     TestBed.inject(TranslationService).switchLanguage('tr');
     const fixture = TestBed.createComponent(SevkiyatlarComponent);
@@ -99,5 +104,58 @@ describe('Sevkiyatlar sayfası (C-10)', () => {
     expect(api.seferler.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({ projeNo: 'P-1', plaka: undefined }));
 
     expect(c.aylik().map(a => [a.ay, a.oran])).toEqual([[10, 100], [9, 50]]);
+  });
+
+  describe('raporlar', () => {
+    let indirilen: string[];
+    beforeEach(() => {
+      indirilen = [];
+      spyOn(URL, 'createObjectURL').and.returnValue('blob:rapor');
+      spyOn(URL, 'revokeObjectURL');
+      spyOn(HTMLAnchorElement.prototype, 'click').and.callFake(function (this: HTMLAnchorElement) { indirilen.push(this.download); });
+    });
+
+    it('sefer listesinde rapor ekrandaki bütün süzgeçlerle, istatistik görünümünde yalnız tarihle alınır', fakeAsync(() => {
+      const { c, el } = setup();
+      c.tarihDegisti('baslangic', '2026-10-01');
+      c.metinFiltresiDegisti('plaka', '34 abc');
+      c.projeTipiDegisti(String(ProjeTipi.Saha));
+      tick(400);
+
+      (el.querySelector('.sv-rapor-excel') as HTMLButtonElement).click();
+      expect(api.donemRaporu).toHaveBeenCalledOnceWith('excel',
+        jasmine.objectContaining({ baslangic: '2026-10-01', plaka: '34 abc', projeTipiId: ProjeTipi.Saha }));
+      expect(indirilen[0]).toMatch(/^Sevkiyat_Raporu_\d{8}\.xlsx$/);
+      expect(c.raporIndiriliyor()).toBeNull();
+
+      c.gorunum.set('plaka');
+      c.raporIndir('pdf');
+      expect(api.donemRaporu.calls.mostRecent().args).toEqual(['pdf', { baslangic: '2026-10-01', bitis: undefined, projeTipiId: null }]);
+      expect(indirilen[1]).toMatch(/^Sevkiyat_Raporu_\d{8}\.pdf$/);
+    }));
+
+    it('indirme hatasında sunucunun mesajı bildirilir; düğme yeniden kullanılabilir', fakeAsync(() => {
+      const { c } = setup();
+      api.donemRaporu.and.returnValue(throwError(() => new Error('404')));
+      api.indirmeHatasi.and.resolveTo('Seçilen süzgeçlere uyan sevkiyat bulunamadı. · Takip: abc');
+      c.raporIndir('pdf');
+      tick();
+      expect(toast.error).toHaveBeenCalledOnceWith('Seçilen süzgeçlere uyan sevkiyat bulunamadı. · Takip: abc');
+      expect(c.raporIndiriliyor()).toBeNull();
+      expect(indirilen).toEqual([]);
+    }));
+
+    it('sefer detayından sefer PDF\'i iner; eski kayıt plaka ve günle adlandırılır', () => {
+      const { c, fixture, el } = setup();
+      c.seferAcKapat(yeni);
+      fixture.detectChanges();
+      (el.querySelector('.sv-sefer-rapor') as HTMLButtonElement).click();
+      expect(api.seferRaporu).toHaveBeenCalledOnceWith(yeni);
+      expect(indirilen).toEqual(['Sefer_2026-000007.pdf']);
+
+      c.seferRaporuIndir(eski);
+      expect(api.seferRaporu.calls.mostRecent().args[0]).toBe(eski);
+      expect(indirilen[1]).toBe('Sevkiyat_34ABC123_20260901.pdf');
+    });
   });
 });

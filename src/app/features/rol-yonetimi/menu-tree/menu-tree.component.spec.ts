@@ -63,6 +63,16 @@ describe('MenuTreeComponent yetki göstergesi', () => {
     expect(write.checkboxes[0].checked).toBeTrue();
   });
 
+  it('ikon yalnız ana düğümde gösterilir; alt düğümün ikonu çizilmez', () => {
+    const root = { ...node(YetkiTipi.W), icon: 'ri-folder-line' };
+    const alt = { ...node(YetkiTipi.W), icon: 'ri-list-check-3-line', parent: root };
+    root.children = [alt];
+    const { element } = render(root);
+    const ikonlar = element.querySelectorAll('.node-icon i');
+    expect(ikonlar.length).toBe(1);
+    expect(ikonlar[0].className).toBe('ri-folder-line');
+  });
+
   it('kök düğüm N → R → W → N döngüsünü izler', () => {
     const root = node(YetkiTipi.N);
     const tree = render(root);

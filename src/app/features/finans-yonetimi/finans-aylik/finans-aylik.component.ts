@@ -1,6 +1,15 @@
 import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { finansHacimGecerli } from '../ortak/finans-hacim';
-import { kategoriKirilimKayitlari, kirilimSandiklari, sarfKaydi } from '../ortak/finans-kirilim';
+import {
+  FINANS_SANDIK_DURUM_SUZGECLERI,
+  FinansSandikDurumSuzgeci,
+  aramayaUyar,
+  kategoriKirilimKayitlari,
+  kirilimSandiklari,
+  sandikDurumSuzgeceUyar,
+  sarfKaydi,
+} from '../ortak/finans-kirilim';
+import { FinansProjeBelgeleriComponent } from '../ortak/finans-proje-belgeleri.component';
 import { Component, DestroyRef, OnInit, WritableSignal, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -43,9 +52,6 @@ import {
   faturaKarsilanmaAnahtari,
   isDurumuAnahtari,
   kategoriAnahtari,
-  odemeDurumuAnahtari,
-  odemeDurumuSinifi,
-  poDurumuAnahtari,
   siparisKarsilanmaAnahtari,
 } from '../ortak/finans-etiketleri';
 import { TranslationService } from '../../../core/services/translation.service';
@@ -73,7 +79,6 @@ import {
   FinansAylikGrupToplami,
   FinansDuzenliIs,
   FinansDuzenliIsKaydetRequest,
-  FinansFatura,
   FinansGider,
   FinansGiderKategori,
   FinansGiderKalemi,
@@ -118,28 +123,6 @@ interface AylikProjeBlogu {
 
 /** Proje panelinin sekmeleri: ayın kategori satırları, sandık kırılımı, projenin PO ve faturaları. */
 type ProjePaneliSekmesi = 'kategoriler' | 'sandiklar' | 'belgeler';
-/** Sandıklar sekmesindeki durum süzgeci. */
-type PanelSandikFiltresi = 'hepsi' | 'fiyat' | 'siparis' | 'fatura' | 'tamam';
-
-/**
- * Sandık durumu, sandığın en geride kalan kaydıdır (FinansIsDurumu): 1–2 PO bekliyor, 3–4 fatura bekliyor,
- * 5 tamamlandı. Fiyat bekleyen sandık durumdan bağımsız, fiyatı girilmemiş kaydı olan sandıktır.
- */
-function panelSandikFiltreyeUyar(sandik: FinansSandikKirilimSatiri, filtre: PanelSandikFiltresi): boolean {
-  switch (filtre) {
-    case 'fiyat': return sandik.fiyatBekleyenKayitSayisi > 0;
-    case 'siparis': return sandik.durum === 1 || sandik.durum === 2;
-    case 'fatura': return sandik.durum === 3 || sandik.durum === 4;
-    case 'tamam': return sandik.durum === 5;
-    default: return true;
-  }
-}
-
-/** Arama metni sandık no/adı/tipi veya PO/fatura numarasında geçiyor mu (büyük/küçük harf duyarsız). */
-function aramayaUyar(arama: string, alanlar: readonly (string | null | undefined)[]): boolean {
-  return !arama || alanlar.some(alan => (alan ?? '').toLocaleLowerCase('tr-TR').includes(arama));
-}
-
 /** Sunucuda sipariş/fatura dağıtımı yapılamayan, önce miktar veya fiyat bekleyen satır durumları. */
 const DAGITIM_BEKLEYEN_DURUMLAR = ['miktar bekliyor', 'fiyatlandırma bekliyor'];
 
@@ -156,9 +139,9 @@ type RaporFormati = 'pdf' | 'excel' | 'ayri';
   imports: [BreadcrumbComponent, DatePipe, DecimalPipe, NgTemplateOutlet, FormsModule, ServerPagerComponent,
     FinansPanelComponent, FinansKayitAramaComponent, FinansDagitimComponent, FinansKayitDetayComponent, FinansBelgelerListesiComponent,
     FinansRaporlarComponent, FinansKategorilerComponent, FinansProjeSeciciComponent, FinansMunferitIslerComponent,
-    FinansParametrelerComponent, FinansProjeDetayComponent, IslemlerMenusuComponent],
+    FinansParametrelerComponent, FinansProjeDetayComponent, IslemlerMenusuComponent, FinansProjeBelgeleriComponent],
   templateUrl: './finans-aylik.component.html',
-  styleUrl: './finans-aylik.component.scss',
+  styleUrls: ['./finans-aylik.component.scss', '../ortak/finans-proje-paneli.scss'],
 })
 export class FinansYonetimiComponent implements OnInit {
   private service = inject(FinansService);
@@ -200,9 +183,6 @@ export class FinansYonetimiComponent implements OnInit {
   readonly faturaKarsilanmaAnahtari = faturaKarsilanmaAnahtari;
   readonly isDurumuAnahtari = isDurumuAnahtari;
   readonly karsilanma = FinansKarsilanma;
-  readonly poDurumuAnahtari = poDurumuAnahtari;
-  readonly odemeDurumuAnahtari = odemeDurumuAnahtari;
-  readonly odemeDurumuSinifi = odemeDurumuSinifi;
 
   private readonly aylikListeIstekleri = new Subject<void>();
   private readonly aylikAramaIstekleri = new Subject<string>();
@@ -710,20 +690,12 @@ export class FinansYonetimiComponent implements OnInit {
   readonly projePaneliAnahtari = signal<string | null>(null);
   readonly projePaneliSekmesi = signal<ProjePaneliSekmesi>('kategoriler');
   readonly panelSandikArama = signal('');
-  readonly panelSandikFiltresi = signal<PanelSandikFiltresi>('hepsi');
+  readonly panelSandikFiltresi = signal<FinansSandikDurumSuzgeci>('hepsi');
   /** Kategori satırından açılan sandık dökümü: Sandıklar sekmesi yalnız o kategorinin kayıtlarını gösterir. */
   readonly panelKategori = signal<FinansAylikIs | null>(null);
-  /** PO / Fatura sekmesi: projenin bütün dönemlerdeki PO ve faturaları; null = henüz yüklenmedi. */
-  readonly panelBelgeleri = signal<{ siparisler: FinansSiparis[]; faturalar: FinansFatura[]; eksik: boolean } | null>(null);
-  readonly panelBelgeleriYukleniyor = signal(false);
-  private panelBelgeNesli = 0;
-  readonly panelSandikFiltreleri: readonly { deger: PanelSandikFiltresi; anahtar: string }[] = [
-    { deger: 'hepsi', anahtar: 'DRAWER_FILTER_ALL' },
-    { deger: 'fiyat', anahtar: 'DRAWER_FILTER_PRICE' },
-    { deger: 'siparis', anahtar: 'DRAWER_FILTER_PO' },
-    { deger: 'fatura', anahtar: 'DRAWER_FILTER_INVOICE' },
-    { deger: 'tamam', anahtar: 'DRAWER_FILTER_DONE' },
-  ];
+  /** PO / Fatura sekmesinin yeniden yüklenme sürümü: liste yenilenince (ör. PO / fatura kaydedildi) artar. */
+  readonly belgeSurumu = signal(0);
+  readonly panelSandikFiltreleri = FINANS_SANDIK_DURUM_SUZGECLERI;
 
   /** Açık paneldeki proje; liste yenilenip proje sayfada kalmazsa null olur ve panel kapanır. */
   readonly projePaneli = computed(() => {
@@ -738,14 +710,14 @@ export class FinansYonetimiComponent implements OnInit {
   readonly panelSandiklari = computed(() => {
     const arama = this.panelSandikArama().trim().toLocaleLowerCase('tr-TR');
     const filtre = this.panelSandikFiltresi();
-    return this.panelKirilimSandiklari().filter(sandik => panelSandikFiltreyeUyar(sandik, filtre) &&
+    return this.panelKirilimSandiklari().filter(sandik => sandikDurumSuzgeceUyar(sandik, filtre) &&
       aramayaUyar(arama, [sandik.sandikNo, sandik.sandikAdi, sandik.sandikTipi, ...sandik.poNumaralari, ...sandik.faturaNumaralari]));
   });
   /** Süzgeç düğmelerindeki sandık sayıları (aramadan bağımsız). */
   readonly panelSandikSayilari = computed(() => {
     const sandiklar = this.panelKirilimSandiklari();
     return Object.fromEntries(this.panelSandikFiltreleri.map(f =>
-      [f.deger, sandiklar.filter(sandik => panelSandikFiltreyeUyar(sandik, f.deger)).length])) as Record<PanelSandikFiltresi, number>;
+      [f.deger, sandiklar.filter(sandik => sandikDurumSuzgeceUyar(sandik, f.deger)).length])) as Record<FinansSandikDurumSuzgeci, number>;
   });
   /** Kategori süzgeci açıkken: kategorinin kayıtları sandığıyla, aramayla daraltılmış. */
   readonly panelKategoriKayitlari = computed(() => {
@@ -759,8 +731,8 @@ export class FinansYonetimiComponent implements OnInit {
   readonly panelAyBelgeNumaralari = computed(() => {
     const satirlar = [...(this.projePaneli()?.satirlar ?? []), ...(this.projePaneli()?.ozelIsler ?? [])];
     return {
-      po: new Set(satirlar.flatMap(satir => satir.poNumaralari)),
-      fatura: new Set(satirlar.flatMap(satir => satir.faturaNumaralari)),
+      po: [...new Set(satirlar.flatMap(satir => satir.poNumaralari))],
+      fatura: [...new Set(satirlar.flatMap(satir => satir.faturaNumaralari))],
     };
   });
 
@@ -776,9 +748,6 @@ export class FinansYonetimiComponent implements OnInit {
     this.panelSandikFiltresi.set('hepsi');
     this.panelKategori.set(null);
     this.acikSandikSatirlari.set(new Set());
-    this.panelBelgeNesli++;
-    this.panelBelgeleri.set(null);
-    this.panelBelgeleriYukleniyor.set(false);
     this.kirilimYukle(blok.anahtar, blok);
   }
   projePaneliniKapat(): void {
@@ -795,7 +764,6 @@ export class FinansYonetimiComponent implements OnInit {
     if (!blok) return;
     this.projePaneliSekmesi.set(sekme);
     this.panelKategori.set(null);
-    if (sekme === 'belgeler' && !this.panelBelgeleri() && !this.panelBelgeleriYukleniyor()) this.panelBelgeleriniYukle(blok);
   }
   /** Kategori satırından sandık dökümüne: Sandıklar sekmesi yalnız o kategorinin kayıtlarıyla açılır. */
   kategoriSandiklariniGoster(satir: FinansAylikIs): void {
@@ -826,34 +794,6 @@ export class FinansYonetimiComponent implements OnInit {
     return this.altSekmeAcik('po') || this.altSekmeAcik('fatura');
   }
 
-  /**
-   * Projenin bütün dönemlerdeki PO ve faturaları (her biri ilk 100). Fatura listesi yalnız Faturalar alt sekmesi
-   * okunabiliyorsa istenir; proje değişirse veya liste yenilenirse eski cevap yazılmaz.
-   */
-  private panelBelgeleriniYukle(blok: AylikProjeBlogu): void {
-    if (!this.panelBelgeleriOkunabilir()) return;
-    const nesil = ++this.panelBelgeNesli;
-    const istek = { pageNumber: 1, pageSize: 100, projeNo: blok.projeNo };
-    const bos = <T>() => of<ApiResult<FinansSayfaliSonuc<T>>>({ isSuccess: true });
-    this.panelBelgeleriYukleniyor.set(true);
-    forkJoin({
-      siparisler: this.service.siparisler(istek),
-      faturalar: this.altSekmeAcik('fatura') ? this.service.faturalar(istek) : bos<FinansFatura>(),
-    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(({ siparisler, faturalar }) => {
-      if (nesil !== this.panelBelgeNesli) return;
-      this.panelBelgeleriYukleniyor.set(false);
-      if (!siparisler.isSuccess || !faturalar.isSuccess) {
-        this.toast.error(siparisler.error ?? faturalar.error ?? this.t('DRAWER_DOCS_LOAD_ERROR'));
-        return;
-      }
-      this.panelBelgeleri.set({
-        siparisler: siparisler.value?.items ?? [],
-        faturalar: faturalar.value?.items ?? [],
-        eksik: (siparisler.value?.totalCount ?? 0) > 100 || (faturalar.value?.totalCount ?? 0) > 100,
-      });
-    });
-  }
-
   private kirilimYukle(anahtar: string, proje: { projeId: number | null; projeNo: string; musteri: string }): void {
     if (this.projeKirilimlari().has(anahtar) || this.kirilimYukleniyor().has(anahtar)) return;
     this.kirilimYukleniyor.update(x => new Set(x).add(anahtar));
@@ -878,8 +818,8 @@ export class FinansYonetimiComponent implements OnInit {
     });
   }
   /**
-   * Liste yenilendi: kırılım önbelleği düşer. Açık panelin projesi yeni sayfada/dönemde varsa kırılımı ve (yüklenmişse)
-   * PO/fatura listesi yeniden yüklenir; yoksa panel kapanır.
+   * Liste yenilendi: kırılım önbelleği düşer. Açık panelin projesi yeni sayfada/dönemde varsa kırılımı ve PO/fatura
+   * listesi (sürümle) yeniden yüklenir; yoksa panel kapanır.
    */
   private kirilimlariYenile(): void {
     this.kirilimNesli++;
@@ -891,12 +831,7 @@ export class FinansYonetimiComponent implements OnInit {
       return;
     }
     this.kirilimYukle(blok.anahtar, blok);
-    if (this.panelBelgeleri() || this.panelBelgeleriYukleniyor()) {
-      this.panelBelgeNesli++;
-      this.panelBelgeleri.set(null);
-      this.panelBelgeleriYukleniyor.set(false);
-      if (this.projePaneliSekmesi() === 'belgeler') this.panelBelgeleriniYukle(blok);
-    }
+    this.belgeSurumu.update(x => x + 1);
   }
   private aciKapat(sinyal: WritableSignal<Set<string>>, anahtar: string): void {
     sinyal.update(mevcut => {

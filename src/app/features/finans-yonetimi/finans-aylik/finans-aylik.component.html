@@ -1191,99 +1191,14 @@
           }
         }
         @case ('belgeler') {
-          @if (panelBelgeleriYukleniyor()) {
-            <div class="crate-breakdown-empty"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> {{ t('DRAWER_DOCS_LOADING') }}</div>
-          } @else if (panelBelgeleri(); as belgeler) {
-            <p class="crate-note"><i class="ri-information-line" aria-hidden="true"></i>{{ t('DRAWER_DOCS_NOTE') }}</p>
-            @if (belgeler.eksik) {
-              <p class="crate-note is-attention"><i class="ri-error-warning-line" aria-hidden="true"></i>{{ t('DRAWER_DOCS_LIMIT') }}</p>
-            }
-            <h3 class="drawer-subtitle">PO <em>{{ belgeler.siparisler.length }}</em></h3>
-            @if (belgeler.siparisler.length) {
-              <table class="crate-breakdown drawer-po-list">
-                <thead>
-                  <tr>
-                    <th>PO no</th>
-                    <th>Tarih</th>
-                    <th class="text-end">{{ t('AMOUNT') }}</th>
-                    <th class="text-end">{{ t('DRAWER_INVOICED') }}</th>
-                    <th>{{ t('INVOICE') }} no</th>
-                    <th>{{ t('STATUS') }}</th>
-                    <th class="text-end"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (po of belgeler.siparisler; track po.id) {
-                    <tr [class.cancelled]="po.iptalEdildi">
-                      <td>
-                        <strong>{{ po.poNumarasi }}</strong>
-                        @if (panelAyBelgeNumaralari().po.has(po.poNumarasi)) { <span class="ref-pill this-month">{{ t('DRAWER_THIS_MONTH') }}</span> }
-                        <small>{{ po.kayitNo }}</small>
-                      </td>
-                      <td>{{ po.siparisTarihi | date: 'dd.MM.yyyy' }}</td>
-                      <td class="text-end nowrap">@for (net of po.netler ?? []; track net.paraBirimi) { <div>{{ net.siparisNetTutar | number: '1.2-2' }} {{ net.paraBirimi }}</div> }</td>
-                      <td class="text-end nowrap">@for (net of po.netler ?? []; track net.paraBirimi) { <div>{{ net.faturalananNetTutar | number: '1.2-2' }} {{ net.paraBirimi }}</div> }</td>
-                      <td>
-                        @for (ft of po.faturaNumaralari ?? []; track ft) { <span class="ref-pill is-invoice">{{ ft }}</span> }
-                        @if (!po.faturaNumaralari?.length) { <small>—</small> }
-                      </td>
-                      <td><span class="status" [class.complete]="po.durum === 3" [class.partial]="po.durum === 2" [class.cancel-status]="po.iptalEdildi || po.durum === 4">{{ po.iptalEdildi ? t('PO_CANCELLED') : t(poDurumuAnahtari(po.durum)) }}</span></td>
-                      <td class="text-end">
-                        <button type="button" class="btn btn-outline-primary btn-sm" (click)="detayHedef.set({ tur: 'Siparis', id: po.id })">{{ t('DETAIL') }}</button>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            } @else {
-              <div class="crate-breakdown-empty">{{ t('DRAWER_NO_PO') }}</div>
-            }
-            @if (altSekmeAcik('fatura')) {
-              <h3 class="drawer-subtitle">{{ t('INVOICE') }} <em>{{ belgeler.faturalar.length }}</em></h3>
-              @if (belgeler.faturalar.length) {
-                <table class="crate-breakdown drawer-invoice-list">
-                  <thead>
-                    <tr>
-                      <th>{{ t('INVOICE') }} no</th>
-                      <th>Tarih</th>
-                      <th>PO no</th>
-                      <th class="text-end">{{ t('AMOUNT') }}</th>
-                      <th>{{ t('DRAWER_DUE') }}</th>
-                      <th>{{ t('STATUS') }}</th>
-                      <th class="text-end"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (f of belgeler.faturalar; track f.id) {
-                      <tr [class.cancelled]="f.iptalEdildi || f.durum === 2">
-                        <td>
-                          <strong>{{ f.faturaNumarasi }}</strong>
-                          @if (panelAyBelgeNumaralari().fatura.has(f.faturaNumarasi)) { <span class="ref-pill this-month">{{ t('DRAWER_THIS_MONTH') }}</span> }
-                          <small>{{ f.kayitNo }}</small>
-                        </td>
-                        <td>{{ f.faturaTarihi | date: 'dd.MM.yyyy' }}</td>
-                        <td>{{ f.poNumarasi || '—' }}</td>
-                        <td class="text-end nowrap">@for (x of f.tutarlar ?? []; track x.paraBirimi) { <div>{{ x.netTutar | number: '1.2-2' }} {{ x.paraBirimi }}</div> }</td>
-                        <td>{{ f.vadeTarihi ? (f.vadeTarihi | date: 'dd.MM.yyyy') : '—' }}</td>
-                        <td>
-                          @if (f.iptalEdildi || f.durum === 2) {
-                            <span class="status cancel-status">İptal</span>
-                          } @else {
-                            <span [class]="'status payment-status ' + odemeDurumuSinifi(f.odemeDurumu)">{{ t(odemeDurumuAnahtari(f.odemeDurumu)) }}</span>
-                          }
-                        </td>
-                        <td class="text-end">
-                          <button type="button" class="btn btn-outline-primary btn-sm" (click)="detayHedef.set({ tur: 'Fatura', id: f.id })">{{ t('DETAIL') }}</button>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              } @else {
-                <div class="crate-breakdown-empty">{{ t('DRAWER_NO_INVOICE') }}</div>
-              }
-            }
-          }
+          <app-finans-proje-belgeleri
+            [projeNo]="blok.projeNo"
+            [donemPoNumaralari]="panelAyBelgeNumaralari().po"
+            [donemFaturaNumaralari]="panelAyBelgeNumaralari().fatura"
+            [isaretEtiketi]="t('DRAWER_THIS_MONTH')"
+            [notMetni]="t('DRAWER_DOCS_NOTE')"
+            [surum]="belgeSurumu()"
+            (kayitAc)="detayHedef.set($event)" />
         }
       }
     </div>

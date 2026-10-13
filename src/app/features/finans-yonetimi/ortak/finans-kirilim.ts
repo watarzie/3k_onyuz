@@ -136,3 +136,36 @@ export function aramaProjeGruplari(kalemler: readonly FinansIsKaydi[]): FinansAr
     };
   });
 }
+
+/** Proje panelinin Sandıklar sekmesindeki durum süzgeci. */
+export type FinansSandikDurumSuzgeci = 'hepsi' | 'fiyat' | 'siparis' | 'fatura' | 'tamam';
+
+export const FINANS_SANDIK_DURUM_SUZGECLERI: readonly { deger: FinansSandikDurumSuzgeci; anahtar: string }[] = [
+  { deger: 'hepsi', anahtar: 'DRAWER_FILTER_ALL' },
+  { deger: 'fiyat', anahtar: 'DRAWER_FILTER_PRICE' },
+  { deger: 'siparis', anahtar: 'DRAWER_FILTER_PO' },
+  { deger: 'fatura', anahtar: 'DRAWER_FILTER_INVOICE' },
+  { deger: 'tamam', anahtar: 'DRAWER_FILTER_DONE' },
+];
+
+/**
+ * Sandık durumu, sandığın en geride kalan kaydıdır (FinansIsDurumu): 1–2 PO bekliyor, 3–4 fatura bekliyor,
+ * 5 tamamlandı. Fiyat bekleyen sandık durumdan bağımsız, fiyatı girilmemiş kaydı olan sandıktır.
+ */
+export function sandikDurumSuzgeceUyar(
+  sandik: { durum: number; fiyatBekleyenKayitSayisi: number },
+  filtre: FinansSandikDurumSuzgeci,
+): boolean {
+  switch (filtre) {
+    case 'fiyat': return sandik.fiyatBekleyenKayitSayisi > 0;
+    case 'siparis': return sandik.durum === 1 || sandik.durum === 2;
+    case 'fatura': return sandik.durum === 3 || sandik.durum === 4;
+    case 'tamam': return sandik.durum === 5;
+    default: return true;
+  }
+}
+
+/** Arama metni (küçük harfe çevrilmiş) alanlardan birinde geçiyor mu; boş arama her şeye uyar. */
+export function aramayaUyar(arama: string, alanlar: readonly (string | null | undefined)[]): boolean {
+  return !arama || alanlar.some((alan) => (alan ?? '').toLocaleLowerCase('tr-TR').includes(arama));
+}

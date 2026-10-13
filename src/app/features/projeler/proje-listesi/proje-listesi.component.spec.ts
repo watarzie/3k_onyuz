@@ -204,7 +204,7 @@ describe('Proje listesi: sevk edilen saha/yedek görünürlüğü (G1) ve toplu 
     it('yazma izniyle bağlantısız projeye bağlantı eklenir: şemasız adres https ile gönderilir, satır yerinde güncellenir', () => {
       yazma.add(YETKI.PROJE.FOTOGRAF_BAGLANTISI);
       const { fixture, c } = setup(sahaYonetimi);
-      projeApi.fotografBaglantisiGuncelle.and.returnValue(of({ isSuccess: true, value: 'https://foto.ornek.com/p-2' }));
+      projeApi.fotografBaglantisiGuncelle.and.returnValue(of({ isSuccess: true, value: { fotografBaglantisi: 'https://foto.ornek.com/p-2' } }));
       const el = fixture.nativeElement as HTMLElement;
       expect(el.querySelectorAll('.pl-foto--ekle').length).toBe(2);
 
@@ -240,7 +240,7 @@ describe('Proje listesi: sevk edilen saha/yedek görünürlüğü (G1) ve toplu 
       listeOgeleri = [{ ...saha, fotografBaglantisi: 'https://foto.ornek.com/p-2' }];
       yazma.add(YETKI.PROJE.FOTOGRAF_BAGLANTISI);
       const { fixture, c } = setup(sahaYonetimi);
-      projeApi.fotografBaglantisiGuncelle.and.returnValue(of({ isSuccess: true, value: null }));
+      projeApi.fotografBaglantisiGuncelle.and.returnValue(of({ isSuccess: true, value: { fotografBaglantisi: null } }));
       c.fotografPenceresiniAc(c.projeler()[0]);
       fixture.detectChanges();
       expect((fixture.nativeElement.querySelector('.pl-foto-adres') as HTMLInputElement).value).toBe('https://foto.ornek.com/p-2');

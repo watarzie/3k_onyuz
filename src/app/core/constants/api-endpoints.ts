@@ -46,6 +46,10 @@ export const API = {
     SEFER_DETAY: (seferId: number) => `${BASE}/sevkiyat/seferler/${seferId}/detay`,
     ESKI_SEFER_DETAY: `${BASE}/sevkiyat/seferler/eski-detay`,
     ISTATISTIK: `${BASE}/sevkiyat/istatistik`,
+    /** Dönem raporu: format "pdf" (özet) veya "excel" (bütün döküm). */
+    RAPOR: (format: 'pdf' | 'excel') => `${BASE}/sevkiyat/rapor/${format}`,
+    SEFER_RAPOR: (seferId: number) => `${BASE}/sevkiyat/seferler/${seferId}/rapor`,
+    ESKI_SEFER_RAPOR: `${BASE}/sevkiyat/seferler/eski-rapor`,
   },
   AMBALAJ: {
     FORM_SURUMLERI: `${BASE}/ambalaj/uretim-formlari`,

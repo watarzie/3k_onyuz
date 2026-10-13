@@ -365,6 +365,28 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
       expect(el.querySelector('.v2-pricing-card')).not.toBeNull();
       expect((el.querySelector('.finans-birim-m3') as HTMLInputElement).readOnly).toBeFalse();
     });
+
+    it('fiyatlandırma formu yalnız seçilen yöntemin alanlarını gösterir; gizlenen değer korunur', () => {
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: { ...kontraIs, sandikMalzemesi: FinansSandikMalzemesi.Ahsap, birimM3: 1.5 } }));
+      const { fixture, component } = setup('IsKaydi');
+      component.tab('fiyat');
+      const el = fixture.nativeElement as HTMLElement;
+      const alanlar = (yontem: 1 | 2 | 3 | 4) => {
+        component.fiyat.fiyatlandirmaBirimi = yontem;
+        fixture.detectChanges();
+        return ['.finans-adet', '.finans-birim-m3', '.finans-birim-fiyat', '.finans-manuel-net']
+          .filter((secici) => el.querySelector(secici) !== null);
+      };
+
+      expect(alanlar(1)).toEqual(['.finans-adet', '.finans-birim-fiyat']);
+      expect(el.querySelector('.fiyat-yontem-notu')?.textContent).toContain('finans adedi × adet birim fiyatı');
+      expect(alanlar(2)).toEqual(['.finans-adet', '.finans-birim-m3', '.finans-birim-fiyat']);
+      expect(alanlar(3)).toEqual(['.finans-birim-fiyat']);
+      expect(el.querySelector('.finans-birim-fiyat')?.closest('label')?.textContent).toContain('Sabit net bedel');
+      expect(alanlar(4)).toEqual(['.finans-manuel-net']);
+      // Yöntem değişse de gizlenen alanın değeri silinmez.
+      expect(component.fiyat.birimM3).toBe(1.5);
+    });
   });
 
   it('bileşen özeti satır tutarlarını toplar ve m³ satırlarını malzemeye göre ayırır', () => {
