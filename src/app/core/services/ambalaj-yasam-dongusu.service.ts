@@ -3,7 +3,7 @@ import { HttpParams } from '@angular/common/http';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
 import { AmbalajFormOlusturRequest, AmbalajFormSurumu, AmbalajGerceklesme, AmbalajGerceklesenRapor } from '../../shared/models/ambalaj-yasam-dongusu.model';
-import { AmbalajBagimsizSandikDto } from '../../shared/models';
+import { AmbalajBagimsizSandikDto, AmbalajKayitGecmisi } from '../../shared/models';
 
 @Injectable({ providedIn: 'root' })
 export class AmbalajYasamDongusuService {
@@ -26,6 +26,10 @@ export class AmbalajYasamDongusuService {
   /** Özel sandığı finansa aktarır (üretim formu yoktur); tarih boşsa aktarım günü finans tarihidir. */
   finansaAktar(id: number, finansTarihi: string | null) {
     return this.api.post<AmbalajBagimsizSandikDto>(API.AMBALAJ.OZEL_SANDIK_FINANSA_AKTAR(id), { finansTarihi });
+  }
+  /** Kaydın değişiklik geçmişi (kim, ne zaman, hangi işlemle neyi değiştirdi); en yeni üstte. */
+  gecmis(id: number) {
+    return this.api.get<AmbalajKayitGecmisi[]>(API.AMBALAJ.KAYIT_GECMIS(id));
   }
   /** Özel sandığı finanstan geri alır; finans kaydı PO'ya bağlıysa sunucu 409 döner. */
   finanstanGeriAl(id: number, gerekce: string) {

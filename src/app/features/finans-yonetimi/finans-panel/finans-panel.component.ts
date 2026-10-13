@@ -28,7 +28,7 @@ import {
   FinansVarlikTuru,
   FinansYaslandirmaKovasi,
 } from '../../../shared/models/finans-v2.model';
-import { finansSekmeAcik } from '../ortak/finans-izinleri';
+import { finansAltSekmeAcik, finansSekmeAcik } from '../ortak/finans-izinleri';
 import { isTuruAdiAnahtari } from '../ortak/finans-etiketleri';
 import { FinansPanelDetayComponent } from '../finans-panel-detay/finans-panel-detay.component';
 
@@ -113,8 +113,8 @@ export class FinansPanelComponent implements OnInit {
     return paneldekiler.length ? paneldekiler : this.paraBirimleri.aktifKodlar();
   });
   readonly yaslandirmaEsikleri = [15, 30, 60, 90];
-  /** Yaşlandırma kovası bekleyen işleri İş Takibi'nde açar; o sekme kapalıysa kova tıklanamaz. */
-  readonly bekleyenlerAcilabilir = computed(() => finansSekmeAcik(this.permissions, 'akis'));
+  /** Yaşlandırma kovası İş Takibi'nin "Bekleyen işler" alt sekmesini açar; o alt sekme kapalıysa kova tıklanamaz. */
+  readonly bekleyenlerAcilabilir = computed(() => finansAltSekmeAcik(this.permissions, 'bekleyen'));
   /** Yaşlandırma kovası tıklanınca kalem listesi Finans İş Takibi'nde açılır. */
   readonly bekleyenAc = output<{ asama: FinansBekleyenAsama; minimumGun: number }>();
   /** Detay dökümünde bir kalem seçilince kayıt detayı finans sayfasında açılır. */

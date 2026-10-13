@@ -1,9 +1,11 @@
 <article class="v2-card v2-list-card record-search">
   <header class="record-search-head">
     <nav class="v2-segmented" [attr.aria-label]="t('PANEL_VIEW')">
-      <button type="button" [class.active]="gorunum() === 'arama'" [attr.aria-pressed]="gorunum() === 'arama'" (click)="gorunumSec('arama')">
-        <i class="ri-search-2-line" aria-hidden="true"></i>{{ t('PANEL_ALL_SEARCH') }}
-      </button>
+      @if (aramaGorunur()) {
+        <button type="button" [class.active]="gorunum() === 'arama'" [attr.aria-pressed]="gorunum() === 'arama'" (click)="gorunumSec('arama')">
+          <i class="ri-search-2-line" aria-hidden="true"></i>{{ t('PANEL_ALL_SEARCH') }}
+        </button>
+      }
       @if (bekleyenGorunur()) {
         <button type="button" [class.active]="gorunum() === 'bekleyen'" [attr.aria-pressed]="gorunum() === 'bekleyen'" (click)="gorunumSec('bekleyen')">
           <i class="ri-time-line" aria-hidden="true"></i>{{ t('PANEL_PENDING') }}

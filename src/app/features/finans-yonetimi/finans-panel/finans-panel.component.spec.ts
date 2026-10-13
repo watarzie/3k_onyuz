@@ -93,7 +93,10 @@ describe('Finans paneli (Kontrol Paneli sekmesi R izni)', () => {
     fixture.componentInstance.kovaAc(fixture.componentInstance.kova('Sipariş', 30)!);
     expect(acilan).not.toHaveBeenCalled();
 
+    // İş Takibi sekmesi tek başına yetmez; "Bekleyen işler" alt sekmesi gerekir.
     ekIzinler.set([FINANS_YETKI.SekmeIsTakibi]); fixture.detectChanges();
+    expect(kovalar[1].disabled).toBeTrue();
+    ekIzinler.set([FINANS_YETKI.SekmeIsTakibi, FINANS_YETKI.SekmeIsTakibiBekleyen]); fixture.detectChanges();
     expect(kovalar[1].disabled).toBeFalse();
     expect(kovalar[2].disabled).toBeTrue();
     kovalar[1].click();

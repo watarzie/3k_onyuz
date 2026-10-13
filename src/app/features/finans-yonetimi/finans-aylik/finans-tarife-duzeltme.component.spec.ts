@@ -15,7 +15,7 @@ import { FinansTarifeDuzeltmeOnizleme } from '../../../shared/models/finans-v2.m
 describe('Hatalı tarife düzeltme', () => {
   let api: jasmine.SpyObj<FinansService>;
   let toast: jasmine.SpyObj<ToastService>;
-  const okuma = new Set<string>([FINANS_YETKI.Modul, FINANS_YETKI.SekmeTanimlar]);
+  const okuma = new Set<string>([FINANS_YETKI.Modul, FINANS_YETKI.SekmeTanimlar, FINANS_YETKI.SekmeTanimlarTarifeler]);
   const yazma = new Set<string>();
 
   const hatali: FinansTarifeSurumu = {
@@ -43,6 +43,7 @@ describe('Hatalı tarife düzeltme', () => {
   beforeEach(() => {
     yazma.clear();
     yazma.add(FINANS_YETKI.SekmeTanimlar);
+    yazma.add(FINANS_YETKI.SekmeTanimlarTarifeler);
     api = jasmine.createSpyObj('FinansService', ['aylikIsler', 'urunler', 'giderKategorileri', 'tarifeDuzeltmeOnizle', 'tarifeDuzelt']);
     const sayfa = { items: [], toplamlar: [], pageNumber: 1, pageSize: 25, totalCount: 0, totalPages: 0, hasPreviousPage: false, hasNextPage: false };
     api.aylikIsler.and.returnValue(of({ isSuccess: true, value: { ...sayfa, finansOzeti: [], grupToplamlari: [] } }));
@@ -72,8 +73,9 @@ describe('Hatalı tarife düzeltme', () => {
     return c;
   }
 
-  it('tanımlar sekmesinde yalnız R izni olan kullanıcı tarife düzeltmesini açamaz', () => {
-    yazma.clear();
+  it('Ürün ve Tarifeler alt sekmesinde yalnız R izni olan kullanıcı tarife düzeltmesini açamaz', () => {
+    // Tanımlar sekmesi W olsa da alt sekmenin W izni yoksa düzenleme yoktur.
+    yazma.delete(FINANS_YETKI.SekmeTanimlarTarifeler);
     const c = duzenlenenTarife();
 
     c.tarifeDuzeltmeAc(hatali);

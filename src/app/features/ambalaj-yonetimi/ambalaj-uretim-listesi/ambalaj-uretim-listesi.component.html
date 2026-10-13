@@ -58,6 +58,13 @@
             </div>
           </div>
 
+          <!-- Finans durumu sekmeleri: finansa aktarılanlar ayrı sekmede; bekleyenler listesi şişmez. -->
+          <div class="segmented ozel-finans-durumu" role="group" aria-label="Finans durumu">
+            <button type="button" [class.active]="ozelFinansDurumu() === 'bekleyen'" (click)="ozelFinansDurumuDegistir('bekleyen')"><i class="ri-time-line" aria-hidden="true"></i>Finansa aktarılmayı bekleyen <span class="segment-count">{{ bagimsizFiltreOzeti().finansaAktarilmayanKayitSayisi ?? 0 }}</span></button>
+            <button type="button" [class.active]="ozelFinansDurumu() === 'aktarilan'" (click)="ozelFinansDurumuDegistir('aktarilan')"><i class="ri-money-euro-circle-line" aria-hidden="true"></i>Finansa aktarılan <span class="segment-count">{{ bagimsizFiltreOzeti().finansaAktarilanKayitSayisi ?? 0 }}</span></button>
+            <button type="button" [class.active]="ozelFinansDurumu() === ''" (click)="ozelFinansDurumuDegistir('')">Tümü</button>
+          </div>
+
           <div class="segmented" role="group" aria-label="Özel sandık türü filtresi">
             <button type="button" [class.active]="ozelTurFiltresi() === 0" (click)="ozelTurFiltresiDegistir(0)">Tümü</button>
             <button type="button" [class.active]="ozelTurFiltresi() === 4" (click)="ozelTurFiltresiDegistir(4)">Saha</button>
@@ -280,13 +287,13 @@
                 } @else {
                   @for (sandik of bagimsizSandiklar(); track sandik.id) {
                     <tr [class.selected]="sandik.uretimeAlindi">
-                      <td><strong>{{ sandik.turMetni }} · {{ sandik.sandikNo }}</strong><small>{{ sandik.ad }}</small></td>
+                      <td><strong>{{ sandik.turMetni }} · {{ sandik.sandikNo }}</strong><small>{{ sandik.ad }}</small>@if (sandik.olusturmaTarihi) {<small class="audit-hint" [title]="'Ekleyen: ' + (sandik.olusturanAdi || '—')"><i class="ri-user-add-line" aria-hidden="true"></i><span>{{ sandik.olusturmaTarihi | date: 'dd.MM.yyyy HH:mm' }}</span>@if (sandik.olusturanAdi) {<span>{{ sandik.olusturanAdi }}</span>}</small>}</td>
                       <td><div class="project-form-action"><strong>{{ sandik.projeNo || 'Proje seçilmemiş' }}</strong>@if (sandik.projeId) { <button *appCanAccess="[izin.FormIndir]" type="button" class="tz-btn tz-btn--icon" [title]="ozelUretimFormuDownloading() === sandik.id ? 'PDF hazırlanıyor' : 'Bu proje için üretim formu al'" [disabled]="ozelUretimFormuDownloading() !== null" [attr.aria-busy]="ozelUretimFormuDownloading() === sandik.id" (click)="ozelUretimFormuIndir(sandik)"><i [class]="ozelUretimFormuDownloading() === sandik.id ? 'ri-loader-4-line spin' : 'ri-file-pdf-2-line tz-ico-danger'"></i></button> }</div><small>{{ sandik.ustSandikNo ? sandik.ustSandikNo + ' · ' + (sandik.ustSandikAdi || '') : sandik.kaynakSandikNo ? sandik.kaynakSandikNo + ' · ' + (sandik.kaynakSandikAdi || '') : sandik.musteri || '-' }}</small></td>
                       <td>{{ sandik.sandikTipi }}</td><td>{{ sandik.adet }}</td>
                       <td><span *appCanAccess="[izin.OlcuGoruntule]">{{ sandik.boy }} × {{ sandik.en }} × {{ sandik.yukseklik }}</span></td>
                       <td><span *appCanAccess="[izin.M3Goruntule]">{{ sandik.m3HesaplanabilirMi === false ? 'Hesaplanmaz' : sandik.hacimM3 === null ? '—' : (sandik.hacimM3 | number:'1.3-3') + ' m³' }}</span></td>
                       <td>{{ sandik.talimatVeren || '-' }}</td>
-                      <td><strong>{{ durumMetni(sandik.uretimDurumu || 1) }}</strong><small class="finance-hint" [class.is-active]="sandik.uretimeAlindi">{{ sandik.uretimeAlindi ? 'Finansta' : 'Finansa aktarılmadı' }}</small><button type="button" class="tz-btn tz-btn--sm lifecycle-open" (click)="bagimsizYasam.set(sandik)"><i [class]="sandik.uretimeAlindi ? 'ri-money-euro-circle-line tz-ico-primary' : 'ri-send-plane-line tz-ico-primary'"></i>{{ sandik.uretimeAlindi ? 'Finans' : 'Finansa aktar' }}</button></td>
+                      <td><strong>{{ durumMetni(sandik.uretimDurumu || 1) }}</strong><small class="finance-hint" [class.is-active]="sandik.uretimeAlindi">@if (sandik.uretimeAlindi) {<span>Finansa aktarıldı</span>@if (sandik.finansaAktarimTarihi) {<span>{{ sandik.finansaAktarimTarihi | date: 'dd.MM.yyyy HH:mm' }}</span>}@if (sandik.finansaAktaranAdi) {<span>{{ sandik.finansaAktaranAdi }}</span>}} @else {Finansa aktarılmadı}</small><button type="button" class="tz-btn tz-btn--sm lifecycle-open" (click)="bagimsizYasam.set(sandik)"><i [class]="sandik.uretimeAlindi ? 'ri-money-euro-circle-line tz-ico-primary' : 'ri-send-plane-line tz-ico-primary'"></i>{{ sandik.uretimeAlindi ? 'Finans' : 'Finansa aktar' }}</button></td>
                       <td class="actions-cell"><div class="actions"><button *appCanWrite="izin.KayitDuzenle" type="button" class="tz-btn tz-btn--sm" title="Özel sandığı düzenle" (click)="bagimsizFormuAc(sandik)"><i class="ri-edit-line tz-ico-primary"></i>Düzenle</button><button *appCanWrite="izin.KayitSil" type="button" class="tz-btn tz-btn--icon tz-btn--danger-hover" title="Sil" aria-label="Sil" (click)="bagimsizSandikSil(sandik)"><i class="ri-delete-bin-line"></i></button></div></td>
                     </tr>
                   } @empty { <tr><td colspan="9" class="empty-state">Bu filtrede özel sandık bulunamadı.</td></tr> }

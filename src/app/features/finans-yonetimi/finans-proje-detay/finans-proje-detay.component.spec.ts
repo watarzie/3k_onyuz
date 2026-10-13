@@ -54,7 +54,7 @@ describe('Finans proje detayı', () => {
   }
 
   it('kalemleri kategori sırasıyla gruplar, sandık numarasına göre sıralar; m³ ve tutarları ayrı toplar', () => {
-    [FINANS_YETKI.Modul, FINANS_YETKI.SekmeIsTakibi, FINANS_YETKI.SekmePoFatura].forEach((k) => izinler.add(k));
+    [FINANS_YETKI.Modul, FINANS_YETKI.SekmeIsTakibi, FINANS_YETKI.SekmePoFatura, FINANS_YETKI.SekmePoFaturaFatura].forEach((k) => izinler.add(k));
     const { c, el } = setup();
     expect(api.genelArama).toHaveBeenCalledOnceWith({ pageNumber: 1, pageSize: 250, projeNo: 'PA-1' });
     expect(api.faturalar).toHaveBeenCalledOnceWith({ pageNumber: 1, pageSize: 250, projeNo: 'PA-1' });
@@ -74,8 +74,9 @@ describe('Finans proje detayı', () => {
     expect(acilan).toHaveBeenCalledOnceWith({ tur: 'IsKaydi', id: 2 });
   });
 
-  it('PO/Fatura sekmesi kapalıysa fatura listesi istenmez; m³ ve tutar sütunları kayıt sekmesi R kullanıcısına hep görünür', () => {
-    [FINANS_YETKI.Modul, FINANS_YETKI.SekmeIsTakibi].forEach((k) => izinler.add(k));
+  it('Faturalar alt sekmesi kapalıysa fatura listesi istenmez; m³ ve tutar sütunları kayıt sekmesi R kullanıcısına hep görünür', () => {
+    // PO/Fatura sekmesi ve PO'lar açık, Faturalar alt sekmesi kapalı.
+    [FINANS_YETKI.Modul, FINANS_YETKI.SekmeIsTakibi, FINANS_YETKI.SekmePoFatura, FINANS_YETKI.SekmePoFaturaPo].forEach((k) => izinler.add(k));
     const sutunlar = (el: HTMLElement) => el.querySelector('table thead tr')!.querySelectorAll('th').length;
     const kisitli = setup();
     expect(api.genelArama).toHaveBeenCalled();

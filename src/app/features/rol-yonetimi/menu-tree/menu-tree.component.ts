@@ -125,9 +125,23 @@ export class MenuTreeComponent {
   }
 
   private uygula(node: MenuTreeDto, seviye: number, checkbox?: HTMLInputElement): void {
+    const onceki = node.yetkiTipiId;
     this.setPermission(node, seviye);
+    this.altSekmeleriYukselt(node, onceki, seviye);
     this.capChildren(node);
     this.kutuyuEsitle(node, checkbox);
+  }
+
+  /**
+   * Sekme açılınca/yükseltilince sekmeyle aynı seviyedeki alt sekmeler (ör. finans-sekme-is-takibi-aylik) onu izler:
+   * sekme R → W yapılınca R olan alt sekmeler W olur, N → R açılınca bütün alt sekmeler R olur. Sekme açıkken bilinçli
+   * kapatılmış (N) alt sekme yükseltmede kapalı kalır. İşlem ve diğer modül düğümleri etkilenmez.
+   */
+  private altSekmeleriYukselt(node: MenuTreeDto, onceki: number, yeni: number): void {
+    if (yeni <= onceki || !this.sekmeDugumu(node)) return;
+    for (const alt of node.children ?? []) {
+      if (this.sekmeDugumu(alt) && alt.yetkiTipiId === onceki) this.setPermission(alt, yeni);
+    }
   }
 
   /**

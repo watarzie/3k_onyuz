@@ -1727,6 +1727,9 @@ table tbody tr.completed-project:hover > td {
   font-size: 11px;
   font-weight: 600;
   &.is-active { color: #1e7a37; }
+  // Aktarım bilgisi alt alta: durum, zaman, aktaran; her biri ortadan bölünmez.
+  span { display: block; white-space: nowrap; }
+  span + span { color: #64748b; font-weight: 500; }
 }
 // Özel sandık satırında durum metninin altındaki yaşam döngüsü düğmesi.
 .lifecycle-open {
@@ -1821,3 +1824,31 @@ table tbody tr.completed-project:hover > td {
 .blocking-reason { color: #b42318; }
 .measure-missing { color: #9a6700; }
 .required-crates i { margin-left: 3px; color: var(--primaryColor); }
+
+// Özel sandık finans durumu sekmeleri ve denetim ipuçları.
+.ozel-finans-durumu {
+  margin-bottom: 10px;
+  .segment-count {
+    margin-left: 6px;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #4338ca;
+    font-size: 11px;
+    font-weight: 700;
+  }
+}
+/* Ekleme zamanı ve ekleyen alt alta: dar sütunda ikisi de ortadan bölünmez, sütunu genişletmez. td small kuralı
+   (display: block) daha özgül olduğundan hücre içi seçici de yazılır. */
+.audit-hint,
+td small.audit-hint {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: start;
+  align-items: center;
+  column-gap: 4px;
+  color: #94a3b8;
+  font-size: 11px;
+  i { grid-row: span 2; }
+  span { white-space: nowrap; }
+}

@@ -18,7 +18,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AmbalajYasamDongusuService } from '../../../core/services/ambalaj-yasam-dongusu.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { AmbalajBagimsizSandikDto, AmbalajUretimPlanDto, ApiResult, onayaAlindi } from '../../../shared/models';
+import { AmbalajBagimsizSandikDto, AmbalajKayitGecmisi, AmbalajUretimPlanDto, ApiResult, onayaAlindi } from '../../../shared/models';
 import { TranslationService } from '../../../core/services/translation.service';
 import {
   AmbalajFormOlusturRequest,
@@ -109,6 +109,12 @@ export class UretimYasamDongusuComponent {
   formlar = signal<AmbalajFormSurumu[]>([]);
   /** Özel sandıkta "Finanstan geri al" onayı; isteğe bağlı gerekçe alanı yalnız o an açılır. */
   finansGeriAlAcik = signal(false);
+  /** Özel sandığın değişiklik geçmişi (isteğe bağlı açılır; her işlemden sonra yenilenir). */
+  gecmisAcik = signal(false);
+  gecmisYukleniyor = signal(false);
+  gecmisKayitlari = signal<AmbalajKayitGecmisi[]>([]);
+  /** Açılan olaylar: oluşturma gibi çok alanlı olaylar varsayılan kısaltılır. */
+  gecmisGenis = signal<ReadonlySet<number>>(new Set());
   rapor = signal<AmbalajGerceklesenRapor | null>(null);
   islemde = signal(false);
   raporYukleniyor = signal(false);
@@ -192,6 +198,9 @@ export class UretimYasamDongusuComponent {
       untracked(() => {
         this.ozelGuncel.set(null);
         this.finansGeriAlAcik.set(false);
+        this.gecmisAcik.set(false);
+        this.gecmisKayitlari.set([]);
+        this.gecmisGenis.set(new Set());
       });
     });
     effect(() => {
@@ -395,6 +404,34 @@ export class UretimYasamDongusuComponent {
         }
       });
   }
+  gecmisiAcKapat() {
+    const acik = !this.gecmisAcik();
+    this.gecmisAcik.set(acik);
+    if (acik) this.gecmisiYukle();
+  }
+  private gecmisiYukle() {
+    const b = this.ozel();
+    if (!b || !this.gecmisAcik()) return;
+    this.gecmisYukleniyor.set(true);
+    this.api
+      .gecmis(b.id)
+      .pipe(
+        finalize(() => this.gecmisYukleniyor.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((r) => {
+        if (r.isSuccess) this.gecmisKayitlari.set(r.value ?? []);
+        else this.toast.error(r.error ?? this.t('HISTORY_ERROR'));
+      });
+  }
+  gecmisOlayiAcKapat(i: number) {
+    this.gecmisGenis.update((s) => {
+      const yeni = new Set(s);
+      if (yeni.has(i)) yeni.delete(i);
+      else yeni.add(i);
+      return yeni;
+    });
+  }
   /** Özel sandığı finansa aktarır; Finans iş kaydı açılır ve tarifesiyle fiyatlanır. */
   finansaAktar() {
     const b = this.ozel();
@@ -410,6 +447,7 @@ export class UretimYasamDongusuComponent {
         if (!this.uygulandi(r)) return;
         if (r.value) this.ozelGuncel.set(r.value);
         this.finansTarihi = '';
+        this.gecmisiYukle();
         this.toast.success(this.t('FINANCE_TRANSFERRED'));
         this.degisti.emit();
       });
@@ -430,6 +468,7 @@ export class UretimYasamDongusuComponent {
         if (r.value) this.ozelGuncel.set(r.value);
         this.finansGeriAlAcik.set(false);
         this.gerekceyiDegistir('');
+        this.gecmisiYukle();
         this.toast.success(this.t('FINANCE_REVERTED'));
         this.degisti.emit();
       });

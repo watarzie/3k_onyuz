@@ -1,6 +1,6 @@
 import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { finansHacimBilesik, finansHacimGecerli } from '../ortak/finans-hacim';
-import { KIRILIM_ILK_SATIR, ilkSatirlar, kategoriKirilimKayitlari, kirilimSandiklari, sarfKaydi } from '../ortak/finans-kirilim';
+import { kategoriKirilimKayitlari, kirilimSandiklari, sarfKaydi } from '../ortak/finans-kirilim';
 import { Component, DestroyRef, OnInit, WritableSignal, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -24,14 +24,18 @@ import { FinansMunferitIslerComponent } from '../finans-munferit-isler/finans-mu
 import {
   FINANS_GIDER_TANIM_SEKMELERI,
   FinansSekme,
+  FinansAltSekme,
+  finansAltSekmeAcik,
+  finansAltSekmeYazilabilir,
+  finansFaturaGirilebilir,
   finansHerhangiSekmeAcik,
+  finansIlkAltSekme,
   finansIlkSekme,
   finansIsDuzenlenebilir,
   finansKayitOkunabilir,
   finansPoGirilebilir,
   finansSekmeAcik,
   finansSekmeYazilabilir,
-  finansSiparisFaturaYazilabilir,
   finansVadeUyarisiGorunur,
 } from '../ortak/finans-izinleri';
 import {
@@ -39,6 +43,9 @@ import {
   faturaKarsilanmaAnahtari,
   isDurumuAnahtari,
   kategoriAnahtari,
+  odemeDurumuAnahtari,
+  odemeDurumuSinifi,
+  poDurumuAnahtari,
   siparisKarsilanmaAnahtari,
 } from '../ortak/finans-etiketleri';
 import { TranslationService } from '../../../core/services/translation.service';
@@ -66,6 +73,7 @@ import {
   FinansAylikGrupToplami,
   FinansDuzenliIs,
   FinansDuzenliIsKaydetRequest,
+  FinansFatura,
   FinansGider,
   FinansGiderKategori,
   FinansGiderKalemi,
@@ -95,7 +103,7 @@ interface AylikGrup {
   toplamlar: ParaTutari[];
 }
 
-/** Aylık PO/fatura görünümünde proje satırı; kategori satırları altında açılır (F5). */
+/** Aylık görünümde proje satırı; kategorileri, sandıkları ve PO/faturaları sağdaki proje panelinde açılır (F5). */
 interface AylikProjeBlogu {
   anahtar: string;
   projeId: number | null;
@@ -108,12 +116,38 @@ interface AylikProjeBlogu {
   ozelIsler: FinansAylikIs[];
 }
 
+/** Proje panelinin sekmeleri: ayın kategori satırları, sandık kırılımı, projenin PO ve faturaları. */
+type ProjePaneliSekmesi = 'kategoriler' | 'sandiklar' | 'belgeler';
+/** Sandıklar sekmesindeki durum süzgeci. */
+type PanelSandikFiltresi = 'hepsi' | 'fiyat' | 'siparis' | 'fatura' | 'tamam';
+
+/**
+ * Sandık durumu, sandığın en geride kalan kaydıdır (FinansIsDurumu): 1–2 PO bekliyor, 3–4 fatura bekliyor,
+ * 5 tamamlandı. Fiyat bekleyen sandık durumdan bağımsız, fiyatı girilmemiş kaydı olan sandıktır.
+ */
+function panelSandikFiltreyeUyar(sandik: FinansSandikKirilimSatiri, filtre: PanelSandikFiltresi): boolean {
+  switch (filtre) {
+    case 'fiyat': return sandik.fiyatBekleyenKayitSayisi > 0;
+    case 'siparis': return sandik.durum === 1 || sandik.durum === 2;
+    case 'fatura': return sandik.durum === 3 || sandik.durum === 4;
+    case 'tamam': return sandik.durum === 5;
+    default: return true;
+  }
+}
+
+/** Arama metni sandık no/adı/tipi veya PO/fatura numarasında geçiyor mu (büyük/küçük harf duyarsız). */
+function aramayaUyar(arama: string, alanlar: readonly (string | null | undefined)[]): boolean {
+  return !arama || alanlar.some(alan => (alan ?? '').toLocaleLowerCase('tr-TR').includes(arama));
+}
+
 /** Sunucuda sipariş/fatura dağıtımı yapılamayan, önce miktar veya fiyat bekleyen satır durumları. */
 const DAGITIM_BEKLEYEN_DURUMLAR = ['miktar bekliyor', 'fiyatlandırma bekliyor'];
 
 type AnaSekme = FinansSekme;
-/** İş ve Tarife Tanımları alt görünümleri; üçü de tanımlar sekmesinin iznine bağlıdır. */
-type AyarGorunumu = 'duzenli' | 'tarifeler' | 'parametreler';
+/** İş ve Tarife Tanımları alt görünümleri; her biri kendi alt sekme iznine bağlıdır (tanımlar sekmesi tavandır). */
+type AyarGorunumu = Extract<FinansAltSekme, 'duzenli' | 'tarifeler' | 'parametreler'>;
+/** İş Takibi alt görünümleri: aylık görünüm, tüm dönemlerde ara, bekleyen işler. */
+type AkisAltSekmesi = Extract<FinansAltSekme, 'aylik' | 'arama' | 'bekleyen'>;
 type RaporFormati = 'pdf' | 'excel' | 'ayri';
 
 @Component({
@@ -166,6 +200,9 @@ export class FinansYonetimiComponent implements OnInit {
   readonly faturaKarsilanmaAnahtari = faturaKarsilanmaAnahtari;
   readonly isDurumuAnahtari = isDurumuAnahtari;
   readonly karsilanma = FinansKarsilanma;
+  readonly poDurumuAnahtari = poDurumuAnahtari;
+  readonly odemeDurumuAnahtari = odemeDurumuAnahtari;
+  readonly odemeDurumuSinifi = odemeDurumuSinifi;
 
   private readonly aylikListeIstekleri = new Subject<void>();
   private readonly aylikAramaIstekleri = new Subject<string>();
@@ -200,12 +237,14 @@ export class FinansYonetimiComponent implements OnInit {
   readonly kayitAramaAcilisi = signal<FinansKayitAramaAcilisi>({ anahtar: 0, gorunum: 'arama' });
 
   kayitAramasiniAc(gorunum: FinansKayitAramaGorunumu): void {
+    if (!this.altSekmeAcik(gorunum)) return;
     this.kayitAramaAcilisi.update((x) => ({ anahtar: x.anahtar + 1, gorunum }));
     this.akisGorunumu.set('kayitlar');
   }
 
   /** Kontrol panelindeki yaşlandırma kovası: bekleyen işler İş Takibi'nde kovanın aşaması ve eşiğiyle açılır. */
   bekleyenleriAc(kova: { asama: FinansBekleyenAsama; minimumGun: number }): void {
+    if (!this.altSekmeAcik('bekleyen')) return;
     this.kayitAramaAcilisi.update((x) => ({ anahtar: x.anahtar + 1, gorunum: 'bekleyen', ...kova }));
     this.akisGorunumu.set('kayitlar');
     this.selectTab('akis');
@@ -230,8 +269,6 @@ export class FinansYonetimiComponent implements OnInit {
   tarifeArama = signal('');
   iptalEdilenleriGoster = signal(false);
   acikGruplar = signal(new Set<string>(this.ozelGrupSirasi));
-  /** Açık proje satırları; proje satırı kategori kırılımına açılır. */
-  acikProjeler = signal(new Set<string>());
   aylikProjeler = signal<FinansAylikProjeOzeti[]>([]);
   aylikProjeOzelIsleri = signal<FinansAylikIs[]>([]);
 
@@ -416,6 +453,12 @@ export class FinansYonetimiComponent implements OnInit {
       const ilk = finansIlkSekme(this.permissions);
       if (ilk) untracked(() => this.selectTab(ilk));
     });
+    // Açık alt görünümün (İş Takibi / Tanımlar) izni kaldırılırsa sekmenin okunabilen ilk alt görünümüne geçilir.
+    effect(() => {
+      const aktif = this.activeTab();
+      if (aktif === 'akis' && !this.altSekmeAcik(this.akisAltSekmesi())) untracked(() => this.akisAltSekmesiniDogrula());
+      if (aktif === 'ayarlar' && !this.altSekmeAcik(this.ayarGorunumu())) untracked(() => this.ayarGorunumunuDogrula());
+    });
   }
 
   /** Sekme görünür mü (R): modül ve sekme düğümü (ortak/finans-izinleri). */
@@ -426,6 +469,48 @@ export class FinansYonetimiComponent implements OnInit {
   /** Sekmedeki işlemler yapılabilir mi (W). */
   sekmeYazilabilir(sekme: AnaSekme): boolean {
     return finansSekmeYazilabilir(this.permissions, sekme);
+  }
+
+  /** Alt sekme görünür mü (R): üst sekme ve alt sekme düğümü. */
+  altSekmeAcik(altSekme: FinansAltSekme): boolean {
+    return finansAltSekmeAcik(this.permissions, altSekme);
+  }
+
+  /** Alt sekmedeki işlemler yapılabilir mi (W): üst sekme ve alt sekme düğümünün yazma izni. */
+  altSekmeYazilabilir(altSekme: FinansAltSekme): boolean {
+    return finansAltSekmeYazilabilir(this.permissions, altSekme);
+  }
+
+  /** Açık İş Takibi alt görünümü. */
+  akisAltSekmesi(): AkisAltSekmesi {
+    return this.akisGorunumu() === 'aylik' ? 'aylik' : this.kayitAramaAcilisi().gorunum;
+  }
+
+  /** İş Takibi alt görünümünü açar; aylık görünüm listeyi yeniden yükler. */
+  akisAltSekmesiniAc(altSekme: AkisAltSekmesi): void {
+    if (!this.altSekmeAcik(altSekme)) return;
+    if (altSekme !== 'aylik') {
+      this.kayitAramasiniAc(altSekme);
+      return;
+    }
+    this.akisGorunumu.set('aylik');
+    this.aylikListeyiYukle();
+  }
+
+  /** Açık İş Takibi alt görünümü okunamıyorsa okunabilen ilk alt görünüm açılır. */
+  private akisAltSekmesiniDogrula(): void {
+    if (this.altSekmeAcik(this.akisAltSekmesi())) return;
+    const ilk = finansIlkAltSekme(this.permissions, 'akis') as AkisAltSekmesi | null;
+    if (ilk) this.akisAltSekmesiniAc(ilk);
+  }
+
+  /** Açık Tanımlar alt görünümü okunamıyorsa okunabilen ilk alt görünüm açılır. */
+  private ayarGorunumunuDogrula(): void {
+    if (this.altSekmeAcik(this.ayarGorunumu())) return;
+    const ilk = finansIlkAltSekme(this.permissions, 'ayarlar') as AyarGorunumu | null;
+    if (!ilk) return;
+    this.ayarGorunumu.set(ilk);
+    this.ayarListesiniYukle();
   }
 
   /** Vade uyarısı sekmelerin üstünde, modül genelindedir; sekme izninden bağımsız kendi iznine bağlıdır. */
@@ -468,7 +553,7 @@ export class FinansYonetimiComponent implements OnInit {
     return kalanGun < 0 ? 'gecikti' : kalanGun <= 7 ? 'acil' : 'yaklasiyor';
   }
   vadeTakibiniAc(filtre: FinansOdemeFiltresi): void {
-    if (!this.sekmeAcik('belgeler')) return;
+    if (!this.altSekmeAcik('fatura')) return;
     this.belgeGorunumu.update(mevcut => ({ anahtar: mevcut.anahtar + 1, tur: 'Fatura', odeme: filtre }));
     this.selectTab('belgeler');
   }
@@ -476,12 +561,18 @@ export class FinansYonetimiComponent implements OnInit {
   selectTab(tab: AnaSekme): void {
     if (!this.sekmeAcik(tab)) return;
     this.activeTab.set(tab);
-    if (tab === 'akis') this.aylikListeyiYukle();
+    if (tab === 'akis') {
+      this.akisAltSekmesiniDogrula();
+      this.aylikListeyiYukle();
+    }
     if (tab === 'giderler' && !this.giderlerYuklendi) {
       this.giderlerYuklendi = true;
       this.giderListeIstekleri.next();
     }
-    if (tab === 'ayarlar') this.ayarListesiniYukle();
+    if (tab === 'ayarlar') {
+      this.ayarGorunumunuDogrula();
+      this.ayarListesiniYukle();
+    }
   }
 
   /** Gider formundaki kategori/kalem listesi: Giderler, Gider Kategorileri veya Raporlar sekmesinden biri. */
@@ -525,7 +616,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   aylikListeyiYukle(): void {
-    if (!this.sekmeAcik('akis')) return;
+    if (!this.altSekmeAcik('aylik')) return;
     this.aylikListeIstekleri.next();
   }
 
@@ -568,7 +659,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   ayarGorunumuDegistir(gorunum: AyarGorunumu): void {
-    if (!this.sekmeAcik('ayarlar')) return;
+    if (!this.altSekmeAcik(gorunum)) return;
     this.ayarGorunumu.set(gorunum);
     this.ayarListesiniYukle();
   }
@@ -606,19 +697,163 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   /**
-   * Proje → sandık kırılımı: proje bloğundaki "Sandıklar" ve kategori satırlarının sandık dökümü aynı sunucu
-   * kırılımını kullanır (sayfalamasız, sunucuda gruplanmış). Kırılım proje başına bir kez yüklenip önbellekte
-   * tutulur; liste yenilenince önbellek düşer ve açık proje panelleri yeniden yüklenir.
+   * Proje paneli: liste yalnız projelerden oluşur; projeye tıklanınca sağdan açılan panelde ayın özeti ile
+   * Kategoriler | Sandıklar | PO / Fatura sekmeleri gösterilir. Sandıklar sunucunun proje → sandık kırılımıdır
+   * (sayfalamasız, sunucuda gruplanmış); kırılım proje başına bir kez yüklenip önbellekte tutulur. Liste yenilenince
+   * önbellek düşer ve açık panelin projesi yeniden yüklenir.
    */
   readonly projeKirilimlari = signal(new Map<string, FinansProjeSandikKirilimi>());
   readonly kirilimYukleniyor = signal(new Set<string>());
-  readonly acikProjeSandiklari = signal(new Set<string>());
-  readonly tumSandiklarAcik = signal(new Set<string>());
   readonly acikSandikSatirlari = signal(new Set<string>());
-  readonly acikSandiklar = signal(new Set<string>());
-  readonly kirilimIlkSatir = KIRILIM_ILK_SATIR;
   readonly sarfKaydi = sarfKaydi;
   private kirilimNesli = 0;
+
+  readonly projePaneliAnahtari = signal<string | null>(null);
+  readonly projePaneliSekmesi = signal<ProjePaneliSekmesi>('kategoriler');
+  readonly panelSandikArama = signal('');
+  readonly panelSandikFiltresi = signal<PanelSandikFiltresi>('hepsi');
+  /** Kategori satırından açılan sandık dökümü: Sandıklar sekmesi yalnız o kategorinin kayıtlarını gösterir. */
+  readonly panelKategori = signal<FinansAylikIs | null>(null);
+  /** PO / Fatura sekmesi: projenin bütün dönemlerdeki PO ve faturaları; null = henüz yüklenmedi. */
+  readonly panelBelgeleri = signal<{ siparisler: FinansSiparis[]; faturalar: FinansFatura[]; eksik: boolean } | null>(null);
+  readonly panelBelgeleriYukleniyor = signal(false);
+  private panelBelgeNesli = 0;
+  readonly panelSandikFiltreleri: readonly { deger: PanelSandikFiltresi; anahtar: string }[] = [
+    { deger: 'hepsi', anahtar: 'DRAWER_FILTER_ALL' },
+    { deger: 'fiyat', anahtar: 'DRAWER_FILTER_PRICE' },
+    { deger: 'siparis', anahtar: 'DRAWER_FILTER_PO' },
+    { deger: 'fatura', anahtar: 'DRAWER_FILTER_INVOICE' },
+    { deger: 'tamam', anahtar: 'DRAWER_FILTER_DONE' },
+  ];
+
+  /** Açık paneldeki proje; liste yenilenip proje sayfada kalmazsa null olur ve panel kapanır. */
+  readonly projePaneli = computed(() => {
+    const anahtar = this.projePaneliAnahtari();
+    return anahtar ? this.aylikProjeBloklari().find(blok => blok.anahtar === anahtar) ?? null : null;
+  });
+  private readonly panelKirilimSandiklari = computed(() => {
+    const blok = this.projePaneli();
+    return blok ? kirilimSandiklari(this.projeKirilimi(blok.anahtar)?.sandiklar ?? []) : [];
+  });
+  /** Sandıklar sekmesi: durum süzgeci ve arama (sandık no/adı/tipi, PO ve fatura no) uygulanmış, doğal sandık sırasıyla. */
+  readonly panelSandiklari = computed(() => {
+    const arama = this.panelSandikArama().trim().toLocaleLowerCase('tr-TR');
+    const filtre = this.panelSandikFiltresi();
+    return this.panelKirilimSandiklari().filter(sandik => panelSandikFiltreyeUyar(sandik, filtre) &&
+      aramayaUyar(arama, [sandik.sandikNo, sandik.sandikAdi, sandik.sandikTipi, ...sandik.poNumaralari, ...sandik.faturaNumaralari]));
+  });
+  /** Süzgeç düğmelerindeki sandık sayıları (aramadan bağımsız). */
+  readonly panelSandikSayilari = computed(() => {
+    const sandiklar = this.panelKirilimSandiklari();
+    return Object.fromEntries(this.panelSandikFiltreleri.map(f =>
+      [f.deger, sandiklar.filter(sandik => panelSandikFiltreyeUyar(sandik, f.deger)).length])) as Record<PanelSandikFiltresi, number>;
+  });
+  /** Kategori süzgeci açıkken: kategorinin kayıtları sandığıyla, aramayla daraltılmış. */
+  readonly panelKategoriKayitlari = computed(() => {
+    const satir = this.panelKategori();
+    if (!satir) return [];
+    const arama = this.panelSandikArama().trim().toLocaleLowerCase('tr-TR');
+    return kategoriKirilimKayitlari(this.projeKirilimi(satir.projeBirimAnahtari)?.sandiklar ?? [], satir.isKaydiIds)
+      .filter(x => aramayaUyar(arama, [x.sandik.sandikNo, x.sandik.sandikAdi, x.sandik.sandikTipi, ...x.kayit.poNumaralari, ...x.kayit.faturaNumaralari]));
+  });
+  /** Bu ayın işlerine bağlı PO ve fatura numaraları; PO / Fatura sekmesinde "Bu ay" olarak işaretlenir. */
+  readonly panelAyBelgeNumaralari = computed(() => {
+    const satirlar = [...(this.projePaneli()?.satirlar ?? []), ...(this.projePaneli()?.ozelIsler ?? [])];
+    return {
+      po: new Set(satirlar.flatMap(satir => satir.poNumaralari)),
+      fatura: new Set(satirlar.flatMap(satir => satir.faturaNumaralari)),
+    };
+  });
+
+  /** Projeye tıklama: sağdaki panel açılır (aynı proje yeniden tıklanırsa kapanır) ve sandık kırılımı yüklenir. */
+  projePaneliniAc(blok: AylikProjeBlogu): void {
+    if (this.projePaneliAnahtari() === blok.anahtar) {
+      this.projePaneliniKapat();
+      return;
+    }
+    this.projePaneliAnahtari.set(blok.anahtar);
+    this.projePaneliSekmesi.set('kategoriler');
+    this.panelSandikArama.set('');
+    this.panelSandikFiltresi.set('hepsi');
+    this.panelKategori.set(null);
+    this.acikSandikSatirlari.set(new Set());
+    this.panelBelgeNesli++;
+    this.panelBelgeleri.set(null);
+    this.panelBelgeleriYukleniyor.set(false);
+    this.kirilimYukle(blok.anahtar, blok);
+  }
+  projePaneliniKapat(): void {
+    this.projePaneliAnahtari.set(null);
+    this.panelKategori.set(null);
+  }
+  /** Gösterilen panel sekmesi: PO / Fatura izni oturumda kalkarsa Kategoriler'e düşer. */
+  aktifPanelSekmesi(): ProjePaneliSekmesi {
+    const sekme = this.projePaneliSekmesi();
+    return sekme === 'belgeler' && !this.panelBelgeleriOkunabilir() ? 'kategoriler' : sekme;
+  }
+  projePaneliSekmesiSec(sekme: ProjePaneliSekmesi): void {
+    const blok = this.projePaneli();
+    if (!blok) return;
+    this.projePaneliSekmesi.set(sekme);
+    this.panelKategori.set(null);
+    if (sekme === 'belgeler' && !this.panelBelgeleri() && !this.panelBelgeleriYukleniyor()) this.panelBelgeleriniYukle(blok);
+  }
+  /** Kategori satırından sandık dökümüne: Sandıklar sekmesi yalnız o kategorinin kayıtlarıyla açılır. */
+  kategoriSandiklariniGoster(satir: FinansAylikIs): void {
+    if (!this.sandikliSatir(satir)) return;
+    this.panelKategori.set(satir);
+    this.projePaneliSekmesi.set('sandiklar');
+  }
+  /** Kategori süzgeci etiketi: kategori adı; iş adı farklıysa onunla birlikte. */
+  kategoriEtiketi(satir: FinansAylikIs): string {
+    const kategori = this.t(kategoriAnahtari(satir.kategori));
+    return satir.isAdi && satir.isAdi.toLocaleLowerCase('tr-TR') !== kategori.toLocaleLowerCase('tr-TR') ? `${kategori} · ${satir.isAdi}` : kategori;
+  }
+  /** Sandık dökümü olan kategori satırı (projeden gelen kayıtlar). */
+  sandikliSatir(satir: FinansAylikIs): boolean {
+    return satir.kaynakTuru === 'Proje' && satir.isKaydiIds.length > 0;
+  }
+  /** Panel özetinde kalan tutarlar: PO bekleyen = iş bedeli − PO, fatura bekleyen = PO − fatura (negatif olmaz). */
+  kalanTutar(toplam: number | null | undefined, karsilanan: number | null | undefined): number {
+    return Math.max(0, Math.round(((toplam ?? 0) - (karsilanan ?? 0)) * 100) / 100);
+  }
+  /** Karşılanma yüzdesi (ilerleme çubuğu); toplam sıfırsa 0. */
+  oran(karsilanan: number | null | undefined, toplam: number | null | undefined): number {
+    return toplam ? Math.min(100, Math.max(0, Math.round(((karsilanan ?? 0) / toplam) * 100))) : 0;
+  }
+
+  /** PO / Fatura sekmesi açık mı: listeler sunucuda PO'lar (PO listesi Faturalar'a da açık) ve Faturalar alt sekmesine bağlıdır. */
+  panelBelgeleriOkunabilir(): boolean {
+    return this.altSekmeAcik('po') || this.altSekmeAcik('fatura');
+  }
+
+  /**
+   * Projenin bütün dönemlerdeki PO ve faturaları (her biri ilk 100). Fatura listesi yalnız Faturalar alt sekmesi
+   * okunabiliyorsa istenir; proje değişirse veya liste yenilenirse eski cevap yazılmaz.
+   */
+  private panelBelgeleriniYukle(blok: AylikProjeBlogu): void {
+    if (!this.panelBelgeleriOkunabilir()) return;
+    const nesil = ++this.panelBelgeNesli;
+    const istek = { pageNumber: 1, pageSize: 100, projeNo: blok.projeNo };
+    const bos = <T>() => of<ApiResult<FinansSayfaliSonuc<T>>>({ isSuccess: true });
+    this.panelBelgeleriYukleniyor.set(true);
+    forkJoin({
+      siparisler: this.service.siparisler(istek),
+      faturalar: this.altSekmeAcik('fatura') ? this.service.faturalar(istek) : bos<FinansFatura>(),
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(({ siparisler, faturalar }) => {
+      if (nesil !== this.panelBelgeNesli) return;
+      this.panelBelgeleriYukleniyor.set(false);
+      if (!siparisler.isSuccess || !faturalar.isSuccess) {
+        this.toast.error(siparisler.error ?? faturalar.error ?? this.t('DRAWER_DOCS_LOAD_ERROR'));
+        return;
+      }
+      this.panelBelgeleri.set({
+        siparisler: siparisler.value?.items ?? [],
+        faturalar: faturalar.value?.items ?? [],
+        eksik: (siparisler.value?.totalCount ?? 0) > 100 || (faturalar.value?.totalCount ?? 0) > 100,
+      });
+    });
+  }
 
   private kirilimYukle(anahtar: string, proje: { projeId: number | null; projeNo: string; musteri: string }): void {
     if (this.projeKirilimlari().has(anahtar) || this.kirilimYukleniyor().has(anahtar)) return;
@@ -643,17 +878,26 @@ export class FinansYonetimiComponent implements OnInit {
       this.projeKirilimlari.update(x => new Map(x).set(anahtar, result.value!));
     });
   }
-  /** Liste yenilendi: kırılım önbelleği düşer; açık proje panelleri yeni dönemin/sayfanın verisiyle yeniden yüklenir. */
+  /**
+   * Liste yenilendi: kırılım önbelleği düşer. Açık panelin projesi yeni sayfada/dönemde varsa kırılımı ve (yüklenmişse)
+   * PO/fatura listesi yeniden yüklenir; yoksa panel kapanır.
+   */
   private kirilimlariYenile(): void {
     this.kirilimNesli++;
     this.projeKirilimlari.set(new Map());
     this.kirilimYukleniyor.set(new Set());
-    this.acikSandiklar.set(new Set());
-    this.acikSandikSatirlari.set(new Set());
-    const bloklar = new Map(this.aylikProjeBloklari().map(blok => [blok.anahtar, blok]));
-    const acik = [...this.acikProjeSandiklari()].filter(anahtar => bloklar.has(anahtar));
-    this.acikProjeSandiklari.set(new Set(acik));
-    for (const anahtar of acik) this.kirilimYukle(anahtar, bloklar.get(anahtar)!);
+    const blok = this.projePaneli();
+    if (!blok) {
+      this.projePaneliniKapat();
+      return;
+    }
+    this.kirilimYukle(blok.anahtar, blok);
+    if (this.panelBelgeleri() || this.panelBelgeleriYukleniyor()) {
+      this.panelBelgeNesli++;
+      this.panelBelgeleri.set(null);
+      this.panelBelgeleriYukleniyor.set(false);
+      if (this.projePaneliSekmesi() === 'belgeler') this.panelBelgeleriniYukle(blok);
+    }
   }
   private aciKapat(sinyal: WritableSignal<Set<string>>, anahtar: string): void {
     sinyal.update(mevcut => {
@@ -663,75 +907,19 @@ export class FinansYonetimiComponent implements OnInit {
     });
   }
 
-  projeSandiklariAcik(blok: AylikProjeBlogu): boolean {
-    return this.acikProjeSandiklari().has(blok.anahtar);
-  }
-  projeSandiklariAcKapat(blok: AylikProjeBlogu): void {
-    this.aciKapat(this.acikProjeSandiklari, blok.anahtar);
-    if (this.projeSandiklariAcik(blok)) this.kirilimYukle(blok.anahtar, blok);
-  }
   projeKirilimi(anahtar: string): FinansProjeSandikKirilimi | undefined {
     return this.projeKirilimlari().get(anahtar);
   }
-  /** Proje panelinde görünen sandıklar: ilk sekiz, "Tümünü göster" ile hepsi. */
-  gorunenSandiklar(blok: AylikProjeBlogu): readonly FinansSandikKirilimSatiri[] {
-    return ilkSatirlar(kirilimSandiklari(this.projeKirilimi(blok.anahtar)?.sandiklar ?? []), this.tumSandiklarAcik().has(blok.anahtar));
+  sandikSatiriAcik(sandik: FinansSandikKirilimSatiri): boolean {
+    return this.acikSandikSatirlari().has(sandik.anahtar);
   }
-  tumSandiklariAcKapat(blok: AylikProjeBlogu): void {
-    this.aciKapat(this.tumSandiklarAcik, blok.anahtar);
-  }
-  sandikSatiriAcik(blok: AylikProjeBlogu, sandik: FinansSandikKirilimSatiri): boolean {
-    return this.acikSandikSatirlari().has(blok.anahtar + '\u001e' + sandik.anahtar);
-  }
-  sandikSatiriAcKapat(blok: AylikProjeBlogu, sandik: FinansSandikKirilimSatiri): void {
-    this.aciKapat(this.acikSandikSatirlari, blok.anahtar + '\u001e' + sandik.anahtar);
+  sandikSatiriAcKapat(sandik: FinansSandikKirilimSatiri): void {
+    this.aciKapat(this.acikSandikSatirlari, sandik.anahtar);
   }
   sandikDurumSinifi(durum: number): string {
     return durum === 5 ? 'complete' : durum === 6 ? 'cancel-status' : durum > 1 ? 'partial' : '';
   }
 
-  private sandikAnahtari(satir: FinansAylikIs): string {
-    return satir.projeBirimAnahtari + ':' + satir.isTuru + ':' + satir.isKaydiIds.join(',');
-  }
-  sandiklarAcik(satir: FinansAylikIs): boolean {
-    return this.acikSandiklar().has(this.sandikAnahtari(satir));
-  }
-  /** Kategori satırının sandık dökümü; projenin kırılımı yüklenmemişse yüklenir. */
-  sandiklariAcKapat(satir: FinansAylikIs): void {
-    this.aciKapat(this.acikSandiklar, this.sandikAnahtari(satir));
-    if (this.sandiklarAcik(satir)) this.kirilimYukle(satir.projeBirimAnahtari, satir);
-  }
-  /** Satırın (proje × kategori) kayıtları sandığıyla, sandık numarasının doğal sırasıyla. */
-  kategoriSandiklari(satir: FinansAylikIs): { sandik: FinansSandikKirilimSatiri; kayit: FinansSandikKirilimKalemi }[] {
-    return kategoriKirilimKayitlari(this.projeKirilimi(satir.projeBirimAnahtari)?.sandiklar ?? [], satir.isKaydiIds);
-  }
-
-  /** Proje satırına tıklama: kategori satırları ve sandık paneli birlikte açılır/kapanır (ok düğmesine gerek yok). */
-  projeSatiriAcKapat(blok: AylikProjeBlogu): void {
-    const acilacak = !this.projeAcik(blok.anahtar);
-    if (acilacak !== this.projeAcik(blok.anahtar)) this.projeDegistir(blok.anahtar);
-    if (acilacak !== this.projeSandiklariAcik(blok)) this.projeSandiklariAcKapat(blok);
-  }
-  /** Sandık dökümü olan kategori satırı (projeden gelen kayıtlar). */
-  sandikliSatir(satir: FinansAylikIs): boolean {
-    return satir.kaynakTuru === 'Proje' && satir.isKaydiIds.length > 0;
-  }
-  projeAcik(anahtar: string): boolean { return this.acikProjeler().has(anahtar); }
-  projeDegistir(anahtar: string): void {
-    this.acikProjeler.update(mevcut => {
-      const sonraki = new Set(mevcut);
-      sonraki.has(anahtar) ? sonraki.delete(anahtar) : sonraki.add(anahtar);
-      return sonraki;
-    });
-  }
-  tumProjeleriAcKapat(): void {
-    const bloklar = this.aylikProjeBloklari();
-    this.acikProjeler.set(this.tumProjelerAcik() ? new Set() : new Set(bloklar.map(blok => blok.anahtar)));
-  }
-  tumProjelerAcik(): boolean {
-    const bloklar = this.aylikProjeBloklari();
-    return bloklar.length > 0 && bloklar.every(blok => this.acikProjeler().has(blok.anahtar));
-  }
   projeTamamlandi(blok: AylikProjeBlogu): boolean {
     return blok.ozet?.durum === 5;
   }
@@ -968,8 +1156,8 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   poIzni(): boolean { return finansPoGirilebilir(this.permissions); }
-  /** Fatura girişi PO/Fatura sekmesinin W iznine bağlıdır. */
-  faturaIzni(): boolean { return finansSiparisFaturaYazilabilir(this.permissions); }
+  /** Fatura girişi: Faturalar alt sekmesinin W izni ve faturalanacak PO'yu seçmek için PO'lar alt sekmesinin R izni. */
+  faturaIzni(): boolean { return finansFaturaGirilebilir(this.permissions); }
   /** İş kaydı iptal/geri alma: İş Takibi veya Münferit İşler sekmesinin W izni. */
   isDuzenlenebilir(): boolean { return finansIsDuzenlenebilir(this.permissions); }
   /** Kayıt (fatura) detayı: kayıt sekmelerinden biri; vade uyarısındaki fatura bağlantısı buna bağlıdır. */
@@ -1040,13 +1228,16 @@ export class FinansYonetimiComponent implements OnInit {
     if (hedef.tur === 'Fatura') this.vadeUyarilariniYukle();
   }
 
-  /** Düzenli iş, tarife, yeniden fiyatlama, tarife düzeltme, para birimi ve parametreler: tanımlar sekmesinin W izni. */
-  tanimYazilabilir(): boolean {
-    return this.sekmeYazilabilir('ayarlar');
+  /**
+   * Tanımlar alt görünümündeki işlemler o alt sekmenin W iznine bağlıdır: düzenli iş → Düzenli İşler; tarife, yeniden
+   * fiyatlama ve tarife düzeltme → Ürün ve Tarifeler; para birimi ve parametreler → Para Birimi ve Vade.
+   */
+  tanimYazilabilir(gorunum: AyarGorunumu): boolean {
+    return this.altSekmeYazilabilir(gorunum);
   }
 
   yenidenFiyatlaAc(urun: FinansUrun): void {
-    if (!this.tanimYazilabilir()) return;
+    if (!this.tanimYazilabilir('tarifeler')) return;
     this.yenidenFiyatlaUrun.set(urun);
     this.yenidenFiyatlaAciklama = '';
     this.yenidenFiyatlaHatasi.set('');
@@ -1074,7 +1265,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   tarifeDuzeltilebilir(): boolean {
-    return !!this.duzenlenenUrunId() && this.tanimYazilabilir();
+    return !!this.duzenlenenUrunId() && this.tanimYazilabilir('tarifeler');
   }
 
   tarifeDuzeltmeAc(surum: FinansTarifeSurumu): void {
@@ -1148,13 +1339,13 @@ export class FinansYonetimiComponent implements OnInit {
     return this.sekmeAcik('giderler') || this.sekmeAcik('raporlar');
   }
 
-  /** Tek seferlik iş ve aylık değer düzeltmesi yalnız İş Takibi'nde yapılır: İş Takibi sekmesinin W izni. */
+  /** Tek seferlik iş ve aylık değer düzeltmesi Aylık görünümde yapılır: Aylık görünüm alt sekmesinin W izni. */
   ozelIsEklenebilir(): boolean {
-    return this.sekmeYazilabilir('akis');
+    return this.altSekmeYazilabilir('aylik');
   }
 
   aylikDegerDuzenlenebilir(satir: FinansAylikIs | null): boolean {
-    if (!satir || !this.sekmeYazilabilir('akis')) return false;
+    if (!satir || !this.altSekmeYazilabilir('aylik')) return false;
     return this.aylikMiktarDuzenlenebilir(satir) || this.aylikTarifeDuzenlenebilir(satir);
   }
 
@@ -1283,9 +1474,9 @@ export class FinansYonetimiComponent implements OnInit {
     }, error: () => this.giderHatasi.set('Gider kaydedilemedi.') });
   }
 
-  /** PO listesi (PO/Fatura sekmesi R) okunabiliyorsa gider formunda PO seçimi gösterilir. */
+  /** PO listesi (PO'lar alt sekmesi R) okunabiliyorsa gider formunda PO seçimi gösterilir. */
   giderPoSecilebilir(): boolean {
-    return this.sekmeAcik('belgeler');
+    return this.altSekmeAcik('po');
   }
 
   giderPoAra(value: string): void {
@@ -1315,7 +1506,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   donemUretFormunuAc(is: FinansDuzenliIs): void {
-    if (!this.tanimYazilabilir() || !is.aktif) return;
+    if (!this.tanimYazilabilir('duzenli') || !is.aktif) return;
     const yilSonu = `${new Date().getFullYear()}-12-31`;
     const bitis = is.bitisTarihi?.slice(0, 10);
     this.donemUretBitis = bitis && bitis < yilSonu ? bitis : yilSonu;
@@ -1325,7 +1516,7 @@ export class FinansYonetimiComponent implements OnInit {
 
   donemUret(): void {
     const is = this.donemUretIs();
-    if (!is || this.donemUretiliyor() || !this.tanimYazilabilir()) return;
+    if (!is || this.donemUretiliyor() || !this.tanimYazilabilir('duzenli')) return;
     if (!this.donemUretBitis) {
       this.donemUretHatasi.set('Bitiş tarihi zorunludur.');
       return;
@@ -1355,7 +1546,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   yeniDuzenliIs(): void {
-    if (!this.tanimYazilabilir()) return;
+    if (!this.tanimYazilabilir('duzenli')) return;
     this.duzenliProjeEtiketi = '';
     this.duzenlenenDuzenliIsId.set(null);
     this.duzenliIsForm = this.bosDuzenliIsFormu();
@@ -1364,7 +1555,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   duzenliIsDuzenle(is: FinansDuzenliIs): void {
-    if (!this.tanimYazilabilir()) return;
+    if (!this.tanimYazilabilir('duzenli')) return;
     this.duzenlenenDuzenliIsId.set(is.id);
     this.duzenliProjeEtiketi = '';
     this.duzenliIsForm = { projeId: is.projeId ?? null, isAdi: is.isAdi, isTuru: is.isTuru, musteri: is.musteri, aciklama: is.aciklama, tekrarSikligi: is.tekrarSikligi, baslangicTarihi: is.baslangicTarihi.slice(0, 10), bitisTarihi: is.bitisTarihi?.slice(0, 10) ?? null, olusturmaGunu: is.olusturmaGunu, miktar: is.miktar, birim: is.birim, birimFiyat: is.birimFiyat, paraBirimi: is.paraBirimi, kdvOrani: is.kdvOrani, aktif: is.aktif, hesaplamaYontemi: is.hesaplamaYontemi, raporGrubu: is.raporGrubu };
@@ -1373,7 +1564,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   duzenliIsKaydet(): void {
-    if (!this.tanimYazilabilir() || this.duzenliIsKaydediliyor()) return;
+    if (!this.tanimYazilabilir('duzenli') || this.duzenliIsKaydediliyor()) return;
     const form = this.duzenliIsForm;
     if (!form.isAdi.trim() || !form.isTuru.trim() || !form.baslangicTarihi || !Number.isFinite(form.miktar) || !Number.isFinite(form.birimFiyat) || !Number.isFinite(form.kdvOrani) || form.olusturmaGunu < 1 || form.olusturmaGunu > 31 || form.miktar <= 0 || form.birimFiyat < 0 || form.kdvOrani < 0 || form.kdvOrani > 100) {
       this.duzenliIsHatasi.set('İş adı, tür, tarih, gün, miktar, fiyat ve KDV alanlarını kontrol edin.');
@@ -1396,7 +1587,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   yeniUrun(): void {
-    if (!this.tanimYazilabilir()) return;
+    if (!this.tanimYazilabilir('tarifeler')) return;
     this.duzenlenenUrunId.set(null);
     this.duzenlenenUrunTarifeleri.set([]);
     this.urunForm = this.bosUrunFormu();
@@ -1405,7 +1596,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   urunDuzenle(urun: FinansUrun): void {
-    if (!this.tanimYazilabilir()) return;
+    if (!this.tanimYazilabilir('tarifeler')) return;
     const eslesme = urun.eslesmeler.find(e => e.aktif !== false) ?? urun.eslesmeler.at(-1);
     this.duzenlenenUrunId.set(urun.id);
     this.duzenlenenUrunTarifeleri.set(urun.tarifeler ?? []);
@@ -1415,7 +1606,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   urunKaydet(): void {
-    if (!this.tanimYazilabilir() || this.urunKaydediliyor()) return;
+    if (!this.tanimYazilabilir('tarifeler') || this.urunKaydediliyor()) return;
     const form = this.urunForm;
     if (!form.kod.trim() || !form.ad.trim() || !Number.isFinite(form.birimFiyat) || !Number.isFinite(form.kdvOrani) || form.birimFiyat < 0 || form.kdvOrani < 0 || form.kdvOrani > 100) {
       this.urunHatasi.set('Kod, ad, geçerli fiyat ve KDV zorunludur.');
@@ -1456,7 +1647,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   async urunSil(urun: FinansUrun): Promise<void> {
-    if (!this.tanimYazilabilir()) return;
+    if (!this.tanimYazilabilir('tarifeler')) return;
     const onay = await this.confirmService.ask({
       title: 'Tarifeyi Sil',
       message: `<strong>${duzMetin(urun.kod)} · ${duzMetin(urun.ad)}</strong> tarifesini silmek istediğinize emin misiniz?<br><br><small class="text-muted">Sipariş geçmişinde kullanılmış tarifeler silinemez; düzenlenerek pasif duruma getirilebilir.</small>`,
@@ -1580,7 +1771,7 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   private ayarListesiniYukle(): void {
-    if (!this.sekmeAcik('ayarlar') || this.ayarGorunumu() === 'parametreler') return;
+    if (!this.altSekmeAcik(this.ayarGorunumu()) || this.ayarGorunumu() === 'parametreler') return;
     if (this.ayarGorunumu() === 'duzenli') {
       if (!this.duzenliIslerYuklendi) {
         this.duzenliIslerYuklendi = true;
@@ -1612,7 +1803,7 @@ export class FinansYonetimiComponent implements OnInit {
   private listeAkislariniKur(): void {
     this.aylikListeIstekleri.pipe(
       switchMap(() => {
-        if (!this.sekmeAcik('akis')) return EMPTY;
+        if (!this.altSekmeAcik('aylik')) return EMPTY;
         const tarih = this.seciliDonem();
         this.aylikLoading.set(true);
         return this.service.aylikIsler(tarih.getFullYear(), tarih.getMonth() + 1, {
@@ -1672,7 +1863,7 @@ export class FinansYonetimiComponent implements OnInit {
 
     this.duzenliListeIstekleri.pipe(
       switchMap(() => {
-        if (!this.sekmeAcik('ayarlar')) return EMPTY;
+        if (!this.altSekmeAcik('duzenli')) return EMPTY;
         this.duzenliLoading.set(true);
         return this.service.duzenliIsler({
           pageNumber: this.duzenliPageNumber(),
@@ -1698,7 +1889,7 @@ export class FinansYonetimiComponent implements OnInit {
 
     this.urunListeIstekleri.pipe(
       switchMap(() => {
-        if (!this.sekmeAcik('ayarlar')) return EMPTY;
+        if (!this.altSekmeAcik('tarifeler')) return EMPTY;
         this.urunLoading.set(true);
         return this.service.urunler({
           pageNumber: this.urunPageNumber(),

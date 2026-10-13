@@ -400,10 +400,22 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
     expect(siparis.kaliciSilinebilir()).toBeFalse();
     expect(siparis.belgeDuzenlemeIzni()).toBeFalse();
 
-    permissions.canWrite.and.callFake((kod: string) => kod === FINANS_YETKI.SekmePoFatura);
+    // PO düzeltme/iptal/silme PO'lar alt sekmesine bağlıdır; Faturalar alt sekmesi yetmez.
+    permissions.canWrite.and.callFake((kod: string) => kod === FINANS_YETKI.SekmePoFatura || kod === FINANS_YETKI.SekmePoFaturaFatura);
+    expect(siparis.iptalEdilebilir()).toBeFalse();
+    expect(siparis.kaliciSilinebilir()).toBeFalse();
+    expect(siparis.belgeDuzenlemeIzni()).toBeFalse();
+    const fatura = setup('Fatura').component;
+    expect(fatura.iptalEdilebilir()).toBeTrue();
+    expect(fatura.kaliciSilinebilir()).toBeTrue();
+    expect(fatura.belgeDuzenlemeIzni()).toBeTrue();
+
+    permissions.canWrite.and.callFake((kod: string) => kod === FINANS_YETKI.SekmePoFatura || kod === FINANS_YETKI.SekmePoFaturaPo);
     expect(siparis.iptalEdilebilir()).toBeTrue();
     expect(siparis.kaliciSilinebilir()).toBeTrue();
     expect(siparis.belgeDuzenlemeIzni()).toBeTrue();
+    expect(fatura.iptalEdilebilir()).toBeFalse();
+    expect(fatura.odemeKaydedilebilir()).toBeFalse();
     expect(gider.iptalEdilebilir()).toBeFalse();
 
     permissions.canWrite.and.callFake((kod: string) => kod === FINANS_YETKI.SekmeMunferitIsler);

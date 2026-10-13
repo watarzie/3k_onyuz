@@ -79,6 +79,44 @@
         }
       </div>
     </div>
+
+    <!-- Denetim: kim, ne zaman, hangi işlemle neyi değiştirdi (oluşturma, düzenleme, finansa aktarma/geri alma). -->
+    <div class="ozel-gecmis">
+      <button type="button" class="link-action ozel-gecmis-ac" [attr.aria-expanded]="gecmisAcik()" (click)="gecmisiAcKapat()">
+        <i [class]="gecmisAcik() ? 'ri-arrow-up-s-line' : 'ri-history-line'" aria-hidden="true"></i>{{ t(gecmisAcik() ? 'HISTORY_HIDE' : 'HISTORY_SHOW') }}
+      </button>
+      @if (gecmisAcik()) {
+        @if (gecmisYukleniyor() && !gecmisKayitlari().length) {
+          <p class="ozel-gecmis-bos">{{ t('SAVING') }}</p>
+        } @else if (!gecmisKayitlari().length) {
+          <p class="ozel-gecmis-bos">{{ t('HISTORY_EMPTY') }}</p>
+        } @else {
+          <ol class="ozel-gecmis-liste">
+            @for (olay of gecmisKayitlari(); track $index; let i = $index) {
+              <li>
+                <div class="ozel-gecmis-baslik">
+                  <strong>{{ olay.islem }}</strong>
+                  <span>{{ olay.tarih | date: 'dd.MM.yyyy HH:mm' }} · {{ olay.kullanici }}</span>
+                </div>
+                @if (olay.aciklama) {
+                  <p class="ozel-gecmis-aciklama">{{ olay.aciklama }}</p>
+                }
+                @if (olay.degisiklikler.length) {
+                  <ul class="ozel-gecmis-alanlar">
+                    @for (d of gecmisGenis().has(i) ? olay.degisiklikler : olay.degisiklikler.slice(0, 4); track $index) {
+                      <li><span>{{ d.alan }}</span>@if (d.eskiDeger) {<s>{{ d.eskiDeger }}</s> →} <b>{{ d.yeniDeger ?? '—' }}</b></li>
+                    }
+                  </ul>
+                  @if (olay.degisiklikler.length > 4) {
+                    <button type="button" class="link-action ozel-gecmis-tumu" (click)="gecmisOlayiAcKapat(i)">{{ gecmisGenis().has(i) ? t('HISTORY_LESS') : t('HISTORY_ALL').replace('{0}', '' + olay.degisiklikler.length) }}</button>
+                  }
+                }
+              </li>
+            }
+          </ol>
+        }
+      }
+    </div>
   </section>
 } @else if (plan()) {
   <section

@@ -24,10 +24,12 @@ import {
 import { ServerPagerComponent } from '../../../shared/components/server-pager/server-pager.component';
 import {
   finansBelgeOkunabilir,
+  finansFaturaGirilebilir,
+  finansFaturaYazilabilir,
   finansIsDuzenlenebilir,
+  finansPoDuzeltilebilir,
   finansPoGirilebilir,
   finansSekmeYazilabilir,
-  finansSiparisFaturaYazilabilir,
   finansVarlikYazilabilir,
 } from '../ortak/finans-izinleri';
 import {
@@ -316,7 +318,7 @@ export class FinansKayitDetayComponent implements OnInit {
   }
   poFaturalanabilir(): boolean {
     const po = this.siparis();
-    return !!po && !po.iptalEdildi && po.durum !== 4 && po.durum !== 3 && finansSiparisFaturaYazilabilir(this.permissions);
+    return !!po && !po.iptalEdildi && po.durum !== 4 && po.durum !== 3 && finansFaturaGirilebilir(this.permissions);
   }
   isePoAcilabilir(): boolean {
     const k = this.kayit();
@@ -325,9 +327,9 @@ export class FinansKayitDetayComponent implements OnInit {
   private kalemAdi(projeNo: string | undefined, ad: string): string {
     return projeNo && !ad.startsWith(projeNo) ? `${projeNo} · ${ad}` : ad;
   }
-  /** PO ve fatura düzeltme: PO/Fatura sekmesinin W izni. */
+  /** PO düzeltme PO'lar, fatura düzeltme Faturalar alt sekmesinin W iznine bağlıdır. */
   belgeDuzenlemeIzni(): boolean {
-    return finansSiparisFaturaYazilabilir(this.permissions);
+    return this.hedef().tur === 'Siparis' ? finansPoDuzeltilebilir(this.permissions) : finansFaturaYazilabilir(this.permissions);
   }
   belgeKaydet(): void {
     if (!this.belgeDuzenlemeIzni()) return;
@@ -392,7 +394,7 @@ export class FinansKayitDetayComponent implements OnInit {
   }
   odemeKaydedilebilir(): boolean {
     const f = this.fatura();
-    return !!f && !f.iptalEdildi && f.durum !== 2 && finansSiparisFaturaYazilabilir(this.permissions);
+    return !!f && !f.iptalEdildi && f.durum !== 2 && finansFaturaYazilabilir(this.permissions);
   }
   odemeKaydet(): void {
     const f = this.fatura();
@@ -507,8 +509,9 @@ export class FinansKayitDetayComponent implements OnInit {
       case 'IsKaydi':
         return finansIsDuzenlenebilir(this.permissions);
       case 'Siparis':
+        return finansPoDuzeltilebilir(this.permissions);
       case 'Fatura':
-        return finansSiparisFaturaYazilabilir(this.permissions);
+        return finansFaturaYazilabilir(this.permissions);
       case 'Gider':
         return finansSekmeYazilabilir(this.permissions, 'giderler');
     }

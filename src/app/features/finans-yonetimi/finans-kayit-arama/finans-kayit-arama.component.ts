@@ -1,9 +1,9 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, DestroyRef, OnInit, computed, inject, input, output, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, Subject, debounceTime, distinctUntilChanged, finalize, switchMap } from 'rxjs';
-import { finansHerhangiSekmeAcik, finansPoGirilebilir } from '../ortak/finans-izinleri';
+import { finansAltSekmeAcik, finansPoGirilebilir } from '../ortak/finans-izinleri';
 import { FinansService } from '../../../core/services/finans.service';
 import { FinansParaBirimiService } from '../../../core/services/finans-para-birimi.service';
 import { PermissionService } from '../../../core/services/permission.service';
@@ -59,7 +59,9 @@ export class FinansKayitAramaComponent implements OnInit {
   readonly bekleyenler = signal<FinansSayfaliSonuc<FinansBekleyen> | null>(null);
   readonly secilenler = signal(new Set<number>());
   /** Bekleyen işler (yaşlandırma): Kontrol Paneli, İş Takibi veya Raporlar sekmesinden biri. */
-  readonly bekleyenGorunur = computed(() => finansHerhangiSekmeAcik(this.permissions, ['panel', 'akis', 'raporlar']));
+  /** Görünümler İş Takibi alt sekmeleridir: "Tüm dönemlerde ara" ve "Bekleyen işler" kendi R izinleriyle açılır. */
+  readonly aramaGorunur = computed(() => finansAltSekmeAcik(this.permissions, 'arama'));
+  readonly bekleyenGorunur = computed(() => finansAltSekmeAcik(this.permissions, 'bekleyen'));
   readonly pager = computed(() => (this.gorunum() === 'arama' ? this.sonuclar() : this.bekleyenler()));
   readonly kategoriAnahtari = kategoriAnahtari;
   readonly sarfKaydi = sarfKaydi;
@@ -126,10 +128,26 @@ export class FinansKayitAramaComponent implements OnInit {
   private readonly refresh = new Subject<void>();
   private readonly search = new Subject<string>();
 
+  constructor() {
+    // Açık görünümün alt sekme izni kaldırılırsa okunabilen diğer görünüme geçilir.
+    effect(() => {
+      const gorunum = this.gorunum();
+      const diger: FinansKayitAramaGorunumu = gorunum === 'arama' ? 'bekleyen' : 'arama';
+      if (!this.gorunumAcik(gorunum) && this.gorunumAcik(diger)) untracked(() => this.gorunumSec(diger));
+    });
+  }
+
+  /** Görünümün alt sekme izni. */
+  gorunumAcik(gorunum: FinansKayitAramaGorunumu): boolean {
+    return gorunum === 'arama' ? this.aramaGorunur() : this.bekleyenGorunur();
+  }
+
   ngOnInit(): void {
     this.paraBirimleri.yukle();
     const acilis = this.acilis();
-    this.gorunum.set(acilis.gorunum === 'bekleyen' && this.bekleyenGorunur() ? 'bekleyen' : 'arama');
+    // Açılış: istenen görünüm okunabiliyorsa o, değilse okunabilen diğeri.
+    const diger: FinansKayitAramaGorunumu = acilis.gorunum === 'arama' ? 'bekleyen' : 'arama';
+    this.gorunum.set(this.gorunumAcik(acilis.gorunum) || !this.gorunumAcik(diger) ? acilis.gorunum : diger);
     this.asama.set(acilis.asama ?? '');
     if (acilis.minimumGun) this.minimumGun = acilis.minimumGun;
     this.search
@@ -177,7 +195,7 @@ export class FinansKayitAramaComponent implements OnInit {
     return finansPoGirilebilir(this.permissions);
   }
   gorunumSec(value: FinansKayitAramaGorunumu): void {
-    if (value === this.gorunum() || (value === 'bekleyen' && !this.bekleyenGorunur())) return;
+    if (value === this.gorunum() || !this.gorunumAcik(value)) return;
     this.gorunum.set(value);
     if (value === 'arama') this.asama.set('');
     this.filtrele();

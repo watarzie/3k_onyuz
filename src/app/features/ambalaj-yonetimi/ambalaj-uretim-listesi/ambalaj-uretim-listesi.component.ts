@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, OnInit, computed, inject, signal } from '@angular/core';
-import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
+import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { debounceTime, distinctUntilChanged, finalize, forkJoin, map, Observable, of, Subject, switchMap } from 'rxjs';
@@ -40,6 +40,7 @@ import {
   UretimDurumId,
   ApiResult,
   onayaAlindi,
+  OzelSandikFinansDurumu,
 } from '../../../shared/models';
 import { AMBALAJ_YETKI } from '../../../core/constants/yetki-kodlari';
 import { projeTipiBaglami } from '../../../core/constants/proje-tipi';
@@ -49,7 +50,7 @@ import { ConfirmService, duzMetin } from '../../../core/services/confirm.service
 @Component({
   selector: 'app-ambalaj-uretim-listesi',
   standalone: true,
-  imports: [BreadcrumbComponent, DecimalPipe, NgTemplateOutlet, FormsModule, RouterLink, ServerPagerComponent, StatCardComponent, UretimYasamDongusuComponent, CanWriteDirective, CanAccessDirective, IslemlerMenusuComponent],
+  imports: [BreadcrumbComponent, DatePipe, DecimalPipe, NgTemplateOutlet, FormsModule, RouterLink, ServerPagerComponent, StatCardComponent, UretimYasamDongusuComponent, CanWriteDirective, CanAccessDirective, IslemlerMenusuComponent],
   templateUrl: './ambalaj-uretim-listesi.component.html',
   styleUrl: './ambalaj-uretim-listesi.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -177,6 +178,8 @@ export class AmbalajUretimListesiComponent implements OnInit {
   bagimsizFormOpen = signal(false);
   editingBagimsizSandikId = signal<number | null>(null);
   ozelTurFiltresi = signal<OzelSandikTur | 0>(0);
+  /** Finans durumu sekmesi; liste kalabalıklaşmasın diye varsayılan finansa aktarılmayı bekleyenlerdir. */
+  ozelFinansDurumu = signal<OzelSandikFinansDurumu>('bekleyen');
   ozelProjeler = signal<ProjeDropdownDto[]>([]);
   ozelProjeArama = signal('');
   ozelProjelerLoading = signal(false);
@@ -270,6 +273,13 @@ export class AmbalajUretimListesiComponent implements OnInit {
 
     this.projePageNumber.set(1);
     this.loadProjects();
+  }
+
+  ozelFinansDurumuDegistir(durum: OzelSandikFinansDurumu): void {
+    if (this.ozelFinansDurumu() === durum) return;
+    this.ozelFinansDurumu.set(durum);
+    this.bagimsizPageNumber.set(1);
+    this.bagimsizSandiklariYukle();
   }
 
   ozelTurFiltresiDegistir(tur: OzelSandikTur | 0): void {
@@ -380,6 +390,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
           return this.ambalajService.getBagimsizSandiklar({
             arama: this.searchTerm(),
             tur: this.ozelTurFiltresi() || undefined,
+            finansDurumu: this.ozelFinansDurumu() || undefined,
             pageNumber: this.bagimsizPageNumber(),
             pageSize: this.bagimsizPageSize(),
             includeSummary,
@@ -403,7 +414,8 @@ export class AmbalajUretimListesiComponent implements OnInit {
         }
 
         this.bagimsizSandiklar.set(sayfa.items ?? []);
-        if (this.bagimsizYasam()) this.bagimsizYasam.set((sayfa.items ?? []).find(k => k.id === this.bagimsizYasam()!.id) ?? null);
+        // Açık pencere güncel satırla yenilenir; satır bu sekmeden çıktıysa (ör. finansa aktarıldı) pencere açık kalır.
+        if (this.bagimsizYasam()) this.bagimsizYasam.set((sayfa.items ?? []).find(k => k.id === this.bagimsizYasam()!.id) ?? this.bagimsizYasam());
         this.bagimsizPageNumber.set(sayfa.pageNumber);
         this.bagimsizPageSize.set(sayfa.pageSize);
         this.bagimsizTotalCount.set(sayfa.totalCount);

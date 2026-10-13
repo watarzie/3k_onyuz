@@ -74,6 +74,7 @@ export const API = {
     IC_SANDIK_SABLONU: (sablonId: number) => `${BASE}/ambalaj/ic-sandik-sablonlari/${sablonId}`,
     TALEP_EDEN_KULLANICILAR: `${BASE}/ambalaj/talep-eden-kullanicilar`,
     KAYIT_DURUM: (kayitId: number) => `${BASE}/ambalaj/kayitlar/${kayitId}/durum`,
+    KAYIT_GECMIS: (kayitId: number) => `${BASE}/ambalaj/kayitlar/${kayitId}/gecmis`,
     PROJE_URETIM_DURUMU: (projeId: number) => `${BASE}/ambalaj/projeler/${projeId}/uretim-durumu`,
   },
   FINANS: {

@@ -91,6 +91,7 @@ export class AmbalajService {
       .set('pageSize', request.pageSize);
     if (request.arama?.trim()) params = params.set('arama', request.arama.trim());
     if (request.tur) params = params.set('tur', request.tur);
+    if (request.finansDurumu) params = params.set('finansDurumu', request.finansDurumu);
     if (request.includeSummary !== undefined) {
       params = params.set('includeSummary', request.includeSummary);
     }

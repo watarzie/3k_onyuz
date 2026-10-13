@@ -212,6 +212,27 @@ describe('MenuTreeComponent yetki göstergesi', () => {
     expect(confirm.ask).toHaveBeenCalledTimes(2);
   }));
 
+  it('sekme açılınca/yükseltilince aynı seviyedeki alt sekmeler onu izler; kapatılmış alt sekme yükseltmede kapalı kalır', () => {
+    const root = node(YetkiTipi.W);
+    const sekme = { ...node(YetkiTipi.N), kod: 'finans-sekme-is-takibi' };
+    const aylik = { ...node(YetkiTipi.N), kod: 'finans-sekme-is-takibi-aylik' };
+    const arama = { ...node(YetkiTipi.N), kod: 'finans-sekme-is-takibi-arama' };
+    const islem = node(YetkiTipi.N);
+    root.children = [sekme];
+    sekme.children = [aylik, arama, islem];
+    sekme.parent = root;
+    [aylik, arama, islem].forEach((c) => (c.parent = sekme));
+    const tree = render(root);
+
+    tree.click(1); // sekme N → R: alt sekmeler R, işlem düğümü N kalır
+    expect([sekme.yetkiTipiId, aylik.yetkiTipiId, arama.yetkiTipiId, islem.yetkiTipiId])
+      .toEqual([YetkiTipi.R, YetkiTipi.R, YetkiTipi.R, YetkiTipi.N]);
+
+    arama.yetkiTipiId = YetkiTipi.N; // kullanıcı aramayı kapattı
+    tree.click(1); // sekme R → W: R olan alt sekme W, kapatılan N kalır
+    expect([sekme.yetkiTipiId, aylik.yetkiTipiId, arama.yetkiTipiId]).toEqual([YetkiTipi.W, YetkiTipi.W, YetkiTipi.N]);
+  });
+
   it('disabled girdisinde hiçbir düğüm değiştirilemez', () => {
     const root = node(YetkiTipi.R);
     const fixture = TestBed.createComponent(MenuTreeComponent);

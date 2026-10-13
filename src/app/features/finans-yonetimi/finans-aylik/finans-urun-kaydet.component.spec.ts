@@ -15,8 +15,8 @@ describe('Finans ürün ve tarife kaydı', () => {
   let api: jasmine.SpyObj<FinansService>;
   let toast: jasmine.SpyObj<ToastService>;
   let onay: jasmine.SpyObj<ConfirmService>;
-  const okuma = new Set<string>([FINANS_YETKI.Modul, FINANS_YETKI.SekmeTanimlar]);
-  const yazma = new Set<string>([FINANS_YETKI.SekmeTanimlar]);
+  const okuma = new Set<string>([FINANS_YETKI.Modul, FINANS_YETKI.SekmeTanimlar, FINANS_YETKI.SekmeTanimlarTarifeler]);
+  const yazma = new Set<string>([FINANS_YETKI.SekmeTanimlar, FINANS_YETKI.SekmeTanimlarTarifeler]);
 
   beforeEach(() => {
     api = jasmine.createSpyObj('FinansService', ['aylikIsler', 'urunler', 'urunGuncelle', 'urunOlustur', 'urunSil', 'giderKategorileri', 'ozelIsOlustur']);

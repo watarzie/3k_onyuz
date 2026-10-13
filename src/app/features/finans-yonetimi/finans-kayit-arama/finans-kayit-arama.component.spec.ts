@@ -14,7 +14,7 @@ describe('Finans İş Takibi kalem listesi (tüm dönemler / bekleyen işler)', 
 
   beforeEach(() => {
     izinler.clear();
-    [FINANS_YETKI.Modul, FINANS_YETKI.SekmeIsTakibi].forEach((x) => izinler.add(x));
+    [FINANS_YETKI.Modul, FINANS_YETKI.SekmeIsTakibi, FINANS_YETKI.SekmeIsTakibiArama, FINANS_YETKI.SekmeIsTakibiBekleyen].forEach((x) => izinler.add(x));
     api = jasmine.createSpyObj<FinansService>('FinansService', ['genelArama', 'yaslandirma', 'paraBirimleri']);
     api.genelArama.and.returnValue(of({ isSuccess: true, value: bos }));
     api.yaslandirma.and.returnValue(of({ isSuccess: true, value: bos }));
@@ -118,13 +118,27 @@ describe('Finans İş Takibi kalem listesi (tüm dönemler / bekleyen işler)', 
     expect(c.etkinFiltre()).toBe(0);
   }));
 
-  it('Kontrol Paneli, İş Takibi ve Raporlar sekmeleri kapalıysa bekleyen işler görünümü açılmaz', () => {
-    izinler.delete(FINANS_YETKI.SekmeIsTakibi);
-    izinler.add(FINANS_YETKI.SekmePoFatura);
+  it('Bekleyen işler alt sekmesi kapalıysa bekleyen işler görünümü açılmaz; düğmesi gösterilmez', () => {
+    izinler.delete(FINANS_YETKI.SekmeIsTakibiBekleyen);
     const fixture = TestBed.createComponent(FinansKayitAramaComponent);
     fixture.componentRef.setInput('acilis', { anahtar: 1, gorunum: 'bekleyen' });
     fixture.detectChanges();
     expect(fixture.componentInstance.gorunum()).toBe('arama');
     expect(api.yaslandirma).not.toHaveBeenCalled();
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.record-search-head nav button').length).toBe(1);
+  });
+
+  it('Tüm dönemlerde ara alt sekmesi kapalıysa açılış bekleyen işlerdir; arama düğmesi gösterilmez', () => {
+    izinler.delete(FINANS_YETKI.SekmeIsTakibiArama);
+    const fixture = TestBed.createComponent(FinansKayitAramaComponent);
+    fixture.componentRef.setInput('acilis', { anahtar: 1, gorunum: 'arama' });
+    fixture.detectChanges();
+    const c = fixture.componentInstance;
+    expect(c.gorunum()).toBe('bekleyen');
+    expect(api.genelArama).not.toHaveBeenCalled();
+    expect(api.yaslandirma).toHaveBeenCalled();
+    c.gorunumSec('arama');
+    expect(c.gorunum()).toBe('bekleyen');
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.record-search-head nav button').length).toBe(1);
   });
 });

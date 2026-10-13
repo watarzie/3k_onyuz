@@ -235,7 +235,24 @@ export interface AmbalajBagimsizSandikDto {
   talimatVeren?: string;
   aciklama?: string;
   hacimM3: number | null;
+  /** Denetim: kaydı ekleyen ve tarih; finansa aktaran ve aktarım tarihi (eski kayıtta aktaran bilinmeyebilir). */
+  olusturmaTarihi?: string | null;
+  olusturanAdi?: string | null;
+  finansaAktarimTarihi?: string | null;
+  finansaAktaranAdi?: string | null;
 }
+
+/** Ambalaj kaydının bir değişiklik olayı (aynı işlemde değişen alanlar). */
+export interface AmbalajKayitGecmisi {
+  tarih: string;
+  kullanici: string;
+  islem: string;
+  aciklama?: string | null;
+  degisiklikler: { alan: string; eskiDeger?: string | null; yeniDeger?: string | null }[];
+}
+
+/** Özel Sandıklar finans durumu sekmesi: finansa aktarılmayı bekleyen, aktarılan ya da hepsi. */
+export type OzelSandikFinansDurumu = 'bekleyen' | 'aktarilan' | '';
 
 export interface AmbalajBagimsizSandikTurOzetiDto {
   tur: OzelSandikTur;
@@ -250,6 +267,8 @@ export interface AmbalajBagimsizSandikFiltreOzetiDto {
   uretimeAlinanSandikAdedi: number;
   toplamHacimM3: number | null;
   turOzetleri: AmbalajBagimsizSandikTurOzetiDto[];
+  finansaAktarilmayanKayitSayisi?: number;
+  finansaAktarilanKayitSayisi?: number;
 }
 
 export interface AmbalajBagimsizSandiklarSayfasiDto {
@@ -266,6 +285,7 @@ export interface AmbalajBagimsizSandiklarSayfasiDto {
 export interface AmbalajBagimsizSandikListelemeRequest {
   arama?: string;
   tur?: OzelSandikTur;
+  finansDurumu?: OzelSandikFinansDurumu;
   pageNumber: number;
   pageSize: number;
   includeSummary?: boolean;

@@ -58,6 +58,7 @@ describe('Üretim V2 gerçek işlem UI sözleşmesi', () => {
       'duzelt',
       'finansaAktar',
       'finanstanGeriAl',
+      'gecmis',
     ]);
     api.formlar.and.returnValue(of({ isSuccess: true, value: [] }));
     api.formOlustur.and.returnValue(of({ isSuccess: false, error: 'Geçici hata' }));
@@ -181,6 +182,31 @@ describe('Üretim V2 gerçek işlem UI sözleşmesi', () => {
       expect(api.finanstanGeriAl).toHaveBeenCalledOnceWith(9, '');
       expect(toast.error).toHaveBeenCalled();
       expect(component.tekilDurum()).toBe('aktarildi');
+    });
+
+    it('değişiklik geçmişi istenince yüklenir; çok alanlı olay kısaltılır ve tümü açılabilir', () => {
+      api.gecmis.and.returnValue(of({ isSuccess: true, value: [
+        { tarih: '2026-10-13T10:00:00', kullanici: 'Ayşe Planlama', islem: 'Özel sandık finansa aktarıldı', aciklama: null,
+          degisiklikler: [{ alan: 'Üretime alındı / finansa aktarıldı', eskiDeger: 'Hayır', yeniDeger: 'Evet' }] },
+        { tarih: '2026-10-12T09:00:00', kullanici: 'Ayşe Planlama', islem: 'Bağımsız ambalaj sandığı eklendi', aciklama: null,
+          degisiklikler: ['Sandık no', 'Sandık adı', 'Yapı', 'Adet', 'Boy (mm)', 'En (mm)'].map((alan) => ({ alan, eskiDeger: null, yeniDeger: 'x' })) },
+      ] }));
+      const el = ac();
+      expect(el.querySelector('.ozel-gecmis-liste')).toBeNull();
+      expect(api.gecmis).not.toHaveBeenCalled();
+
+      (el.querySelector('.ozel-gecmis-ac') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(api.gecmis).toHaveBeenCalledOnceWith(9);
+      const olaylar = el.querySelectorAll('.ozel-gecmis-liste > li');
+      expect(olaylar.length).toBe(2);
+      expect(olaylar[0].textContent).toContain('Özel sandık finansa aktarıldı');
+      expect(olaylar[0].textContent).toContain('Ayşe Planlama');
+      expect(olaylar[1].querySelectorAll('.ozel-gecmis-alanlar li').length).toBe(4);
+      (olaylar[1].querySelector('.ozel-gecmis-tumu') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(el.querySelectorAll('.ozel-gecmis-liste > li')[1].querySelectorAll('.ozel-gecmis-alanlar li').length).toBe(6);
     });
 
     it('tamamlanmış özel sandıkta işlem düğmesi yoktur; yazma izni yoksa Finansa aktar görünmez', () => {

@@ -9,7 +9,7 @@ import { TranslationService } from '../../../core/services/translation.service';
 import { FinansFatura, FinansIsKaydi, FinansSayfaliSonuc } from '../../../shared/models/finans.model';
 import { FinansFiyatBileseni, FinansVarlikTuru } from '../../../shared/models/finans-v2.model';
 import { ApiResult } from '../../../shared/models/common.model';
-import { finansSekmeAcik } from '../ortak/finans-izinleri';
+import { finansAltSekmeAcik } from '../ortak/finans-izinleri';
 import {
   FINANS_KATEGORILERI,
   isDurumuAnahtari,
@@ -89,8 +89,8 @@ export class FinansProjeDetayComponent implements OnInit {
   ngOnInit(): void {
     this.loading.set(true);
     const projeNo = this.projeNo();
-    // Fatura listesi (ödeme durumları) sunucuda PO/Fatura sekmesinin R iznine bağlıdır; kalemler kayıt sekmelerine.
-    const faturalar$ = finansSekmeAcik(this.permissions, 'belgeler')
+    // Fatura listesi (ödeme durumları) sunucuda Faturalar alt sekmesinin R iznine bağlıdır; kalemler kayıt sekmelerine.
+    const faturalar$ = finansAltSekmeAcik(this.permissions, 'fatura')
       ? this.service.faturalar({ pageNumber: 1, pageSize: 250, projeNo })
       : of<ApiResult<FinansSayfaliSonuc<FinansFatura>>>({ isSuccess: true });
     forkJoin({ kalemler: this.service.genelArama({ pageNumber: 1, pageSize: 250, projeNo }), faturalar: faturalar$ })

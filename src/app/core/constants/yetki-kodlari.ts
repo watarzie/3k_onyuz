@@ -109,9 +109,10 @@ export const AMBALAJ_YETKI = {
   KayitSil: 'ambalaj-kayit-sil',
 } as const;
 /**
- * Finans yetkisi yalnız sekme düzeyindedir (sunucudaki YetkiKodlari.Finans): sekmenin R izni sekmedeki bütün verileri
- * (tutar, fiyat, gelir, gider, kârlılık, ölçü, m³) gösterir, W izni sekmedeki bütün işlemleri yapar. Alt işlem ve alan
- * izni yoktur; birden çok sekmede açılan ortak işlemler için ortak/finans-izinleri.ts'deki sekme kümelerine bakın.
+ * Finans yetkisi yalnız sekme ve alt sekme düzeyindedir (sunucudaki YetkiKodlari.Finans): R görünen verilerin tamamını
+ * (tutar, fiyat, gelir, gider, kârlılık, ölçü, m³) gösterir, W o sekmedeki bütün işlemleri yapar. İş Takibi, Tanımlar
+ * ve PO/Fatura sekmelerinin alt sekmeleri vardır; sekme alt sekmenin tavanıdır. Alt işlem ve alan izni yoktur; birden
+ * çok sekmede açılan ortak işlemler için ortak/finans-izinleri.ts'deki sekme kümelerine bakın.
  */
 export const FINANS_YETKI = {
   Modul: 'finans-yonetimi',
@@ -123,6 +124,17 @@ export const FINANS_YETKI = {
   SekmeTanimlar: 'finans-sekme-tanimlar',
   SekmeRaporlar: 'finans-sekme-raporlar',
   SekmeMunferitIsler: 'finans-sekme-munferit-isler',
+  /** İş Takibi alt sekmeleri: Aylık görünüm, Tüm dönemlerde ara, Bekleyen işler. */
+  SekmeIsTakibiAylik: 'finans-sekme-is-takibi-aylik',
+  SekmeIsTakibiArama: 'finans-sekme-is-takibi-arama',
+  SekmeIsTakibiBekleyen: 'finans-sekme-is-takibi-bekleyen',
+  /** İş ve Tarife Tanımları alt sekmeleri: Düzenli İşler, Ürün ve Tarifeler, Para Birimi ve Vade. */
+  SekmeTanimlarDuzenli: 'finans-sekme-tanimlar-duzenli',
+  SekmeTanimlarTarifeler: 'finans-sekme-tanimlar-tarifeler',
+  SekmeTanimlarParaBirimi: 'finans-sekme-tanimlar-para-birimi',
+  /** PO ve Faturalar alt sekmeleri: PO'lar, Faturalar. */
+  SekmePoFaturaPo: 'finans-sekme-po-fatura-po',
+  SekmePoFaturaFatura: 'finans-sekme-po-fatura-fatura',
   /** İş Takibi'nin üstündeki vade uyarısı (vadesi geçen/yaklaşan faturalar); yalnız R. */
   VadeUyarisi: 'finans-vade-uyarisi',
 } as const;

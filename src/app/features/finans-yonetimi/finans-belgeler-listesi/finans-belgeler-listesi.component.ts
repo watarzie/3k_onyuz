@@ -1,6 +1,6 @@
 import { TranslationService } from '../../../core/services/translation.service';
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, DestroyRef, OnInit, inject, input, output, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, Subject, debounceTime, distinctUntilChanged, finalize, switchMap } from 'rxjs';
@@ -19,9 +19,18 @@ import {
 import { FinansVarlikTuru } from '../../../shared/models/finans-v2.model';
 import { ServerPagerComponent } from '../../../shared/components/server-pager/server-pager.component';
 import { IslemlerMenusuComponent } from '../../../shared/components/islemler-menusu/islemler-menusu.component';
-import { finansPoGirilebilir, finansSiparisFaturaYazilabilir } from '../ortak/finans-izinleri';
+import {
+  FinansAltSekme,
+  finansAltSekmeAcik,
+  finansFaturaGirilebilir,
+  finansFaturaYazilabilir,
+  finansPoGirilebilir,
+} from '../ortak/finans-izinleri';
 import { odemeDurumuAnahtari, odemeDurumuSinifi, poDurumuAnahtari } from '../ortak/finans-etiketleri';
 import { onayaAlindi } from '../../../shared/models';
+
+/** Liste türlerinin alt sekmeleri: PO'lar ve Faturalar ayrı alt sekme izinleridir. */
+const LISTE_ALT_SEKMELERI: Readonly<Record<'Siparis' | 'Fatura', FinansAltSekme>> = { Siparis: 'po', Fatura: 'fatura' };
 
 /**
  * PO ve fatura listesi. PO'lar uygulamada doğrudan girilir; liste belge yüklemesine bağlı değildir.
@@ -73,8 +82,25 @@ export class FinansBelgelerListesiComponent implements OnInit {
   pageSize = 25;
   private readonly refresh = new Subject<void>();
   private readonly search = new Subject<string>();
+  constructor() {
+    // Açık listenin alt sekme izni kaldırılırsa okunabilen diğer listeye geçilir.
+    effect(() => {
+      const ilk = this.ilkAcikTur();
+      if (ilk && !this.turAcik(untracked(() => this.tur))) untracked(() => this.turSec(ilk));
+    });
+  }
+
+  /** Liste türü (PO'lar / Faturalar) görünür mü: alt sekmenin R izni. */
+  turAcik(tur: 'Siparis' | 'Fatura'): boolean {
+    return finansAltSekmeAcik(this.permissions, LISTE_ALT_SEKMELERI[tur]);
+  }
+  private ilkAcikTur(): 'Siparis' | 'Fatura' | null {
+    return this.turAcik('Siparis') ? 'Siparis' : this.turAcik('Fatura') ? 'Fatura' : null;
+  }
+
   ngOnInit(): void {
-    this.tur = this.baslangicTuru();
+    // Açılış: istenen liste (vade uyarısından fatura) okunabiliyorsa o, değilse okunabilen ilk liste.
+    this.tur = this.turAcik(this.baslangicTuru()) ? this.baslangicTuru() : (this.ilkAcikTur() ?? 'Siparis');
     this.odemeDurumu = this.tur === 'Fatura' ? this.baslangicOdemeFiltresi() : null;
     this.search
       .pipe(debounceTime(350), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
@@ -113,7 +139,7 @@ export class FinansBelgelerListesiComponent implements OnInit {
     this.refresh.next();
   }
   turSec(tur: 'Siparis' | 'Fatura'): void {
-    if (this.tur === tur) return;
+    if (this.tur === tur || !this.turAcik(tur)) return;
     this.tur = tur;
     this.filtrele();
   }
@@ -140,16 +166,16 @@ export class FinansBelgelerListesiComponent implements OnInit {
   poGirilebilir(): boolean {
     return finansPoGirilebilir(this.permissions);
   }
-  /** Fatura girişi, PO/fatura düzeltme-iptal ve ödeme: PO/Fatura sekmesinin W izni. */
+  /** Fatura girişi: Faturalar alt sekmesinin W izni ve PO seçimi için PO'lar alt sekmesinin R izni. */
   faturaGirilebilir(): boolean {
-    return finansSiparisFaturaYazilabilir(this.permissions);
+    return finansFaturaGirilebilir(this.permissions);
   }
   /** Kalem eklenebilir: PO iptal değil (fatura durumu kalem eklemeyi engellemez). */
   kalemEklenebilir(po: FinansSiparis): boolean {
     return !po.iptalEdildi && po.durum !== 4;
   }
   odemeKaydedilebilir(f: FinansFatura): boolean {
-    return !f.iptalEdildi && f.durum !== 2 && finansSiparisFaturaYazilabilir(this.permissions);
+    return !f.iptalEdildi && f.durum !== 2 && finansFaturaYazilabilir(this.permissions);
   }
   /** Ödendi kutusu: işaretli faturada işareti kaldırma (gerekçeli), işaretsizde ödeme tarihi girişi açılır. */
   odemePaneliniAc(f: FinansFatura): void {
