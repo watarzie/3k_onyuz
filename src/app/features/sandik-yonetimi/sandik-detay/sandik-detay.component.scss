@@ -335,7 +335,7 @@ table tr.bulk-selected td { background: #f0f3ff; }
   }
 }
 
-/* Kalıcı ürün bilgisi (seri no, SKT, lot): satırda kısa gösterim, panelde düzenleme. */
+/* Kalıcı ürün bilgisi (seri no, SKT, lot): burada yalnız gösterilir; 3K karşılama panelinden düzenlenir. */
 .urun-bilgisi-meta {
   display: flex;
   align-items: center;
@@ -349,4 +349,15 @@ table tr.bulk-selected td { background: #f0f3ff; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.urun-bilgisi-input { resize: vertical; font-size: 13px; }
+.panel-urun-bilgisi {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #eef6fb;
+  color: #0f5f8a;
+  font-size: 12px;
+  font-weight: 600;
+  word-break: break-word;
+}

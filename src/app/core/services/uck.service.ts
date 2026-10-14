@@ -2,11 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, UcKDurumSifirlaDto, UcKIsListesiDto, UcKTopluSecimDto } from '../../shared/models/index';
+import { ApiResult, UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, UcKDurumSifirlaDto, UcKIsListesiDto, UcKTopluSecimDto, ProjedenKarsilamaKaynakDto } from '../../shared/models/index';
 
 /**
  * UcKController:
  *  GET  /api/uck/{projeId}/urunler
+ *  GET  /api/uck/{projeId}/projeden-karsilama-kaynaklari?kaynakProjeId=
  *  PUT  /api/uck/durum-guncelle
  *  PUT  /api/uck/durum-sifirla
  *  POST /api/uck/toplu-tam-geldi
@@ -41,6 +42,12 @@ export class UcKService {
     const url = queryString ? `${endpoint}?${queryString}` : endpoint;
 
     return this.api.get<UcKUrunDto[]>(url);
+  }
+
+  /** Projeden karşılama için kaynak projedeki ürünler; hedef projenin 3K yazma izniyle açılır. */
+  getProjedenKarsilamaKaynaklari(hedefProjeId: number, kaynakProjeId: number): Observable<ApiResult<ProjedenKarsilamaKaynakDto[]>> {
+    const query = new URLSearchParams({ kaynakProjeId: String(kaynakProjeId) });
+    return this.api.get<ProjedenKarsilamaKaynakDto[]>(`${API.UCK.PROJEDEN_KARSILAMA_KAYNAKLARI(hedefProjeId)}?${query}`);
   }
 
   getIsListesi(params: { page?: number; pageSize?: number; isTipi?: string; projeId?: number | null; sadeceBugun?: boolean } = {}): Observable<ApiResult<UcKIsListesiDto>> {

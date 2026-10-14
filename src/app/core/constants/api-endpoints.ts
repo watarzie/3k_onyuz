@@ -211,6 +211,7 @@ export const API = {
   },
   UCK: {
     URUNLER: (projeId: number) => `${BASE}/uck/${projeId}/urunler`,
+    PROJEDEN_KARSILAMA_KAYNAKLARI: (projeId: number) => `${BASE}/uck/${projeId}/projeden-karsilama-kaynaklari`,
     IS_LISTESI: `${BASE}/uck/is-listesi`,
     DURUM_GUNCELLE: `${BASE}/uck/durum-guncelle`,
     DURUM_SIFIRLA: `${BASE}/uck/durum-sifirla`,

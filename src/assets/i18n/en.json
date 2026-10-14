@@ -970,7 +970,7 @@
     "URUN_BILGISI": "Product info (serial no, expiry, lot)",
     "URUN_BILGISI_IPUCU": "Permanent details such as serial number and expiry date. 3K operations and undo actions do not clear this field; it moves with the product between crates.",
     "URUN_BILGISI_ORNEK": "E.g. SN: A-1001, Exp: 03.2027, Lot: L-42",
-    "ISLEM_ACIKLAMASI_IPUCU": "Operation note — use the Product info field on the crate screen for serial no/expiry",
+    "ISLEM_ACIKLAMASI_IPUCU": "Operation note — use the Product info field below for serial no/expiry",
     "PROJE_NO": "Project No",
     "MUSTERI": "Customer",
     "DURUM": "Status",
