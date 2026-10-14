@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiRevizyonApiResult, CekiRevizyonYuklemeYaniti, CekiRevizyonOnizlemeSonuc, ProjeDropdownDto, SevkiyatDto, EksiklerdenSahaProjesiOlusturDto, SandiklardanSahaProjesiOlusturDto, SahaAktarimDto, SahaSandikAktarimGeriAlResultDto } from '../../shared/models/index';
+import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiRevizyonApiResult, CekiRevizyonYuklemeYaniti, CekiRevizyonOnizlemeSonuc, ProjeDropdownDto, SevkiyatDto, EksiklerdenSahaProjesiOlusturDto, SandiklardanSahaProjesiOlusturDto, SahaAktarimDto, SahaSandikAktarimGeriAlResultDto, ProjeFotografBaglantisiSonucu } from '../../shared/models/index';
 
 /**
  * ProjeController (2 endpoint) + CekiController (2 endpoint):
@@ -125,6 +125,11 @@ export class ProjeService {
         aciklama: payload.aciklama?.trim() || null
       }
     );
+  }
+
+  /** Fotoğraf sayfası bağlantısını kaydeder; boş (null) bağlantıyı kaldırır. Dönen değer kaydedilen adrestir. */
+  fotografBaglantisiGuncelle(projeId: number, baglanti: string | null): Observable<ApiResult<ProjeFotografBaglantisiSonucu>> {
+    return this.api.put<ProjeFotografBaglantisiSonucu>(API.PROJE.FOTOGRAF_BAGLANTISI(projeId), { baglanti });
   }
 
   sevkTarihiGuncelle(projeId: number, planlananSevkTarihi: string | null): Observable<ApiResult<boolean>> {

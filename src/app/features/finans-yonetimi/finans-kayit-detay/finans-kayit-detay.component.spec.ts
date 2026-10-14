@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { of, Subject, throwError } from 'rxjs';
 import { FinansOdemeDurumu, FinansSandikMalzemesi } from '../../../core/constants/enums';
-import { AMBALAJ_YETKI, FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
+import { FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
 import { FinansService } from '../../../core/services/finans.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -152,6 +152,7 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
       'kaliciSil',
       'isDetay',
       'fiyatlandir',
+      'hacimGir',
       'faturaOdeme',
       'paraBirimleri',
       'downloadErrorMessage',
@@ -164,6 +165,7 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
     api.kaliciSil.and.returnValue(of({ isSuccess: true }));
     api.isDetay.and.returnValue(of({ isSuccess: true, value: work }));
     api.fiyatlandir.and.returnValue(of({ isSuccess: true }));
+    api.hacimGir.and.returnValue(of({ isSuccess: true }));
     api.faturaOdeme.and.returnValue(of({ isSuccess: true }));
     api.paraBirimleri.and.returnValue(of({ isSuccess: true, value: paraBirimleri }));
     toast = jasmine.createSpyObj<ToastService>('ToastService', ['success', 'info']);
@@ -220,6 +222,173 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
     );
   });
 
+  describe('Hacim (ahşap / kontra m³)', () => {
+    const kontraIs: FinansIsKaydi = {
+      ...work, id: 41, sandikTipi: 'Kontrplak Sandık', sandikMalzemesi: FinansSandikMalzemesi.Kontra,
+      adet: 2, birimM3: 0, toplamM3: 0, ahsapM3: 0, kontraM3: 0, fiyatlandirmaBirimi: 2, birimFiyat: 100,
+    };
+
+    it('kontrplak sandıkta hacim Fiyatlandırma sekmesinde girilir; tarife × (ahşap + kontra) önizlenir ve gerekçeyle gönderilir', () => {
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: kontraIs }));
+      const { fixture, component } = setup('IsKaydi');
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('.finans-hacim-karti')).toBeNull();
+      // Kontra sandıkta özet ahşap ve kontra m³'ü ayrı kutularda gösterir; ikisi toplanmaz.
+      expect(el.querySelectorAll('.hacim-ozet__kutu').length).toBe(2);
+      expect(el.querySelector('.hacim-ozet__kontra')).not.toBeNull();
+      (el.querySelector('.hacim-bekliyor') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(component.sekme()).toBe('fiyat');
+      expect((el.querySelector('.hacim-ahsap') as HTMLInputElement).readOnly).toBeFalse();
+      component.hacim.ahsapM3 = 1.2;
+      component.hacim.kontraM3 = 0.8;
+      fixture.detectChanges();
+      // Ahşap ve kontra toplanıp ayrı bir "bileşik" değer olarak gösterilmez.
+      expect(el.querySelector('.hacim-bilesik')).toBeNull();
+      const onizleme = el.querySelector('.hacim-onizleme')?.textContent ?? '';
+      expect(onizleme).toContain('200.00');
+      expect(onizleme).toMatch(/1\.2\s*\+\s*\S+ m³\s*0\.8\s*\)/);
+
+      // Gerekçe isteğe bağlıdır: boşken de gönderilir, yazılırsa iletilir.
+      component.hacimKaydet();
+      expect(api.hacimGir).toHaveBeenCalledOnceWith(41, { ahsapM3: 1.2, kontraM3: 0.8, aciklama: undefined });
+      // Kayıttan sonra form sunucudaki değerle yeniden açılır; ikinci girişte değerler tekrar yazılır.
+      component.hacim = { ahsapM3: 1.2, kontraM3: 0.8, aciklama: ' Kontra ölçüsü girildi ' };
+      component.hacimKaydet();
+      expect(api.hacimGir).toHaveBeenCalledWith(41, { ahsapM3: 1.2, kontraM3: 0.8, aciklama: 'Kontra ölçüsü girildi' });
+    });
+
+    it('ahşap sandıkta hacim girişi yoktur; daha önce elle girilmişse ahşap m³ salt okunur ve geçersiz hacim gönderilmez', () => {
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: { ...kontraIs, sandikMalzemesi: FinansSandikMalzemesi.Ahsap, ahsapM3: 2.5 } }));
+      const ilk = setup('IsKaydi');
+      expect(ilk.component.hacimDuzenlenebilir()).toBeFalse();
+      // Ahşap kapalı sandıkta özet yalnız ahşap m³ gösterir.
+      const kutular = ilk.fixture.nativeElement.querySelectorAll('.hacim-ozet__kutu') as NodeListOf<HTMLElement>;
+      expect(kutular.length).toBe(1);
+      expect(kutular[0].textContent).toContain('2.5');
+      expect(ilk.fixture.nativeElement.querySelector('.hacim-ozet__kontra')).toBeNull();
+      ilk.component.tab('fiyat');
+      ilk.fixture.detectChanges();
+      expect(ilk.fixture.nativeElement.querySelector('.finans-hacim-karti')).toBeNull();
+
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: { ...kontraIs, sandikMalzemesi: FinansSandikMalzemesi.Ahsap, ahsapM3: 2.5, hacimManuel: true } }));
+      const { fixture, component } = setup('IsKaydi');
+      component.tab('fiyat');
+      fixture.detectChanges();
+      expect((fixture.nativeElement.querySelector('.hacim-ahsap') as HTMLInputElement).readOnly).toBeTrue();
+      expect(component.hacim.ahsapM3).toBe(2.5);
+      component.hacim = { ahsapM3: 0, kontraM3: 0, aciklama: 'Geçersiz hacim' };
+      component.hacimKaydet();
+      expect(api.hacimGir).not.toHaveBeenCalled();
+      expect(component.hata()).toBeTruthy();
+    });
+
+    it('malzemeli fiyatlı işte önizleme kontra m³ × kontra + ahşap m³ × ahşap fiyatıyla hesaplanır', () => {
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: { ...kontraIs, birimFiyat: 300, ahsapBirimFiyat: 150 } }));
+      const { fixture, component } = setup('IsKaydi');
+      component.tab('fiyat');
+      component.hacim = { ahsapM3: 1.2, kontraM3: 0.8, aciklama: '' };
+      fixture.detectChanges();
+      expect(component.hacimOnizleme()?.tutar).toBe(420);
+      expect((fixture.nativeElement as HTMLElement).querySelector('.hacim-onizleme')?.textContent).toContain('420.00');
+      expect((fixture.nativeElement as HTMLElement).querySelector('.hacim-ahsap-tarifesiz')).toBeNull();
+    });
+
+    it('malzemeli fiyatta ahşap tarifesi yoksa (ahşap fiyatı 0) ahşap m³ girilince uyarı gösterilir', () => {
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: { ...kontraIs, birimFiyat: 300, ahsapBirimFiyat: 0 } }));
+      const { fixture, component } = setup('IsKaydi');
+      component.tab('fiyat');
+      component.hacim = { ahsapM3: 1.2, kontraM3: 0.8, aciklama: '' };
+      fixture.detectChanges();
+      expect(component.hacimOnizleme()?.tutar).toBe(240);
+      expect((fixture.nativeElement as HTMLElement).querySelector('.hacim-ahsap-tarifesiz')).not.toBeNull();
+    });
+
+    it('PO bağlı işte veya iş kaydı düzenleme (İş Takibi/Münferit İşler W) izni yokken bölüm açılmaz', () => {
+      const fiyatSekmesinde = () => {
+        const { fixture, component } = setup('IsKaydi');
+        component.tab('fiyat');
+        fixture.detectChanges();
+        return fixture.nativeElement.querySelector('.finans-hacim-karti');
+      };
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: { ...kontraIs, poNumaralari: ['PO-1'] } }));
+      expect(fiyatSekmesinde()).toBeNull();
+
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: kontraIs }));
+      expect(fiyatSekmesinde()).not.toBeNull();
+
+      // Yalnız Münferit İşler W de iş kaydını düzenler; ikisi de yoksa bölüm kapanır.
+      permissions.canWrite.and.callFake((kod: string) => kod !== FINANS_YETKI.SekmeIsTakibi);
+      expect(fiyatSekmesinde()).not.toBeNull();
+      permissions.canWrite.and.callFake((kod: string) => kod !== FINANS_YETKI.SekmeIsTakibi && kod !== FINANS_YETKI.SekmeMunferitIsler);
+      expect(fiyatSekmesinde()).toBeNull();
+    });
+
+    it('adetle fiyatlanan katlanır işte m³ girilir ama tutarı değiştirmediği söylenir; elle fiyat kartı kendiliğinden açılmaz', () => {
+      const katlanir = { ...kontraIs, sandikTipi: 'Katlanır Sandık', fiyatlandirmaBirimi: 1 as const };
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: katlanir }));
+      const { fixture, component } = setup('IsKaydi');
+      expect(component.fiyatDuzenlenebilir()).toBeTrue();
+      const el = fixture.nativeElement as HTMLElement;
+      (el.querySelector('.fiyat-sekmesi') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(el.querySelector('.hacim-adet-notu')).not.toBeNull();
+      expect(el.querySelector('.v2-pricing-card')).toBeNull();
+    });
+
+    it('hacimle fiyatlanan işte birim m³ sorulmaz; elle fiyatlandırma kapalıdır ve yalnız bilinçli açılır', () => {
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: { ...kontraIs, hacimManuel: true, birimM3: 1, toplamM3: 2 } }));
+      const { fixture, component } = setup('IsKaydi');
+      component.tab('fiyat');
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('.finans-hacim-karti')).not.toBeNull();
+      expect(el.querySelector('.v2-pricing-card')).toBeNull();
+      expect(el.querySelector('.finans-birim-m3')).toBeNull();
+
+      (el.querySelector('.elle-fiyat-ac') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(el.querySelector('.v2-pricing-card')).not.toBeNull();
+      expect(el.querySelector('.elle-fiyat-uyari')).not.toBeNull();
+      expect(el.querySelector('.finans-birim-m3')).toBeNull();
+      (el.querySelector('.elle-fiyat-kapat') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(el.querySelector('.v2-pricing-card')).toBeNull();
+    });
+
+    it('hacimsiz (ahşap/özel) işte elle fiyatlandırma doğrudan açıktır ve birim m³ girilir', () => {
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: { ...kontraIs, sandikMalzemesi: FinansSandikMalzemesi.Ahsap } }));
+      const { fixture, component } = setup('IsKaydi');
+      component.tab('fiyat');
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('.v2-pricing-card')).not.toBeNull();
+      expect((el.querySelector('.finans-birim-m3') as HTMLInputElement).readOnly).toBeFalse();
+    });
+
+    it('fiyatlandırma formu yalnız seçilen yöntemin alanlarını gösterir; gizlenen değer korunur', () => {
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: { ...kontraIs, sandikMalzemesi: FinansSandikMalzemesi.Ahsap, birimM3: 1.5 } }));
+      const { fixture, component } = setup('IsKaydi');
+      component.tab('fiyat');
+      const el = fixture.nativeElement as HTMLElement;
+      const alanlar = (yontem: 1 | 2 | 3 | 4) => {
+        component.fiyat.fiyatlandirmaBirimi = yontem;
+        fixture.detectChanges();
+        return ['.finans-adet', '.finans-birim-m3', '.finans-birim-fiyat', '.finans-manuel-net']
+          .filter((secici) => el.querySelector(secici) !== null);
+      };
+
+      expect(alanlar(1)).toEqual(['.finans-adet', '.finans-birim-fiyat']);
+      expect(el.querySelector('.fiyat-yontem-notu')?.textContent).toContain('finans adedi × adet birim fiyatı');
+      expect(alanlar(2)).toEqual(['.finans-adet', '.finans-birim-m3', '.finans-birim-fiyat']);
+      expect(alanlar(3)).toEqual(['.finans-birim-fiyat']);
+      expect(el.querySelector('.finans-birim-fiyat')?.closest('label')?.textContent).toContain('Sabit net bedel');
+      expect(alanlar(4)).toEqual(['.finans-manuel-net']);
+      // Yöntem değişse de gizlenen alanın değeri silinmez.
+      expect(component.fiyat.birimM3).toBe(1.5);
+    });
+  });
+
   it('bileşen özeti satır tutarlarını toplar ve m³ satırlarını malzemeye göre ayırır', () => {
     const { component } = setup('IsKaydi');
     component.fiyat.bilesenler = [
@@ -244,34 +413,55 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
     expect(component.paraBirimleri.secenekler('USD')).toEqual(['TRY', 'EUR', 'USD']);
   });
 
-  for (const denied of [
-    FINANS_YETKI.ParasalVeriGoruntule,
-    FINANS_YETKI.BirimFiyatGoruntule,
-    FINANS_YETKI.TutarGoruntule,
-    FINANS_YETKI.GelirGoruntule,
-    FINANS_YETKI.GiderGoruntule,
-    FINANS_YETKI.KarlilikGoruntule,
-    AMBALAJ_YETKI.OlcuGoruntule,
-    AMBALAJ_YETKI.M3Goruntule,
-    AMBALAJ_YETKI.SarfGoruntule,
-  ]) {
-    it(`fiyat formu açıkken ${denied} izni kalkarsa eski snapshot üzerine yazamaz`, () => {
-      const { component } = setup('IsKaydi');
-      expect(component.fiyatDuzenlenebilir()).toBeTrue();
-      permissions.hasAccess.and.callFake((kod) => kod !== denied);
-      component.fiyat.aciklama = 'Yetki değişiminden sonra kayıt';
-      component.fiyatKaydet();
-      expect(api.fiyatlandir).not.toHaveBeenCalled();
-      expect(component.hata()).toContain('Gizlenmiş değerlerin üzerine yazılamaz');
-    });
-  }
-
-  it('fiyat yazma izni kaldırılınca alanların tamamı görünse de değişiklik göndermez', () => {
+  it('iş kaydı düzenleme (İş Takibi/Münferit İşler W) izni kaldırılınca alanlar görünse de fiyat değişikliği göndermez', () => {
     const { component } = setup('IsKaydi');
-    permissions.canWrite.and.callFake((kod) => kod !== FINANS_YETKI.FiyatlandirmaDegistir);
+    expect(component.fiyatDuzenlenebilir()).toBeTrue();
+    permissions.canWrite.and.callFake((kod: string) => kod !== FINANS_YETKI.SekmeIsTakibi && kod !== FINANS_YETKI.SekmeMunferitIsler);
     component.fiyat.aciklama = 'Yetki değişimi sonrası kayıt';
     component.fiyatKaydet();
     expect(api.fiyatlandir).not.toHaveBeenCalled();
+    expect(component.hata()).toContain('İş Takibi veya Münferit İşler');
+  });
+
+  it('iptal ve kalıcı silme kaydın kendi sekmesinin W iznine bağlıdır', () => {
+    permissions.canWrite.and.callFake((kod: string) => kod === FINANS_YETKI.SekmeGiderler);
+    const gider = setup('Gider').component;
+    expect(gider.iptalEdilebilir()).toBeTrue();
+    expect(gider.kaliciSilinebilir()).toBeTrue();
+    const siparis = setup('Siparis').component;
+    expect(siparis.iptalEdilebilir()).toBeFalse();
+    expect(siparis.kaliciSilinebilir()).toBeFalse();
+    expect(siparis.belgeDuzenlemeIzni()).toBeFalse();
+
+    // PO düzeltme/iptal/silme PO'lar alt sekmesine bağlıdır; Faturalar alt sekmesi yetmez.
+    permissions.canWrite.and.callFake((kod: string) => kod === FINANS_YETKI.SekmePoFatura || kod === FINANS_YETKI.SekmePoFaturaFatura);
+    expect(siparis.iptalEdilebilir()).toBeFalse();
+    expect(siparis.kaliciSilinebilir()).toBeFalse();
+    expect(siparis.belgeDuzenlemeIzni()).toBeFalse();
+    const fatura = setup('Fatura').component;
+    expect(fatura.iptalEdilebilir()).toBeTrue();
+    expect(fatura.kaliciSilinebilir()).toBeTrue();
+    expect(fatura.belgeDuzenlemeIzni()).toBeTrue();
+
+    permissions.canWrite.and.callFake((kod: string) => kod === FINANS_YETKI.SekmePoFatura || kod === FINANS_YETKI.SekmePoFaturaPo);
+    expect(siparis.iptalEdilebilir()).toBeTrue();
+    expect(siparis.kaliciSilinebilir()).toBeTrue();
+    expect(siparis.belgeDuzenlemeIzni()).toBeTrue();
+    expect(fatura.iptalEdilebilir()).toBeFalse();
+    expect(fatura.odemeKaydedilebilir()).toBeFalse();
+    expect(gider.iptalEdilebilir()).toBeFalse();
+
+    permissions.canWrite.and.callFake((kod: string) => kod === FINANS_YETKI.SekmeMunferitIsler);
+    const is = setup('IsKaydi').component;
+    expect(is.iptalEdilebilir()).toBeTrue();
+    expect(is.kaliciSilinebilir()).toBeTrue();
+  });
+
+  it('değişiklik geçmişi kayıt sekmeleri veya Giderler sekmesinden biriyle görünür', () => {
+    permissions.hasAccess.and.callFake((kod: string) => kod === FINANS_YETKI.Modul || kod === FINANS_YETKI.SekmeGiderler);
+    expect(setup('Gider').component.gecmisGorunur()).toBeTrue();
+    permissions.hasAccess.and.callFake((kod: string) => kod === FINANS_YETKI.Modul || kod === FINANS_YETKI.SekmeGiderKategorileri);
+    expect(setup('Gider').component.gecmisGorunur()).toBeFalse();
   });
 
   it('PO revizyonunu gerekçe ve net tutarla, eski fiziksel miktarları taşımadan gönderir', () => {
@@ -387,9 +577,9 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
       });
     });
 
-    it('ödeme yazma izni yoksa veya fatura iptal edilmişse ödeme kaydı açılmaz', () => {
+    it('PO/Fatura sekmesinde W izni yoksa veya fatura iptal edilmişse ödeme kaydı açılmaz', () => {
       api.faturaDetay.and.returnValue(of({ isSuccess: true, value: odenmemis }));
-      permissions.canWrite.and.callFake((kod) => kod !== FINANS_YETKI.OdemeKaydet);
+      permissions.canWrite.and.callFake((kod) => kod !== FINANS_YETKI.SekmePoFatura);
       const { component } = setup('Fatura');
       expect(component.odemeKaydedilebilir()).toBeFalse();
       component.odemeForm = { odendi: true, tarih: '2026-09-25', aciklama: '' };
@@ -443,7 +633,7 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
   }
 
   for (const net of [null, 0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
-    it(`geçersiz/maskelenmiş ${String(net)} net tutarı revizyon olarak göndermez`, () => {
+    it(`geçersiz ${String(net)} net tutarı revizyon olarak göndermez`, () => {
       const { component } = setup('Fatura');
       component.belgeForm.gerekce = 'Tutar düzeltmesi';
       component.tutarlariDuzenle = true;
@@ -454,11 +644,11 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
     });
   }
 
-  it('ana parasal izni kalkmışsa görünen eski tutarla revizyon göndermez', () => {
+  it('PO/Fatura sekmesinin W izni kalkmışsa revizyon göndermez', () => {
     const { component } = setup('Siparis');
     component.belgeForm.gerekce = 'Tutar düzeltmesi';
     component.tutarlariDuzenle = true;
-    permissions.hasAccess.and.callFake((kod) => kod !== component.izin.ParasalVeriGoruntule);
+    permissions.canWrite.and.callFake((kod) => kod !== FINANS_YETKI.SekmePoFatura);
     component.belgeKaydet();
     expect(api.siparisGuncelle).not.toHaveBeenCalled();
   });

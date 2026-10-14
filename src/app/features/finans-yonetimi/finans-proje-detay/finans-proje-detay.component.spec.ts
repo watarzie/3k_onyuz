@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { FinansIsKategorisi, FinansOdemeDurumu, FinansSandikMalzemesi } from '../../../core/constants/enums';
-import { AMBALAJ_YETKI, FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
+import { FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
 import { FinansService } from '../../../core/services/finans.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { FinansFatura, FinansIsKaydi, FinansSayfaliSonuc } from '../../../shared/models/finans.model';
@@ -54,7 +54,7 @@ describe('Finans proje detayı', () => {
   }
 
   it('kalemleri kategori sırasıyla gruplar, sandık numarasına göre sıralar; m³ ve tutarları ayrı toplar', () => {
-    [FINANS_YETKI.KayitGoruntule, FINANS_YETKI.SiparisOperasyonGoruntule].forEach((k) => izinler.add(k));
+    [FINANS_YETKI.Modul, FINANS_YETKI.SekmeIsTakibi, FINANS_YETKI.SekmePoFatura, FINANS_YETKI.SekmePoFaturaFatura].forEach((k) => izinler.add(k));
     const { c, el } = setup();
     expect(api.genelArama).toHaveBeenCalledOnceWith({ pageNumber: 1, pageSize: 250, projeNo: 'PA-1' });
     expect(api.faturalar).toHaveBeenCalledOnceWith({ pageNumber: 1, pageSize: 250, projeNo: 'PA-1' });
@@ -74,17 +74,15 @@ describe('Finans proje detayı', () => {
     expect(acilan).toHaveBeenCalledOnceWith({ tur: 'IsKaydi', id: 2 });
   });
 
-  it('fatura okuma izni yoksa fatura istemez; m³ ve tutar sütunları yalnız kendi izinleriyle görünür', () => {
-    izinler.add(FINANS_YETKI.KayitGoruntule);
+  it('Faturalar alt sekmesi kapalıysa fatura listesi istenmez; m³ ve tutar sütunları kayıt sekmesi R kullanıcısına hep görünür', () => {
+    // PO/Fatura sekmesi ve PO'lar açık, Faturalar alt sekmesi kapalı.
+    [FINANS_YETKI.Modul, FINANS_YETKI.SekmeIsTakibi, FINANS_YETKI.SekmePoFatura, FINANS_YETKI.SekmePoFaturaPo].forEach((k) => izinler.add(k));
     const sutunlar = (el: HTMLElement) => el.querySelector('table thead tr')!.querySelectorAll('th').length;
     const kisitli = setup();
+    expect(api.genelArama).toHaveBeenCalled();
     expect(api.faturalar).not.toHaveBeenCalled();
     expect(kisitli.c.faturalar()).toEqual([]);
-    expect(sutunlar(kisitli.el)).toBe(4);
-
-    [AMBALAJ_YETKI.M3Goruntule, FINANS_YETKI.ParasalVeriGoruntule, FINANS_YETKI.TutarGoruntule].forEach((k) => izinler.add(k));
-    const tam = setup();
-    expect(sutunlar(tam.el)).toBe(7);
+    expect(sutunlar(kisitli.el)).toBe(7);
   });
 
   it('malzeme etiketi yalnız m³ satırında verilir; sabit satırın tutarı birim fiyattır', () => {

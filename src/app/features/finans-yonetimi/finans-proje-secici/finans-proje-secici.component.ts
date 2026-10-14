@@ -16,7 +16,7 @@ import { FinansSayfaliSonuc } from '../../../shared/models/finans.model';
       [attr.aria-expanded]="acik()"
       (click)="ac()"
     >
-      {{ etiket() || (projeId() ? 'Seçili proje #' + projeId() : 'Proje seçin (isteğe bağlı)') }}
+      {{ etiket() || (projeId() ? 'Seçili proje #' + projeId() : bosEtiket() || 'Proje seçin (isteğe bağlı)') }}
     </button>
     @if (acik()) {
       <div class="project-dropdown">
@@ -34,7 +34,7 @@ import { FinansSayfaliSonuc } from '../../../shared/models/finans.model';
         @if (hata()) {
           <p role="alert">{{ hata() }}</p>
         }
-        <button type="button" (click)="sec(null)">Projeye bağlama</button>
+        <button type="button" (click)="sec(null)">{{ bosSecimEtiketi() }}</button>
         @for (p of sonuc()?.items; track p.projeId) {
           <button type="button" (click)="sec(p)">
             <strong>{{ p.projeNo }}</strong> · {{ p.musteri }}
@@ -106,6 +106,10 @@ import { FinansSayfaliSonuc } from '../../../shared/models/finans.model';
 export class FinansProjeSeciciComponent implements OnInit {
   readonly projeId = input<number | null | undefined>(null);
   readonly etiket = input('');
+  /** Seçim yokken düğmede görünen metin (filtre olarak kullanıldığında "Tüm projeler"). */
+  readonly bosEtiket = input('');
+  /** Seçimi kaldıran satırın metni; kayıt formunda "Projeye bağlama", filtrede "Tüm projeler". */
+  readonly bosSecimEtiketi = input('Projeye bağlama');
   readonly secildi = output<{ projeId: number; projeNo: string; musteri: string } | null>();
   private readonly service = inject(FinansService);
   private readonly destroyRef = inject(DestroyRef);

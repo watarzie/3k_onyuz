@@ -1,9 +1,11 @@
 <article class="v2-card v2-list-card record-search">
   <header class="record-search-head">
     <nav class="v2-segmented" [attr.aria-label]="t('PANEL_VIEW')">
-      <button type="button" [class.active]="gorunum() === 'arama'" [attr.aria-pressed]="gorunum() === 'arama'" (click)="gorunumSec('arama')">
-        <i class="ri-search-2-line" aria-hidden="true"></i>{{ t('PANEL_ALL_SEARCH') }}
-      </button>
+      @if (aramaGorunur()) {
+        <button type="button" [class.active]="gorunum() === 'arama'" [attr.aria-pressed]="gorunum() === 'arama'" (click)="gorunumSec('arama')">
+          <i class="ri-search-2-line" aria-hidden="true"></i>{{ t('PANEL_ALL_SEARCH') }}
+        </button>
+      }
       @if (bekleyenGorunur()) {
         <button type="button" [class.active]="gorunum() === 'bekleyen'" [attr.aria-pressed]="gorunum() === 'bekleyen'" (click)="gorunumSec('bekleyen')">
           <i class="ri-time-line" aria-hidden="true"></i>{{ t('PANEL_PENDING') }}
@@ -25,6 +27,22 @@
       <span>{{ t('SEARCH') }}</span>
       <span class="filter-input"><i class="ri-search-line" aria-hidden="true"></i><input type="search" [attr.aria-label]="t('SEARCH')" [(ngModel)]="arama" (ngModelChange)="aramaDegisti()" [placeholder]="t('PANEL_SEARCH_ALL_HINT')" /></span>
     </label>
+    @if (gorunum() === 'arama') {
+      <div class="filter-field filter-project">
+        <span>{{ t('PROJECT') }}</span>
+        <app-finans-proje-secici
+          [projeId]="projeFiltresi?.projeId"
+          [etiket]="projeFiltresi ? projeFiltresi.projeNo + ' · ' + projeFiltresi.musteri : ''"
+          [bosEtiket]="t('ALL_PROJECTS')"
+          [bosSecimEtiketi]="t('ALL_PROJECTS')"
+          (secildi)="projeSecildi($event)"
+        />
+      </div>
+      <label class="filter-field filter-crate">
+        <span>{{ t('CRATE_NO') }}</span>
+        <input type="search" class="crate-no-filter" [attr.aria-label]="t('CRATE_NO')" [(ngModel)]="sandikNo" (ngModelChange)="sandikNoDegisti()" [placeholder]="t('CRATE_NO_HINT')" />
+      </label>
+    }
     <label class="filter-field">
       <span>{{ t('CURRENCY') }}</span>
       <select [(ngModel)]="para" (change)="filtrele()">
@@ -79,7 +97,7 @@
           <i class="ri-filter-off-line" aria-hidden="true"></i>{{ t('FILTERS_RESET') }}
         </button>
       }
-      @if (gorunum() === 'arama' && permissions.canWrite(izin.PoGir) && secilenler().size) {
+      @if (gorunum() === 'arama' && poGirilebilir() && secilenler().size) {
         <button class="btn btn-primary btn-sm" type="button" (click)="topluSiparis()">
           <i class="ri-add-circle-line" aria-hidden="true"></i>{{ t('PANEL_PO_SELECTION') }} ({{ secilenler().size }})
         </button>
@@ -102,66 +120,85 @@
             <th>{{ t('PROJECT_WORK') }}</th>
             <th>{{ t(gorunum() === 'arama' ? 'PANEL_FINANCE_DATE' : 'START') }}</th>
             <th>{{ t('STATUS') }}</th>
-            @if (parasal(izin.TutarGoruntule)) {
-              <th class="text-end">{{ t('AMOUNT') }}</th>
-            }
+            <th class="text-end">{{ t('AMOUNT') }}</th>
             <th class="text-end">{{ t('ACTION') }}</th>
           </tr>
         </thead>
         <tbody>
           @if (gorunum() === 'arama') {
-            @for (grup of projeGruplari(); track grup.projeNo) {
-              <tr class="project-group-row" [class.expanded]="projeAcik(grup.projeNo)">
+            @for (grup of projeGruplari(); track grup.anahtar) {
+              <tr class="project-group-row" [class.expanded]="projeAcik(grup.anahtar)">
                 <td class="select-column">
-                  @if (permissions.canWrite(izin.PoGir)) {
+                  @if (poGirilebilir()) {
                     <input type="checkbox" [attr.aria-label]="grup.projeNo + ' ' + t('SELECT')" [checked]="projeSecili(grup)" (change)="projeSec(grup, $any($event.target).checked)" />
                   }
                 </td>
                 <td>
-                  <button type="button" class="project-toggle" [attr.aria-expanded]="projeAcik(grup.projeNo)" (click)="projeAcKapat(grup.projeNo)">
-                    <i [class]="projeAcik(grup.projeNo) ? 'ri-arrow-down-s-line' : 'ri-arrow-right-s-line'" aria-hidden="true"></i>
-                    <span><strong>{{ grup.projeNo }}</strong><small>{{ grup.musteri }} · {{ grup.kalemler.length }} kalem · {{ grup.kategoriSayisi }} kategori</small></span>
+                  <button type="button" class="project-toggle" [attr.aria-expanded]="projeAcik(grup.anahtar)" (click)="projeAcKapat(grup.anahtar)">
+                    <i [class]="projeAcik(grup.anahtar) ? 'ri-arrow-down-s-line' : 'ri-arrow-right-s-line'" aria-hidden="true"></i>
+                    <span><strong>{{ grup.projeNo }}</strong><small>{{ grup.musteri }} · {{ grup.kalemler.length }} kalem · {{ grup.sandiklar.length }} {{ t('CRATE_GROUPS') }} · {{ grup.kategoriSayisi }} kategori</small></span>
                   </button>
                 </td>
                 <td>
                   {{ grup.ilkTarih | date: 'dd.MM.yyyy' }}@if (grup.sonTarih !== grup.ilkTarih) { – {{ grup.sonTarih | date: 'dd.MM.yyyy' }} }
                 </td>
                 <td></td>
-                @if (parasal(izin.TutarGoruntule)) {
-                  <td class="text-end v2-nowrap">
-                    @for (toplam of grup.toplamlar; track toplam.paraBirimi) {
-                      <div><strong>{{ toplam.net | number: '1.2-2' }} {{ toplam.paraBirimi }}</strong></div>
-                    }
-                  </td>
-                }
+                <td class="text-end v2-nowrap">
+                  @for (toplam of grup.toplamlar; track toplam.paraBirimi) {
+                    <div><strong>{{ toplam.net | number: '1.2-2' }} {{ toplam.paraBirimi }}</strong></div>
+                  }
+                </td>
                 <td class="text-end">
-                  <button type="button" class="btn btn-light btn-sm" (click)="projeAcKapat(grup.projeNo)">{{ projeAcik(grup.projeNo) ? 'Gizle' : 'Kalemler' }}</button>
+                  <button type="button" class="btn btn-light btn-sm" (click)="projeAcKapat(grup.anahtar)">{{ projeAcik(grup.anahtar) ? 'Gizle' : 'Kalemler' }}</button>
                 </td>
               </tr>
-              @if (projeAcik(grup.projeNo)) {
-                @for (row of grup.kalemler; track row.id) {
+              @if (projeAcik(grup.anahtar)) {
+                @for (sandik of grup.sandiklar; track sandik.anahtar) {
+                  <tr class="crate-group-row">
+                    <td class="select-column">
+                      @if (poGirilebilir()) {
+                        <input type="checkbox" [attr.aria-label]="(sandik.sandikNo || t('CRATE_NONE')) + ' ' + t('SELECT')" [checked]="projeSecili(sandik)" (change)="projeSec(sandik, $any($event.target).checked)" />
+                      }
+                    </td>
+                    <td colspan="3">
+                      <i class="ri-archive-line" aria-hidden="true"></i>
+                      @if (sandik.sandikNo) {
+                        <strong>{{ t('CRATE') }} {{ sandik.sandikNo }}</strong>
+                        <small>{{ sandik.sandikAdi }}@if (sandik.sandikTipi) { · {{ sandik.sandikTipi }} } · {{ sandik.kalemler.length }} kalem</small>
+                      } @else {
+                        <strong>{{ t('CRATE_NONE') }}</strong><small>{{ sandik.kalemler.length }} kalem</small>
+                      }
+                    </td>
+                    <td class="text-end v2-nowrap">
+                      @for (toplam of sandik.toplamlar; track toplam.paraBirimi) {
+                        <div>{{ toplam.net | number: '1.2-2' }} {{ toplam.paraBirimi }}</div>
+                      }
+                    </td>
+                    <td></td>
+                  </tr>
+                @for (row of sandik.kalemler; track row.id) {
                   <tr class="project-item-row">
                     <td class="select-column">
-                      @if (permissions.canWrite(izin.PoGir)) {
+                      @if (poGirilebilir()) {
                         <input type="checkbox" [attr.aria-label]="row.projeNo + ' ' + t('SELECT')" [checked]="secilenler().has(row.id)" (change)="sec(row.id, $any($event.target).checked)" />
                       }
                     </td>
                     <td>
-                      <strong>{{ row.sandikNo || row.isAdi || row.sandikAdi }}</strong
-                      ><small>{{ t(kategoriAnahtari(row.kategori)) }} · {{ row.isAdi || row.sandikAdi }}</small
+                      <strong>{{ t(kategoriAnahtari(row.kategori)) }}</strong
+                      ><span class="source-badge" [class.is-sarf]="sarfKaydi(row)">{{ sarfKaydi(row) ? t('SOURCE_SARF') : t('SOURCE_NET') }}</span
+                      ><small>{{ row.isAdi || row.sandikAdi }}</small
                       ><small>PO: {{ row.poNumaralari.join(', ') || '—' }} · {{ t('INVOICE') }}: {{ row.faturaNumaralari.join(', ') || '—' }}</small>
                     </td>
                     <td>{{ row.finansTarihi | date: 'dd.MM.yyyy' }}<small>{{ row.finansDonemi | date: 'MM.yyyy' }}</small></td>
                     <td>
                       <span class="v2-status" [class.is-active]="row.kaynakAktif">{{ row.kaynakAktif ? t('PANEL_ACTIVE_SOURCE') : t('PANEL_INACTIVE_SOURCE') }}</span>
                     </td>
-                    @if (parasal(izin.TutarGoruntule)) {
-                      <td class="text-end v2-nowrap">{{ row.netTutar | number: '1.2-2' }} {{ row.paraBirimi }}</td>
-                    }
+                    <td class="text-end v2-nowrap">{{ row.netTutar | number: '1.2-2' }} {{ row.paraBirimi }}</td>
                     <td class="text-end">
                       <button class="btn btn-outline-primary btn-sm" (click)="kayitAc.emit({ tur: 'IsKaydi', id: row.id })">{{ t('DETAIL') }}</button>
                     </td>
                   </tr>
+                }
                 }
               }
             }
@@ -171,9 +208,7 @@
                 <td><strong>{{ row.projeNo }}</strong><small>{{ row.isAdi }} · {{ row.poNumarasi }}</small></td>
                 <td>{{ row.baslangic | date: 'dd.MM.yyyy' }}</td>
                 <td><span class="v2-status">{{ row.asama }} · {{ row.gun }} {{ t('DAY') }}</span></td>
-                @if (parasal(izin.TutarGoruntule)) {
-                  <td class="text-end v2-nowrap">{{ row.kalanNetTutar | number: '1.2-2' }} {{ row.paraBirimi }}</td>
-                }
+                <td class="text-end v2-nowrap">{{ row.kalanNetTutar | number: '1.2-2' }} {{ row.paraBirimi }}</td>
                 <td class="text-end">
                   <button class="btn btn-outline-primary btn-sm" (click)="kayitAc.emit({ tur: 'IsKaydi', id: row.isKaydiId })">{{ t('DETAIL') }}</button>
                 </td>

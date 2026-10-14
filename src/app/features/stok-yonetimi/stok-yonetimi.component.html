@@ -33,6 +33,16 @@
           <p>{{ totalCount() }} kayıt · depodaki fazla ve iade malzemeler</p>
         </div>
       </div>
+      <div class="tz-segmented stock-tabs" role="tablist" aria-label="Stok durumu">
+        <button type="button" role="tab" [class.active]="durumSekmesi() === StokDurum.Aktif" [attr.aria-selected]="durumSekmesi() === StokDurum.Aktif"
+                (click)="durumSekmesiDegistir(StokDurum.Aktif)">
+          <i class="ri-checkbox-circle-line" aria-hidden="true"></i>Aktif Stok @if (sayilar(); as s) {<span class="stock-tab-count">{{ s.aktif }}</span>}
+        </button>
+        <button type="button" role="tab" [class.active]="durumSekmesi() === StokDurum.Tukendi" [attr.aria-selected]="durumSekmesi() === StokDurum.Tukendi"
+                (click)="durumSekmesiDegistir(StokDurum.Tukendi)">
+          <i class="ri-inbox-unarchive-line" aria-hidden="true"></i>Tükendiler @if (sayilar(); as s) {<span class="stock-tab-count">{{ s.tukendi }}</span>}
+        </button>
+      </div>
       <label class="stock-search">
         <i class="ri-search-line" aria-hidden="true"></i>
         <input type="search" placeholder="Barkod, malzeme veya proje ara..." aria-label="Stoklarda ara"
@@ -49,7 +59,7 @@
       <div class="stock-empty">
         <span class="stock-empty__icon" aria-hidden="true"><i class="ri-inbox-archive-line"></i></span>
         <h4>Stok bulunamadı</h4>
-        <p>{{ searchTerm() ? 'Aramanızla eşleşen stok kaydı yok.' : 'Henüz stok kaydı eklenmemiş.' }}</p>
+        <p>{{ searchTerm() ? 'Aramanızla eşleşen stok kaydı yok.' : durumSekmesi() === StokDurum.Tukendi ? 'Tükenmiş stok kaydı yok.' : 'Aktif stok kaydı yok.' }}</p>
       </div>
     } @else {
       <div class="table-responsive">
@@ -69,7 +79,7 @@
           </thead>
           <tbody>
             @for (s of filteredStoklar(); track s.id) {
-              <tr [class.is-depleted]="s.durumMetni !== 'Aktif'">
+              <tr [class.is-depleted]="s.durumId !== StokDurum.Aktif">
                 <td>
                   <div class="stock-item">
                     <span class="stock-item__icon" aria-hidden="true"><i class="ri-box-3-line"></i></span>
@@ -102,8 +112,8 @@
                   }
                 </td>
                 <td>
-                  <span class="stock-status" [class.is-active]="s.durumMetni === 'Aktif'">
-                    <span class="stock-status__dot" aria-hidden="true"></span>{{ s.durumMetni }}
+                  <span class="stock-status" [class.is-active]="s.durumId === StokDurum.Aktif">
+                    <span class="stock-status__dot" aria-hidden="true"></span>{{ durumEtiketi(s.durumId) }}
                   </span>
                 </td>
                 @if (canWriteStock() || canDeleteStock()) {

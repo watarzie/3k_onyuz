@@ -1,0 +1,62 @@
+// Hacim özeti: ahşap + kontra = bileşik m³ (fiyatlandırma miktarı) kutucukları.
+.hacim-ozet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid #e6e9f2;
+  border-radius: 12px;
+  background: #fbfcff;
+  &.is-bos {
+    border-color: #f6c77d;
+    background: #fffaf1;
+  }
+}
+.hacim-ozet__kutu {
+  display: grid;
+  gap: 2px;
+  min-width: 110px;
+  padding: 10px 14px;
+  border: 1px solid #e6e9f2;
+  border-radius: 10px;
+  background: #fff;
+  span {
+    color: #64748b;
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  strong {
+    color: #1f2937;
+    font-size: 18px;
+    font-variant-numeric: tabular-nums;
+  }
+}
+.hacim-ozet__durum {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  .btn { display: inline-flex; align-items: center; gap: 6px; }
+}
+.hacim-ozet__uyari {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #b45309;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+@media (max-width: 575.98px) {
+  .hacim-ozet__kutu { flex: 1 1 90px; min-width: 0; }
+  .hacim-ozet__durum { width: 100%; margin-left: 0; }
+}
+
+/* Ahşap tarifesi bulunamayan malzemeli iş: ahşap m³ tutara katılmaz. */
+.v2-note.is-warning {
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fcd34d;
+}

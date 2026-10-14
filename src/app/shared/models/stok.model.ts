@@ -14,6 +14,12 @@ export interface StokKaydiDto {
   durumMetni: string;
 }
 
+/** Stok sekmelerinin sayaçları (Aktif Stok / Tükendiler). */
+export interface StokDurumSayilariDto {
+  aktif: number;
+  tukendi: number;
+}
+
 export interface StokKaydiOlusturDto {
   id?: number;
   malzemeKodu: string;

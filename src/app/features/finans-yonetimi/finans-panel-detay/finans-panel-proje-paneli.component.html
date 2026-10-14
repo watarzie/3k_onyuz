@@ -1,0 +1,210 @@
+@let p = proje();
+<div class="project-drawer-backdrop" (click)="kapat.emit()"></div>
+<aside class="project-drawer" role="dialog" aria-modal="true" [attr.aria-label]="p.projeNo">
+  <header class="project-drawer-header">
+    <div class="project-drawer-title">
+      <span>{{ baslangic() | date: 'dd.MM.yyyy' }} – {{ bitis() | date: 'dd.MM.yyyy' }}</span>
+      <h2>{{ p.projeNo }}</h2>
+      <p>
+        {{ p.musteri || '—' }}
+        <span class="note-chip">{{ t(grupAnahtari()) }}</span>
+        <span class="status" [class.complete]="p.siparis === 2" [class.partial]="p.siparis === 1">{{ t(siparisKarsilanmaAnahtari(p.siparis)) }}</span>
+        <span class="status" [class.complete]="p.fatura === 2" [class.partial]="p.fatura === 1">{{ t(faturaKarsilanmaAnahtari(p.fatura)) }}</span>
+      </p>
+    </div>
+    <div class="project-drawer-actions">
+      @if (projeli()) {
+        <button type="button" class="tz-btn panel-tum-donemler" (click)="tumDonemlerAcik.set(true)"><i class="ri-history-line tz-ico-primary" aria-hidden="true"></i>{{ t('DRAWER_ALL_PERIODS') }}</button>
+      }
+      <button type="button" class="project-drawer-close" [attr.aria-label]="t('DRAWER_CLOSE')" (click)="kapat.emit()"><i class="ri-close-line" aria-hidden="true"></i></button>
+    </div>
+  </header>
+
+  <div class="project-drawer-body">
+    <section class="project-summary" [attr.aria-label]="t('DRAWER_SUMMARY')">
+      <div class="project-summary-grid">
+        <div class="summary-tile">
+          <span>{{ t('DRAWER_WORK_VALUE') }}</span>
+          <strong>{{ p.isBedeli | number: '1.2-2' }} {{ p.paraBirimi }}</strong>
+          <small>{{ p.isKaydi }} {{ t('PANEL_KPI_ITEMS_LOWER') }}</small>
+        </div>
+        <div class="summary-tile">
+          <span>{{ t('DRAWER_ON_PO') }}</span>
+          <strong>{{ p.siparisNetTutar | number: '1.2-2' }} {{ p.paraBirimi }}</strong>
+          <i class="progress-line"><i [style.width.%]="oran(p.siparisNetTutar, p.isBedeli)"></i></i>
+          <small>%{{ oran(p.siparisNetTutar, p.isBedeli) }}</small>
+        </div>
+        <div class="summary-tile">
+          <span>{{ t('DRAWER_INVOICED') }}</span>
+          <strong>{{ p.faturalananNetTutar | number: '1.2-2' }} {{ p.paraBirimi }}</strong>
+          <i class="progress-line is-invoice"><i [style.width.%]="oran(p.faturalananNetTutar, p.isBedeli)"></i></i>
+          <small>%{{ oran(p.faturalananNetTutar, p.isBedeli) }}</small>
+        </div>
+        <div class="summary-tile is-remaining">
+          <span>{{ t('DRAWER_REMAINING') }}</span>
+          <small>{{ t('DRAWER_REMAINING_PO') }} <b>{{ (p.kalanSiparisNetTutar ?? 0) | number: '1.2-2' }} {{ p.paraBirimi }}</b></small>
+          <small>{{ t('DRAWER_REMAINING_INVOICE') }} <b>{{ (p.kalanFaturaNetTutar ?? 0) | number: '1.2-2' }} {{ p.paraBirimi }}</b></small>
+        </div>
+      </div>
+      <div class="project-summary-notes">
+        @if (ahsapM3()) { <span class="note-chip">{{ t('WOOD_M3') }} {{ ahsapM3() | number: '1.0-3' }}</span> }
+        @if (kontraM3()) { <span class="note-chip">{{ t('PLYWOOD_M3') }} {{ kontraM3() | number: '1.0-3' }}</span> }
+        @if (p.gider) { <span class="note-chip">{{ t('PANEL_DETAIL_EXPENSE') }} {{ p.gider | number: '1.2-2' }} {{ p.paraBirimi }}</span> }
+        @if (fiyatBekleyen()) {
+          <span class="note-chip is-attention"><i class="ri-error-warning-line" aria-hidden="true"></i>{{ fiyatBekleyen() }} {{ t('PRICE_PENDING_RECORDS') }}</span>
+        }
+      </div>
+    </section>
+
+    <nav class="project-drawer-tabs" role="tablist">
+      <button type="button" role="tab" [class.active]="sekme() === 'kategoriler'" [attr.aria-selected]="sekme() === 'kategoriler'" (click)="sekmeSec('kategoriler')">
+        <i class="ri-stack-line" aria-hidden="true"></i>{{ t('DRAWER_TAB_CATEGORIES') }}<em>{{ kategoriler().length }}</em>
+      </button>
+      <button type="button" role="tab" [class.active]="sekme() === 'sandiklar'" [attr.aria-selected]="sekme() === 'sandiklar'" (click)="sekmeSec('sandiklar')">
+        <i class="ri-archive-line" aria-hidden="true"></i>{{ t('CRATES') }}<em>{{ sandikSayisi() }}</em>
+      </button>
+      @if (belgelerGorunur()) {
+        <button type="button" role="tab" [class.active]="sekme() === 'belgeler'" [attr.aria-selected]="sekme() === 'belgeler'" (click)="sekmeSec('belgeler')">
+          <i class="ri-file-list-3-line" aria-hidden="true"></i>{{ t('DRAWER_TAB_DOCUMENTS') }}
+        </button>
+      }
+    </nav>
+
+    @if (sekme() === 'belgeler' && belgelerGorunur()) {
+      <app-finans-proje-belgeleri
+        [projeNo]="p.projeNo"
+        [donemPoNumaralari]="donemPo()"
+        [donemFaturaNumaralari]="donemFatura()"
+        [isaretEtiketi]="t('DRAWER_IN_PERIOD')"
+        [notMetni]="t('DRAWER_DOCS_NOTE_PERIOD')"
+        (kayitAc)="kayitAc.emit($event)" />
+    } @else if (yukleniyor()) {
+      <div class="crate-breakdown-empty"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> {{ t('PANEL_DETAIL_LOADING') }}</div>
+    } @else if (hata()) {
+      <div class="crate-breakdown-empty"><i class="ri-error-warning-line" aria-hidden="true"></i> {{ t('LIST_LOAD_ERROR') }}</div>
+    } @else if (!kalemler().length) {
+      <div class="crate-breakdown-empty">{{ t('PANEL_DETAIL_ITEMS_EMPTY') }}</div>
+    } @else if (sekme() === 'kategoriler') {
+      <table class="crate-breakdown panel-kategoriler">
+        <thead>
+          <tr>
+            <th>Kategori</th>
+            <th class="text-end">{{ t('PANEL_DETAIL_ITEMS') }}</th>
+            <th class="text-end">{{ t('CRATES') }}</th>
+            <th class="text-end">{{ t('WOOD_M3') }}</th>
+            <th class="text-end">{{ t('PLYWOOD_M3') }}</th>
+            <th class="text-end">{{ t('AMOUNT') }}</th>
+            <th class="text-end">{{ t('DRAWER_ON_PO') }}</th>
+            <th class="text-end">{{ t('DRAWER_INVOICED') }}</th>
+            <th>{{ t('STATUS') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (k of kategoriler(); track k.kategori) {
+            <tr class="is-clickable" (click)="kategoriSandiklari(k.kategori)">
+              <td><strong>{{ t(kategoriAnahtari(k.kategori || undefined)) }}</strong></td>
+              <td class="text-end">{{ k.kalemSayisi }}</td>
+              <td class="text-end">{{ k.sandikSayisi || '—' }}</td>
+              <td class="text-end nowrap">{{ k.ahsapM3 ? (k.ahsapM3 | number: '1.0-3') : '—' }}</td>
+              <td class="text-end nowrap">{{ k.kontraM3 ? (k.kontraM3 | number: '1.0-3') : '—' }}</td>
+              <td class="text-end nowrap"><strong>{{ k.net | number: '1.2-2' }}</strong></td>
+              <td class="text-end nowrap">{{ k.siparis | number: '1.2-2' }}</td>
+              <td class="text-end nowrap">{{ k.fatura | number: '1.2-2' }}</td>
+              <td><span [class]="'status ' + durumSinifi(k.durum)">{{ t(isDurumuAnahtari(k.durum)) }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <p class="crate-note drawer-note"><i class="ri-information-line" aria-hidden="true"></i>{{ t('DRAWER_CATEGORY_HINT') }}</p>
+    } @else {
+      <div class="drawer-filters">
+        <label class="drawer-search">
+          <i class="ri-search-line" aria-hidden="true"></i>
+          <input type="search" [ngModel]="arama()" (ngModelChange)="arama.set($event)" [placeholder]="t('DRAWER_CRATE_SEARCH')" [attr.aria-label]="t('DRAWER_CRATE_SEARCH')" />
+        </label>
+        @if (kategoriSuzgeci() !== null) {
+          <span class="drawer-chip">
+            <i class="ri-filter-3-line" aria-hidden="true"></i>{{ t(kategoriAnahtari(kategoriSuzgeci() || undefined)) }}
+            <button type="button" [attr.aria-label]="t('DRAWER_CLEAR_CATEGORY')" (click)="kategoriSuzgeci.set(null)"><i class="ri-close-line" aria-hidden="true"></i></button>
+          </span>
+        }
+        <div class="drawer-segments" role="group" [attr.aria-label]="t('STATUS')">
+          @for (f of suzgecler; track f.deger) {
+            <button type="button" [class.active]="durumSuzgeci() === f.deger" [attr.aria-pressed]="durumSuzgeci() === f.deger" (click)="durumSuzgeci.set(f.deger)">
+              {{ t(f.anahtar) }}<em>{{ suzgecSayilari()[f.deger] }}</em>
+            </button>
+          }
+        </div>
+      </div>
+      @if (sandiklar().length) {
+        <table class="crate-breakdown panel-sandiklar">
+          <thead>
+            <tr>
+              <th>{{ t('CRATE') }}</th>
+              <th class="text-end">{{ t('AMOUNT') }}</th>
+              <th class="text-end">PO / {{ t('INVOICE') }}</th>
+              <th>PO / {{ t('INVOICE') }} no</th>
+              <th>{{ t('STATUS') }}</th>
+              <th class="text-end"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of sandiklar(); track s.anahtar) {
+              <tr class="crate-summary-row is-clickable" [class.expanded]="sandikAcik(s)" (click)="sandikAcKapat(s)">
+                <td>
+                  <button type="button" class="crate-row-toggle" [attr.aria-expanded]="sandikAcik(s)" (click)="$event.stopPropagation(); sandikAcKapat(s)">
+                    <i [class]="sandikAcik(s) ? 'ri-arrow-down-s-line' : 'ri-arrow-right-s-line'" aria-hidden="true"></i>
+                    <strong>{{ s.sandikNo || t('CRATE_NONE') }}</strong>
+                  </button>
+                  <small>{{ s.sandikAdi }}@if (s.sandikTipi) { · {{ s.sandikTipi }} } · {{ s.kalemler.length }} {{ t('RECORDS_COUNT') }}</small>
+                  @if (s.fiyatBekleyenKayitSayisi) {
+                    <small class="attention-value">{{ s.fiyatBekleyenKayitSayisi }} {{ t('PRICE_PENDING_RECORDS') }}</small>
+                  }
+                </td>
+                <td class="text-end nowrap">{{ s.net | number: '1.2-2' }} {{ p.paraBirimi }}</td>
+                <td class="text-end nowrap"><small>{{ s.siparis | number: '1.2-2' }} / {{ s.fatura | number: '1.2-2' }}</small></td>
+                <td><small>PO: {{ s.poNumaralari.join(', ') || '—' }} · {{ t('INVOICE') }}: {{ s.faturaNumaralari.join(', ') || '—' }}</small></td>
+                <td><span [class]="'status ' + durumSinifi(s.durum)">{{ t(isDurumuAnahtari(s.durum)) }}</span></td>
+                <td class="text-end"></td>
+              </tr>
+              @if (sandikAcik(s)) {
+                @for (k of s.kalemler; track k.id) {
+                  <tr class="crate-record-row">
+                    <td>
+                      <span class="source-pill" [class.is-sarf]="sarfKaydi(k)">{{ sarfKaydi(k) ? t('SOURCE_SARF') : t('SOURCE_NET') }}</span>
+                      {{ t(kategoriAnahtari(k.kategori)) }}<small>{{ k.isAdi || k.sandikAdi }} · {{ k.finansTarihi | date: 'dd.MM.yyyy' }}</small>
+                    </td>
+                    <td class="text-end nowrap">{{ k.netTutar === null || k.netTutar === undefined ? '—' : (k.netTutar | number: '1.2-2') }}</td>
+                    <td class="text-end nowrap"><small>{{ (k.siparisNetTutar ?? 0) | number: '1.2-2' }} / {{ (k.faturalananNetTutar ?? 0) | number: '1.2-2' }}</small></td>
+                    <td>
+                      @for (po of k.poNumaralari; track po) { <span class="ref-pill">PO {{ po }}</span> }
+                      @for (ft of k.faturaNumaralari; track ft) { <span class="ref-pill is-invoice">{{ ft }}</span> }
+                      @if (!k.poNumaralari.length && !k.faturaNumaralari.length) { <small>—</small> }
+                    </td>
+                    <td><span [class]="'status ' + durumSinifi(k.durum ?? 1)">{{ t(isDurumuAnahtari(k.durum)) }}</span></td>
+                    <td class="text-end">
+                      <button type="button" class="btn btn-outline-primary btn-sm kalem-detay" (click)="$event.stopPropagation(); kayitAc.emit({ tur: 'IsKaydi', id: k.id })">{{ t('DETAIL') }}</button>
+                    </td>
+                  </tr>
+                }
+              }
+            }
+          </tbody>
+        </table>
+      } @else {
+        <div class="crate-breakdown-empty">{{ t('DRAWER_CRATES_NO_MATCH') }}</div>
+      }
+    }
+    @if (kesildi()) {
+      <p class="crate-note is-attention drawer-note"><i class="ri-error-warning-line" aria-hidden="true"></i>{{ t('PANEL_DETAIL_TRUNCATED') }}</p>
+    }
+  </div>
+</aside>
+
+@if (tumDonemlerAcik()) {
+  <app-finans-proje-detay
+    [projeNo]="p.projeNo"
+    [musteri]="p.musteri"
+    (kapat)="tumDonemlerAcik.set(false)"
+    (kayitAc)="tumDonemlerAcik.set(false); kayitAc.emit($event)" />
+}

@@ -22,6 +22,11 @@ import {
   FinansIsKaydi,
   FinansListelemeRequest,
   FinansOzelIsKaydetRequest,
+  FinansHacimGirRequest,
+  FinansProjeSandikKirilimi,
+  FinansMunferitIsKaydetRequest,
+  FinansUrunSecenegi,
+  FinansSandikKirilimiRequest,
   FinansSayfaliSonuc,
   FinansSiparis,
   FinansSiparisDetay,
@@ -93,6 +98,10 @@ export class FinansService {
   }
   fiyatlandir(id: number, request: FinansFiyatlandirma) {
     return this.api.post<void>(API.FINANS.FIYATLANDIRMA(id), request);
+  }
+  /** Ahşap ve kontra m³'ü elle girer; bileşik toplam işin m³ miktarı olur. */
+  hacimGir(id: number, request: FinansHacimGirRequest) {
+    return this.api.post<void>(API.FINANS.HACIM(id), request);
   }
   /** Para birimi tanımları (F1); seçim listeleri yalnız aktif olanları kullanır. */
   paraBirimleri(sadeceAktif = false) {
@@ -250,6 +259,33 @@ export class FinansService {
   ) {
     const params = this.listelemeParametreleri(request).set('yil', yil).set('ay', ay);
     return this.api.get<FinansAylikSayfaliSonuc>(API.FINANS.AYLIK_ISLER, { params });
+  }
+  /** Projenin sandık kırılımı (sayfalamasız, sunucuda gruplanmış); yil/ay verilirse yalnız o finans dönemi. */
+  projeSandikKirilimi(request: FinansSandikKirilimiRequest) {
+    let params = new HttpParams();
+    if (request.projeId) params = params.set('projeId', request.projeId);
+    if (request.projeNo?.trim()) params = params.set('projeNo', request.projeNo.trim());
+    if (request.musteri?.trim()) params = params.set('musteri', request.musteri.trim());
+    if (request.yil && request.ay) params = params.set('yil', request.yil).set('ay', request.ay);
+    if (request.sandikNo?.trim()) params = params.set('sandikNo', request.sandikNo.trim());
+    if (request.iptalEdilenleriDahilEt) params = params.set('iptalEdilenleriDahilEt', true);
+    return this.api.get<FinansProjeSandikKirilimi>(API.FINANS.PROJE_SANDIK_KIRILIMI, { params });
+  }
+  /** Münferit İşler sekmesi: elle açılmış özel işler (tarih aralığı, arama, iptaller). */
+  munferitIsler(request: FinansListelemeRequest) {
+    return this.liste<FinansIsKaydi>(API.FINANS.MUNFERIT_ISLER, request);
+  }
+  /** Yeni münferit iş: fiyat ürünün iş tarihindeki tarifesinden gelir. */
+  munferitIsOlustur(request: FinansMunferitIsKaydetRequest) {
+    return this.api.post<FinansIsKaydi>(API.FINANS.MUNFERIT_ISLER, request);
+  }
+  /** Münferit iş formunun tarife seçenekleri (aktif, en fazla 50) ve verilen iş tarihindeki tarife fiyatı. */
+  urunSecenekleri(arama?: string, isTuru?: number, tarih?: string) {
+    let params = new HttpParams();
+    if (arama?.trim()) params = params.set('arama', arama.trim());
+    if (isTuru) params = params.set('isTuru', isTuru);
+    if (tarih) params = params.set('tarih', tarih);
+    return this.api.get<FinansUrunSecenegi[]>(API.FINANS.URUN_SECENEKLERI, { params });
   }
   ozelIsOlustur(request: FinansOzelIsKaydetRequest) {
     return this.api.post<FinansIsKaydi>(API.FINANS.OZEL_ISLER, request);
@@ -434,6 +470,7 @@ export class FinansService {
     if (request.arama?.trim()) params = params.set('arama', request.arama.trim());
     if (request.projeNo?.trim()) params = params.set('projeNo', request.projeNo.trim());
     if (request.poNumarasi?.trim()) params = params.set('poNumarasi', request.poNumarasi.trim());
+    if (request.sandikNo?.trim()) params = params.set('sandikNo', request.sandikNo.trim());
     if (request.baslangic) params = params.set('baslangic', request.baslangic);
     if (request.bitis) params = params.set('bitis', request.bitis);
     for (const key of [

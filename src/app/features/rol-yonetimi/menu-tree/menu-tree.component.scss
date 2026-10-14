@@ -35,6 +35,18 @@
   }
 }
 
+// Sekme düğümünün R/W anlamı: etiketin yanında kısa açıklama.
+.node-help {
+  flex: 0 1 auto;
+  margin-right: auto;
+  min-width: 0;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .node-row {
   --seviye: var(--mt-n);
   display: flex;
@@ -158,6 +170,11 @@
   font-size: 13.5px;
   font-weight: 500;
   user-select: none;
+
+  // Sekme düğümünde etiket içeriği kadar yer alır; açıklama hemen yanında durur.
+  &:has(+ .node-help) {
+    flex: 0 1 auto;
+  }
 }
 
 // ===== Seviye etiketi =====

@@ -62,8 +62,9 @@ export class PdfService {
     return this.api.downloadFile(API.PDF.UCK_SANDIK_DURUM(projeId));
   }
 
-  stokPdf(): Observable<Blob> {
-    return this.api.downloadFile(API.PDF.STOK);
+  /** Stok raporu; durum verilirse yalnız o sekmenin kayıtları basılır. */
+  stokPdf(durumId?: number | null): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.STOK(durumId));
   }
 
   depoSandikPdf(projeTipiId?: number | null): Observable<Blob> {

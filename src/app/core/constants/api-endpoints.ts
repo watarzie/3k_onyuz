@@ -36,7 +36,20 @@ export const API = {
     SEVKIYATLAR: (id: number) => `${BASE}/proje/${id}/sevkiyatlar`,
     KILIDI_AC: (id: number) => `${BASE}/proje/${id}/kilidi-ac`,
     SEVK_TARIHI_GUNCELLE: `${BASE}/proje/sevk-tarihi-guncelle`,
+    FOTOGRAF_BAGLANTISI: (id: number) => `${BASE}/proje/${id}/fotograf-baglantisi`,
     DELETE: (id: number) => `${BASE}/proje/${id}`,
+  },
+  /** Tır seferi (çok projeli toplu sevk), sefer listesi ve sevkiyat istatistikleri. */
+  SEVKIYAT: {
+    TOPLU_SEVK: `${BASE}/sevkiyat/toplu-sevk`,
+    SEFERLER: `${BASE}/sevkiyat/seferler`,
+    SEFER_DETAY: (seferId: number) => `${BASE}/sevkiyat/seferler/${seferId}/detay`,
+    ESKI_SEFER_DETAY: `${BASE}/sevkiyat/seferler/eski-detay`,
+    ISTATISTIK: `${BASE}/sevkiyat/istatistik`,
+    /** Dönem raporu: format "pdf" (özet) veya "excel" (bütün döküm). */
+    RAPOR: (format: 'pdf' | 'excel') => `${BASE}/sevkiyat/rapor/${format}`,
+    SEFER_RAPOR: (seferId: number) => `${BASE}/sevkiyat/seferler/${seferId}/rapor`,
+    ESKI_SEFER_RAPOR: `${BASE}/sevkiyat/seferler/eski-rapor`,
   },
   AMBALAJ: {
     FORM_SURUMLERI: `${BASE}/ambalaj/uretim-formlari`,
@@ -57,6 +70,8 @@ export const API = {
     AMBALAJ_KARARI: (sandikId: number) => `${BASE}/ambalaj/sandiklar/${sandikId}/ambalaj-karari`,
     BAGIMSIZ_SANDIKLAR: (tur?: number) => `${BASE}/ambalaj/bagimsiz-sandiklar${tur ? `?tur=${tur}` : ''}`,
     BAGIMSIZ_SANDIK: (sandikId: number) => `${BASE}/ambalaj/bagimsiz-sandiklar/${sandikId}`,
+    OZEL_SANDIK_FINANSA_AKTAR: (sandikId: number) => `${BASE}/ambalaj/bagimsiz-sandiklar/${sandikId}/finansa-aktar`,
+    OZEL_SANDIK_FINANSTAN_GERI_AL: (sandikId: number) => `${BASE}/ambalaj/bagimsiz-sandiklar/${sandikId}/finanstan-geri-al`,
     ILAVE_SANDIK_ADAYLARI: (projeId: number, mevcutKayitId?: number | null) =>
       `${BASE}/ambalaj/projeler/${projeId}/ilave-sandik-adaylari${mevcutKayitId ? `?mevcutKayitId=${mevcutKayitId}` : ''}`,
     SANDIK_SECENEKLERI: (projeId: number) => `${BASE}/ambalaj/projeler/${projeId}/sandik-secenekleri`,
@@ -64,6 +79,7 @@ export const API = {
     IC_SANDIK_SABLONU: (sablonId: number) => `${BASE}/ambalaj/ic-sandik-sablonlari/${sablonId}`,
     TALEP_EDEN_KULLANICILAR: `${BASE}/ambalaj/talep-eden-kullanicilar`,
     KAYIT_DURUM: (kayitId: number) => `${BASE}/ambalaj/kayitlar/${kayitId}/durum`,
+    KAYIT_GECMIS: (kayitId: number) => `${BASE}/ambalaj/kayitlar/${kayitId}/gecmis`,
     PROJE_URETIM_DURUMU: (projeId: number) => `${BASE}/ambalaj/projeler/${projeId}/uretim-durumu`,
   },
   FINANS: {
@@ -73,6 +89,7 @@ export const API = {
     YASLANDIRMA: `${BASE}/finans/yaslandirma`,
     FINANS_TARIHI: (id: number) => `${BASE}/finans/is-kayitlari/${id}/finans-tarihi`,
     FIYATLANDIRMA: (id: number) => `${BASE}/finans/is-kayitlari/${id}/fiyatlandirma`,
+    HACIM: (id: number) => `${BASE}/finans/is-kayitlari/${id}/hacim`,
     PARA_BIRIMLERI: `${BASE}/finans/para-birimleri`,
     PARA_BIRIMI: (id: number) => `${BASE}/finans/para-birimleri/${id}`,
     PARAMETRELER: `${BASE}/finans/parametreler`,
@@ -96,6 +113,9 @@ export const API = {
     FATURA_ODEME: (faturaId: number) => `${BASE}/finans/faturalar/${faturaId}/odeme`,
     VADE_UYARILARI: `${BASE}/finans/vade-uyarilari`,
     AYLIK_ISLER: `${BASE}/finans/aylik-isler`,
+    PROJE_SANDIK_KIRILIMI: `${BASE}/finans/proje-sandik-kirilimi`,
+    MUNFERIT_ISLER: `${BASE}/finans/munferit-isler`,
+    URUN_SECENEKLERI: `${BASE}/finans/urun-secenekleri`,
     OZEL_ISLER: `${BASE}/finans/ozel-isler`,
     OZEL_IS_AYLIK_DEGER: (ozelIsId: number) => `${BASE}/finans/ozel-isler/${ozelIsId}/aylik-deger`,
     OZEL_IS_IPTAL: (ozelIsId: number) => `${BASE}/finans/ozel-isler/${ozelIsId}/iptal`,
@@ -164,6 +184,7 @@ export const API = {
     CEKI_SATIRI_GUNCELLE: `${BASE}/sandik/ceki-satiri-guncelle`,
     CEKI_SATIRLARI_SIL: `${BASE}/sandik/ceki-satirlari-sil`,
     OZELLIK_GUNCELLE: `${BASE}/sandik/ozellik-guncelle`,
+    ICERIK_BILGISI_GUNCELLE: `${BASE}/sandik/icerik-bilgisi-guncelle`,
     KAPAT: `${BASE}/sandik/kapat`,
     TOPLU_KAPAT: `${BASE}/sandik/toplu-kapat`,
     LOKASYON_GUNCELLE: `${BASE}/sandik/lokasyon-guncelle`,
@@ -190,6 +211,7 @@ export const API = {
   },
   UCK: {
     URUNLER: (projeId: number) => `${BASE}/uck/${projeId}/urunler`,
+    PROJEDEN_KARSILAMA_KAYNAKLARI: (projeId: number) => `${BASE}/uck/${projeId}/projeden-karsilama-kaynaklari`,
     IS_LISTESI: `${BASE}/uck/is-listesi`,
     DURUM_GUNCELLE: `${BASE}/uck/durum-guncelle`,
     DURUM_SIFIRLA: `${BASE}/uck/durum-sifirla`,
@@ -199,6 +221,7 @@ export const API = {
   },
   STOK: {
     LIST: `${BASE}/stok`,
+    SAYILAR: `${BASE}/stok/sayilar`,
     CREATE: `${BASE}/stok`,
     DELETE: (id: number) => `${BASE}/stok/${id}`,
   },
@@ -243,7 +266,7 @@ export const API = {
     SAHA_GERCEKLESEN_CEKI_LISTESI: (projeId: number) => `${BASE}/pdf/saha-gerceklesen-ceki-listesi/${projeId}`,
     SAHA_GERCEKLESEN_CEKI_LISTESI_EXCEL: (projeId: number) => `${BASE}/pdf/saha-gerceklesen-ceki-listesi/${projeId}/excel`,
     UCK_SANDIK_DURUM: (projeId: number) => `${BASE}/pdf/uck-sandik-durum/${projeId}`,
-    STOK: `${BASE}/pdf/stok`,
+    STOK: (durumId?: number | null) => `${BASE}/pdf/stok${durumId ? `?durumId=${durumId}` : ''}`,
     DEPO_SANDIK: (projeTipiId?: number | null) =>
       projeTipiId ? `${BASE}/pdf/depo-sandik?projeTipiId=${projeTipiId}` : `${BASE}/pdf/depo-sandik`,
     DEPO_SANDIK_PROJE: (projeId: number) => `${BASE}/pdf/depo-sandik/proje/${projeId}`,

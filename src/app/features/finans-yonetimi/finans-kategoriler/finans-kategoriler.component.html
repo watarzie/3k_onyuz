@@ -152,8 +152,7 @@
                 [disabled]="
                   kalemSaving() ||
                   !kalemForm.kod.trim() ||
-                  !kalemForm.ad.trim() ||
-                  (!!kalemId && !varsayilanlariGorebilir())
+                  !kalemForm.ad.trim()
                 "
                 (click)="kalemKaydet()"
               >
@@ -165,12 +164,6 @@
               <i class="ri-information-line" aria-hidden="true"></i>{{ t('ITEM_DEFAULTS_HELP') }}
             </p>
           </div>
-          @if (!varsayilanlariGorebilir() || !kalemVarsayilanlariTam()) {
-            <p class="v2-warning">
-              Mevcut kalemi düzenlemek için gider, parasal veri, birim fiyat ve tutar görüntüleme
-              izinleri gerekir. İzin değiştiyse alt kalemleri yeniden yükleyin.
-            </p>
-          }
         }
         @if (kalemLoading()) {
           <div class="v2-empty" role="status">
@@ -206,9 +199,7 @@
                       @if (yonetebilir() && seciliKategori()?.aktif) {
                         <button
                           class="btn btn-outline-primary btn-sm"
-                          [disabled]="
-                            kalemSaving() || !varsayilanlariGorebilir() || !kalemVarsayilanlariTam()
-                          "
+                          [disabled]="kalemSaving()"
                           (click)="kalemDuzenle(k)"
                         >
                           <i class="ri-edit-line" aria-hidden="true"></i>{{ t('EDIT') }}

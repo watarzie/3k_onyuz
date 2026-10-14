@@ -710,6 +710,8 @@ dd {
 }
 .filter-check {
   display: inline-flex;
+  // Genel label kuralı sütun düzeni verir; onay kutusu metnin yanında durur.
+  flex-direction: row;
   align-items: center;
   gap: 8px;
   height: 40px;
@@ -767,6 +769,166 @@ dd {
 }
 .project-item-row > td {
   font-size: 12.5px;
+}
+// Kayıt aramada proje altındaki sandık başlığı (alt toplamlı) ve kaynak bileşeni rozeti (sandık / sarf).
+.crate-group-row > td {
+  background: color-mix(in srgb, var(--v2-soft, #f7f7ff) 55%, var(--whiteColor, #fff));
+  font-size: 12.5px;
+}
+.crate-group-row > td:nth-child(2) {
+  padding-left: 30px;
+  i {
+    margin-right: 6px;
+    color: var(--v2-primary, #605dff);
+  }
+  small {
+    margin-left: 8px;
+    color: var(--v2-muted, #64748b);
+  }
+}
+.source-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: #eef2f7;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.source-badge.is-sarf {
+  background: #fff6db;
+  color: #9a6700;
+}
+.filter-field.filter-project {
+  flex: 0 1 240px;
+  // Seçici düğmesi filtre alanlarının yüksekliği ve yazı boyunda.
+  ::ng-deep .project-picker > .form-select {
+    height: 40px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+}
+.filter-field.filter-crate {
+  flex: 0 1 140px;
+  min-width: 110px;
+}
+// Münferit İşler sekmesi: başlık, ürün seçici ve fiyat önizlemesi.
+.adhoc-jobs .record-search-head {
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.adhoc-title h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+  i {
+    color: var(--v2-primary, #605dff);
+  }
+}
+.adhoc-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.adhoc-row td small {
+  display: block;
+  color: var(--v2-muted, #64748b);
+}
+.adhoc-row.is-cancelled td {
+  opacity: 0.65;
+}
+.adhoc-selected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--borderColor, #e5eaf1);
+  border-radius: 10px;
+  background: var(--v2-soft, #f7f7ff);
+  font-size: 13px;
+  small {
+    color: var(--v2-muted, #64748b);
+  }
+}
+.adhoc-options {
+  display: flex;
+  flex-direction: column;
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid var(--borderColor, #e5eaf1);
+  border-radius: 10px;
+  > small {
+    padding: 8px 10px;
+  }
+}
+.adhoc-option {
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--borderColor, #e5eaf1);
+  background: transparent;
+  font-size: 13px;
+  text-align: left;
+  &:last-child {
+    border-bottom: 0;
+  }
+  &:hover {
+    background: var(--v2-soft, #f7f7ff);
+  }
+}
+.adhoc-tariff-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(0, 2fr);
+  gap: 8px;
+}
+@media (max-width: 640px) {
+  .adhoc-tariff-row {
+    grid-template-columns: 1fr;
+  }
+}
+.adhoc-project-source {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  label {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+  // Formun genel input kuralları radyoyu büyütmesin.
+  input[type='radio'] {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    min-height: 0;
+    margin: 0;
+    accent-color: var(--primaryColor);
+  }
+}
+.adhoc-no-tariff i {
+  margin-right: 4px;
+}
+.adhoc-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: #334155;
+  font-size: 13px;
+  i {
+    color: var(--v2-primary, #605dff);
+  }
 }
 .v2-list-card > .filter-bar {
   margin: 0 20px 16px;

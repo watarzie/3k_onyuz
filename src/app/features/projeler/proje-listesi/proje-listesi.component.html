@@ -102,7 +102,7 @@
       <span class="pl-sayac">{{ totalCount() }}</span>
     </div>
     <div class="project-list-header-actions">
-      @if (canUseBulkEksikRapor() || canUseBulkTalepFormu()) {
+      @if (canUseBulkSecim()) {
         <div class="toolbar-group" role="group" aria-label="Seçili projeler için toplu işlemler" [class.has-selection]="selectedEksikRaporCount() > 0">
           <span class="toolbar-group-label" title="Toplu işlemler seçili projelere uygulanır">
             <span class="toolbar-count">{{ selectedEksikRaporCount() }}</span>seçili
@@ -133,6 +133,15 @@
                 <i class="ri-file-excel-2-line toolbar-icon is-success"></i>
               }
               <span>Talep Formu Excel</span>
+            </button>
+          }
+          @if (canUseTopluSevk()) {
+            <button type="button" class="toolbar-btn toplu-sevk-trigger"
+              [disabled]="selectedEksikRaporCount() === 0"
+              (click)="openTopluSevk()"
+              title="Seçilen projelerin sevke hazır sandıklarını tek tır seferinde sevk et">
+              <i class="ri-truck-line toolbar-icon is-warning"></i>
+              <span>Toplu Sevk Et</span>
             </button>
           }
         </div>
@@ -234,7 +243,7 @@
               @if (canUseBulkSecim()) {
                 <th class="bulk-report-select-column">
                   <input type="checkbox" class="form-check-input"
-                    aria-label="Bu sayfadaki projeleri rapor için seç"
+                    aria-label="Bu sayfadaki projeleri toplu işlem için seç"
                     [checked]="allCurrentPageSelectedForEksikRapor()"
                     [indeterminate]="someCurrentPageSelectedForEksikRapor()"
                     [disabled]="bulkEksikRaporDownloading() !== null || projeler().length > 25"
@@ -271,7 +280,7 @@
                     <input type="checkbox" class="form-check-input"
                       [checked]="isEksikRaporProjeSelected(p.id)"
                       [disabled]="bulkEksikRaporDownloading() !== null"
-                      [attr.aria-label]="p.projeNo + ' projesini rapor için seç'"
+                      [attr.aria-label]="p.projeNo + ' projesini toplu işlem için seç'"
                       (click)="$event.stopPropagation()"
                       (change)="toggleEksikRaporProjeSelection(p.id)" />
                   </td>
@@ -280,6 +289,18 @@
                   <div class="pl-proje__hucre">
                     <span class="pl-proje__ikon"><i [class]="isSandikMode() ? 'ri-folder-line' : 'ri-folder-3-line'" aria-hidden="true"></i></span>
                     <span class="pl-proje__no">{{ p.projeNo }}</span>
+                    @if (fotografBaglantisiGorunur() && p.fotografBaglantisi) {
+                      <a class="pl-foto" [href]="p.fotografBaglantisi" target="_blank" rel="noopener noreferrer"
+                         [title]="'Fotoğrafları yeni sekmede aç · ' + fotografSitesi(p.fotografBaglantisi)"
+                         [attr.aria-label]="p.projeNo + ' fotoğraflarını yeni sekmede aç'">
+                        <i class="ri-camera-line" aria-hidden="true"></i><span>Fotoğraflar</span><i class="ri-external-link-line pl-foto__dis" aria-hidden="true"></i>
+                      </a>
+                    } @else if (fotografBaglantisiDuzenlenebilir()) {
+                      <button type="button" class="pl-foto pl-foto--ekle" title="Fotoğraf bağlantısı ekle"
+                              [attr.aria-label]="p.projeNo + ' için fotoğraf bağlantısı ekle'" (click)="fotografPenceresiniAc(p)">
+                        <i class="ri-camera-line" aria-hidden="true"></i><i class="ri-add-line pl-foto__arti" aria-hidden="true"></i>
+                      </button>
+                    }
                   </div>
                 </td>
                 @if (showProjeTipiFilter()) {
@@ -352,6 +373,11 @@
                 @if (shouldShowActions(p)) {
                   <td class="pl-c-islem">
                     <app-islemler-menusu>
+                      @if (fotografBaglantisiDuzenlenebilir() && p.fotografBaglantisi) {
+                        <button type="button" class="btn btn-sm btn-outline-primary pl-foto-duzenle" (click)="fotografPenceresiniAc(p)">
+                          <i class="ri-camera-line me-1"></i>Fotoğraf Bağlantısını Düzenle
+                        </button>
+                      }
                       @if (canSeeRevizyonGecmisi(p)) {
                         <button type="button" class="btn btn-sm btn-outline-primary" (click)="revizyonGecmisiProje.set(p)"><i class="ri-history-line me-1"></i>{{ 'REV_HISTORY.TITLE' | translate }}</button>
                       }
@@ -478,7 +504,7 @@
                           <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
                         </button>
                       }
-                      @if ((canSevkEtCurrent() || canUpdatePlanlananSevkTarihiCurrent()) && (!isSandikMode() || isSahaYonetimi() || isYedekYonetimi())) {
+                      @if (!isSandikMode() || isSahaYonetimi() || isYedekYonetimi()) {
                         @if (p.durumMetni === 'SevkEdildi' || p.durumMetni === 'Sevk Edildi') {
                           @if (!isSevkEdilen() && kilidiAcabilir(p)) {
                             <button class="btn btn-sm btn-outline-primary" (click)="openKilitAcModal(p)">
@@ -491,12 +517,12 @@
                               <i class="ri-lock-unlock-line me-1"></i>Kilidi Aç
                             </button>
                           }
-                          @if (canUpdatePlanlananSevkTarihiCurrent()) {
+                          @if (canUpdatePlanlananSevkTarihiProje(p)) {
                             <button class="btn btn-sm btn-warning" (click)="openSevkTarihiModal(p)" title="Planlanan Sevk Tarihi Gir">
                               <i class="ri-calendar-event-line me-1"></i>Planlanan Sevk Tarihi
                             </button>
                           }
-                          @if (canSevkEtCurrent()) {
+                          @if (canSevkEtProje(p)) {
                             <button class="btn btn-sm btn-warning" (click)="openSevkEtModal(p)" title="Projeyi Sevk Et">
                               <i class="ri-truck-line me-1"></i>
                               {{ p.durumMetni === 'EksikSevkEdildi' || p.durumMetni === 'Eksik Sevk Edildi' ? 'Kalanı Sevk Et' : 'Sevk Et' }}
@@ -553,6 +579,53 @@
     }
   </div>
 </div>
+
+<!-- ===== Fotoğraf Bağlantısı ===== -->
+@if (fotografProje(); as fp) {
+  <div class="tz-modal-backdrop" (click)="fotografPenceresiniKapat()"></div>
+  <div class="tz-modal tz-modal--md pl-foto-modal" role="dialog" aria-modal="true" aria-labelledby="pl-foto-baslik" (keydown.escape)="fotografPenceresiniKapat()">
+    <header class="tz-modal__header">
+      <span class="tz-modal__icon"><i class="ri-camera-line"></i></span>
+      <div class="tz-modal__title">
+        <h5 id="pl-foto-baslik">Fotoğraf Bağlantısı</h5>
+        <p>{{ fp.projeNo }}@if (fp.musteri) { · {{ fp.musteri }} }</p>
+      </div>
+      <button type="button" class="tz-modal__close" aria-label="Kapat" (click)="fotografPenceresiniKapat()"><i class="ri-close-line"></i></button>
+    </header>
+    <div class="tz-modal__body">
+      <label class="tz-field">
+        <span>Fotoğrafların bulunduğu sayfanın adresi</span>
+        <input class="form-control pl-foto-adres" type="url" inputmode="url" autocomplete="off" maxlength="1000"
+               placeholder="https://foto.ornek.com/projeler/{{ fp.projeNo }}"
+               [value]="fotografTaslak()" (input)="fotografTaslak.set($any($event.target).value)"
+               (keydown.enter)="fotografBaglantisiKaydet()"
+               [attr.aria-invalid]="!fotografTaslakGecerli()" />
+        @if (!fotografTaslakGecerli()) {
+          <small class="pl-foto-hata" role="alert"><i class="ri-error-warning-line"></i> Geçerli bir web adresi girin (http veya https).</small>
+        } @else if (fotografOnizleme(); as adres) {
+          <small class="pl-foto-onizleme">
+            <i class="ri-link"></i> {{ fotografSitesi(adres) }} ·
+            <a [href]="adres" target="_blank" rel="noopener noreferrer">Bağlantıyı dene</a>
+          </small>
+        } @else {
+          <small>Tarayıcıda fotoğraf klasörünü veya albümünü açıp adres çubuğundaki bağlantıyı yapıştırın.</small>
+        }
+      </label>
+    </div>
+    <footer class="tz-modal__footer">
+      @if (fp.fotografBaglantisi) {
+        <button type="button" class="tz-btn tz-btn--danger-hover pl-foto-kaldir" (click)="fotografBaglantisiKaldir()" [disabled]="fotografKaydediliyor()">
+          <i class="ri-link-unlink tz-ico-danger"></i>Bağlantıyı Kaldır
+        </button>
+      }
+      <button type="button" class="tz-btn" (click)="fotografPenceresiniKapat()" [disabled]="fotografKaydediliyor()">Vazgeç</button>
+      <button type="button" class="tz-btn tz-btn--primary pl-foto-kaydet" (click)="fotografBaglantisiKaydet()"
+              [disabled]="fotografKaydediliyor() || !fotografOnizleme() || !fotografTaslakGecerli()">
+        <i [class]="fotografKaydediliyor() ? 'ri-loader-4-line tz-spin' : 'ri-save-3-line'"></i>Kaydet
+      </button>
+    </footer>
+  </div>
+}
 
 <!-- ===== Sevk Tarihi Güncelle Modal ===== -->
 @if (showSevkTarihiModal()) {
@@ -881,6 +954,10 @@
 }
 
 <!-- ===== SEVK ET MODAL ===== -->
+@if (topluSevkProjeleri(); as topluSevkListesi) {
+  <app-toplu-sevk [projeler]="topluSevkListesi" (kapandi)="closeTopluSevk()" (sevkEdildi)="onTopluSevkEdildi($event)" />
+}
+
 @if (showSevkEtModal()) {
   <div class="modal-backdrop fade show" (click)="closeSevkEtModal()"></div>
   <div class="modal d-block fade show" tabindex="-1">

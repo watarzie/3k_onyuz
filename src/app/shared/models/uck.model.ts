@@ -4,6 +4,8 @@ import { SahaTamamlamaIzDto } from './saha-iz.model';
 export interface UcKUrunDto {
   cekiSatiriId: number;
   sandikIcerikId?: number;
+  /** Satırın sandığı; ürün bilgisi bu sandık ve içerik üzerinden kaydedilir. */
+  sandikId?: number | null;
   /** Çeki satırındaki ana talep; sandık dağılımından bağımsız toplamdır. */
   anaIstenenAdet?: number;
   /** İlk miktar düzenlemesinden önceki çeki miktarı; null ise kayıtlı miktar düzenlemesi yoktur. */
@@ -21,6 +23,8 @@ export interface UcKUrunDto {
   kaynakCekiSatiriId?: number;
   kaynakProjeNo?: string;
   kaynakSandikNo?: string;
+  /** Seçili sandık satırının kalıcı ürün bilgisi (seri no, SKT, lot); 3K karşılama panelinden düzenlenir. */
+  urunBilgisi?: string | null;
   kaynakSiraNo?: number;
   sahaTamamlamalari: SahaTamamlamaIzDto[];
   siraNo: number;
@@ -171,6 +175,23 @@ export interface UcKDurumGuncelleDto {
   mevcutProjeNo?: string;
   mevcutSandikNo?: string;
   kaynakUrunAdi?: string;
+}
+
+/**
+ * "Projeden Karşılandı" panelinde kaynak projeden seçilebilecek ürün.
+ * GET /api/uck/{hedefProjeId}/projeden-karsilama-kaynaklari?kaynakProjeId= — hedef projenin 3K W izniyle açılır;
+ * değerler kaynak projenin Grid satırlarıyla aynıdır. Çok sandıklı satır her sandık için ayrı döner.
+ */
+export interface ProjedenKarsilamaKaynakDto {
+  cekiSatiriId: number;
+  siraNo: number;
+  barkodNo: string;
+  olcuResmiPozNo?: string | null;
+  aciklama: string;
+  /** Bu sandık satırına 3K'da gelen miktar. */
+  gelenMiktar: number;
+  /** Bu sandık satırında kullanılabilir net miktar. */
+  netKullanilabilir: number;
 }
 
 export interface TopluTamGeldiDto {

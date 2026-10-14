@@ -2,6 +2,7 @@ import { signal } from '@angular/core';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { of, Subject } from 'rxjs';
 import { FinansOdemeFiltresi } from '../../../core/constants/enums';
+import { FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
 import { FinansService } from '../../../core/services/finans.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -15,6 +16,8 @@ describe('Finans yönetim tasarımı — mevcut iş akışları', () => {
   let api: jasmine.SpyObj<FinansService>;
   let toast: jasmine.SpyObj<ToastService>;
   const write = signal(true);
+  /** Okunamayan rol ağacı düğümleri (alt sekme izinleri için). */
+  const gizli = signal<string[]>([]);
   const fatura: FinansFatura = {
     id: 8,
     kayitNo: 'F8',
@@ -57,6 +60,7 @@ describe('Finans yönetim tasarımı — mevcut iş akışları', () => {
     api.siparisler.and.returnValue(of({ isSuccess: true, value: page<FinansSiparis>([]) }));
     api.faturalar.and.returnValue(of({ isSuccess: true, value: page<FinansFatura>([]) }));
     api.giderKategorileri.and.returnValue(of({ isSuccess: true, value: [] }));
+    gizli.set([]);
     TestBed.configureTestingModule({
       imports: [FinansBelgelerListesiComponent, FinansRaporlarComponent],
       providers: [
@@ -64,7 +68,7 @@ describe('Finans yönetim tasarımı — mevcut iş akışları', () => {
         { provide: ToastService, useValue: toast },
         {
           provide: PermissionService,
-          useValue: { hasAccess: () => true, canWrite: () => write() },
+          useValue: { hasAccess: (kod: string) => !gizli().includes(kod), canWrite: (kod: string) => write() && !gizli().includes(kod) },
         },
         { provide: TranslationService, useValue: { translate: (key: string) => key } },
       ],
@@ -155,6 +159,38 @@ describe('Finans yönetim tasarımı — mevcut iş akışları', () => {
     c.odemeKaydet();
     expect(c.odemeHatasi()).toBe('FINANS_V2.PAYMENT_UNMARK_REASON_ERROR');
     expect(api.faturaOdeme).toHaveBeenCalledTimes(1);
+  });
+
+  it('Faturalar alt sekmesi okunamıyorsa fatura listesi düğmesi yoktur; vade uyarısından fatura istense de PO listesi açılır', () => {
+    gizli.set([FINANS_YETKI.SekmePoFaturaFatura]);
+    const fixture = TestBed.createComponent(FinansBelgelerListesiComponent);
+    fixture.componentRef.setInput('baslangicTuru', 'Fatura');
+    fixture.detectChanges();
+    const c = fixture.componentInstance;
+    expect(c.tur).toBe('Siparis');
+    expect(fixture.nativeElement.querySelectorAll('.v2-segmented button').length).toBe(1);
+    expect(api.siparisler).toHaveBeenCalled();
+    expect(api.faturalar).not.toHaveBeenCalled();
+    c.turSec('Fatura');
+    expect(c.tur).toBe('Siparis');
+    // Fatura girişi ve ödeme Faturalar alt sekmesinin W iznine bağlıdır.
+    expect(c.faturaGirilebilir()).toBeFalse();
+    expect(c.odemeKaydedilebilir(fatura)).toBeFalse();
+  });
+
+  it("açık listenin alt sekme izni kalkınca okunabilen listeye geçilir; PO'lar okunamasa da Faturalar W ile fatura girilir", () => {
+    const fixture = TestBed.createComponent(FinansBelgelerListesiComponent);
+    fixture.detectChanges();
+    const c = fixture.componentInstance;
+    expect(c.tur).toBe('Siparis');
+    expect(c.faturaGirilebilir()).toBeTrue();
+    gizli.set([FINANS_YETKI.SekmePoFaturaPo]);
+    fixture.detectChanges();
+    expect(c.tur).toBe('Fatura');
+    expect(api.faturalar).toHaveBeenCalled();
+    // PO seçimi için PO listesi Faturalar alt sekmesine de açıktır.
+    expect(c.faturaGirilebilir()).toBeTrue();
+    expect(c.odemeKaydedilebilir(fatura)).toBeTrue();
   });
 
   it('ödeme yazma izni yoksa hızlı ödeme paneli açılmaz; 202 yanıtı onay bilgisini gösterir', () => {

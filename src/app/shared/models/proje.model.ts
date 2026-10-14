@@ -39,6 +39,13 @@ export interface ProjeDto {
   nakilOlcuResmiNo?: string;
   sonMontajResmiNo?: string;
   projeMuduru?: string;
+  /** Fotoğraf sayfası bağlantısı; sunucu yalnız proje-fotograf-baglantisi R izniyle doldurur. */
+  fotografBaglantisi?: string | null;
+}
+
+/** Fotoğraf bağlantısı kaydının sonucu (sunucu JSON nesnesi döndürür). */
+export interface ProjeFotografBaglantisiSonucu {
+  fotografBaglantisi: string | null;
 }
 
 export interface ProjeOlusturDto {

@@ -70,6 +70,13 @@ export const routes: Routes = [
           import('./features/projeler/proje-listesi/proje-listesi.component').then(m => m.ProjeListesiComponent),
         data: { menuKod: YETKI.PROJE.SEVK_EDILEN },
       },
+      {
+        path: 'projeler/sevkiyatlar',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/projeler/sevkiyatlar/sevkiyatlar.component').then(m => m.SevkiyatlarComponent),
+        data: { menuKod: YETKI.PROJE.SEVKIYATLAR },
+      },
 
       // --- Sandık Yönetimi ---
       {

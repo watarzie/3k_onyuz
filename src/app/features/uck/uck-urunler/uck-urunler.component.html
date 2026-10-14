@@ -145,6 +145,9 @@
                   <span class="badge bg-secondary-subtle text-secondary" style="font-size:10px">Manuel</span>
                   }
                 </div>
+                @if (u.urunBilgisi) {
+                <small class="urun-bilgisi-meta" [title]="u.urunBilgisi"><i class="ri-price-tag-3-line"></i>{{ u.urunBilgisi }}</small>
+                }
                 <div class="saha-inline-meta">
                   @if (hasKaynakSahaIz(u)) {
                   <span class="saha-source-pill" [title]="getKaynakSahaLabel(u)">
@@ -553,6 +556,9 @@
         <span class="ozet-chip"><i class="ri-barcode-line"></i> {{ panelUrun()!.barkodNo }}</span>
         <span class="ozet-chip"><i class="ri-archive-line"></i> {{ panelUrun()!.sandikNo }}</span>
         <span class="ozet-chip"><i class="ri-stack-line"></i> Bu sandıkta: {{ formatMiktar(getSandikMiktari(panelUrun()!)) }} {{ panelUrun()!.birim }}</span>
+        @if (panelUrun()!.urunBilgisi) {
+        <span class="ozet-chip urun-bilgisi-chip" [title]="ts.translate('LABELS.URUN_BILGISI')"><i class="ri-price-tag-3-line"></i> {{ panelUrun()!.urunBilgisi }}</span>
+        }
         @if (hasAnaToplamFarki(panelUrun()!)) {
         <span class="ozet-chip"><i class="ri-file-list-3-line"></i> Ana toplam: {{ formatMiktar(getAnaIstenenAdet(panelUrun()!)) }} {{ panelUrun()!.birim }}</span>
         }
@@ -608,6 +614,9 @@
       @if (panelTip() === 'Fazla Geldi') {
       <small class="text-muted">Buraya yalnızca fazla teslim edilen adet girilir.</small>
       }
+      @if (panelTip() === 'Tedarikçiden Geldi') {
+      <small class="text-muted">Tedarikçiden gelen toplam adet girilir; kalanı aşan kısım stoka aktarılabilir.</small>
+      }
     </div>
 
     <!-- Kalan Gösterge -->
@@ -635,7 +644,7 @@
     </div>
     }
 
-    @if (panelTip() === 'Fazla Geldi') {
+    @if (panelTip() === 'Fazla Geldi' || tedarikciFazlaOnizleme > 0) {
     <div class="fazla-geldi-card mb-3">
       <div class="fazla-icon"><i class="ri-inbox-archive-line"></i></div>
       <div class="fazla-content">
@@ -643,8 +652,13 @@
           <input class="form-check-input mt-1" type="checkbox" [ngModel]="panelFazlaStogaAktar()"
             (ngModelChange)="panelFazlaStogaAktar.set($event)" />
           <span>
+            @if (panelTip() === 'Tedarikçiden Geldi') {
+            <strong class="tedarikci-fazla-ozet">Stoka aktar: {{ formatMiktar(tedarikciFazlaOnizleme) }} adet stoğa aktarılacak</strong>
+            <small>Kalan kadarı karşılanır; aşan adet stok giriş nedeni "Tedarikçi fazla teslim" ile ayrı stok kaydı olur.</small>
+            } @else {
             <strong>Stoka aktar</strong>
             <small>Stok giriş nedeni: Fazla teslim</small>
+            }
           </span>
         </label>
       </div>
@@ -683,7 +697,12 @@
       </div>
 
       <!-- Kaynak Ürün Seçimi -->
-      @if (kaynakUrunler().length > 0) {
+      @if (kaynakUrunlerYukleniyor()) {
+      <div class="text-muted mt-1 small"><span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Kaynak
+        projenin ürünleri yükleniyor...</div>
+      } @else if (kaynakUrunHatasi()) {
+      <div class="text-danger mt-1 small"><i class="ri-error-warning-line me-1"></i>{{ kaynakUrunHatasi() }}</div>
+      } @else if (kaynakUrunler().length > 0) {
       <label class="form-label fw-semibold mt-2">
         Kaynak Ürün <span class="text-danger">*</span>
       </label>
@@ -773,8 +792,29 @@
         Açıklama
         @if (isAciklamaZorunlu) { <span class="text-danger">*</span> }
       </label>
-      <textarea class="form-control" rows="2" placeholder="Detay girin..." [ngModel]="panelAciklama()"
+      <textarea class="form-control" rows="2" [placeholder]="ts.translate('LABELS.ISLEM_ACIKLAMASI_IPUCU')" [ngModel]="panelAciklama()"
         (ngModelChange)="panelAciklama.set($event)"></textarea>
+    </div>
+
+    <!-- 5. Ürün bilgisi (seri no, SKT, lot): karşılamadan bağımsız, kendi düğmesiyle kaydedilir -->
+    <div class="mb-4 urun-bilgisi-alani">
+      <label class="form-label fw-semibold" for="panelUrunBilgisi">{{ ts.translate('LABELS.URUN_BILGISI') }}</label>
+      <small class="text-muted d-block mb-2">{{ ts.translate('LABELS.URUN_BILGISI_IPUCU') }}</small>
+      <textarea id="panelUrunBilgisi" class="form-control urun-bilgisi-input" rows="2" [attr.maxlength]="urunBilgisiEnFazla"
+        [placeholder]="ts.translate('LABELS.URUN_BILGISI_ORNEK')" [ngModel]="panelUrunBilgisi()"
+        (ngModelChange)="panelUrunBilgisi.set($event)"
+        [disabled]="!urunBilgisiKaydedilebilir() || urunBilgisiSaving()"></textarea>
+      <div class="d-flex align-items-center justify-content-between mt-2">
+        <small class="text-muted">{{ panelUrunBilgisi().length }} / {{ urunBilgisiEnFazla }}</small>
+        <button type="button" class="btn btn-outline-primary btn-sm urun-bilgisi-kaydet" (click)="urunBilgisiKaydet()"
+          [disabled]="!urunBilgisiKaydedilebilir() || urunBilgisiSaving() || !urunBilgisiDegisti()">
+          @if (urunBilgisiSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          <i class="ri-price-tag-3-line me-1"></i>Ürün bilgisini kaydet
+        </button>
+      </div>
+      @if (urunBilgisiKilitNedeni()) {
+      <small class="text-muted d-block mt-1"><i class="ri-lock-line me-1"></i>{{ urunBilgisiKilitNedeni() }}</small>
+      }
     </div>
 
     <!-- Kaydet -->

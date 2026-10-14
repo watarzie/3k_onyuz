@@ -13,10 +13,14 @@ export const YETKI = {
     KOK: 'projeler',
     AKTIF_PROJELER: 'aktif-projeler',
     SEVK_EDILEN: 'sevk-edilen',
+    /** Sevkiyatlar sayfası: tır seferleri ve sevkiyat istatistikleri (R). */
+    SEVKIYATLAR: 'sevkiyatlar',
     SEVK_ET: 'proje-sevk-et',
     SIL: 'proje-sil',
     CEKI_YUKLE: 'ceki-yukle',
     PLANLANAN_SEVK_TARIHI: 'planlanan-sevk-tarihi',
+    /** Proje fotoğraf bağlantısı; bütün proje listelerinde aynı kod: R görür ve açar, W ekler/düzenler/kaldırır. */
+    FOTOGRAF_BAGLANTISI: 'proje-fotograf-baglantisi',
   },
   SANDIK: {
     YONETIMI: 'sandik-yonetimi',
@@ -106,40 +110,33 @@ export const AMBALAJ_YETKI = {
   KayitEkle: 'ambalaj-kayit-ekle',
   KayitSil: 'ambalaj-kayit-sil',
 } as const;
+/**
+ * Finans yetkisi yalnız sekme ve alt sekme düzeyindedir (sunucudaki YetkiKodlari.Finans): R görünen verilerin tamamını
+ * (tutar, fiyat, gelir, gider, kârlılık, ölçü, m³) gösterir, W o sekmedeki bütün işlemleri yapar. İş Takibi, Tanımlar
+ * ve PO/Fatura sekmelerinin alt sekmeleri vardır; sekme alt sekmenin tavanıdır. Alt işlem ve alan izni yoktur; birden
+ * çok sekmede açılan ortak işlemler için ortak/finans-izinleri.ts'deki sekme kümelerine bakın.
+ */
 export const FINANS_YETKI = {
   Modul: 'finans-yonetimi',
-  GelirGoruntule: 'finans-gelir-goruntule',
-  GiderGoruntule: 'finans-gider-goruntule',
-  SiparisOperasyonGoruntule: 'finans-siparis-goruntule',
-  RaporGoruntule: 'finans-rapor-goruntule',
-  ManuelIsEkle: 'finans-is-ekle',
-  IsIptal: 'finans-is-iptal',
-  TarihDegistir: 'finans-tarih-degistir',
-  PoGir: 'finans-po-gir',
-  PoDegistir: 'finans-po-degistir',
-  BirimFiyatGoruntule: 'finans-birim-fiyat-goruntule',
-  BirimFiyatDegistir: 'finans-birim-fiyat-degistir',
-  KarlilikGoruntule: 'finans-karlilik-goruntule',
-  ExcelAktar: 'finans-excel-aktar',
-  PdfAktar: 'finans-pdf-aktar',
-  GiderEkle: 'finans-gider-ekle',
-  GiderDuzenle: 'finans-gider-duzenle',
-  GiderKutuphanesiYonet: 'finans-gider-kutuphanesi-yonet',
-  IsKutuphanesiYonet: 'finans-is-kutuphanesi-yonet',
-  DuzenliIsYonet: 'finans-duzenli-is-yonet',
-  ParasalVeriGoruntule: 'finans-parasal-veri-goruntule',
-  TutarGoruntule: 'finans-tutar-goruntule',
-  KayitGoruntule: 'finans-kayit-goruntule',
-  FaturaGir: 'finans-fatura-gir',
-  FaturaDegistir: 'finans-fatura-degistir',
-  FaturaIptal: 'finans-fatura-iptal',
-  PoIptal: 'finans-po-iptal',
-  GiderIptal: 'finans-gider-iptal',
-  KaliciSil: 'finans-kalici-sil',
-  BelgeYukle: 'finans-belge-yukle',
-  BelgeIndir: 'finans-belge-indir',
-  DenetimGor: 'finans-denetim-gor',
-  FiyatlandirmaDegistir: 'finans-fiyatlandirma-degistir',
-  /** Faturayı ödendi/ödenmedi işaretleme (D3). */
-  OdemeKaydet: 'finans-odeme-kaydet',
+  SekmePanel: 'finans-sekme-panel',
+  SekmeIsTakibi: 'finans-sekme-is-takibi',
+  SekmePoFatura: 'finans-sekme-po-fatura',
+  SekmeGiderler: 'finans-sekme-giderler',
+  SekmeGiderKategorileri: 'finans-sekme-gider-kategorileri',
+  SekmeTanimlar: 'finans-sekme-tanimlar',
+  SekmeRaporlar: 'finans-sekme-raporlar',
+  SekmeMunferitIsler: 'finans-sekme-munferit-isler',
+  /** İş Takibi alt sekmeleri: Aylık görünüm, Tüm dönemlerde ara, Bekleyen işler. */
+  SekmeIsTakibiAylik: 'finans-sekme-is-takibi-aylik',
+  SekmeIsTakibiArama: 'finans-sekme-is-takibi-arama',
+  SekmeIsTakibiBekleyen: 'finans-sekme-is-takibi-bekleyen',
+  /** İş ve Tarife Tanımları alt sekmeleri: Düzenli İşler, Ürün ve Tarifeler, Para Birimi ve Vade. */
+  SekmeTanimlarDuzenli: 'finans-sekme-tanimlar-duzenli',
+  SekmeTanimlarTarifeler: 'finans-sekme-tanimlar-tarifeler',
+  SekmeTanimlarParaBirimi: 'finans-sekme-tanimlar-para-birimi',
+  /** PO ve Faturalar alt sekmeleri: PO'lar, Faturalar. */
+  SekmePoFaturaPo: 'finans-sekme-po-fatura-po',
+  SekmePoFaturaFatura: 'finans-sekme-po-fatura-fatura',
+  /** İş Takibi'nin üstündeki vade uyarısı (vadesi geçen/yaklaşan faturalar); yalnız R. */
+  VadeUyarisi: 'finans-vade-uyarisi',
 } as const;

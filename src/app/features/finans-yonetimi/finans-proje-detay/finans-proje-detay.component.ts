@@ -2,7 +2,6 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, OnInit, computed, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize, forkJoin, of } from 'rxjs';
-import { AMBALAJ_YETKI, FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
 import { FinansIsKategorisi, FinansSandikMalzemesi } from '../../../core/constants/enums';
 import { FinansService } from '../../../core/services/finans.service';
 import { PermissionService } from '../../../core/services/permission.service';
@@ -10,7 +9,7 @@ import { TranslationService } from '../../../core/services/translation.service';
 import { FinansFatura, FinansIsKaydi, FinansSayfaliSonuc } from '../../../shared/models/finans.model';
 import { FinansFiyatBileseni, FinansVarlikTuru } from '../../../shared/models/finans-v2.model';
 import { ApiResult } from '../../../shared/models/common.model';
-import { finansSiparisFaturaOkunabilir } from '../ortak/finans-izinleri';
+import { finansAltSekmeAcik } from '../ortak/finans-izinleri';
 import {
   FINANS_KATEGORILERI,
   isDurumuAnahtari,
@@ -45,7 +44,6 @@ export class FinansProjeDetayComponent implements OnInit {
   private readonly service = inject(FinansService);
   private readonly destroyRef = inject(DestroyRef);
   readonly permissions = inject(PermissionService);
-  readonly izin = FINANS_YETKI;
   readonly malzeme = FinansSandikMalzemesi;
   readonly kategoriAnahtari = kategoriAnahtari;
   readonly isDurumuAnahtari = isDurumuAnahtari;
@@ -91,7 +89,8 @@ export class FinansProjeDetayComponent implements OnInit {
   ngOnInit(): void {
     this.loading.set(true);
     const projeNo = this.projeNo();
-    const faturalar$ = finansSiparisFaturaOkunabilir(this.permissions)
+    // Fatura listesi (ödeme durumları) sunucuda Faturalar alt sekmesinin R iznine bağlıdır; kalemler kayıt sekmelerine.
+    const faturalar$ = finansAltSekmeAcik(this.permissions, 'fatura')
       ? this.service.faturalar({ pageNumber: 1, pageSize: 250, projeNo })
       : of<ApiResult<FinansSayfaliSonuc<FinansFatura>>>({ isSuccess: true });
     forkJoin({ kalemler: this.service.genelArama({ pageNumber: 1, pageSize: 250, projeNo }), faturalar: faturalar$ })
@@ -110,12 +109,6 @@ export class FinansProjeDetayComponent implements OnInit {
       });
   }
 
-  parasal(kod: string): boolean {
-    return this.permissions.hasAccess(this.izin.ParasalVeriGoruntule) && this.permissions.hasAccess(kod);
-  }
-  m3Gorunur(): boolean {
-    return this.permissions.hasAccess(AMBALAJ_YETKI.M3Goruntule);
-  }
   satirTutari(b: FinansFiyatBileseni): number {
     const miktar = b.yontem === 3 || b.yontem === 4 ? 1 : b.miktar;
     return Math.round(miktar * b.birimFiyat * 100) / 100;

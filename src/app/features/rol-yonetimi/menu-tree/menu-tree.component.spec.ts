@@ -1,4 +1,5 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, flushMicrotasks } from '@angular/core/testing';
+import { ConfirmService } from '../../../core/services/confirm.service';
 import { YetkiTipi } from '../../../core/constants/enums';
 import { TranslationService } from '../../../core/services/translation.service';
 import { MenuTreeDto } from '../../../shared/models';
@@ -6,15 +7,20 @@ import { MenuTreeComponent } from './menu-tree.component';
 
 describe('MenuTreeComponent yetki göstergesi', () => {
   let nextNodeId = 1;
+  let confirm: jasmine.SpyObj<ConfirmService>;
 
   beforeEach(() => {
     nextNodeId = 1;
+    confirm = jasmine.createSpyObj<ConfirmService>('ConfirmService', ['ask']);
     TestBed.configureTestingModule({
       imports: [MenuTreeComponent],
-      providers: [{
-        provide: TranslationService,
-        useValue: { translate: (key: string) => ({ 'MENU.TEST_IZIN': 'Test izni' })[key as 'MENU.TEST_IZIN'] ?? key },
-      }],
+      providers: [
+        {
+          provide: TranslationService,
+          useValue: { translate: (key: string) => ({ 'MENU.TEST_IZIN': 'Test izni' })[key as 'MENU.TEST_IZIN'] ?? key },
+        },
+        { provide: ConfirmService, useValue: confirm },
+      ],
     });
   });
 
@@ -31,9 +37,11 @@ describe('MenuTreeComponent yetki göstergesi', () => {
     };
   }
 
+  /** Ağacı bütün dalları açık çizer (düzey kapanması ayrı testte). */
   function render(...roots: MenuTreeDto[]) {
     const fixture = TestBed.createComponent(MenuTreeComponent);
     fixture.componentInstance.nodes = roots;
+    fixture.componentInstance.tumunuAc(true);
     fixture.detectChanges();
     const element = fixture.nativeElement as HTMLElement;
     const checkboxes = element.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
@@ -53,6 +61,16 @@ describe('MenuTreeComponent yetki göstergesi', () => {
     const write = render(node(YetkiTipi.W));
     expect(write.checkboxes[0].indeterminate).toBeFalse();
     expect(write.checkboxes[0].checked).toBeTrue();
+  });
+
+  it('ikon yalnız ana düğümde gösterilir; alt düğümün ikonu çizilmez', () => {
+    const root = { ...node(YetkiTipi.W), icon: 'ri-folder-line' };
+    const alt = { ...node(YetkiTipi.W), icon: 'ri-list-check-3-line', parent: root };
+    root.children = [alt];
+    const { element } = render(root);
+    const ikonlar = element.querySelectorAll('.node-icon i');
+    expect(ikonlar.length).toBe(1);
+    expect(ikonlar[0].className).toBe('ri-folder-line');
   });
 
   it('kök düğüm N → R → W → N döngüsünü izler', () => {
@@ -135,6 +153,94 @@ describe('MenuTreeComponent yetki göstergesi', () => {
     expect(root.yetkiTipiId).toBe(YetkiTipi.N);
     expect(action.yetkiTipiId).toBe(YetkiTipi.N);
     expect(tree.checkboxes[1].disabled).toBeTrue();
+  });
+
+  it('kök açık, alt düzeydeki dallar kapalı başlar; tümünü aç/kapat bütün dallara uygulanır', () => {
+    const root = node(YetkiTipi.W);
+    const sekme = node(YetkiTipi.W);
+    const islem = node(YetkiTipi.W);
+    root.children = [sekme];
+    sekme.children = [islem];
+    sekme.parent = root;
+    islem.parent = sekme;
+    const fixture = TestBed.createComponent(MenuTreeComponent);
+    const c = fixture.componentInstance;
+    c.nodes = [root];
+    fixture.detectChanges();
+    const kutular = () => (fixture.nativeElement as HTMLElement).querySelectorAll('input[type="checkbox"]').length;
+    expect(kutular()).toBe(2);
+    expect(c.hepsiAcik()).toBeFalse();
+
+    c.tumunuAc(true);
+    fixture.detectChanges();
+    expect(kutular()).toBe(3);
+    expect(c.hepsiAcik()).toBeTrue();
+
+    c.tumunuAc(false);
+    fixture.detectChanges();
+    expect(kutular()).toBe(2);
+
+    // Arama sürerken eşleşen düğümün dalı açık gösterilir.
+    c.arama = 'test-izin';
+    fixture.detectChanges();
+    expect(kutular()).toBe(3);
+  });
+
+  it('sekme düğümü açıklamasını gösterir; N yapılırken altındaki seçimler için onay ister', fakeAsync(() => {
+    const root = node(YetkiTipi.W);
+    const sekme = { ...node(YetkiTipi.W), kod: 'finans-sekme-po-fatura' };
+    const islem = node(YetkiTipi.W);
+    root.children = [sekme];
+    sekme.children = [islem];
+    sekme.parent = root;
+    islem.parent = sekme;
+    const tree = render(root);
+    expect(tree.element.querySelectorAll('.node-help').length).toBe(1);
+
+    // W → N: vazgeçilirse sekme ve alt seçim aynen kalır.
+    confirm.ask.and.returnValue(Promise.resolve(false));
+    tree.click(1);
+    flushMicrotasks();
+    tree.fixture.detectChanges();
+    expect(confirm.ask).toHaveBeenCalledTimes(1);
+    expect([sekme.yetkiTipiId, islem.yetkiTipiId]).toEqual([YetkiTipi.W, YetkiTipi.W]);
+    expect(tree.checkboxes[1].checked).toBeTrue();
+
+    // Onaylanırsa sekme N olur, alt seçim kapanır.
+    confirm.ask.and.returnValue(Promise.resolve(true));
+    tree.click(1);
+    flushMicrotasks();
+    tree.fixture.detectChanges();
+    expect([sekme.yetkiTipiId, islem.yetkiTipiId]).toEqual([YetkiTipi.N, YetkiTipi.N]);
+
+    // Altında seçim yokken veya N'den açarken onay sorulmaz.
+    tree.click(1);
+    expect(sekme.yetkiTipiId).toBe(YetkiTipi.R);
+    tree.click(1);
+    tree.click(1);
+    expect(sekme.yetkiTipiId).toBe(YetkiTipi.N);
+    expect(confirm.ask).toHaveBeenCalledTimes(2);
+  }));
+
+  it('sekme açılınca/yükseltilince aynı seviyedeki alt sekmeler onu izler; kapatılmış alt sekme yükseltmede kapalı kalır', () => {
+    const root = node(YetkiTipi.W);
+    const sekme = { ...node(YetkiTipi.N), kod: 'finans-sekme-is-takibi' };
+    const aylik = { ...node(YetkiTipi.N), kod: 'finans-sekme-is-takibi-aylik' };
+    const arama = { ...node(YetkiTipi.N), kod: 'finans-sekme-is-takibi-arama' };
+    const islem = node(YetkiTipi.N);
+    root.children = [sekme];
+    sekme.children = [aylik, arama, islem];
+    sekme.parent = root;
+    [aylik, arama, islem].forEach((c) => (c.parent = sekme));
+    const tree = render(root);
+
+    tree.click(1); // sekme N → R: alt sekmeler R, işlem düğümü N kalır
+    expect([sekme.yetkiTipiId, aylik.yetkiTipiId, arama.yetkiTipiId, islem.yetkiTipiId])
+      .toEqual([YetkiTipi.R, YetkiTipi.R, YetkiTipi.R, YetkiTipi.N]);
+
+    arama.yetkiTipiId = YetkiTipi.N; // kullanıcı aramayı kapattı
+    tree.click(1); // sekme R → W: R olan alt sekme W, kapatılan N kalır
+    expect([sekme.yetkiTipiId, aylik.yetkiTipiId, arama.yetkiTipiId]).toEqual([YetkiTipi.W, YetkiTipi.W, YetkiTipi.N]);
   });
 
   it('disabled girdisinde hiçbir düğüm değiştirilemez', () => {

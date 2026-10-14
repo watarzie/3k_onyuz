@@ -1,9 +1,10 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
 import { FinansService } from '../../../core/services/finans.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { TranslationService } from '../../../core/services/translation.service';
 import { FinansKayitAramaComponent } from './finans-kayit-arama.component';
 
 describe('Finans İş Takibi kalem listesi (tüm dönemler / bekleyen işler)', () => {
@@ -13,7 +14,7 @@ describe('Finans İş Takibi kalem listesi (tüm dönemler / bekleyen işler)', 
 
   beforeEach(() => {
     izinler.clear();
-    [FINANS_YETKI.Modul, FINANS_YETKI.KayitGoruntule, FINANS_YETKI.RaporGoruntule].forEach((x) => izinler.add(x));
+    [FINANS_YETKI.Modul, FINANS_YETKI.SekmeIsTakibi, FINANS_YETKI.SekmeIsTakibiArama, FINANS_YETKI.SekmeIsTakibiBekleyen].forEach((x) => izinler.add(x));
     api = jasmine.createSpyObj<FinansService>('FinansService', ['genelArama', 'yaslandirma', 'paraBirimleri']);
     api.genelArama.and.returnValue(of({ isSuccess: true, value: bos }));
     api.yaslandirma.and.returnValue(of({ isSuccess: true, value: bos }));
@@ -26,6 +27,8 @@ describe('Finans İş Takibi kalem listesi (tüm dönemler / bekleyen işler)', 
         { provide: PermissionService, useValue: { hasAccess: (k: string) => izinler.has(k), canWrite: () => true } },
       ],
     });
+    // Diğer specler dili değiştirebilir; etiket beklentileri Türkçedir.
+    TestBed.inject(TranslationService).switchLanguage('tr');
   });
 
   it('varsayılan bütün dönemlerde arar; para birimi filtresi boşsa bütün para birimlerini ister', () => {
@@ -60,8 +63,9 @@ describe('Finans İş Takibi kalem listesi (tüm dönemler / bekleyen işler)', 
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelectorAll('.project-group-row').length).toBe(2);
     expect(el.querySelectorAll('.project-item-row').length).toBe(0);
-    c.projeAcKapat('PA-1'); fixture.detectChanges();
+    c.projeAcKapat(gruplar[0].anahtar); fixture.detectChanges();
     expect(el.querySelectorAll('.project-item-row').length).toBe(2);
+    expect(el.querySelectorAll('.crate-group-row').length).toBe(1);
     c.projeSec(gruplar[0], true);
     expect([...c.secilenler()]).toEqual([1, 2]);
     expect(c.projeSecili(gruplar[0])).toBeTrue();
@@ -78,12 +82,63 @@ describe('Finans İş Takibi kalem listesi (tüm dönemler / bekleyen işler)', 
       .toEqual(['1/1', '2/2', '9/1', '9/2', '10/1']);
   });
 
-  it('rapor görme izni yoksa bekleyen işler görünümü açılmaz', () => {
-    izinler.delete(FINANS_YETKI.RaporGoruntule);
+  it('proje seçici ve sandık no sunucu filtresidir; sonuç proje → sandık başlıklarında alt toplamlarla açılır', fakeAsync(() => {
+    const kalem = (id: number, sandikNo: string, net: number, ek: object = {}) =>
+      ({ id, projeId: 5, projeNo: 'PA-5', musteri: 'GE', sandikNo, sandikAdi: 'Sandık ' + sandikNo, kaynakKayitId: 'K' + sandikNo,
+         kategori: 1, isTuru: 1, netTutar: net, paraBirimi: 'EUR', poNumaralari: [], faturaNumaralari: [], ...ek });
+    api.genelArama.and.returnValue(of({ isSuccess: true, value: { ...bos, totalCount: 3, items: [
+      kalem(1, '12', 400), kalem(2, '12', 50, { isTuru: 9, kategori: 2, kaynakBileseni: 'SARF' }), kalem(3, '120', 300),
+    ] as never } }));
+    const fixture = TestBed.createComponent(FinansKayitAramaComponent); fixture.detectChanges();
+    const c = fixture.componentInstance;
+
+    c.projeSecildi({ projeId: 5, projeNo: 'PA-5', musteri: 'GE' });
+    expect(api.genelArama.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({ projeId: 5, sandikNo: undefined, pageNumber: 1 }));
+    c.sandikNo = ' 12 ';
+    c.sandikNoDegisti();
+    tick(400);
+    expect(api.genelArama.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({ projeId: 5, sandikNo: '12' }));
+    expect(c.etkinFiltre()).toBe(2);
+
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const [grup] = c.projeGruplari();
+    expect(c.projeAcik(grup.anahtar)).toBeTrue();
+    expect(grup.sandiklar.map((s) => [s.sandikNo, s.kalemler.length, s.toplamlar])).toEqual([
+      ['12', 2, [{ paraBirimi: 'EUR', net: 450 }]],
+      ['120', 1, [{ paraBirimi: 'EUR', net: 300 }]],
+    ]);
+    const basliklar = el.querySelectorAll('tr.crate-group-row');
+    expect(basliklar.length).toBe(2);
+    expect(basliklar[0].textContent).toContain('450.00 EUR');
+    expect(el.querySelector('tr.project-item-row .source-badge.is-sarf')?.textContent?.trim()).toBe('Sarf');
+
+    c.filtreleriTemizle();
+    expect(api.genelArama.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({ projeId: undefined, sandikNo: undefined }));
+    expect(c.etkinFiltre()).toBe(0);
+  }));
+
+  it('Bekleyen işler alt sekmesi kapalıysa bekleyen işler görünümü açılmaz; düğmesi gösterilmez', () => {
+    izinler.delete(FINANS_YETKI.SekmeIsTakibiBekleyen);
     const fixture = TestBed.createComponent(FinansKayitAramaComponent);
     fixture.componentRef.setInput('acilis', { anahtar: 1, gorunum: 'bekleyen' });
     fixture.detectChanges();
     expect(fixture.componentInstance.gorunum()).toBe('arama');
     expect(api.yaslandirma).not.toHaveBeenCalled();
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.record-search-head nav button').length).toBe(1);
+  });
+
+  it('Tüm dönemlerde ara alt sekmesi kapalıysa açılış bekleyen işlerdir; arama düğmesi gösterilmez', () => {
+    izinler.delete(FINANS_YETKI.SekmeIsTakibiArama);
+    const fixture = TestBed.createComponent(FinansKayitAramaComponent);
+    fixture.componentRef.setInput('acilis', { anahtar: 1, gorunum: 'arama' });
+    fixture.detectChanges();
+    const c = fixture.componentInstance;
+    expect(c.gorunum()).toBe('bekleyen');
+    expect(api.genelArama).not.toHaveBeenCalled();
+    expect(api.yaslandirma).toHaveBeenCalled();
+    c.gorunumSec('arama');
+    expect(c.gorunum()).toBe('bekleyen');
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.record-search-head nav button').length).toBe(1);
   });
 });

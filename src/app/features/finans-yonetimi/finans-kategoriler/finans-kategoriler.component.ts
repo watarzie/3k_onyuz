@@ -6,10 +6,10 @@ import { finalize } from 'rxjs';
 import { FinansService } from '../../../core/services/finans.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PermissionService } from '../../../core/services/permission.service';
-import { FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
 import { FinansGiderKalemi, FinansGiderKategori } from '../../../shared/models/finans.model';
 
 import { onayaAlindi } from '../../../shared/models';
+import { finansSekmeYazilabilir } from '../ortak/finans-izinleri';
 @Component({
   selector: 'app-finans-kategoriler',
   standalone: true,
@@ -40,23 +40,11 @@ export class FinansKategorilerComponent implements OnInit {
   readonly seciliKategori = computed(() =>
     this.kategoriler().find((k) => k.id === this.seciliKategoriId()),
   );
-  readonly yonetebilir = computed(
-    () =>
-      this.permissions.hasAccess(FINANS_YETKI.Modul) &&
-      this.permissions.canWrite(FINANS_YETKI.GiderKutuphanesiYonet),
-  );
-  readonly varsayilanlariGorebilir = computed(() =>
-    [
-      FINANS_YETKI.ParasalVeriGoruntule,
-      FINANS_YETKI.BirimFiyatGoruntule,
-      FINANS_YETKI.TutarGoruntule,
-      FINANS_YETKI.GiderGoruntule,
-    ].every((k) => this.permissions.hasAccess(k)),
-  );
+  /** Kategori ve kalem ekleme/düzenleme: Gider Kategorileri sekmesinin W izni. */
+  readonly yonetebilir = computed(() => finansSekmeYazilabilir(this.permissions, 'kategoriler'));
   readonly kalemSaving = signal(false);
   readonly kalemLoading = signal(false);
   readonly kalemHatasi = signal('');
-  readonly kalemVarsayilanlariTam = signal(false);
   kalemId?: number;
   kalemForm: Omit<FinansGiderKalemi, 'id'> = { kategoriId: 0, kod: '', ad: '', aktif: true };
   readonly saving = signal(false);
@@ -137,8 +125,6 @@ export class FinansKategorilerComponent implements OnInit {
   kalemDuzenle(kalem: FinansGiderKalemi): void {
     if (
       !this.yonetebilir() ||
-      !this.varsayilanlariGorebilir() ||
-      !this.kalemVarsayilanlariTam() ||
       !this.seciliKategori()?.aktif ||
       this.kalemSaving()
     )
@@ -152,8 +138,7 @@ export class FinansKategorilerComponent implements OnInit {
     if (
       !this.yonetebilir() ||
       this.kalemSaving() ||
-      !this.seciliKategori()?.aktif ||
-      (this.kalemId && !this.varsayilanlariGorebilir())
+      !this.seciliKategori()?.aktif
     )
       return;
     const form = this.kalemForm;
@@ -185,8 +170,6 @@ export class FinansKategorilerComponent implements OnInit {
     const id = this.seciliKategoriId();
     if (!id) return;
     const version = ++this.listeSurumu;
-    const defaultsVisible = this.varsayilanlariGorebilir();
-    this.kalemVarsayilanlariTam.set(false);
     this.kalemLoading.set(true);
     this.kalemler.set([]);
     this.service
@@ -202,7 +185,6 @@ export class FinansKategorilerComponent implements OnInit {
           if (version !== this.listeSurumu) return;
           if (r.isSuccess) {
             this.kalemler.set(r.value ?? []);
-            this.kalemVarsayilanlariTam.set(defaultsVisible && this.varsayilanlariGorebilir());
           } else this.kalemHatasi.set(r.error ?? 'Kalemler alınamadı.');
         },
         error: () => {

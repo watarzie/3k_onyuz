@@ -1,4 +1,4 @@
-import { FinansIsKategorisi, FinansKarsilanma, FinansOdemeDurumu, FinansOdemeFiltresi } from '../../core/constants/enums';
+import { FinansIsKategorisi, FinansKarsilanma, FinansOdemeDurumu, FinansOdemeFiltresi, FinansSandikMalzemesi } from '../../core/constants/enums';
 
 export type FinansFiyatlandirmaBirimi = 1 | 2 | 3 | 4;
 
@@ -48,6 +48,8 @@ export interface FinansListelemeRequest {
   kategoriler?: FinansIsKategorisi[];
   /** Fatura listesi ödeme/vade filtresi (D3). */
   odemeDurumu?: FinansOdemeFiltresi;
+  /** Sandık no içinde geçen metin (sunucuda büyük/küçük harf duyarsız). */
+  sandikNo?: string;
 }
 
 export interface FinansDuzenliIsListelemeRequest {
@@ -176,6 +178,10 @@ export interface FinansFaturaGrupKalemi {
 }
 
 export interface FinansIsKaydi {
+  /** Ahşap/kontra m³ "Hacim" bölümünden elle girildi; üretim aktarımı ezmez. */
+  hacimManuel?: boolean;
+  /** Sandık malzemesi (1 ahşap, 2 kontra/katlanır, 0 bilinmiyor); hacim girişinin biçimini belirler. */
+  sandikMalzemesi?: FinansSandikMalzemesi | 0;
   manuelNetTutar?: number | null;
   bilesenler?: import('./finans-v2.model').FinansFiyatBileseni[] | null;
   isAdi?: string;
@@ -183,8 +189,17 @@ export interface FinansIsKaydi {
   finansTarihi?: string;
   finansDonemi?: string;
   uretimTarihi?: string;
+  /** Kaynak bileşeni: sandığın kendi satırı "NET", sarf kereste payı "SARF". */
   kaynakBileseni?: string;
+  /** Kaydın kaynağı (ör. AMBALAJURETIM, Manuel, OzelIs) ve kaynak kaydın kimliği (üretim iş akışı). */
+  kaynakTuru?: string;
+  kaynakKayitId?: string | null;
+  ozelIsTuru?: string | null;
+  raporGrubu?: string | null;
   birimFiyat?: number | null;
+  /** Malzemeli fiyatta ahşap m³ fiyatı; doluysa birimFiyat kontra m³ fiyatıdır (net = kontra × birimFiyat + ahşap × bu). */
+  ahsapBirimFiyat?: number | null;
+  ahsapFinansUrunId?: number | null;
   fiyatlandirmaBirimi?: FinansFiyatlandirmaBirimi;
   fiyatlandirmaHazir?: boolean;
   paraBirimi?: string;
@@ -211,6 +226,8 @@ export interface FinansIsKaydi {
   icSandikSablonId?: number | null;
   isTuru: number;
   adet: number;
+  /** Miktar birimi (Adet, m³, Hizmet…). */
+  birim?: string;
   birimM3: number;
   toplamM3: number;
   /** Ahşap ve kontra/katlanır m³ payı (F11); m³ izni yoksa sunucudan null gelir. */
@@ -225,6 +242,99 @@ export interface FinansIsKaydi {
   poNumaralari: string[];
   faturaNumaralari: string[];
   kaynakAktif: boolean;
+}
+
+/** Münferit iş formunun ürün seçeneği; fiyat taşımaz (kayıt ürünün iş tarihindeki tarifesiyle fiyatlanır). */
+/** Münferit iş tarife seçeneği; fiyat alanları istenen iş tarihindeki tarife sürümüdür (yoksa null). */
+export interface FinansUrunSecenegi {
+  id: number;
+  kod: string;
+  ad: string;
+  fiyatlandirmaBirimi: FinansFiyatlandirmaBirimi;
+  birimFiyat?: number | null;
+  paraBirimi?: string | null;
+  kdvOrani?: number | null;
+}
+
+/**
+ * "Yeni Münferit İş" isteği: tarife + proje (sistem projesi ya da serbest ad, biri) + tarih + miktar. İş adı tarifenin
+ * adıdır, fiyat tarifeden gelir; adet tarifesinde adet, m³ tarifesinde ahşap/kontra m³ gönderilir.
+ */
+export interface FinansMunferitIsKaydetRequest {
+  finansUrunId: number;
+  projeId?: number | null;
+  projeAdi?: string | null;
+  isTarihi: string;
+  adet?: number;
+  ahsapM3?: number | null;
+  kontraM3?: number | null;
+}
+
+/** İş Takibi proje → sandık kırılımı isteği: proje kimliği ya da sisteme bağlı olmayan proje için no + müşteri. */
+export interface FinansSandikKirilimiRequest {
+  projeId?: number | null;
+  projeNo?: string;
+  musteri?: string;
+  yil?: number;
+  ay?: number;
+  iptalEdilenleriDahilEt?: boolean;
+  sandikNo?: string;
+}
+
+/** Sandığın altındaki iş kaydı; sarf kereste payı kaynakBileseni = "SARF" ile ayrılır. */
+export interface FinansSandikKirilimKalemi {
+  id: number;
+  isTuru: number;
+  kategori: FinansIsKategorisi;
+  kaynakBileseni: string;
+  isAdi: string;
+  finansTarihi: string;
+  adet: number;
+  toplamM3: number | null;
+  ahsapM3: number | null;
+  kontraM3: number | null;
+  paraBirimi: string;
+  netTutar: number | null;
+  siparisNetTutar: number | null;
+  faturalananNetTutar: number | null;
+  durum: number;
+  aktif: boolean;
+  poNumaralari: string[];
+  faturaNumaralari: string[];
+}
+
+/** Bir sandığın özeti: tutarlar NET + SARF, adet ve m³ yalnız sandığın kendi kayıtları; durum en düşük iş durumu. */
+export interface FinansSandikKirilimSatiri {
+  anahtar: string;
+  sandikNo: string | null;
+  sandikAdi: string | null;
+  sandikTipi: string | null;
+  sandikCinsi: number | null;
+  sandikMalzemesi: FinansSandikMalzemesi | 0;
+  kayitSayisi: number;
+  fiyatBekleyenKayitSayisi: number;
+  adet: number;
+  toplamM3: number | null;
+  ahsapM3: number | null;
+  kontraM3: number | null;
+  paraBirimi: string;
+  netTutar: number | null;
+  siparisNetTutar: number | null;
+  faturalananNetTutar: number | null;
+  durum: number;
+  ilkTarih: string;
+  sonTarih: string;
+  poNumaralari: string[];
+  faturaNumaralari: string[];
+  kayitlar: FinansSandikKirilimKalemi[];
+}
+
+export interface FinansProjeSandikKirilimi {
+  projeId: number | null;
+  projeNo: string;
+  musteri: string;
+  kayitSayisi: number;
+  sandiklar: FinansSandikKirilimSatiri[];
 }
 
 export interface FinansDagitimRequest {
@@ -459,10 +569,12 @@ export interface FinansUrunEslesmesi {
   isTuru: number;
   sandikAdi: string | null;
   sandikTipi?: string | null;
-  boy?: number | null;
-  en?: number | null;
-  yukseklik?: number | null;
   icSandikSablonId?: number | null;
+  /**
+   * Malzemeli m³ tarifesi (1 ahşap, 2 kontra; boş = genel tek m³ tarifesi). Kontrplak/katlanır sandıkta ahşap m³
+   * ahşap, kontra m³ kontra tarifesiyle fiyatlanır. Katlanır sandık boyutla eşleşmez.
+   */
+  malzeme?: FinansSandikMalzemesi | null;
   aktif?: boolean;
 }
 
@@ -487,6 +599,9 @@ export interface FinansUrun {
   aktif: boolean;
   sira: number;
   eslesmeler: FinansUrunEslesmesi[];
+  /** İstenen tarihte (varsayılan bugün) geçerli tarifenin fiyatı; tarife yoksa veya izin yoksa null. */
+  guncelBirimFiyat?: number | null;
+  guncelParaBirimi?: string | null;
   /** Bugün geçerli tarife sürümünün başlangıç ve bitişi. */
   guncelGecerlilikBaslangici?: string | null;
   guncelGecerlilikBitisi?: string | null;
@@ -505,7 +620,7 @@ export interface FinansUrunKaydetRequest {
   gecerlilikBaslangici?: string | null;
   aktif: boolean;
   sira: number;
-  eslesmeler: { id?: number | null; aktif: boolean; isTuru: number; sandikAdi: string | null; icSandikSablonId?: number | null; sandikTipi?: string | null; boy?: number | null; en?: number | null; yukseklik?: number | null }[];
+  eslesmeler: { id?: number | null; aktif: boolean; isTuru: number; sandikAdi: string | null; icSandikSablonId?: number | null; sandikTipi?: string | null; malzeme?: FinansSandikMalzemesi | null }[];
 }
 
 export interface FinansOzelIsKaydetRequest {
@@ -524,6 +639,17 @@ export interface FinansOzelIsKaydetRequest {
   birimFiyat: number;
   paraBirimi: string;
   kdvOrani: number;
+  /** m³ yönteminde zorunlu; birim m³ = (ahşap + kontra) / miktar. */
+  ahsapM3?: number | null;
+  kontraM3?: number | null;
+}
+
+/** Kayıt detayındaki "Hacim" bölümünün isteği. */
+export interface FinansHacimGirRequest {
+  ahsapM3: number;
+  kontraM3: number;
+  /** İsteğe bağlı gerekçe. */
+  aciklama?: string;
 }
 
 export interface FinansAylikIs {
@@ -546,6 +672,8 @@ export interface FinansAylikIs {
   miktar: number;
   birim: string;
   birimFiyat: number;
+  /** Malzemeli fiyatta ahşap m³ fiyatı (birimFiyat kontra m³ fiyatıdır). */
+  ahsapBirimFiyat?: number | null;
   kdvOrani: number;
   netTutar: number;
   kdvTutari: number;
@@ -652,6 +780,8 @@ export interface FinansAylikSayfaliSonuc {
   items: FinansAylikIs[];
   /** Sayfadaki proje birimlerinin (özel işler hariç) birleşik sipariş/fatura durumu. */
   projeler?: FinansAylikProjeOzeti[];
+  /** Sayfadaki projelere bağlı özel/düzenli işler; proje bloğunun "Özel / Düzenli" alt grubunda da gösterilir. */
+  projeOzelIsleri?: FinansAylikIs[];
   finansOzeti: FinansAylikFinansOzeti[];
   grupToplamlari: FinansAylikGrupToplami[];
   pageNumber: number;

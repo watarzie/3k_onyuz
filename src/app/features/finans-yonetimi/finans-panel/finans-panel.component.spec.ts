@@ -9,17 +9,15 @@ import { TranslationService } from '../../../core/services/translation.service';
 import { FINANS_YETKI } from '../../../core/constants/yetki-kodlari';
 import { FinansPanel } from '../../../shared/models/finans-v2.model';
 
-describe('Finans paneli bağımsız kayıt izni', () => {
+describe('Finans paneli (Kontrol Paneli sekmesi R izni)', () => {
   let api: jasmine.SpyObj<FinansService>;
   let toast: jasmine.SpyObj<ToastService>;
-  const kayitIzni = signal(false);
   const ekIzinler = signal<string[]>([]);
   const panelVerisi = {
     siparisBekleyen: 4, kismiSiparis: 1, siparisTam: 2, kismiFatura: 0, tamamlanan: 3,
     tutarlar: [], aylik: [], isTurleri: [], giderTurleri: [], projeler: [], ozelIsTurleri: [],
   } as unknown as FinansPanel;
   beforeEach(() => {
-    kayitIzni.set(false);
     ekIzinler.set([]);
     api = jasmine.createSpyObj('FinansService', ['panel', 'hareketler', 'genelArama', 'yaslandirma']);
     toast = jasmine.createSpyObj('ToastService', ['error']);
@@ -33,7 +31,7 @@ describe('Finans paneli bağımsız kayıt izni', () => {
       { provide: FinansService, useValue: api }, { provide: ToastService, useValue: toast },
       { provide: PermissionService, useValue: {
         hasAccess: (code: string) =>
-          code === FINANS_YETKI.Modul || (code === FINANS_YETKI.KayitGoruntule && kayitIzni()) || ekIzinler().includes(code),
+          code === FINANS_YETKI.Modul || code === FINANS_YETKI.SekmePanel || ekIzinler().includes(code),
         canWrite: () => false,
       } },
     ] });
@@ -42,7 +40,6 @@ describe('Finans paneli bağımsız kayıt izni', () => {
   afterEach(() => TestBed.inject(TranslationService).switchLanguage('tr'));
 
   it('varsayılan tüm dönemlerin özetini açar; sekme, kalem listesi ve kayıt isteği yoktur', () => {
-    kayitIzni.set(true);
     const fixture = TestBed.createComponent(FinansPanelComponent); fixture.detectChanges();
     expect(api.panel).toHaveBeenCalledTimes(1);
     const yil = new Date().getFullYear();
@@ -68,60 +65,56 @@ describe('Finans paneli bağımsız kayıt izni', () => {
     expect(fixture.nativeElement.querySelectorAll('.period-filter input[type="date"]').length).toBe(2);
   });
 
-  it('alacak kartları fatura okuma izniyle görünür; tutarlar yalnız tutar izniyle yazılır', () => {
+  it('panel R kullanıcısı alacak kartlarını adet ve tutarlarıyla görür; ayrı fatura veya tutar izni yoktur', () => {
     api.panel.and.returnValue(of({ isSuccess: true, value: { ...panelVerisi, vadeUyariGunu: 7, alacaklar: [{
       paraBirimi: 'USD', bekleyenTutar: 1500, bekleyenAdet: 3, vadesiGecenTutar: 500, vadesiGecenAdet: 1,
       yaklasanTutar: 1000, yaklasanAdet: 2, zamanindaOdenenAdet: 4, gecOdenenAdet: 1, odenenTutar: 2500,
     }] } }));
-    kayitIzni.set(true);
     const fixture = TestBed.createComponent(FinansPanelComponent); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.dashboard-receivables')).toBeNull();
-
-    ekIzinler.set([FINANS_YETKI.SiparisOperasyonGoruntule]); fixture.detectChanges();
     const kart = fixture.nativeElement.querySelector('.dashboard-receivables') as HTMLElement;
     expect(kart.querySelector('h5')!.textContent).toBe('USD');
     expect(kart.textContent).toContain('7 gün içinde');
     const degerler = () => Array.from(kart.querySelectorAll('dd')).map((x) => x.textContent!.trim());
-    expect(degerler()).toEqual(['3', '1', '2', '5', '4 / 1']);
-
-    ekIzinler.set([FINANS_YETKI.SiparisOperasyonGoruntule, FINANS_YETKI.ParasalVeriGoruntule, FINANS_YETKI.TutarGoruntule]);
-    fixture.detectChanges();
-    expect(degerler().slice(0, 4).every((x) => x.includes(' · '))).toBeTrue();
+    expect(degerler()).toEqual(['3 · 1,500.00', '1 · 500.00', '2 · 1,000.00', '5 · 2,500.00', '4 / 1']);
   });
 
-  it('yaşlandırma kovası bekleme listesini İş Takibinde kovanın aşaması ve eşiğiyle açtırır; boş kova tıklanamaz', () => {
+  it('yaşlandırma kovası bekleme listesini İş Takibinde kovanın aşaması ve eşiğiyle açtırır; boş kova ve İş Takibi kapalıyken tıklanamaz', () => {
     api.panel.and.returnValue(of({ isSuccess: true, value: { ...panelVerisi, yaslandirma: [
       { asama: 'Sipariş', minGun: 15, adet: 2, tutarlar: [] },
       { asama: 'Sipariş', minGun: 30, adet: 1, tutarlar: [] },
       { asama: 'Fatura', minGun: 60, adet: 0, tutarlar: [] },
     ] } }));
-    kayitIzni.set(true);
-    ekIzinler.set([FINANS_YETKI.RaporGoruntule]);
     const fixture = TestBed.createComponent(FinansPanelComponent); fixture.detectChanges();
     const kovalar = fixture.nativeElement.querySelectorAll('.dashboard-aging-bucket') as NodeListOf<HTMLButtonElement>;
     expect(kovalar.length).toBe(3);
-    expect(kovalar[2].disabled).toBeTrue();
+    // Bekleyen işler İş Takibi'nde açılır; o sekme kapalıysa kovalar tıklanamaz.
+    expect(kovalar[1].disabled).toBeTrue();
     const acilan = spyOn(fixture.componentInstance.bekleyenAc, 'emit');
+    fixture.componentInstance.kovaAc(fixture.componentInstance.kova('Sipariş', 30)!);
+    expect(acilan).not.toHaveBeenCalled();
+
+    // İş Takibi sekmesi tek başına yetmez; "Bekleyen işler" alt sekmesi gerekir.
+    ekIzinler.set([FINANS_YETKI.SekmeIsTakibi]); fixture.detectChanges();
+    expect(kovalar[1].disabled).toBeTrue();
+    ekIzinler.set([FINANS_YETKI.SekmeIsTakibi, FINANS_YETKI.SekmeIsTakibiBekleyen]); fixture.detectChanges();
+    expect(kovalar[1].disabled).toBeFalse();
+    expect(kovalar[2].disabled).toBeTrue();
     kovalar[1].click();
     expect(acilan).toHaveBeenCalledOnceWith({ asama: 'Sipariş', minimumGun: 30 });
     expect(api.yaslandirma).not.toHaveBeenCalled();
   });
 
-  it('genel durum kartları iş kalemi, PO ve fatura sayılarını gösterir; PO/fatura kartları fatura okuma izniyle açılır', () => {
+  it('genel durum kartları iş kalemi, PO ve fatura sayılarını panel R izniyle gösterir', () => {
     api.panel.and.returnValue(of({ isSuccess: true, value: { ...panelVerisi, sayilar: {
       isKaydi: 10, proje: 3, po: 6, acikPo: 2, kismiFaturaliPo: 1, kapaliPo: 3,
       fatura: 9, odenenFatura: 7, odenmemisFatura: 2, vadesiGecenFatura: 1, giderKaydi: 4,
     } } }));
-    kayitIzni.set(true);
     const fixture = TestBed.createComponent(FinansPanelComponent); fixture.detectChanges();
     const kartlar = () => Array.from(fixture.nativeElement.querySelectorAll('.kpi-card') as NodeListOf<HTMLElement>)
       .map((x) => x.getAttribute('data-kpi'));
-    expect(kartlar()).toEqual(['is', 'gider']);
+    expect(kartlar()).toEqual(['is', 'po', 'fatura', 'gider']);
     expect(fixture.nativeElement.querySelector('[data-kpi="is"] .kpi-value').textContent.trim()).toBe('10');
     expect(fixture.nativeElement.querySelector('[data-kpi="is"]').textContent).toContain('3 proje');
-
-    ekIzinler.set([FINANS_YETKI.SiparisOperasyonGoruntule]); fixture.detectChanges();
-    expect(kartlar()).toEqual(['is', 'po', 'fatura', 'gider']);
     const po = fixture.nativeElement.querySelector('[data-kpi="po"]') as HTMLElement;
     expect(po.querySelector('.kpi-value')!.textContent!.trim()).toBe('6');
     expect(po.textContent).toContain('2 açık');
@@ -134,12 +127,9 @@ describe('Finans paneli bağımsız kayıt izni', () => {
       { ay: '2026-08', isKaydi: 4, po: 2, fatura: 1 },
       { ay: '2026-09', isKaydi: 6, po: 3, fatura: 5 },
     ] } }));
-    kayitIzni.set(true);
     const fixture = TestBed.createComponent(FinansPanelComponent); fixture.detectChanges();
     const c = fixture.componentInstance;
-    expect(c.series().map((x) => x.name)).toEqual(['İş kalemi']);
-    expect(c.series()[0].data).toEqual([4, 6]);
-    ekIzinler.set([FINANS_YETKI.SiparisOperasyonGoruntule]);
+    expect(c.series()[0].name).toBe('İş kalemi');
     expect(c.series().map((x) => x.data)).toEqual([[4, 6], [2, 3], [1, 5]]);
     expect(c.chart().type).toBe('area');
 
@@ -156,8 +146,6 @@ describe('Finans paneli bağımsız kayıt izni', () => {
       { ay: '2026-08', isKaydi: 4, po: 2, fatura: 1 },
       { ay: '2026-09', isKaydi: 6, po: 3, fatura: 5 },
     ] } }));
-    kayitIzni.set(true);
-    ekIzinler.set([FINANS_YETKI.SiparisOperasyonGoruntule]);
     const fixture = TestBed.createComponent(FinansPanelComponent); fixture.detectChanges();
     const c = fixture.componentInstance;
     const dugmeler = () => Array.from(fixture.nativeElement.querySelectorAll('.chart-legend__item')) as HTMLButtonElement[];
@@ -182,6 +170,33 @@ describe('Finans paneli bağımsız kayıt izni', () => {
     c.grafikGorunumuSec('adet'); fixture.detectChanges();
     expect(kapali()).toEqual([false, false, false]);
     localStorage.removeItem('3k_finans_panel_grafik');
+  });
+
+  it('ana panel dönemdeki münferit işleri listeler; satır detay açar, "Tümü" sekme izniyle Münferit İşler sekmesine gider', () => {
+    api.panel.and.returnValue(of({ isSuccess: true, value: { ...panelVerisi, munferitIsSayisi: 1, munferitIsler: [
+      { id: 41, finansTarihi: '2026-10-06', projeNo: 'Rüzgar Sahası', musteri: 'Rüzgar Sahası', isAdi: 'Haliade-X kasa',
+        adet: 2, birim: 'Adet', netTutar: 2500, paraBirimi: 'EUR', durum: 1 },
+    ] } }));
+    const fixture = TestBed.createComponent(FinansPanelComponent); fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const kart = el.querySelector('.dashboard-adhoc')!;
+    expect(kart.textContent).toContain('Dönemde 1 münferit iş');
+    expect(kart.querySelectorAll('tbody tr').length).toBe(1);
+    expect(kart.textContent).toContain('Haliade-X kasa');
+    expect(kart.querySelector('.panel-adhoc-all')).toBeNull();
+
+    const acilan: unknown[] = [];
+    fixture.componentInstance.kayitAc.subscribe((x) => acilan.push(x));
+    (kart.querySelector('tbody tr') as HTMLElement).click();
+    expect(acilan).toEqual([{ tur: 'IsKaydi', id: 41 }]);
+
+    ekIzinler.set([FINANS_YETKI.SekmeMunferitIsler]);
+    const sekme = jasmine.createSpy('munferitAc');
+    const ikinci = TestBed.createComponent(FinansPanelComponent);
+    ikinci.componentInstance.munferitAc.subscribe(sekme);
+    ikinci.detectChanges();
+    (ikinci.nativeElement.querySelector('.panel-adhoc-all') as HTMLButtonElement).click();
+    expect(sekme).toHaveBeenCalled();
   });
 
   it('bekleyen iş yoksa bekleme kartı kova yerine sakin bir durum gösterir', () => {

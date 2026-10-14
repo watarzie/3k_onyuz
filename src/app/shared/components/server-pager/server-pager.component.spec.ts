@@ -77,6 +77,22 @@ describe('ServerPagerComponent', () => {
     expect(emittedPageSizes).toEqual([50]);
   });
 
+  it('shows the current page size as the selected option', () => {
+    fixture.componentRef.setInput('pageSize', 25);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const select = root.querySelector<HTMLSelectElement>('select')!;
+
+    expect(select.selectedOptions[0]?.textContent?.trim()).toBe('25');
+    expect(select.value).toBe('25');
+
+    fixture.componentRef.setInput('pageSize', 50);
+    fixture.detectChanges();
+
+    expect(select.selectedOptions[0]?.textContent?.trim()).toBe('50');
+  });
+
   it('disables previous and next controls when the server says they are unavailable', () => {
     fixture.componentRef.setInput('pageNumber', 1);
     fixture.componentRef.setInput('totalPages', 1);

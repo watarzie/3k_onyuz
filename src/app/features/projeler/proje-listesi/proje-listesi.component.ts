@@ -15,6 +15,7 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { IslemlerMenusuComponent } from '../../../shared/components/islemler-menusu/islemler-menusu.component';
 import { CekiRevizyonOnizlemeComponent } from '../../../shared/components/ceki-revizyon-onizleme/ceki-revizyon-onizleme.component';
 import { CekiRevizyonGecmisiComponent } from '../../../shared/components/ceki-revizyon-gecmisi/ceki-revizyon-gecmisi.component';
+import { TopluSevkComponent } from '../toplu-sevk/toplu-sevk.component';
 import {
   CekiRevizyonOnizlemeSonuc,
   CekiRevizyonOnayKuyruguYaniti,
@@ -24,14 +25,19 @@ import {
   SahaAktarimDto,
   SandikDto,
   SevkiyatDto,
+  TOPLU_SEVK_EN_FAZLA_PROJE,
+  TopluSevkSonucu,
   onayaAlindi,
+  sandikSevkAdayiMi,
+  sandikSevkEdildiMi,
 } from '../../../shared/models/index';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmService, duzMetin } from '../../../core/services/confirm.service';
 import { PdfService } from '../../../core/services/pdf.service';
 import { ProjeTipi, SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
-import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
+import { PROJE_TIPI_BAGLAMLARI, projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
+import { fotografBaglantisiGecerli, fotografBaglantisiNormalize, fotografSitesi } from './proje-fotograf-baglantisi';
 import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 
 interface SahaAktarimGrubu {
@@ -51,7 +57,7 @@ interface RevisionIssueViewModel {
 @Component({
   selector: 'app-proje-listesi',
   standalone: true,
-  imports: [TranslatePipe, RouterLink, NgClass, StatusBadgeComponent, BreadcrumbComponent, CekiRevizyonOnizlemeComponent, CekiRevizyonGecmisiComponent, FormsModule, DatePipe, IslemlerMenusuComponent],
+  imports: [TranslatePipe, RouterLink, NgClass, StatusBadgeComponent, BreadcrumbComponent, CekiRevizyonOnizlemeComponent, CekiRevizyonGecmisiComponent, FormsModule, DatePipe, IslemlerMenusuComponent, TopluSevkComponent],
   templateUrl: './proje-listesi.component.html',
   styleUrl: './proje-listesi.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -121,13 +127,20 @@ export class ProjeListesiComponent implements OnInit {
     (this.isSandikYonetimi() || this.isSahaYonetimi() || this.isYedekYonetimi()) &&
     this.permissions.hasAccess(this.projeTipi.yetki.gridModulu)
   );
-  /** Proje seçim sütunu: toplu eksik raporu veya toplu talep formu için. */
-  canUseBulkSecim = computed(() => this.canUseBulkEksikRapor() || this.canUseBulkTalepFormu());
+  /**
+   * Toplu sevk (tır seferi): sevk edilmemiş proje listelerinde. Aktif Projeler bütün tipleri gösterir; herhangi bir tipin
+   * sevk izni yeter, her proje pencerede kendi tipinin sevk iznine göre sefere eklenir (sunucu ayrıca doğrular).
+   */
+  canUseTopluSevk = computed(() =>
+    (this.isAktifProjeler() && this.canSevkEtHerhangiTip()) ||
+    ((this.isSahaYonetimi() || this.isYedekYonetimi()) && this.canSevkEtCurrent())
+  );
+  /** Proje seçim sütunu: toplu eksik raporu, toplu talep formu veya toplu sevk için. */
+  canUseBulkSecim = computed(() => this.canUseBulkEksikRapor() || this.canUseBulkTalepFormu() || this.canUseTopluSevk());
   canSeeGerceklesenRapor = computed(() => this.permissions.hasAccess(YETKI.SANDIK.GERCEKLESEN_CEKI_RAPORU));
   canSee3KIsListesi = computed(() => this.isSandikYonetimi() && this.permissions.hasAccess(YETKI.SANDIK.UCK_IS_LISTESI));
   canSeeGridIsListesi = computed(() => this.isSandikYonetimi() && this.permissions.hasAccess(YETKI.SANDIK.GRID_IS_LISTESI));
   canUseEksikTamamlama = computed(() => this.permissions.canWrite(YETKI.SAHA.SAHAYA_AKTAR));
-  canSevkEt = computed(() => this.permissions.canWrite(YETKI.PROJE.SEVK_ET));
   canUploadCeki = computed(() => this.permissions.canWrite(YETKI.PROJE.CEKI_YUKLE));
   canSeeSahaGrid = computed(() => this.permissions.hasAccess(YETKI.SAHA.GRID_MODULU));
   canSeeSaha3K = computed(() => this.permissions.hasAccess(YETKI.SAHA.UCK_MODULU));
@@ -145,6 +158,11 @@ export class ProjeListesiComponent implements OnInit {
   canManageSahaAktarimGeriAl = computed(() => this.permissions.hasAccess(YETKI.SAHA.AKTARIM_GERI_AL));
   canWriteSahaAktarimGeriAl = computed(() => this.permissions.canWrite(YETKI.SAHA.AKTARIM_GERI_AL));
   canSevkEtCurrent = computed(() => this.permissions.canWrite(this.projeTipi.yetki.sevkEt));
+  /** Birden çok tipi gösteren listelerde (Aktif Projeler, Sevk Edilen) sevk işlemi sütunu için: herhangi bir tipin sevk izni. */
+  canSevkEtHerhangiTip = computed(() =>
+    Object.values(PROJE_TIPI_BAGLAMLARI).some(baglam => this.permissions.canWrite(baglam.yetki.sevkEt)));
+  canUpdatePlanlananSevkTarihiHerhangiTip = computed(() =>
+    Object.values(PROJE_TIPI_BAGLAMLARI).some(baglam => this.permissions.canWrite(baglam.yetki.planlananSevkTarihi)));
   canDeleteProjectCurrent = computed(() => this.permissions.canWrite(this.projeTipi.yetki.projeSil));
   canUpdatePlanlananSevkTarihiCurrent = computed(() =>
     this.permissions.canWrite(this.projeTipi.yetki.planlananSevkTarihi));
@@ -164,14 +182,14 @@ export class ProjeListesiComponent implements OnInit {
       this.canUpdatePlanlananSevkTarihiCurrent() || this.canDeleteProjectCurrent())
   );
   hasActionColumn = computed(() =>
+    (this.fotografBaglantisiDuzenlenebilir() && this.projeler().some(p => !!p.fotografBaglantisi)) ||
     this.projeler().some(proje => this.canSeeRevizyonGecmisi(proje)) ||
     this.hasSandikYonetimiActions() ||
     this.hasSahaYonetimiActions() ||
     this.hasYedekYonetimiActions() ||
     (this.isSevkEdilen() && this.canSeeGerceklesenRapor()) ||
     (this.isSahaYonetimi() && this.canSeeSahaGerceklesenRapor()) ||
-    (!this.isSandikMode() && this.canSevkEt()) ||
-    (!this.isSandikMode() && this.canUpdatePlanlananSevkTarihiCurrent()) ||
+    (!this.isSandikMode() && this.projeler().some(p => this.canSevkEtProje(p) || this.canUpdatePlanlananSevkTarihiProje(p))) ||
     (!this.isSandikMode() && this.hasAnySevkiyatGecmisi()) ||
     this.isSevkEdilen() ||
     (!this.isSandikMode() && this.canDeleteProjectCurrent())
@@ -527,7 +545,8 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   shouldShowActions(p: ProjeDto): boolean {
-    if (this.canSeeRevizyonGecmisi(p)) return true;
+    // Bağlantı ekleme satırdaki "+" düğmesindedir; menüde yalnız kayıtlı bağlantıyı düzenleme/kaldırma bulunur.
+    if ((this.fotografBaglantisiDuzenlenebilir() && !!p.fotografBaglantisi) || this.canSeeRevizyonGecmisi(p)) return true;
     if (this.isSahaYonetimi()) return this.hasSahaYonetimiActions();
     if (this.isYedekYonetimi()) return this.hasYedekYonetimiActions();
     if (this.isSandikYonetimi()) return this.hasSandikYonetimiActions();
@@ -535,9 +554,22 @@ export class ProjeListesiComponent implements OnInit {
     return this.canShowGerceklesenRapor(p) ||
       (this.isSevkEdilen() && this.kilidiAcabilir(p)) ||
       (!this.isSandikMode() && this.hasSevkiyatGecmisi(p)) ||
-      (!this.isSandikMode() && this.canSevkEt()) ||
-      (!this.isSandikMode() && this.canUpdatePlanlananSevkTarihiCurrent()) ||
+      (!this.isSandikMode() && this.canSevkEtProje(p)) ||
+      (!this.isSandikMode() && this.canUpdatePlanlananSevkTarihiProje(p)) ||
       this.canDeleteProjectCurrent();
+  }
+
+  /**
+   * Sevk etme: sunucudaki Shipment kuralıyla aynı — projenin gerçek tipinin sevk etme (W) izni. Aktif Projeler bütün
+   * tipleri listeler; ekranın (normal proje) izni saha/yedek satırı için geçerli değildir.
+   */
+  canSevkEtProje(p: ProjeDto): boolean {
+    return this.permissions.canWrite(projeTipiBaglami(p.projeTipiId).yetki.sevkEt);
+  }
+
+  /** Planlanan sevk tarihi: sunucudaki PlannedShipmentDate kuralıyla aynı — projenin gerçek tipinin izni. */
+  canUpdatePlanlananSevkTarihiProje(p: ProjeDto): boolean {
+    return this.permissions.canWrite(projeTipiBaglami(p.projeTipiId).yetki.planlananSevkTarihi);
   }
 
   canSeeRevizyonGecmisi(proje: ProjeDto): boolean {
@@ -564,15 +596,13 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   /**
-   * Sevkiyat kilidini açma: sunucudaki ProjectUnlock kuralıyla aynı — Sevk Edilen listesinde projenin gerçek tipinin
-   * proje yönetimi veya Sevk Edilen yazma izni; modül listelerinde ekranın sevk izni.
+   * Sevkiyat kilidini açma: sunucudaki ProjectUnlock kuralıyla aynı — bütün listelerde projenin gerçek tipinin proje
+   * yönetimi veya Sevk Edilen yazma izni. Sevk etme izni kilit açmaya yetmez (sunucu 403 döner).
    */
   kilidiAcabilir(p: ProjeDto): boolean {
     if (!p.fizikselSevkEdilmisSandikVarMi) return false;
-    if (this.isSevkEdilen())
-      return this.permissions.canWrite(projeTipiBaglami(p.projeTipiId).yetki.projeYonetimi) ||
-        this.permissions.canWrite(YETKI.PROJE.SEVK_EDILEN);
-    return this.canSevkEtCurrent();
+    return this.permissions.canWrite(projeTipiBaglami(p.projeTipiId).yetki.projeYonetimi) ||
+      this.permissions.canWrite(YETKI.PROJE.SEVK_EDILEN);
   }
 
   /** Saha raporu uçları: saha modülünde veya Sevk Edilen listesindeki saha satırında. */
@@ -618,8 +648,8 @@ export class ProjeListesiComponent implements OnInit {
     if (next.has(projeId)) {
       next.delete(projeId);
     } else {
-      if (next.size >= 25) {
-        this.toastService.warning('Toplu eksik raporu için en fazla 25 proje seçebilirsiniz.');
+      if (next.size >= TOPLU_SEVK_EN_FAZLA_PROJE) {
+        this.toastService.warning(`Toplu işlemler için en fazla ${TOPLU_SEVK_EN_FAZLA_PROJE} proje seçebilirsiniz.`);
         return;
       }
       next.add(projeId);
@@ -700,6 +730,34 @@ export class ProjeListesiComponent implements OnInit {
         this.toastService.error(await this.pdfService.downloadErrorMessage(error, 'Talep formu indirilirken bir hata oluştu.'));
       },
     });
+  }
+
+  // ===== Toplu Sevk (tır seferi) =====
+
+  /** Pencereye giden seçili projeler; seçim yalnız bu sayfanın projelerini kapsar (liste yenilenince temizlenir). */
+  topluSevkProjeleri = signal<ProjeDto[] | null>(null);
+
+  openTopluSevk() {
+    if (!this.canUseTopluSevk()) return;
+    const secili = this.selectedEksikRaporProjeIds();
+    const projeler = this.projeler().filter(p => secili.has(p.id));
+    if (projeler.length === 0) {
+      this.toastService.warning('Toplu sevk için en az bir proje seçmelisiniz.');
+      return;
+    }
+    this.bulkEksikRaporMenuPosition.set(null);
+    this.topluSevkProjeleri.set(projeler);
+  }
+
+  closeTopluSevk() {
+    this.topluSevkProjeleri.set(null);
+  }
+
+  onTopluSevkEdildi(sonuc: TopluSevkSonucu) {
+    this.topluSevkProjeleri.set(null);
+    this.toastService.success(
+      `Sefer ${sonuc.seferNo}: ${sonuc.projeSayisi} projenin ${sonuc.sandikSayisi} sandığı sevk edildi.`);
+    this.loadProjeler();
   }
 
   private clearBulkEksikRaporSelection() {
@@ -1086,10 +1144,89 @@ export class ProjeListesiComponent implements OnInit {
     return (bytes / 1048576).toFixed(1) + ' MB';
   }
 
+  // ===== Fotoğraf Bağlantısı =====
+  // Tek izin kodu, proje tipinden bağımsız: R bağlantıyı görür ve açar, W ekler/düzenler/kaldırır. Sunucu bağlantıyı
+  // listede yalnız R izniyle döndürür; ön yüz kontrolü yalnız görünürlük içindir.
+
+  readonly fotografSitesi = fotografSitesi;
+  readonly fotografProje = signal<ProjeDto | null>(null);
+  readonly fotografTaslak = signal('');
+  readonly fotografKaydediliyor = signal(false);
+  /** Yazılan adresin kaydedilecek hali (şemasızsa https eklenmiş); geçersizse kaydet kapalıdır. */
+  readonly fotografOnizleme = computed(() => fotografBaglantisiNormalize(this.fotografTaslak()));
+  readonly fotografTaslakGecerli = computed(() => fotografBaglantisiGecerli(this.fotografTaslak()));
+
+  fotografBaglantisiGorunur(): boolean {
+    return this.permissions.hasAccess(YETKI.PROJE.FOTOGRAF_BAGLANTISI);
+  }
+
+  fotografBaglantisiDuzenlenebilir(): boolean {
+    return this.permissions.canWrite(YETKI.PROJE.FOTOGRAF_BAGLANTISI);
+  }
+
+  fotografPenceresiniAc(proje: ProjeDto): void {
+    if (!this.fotografBaglantisiDuzenlenebilir()) return;
+    this.fotografProje.set(proje);
+    this.fotografTaslak.set(proje.fotografBaglantisi ?? '');
+  }
+
+  fotografPenceresiniKapat(): void {
+    if (this.fotografKaydediliyor()) return;
+    this.fotografProje.set(null);
+    this.fotografTaslak.set('');
+  }
+
+  fotografBaglantisiKaydet(): void {
+    const adres = this.fotografOnizleme();
+    if (!adres || !this.fotografTaslakGecerli()) {
+      this.toastService.error('Geçerli bir web adresi girin (ör. https://ornek.com/proje).');
+      return;
+    }
+    this.fotografBaglantisiGonder(adres, 'Fotoğraf bağlantısı kaydedildi.');
+  }
+
+  async fotografBaglantisiKaldir(): Promise<void> {
+    const proje = this.fotografProje();
+    if (!proje?.fotografBaglantisi || this.fotografKaydediliyor()) return;
+    const onay = await this.confirmService.ask({
+      title: 'Fotoğraf Bağlantısını Kaldır',
+      message: `${proje.projeNo} projesinin fotoğraf bağlantısı kaldırılacak. Fotoğraflar sitede kalır; yalnız bağlantı silinir.`,
+      confirmText: 'Bağlantıyı Kaldır',
+      cancelText: 'Vazgeç',
+      type: 'warning'
+    });
+    if (!onay) return;
+    this.fotografBaglantisiGonder(null, 'Fotoğraf bağlantısı kaldırıldı.');
+  }
+
+  private fotografBaglantisiGonder(adres: string | null, basariMesaji: string): void {
+    const proje = this.fotografProje();
+    if (!proje || !this.fotografBaglantisiDuzenlenebilir() || this.fotografKaydediliyor()) return;
+    this.fotografKaydediliyor.set(true);
+    this.projeService.fotografBaglantisiGuncelle(proje.id, adres).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.fotografKaydediliyor.set(false);
+        if (!res.isSuccess) {
+          this.toastService.error(res.error || 'Fotoğraf bağlantısı kaydedilemedi.');
+          return;
+        }
+        // Liste yeniden yüklenmeden satır güncellenir (sayfa ve kaydırma yerinde kalır).
+        const kaydedilen = res.value?.fotografBaglantisi ?? null;
+        this.projeler.update(liste => liste.map(p => p.id === proje.id ? { ...p, fotografBaglantisi: kaydedilen } : p));
+        this.toastService.success(basariMesaji);
+        this.fotografPenceresiniKapat();
+      },
+      error: () => {
+        this.fotografKaydediliyor.set(false);
+        this.toastService.error('Sunucu hatası oluştu.');
+      }
+    });
+  }
+
   // ===== Sevk Tarihi Güncelle =====
   
   openSevkTarihiModal(proje: ProjeDto) {
-    if (!this.canUpdatePlanlananSevkTarihiCurrent()) return;
+    if (!this.canUpdatePlanlananSevkTarihiProje(proje)) return;
 
     this.selectedProjeId.set(proje.id);
     this.sevkTarihiProje.set(proje);
@@ -1104,8 +1241,14 @@ export class ProjeListesiComponent implements OnInit {
     this.guncelSevkTarihi.set('');
   }
 
+  /** Açık planlanan sevk tarihi penceresindeki projenin gerçek tipine göre. */
+  private sevkTarihiYazilabilir(): boolean {
+    const proje = this.sevkTarihiProje();
+    return !!proje && this.canUpdatePlanlananSevkTarihiProje(proje);
+  }
+
   kaydetSevkTarihi() {
-    if (!this.canUpdatePlanlananSevkTarihiCurrent() || this.sevkTarihiSaving()) return;
+    if (!this.sevkTarihiYazilabilir() || this.sevkTarihiSaving()) return;
 
     const tarih = this.toApiDateTime(this.guncelSevkTarihi());
 
@@ -1119,7 +1262,7 @@ export class ProjeListesiComponent implements OnInit {
 
   async planlananSevkTarihiKaldir(): Promise<void> {
     if (
-      !this.canUpdatePlanlananSevkTarihiCurrent()
+      !this.sevkTarihiYazilabilir()
       || !this.sevkTarihiProje()?.planlananSevkTarihi
       || this.sevkTarihiSaving()
     ) return;
@@ -1139,7 +1282,7 @@ export class ProjeListesiComponent implements OnInit {
 
   private planlananSevkTarihiGuncelle(tarih: string | null, basariMesaji: string): void {
     const projeId = this.selectedProjeId();
-    if (!this.canUpdatePlanlananSevkTarihiCurrent() || projeId <= 0 || this.sevkTarihiSaving()) return;
+    if (!this.sevkTarihiYazilabilir() || projeId <= 0 || this.sevkTarihiSaving()) return;
 
     this.sevkTarihiSaving.set(true);
 
@@ -1427,16 +1570,12 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   isSandikSevkEdildi(sandik: SandikDto): boolean {
-    return sandik.sahaUzerindenSevkEdildiMi === true ||
-      sandik.durumId === 4 ||
-      sandik.durumMetni === 'SevkEdildi' ||
-      sandik.durumMetni === 'Sevk Edildi';
+    return sandikSevkEdildiMi(sandik);
   }
 
+  /** Tekil ve toplu sevkte aynı kural (sandikSevkAdayiMi). */
   isSandikSevkAdayi(sandik: SandikDto): boolean {
-    return sandik.durumId === 3 &&
-      !this.isSandikSevkEdildi(sandik) &&
-      sandik.sahayaAktarildiMi !== true;
+    return sandikSevkAdayiMi(sandik);
   }
 
   isSandikDuzeltmeyeAcik(sandik: SandikDto): boolean {

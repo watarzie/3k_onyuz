@@ -11,11 +11,11 @@
       <select
         class="form-select form-select-sm"
         aria-label="Sayfa başına kayıt sayısı"
-        [value]="safePageSize()"
         (change)="onPageSizeSelect($event)"
       >
+        <!-- Seçim option üzerinde: select [value] seçenekler @for ile oluşmadan uygulanır ve ilk seçenek görünür. -->
         @for (size of availablePageSizes(); track size) {
-          <option [value]="size">{{ size }}</option>
+          <option [value]="size" [selected]="size === safePageSize()">{{ size }}</option>
         }
       </select>
     </label>

@@ -1,4 +1,124 @@
-@if (plan() || bagimsiz()) {
+@if (ozel(); as b) {
+  <!-- Özel sandık: üretim formu yoktur. Kaydedilen sandık "Finansa aktar" ile Finans iş kaydı olur. -->
+  @let adim = tekilDurum();
+  <section class="ozel-uretim" [attr.aria-label]="t('SINGLE_TITLE')">
+    <ol class="ozel-adimlar">
+      <li class="tamam">
+        <span class="ozel-adim-no"><i class="ri-save-3-line"></i></span>{{ t('STEP_SAVED') }}
+      </li>
+      <li [class.aktif]="adim === 'aktarilmadi'" [class.tamam]="adim === 'aktarildi' || adim === 'tamamlandi'">
+        <span class="ozel-adim-no"><i class="ri-money-euro-circle-line"></i></span>{{ t('STEP_FINANCE') }}
+      </li>
+      <li [class.aktif]="adim === 'aktarildi'" [class.tamam]="adim === 'tamamlandi'">
+        <span class="ozel-adim-no"><i class="ri-check-double-line"></i></span>{{ t('STEP_DONE') }}
+      </li>
+    </ol>
+
+    <div class="ozel-durum" [attr.data-durum]="adim">
+      @switch (adim) {
+        @case ('haric') {
+          <h4>{{ t('EXCLUDED') }}</h4>
+          <p>{{ t('SINGLE_EXCLUDED_HELP') }}</p>
+        }
+        @case ('aktarilmadi') {
+          <h4>{{ t('SINGLE_NOT_TRANSFERRED_TITLE') }}</h4>
+          <p>{{ t('SINGLE_NOT_TRANSFERRED_HELP') }}</p>
+          @if (ozelAktarYetkili()) {
+            <label class="ozel-alan">
+              <span>{{ t('FINANCE_DATE') }}</span>
+              <input type="date" class="ozel-finans-tarihi" [(ngModel)]="finansTarihi" />
+              <small>{{ t('FINANCE_DATE_SINGLE_HELP') }}</small>
+            </label>
+          }
+        }
+        @case ('aktarildi') {
+          <h4>{{ t('SINGLE_TRANSFERRED_TITLE') }}</h4>
+          <p>{{ t('SINGLE_TRANSFERRED_HELP') }}</p>
+        }
+        @case ('tamamlandi') {
+          <h4>{{ t('SINGLE_DONE_TITLE') }}</h4>
+          <p>{{ t('SINGLE_DONE_HELP') }}</p>
+        }
+      }
+
+      <div class="ozel-eylemler">
+        @if (adim === 'aktarilmadi' && ozelAktarYetkili()) {
+          <button type="button" class="primary-action ozel-finansa-aktar" [disabled]="islemde()" (click)="finansaAktar()">
+            <i [class]="islemde() ? 'ri-loader-4-line spin' : 'ri-send-plane-line'"></i>{{ t(islemde() ? 'SAVING' : 'FINANCE_TRANSFER') }}
+          </button>
+        }
+        @if (adim === 'aktarildi' && ozelGeriAlYetkili() && !finansGeriAlAcik()) {
+          <button type="button" class="link-action ozel-finanstan-geri-al" [disabled]="islemde()" (click)="finansGeriAlAcik.set(true)">
+            {{ t('FINANCE_REVERT') }}
+          </button>
+        }
+      </div>
+
+      @if (finansGeriAlAcik() && adim === 'aktarildi') {
+        <div class="ozel-geri-alma">
+          <p class="ozel-geri-alma-notu">{{ t('FINANCE_REVERT_HELP') }}</p>
+          <label class="ozel-alan">
+            <span>{{ t('FINANCE_REVERT_REASON') }}</span>
+            <input class="ozel-gerekce" [ngModel]="gerekce" (ngModelChange)="gerekceyiDegistir($event)" maxlength="1000" />
+          </label>
+          <div class="ozel-eylemler">
+            <button type="button" [disabled]="islemde()" (click)="finansGeriAlAcik.set(false)">{{ t('CANCEL') }}</button>
+            <button type="button" class="primary-action ozel-finanstan-geri-al-onay" [disabled]="islemde()" (click)="finanstanGeriAl()">{{ t('CONFIRM') }}</button>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="ozel-finans">
+      <i class="ri-money-euro-circle-line" aria-hidden="true"></i>
+      <div>
+        <strong>{{ t('FINANCE_TITLE') }}</strong>
+        <p>{{ t(b.uretimeAlindi ? 'FINANCE_ACTIVE' : 'FINANCE_NOT_YET') }}</p>
+        @if (b.m3HesaplanabilirMi === false) {
+          <p class="ozel-finans-hacim">{{ t('FINANCE_VOLUME_MANUAL') }}</p>
+        }
+      </div>
+    </div>
+
+    <!-- Denetim: kim, ne zaman, hangi işlemle neyi değiştirdi (oluşturma, düzenleme, finansa aktarma/geri alma). -->
+    <div class="ozel-gecmis">
+      <button type="button" class="link-action ozel-gecmis-ac" [attr.aria-expanded]="gecmisAcik()" (click)="gecmisiAcKapat()">
+        <i [class]="gecmisAcik() ? 'ri-arrow-up-s-line' : 'ri-history-line'" aria-hidden="true"></i>{{ t(gecmisAcik() ? 'HISTORY_HIDE' : 'HISTORY_SHOW') }}
+      </button>
+      @if (gecmisAcik()) {
+        @if (gecmisYukleniyor() && !gecmisKayitlari().length) {
+          <p class="ozel-gecmis-bos">{{ t('SAVING') }}</p>
+        } @else if (!gecmisKayitlari().length) {
+          <p class="ozel-gecmis-bos">{{ t('HISTORY_EMPTY') }}</p>
+        } @else {
+          <ol class="ozel-gecmis-liste">
+            @for (olay of gecmisKayitlari(); track $index; let i = $index) {
+              <li>
+                <div class="ozel-gecmis-baslik">
+                  <strong>{{ olay.islem }}</strong>
+                  <span>{{ olay.tarih | date: 'dd.MM.yyyy HH:mm' }} · {{ olay.kullanici }}</span>
+                </div>
+                @if (olay.aciklama) {
+                  <p class="ozel-gecmis-aciklama">{{ olay.aciklama }}</p>
+                }
+                @if (olay.degisiklikler.length) {
+                  <ul class="ozel-gecmis-alanlar">
+                    @for (d of gecmisGenis().has(i) ? olay.degisiklikler : olay.degisiklikler.slice(0, 4); track $index) {
+                      <li><span>{{ d.alan }}</span>@if (d.eskiDeger) {<s>{{ d.eskiDeger }}</s> →} <b>{{ d.yeniDeger ?? '—' }}</b></li>
+                    }
+                  </ul>
+                  @if (olay.degisiklikler.length > 4) {
+                    <button type="button" class="link-action ozel-gecmis-tumu" (click)="gecmisOlayiAcKapat(i)">{{ gecmisGenis().has(i) ? t('HISTORY_LESS') : t('HISTORY_ALL').replace('{0}', '' + olay.degisiklikler.length) }}</button>
+                  }
+                }
+              </li>
+            }
+          </ol>
+        }
+      }
+    </div>
+  </section>
+} @else if (plan()) {
   <section
     class="lifecycle-panel"
     [class.integrated]="entegre()"

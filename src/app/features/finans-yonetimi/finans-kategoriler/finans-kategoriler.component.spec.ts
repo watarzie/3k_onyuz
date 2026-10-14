@@ -80,15 +80,12 @@ describe('Finans F8 kategori ve bağlı gider kalemi', () => {
     c.kategoriSec(1); c.kalemDuzenle(item); write.set(false); c.kalemKaydet(); c.ad = 'Yeni'; c.kaydet();
     expect(api.giderKalemiKaydet).not.toHaveBeenCalled(); expect(api.giderKategoriKaydet).not.toHaveBeenCalled();
   });
-  it('gizlenmiş fiyat varsayılanını null ile ezebilecek kalem düzenlemesini engeller', () => {
-    const c = categories(); denied.set(FINANS_YETKI.BirimFiyatGoruntule); c.kalemDuzenle({ ...item, varsayilanBirimFiyat: null });
+  it('yönetim Gider Kategorileri sekme düğümünün iznine bağlıdır; düğüm kalkınca kalem düzenlenmez ve kaydedilmez', () => {
+    const c = categories(); expect(c.yonetebilir()).toBeTrue();
+    denied.set(FINANS_YETKI.SekmeGiderKategorileri);
+    expect(c.yonetebilir()).toBeFalse();
+    c.kalemDuzenle(item); c.kalemForm = { ...item }; c.kalemKaydet();
     expect(c.kalemId).toBeUndefined(); expect(api.giderKalemiKaydet).not.toHaveBeenCalled();
-  });
-  it('izin sonradan verilse de önceki maskeli kalem listesini düzenlemeye açmaz', () => {
-    denied.set(FINANS_YETKI.BirimFiyatGoruntule);
-    const c = categories(); denied.set(null); c.kalemDuzenle(item);
-    expect(c.kalemId).toBeUndefined();
-    c.kategoriSec(1); c.kalemDuzenle(item); expect(c.kalemId).toBe(8);
   });
   it('eski kategori cevabının yeni kalem listesini ezmesini engeller', () => {
     const first = new Subject<ApiResult<FinansGiderKalemi[]>>();

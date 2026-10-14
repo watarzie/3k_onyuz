@@ -531,3 +531,40 @@
     }
   }
 }
+
+// Proje grupları (Normal → Saha → Yedek → Bağımsız): başlık satırı grubun rengini ve ara toplamını taşır.
+.project-group {
+  --grup: var(--dt-primary);
+  &[data-grup='2'] { --grup: #16a34a; }
+  &[data-grup='3'] { --grup: #0ea5e9; }
+  &[data-grup='4'] { --grup: #e8890c; }
+  .project-avatar {
+    background: color-mix(in srgb, var(--grup) 10%, #fff);
+    color: var(--grup);
+  }
+}
+.group-row > td {
+  padding-top: 14px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid color-mix(in srgb, var(--grup) 35%, transparent);
+  background: color-mix(in srgb, var(--grup) 5%, #fff);
+  color: var(--dt-title);
+  font-size: 12px;
+  font-weight: 700;
+}
+.group-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--grup);
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  i { font-size: 15px; }
+}
+.group-count {
+  margin-left: 8px;
+  color: var(--dt-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+}

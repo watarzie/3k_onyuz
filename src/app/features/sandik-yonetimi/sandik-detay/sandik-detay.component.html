@@ -200,6 +200,9 @@
                       @if (item.kaynakProjeNo) {
                         <small class="d-block text-primary fw-semibold"><i class="ri-folder-line me-1"></i>{{ item.kaynakProjeNo }}</small>
                       }
+                      @if (item.urunBilgisi) {
+                        <small class="urun-bilgisi-meta" [title]="item.urunBilgisi"><i class="ri-price-tag-3-line"></i>{{ item.urunBilgisi }}</small>
+                      }
                       @if (getSandikTransferOzeti(item)) {
                         <small class="sandik-transfer-pill" [title]="getSandikTransferOzeti(item)">
                           <i class="ri-route-line"></i>{{ getSandikTransferOzeti(item) }}
@@ -228,7 +231,7 @@
                 @if (canWriteSandik()) {
                   <td>
                     <div class="row-actions" (click)="$event.stopPropagation()">
-                      <button type="button" class="tz-btn tz-btn--sm" (click)="selectUrun(item)" title="Konulan miktarı ve ürün bilgisini düzenle">
+                      <button type="button" class="tz-btn tz-btn--sm" (click)="selectUrun(item)" title="Konulan miktarı düzenle">
                         <i class="ri-edit-line tz-ico-primary"></i>Düzenle
                       </button>
                       <button type="button" class="tz-btn tz-btn--sm" (click)="openTasiModal(item)" title="Ürünü başka sandığa taşı" [disabled]="isSandikTasimayaKilitli()">
@@ -285,6 +288,13 @@
           <div class="panel-transfer-summary mt-3">
             <i class="ri-route-line"></i>
             <span>{{ getSandikTransferOzeti(selectedUrun()!) }}</span>
+          </div>
+        }
+
+        @if (selectedUrun()!.urunBilgisi) {
+          <div class="panel-urun-bilgisi mt-3" [title]="'LABELS.URUN_BILGISI' | translate">
+            <i class="ri-price-tag-3-line"></i>
+            <span>{{ selectedUrun()!.urunBilgisi }}</span>
           </div>
         }
 

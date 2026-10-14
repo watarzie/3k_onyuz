@@ -8,7 +8,8 @@ import { ProjeService } from '../../../core/services/proje.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmService } from '../../../core/services/confirm.service';
-import { AmbalajProjeOzetDto } from '../../../shared/models';
+import { TranslationService } from '../../../core/services/translation.service';
+import { AmbalajProjeOzetDto, AmbalajUretimPlanDto } from '../../../shared/models';
 
 describe('Ambalaj FB listesinden proje tamamlama ve Üretimi Tamamlanan sekmesi', () => {
   let api: jasmine.SpyObj<AmbalajService>;
@@ -26,8 +27,9 @@ describe('Ambalaj FB listesinden proje tamamlama ve Üretimi Tamamlanan sekmesi'
 
   beforeEach(() => {
     allowed.clear();
-    ['ambalaj-durum-duzenle', 'ambalaj-uretimi-tamamla', 'ambalaj-durumu-geri-al', 'ambalaj-uretimi-yeniden-ac'].forEach((x) => allowed.add(x));
-    api = jasmine.createSpyObj('AmbalajService', ['getProjeler', 'projeUretimDurumu', 'getIcSandikSablonlari', 'getTalepEdenKullanicilar', 'getProjeSandikSecenekleri']);
+    // Proje kaynak sandıklı olduğundan sunucu kaynak müdahalesi yazma iznini de ister (ön yüz aynası).
+    ['ambalaj-durum-duzenle', 'ambalaj-uretimi-tamamla', 'ambalaj-durumu-geri-al', 'ambalaj-uretimi-yeniden-ac', 'ambalaj-kaynak-mudahalesi'].forEach((x) => allowed.add(x));
+    api = jasmine.createSpyObj('AmbalajService', ['getProjeler', 'projeUretimDurumu', 'getIcSandikSablonlari', 'getTalepEdenKullanicilar', 'getProjeSandikSecenekleri', 'getPlan']);
     api.getProjeler.and.returnValue(of({ isSuccess: true, value: sayfa }));
     api.projeUretimDurumu.and.returnValue(of({ isSuccess: true, value: { projeId: 7, degisenKayit: 2, projeDurumu: 3 } }));
     api.getIcSandikSablonlari.and.returnValue(of({ isSuccess: true, value: [] }));
@@ -50,6 +52,7 @@ describe('Ambalaj FB listesinden proje tamamlama ve Üretimi Tamamlanan sekmesi'
         { provide: ToastService, useValue: jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']) },
       ],
     });
+    TestBed.inject(TranslationService).switchLanguage('tr');
   });
 
   function setup() {
@@ -101,6 +104,55 @@ describe('Ambalaj FB listesinden proje tamamlama ve Üretimi Tamamlanan sekmesi'
     allowed.delete('ambalaj-uretimi-tamamla');
     expect(c.projeTamamlanabilir(proje)).toBeFalse();
   }));
+
+  it('kaynak müdahalesi izni yoksa Tamamla görünür ama devre dışıdır; nedeni ipucunda yazılır', () => {
+    allowed.delete('ambalaj-kaynak-mudahalesi');
+    const { fixture, c, el } = setup();
+    const buton = islem(fixture, el, 'Üretimi tamamla');
+    expect(buton).toBeDefined();
+    expect(buton!.disabled).toBeTrue();
+    expect(buton!.title).toContain('kaynak müdahalesi');
+    expect(c.projeTamamlanabilir(proje)).toBeFalse();
+    expect(api.projeUretimDurumu).not.toHaveBeenCalled();
+  });
+
+  it('tamamlama reddindeki engelleyen sandıklar plan çekmecesinde vurgulanır (707-02)', fakeAsync(() => {
+    const kalem = {
+      id: 11, kaynakSandikId: 41, tur: 1 as const, turMetni: 'Proje Sandığı', uretimeAlindi: true, sandikNo: '1', ad: 'Ana',
+      sandikTipi: 'Ahşap Kapalı' as const, adet: 1, boy: 2000, en: 1200, yukseklik: 1800, hacimM3: 1, ambalajaDahilMi: true,
+      ambalajKarariOneriliyor: false, uretimDurumu: 2 as const, olcuHazir: true,
+    };
+    const plan: AmbalajUretimPlanDto = {
+      projeId: 7, projeNo: 'PA727-03', musteri: 'GE', projeTipiId: 1, projeTipiMetni: 'Normal', projeSandiklariDurumId: 2,
+      ilaveSandiklarDurumId: 1, icSandiklarDurumId: 1, seciliSandikAdedi: 1, seciliHacimM3: 1,
+      kalemler: [kalem, { ...kalem, id: 31, kaynakSandikId: 51, tur: 2, turMetni: 'İlave Sandık', sandikNo: '12', uretimeAlindi: false, uretimDurumu: 1 }],
+    };
+    api.getPlan.and.returnValue(of({ isSuccess: true, value: plan }));
+    api.projeUretimDurumu.and.returnValue(of({
+      isSuccess: false, statusCode: 409, error: 'Üretim tamamlanamıyor. Üretim formu olmayan: 12 (İlave).',
+      issues: [{ kayitId: 31, kaynakSandikId: 51, sandikNo: '12', grupMetni: 'İlave', ozelSandik: false, neden: 'FormYok' as const, mesaj: '12 (İlave): üretim formu yok' }],
+    }));
+    const { fixture, c, el } = setup();
+    islem(fixture, el, 'Üretimi tamamla')!.click();
+    flushMicrotasks();
+    fixture.detectChanges();
+
+    expect(api.getPlan).toHaveBeenCalledWith(7, undefined, 1);
+    expect(c.planOpen()).toBeTrue();
+    const vurgulu = el.querySelectorAll('.plan-drawer .crate-table tbody tr.blocking-row');
+    expect(vurgulu.length).toBe(1);
+    expect(vurgulu[0].textContent).toContain('12');
+    expect(vurgulu[0].querySelector('.group-badge')!.textContent).toContain('İlave');
+    expect(el.querySelector('.completion-blockers')!.textContent).toContain('12 (İlave): üretim formu yok');
+  }));
+
+  it('gerekli sandık sayacı grup kırılımını ipucunda gösterir', () => {
+    api.getProjeler.and.returnValue(of({ isSuccess: true, value: { ...sayfa, items: [{ ...proje, gerekliSandikKirilimi: [
+      { grup: 'Normal', adet: 2, tamamlananAdet: 1 }, { grup: 'İlave', adet: 1, tamamlananAdet: 0 },
+    ] }] } }));
+    const { el } = setup();
+    expect(el.querySelector('.required-crates')!.getAttribute('title')).toBe('Normal: 1 / 2 · İlave: 0 / 1');
+  });
 
   it('tamamlanan projenin geri alınması gerekçe ister; satır yeşil gösterilir (A3)', () => {
     const { fixture, c, el } = setup();

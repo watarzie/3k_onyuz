@@ -26,10 +26,8 @@
         }
         <div class="v2-toolbar v2-dialog-context">
           <span class="v2-tag">{{ kalemler().length }} {{ t('PROJECT_DETAIL_ITEMS') }}</span>
-          @if (parasal(izin.TutarGoruntule)) {
-            @for (toplam of toplamlar(); track toplam.paraBirimi) {
-              <span class="v2-tag">{{ toplam.net | number: '1.2-2' }} {{ toplam.paraBirimi }}</span>
-            }
+          @for (toplam of toplamlar(); track toplam.paraBirimi) {
+            <span class="v2-tag">{{ toplam.net | number: '1.2-2' }} {{ toplam.paraBirimi }}</span>
           }
         </div>
         @for (grup of gruplar(); track grup.kategori) {
@@ -37,22 +35,16 @@
             <h4 class="v2-dialog-card-title">
               <i class="ri-stack-line" aria-hidden="true"></i>{{ t(kategoriAnahtari(grup.kategori)) }}
               <span class="v2-tag">{{ grup.kalemler.length }}</span>
-              @if (m3Gorunur()) {
-                <span class="v2-tag">{{ t('MATERIAL_WOOD') }} {{ grup.ahsapM3 | number: '1.0-3' }} m³ · {{ t('PLYWOOD_FOLDING') }} {{ grup.kontraM3 | number: '1.0-3' }} m³</span>
-              }
+              <span class="v2-tag">{{ t('MATERIAL_WOOD') }} {{ grup.ahsapM3 | number: '1.0-3' }} m³@if (grup.kontraM3) { · {{ t('PLYWOOD_FOLDING') }} {{ grup.kontraM3 | number: '1.0-3' }} m³ }</span>
             </h4>
             <div class="v2-dialog-table-wrap">
               <table class="table v2-table">
                 <thead>
                   <tr>
                     <th>{{ t('CRATE') }}</th>
-                    @if (m3Gorunur()) {
-                      <th>{{ t('MATERIAL_WOOD') }} m³</th>
-                      <th>{{ t('PLYWOOD_FOLDING') }} m³</th>
-                    }
-                    @if (parasal(izin.TutarGoruntule)) {
-                      <th>{{ t('AMOUNT') }}</th>
-                    }
+                    <th>{{ t('MATERIAL_WOOD') }} m³</th>
+                    <th>{{ t('PLYWOOD_FOLDING') }} m³</th>
+                    <th>{{ t('AMOUNT') }}</th>
                     <th>{{ t('STATUS') }}</th>
                     <th>PO / {{ t('INVOICE') }}</th>
                     <th></th>
@@ -71,13 +63,9 @@
                           </small>
                         }
                       </td>
-                      @if (m3Gorunur()) {
-                        <td>{{ kalem.ahsapM3 | number: '1.0-3' }}</td>
-                        <td>{{ kalem.kontraM3 | number: '1.0-3' }}</td>
-                      }
-                      @if (parasal(izin.TutarGoruntule)) {
-                        <td class="v2-nowrap">{{ kalem.netTutar | number: '1.2-2' }} {{ kalem.paraBirimi }}</td>
-                      }
+                      <td>{{ kalem.ahsapM3 | number: '1.0-3' }}</td>
+                      <td>{{ kalem.kontraM3 | number: '1.0-3' }}</td>
+                      <td class="v2-nowrap">{{ kalem.netTutar | number: '1.2-2' }} {{ kalem.paraBirimi }}</td>
                       <td><span class="v2-status">{{ t(isDurumuAnahtari(kalem.durum)) }}</span></td>
                       <td>
                         <small class="d-block">PO: {{ kalem.poNumaralari.join(', ') || '—' }}</small>
@@ -118,9 +106,7 @@
                     <th>{{ t('INVOICE_DATE') }}</th>
                     <th>{{ t('DUE_DATE') }}</th>
                     <th>{{ t('PAYMENT_TITLE') }}</th>
-                    @if (parasal(izin.TutarGoruntule)) {
-                      <th>{{ t('AMOUNT') }}</th>
-                    }
+                    <th>{{ t('AMOUNT') }}</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -137,13 +123,11 @@
                           <small class="d-block">{{ f.odemeTarihi | date: 'dd.MM.yyyy' }}</small>
                         }
                       </td>
-                      @if (parasal(izin.TutarGoruntule)) {
-                        <td class="v2-nowrap">
-                          @for (tutar of f.tutarlar ?? []; track tutar.paraBirimi) {
-                            <div>{{ tutar.toplamTutar | number: '1.2-2' }} {{ tutar.paraBirimi }}</div>
-                          }
-                        </td>
-                      }
+                      <td class="v2-nowrap">
+                        @for (tutar of f.tutarlar ?? []; track tutar.paraBirimi) {
+                          <div>{{ tutar.toplamTutar | number: '1.2-2' }} {{ tutar.paraBirimi }}</div>
+                        }
+                      </td>
                       <td class="v2-dialog-action-cell">
                         <button class="btn btn-outline-primary btn-sm" (click)="kayitAc.emit({ tur: 'Fatura', id: f.id })">
                           {{ t('DETAIL') }}

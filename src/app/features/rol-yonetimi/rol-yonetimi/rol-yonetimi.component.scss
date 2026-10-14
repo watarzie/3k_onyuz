@@ -403,6 +403,20 @@
   &__r { background: #0ea5e9; }
 }
 
+.perm-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.tree-toggle-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
 .perm-toolbar {
   display: flex;
   flex-wrap: wrap;

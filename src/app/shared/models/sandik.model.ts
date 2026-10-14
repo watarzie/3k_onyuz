@@ -82,6 +82,16 @@ export interface SandikIcerikDto {
   projeKarsilanan: number;
   tedarikciKarsilanan: number;
   kaynakProjeNo?: string;
+  /** Kalıcı ürün bilgisi (seri no, SKT, lot); 3K işlem açıklamasından bağımsızdır. */
+  urunBilgisi?: string | null;
+}
+
+/** Sandık satırının kalıcı ürün bilgisini günceller; boş değer bilgiyi siler. */
+export interface SandikIcerikBilgisiGuncelleDto {
+  projeId: number;
+  sandikId: number;
+  sandikIcerikId: number;
+  urunBilgisi: string | null;
 }
 
 export interface SandikEkleDto {

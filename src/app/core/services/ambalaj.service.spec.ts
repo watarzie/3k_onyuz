@@ -59,6 +59,10 @@ describe('AmbalajService referans sözleşmesi', () => {
     expect(params.get('pageNumber')).toBe('3');
     expect(params.get('pageSize')).toBe('50');
     expect(params.get('includeSummary')).toBe('false');
+    expect(params.has('finansDurumu')).toBeFalse();
+
+    service.getBagimsizSandiklar({ finansDurumu: 'aktarilan', pageNumber: 1, pageSize: 25 }).subscribe();
+    expect((api.get.calls.mostRecent().args[1] as { params: HttpParams }).params.get('finansDurumu')).toBe('aktarilan');
   });
 
   it('proje planını kaynak tipi ve grupla ister', () => {
