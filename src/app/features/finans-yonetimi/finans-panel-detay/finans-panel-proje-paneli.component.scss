@@ -1,5 +1,5 @@
 // Kontrol Paneli proje paneline özgü küçük ayarlar; panel düzeni ortak/finans-proje-paneli.scss'tedir.
 .crate-breakdown tr.is-clickable { cursor: pointer; }
-.crate-breakdown tr.is-clickable:hover > td { background: #fafbff; }
+.crate-breakdown tr.is-clickable:hover > td { background: color-mix(in srgb, var(--primaryColor) 3%, #fff); }
 .panel-kategoriler td small { display: inline; }
 .kalem-detay { white-space: nowrap; }

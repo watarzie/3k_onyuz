@@ -1,6 +1,6 @@
 :host {
   display: block;
-  --finance-primary: var(--primaryColor, #605dff);
+  --finance-primary: var(--primaryColor);
   --finance-soft: color-mix(in srgb, var(--finance-primary) 6%, var(--whiteColor, #fff));
   --finance-border: var(--borderColor, #eceef2);
 }
@@ -105,7 +105,7 @@
   overflow-x: auto;
   border-bottom: 1px solid var(--borderColor);
   scrollbar-width: thin;
-  scrollbar-color: #d5d3fa transparent;
+  scrollbar-color: var(--brandColorLine) transparent;
 }
 .main-tabs button {
   display: inline-flex;
@@ -128,7 +128,7 @@
 .main-tabs button.active {
   color: var(--primaryColor);
   background: var(--finance-soft);
-  box-shadow: inset 0 0 0 1px #605dff18;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primaryColor) 9%, transparent);
 }
 .main-tabs i {
   margin-right: 7px;
@@ -150,13 +150,13 @@
 .monthly-overview { margin-bottom: 22px; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 9px 15px; border-radius: 8px; font-size: 12px; font-weight: 600; line-height: 1.4; }
 .btn i { font-size: 16px; line-height: 1; }
-.btn-primary { color: #fff; background: var(--finance-primary); border-color: var(--finance-primary); box-shadow: 0 3px 8px #605dff16; }
+.btn-primary { color: #fff; background: var(--finance-primary); border-color: var(--finance-primary); box-shadow: 0 3px 8px color-mix(in srgb, var(--primaryColor) 9%, transparent); }
 .btn-primary:hover:not(:disabled) { background: color-mix(in srgb, var(--finance-primary) 88%, #000); border-color: var(--finance-primary); }
-.btn-outline-primary { color: var(--finance-primary); background: transparent; border-color: #605dff45; }
+.btn-outline-primary { color: var(--finance-primary); background: transparent; border-color: color-mix(in srgb, var(--primaryColor) 27%, transparent); }
 .btn-outline-primary:hover:not(:disabled) { color: var(--finance-primary); background: var(--finance-soft); border-color: var(--finance-primary); }
 .btn-light { background: var(--whiteColor); border-color: var(--finance-border); color: var(--bodyColor); }
 .btn-light:hover:not(:disabled) { color: var(--finance-primary); background: var(--finance-soft); }
-button:focus-visible { outline: 3px solid #605dff45; outline-offset: 2px; }
+button:focus-visible { outline: 3px solid color-mix(in srgb, var(--primaryColor) 27%, transparent); outline-offset: 2px; }
 input[type='checkbox'] { accent-color: var(--finance-primary); }
 .monthly-toolbar,
 .section-toolbar {
@@ -291,7 +291,7 @@ input[type='checkbox'] { accent-color: var(--finance-primary); }
 .settings-search label { position: relative; width: min(380px, 100%); margin: 0; }
 .settings-search label i { position: absolute; top: 11px; left: 12px; color: #64748b; }
 .settings-search input { width: 100%; height: 42px; padding: 8px 12px 8px 34px; border: 1px solid var(--borderColor); border-radius: 8px; background: var(--whiteColor); font-size: 12px; }
-.settings-search input:focus, .summary-toolbar input:focus { border-color: var(--finance-primary); outline: 3px solid #605dff16; }
+.settings-search input:focus, .summary-toolbar input:focus { border-color: var(--finance-primary); outline: 3px solid color-mix(in srgb, var(--primaryColor) 9%, transparent); }
 .settings-search input::placeholder, .summary-toolbar input::placeholder { color: #94a3b8; }
 .summary-toolbar strong, .settings-search strong { color: var(--blackColor); font-size: 13px; font-weight: 650; }
 .finance-summary-wrap {
@@ -370,7 +370,7 @@ input[type='checkbox'] { accent-color: var(--finance-primary); }
 .group-name em {
   padding: 3px 7px;
   border-radius: 4px;
-  background: rgba(96, 93, 255, 0.08);
+  background: color-mix(in srgb, var(--primaryColor) 8%, transparent);
   color: var(--primaryColor);
   font-size: 10px;
   font-style: normal;
@@ -382,7 +382,7 @@ input[type='checkbox'] { accent-color: var(--finance-primary); }
 .group-totals b {
   min-width: 108px;
   padding: 7px 10px;
-  border: 1px solid #605dff12;
+  border: 1px solid color-mix(in srgb, var(--primaryColor) 7%, transparent);
   border-radius: 7px;
   background: var(--whiteColor);
   color: #334155;
@@ -409,7 +409,7 @@ input[type='checkbox'] { accent-color: var(--finance-primary); }
   font-size: 12px;
 }
 .table tbody tr:last-child td { border-bottom: 0; }
-.table tbody tr:not(.completed-row):hover > td { background-color: #605dff04; }
+.table tbody tr:not(.completed-row):hover > td { background-color: color-mix(in srgb, var(--primaryColor) 2%, transparent); }
 .table strong { color: var(--blackColor); font-weight: 650; }
 .date-cell { white-space: nowrap; }
 .description-cell { min-width: 220px; max-width: 380px; line-height: 1.6; }
@@ -606,7 +606,7 @@ input[type='checkbox'] { accent-color: var(--finance-primary); }
   line-height: 1.4;
   color: var(--blackColor);
 }
-.side-panel h3 > i { display: inline-grid; place-items: center; width: 38px; height: 38px; margin-right: 10px; border: 1px solid #605dff20; border-radius: 10px; color: var(--finance-primary); background: var(--whiteColor); font-size: 20px; vertical-align: middle; }
+.side-panel h3 > i { display: inline-grid; place-items: center; width: 38px; height: 38px; margin-right: 10px; border: 1px solid color-mix(in srgb, var(--primaryColor) 13%, transparent); border-radius: 10px; color: var(--finance-primary); background: var(--whiteColor); font-size: 20px; vertical-align: middle; }
 .side-panel header small {
   color: #64748b;
 }
@@ -668,11 +668,11 @@ input[type='checkbox'] { accent-color: var(--finance-primary); }
   border-radius: 8px;
   font-size: 13px;
 }
-.form-control:focus, .form-select:focus { border-color: var(--finance-primary); box-shadow: 0 0 0 3px #605dff16; }
+.form-control:focus, .form-select:focus { border-color: var(--finance-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 9%, transparent); }
 .form-control::placeholder { color: #94a3b8; font-size: 12px; }
 .field > small { font-size: 11px; color: var(--bodyColor); line-height: 1.6; }
 .field textarea { padding: 12px; resize: vertical; }
-.panel-body > .check, .panel-body > .cancel-toggle { padding: 12px; background: var(--finance-soft); border: 1px solid #605dff15; border-radius: 8px; align-self: start; }
+.panel-body > .check, .panel-body > .cancel-toggle { padding: 12px; background: var(--finance-soft); border: 1px solid color-mix(in srgb, var(--primaryColor) 8%, transparent); border-radius: 8px; align-self: start; }
 .check {
   display: flex;
   align-items: center;
@@ -745,7 +745,7 @@ input[type='checkbox'] { accent-color: var(--finance-primary); }
   strong { color: var(--blackColor); font-size: 15px; font-variant-numeric: tabular-nums; }
   em { color: #64748b; font-size: 11.5px; font-style: normal; }
   &.is-yeni {
-    border-color: #605dff40;
+    border-color: color-mix(in srgb, var(--primaryColor) 25%, transparent);
     background: var(--finance-soft);
     strong { color: var(--finance-primary); }
   }
@@ -819,7 +819,7 @@ input[type='checkbox'] { accent-color: var(--finance-primary); }
   gap: 9px;
   font-size: 12px;
 }
-.checkbox-list label:has(input:checked) { background: var(--finance-soft); border-color: #605dff35; }
+.checkbox-list label:has(input:checked) { background: var(--finance-soft); border-color: color-mix(in srgb, var(--primaryColor) 21%, transparent); }
 .checkbox-list input {
   width: 16px;
   height: 16px;
@@ -907,11 +907,11 @@ input[type='checkbox'] { accent-color: var(--finance-primary); }
   box-shadow: inset 3px 0 0 var(--primaryColor);
 }
 .monthly-table .project-detail-row > td {
-  border-color: #e8e7f7;
-  background: #fafafd;
+  border-color: color-mix(in srgb, var(--primaryColor) 14%, #fff);
+  background: color-mix(in srgb, var(--primaryColor) 2%, #fff);
 }
 .monthly-table .project-detail-row:hover > td {
-  background: #f5f4ff;
+  background: color-mix(in srgb, var(--primaryColor) 6%, #fff);
 }
 .monthly-table .project-detail-row .detail-name {
   position: relative;
@@ -923,8 +923,8 @@ input[type='checkbox'] { accent-color: var(--finance-primary); }
   left: 9px;
   width: 10px;
   height: 27px;
-  border-bottom: 1px solid #c8c5ed;
-  border-left: 1px solid #c8c5ed;
+  border-bottom: 1px solid color-mix(in srgb, var(--primaryColor) 35%, #fff);
+  border-left: 1px solid color-mix(in srgb, var(--primaryColor) 35%, #fff);
   content: '';
 }
 .monthly-table tr.completed-row > td {
@@ -1125,7 +1125,7 @@ input[type='checkbox'] { accent-color: var(--finance-primary); }
 // Satırın tamamı tıklanarak alt döküm açılır (sandık satırı, sandıklı kategori satırı).
 .monthly-table tr.is-clickable {
   cursor: pointer;
-  &:hover > td { background: #fafbff; }
+  &:hover > td { background: color-mix(in srgb, var(--primaryColor) 3%, #fff); }
 }
 
 /* Malzemeli fiyat: kontra ve ahşap m³ birim fiyatı alt alta. */

@@ -85,7 +85,7 @@ import { FinansSayfaliSonuc } from '../../../shared/models/finans.model';
         color: #44516b;
       }
       .project-dropdown > button:hover {
-        background: #f3f2ff;
+        background: var(--brandColorSoft);
       }
       .project-pages {
         display: flex;

@@ -505,9 +505,9 @@ table {
 .summary-filter-chip {
   font-size: 11px;
   font-weight: 800;
-  color: #2563eb;
-  background: #eff6ff;
-  border: 1px solid #dbeafe;
+  color: var(--brandColorHover);
+  background: var(--brandColorSoft);
+  border: 1px solid var(--brandColorLine);
   border-radius: 999px;
   padding: 5px 9px;
   white-space: nowrap;
@@ -950,8 +950,8 @@ table {
     transition: border-color .15s, box-shadow .15s;
 
     &:focus {
-      border-color: #93b4ff;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, .1);
+      border-color: color-mix(in srgb, var(--primaryColor) 45%, #fff);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 10%, transparent);
     }
   }
 }
@@ -1013,7 +1013,7 @@ table {
     transition: background-color .15s, transform .15s;
 
     &:hover {
-      background: #f1f5ff;
+      background: color-mix(in srgb, var(--primaryColor) 5%, #fff);
       transform: translateX(2px);
     }
 
@@ -1071,8 +1071,8 @@ table {
   width: 34px;
   height: 34px;
   border-radius: 9px;
-  color: #2563eb;
-  background: #eaf1ff;
+  color: var(--brandColorHover);
+  background: var(--brandColorSoft);
   font-size: 16px;
 }
 

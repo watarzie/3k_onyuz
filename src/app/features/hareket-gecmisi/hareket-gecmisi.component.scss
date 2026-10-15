@@ -1,6 +1,6 @@
 // Hareket Geçmişi — Trezo liste sayfası: başlık + kart (proje seçici, filtreler) + tablo + ortak sayfalayıcı.
 .history-page {
-  --hs-primary: var(--primaryColor, #605dff);
+  --hs-primary: var(--primaryColor);
   --hs-soft: color-mix(in srgb, var(--hs-primary) 8%, #fff);
   --hs-border: var(--borderColor, #eceef2);
   --hs-title: var(--blackColor, #3a4252);
@@ -286,7 +286,7 @@
   tbody tr {
     transition: background 0.15s ease;
     &:hover {
-      background: #fafbff;
+      background: color-mix(in srgb, var(--primaryColor) 3%, #fff);
     }
     &:last-child td {
       border-bottom: 0;
@@ -318,8 +318,8 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #e0e7ff, #ede9fe);
-  color: #4f46e5;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--primaryColor) 16%, #fff), var(--brandColorSoft));
+  color: var(--brandColorHover);
   font-size: 12px;
   font-weight: 700;
 }

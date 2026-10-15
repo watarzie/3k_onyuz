@@ -4,7 +4,7 @@
 // Panel, kayıt detayı / PO-fatura ekranı (1060) ve onay pencerelerinin (1050+) altında kalır; onlar panelin üstünde açılır.
 
 :host {
-  --finance-primary: var(--primaryColor, #605dff);
+  --finance-primary: var(--primaryColor);
   --finance-soft: color-mix(in srgb, var(--finance-primary) 6%, var(--whiteColor, #fff));
   --finance-border: var(--borderColor, #eceef2);
 }
@@ -176,7 +176,7 @@
     border-radius: 8px;
     background: var(--whiteColor);
     font-size: 12.5px;
-    &:focus { border-color: var(--finance-primary); outline: 0; box-shadow: 0 0 0 3px #605dff1a; }
+    &:focus { border-color: var(--finance-primary); outline: 0; box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 10%, transparent); }
   }
 }
 .drawer-segments {
@@ -208,14 +208,14 @@
   align-items: center;
   gap: 6px;
   padding: 5px 6px 5px 11px;
-  border: 1px solid #d9d8ff;
+  border: 1px solid var(--brandColorLine);
   border-radius: 999px;
   background: var(--finance-soft);
   color: var(--finance-primary);
   font-size: 12px;
   font-weight: 600;
   button { display: inline-flex; padding: 2px; border: 0; border-radius: 50%; background: transparent; color: inherit; font-size: 15px; }
-  button:hover { background: #e8e7ff; }
+  button:hover { background: color-mix(in srgb, var(--primaryColor) 14%, #fff); }
 }
 .crate-breakdown td small { display: block; }
 .crate-breakdown .nowrap { white-space: nowrap; }
@@ -229,7 +229,7 @@
   font-weight: 700;
   em { padding: 1px 7px; border-radius: 999px; background: #eceef2; color: #475569; font-size: 10.5px; font-style: normal; }
 }
-.ref-pill.this-month { margin-left: 6px; border-color: #d9d8ff; background: var(--finance-soft); color: var(--finance-primary); }
+.ref-pill.this-month { margin-left: 6px; border-color: var(--brandColorLine); background: var(--finance-soft); color: var(--finance-primary); }
 .status.payment-status.is-active { background: #dff4e9; color: #078a55; }
 .status.payment-status.is-danger { background: #fee2e2; color: #b91c1c; }
 

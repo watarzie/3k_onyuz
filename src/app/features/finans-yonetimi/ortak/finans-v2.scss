@@ -66,13 +66,13 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-  outline: 2px solid #605dff55;
+  outline: 2px solid color-mix(in srgb, var(--primaryColor) 33%, transparent);
   outline-offset: 1px;
 }
 input[type='checkbox'] {
   width: 18px;
   height: 18px;
-  accent-color: #605dff;
+  accent-color: var(--primaryColor);
 }
 .v2-search {
   flex: 1;
@@ -103,8 +103,8 @@ input[type='checkbox'] {
   border-bottom: 2px solid transparent;
 }
 .v2-tabs button.active {
-  color: #605dff;
-  border-color: #605dff;
+  color: var(--primaryColor);
+  border-color: var(--primaryColor);
 }
 .v2-counts {
   display: flex;
@@ -112,13 +112,13 @@ input[type='checkbox'] {
   flex-wrap: wrap;
 }
 .v2-counts span {
-  background: #f4f3ff;
+  background: var(--brandColorSoft);
   padding: 10px 14px;
   border-radius: 8px;
 }
 .v2-counts b {
   margin-left: 10px;
-  color: #605dff;
+  color: var(--primaryColor);
 }
 .v2-note {
   margin: 12px 0 18px;
@@ -264,7 +264,7 @@ dd {
 
 // Shared Trezo surfaces: management pages opt in without changing dialog layouts.
 .v2-management {
-  --v2-primary: var(--primaryColor, #605dff);
+  --v2-primary: var(--primaryColor);
   --v2-soft: color-mix(in srgb, var(--v2-primary) 7%, var(--whiteColor, #fff));
   --v2-muted: var(--bodyColor, #64748b);
   padding: 26px;
@@ -297,7 +297,7 @@ dd {
     color: #fff;
     background: var(--v2-primary);
     border-color: var(--v2-primary);
-    box-shadow: 0 3px 8px #605dff16;
+    box-shadow: 0 3px 8px color-mix(in srgb, var(--primaryColor) 9%, transparent);
   }
   .btn-primary:hover:not(:disabled) {
     background: color-mix(in srgb, var(--v2-primary) 88%, #000);
@@ -325,7 +325,7 @@ dd {
   }
   button:focus-visible,
   summary:focus-visible {
-    outline: 3px solid #605dff55;
+    outline: 3px solid color-mix(in srgb, var(--primaryColor) 33%, transparent);
     outline-offset: 3px;
   }
   label {
@@ -349,7 +349,7 @@ dd {
   select:focus,
   textarea:focus {
     border-color: var(--v2-primary);
-    outline: 3px solid #605dff16;
+    outline: 3px solid color-mix(in srgb, var(--primaryColor) 9%, transparent);
   }
   fieldset {
     min-width: 0;
@@ -558,7 +558,7 @@ dd {
 }
 .v2-version {
   padding: 4px 8px;
-  border: 1px solid #605dff25;
+  border: 1px solid color-mix(in srgb, var(--primaryColor) 15%, transparent);
   border-radius: 6px;
   color: var(--v2-primary);
   background: var(--v2-soft);
@@ -567,7 +567,7 @@ dd {
 }
 // Ortak filtre çubuğu: arama kutusu, etiketli seçimler ve sağa yaslı işlemler tek satırda, dar ekranda sarılır.
 .record-search {
-  --v2-primary: var(--primaryColor, #605dff);
+  --v2-primary: var(--primaryColor);
   --v2-soft: color-mix(in srgb, var(--v2-primary) 7%, var(--whiteColor, #fff));
   --v2-muted: var(--bodyColor, #64748b);
 }
@@ -591,7 +591,7 @@ dd {
   padding: 14px 16px;
   border: 1px solid var(--borderColor, #e5eaf1);
   border-radius: 12px;
-  background: var(--v2-soft, #f7f7ff);
+  background: var(--v2-soft, var(--brandColorSoft));
 }
 .filter-field {
   display: flex;
@@ -660,8 +660,8 @@ dd {
   border-radius: 10px;
   background: var(--whiteColor, #fff);
   &:focus-within {
-    border-color: var(--v2-primary, #605dff);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--v2-primary, #605dff) 14%, transparent);
+    border-color: var(--v2-primary, var(--primaryColor));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--v2-primary, var(--primaryColor)) 14%, transparent);
   }
   > i {
     color: var(--v2-muted, #64748b);
@@ -698,9 +698,9 @@ dd {
 }
 .filter-field select:focus,
 .filter-field input:focus {
-  border-color: var(--v2-primary, #605dff);
+  border-color: var(--v2-primary, var(--primaryColor));
   outline: 0;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--v2-primary, #605dff) 14%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--v2-primary, var(--primaryColor)) 14%, transparent);
 }
 .filter-actions {
   display: flex;
@@ -739,7 +739,7 @@ dd {
   font-weight: 500;
 }
 .project-group-row.expanded > td {
-  background: var(--v2-soft, #f7f7ff);
+  background: var(--v2-soft, var(--brandColorSoft));
 }
 .project-toggle {
   display: inline-flex;
@@ -751,7 +751,7 @@ dd {
   color: inherit;
   text-align: left;
   i {
-    color: var(--v2-primary, #605dff);
+    color: var(--v2-primary, var(--primaryColor));
     font-size: 18px;
   }
   span {
@@ -772,14 +772,14 @@ dd {
 }
 // Kayıt aramada proje altındaki sandık başlığı (alt toplamlı) ve kaynak bileşeni rozeti (sandık / sarf).
 .crate-group-row > td {
-  background: color-mix(in srgb, var(--v2-soft, #f7f7ff) 55%, var(--whiteColor, #fff));
+  background: color-mix(in srgb, var(--v2-soft, var(--brandColorSoft)) 55%, var(--whiteColor, #fff));
   font-size: 12.5px;
 }
 .crate-group-row > td:nth-child(2) {
   padding-left: 30px;
   i {
     margin-right: 6px;
-    color: var(--v2-primary, #605dff);
+    color: var(--v2-primary, var(--primaryColor));
   }
   small {
     margin-left: 8px;
@@ -827,7 +827,7 @@ dd {
   font-size: 16px;
   font-weight: 700;
   i {
-    color: var(--v2-primary, #605dff);
+    color: var(--v2-primary, var(--primaryColor));
   }
 }
 .adhoc-new {
@@ -851,7 +851,7 @@ dd {
   padding: 8px 10px;
   border: 1px solid var(--borderColor, #e5eaf1);
   border-radius: 10px;
-  background: var(--v2-soft, #f7f7ff);
+  background: var(--v2-soft, var(--brandColorSoft));
   font-size: 13px;
   small {
     color: var(--v2-muted, #64748b);
@@ -879,7 +879,7 @@ dd {
     border-bottom: 0;
   }
   &:hover {
-    background: var(--v2-soft, #f7f7ff);
+    background: var(--v2-soft, var(--brandColorSoft));
   }
 }
 .adhoc-tariff-row {
@@ -927,7 +927,7 @@ dd {
   color: #334155;
   font-size: 13px;
   i {
-    color: var(--v2-primary, #605dff);
+    color: var(--v2-primary, var(--primaryColor));
   }
 }
 .v2-list-card > .filter-bar {
@@ -1011,7 +1011,7 @@ dd {
 }
 .v2-category-row.active {
   background: var(--v2-soft);
-  border-color: #605dff30;
+  border-color: color-mix(in srgb, var(--primaryColor) 19%, transparent);
 }
 .v2-category-select {
   display: flex;
@@ -1148,7 +1148,7 @@ dd {
   height: 48px;
   font-size: 25px;
   color: var(--v2-primary);
-  border: 1px solid #605dff22;
+  border: 1px solid color-mix(in srgb, var(--primaryColor) 13%, transparent);
   border-radius: 13px;
   background: var(--whiteColor, #fff);
   margin-bottom: 20px;
@@ -1168,7 +1168,7 @@ dd {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  border-top: 1px solid #605dff20;
+  border-top: 1px solid color-mix(in srgb, var(--primaryColor) 13%, transparent);
   padding-top: 15px;
 }
 .v2-export-note > i {

@@ -190,7 +190,7 @@
   &--more { background: #f1f5f9; color: #64748b; }
 }
 .sv-tip {
-  --tip: var(--primaryColor, #605dff);
+  --tip: #605dff; // Normal proje tipinin kategori rengi; vurgu yeşili Saha ile karışmasın diye sabit.
   display: inline-block;
   padding: 2px 8px;
   border-radius: 999px;

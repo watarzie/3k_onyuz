@@ -1,7 +1,7 @@
 // Finans kontrol paneli — Trezo finans panosu düzeni: üstte KPI kartları, solda grafik ve tablolar,
 // sağda durum kartları. Kartlar açık gri zemin üstünde beyaz, ince kenarlı ve gölgesizdir.
 .finance-dashboard {
-  --v2-primary: var(--primaryColor, #605dff);
+  --v2-primary: var(--primaryColor);
   --v2-soft: color-mix(in srgb, var(--v2-primary) 7%, var(--whiteColor, #fff));
   --v2-muted: var(--bodyColor, #64748b);
   --dash-bg: #f6f7f9;
@@ -798,5 +798,5 @@
   }
 }
 .dashboard-adhoc .dash-card-head h4 i {
-  color: var(--v2-primary, #605dff);
+  color: var(--v2-primary, var(--primaryColor));
 }

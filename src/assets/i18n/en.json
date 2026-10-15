@@ -1039,6 +1039,7 @@
     "WELCOME": "Sign in to your account to continue"
   },
   "AUTH_2FA": {
+    "LANG_LABEL": "Language",
     "LOGIN_CARD_LABEL": "3K secure sign-in",
     "TOGGLE_PASSWORD": "Toggle password visibility",
     "REMEMBER_ME": "Remember Me",
@@ -1132,5 +1133,100 @@
     "TWO_FACTOR_RESET_ACTION": "Reset Enrollment",
     "TWO_FACTOR_RESET_SUCCESS": "The user's Authenticator enrollment was reset. Their 2FA requirement was not changed.",
     "TWO_FACTOR_RESET_FAILED": "The user's Authenticator enrollment could not be reset."
+  },
+  "LANDING": {
+    "LANG_LABEL": "Language",
+    "NEW_TAB": "(opens in a new tab)",
+    "NAV": {
+      "CORPORATE": "Corporate site"
+    },
+    "CTA": {
+      "DASHBOARD_SHORT": "Dashboard",
+      "LOGIN": "Sign In to 3K",
+      "LOGIN_SHORT": "Sign In",
+      "DASHBOARD": "Go to Dashboard"
+    },
+    "HERO": {
+      "TITLE_LEAD": "From product to shipment,",
+      "TITLE_ACCENT": "every step in one flow.",
+      "LEAD": "Run the whole operation from one hub — from the product list and packaging plan to crating, warehousing and shipment.",
+      "SECONDARY": "See the Flow",
+      "TRUST": {
+        "TWO_FACTOR": "Two-step verification",
+        "APPROVALS": "Approved critical actions",
+        "ROLES": "Role-based access",
+        "REPORTS": "PDF & Excel reports"
+      }
+    },
+    "PREVIEW": {
+      "LABEL": "Sample dashboard view",
+      "TITLE": "Shipment readiness",
+      "TOTAL_CRATES": "Total crates",
+      "UNIT_PCS": "pcs",
+      "HEAT_TREATED": "ISPM 15 heat-treated",
+      "READY": "Ready to ship",
+      "READY_VALUE": "94%",
+      "READY_HINT": "116 / 124 crates",
+      "ITEM_MACHINE": "Heavy-duty machine crate",
+      "ITEM_PALLET": "Euro pallet",
+      "PALLET_SPEC": "1200 × 800 mm · Pine",
+      "STATUS_CLOSED": "Closed",
+      "STATUS_PRODUCTION": "In production",
+      "WEEKLY": "Weekly shipment volume"
+    },
+    "FLOW": {
+      "EYEBROW": "OPERATIONAL FLOW",
+      "TITLE": "A product's journey, in one flow.",
+      "SUBTITLE": "Each stage builds on the one before, so every team works from the same facts.",
+      "STEPS": {
+        "PROJECT": {
+          "TITLE": "Project & product list",
+          "TEXT": "Product lists are imported and every revision is tracked."
+        },
+        "CRATING": {
+          "TITLE": "Crating",
+          "TEXT": "Items are packed into crates and shortages show up instantly."
+        },
+        "PACKAGING": {
+          "TITLE": "Packaging production",
+          "TEXT": "Custom wooden crates and pallets are planned to size."
+        },
+        "WAREHOUSE": {
+          "TITLE": "Warehouse & stock",
+          "TEXT": "Crate locations and stock are tracked in one place."
+        },
+        "SHIPMENT": {
+          "TITLE": "Shipment",
+          "TEXT": "Ready crates are loaded and every shipment is reported."
+        },
+        "FINANCE": {
+          "TITLE": "Finance",
+          "TEXT": "Completed work is linked to orders and invoices."
+        }
+      }
+    },
+    "CORPORATE": {
+      "EYEBROW": "CORPORATE WEBSITE",
+      "TEXT": "Discover our wooden crates, export packaging and industrial packaging solutions on our corporate website.",
+      "OPEN_MAP": "Open in Maps",
+      "VISIT": "Visit 3kambalaj.com"
+    },
+    "FOOTER": {
+      "RIGHTS": "All rights reserved."
+    }
+  },
+  "SIDEBAR": {
+    "MENU_GENISLET": "Expand menu",
+    "MENU_DARALT": "Collapse menu",
+    "MENU_AC": "Open menu",
+    "KENAR_MENU": "Sidebar",
+    "ANA_MENU": "Main menu",
+    "MENUYU_KAPAT": "Close menu",
+    "ALT_MENU_AC_KAPAT": "Toggle {grup} submenu",
+    "GRUP_OPERASYON": "Operations",
+    "GRUP_YONETIM": "Administration"
+  },
+  "LAYOUT": {
+    "ICERIGE_GEC": "Skip to content"
   }
 }

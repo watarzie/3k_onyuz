@@ -230,7 +230,7 @@
             <td class="text-center">{{ u.gelenMiktar }}</td>
             <td class="text-center" [ngClass]="{'text-purple fw-semibold': u.stokKarsilanan > 0}">{{ u.stokKarsilanan >
               0 ? u.stokKarsilanan : '-' }}</td>
-            <td class="text-center" [ngClass]="{'text-primary fw-semibold': u.projeKarsilanan > 0}">{{ u.projeKarsilanan
+            <td class="text-center" [ngClass]="{'text-mavi fw-semibold': u.projeKarsilanan > 0}">{{ u.projeKarsilanan
               > 0 ? u.projeKarsilanan : '-' }}</td>
             <td class="text-center" [ngClass]="{'text-warning fw-semibold': u.projeGonderilen > 0}">{{ u.projeGonderilen
               > 0 ? u.projeGonderilen : '-' }}
@@ -245,11 +245,11 @@
             <td style="max-width:160px">
               @if (u.projeKarsilanan > 0) {
               <div class="d-flex align-items-center gap-1">
-                <i class="ri-arrow-left-line text-primary"></i>
-                <span class="text-primary fw-semibold text-truncate"
+                <i class="ri-arrow-left-line text-mavi"></i>
+                <span class="text-mavi fw-semibold text-truncate"
                   [title]="'Karşılandı ← ' + getProjedenAlinanProjeOzeti(u) + ' (' + u.projeKarsilanan + ' adet)'">{{
                   getProjedenAlinanProjeOzeti(u) }}</span>
-                <span class="badge bg-primary-subtle text-primary" style="font-size:10px">{{ u.projeKarsilanan }}</span>
+                <span class="badge bg-mavi-subtle text-mavi" style="font-size:10px">{{ u.projeKarsilanan }}</span>
               </div>
               }
               @if (u.projeGonderilen > 0) {

@@ -1039,6 +1039,7 @@
     "WELCOME": "Devam etmek için hesabınıza giriş yapın"
   },
   "AUTH_2FA": {
+    "LANG_LABEL": "Dil seçimi",
     "LOGIN_CARD_LABEL": "3K güvenli giriş",
     "TOGGLE_PASSWORD": "Şifre görünürlüğünü değiştir",
     "REMEMBER_ME": "Beni Hatırla",
@@ -1132,5 +1133,100 @@
     "TWO_FACTOR_RESET_ACTION": "Kurulumu Sıfırla",
     "TWO_FACTOR_RESET_SUCCESS": "Kullanıcının Authenticator kurulumu sıfırlandı. 2FA zorunluluğu değiştirilmedi.",
     "TWO_FACTOR_RESET_FAILED": "Kullanıcının Authenticator kurulumu sıfırlanamadı."
+  },
+  "LANDING": {
+    "LANG_LABEL": "Dil seçimi",
+    "NEW_TAB": "(yeni sekmede açılır)",
+    "NAV": {
+      "CORPORATE": "Kurumsal site"
+    },
+    "CTA": {
+      "DASHBOARD_SHORT": "Panel",
+      "LOGIN": "Sisteme Giriş Yap",
+      "LOGIN_SHORT": "Giriş Yap",
+      "DASHBOARD": "Panele Git"
+    },
+    "HERO": {
+      "TITLE_LEAD": "Üründen sevkiyata,",
+      "TITLE_ACCENT": "her adım tek akışta.",
+      "LEAD": "Ürün listesinden ambalaj planına, sandıklama, depo ve sevkiyata kadar tüm operasyonu tek merkezden yönetin.",
+      "SECONDARY": "Akışı İncele",
+      "TRUST": {
+        "TWO_FACTOR": "İki adımlı doğrulama",
+        "APPROVALS": "Onaylı kritik işlemler",
+        "ROLES": "Rol bazlı yetki",
+        "REPORTS": "PDF ve Excel raporlar"
+      }
+    },
+    "PREVIEW": {
+      "LABEL": "Örnek panel görünümü",
+      "TITLE": "Sevkiyat hazırlığı",
+      "TOTAL_CRATES": "Toplam sandık",
+      "UNIT_PCS": "adet",
+      "HEAT_TREATED": "ISPM 15 ısıl işlemli",
+      "READY": "Sevke hazır",
+      "READY_VALUE": "%94",
+      "READY_HINT": "116 / 124 sandık",
+      "ITEM_MACHINE": "Ağır tip makine sandığı",
+      "ITEM_PALLET": "Euro palet",
+      "PALLET_SPEC": "1200 × 800 mm · Çam",
+      "STATUS_CLOSED": "Kapatıldı",
+      "STATUS_PRODUCTION": "Üretimde",
+      "WEEKLY": "Haftalık sevkiyat hacmi"
+    },
+    "FLOW": {
+      "EYEBROW": "OPERASYON AKIŞI",
+      "TITLE": "Bir ürünün yolculuğu, tek akışta.",
+      "SUBTITLE": "Her aşama bir öncekinin verisini devralır; ekipler aynı bilgiyle çalışır.",
+      "STEPS": {
+        "PROJECT": {
+          "TITLE": "Proje ve ürün listesi",
+          "TEXT": "Ürün listesi içe aktarılır, revizyonlar izlenir."
+        },
+        "CRATING": {
+          "TITLE": "Sandıklama",
+          "TEXT": "Ürünler sandıklara yerleşir, eksikler anında görünür."
+        },
+        "PACKAGING": {
+          "TITLE": "Ambalaj üretimi",
+          "TEXT": "Ölçüye özel ahşap sandık ve palet üretimi planlanır."
+        },
+        "WAREHOUSE": {
+          "TITLE": "Depo ve stok",
+          "TEXT": "Sandık konumları ve stok tek yerden izlenir."
+        },
+        "SHIPMENT": {
+          "TITLE": "Sevkiyat",
+          "TEXT": "Hazır sandıklar yüklenir, her sevkiyat raporlanır."
+        },
+        "FINANCE": {
+          "TITLE": "Finans",
+          "TEXT": "Üretilen işler sipariş ve faturaya bağlanır."
+        }
+      }
+    },
+    "CORPORATE": {
+      "EYEBROW": "KURUMSAL SİTE",
+      "TEXT": "Ahşap sandık, ihracat ambalajı ve endüstriyel ambalaj çözümlerimizi kurumsal sitemizde keşfedin.",
+      "OPEN_MAP": "Haritada aç",
+      "VISIT": "3kambalaj.com'u ziyaret edin"
+    },
+    "FOOTER": {
+      "RIGHTS": "Tüm hakları saklıdır."
+    }
+  },
+  "SIDEBAR": {
+    "MENU_GENISLET": "Menüyü genişlet",
+    "MENU_DARALT": "Menüyü daralt",
+    "MENU_AC": "Menüyü aç",
+    "KENAR_MENU": "Kenar menü",
+    "ANA_MENU": "Ana menü",
+    "MENUYU_KAPAT": "Menüyü kapat",
+    "ALT_MENU_AC_KAPAT": "{grup} alt menüsünü aç/kapat",
+    "GRUP_OPERASYON": "Operasyon",
+    "GRUP_YONETIM": "Yönetim"
+  },
+  "LAYOUT": {
+    "ICERIGE_GEC": "İçeriğe geç"
   }
 }

@@ -20,7 +20,7 @@ import { ActivatedRoute } from '@angular/router';
     }
     .icon-wrapper {
       width: 80px; height: 80px; border-radius: 20px;
-      background: linear-gradient(135deg, #605DFF, #8B5CF6);
+      background: linear-gradient(135deg, var(--brandColor), #14875A);
       display: flex; align-items: center; justify-content: center;
       font-size: 36px; color: #fff; margin-bottom: 20px;
     }

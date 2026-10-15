@@ -131,13 +131,13 @@
 
   &:hover {
     color: #334155;
-    background: #eef2ff;
+    background: var(--brandColorSoft);
   }
 
   &.active {
     color: #fff;
-    background: var(--primaryColor, #605DFF);
-    box-shadow: 0 2px 7px rgba(96, 93, 255, .22);
+    background: var(--primaryColor);
+    box-shadow: 0 2px 7px color-mix(in srgb, var(--primaryColor) 22%, transparent);
   }
 }
 // Araç çubuğu: bütün eylemler aynı beyaz, ince kenarlı düğme dilinde; anlam rengi yalnız simgede.
@@ -160,7 +160,7 @@
   &:hover:not(:disabled) {
     border-color: color-mix(in srgb, var(--primaryColor) 35%, transparent);
     color: var(--primaryColor);
-    box-shadow: 0 4px 12px -8px rgba(96, 93, 255, .55);
+    box-shadow: 0 4px 12px -8px color-mix(in srgb, var(--primaryColor) 55%, transparent);
   }
   &:disabled {
     opacity: .5;
@@ -255,7 +255,7 @@
     &:focus {
       border-color: var(--primaryColor);
       background: var(--whiteColor);
-      box-shadow: 0 0 0 3px rgba(96, 93, 255, .14);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 14%, transparent);
     }
   }
 }
@@ -352,7 +352,7 @@
   tbody tr:last-child td { border-bottom: none; }
 }
 .pl-satir {
-  --tip: var(--primaryColor);
+  --tip: #605DFF; // Normal proje tipinin kategori rengi; vurgu yeşili Saha ile karışmasın diye sabit.
   animation: pl-satir .4s calc(min(var(--i, 0), 14) * 35ms + 180ms) cubic-bezier(.2, .7, .2, 1) backwards;
   &[data-tip='2'] { --tip: #16a34a; }
   &[data-tip='3'] { --tip: #0ea5e9; }
@@ -373,7 +373,7 @@
     transform: scaleY(.4);
     transition: opacity .2s ease, transform .2s ease;
   }
-  &:hover > td { background: #fafbfe; }
+  &:hover > td { background: color-mix(in srgb, var(--primaryColor) 2%, #fff); }
   &:hover > td:first-child::before { opacity: 1; transform: scaleY(1); }
   &:hover .pl-proje__ikon { transform: scale(1.07) rotate(-4deg); }
 }
@@ -555,7 +555,7 @@
     cursor: pointer;
     appearance: none;
     outline: 0;
-    &:focus { border-color: var(--primaryColor); box-shadow: 0 0 0 3px rgba(96, 93, 255, .14); }
+    &:focus { border-color: var(--primaryColor); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 14%, transparent); }
   }
 }
 .pl-sayfalama__bilgi {
@@ -585,7 +585,7 @@
   &:hover:not(:disabled) {
     border-color: color-mix(in srgb, var(--primaryColor) 40%, transparent);
     color: var(--primaryColor);
-    box-shadow: 0 6px 14px -10px rgba(96, 93, 255, .7);
+    box-shadow: 0 6px 14px -10px color-mix(in srgb, var(--primaryColor) 70%, transparent);
   }
   &:active:not(:disabled) { transform: scale(.96); }
   &:disabled { opacity: .45; cursor: not-allowed; }
@@ -603,7 +603,7 @@
   font-weight: 600;
   line-height: 34px;
   font-variant-numeric: tabular-nums;
-  box-shadow: 0 8px 16px -10px rgba(96, 93, 255, .9);
+  box-shadow: 0 8px 16px -10px color-mix(in srgb, var(--primaryColor) 90%, transparent);
   b { color: #fff; font-size: 13.5px; }
 }
 
@@ -675,12 +675,12 @@
   font-weight: 600;
 }
 .btn-primary-gradient {
-  background: linear-gradient(135deg, #605DFF, #8B5CF6);
+  background: linear-gradient(135deg, var(--brandColor), #14875A);
   color: #fff; border: none; font-weight: 600; border-radius: 8px; padding: 8px 20px;
-  &:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(96,93,255,.3); color: #fff; }
+  &:hover { transform: translateY(-1px); box-shadow: 0 2px 8px color-mix(in srgb, var(--primaryColor) 30%, transparent); color: #fff; }
 }
 .btn-action {
-  background: linear-gradient(135deg, #605DFF, #8B5CF6); color: #fff;
+  background: linear-gradient(135deg, var(--brandColor), #14875A); color: #fff;
   font-size: 12px; border-radius: 6px; padding: 5px 14px; font-weight: 500;
   &:hover { color: #fff; }
 }
@@ -1603,8 +1603,8 @@
       font-size: 13px; font-weight: 500; border-radius: 4px;
     }
     &.active .page-link {
-      background-color: var(--primaryColor, #605DFF);
-      border-color: var(--primaryColor, #605DFF);
+      background-color: var(--primaryColor);
+      border-color: var(--primaryColor);
       color: #fff;
     }
   }

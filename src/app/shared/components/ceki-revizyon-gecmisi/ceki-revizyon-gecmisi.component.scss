@@ -39,8 +39,8 @@
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  background: color-mix(in srgb, var(--primaryColor, #605dff) 11%, #fff);
-  color: var(--primaryColor, #605dff);
+  background: color-mix(in srgb, var(--primaryColor, #0e7a4e) 11%, #fff);
+  color: var(--primaryColor, #0e7a4e);
   font-size: 20px;
 }
 .history-head__title {
@@ -120,10 +120,10 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--primaryColor, #605dff) 9%, #fff);
-  color: var(--primaryColor, #605dff);
+  background: color-mix(in srgb, var(--primaryColor, #0e7a4e) 9%, #fff);
+  color: var(--primaryColor, #0e7a4e);
   font-size: 28px;
-  box-shadow: 0 0 0 10px color-mix(in srgb, var(--primaryColor, #605dff) 4%, #fff);
+  box-shadow: 0 0 0 10px color-mix(in srgb, var(--primaryColor, #0e7a4e) 4%, #fff);
 }
 
 .history-table-wrap {
@@ -152,7 +152,7 @@
   }
   tbody tr {
     transition: background .15s ease;
-    &:hover { background: #fafbff; }
+    &:hover { background: color-mix(in srgb, var(--primaryColor, #0e7a4e) 3%, #fff); }
     &:last-child td { border-bottom: 0; }
   }
   small {
@@ -201,8 +201,8 @@
   font-size: 11px;
   font-weight: 600;
   &.is-request {
-    background: color-mix(in srgb, var(--primaryColor, #605dff) 9%, #fff);
-    color: var(--primaryColor, #605dff);
+    background: color-mix(in srgb, var(--primaryColor, #0e7a4e) 9%, #fff);
+    color: var(--primaryColor, #0e7a4e);
   }
 }
 .state-pill {

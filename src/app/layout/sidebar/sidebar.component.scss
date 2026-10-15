@@ -1,129 +1,538 @@
-$sidebar-bg: #0a1929;
-$sidebar-width: 260px;
-$sidebar-text: #94a3b8;
-$sidebar-active: #25B003;
-$sidebar-hover-bg: rgba(255,255,255,.06);
+// Kenar menü: Trezo'nun beyaz kenar menü dili, marka vurgusu çam yeşili (--brandColor).
+// Sınıflar "km-" önekli: Bootstrap .nav-link ile çakışıp mavi odak halkası almasın.
+// Genişlikler main-layout :host'taki değişkenlerden miras alınır; içerik boşluğu ile tek yerden eşleşsin.
 
-.sidebar-area {
-  width: $sidebar-width;
+:host {
+  --km-genislik: var(--kenar-genislik, 260px);
+  --km-dar-genislik: var(--kenar-dar-genislik, 80px);
+  // Trezo menü tonları; global token'da karşılıkları yok.
+  --km-hover: #F4F6F8;
+  --km-halka: #B6C2CF;
+  --km-kaydirma: #E1E6EC;
+  --km-kaydirma-hover: #C5CED8;
+  --km-ortu: rgba(15, 27, 45, .45);
+  --km-golge-mobil: 12px 0 30px rgba(0, 0, 0, .18);
+  --km-golge-acilir: 12px 0 32px -12px rgba(16, 24, 40, .18);
+  --km-gecis: .25s ease;
+}
+
+// ===== Kap =====
+.km {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  width: var(--km-genislik);
   max-width: 82vw;
   height: 100vh;
-  position: fixed;
-  left: 0; top: 0;
-  background: $sidebar-bg;
-  z-index: 999;
-  overflow-y: auto;
-  transition: .3s ease;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,.1) transparent;
+  height: 100dvh;
+  background: var(--whiteColor);
+  border-right: 1px solid var(--borderColor);
+  font-family: var(--fontFamily);
+  transition: width var(--km-gecis), box-shadow var(--km-gecis);
 }
-.sidebar-header {
-  padding: 18px 20px;
-  border-bottom: 1px solid rgba(255,255,255,.08);
-}
-.logo {
-  text-decoration: none;
-  &-icon {
-    width: 36px; height: 36px; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    overflow: hidden;
 
-    img {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-  }
-  &-text { font-size: 22px; font-weight: 800; color: #fff; letter-spacing: 1px; }
-}
-.sidebar-nav {
-  padding: 12px 0;
-}
-.nav-link {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 20px;
-  color: $sidebar-text;
-  font-size: 13.5px;
-  cursor: pointer;
-  transition: .2s;
-  text-decoration: none;
-  border-left: 3px solid transparent;
-  i { font-size: 18px; width: 20px; text-align: center; }
-  .arrow { margin-left: auto; transition: transform .2s; }
-  &:hover { background: $sidebar-hover-bg; color: #fff; }
-  &.active {
-    background: $sidebar-hover-bg;
-    color: $sidebar-active;
-    border-left-color: $sidebar-active;
-    font-weight: 600;
-  }
-}
-.nav-parent-row {
-  display: flex;
-  align-items: stretch;
-
-  .parent-link {
-    flex: 1 1 auto;
-    min-width: 0;
-    padding-right: 8px;
-  }
-}
-.nav-toggle {
-  width: 44px;
-  flex: 0 0 44px;
-  border: 0;
-  background: transparent;
-  color: $sidebar-text;
-  cursor: pointer;
+// ===== Logo alanı =====
+// 65px: header (12 + 40 + 12 + 1px kenar) ile alt çizgi tek hat olsun, kenar menü sınırında basamak yapmasın.
+.km-logo {
+  flex: 0 0 65px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: .2s;
+  justify-content: space-between;
+  gap: 8px;
+  height: 65px;
+  padding: 0 14px 0 22px;
+  border-bottom: 1px solid var(--borderColor);
+}
 
-  i { font-size: 18px; transition: transform .2s; }
+.km-logo__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  border-radius: 8px;
+  color: var(--brandInk);
+  text-decoration: none;
+
+  // Global a:hover moru buraya sızmasın.
+  &:hover,
+  &:focus {
+    color: var(--brandInk);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--brandColor);
+    outline-offset: 2px;
+  }
+}
+
+.km-logo__amblem {
+  display: block;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+}
+
+.km-logo__yazi {
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--brandInk);
+  white-space: nowrap;
+}
+
+.km-kapat {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--bodyColor);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease;
 
   &:hover {
-    background: $sidebar-hover-bg;
-    color: #fff;
+    background: var(--km-hover);
+    color: var(--brandInk);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--brandColor);
+    outline-offset: 2px;
   }
 }
-.has-children {
-  &.open {
-    > .nav-link .arrow,
-    > .nav-parent-row .nav-toggle .arrow { transform: rotate(180deg); }
-    .sub-menu { display: block; }
+
+// ===== Menü listesi (kendi içinde kayar) =====
+.km-nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px 14px 24px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--km-kaydirma) transparent;
+
+  &:hover {
+    scrollbar-color: var(--km-kaydirma-hover) transparent;
   }
 }
-.sub-menu {
-  display: none;
-  padding-left: 50px;
-  .sub-link {
-    display: block;
-    padding: 7px 16px;
-    font-size: 13px;
-    color: $sidebar-text;
-    text-decoration: none;
-    border-radius: 4px;
-    transition: .2s;
-    &:hover { color: #fff; }
-    &.active { color: $sidebar-active; font-weight: 600; }
+
+.km-bolum + .km-bolum {
+  margin-top: 20px;
+}
+
+.km-bolum__baslik {
+  display: block;
+  margin: 0 0 8px;
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  // Başlık listenin adıdır (aria-labelledby); soluk görünüm boyut ve aralıktan gelir, renk AA (4,76:1) kalır.
+  color: var(--bodyColor);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.km-liste,
+.km-alt__liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.km-liste > li + li {
+  margin-top: 3px;
+}
+
+// ===== Kök öğe (bağlantı veya grup başlığı düğmesi) =====
+.km-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  // Uzun etiket iki satıra inebilsin diye yükseklik serbest; tek satırda yine 40px.
+  min-height: 40px;
+  height: auto;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--blackColor);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease;
+
+  > i:not(.km-ok) {
+    flex: 0 0 20px;
+    width: 20px;
+    font-size: 19px;
+    line-height: 1;
+    text-align: center;
+    color: var(--bodyColor);
+    transition: color .15s ease;
+  }
+
+  // Aktif göstergesi: öğe içinde, solda yuvarlak uçlu yeşil çubuk.
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10px;
+    bottom: 10px;
+    width: 3px;
+    border-radius: 3px;
+    background: var(--brandColor);
+    opacity: 0;
+    transition: opacity .15s ease;
+  }
+
+  &:hover {
+    background: var(--km-hover);
+    color: var(--brandInk);
+
+    > i:not(.km-ok) {
+      color: var(--brandInk);
+    }
+  }
+
+  // İçe çizilir: kaydırma kabının kenarında kırpılmasın.
+  &:focus-visible {
+    outline: 2px solid var(--brandColor);
+    outline-offset: -2px;
+  }
+
+  &.active,
+  &.active:hover {
+    background: var(--brandColorSoft);
+    color: var(--brandColor);
+    font-weight: 600;
+
+    > i:not(.km-ok) {
+      color: var(--brandColor);
+    }
+
+    &::before {
+      opacity: 1;
+    }
   }
 }
-.sidebar-close { color: #fff; font-size: 22px; }
-.sidebar-overlay {
+
+// En çok iki satır: uzun (EN) adlar dokunmatikte ve klavye odağında da okunabilsin; tam ad title'da kalır.
+.km-etiket {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  white-space: normal;
+}
+
+.km-ok {
+  flex: 0 0 auto;
+  margin-left: auto;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--bodyColor);
+  transition: transform .2s ease;
+}
+
+// Rotalı üst öğe + ayrı aç/kapa düğmesi (bugünkü veride kullanılmıyor, korunuyor).
+.km-satir {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+
+  > .km-link {
+    flex: 1 1 auto;
+    width: auto;
+  }
+}
+
+.km-ac {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--bodyColor);
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease;
+
+  &:hover {
+    background: var(--km-hover);
+    color: var(--brandInk);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--brandColor);
+    outline-offset: -2px;
+  }
+}
+
+.km-grup {
+  &.acik {
+    > .km-link--grup,
+    > .km-satir > .km-link:not(.active) {
+      color: var(--brandInk);
+    }
+
+    > .km-link--grup .km-ok,
+    > .km-satir .km-ok {
+      transform: rotate(180deg);
+    }
+  }
+
+  // İçindeki bir sayfa açıkken üst öğe hafifçe vurgulanır; kullanıcı yerini kaybetmesin.
+  &.icinde-aktif {
+    > .km-link--grup,
+    > .km-satir > .km-link:not(.active) {
+      background: var(--km-hover);
+      color: var(--brandInk);
+
+      > i:not(.km-ok) {
+        color: var(--brandInk);
+      }
+    }
+  }
+}
+
+// ===== Alt menü: yükseklik 0fr → 1fr ile yumuşak açılır =====
+.km-alt {
+  display: grid;
+  grid-template-rows: 0fr;
+  // Kapalıyken gizli: klavye odağı görünmeyen bağlantılara düşmesin.
+  visibility: hidden;
+  transition: grid-template-rows var(--km-gecis), visibility 0s linear .25s;
+
+  &.acik {
+    grid-template-rows: 1fr;
+    visibility: visible;
+    transition: grid-template-rows var(--km-gecis), visibility 0s;
+  }
+}
+
+.km-alt__liste {
+  min-height: 0;
+  overflow: hidden;
+
+  > li:first-child {
+    margin-top: 4px;
+  }
+
+  > li + li {
+    margin-top: 2px;
+  }
+
+  > li:last-child {
+    margin-bottom: 4px;
+  }
+}
+
+// Sol 42px = kök öğe dolgusu 12 + ikon 20 + aralık 10: alt metin üst etiketlerle aynı dikey çizgide.
+// En çok iki satır (.km-etiket ile aynı gerekçe).
+.km-alt-link {
+  position: relative;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  padding: 8px 12px 8px 42px;
+  border-radius: 8px;
+  color: var(--bodyColor);
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-decoration: none;
+  white-space: normal;
+  overflow: hidden;
+  transition: background-color .15s ease, color .15s ease;
+
+  // Trezo halka işareti; kök ikonun ortasıyla aynı eksende (left 18 + 4 = 22). Dikeyde ilk satırın ortasında:
+  // tek satırda eski %50 ile aynı yer, iki satırda başlığın yanında kalır.
+  &::before {
+    content: '';
+    position: absolute;
+    left: 18px;
+    top: calc(8px + .675em);
+    width: 8px;
+    height: 8px;
+    margin-top: -4px;
+    border: 1.5px solid var(--km-halka);
+    border-radius: 50%;
+    transition: background-color .15s ease, border-color .15s ease;
+  }
+
+  &:hover {
+    background: var(--km-hover);
+    color: var(--brandInk);
+
+    &::before {
+      border-color: var(--bodyColor);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--brandColor);
+    outline-offset: -2px;
+  }
+
+  &.active,
+  &.active:hover {
+    background: var(--brandColorSoft);
+    color: var(--brandColor);
+    font-weight: 600;
+
+    &::before {
+      background: var(--brandColor);
+      border-color: var(--brandColor);
+    }
+  }
+}
+
+// ===== Mobil karartma =====
+.km-ortu {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.5);
   z-index: 998;
+  background: var(--km-ortu);
 }
 
+@keyframes km-belir {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+// ===== <1200px: ekran dışı menü; "toggled" = açık (önceki davranış) =====
 @media (max-width: 1199.98px) {
-  .sidebar-area {
-    left: -$sidebar-width;
-    box-shadow: 12px 0 30px rgba(0,0,0,.18);
-    &.active { left: 0; }
+  .km {
+    transform: translateX(-100%);
+    // Kapalı menü ekran dışında kalırken klavye odağı da almasın.
+    visibility: hidden;
+    transition: transform .3s ease, visibility 0s linear .3s;
+
+    &.active {
+      transform: none;
+      visibility: visible;
+      box-shadow: var(--km-golge-mobil);
+      transition: transform .3s ease, visibility 0s;
+    }
   }
 
-  .sidebar-overlay.active { display: block; }
+  .km-ortu.active {
+    display: block;
+    animation: km-belir .2s ease;
+  }
+}
+
+// ===== ≥1200px: "toggled" = 80px ikon modu; üzerine gelince ya da klavyeyle girince içeriği itmeden açılır =====
+@media (min-width: 1200px) {
+  .km.active:hover,
+  .km.active:has(:focus-visible) {
+    box-shadow: var(--km-golge-acilir);
+  }
+
+  .km.active:not(:hover):not(:has(:focus-visible)) {
+    width: var(--km-dar-genislik);
+
+    .km-logo {
+      justify-content: center;
+      padding: 0;
+    }
+
+    .km-nav {
+      padding: 18px 12px 24px;
+    }
+
+    // Başlık ince çizgiye döner; metin ekran okuyucuda kalır.
+    .km-bolum__baslik {
+      position: relative;
+      height: 16px;
+      padding: 0;
+      font-size: 0;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 32px;
+        height: 1px;
+        background: var(--borderColor);
+        transform: translate(-50%, -50%);
+      }
+    }
+
+    .km-link {
+      justify-content: center;
+      gap: 0;
+      padding: 0;
+    }
+
+    // Etiket ve logo yazısı görsel olarak gizlenir ama bağlantının erişilebilir adı olarak kalır.
+    .km-logo__yazi,
+    .km-etiket {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .km-ok,
+    .km-ac,
+    .km-alt {
+      display: none;
+    }
+  }
+}
+
+// ===== Hareket azaltma: geçişler anında =====
+@media (prefers-reduced-motion: reduce) {
+  .km,
+  .km.active,
+  .km-alt,
+  .km-alt.acik,
+  .km-link,
+  .km-link::before,
+  .km-link > i:not(.km-ok),
+  .km-alt-link,
+  .km-alt-link::before,
+  .km-ok,
+  .km-ac,
+  .km-kapat {
+    transition: none;
+  }
+
+  .km-ortu.active {
+    animation: none;
+  }
 }

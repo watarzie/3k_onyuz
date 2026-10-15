@@ -1,7 +1,7 @@
 // İzin ağacı — Trezo: satır kartları, tasarlanmış üç durumlu kutu, seviye etiketi, girinti kılavuzu.
-// Seviye renkleri: yazma = birincil mor, okuma = camgöbeği, yetkisiz = gri.
+// Seviye renkleri: yazma = birincil (vurgu) renk, okuma = camgöbeği, yetkisiz = gri.
 :host {
-  --mt-w: var(--primaryColor, #605dff);
+  --mt-w: var(--primaryColor);
   --mt-r: #0ea5e9;
   --mt-n: #94a3b8;
   display: block;
@@ -61,7 +61,7 @@
   &[data-level='2'] { --seviye: var(--mt-r); }
 
   &:hover {
-    background: #f6f7fb;
+    background: color-mix(in srgb, var(--primaryColor) 3%, #fff);
   }
   &.is-match .node-label {
     padding: 1px 6px;
@@ -96,7 +96,7 @@
     transform: rotate(90deg);
   }
   &:hover {
-    background: #eef0f7;
+    background: var(--brandColorSoft);
     color: var(--primaryColor);
   }
 }
@@ -125,7 +125,7 @@
   }
   &:focus-visible {
     outline: 0;
-    box-shadow: 0 0 0 3px rgba(96, 93, 255, .2);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 20%, transparent);
   }
   &:active:not(:disabled) {
     transform: scale(.9);
@@ -134,7 +134,7 @@
     border-color: var(--mt-w);
     background-color: var(--mt-w);
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m5 10.5 3.2 3.2L15 7'/%3e%3c/svg%3e");
-    box-shadow: 0 4px 10px -4px rgba(96, 93, 255, .7);
+    box-shadow: 0 4px 10px -4px color-mix(in srgb, var(--primaryColor) 70%, transparent);
     animation: mt-isaret .22s ease-out;
   }
   &:indeterminate {

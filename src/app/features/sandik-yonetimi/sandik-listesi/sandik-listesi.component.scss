@@ -28,9 +28,9 @@ table {
 }
 .progress { border-radius: 3px; background: #e2e8f0; }
 .btn-action {
-  background: linear-gradient(135deg, #605DFF, #8B5CF6);
+  background: linear-gradient(135deg, var(--brandColor), #14875A);
   color: #fff; font-size: 12px; border-radius: 6px; padding: 4px 12px;
-  &:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(96,93,255,.3); color: #fff; }
+  &:hover { transform: translateY(-1px); box-shadow: 0 2px 8px color-mix(in srgb, var(--primaryColor) 30%, transparent); color: #fff; }
 }
 .btn-status {
   font-size: 12px; font-weight: 600; border-radius: 6px; padding: 5px 14px;

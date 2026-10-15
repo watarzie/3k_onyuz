@@ -1,8 +1,11 @@
 <header class="header-area transition" [ngClass]="{'sticky': isSticky()}">
   <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
     <div class="d-flex align-items-center gap-3">
-      <button class="sidebar-burger-menu border-0 bg-transparent p-0" (click)="toggle()">
-        <i class="ri-menu-line fs-5"></i>
+      <!-- Erişilebilir ad ve durum kırılıma göre: masaüstünde daraltır/genişletir, mobilde açar/kapatır. -->
+      <button type="button" class="sidebar-burger-menu border-0 bg-transparent p-0" (click)="toggle()"
+              aria-controls="kenar-menu" [attr.aria-expanded]="menuGenis()"
+              [attr.aria-label]="menuDugmesiEtiketi() | translate">
+        <i class="ri-menu-line fs-5" aria-hidden="true"></i>
       </button>
       <div class="search-box position-relative d-none d-md-block">
         <i class="ri-search-line position-absolute top-50 translate-middle-y"></i>

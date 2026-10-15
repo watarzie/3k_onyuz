@@ -1,6 +1,6 @@
 // Stok Yönetimi — Trezo sayfa düzeni: başlık, kart içinde arama + tablo, ortak sayfalayıcı.
 .stock-page {
-  --st-primary: var(--primaryColor, #605dff);
+  --st-primary: var(--primaryColor);
   --st-soft: color-mix(in srgb, var(--st-primary) 8%, #fff);
   --st-border: var(--borderColor, #eceef2);
   --st-title: var(--blackColor, #3a4252);
@@ -31,18 +31,18 @@
     font-size: 16px;
   }
   &:hover:not(:disabled) {
-    border-color: color-mix(in srgb, var(--primaryColor, #605dff) 35%, transparent);
-    color: var(--primaryColor, #605dff);
+    border-color: color-mix(in srgb, var(--primaryColor) 35%, transparent);
+    color: var(--primaryColor);
   }
   &:disabled {
     opacity: 0.65;
   }
   &--primary {
-    border-color: var(--primaryColor, #605dff);
-    background: var(--primaryColor, #605dff);
+    border-color: var(--primaryColor);
+    background: var(--primaryColor);
     color: #fff;
     &:hover:not(:disabled) {
-      background: color-mix(in srgb, var(--primaryColor, #605dff) 88%, #000);
+      background: color-mix(in srgb, var(--primaryColor) 88%, #000);
       color: #fff;
     }
   }
@@ -180,7 +180,7 @@
   tbody tr {
     transition: background 0.15s ease;
     &:hover {
-      background: #fafbff;
+      background: color-mix(in srgb, var(--primaryColor) 2%, #fff);
     }
     &:last-child td {
       border-bottom: 0;
@@ -386,8 +386,8 @@
   width: 40px;
   height: 40px;
   border-radius: 11px;
-  background: color-mix(in srgb, var(--primaryColor, #605dff) 8%, #fff);
-  color: var(--primaryColor, #605dff);
+  background: color-mix(in srgb, var(--primaryColor) 8%, #fff);
+  color: var(--primaryColor);
   font-size: 19px;
 }
 .stock-modal__note {
