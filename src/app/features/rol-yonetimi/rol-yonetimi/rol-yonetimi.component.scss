@@ -115,7 +115,7 @@
     &:focus {
       border-color: var(--primaryColor);
       background: #fff;
-      box-shadow: 0 0 0 3px rgba(96, 93, 255, .12);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 12%, transparent);
     }
   }
 }
@@ -155,7 +155,7 @@
   }
 
   &:hover {
-    background: #f6f7fb;
+    background: color-mix(in srgb, var(--primaryColor) 3%, #fff);
     transform: translateX(2px);
 
     .role-actions { opacity: 1; }
@@ -268,10 +268,10 @@
     width: 64px;
     height: 64px;
     border-radius: 20px;
-    background: linear-gradient(135deg, #7c78ff, #4f46e5);
+    background: linear-gradient(135deg, var(--brandColor), #14875A);
     color: #fff;
     font-size: 30px;
-    box-shadow: 0 16px 30px -12px rgba(79, 70, 229, .6);
+    box-shadow: 0 16px 30px -12px color-mix(in srgb, var(--brandColorHover) 60%, transparent);
     animation: rol-sal 3.6s ease-in-out infinite;
   }
 }
@@ -279,7 +279,7 @@
 .empty-illus__halka {
   position: absolute;
   inset: 12px;
-  border: 1px solid rgba(96, 93, 255, .35);
+  border: 1px solid color-mix(in srgb, var(--primaryColor) 35%, transparent);
   border-radius: 50%;
   animation: rol-halka 3s ease-out infinite;
 
@@ -463,7 +463,7 @@
     &:focus {
       border-color: var(--primaryColor);
       background: #fff;
-      box-shadow: 0 0 0 3px rgba(96, 93, 255, .12);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 12%, transparent);
     }
   }
 }
@@ -504,8 +504,8 @@
   to { opacity: 0; transform: scale(1.4); }
 }
 @keyframes rol-nabiz {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(96, 93, 255, .45); }
-  50% { box-shadow: 0 0 0 6px rgba(96, 93, 255, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primaryColor) 45%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--primaryColor) 0%, transparent); }
 }
 @keyframes rol-parilti {
   0% { background-position: 100% 0; }

@@ -306,7 +306,7 @@
                 @if (showProjeTipiFilter()) {
                   <td data-label="Proje Tipi">
                     <span class="badge pl-tip" [ngClass]="{
-                      'bg-primary-subtle text-primary': p.projeTipiId === ProjeTipi.Normal,
+                      'bg-mavi-subtle text-mavi': p.projeTipiId === ProjeTipi.Normal,
                       'bg-success-subtle text-success': p.projeTipiId === ProjeTipi.Saha,
                       'bg-info-subtle text-info': p.projeTipiId === ProjeTipi.Yedek
                     }">{{ projeTipiMetni(p.projeTipiId) }}</span>

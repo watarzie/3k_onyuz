@@ -60,7 +60,7 @@ import { ConfirmService } from '../../../core/services/confirm.service';
       animation: confirmFade .18s ease;
     }
     .confirm-modal {
-      --ton: var(--primaryColor, #605dff);
+      --ton: var(--primaryColor, #0e7a4e);
       --ton-soft: color-mix(in srgb, var(--ton) 12%, #fff);
       position: fixed;
       top: 50%; left: 50%;

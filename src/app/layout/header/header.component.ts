@@ -39,6 +39,23 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.bildirimService.toplamOkunmamis() + (this.canSeeApprovalQueue ? this.bekleyenIslemSayisi() : 0)
   );
 
+  /** Kenar menünün masaüstü kırılımı (sidebar ile aynı); hamburgerin anlamı genişliğe göre değişir. */
+  private readonly masaustuSorgusu: MediaQueryList | null =
+    typeof window.matchMedia === 'function' ? window.matchMedia('(min-width: 1200px)') : null;
+  private readonly masaustu = signal(this.masaustuSorgusu?.matches ?? false);
+
+  /** Hamburger aria-expanded: masaüstünde "toggled" = daraltılmış, mobilde "toggled" = açık. */
+  readonly menuGenis = computed(() =>
+    this.masaustu() ? !this.toggleService.isSidebarToggled() : this.toggleService.isSidebarToggled()
+  );
+
+  /** Hamburgerin yapacağı işi söyleyen etiket anahtarı. */
+  readonly menuDugmesiEtiketi = computed(() => {
+    const toggled = this.toggleService.isSidebarToggled();
+    if (this.masaustu()) return toggled ? 'SIDEBAR.MENU_GENISLET' : 'SIDEBAR.MENU_DARALT';
+    return toggled ? 'SIDEBAR.MENUYU_KAPAT' : 'SIDEBAR.MENU_AC';
+  });
+
   private approvalUpdateSubscription?: Subscription;
   private permissionUpdateSubscription?: Subscription;
 
@@ -55,6 +72,13 @@ export class HeaderComponent implements OnInit, OnDestroy {
     };
     inject(NgZone).runOutsideAngular(() => window.addEventListener('scroll', kaydirildi, { passive: true }));
     inject(DestroyRef).onDestroy(() => window.removeEventListener('scroll', kaydirildi));
+
+    const masaustuSorgusu = this.masaustuSorgusu;
+    if (masaustuSorgusu) {
+      const kirilimDegisti = (olay: MediaQueryListEvent) => this.masaustu.set(olay.matches);
+      masaustuSorgusu.addEventListener('change', kirilimDegisti);
+      inject(DestroyRef).onDestroy(() => masaustuSorgusu.removeEventListener('change', kirilimDegisti));
+    }
 
     effect(() => {
       if (this.canSeeApprovalQueue) {

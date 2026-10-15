@@ -32,8 +32,8 @@ import { Component, input } from '@angular/core';
       height: 100%;
     }
     .stat-card {
-      --ton: #605dff;
-      --ton-soft: #ecf0ff;
+      --ton: var(--primaryColor);
+      --ton-soft: var(--brandColorSoft);
       position: relative;
       display: flex;
       align-items: center;

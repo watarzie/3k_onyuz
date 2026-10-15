@@ -130,7 +130,7 @@ table {
 .cursor-pointer { cursor: pointer; }
 .bulk-select-cell { width: 44px; padding-right: 6px; }
 .bulk-select-cell .form-check-input { cursor: pointer; }
-table tr.bulk-selected td { background: #f0f3ff; }
+table tr.bulk-selected td { background: color-mix(in srgb, var(--primaryColor) 7%, #fff); }
 .gelen-text { font-weight: 600; }
 .ana-toplam-meta {
   margin-top: 3px;
@@ -297,7 +297,7 @@ table tr.bulk-selected td { background: #f0f3ff; }
   tbody tr {
     cursor: pointer;
     transition: background .15s ease;
-    &:hover { background: #fafbff; }
+    &:hover { background: color-mix(in srgb, var(--primaryColor) 2%, #fff); }
     &.is-selected { background: color-mix(in srgb, var(--primaryColor) 7%, #fff); }
     &:last-child td { border-bottom: 0; }
   }

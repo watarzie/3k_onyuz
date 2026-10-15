@@ -29,11 +29,11 @@
   &:focus-visible {
     outline: 0;
     border-color: var(--primaryColor);
-    box-shadow: 0 0 0 3px rgba(96, 93, 255, .14);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 14%, transparent);
   }
   .is-open & {
     border-color: var(--primaryColor);
-    box-shadow: 0 0 0 3px rgba(96, 93, 255, .12);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 12%, transparent);
   }
   .has-value & {
     border-color: color-mix(in srgb, var(--primaryColor) 45%, transparent);
@@ -173,7 +173,7 @@
   animation: tz-secici-satir .22s calc(var(--i) * 18ms) ease-out both;
 
   &.is-active {
-    background: #f4f5ff;
+    background: color-mix(in srgb, var(--primaryColor) 6%, #fff);
   }
   &.is-selected {
     background: color-mix(in srgb, var(--primaryColor) 9%, #fff);

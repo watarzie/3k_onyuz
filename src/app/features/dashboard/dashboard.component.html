@@ -236,7 +236,7 @@
         } @else {
           <div class="ozet-row">
             <div class="ozet-item">
-              <div class="ozet-number text-primary">{{ projeOzetiHazirlanan() }}</div>
+              <div class="ozet-number text-mavi">{{ projeOzetiHazirlanan() }}</div>
               <div class="ozet-label">Hazırlanıyor</div>
             </div>
             <div class="ozet-item">
@@ -257,14 +257,14 @@
               <span class="small text-muted">Durum Dağılımı</span>
               <div class="progress" style="height: 8px;">
                 @if (projeOzetiToplam() > 0) {
-                  <div class="progress-bar bg-primary" [style.width.%]="(projeOzetiHazirlanan() / projeOzetiToplam()) * 100"></div>
+                  <div class="progress-bar bg-mavi" [style.width.%]="(projeOzetiHazirlanan() / projeOzetiToplam()) * 100"></div>
                   <div class="progress-bar bg-success" [style.width.%]="(projeOzetiSevkEdilen() / projeOzetiToplam()) * 100"></div>
                   <div class="progress-bar bg-warning" [style.width.%]="(projeOzetiEksikSevk() / projeOzetiToplam()) * 100"></div>
                   <div class="progress-bar bg-info" [style.width.%]="(projeOzetiTamamlanan() / projeOzetiToplam()) * 100"></div>
                 }
               </div>
               <div class="d-flex gap-3 mt-2 flex-wrap">
-                <span class="mini-legend"><span class="legend-dot bg-primary"></span> Hazırlanıyor</span>
+                <span class="mini-legend"><span class="legend-dot bg-mavi"></span> Hazırlanıyor</span>
                 <span class="mini-legend"><span class="legend-dot bg-success"></span> Sevk</span>
                 <span class="mini-legend"><span class="legend-dot bg-warning"></span> Eksik Sevk</span>
                 <span class="mini-legend"><span class="legend-dot bg-info"></span> Tamamlanan</span>
@@ -722,9 +722,9 @@
         } @else {
           <div class="tip-bars">
             <div class="tip-bar-row">
-              <div class="tip-bar-label"><i class="ri-folder-line text-primary me-1"></i> Normal</div>
+              <div class="tip-bar-label"><i class="ri-folder-line text-mavi me-1"></i> Normal</div>
               <div class="tip-bar-track">
-                <div class="tip-bar-fill bg-primary" [style.width.%]="toplamSandik() > 0 ? (normalSandik() / toplamSandik()) * 100 : 0"></div>
+                <div class="tip-bar-fill bg-mavi" [style.width.%]="toplamSandik() > 0 ? (normalSandik() / toplamSandik()) * 100 : 0"></div>
               </div>
               <div class="tip-bar-val">{{ normalSandik() }}</div>
             </div>

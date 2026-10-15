@@ -1,4 +1,4 @@
-import { Injectable, signal, effect } from '@angular/core';
+import { DOCUMENT, Injectable, signal, effect, inject } from '@angular/core';
 import en from '../../../assets/i18n/en.json';
 import tr from '../../../assets/i18n/tr.json';
 
@@ -15,10 +15,14 @@ import tr from '../../../assets/i18n/tr.json';
 export class TranslationService {
   private translations: Record<string, Record<string, unknown>> = { en, tr };
   currentLang = signal<string>(localStorage.getItem('3k_lang') || 'tr');
+  private readonly document = inject(DOCUMENT);
 
   constructor() {
     effect(() => {
-      localStorage.setItem('3k_lang', this.currentLang());
+      const dil = this.currentLang();
+      localStorage.setItem('3k_lang', dil);
+      // <html lang> seçili dili söylesin: ekran okuyucu doğru telaffuz etsin, CSS büyük harf (i/İ) dile uysun.
+      this.document.documentElement.lang = dil;
     });
   }
 

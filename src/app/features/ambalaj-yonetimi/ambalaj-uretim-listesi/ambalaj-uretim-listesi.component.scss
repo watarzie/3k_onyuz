@@ -15,7 +15,7 @@
 .production-row-actions button:disabled { cursor: not-allowed; opacity: .55; }
 .production-state-cell { min-width: 125px; }
 .manual-crate.lifecycle-manual-crate { grid-template-columns: 60px 80px minmax(180px, 1fr) 145px 70px; }
-.lifecycle-manual-crate.selected { background: rgba(96, 93, 255, .04); }
+.lifecycle-manual-crate.selected { background: color-mix(in srgb, var(--primaryColor) 4%, transparent); }
 .manual-selection { width: 17px; height: 17px; accent-color: var(--primaryColor); }
 .manual-selection-field { display: flex; flex-direction: column; align-items: center; gap: 5px; margin: 0; color: var(--bodyColor, #64748b); font-size: 10px; text-align: center; cursor: pointer; }
 .lifecycle-manual-crate .production-row-state { margin-top: 8px; }
@@ -33,7 +33,7 @@
   --muted: var(--bodyColor);
   --line: var(--borderColor);
   --accent: var(--primaryColor);
-  --accent-dark: #4936f5;
+  --accent-dark: var(--brandColorHover);
   --paper: var(--whiteColor);
   color: var(--ink);
 }
@@ -82,7 +82,7 @@
   width: 48px;
   height: 48px;
   border-radius: 8px;
-  background: #eef2ff;
+  background: var(--brandColorSoft);
   color: var(--primaryColor);
   font-size: 24px;
 }
@@ -407,7 +407,7 @@ td small {
 .plan-toolbar .drawer-status { width: 150px; }
 .plan-toolbar label span, .crate-form label > span { display: block; margin-bottom: 5px; color: #596671; font-size: 11px; font-weight: 700; text-transform: uppercase; }
 .plan-toolbar input, .crate-form input:not([type='checkbox']), .crate-form select, .crate-form textarea, .report-strip select { width: 100%; min-height: 38px; padding: 8px 10px; border: 1px solid var(--borderColor); border-radius: 8px; background: var(--whiteColor); color: var(--blackColor); }
-.plan-toolbar input:focus, .crate-form input:focus, .crate-form select:focus, .crate-form textarea:focus, .report-strip select:focus { border-color: var(--primaryColor); outline: 0; box-shadow: 0 0 0 3px rgba(96, 93, 255, .1); }
+.plan-toolbar input:focus, .crate-form input:focus, .crate-form select:focus, .crate-form textarea:focus, .report-strip select:focus { border-color: var(--primaryColor); outline: 0; box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 10%, transparent); }
 .crate-form input[readonly] { background: #f2f4f7; color: var(--bodyColor); }
 .primary-action, .report-download { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 39px; padding: 0 15px; border: 1px solid var(--primaryColor); border-radius: 8px; background: var(--primaryColor); color: #fff; white-space: nowrap; }
 
@@ -423,7 +423,7 @@ td small {
 .section-heading p, .report-strip p { margin: 0; color: #65717d; font-size: 12px; }
 .selection-actions, .add-actions { display: flex; gap: 6px; }
 .selection-actions button, .add-actions button, .form-actions > button, .crate-row-actions button { min-height: 32px; padding: 0 10px; border: 1px solid var(--borderColor); border-radius: 8px; background: var(--whiteColor); color: var(--bodyColor); }
-.add-actions button { color: var(--primaryColor); border-color: rgba(96, 93, 255, .35); }
+.add-actions button { color: var(--primaryColor); border-color: color-mix(in srgb, var(--primaryColor) 35%, transparent); }
 .add-actions button { display: inline-flex; align-items: center; gap: 4px; }
 .selection-actions .add-crate { border-color: var(--primaryColor); background: var(--primaryColor); color: #fff; }
 .add-actions .secondary-add { border-color: #98a7b2; color: #3f5969; }
@@ -463,7 +463,7 @@ td small {
 
 .manual-crates { border-top: 1px solid var(--borderColor); }
 .manual-crate { display: grid; grid-template-columns: 105px minmax(220px, 1fr) 135px 70px; align-items: center; gap: 13px; padding: 12px 0; border-bottom: 1px solid #dce2e7; }
-.manual-crate.inner { padding-left: 24px; border-left: 3px solid var(--primaryColor); background: #fafaff; }
+.manual-crate.inner { padding-left: 24px; border-left: 3px solid var(--primaryColor); background: color-mix(in srgb, var(--primaryColor) 3%, #fff); }
 .crate-type { color: #456474; font-size: 10px; font-weight: 700; text-transform: uppercase; }
 .crate-main { display: flex; flex-direction: column; }
 .crate-main span { color: #3e4b54; font-size: 12px; }
@@ -537,8 +537,8 @@ td small {
   --module-subtle: #f6f7f9;
   --module-table-head: #f8fafc;
   --module-text-soft: #64748b;
-  --module-primary-soft: rgba(96, 93, 255, .08);
-  --module-primary-border: rgba(96, 93, 255, .26);
+  --module-primary-soft: color-mix(in srgb, var(--primaryColor) 8%, transparent);
+  --module-primary-border: color-mix(in srgb, var(--primaryColor) 26%, transparent);
   max-width: 100%;
   min-width: 0;
   overflow-x: hidden;
@@ -562,8 +562,8 @@ td small {
 }
 
 .summary-card:hover {
-  border-color: #c7d2fe !important;
-  box-shadow: 0 4px 16px rgba(99, 102, 241, .06);
+  border-color: var(--brandColorLine) !important;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--primaryColor) 6%, transparent);
 }
 
 .summary-icon {
@@ -696,7 +696,7 @@ td small {
 .segmented button.active {
   background: #fff;
   color: var(--primaryColor);
-  box-shadow: 0 2px 6px rgba(23, 43, 77, .08), 0 0 0 1px rgba(96, 93, 255, .14);
+  box-shadow: 0 2px 6px rgba(23, 43, 77, .08), 0 0 0 1px color-mix(in srgb, var(--primaryColor) 14%, transparent);
 }
 
 .production-queues button {
@@ -769,7 +769,7 @@ td small {
 .report-button,
 .form-actions .primary-action {
   border-color: transparent;
-  background: linear-gradient(135deg, #605dff, #8b5cf6);
+  background: linear-gradient(135deg, var(--brandColor), #14875A);
   color: #fff;
 }
 
@@ -780,9 +780,9 @@ td small {
 .report-button:hover:not(:disabled),
 .form-actions .primary-action:hover {
   border-color: transparent;
-  background: linear-gradient(135deg, #514ee8, #7c4ee0);
+  background: linear-gradient(135deg, var(--brandColorHover), #0E7A4E);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(96, 93, 255, .28);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--primaryColor) 28%, transparent);
 }
 
 .icon-button.danger,
@@ -877,7 +877,7 @@ table tbody tr:hover,
 }
 
 .crate-table tbody tr.selected > td {
-  background: rgba(96, 93, 255, .08) !important;
+  background: color-mix(in srgb, var(--primaryColor) 8%, transparent) !important;
 }
 
 .crate-table tbody tr.selected {
@@ -992,7 +992,7 @@ td small,
 
 .template-item:hover {
   border-color: var(--module-primary-border);
-  background: #fafaff;
+  background: color-mix(in srgb, var(--primaryColor) 3%, #fff);
 }
 
 .decision-modal {
@@ -1051,8 +1051,8 @@ td small,
 }
 
 .special-crate-modal-header > button:hover {
-  border-color: var(--module-primary-border, rgba(96, 93, 255, .26));
-  background: var(--module-primary-soft, rgba(96, 93, 255, .08));
+  border-color: var(--module-primary-border, color-mix(in srgb, var(--primaryColor) 26%, transparent));
+  background: var(--module-primary-soft, color-mix(in srgb, var(--primaryColor) 8%, transparent));
   color: var(--primaryColor);
 }
 
@@ -1084,7 +1084,7 @@ td small,
   align-items: center;
   justify-content: center;
   border-radius: 11px;
-  background: var(--module-primary-soft, #eeedff);
+  background: var(--module-primary-soft, var(--brandColorSoft));
   color: var(--primaryColor);
   font-size: 21px;
 }
@@ -1230,7 +1230,7 @@ td small,
   border-color: var(--primaryColor);
   outline: 0;
   background-color: #fff;
-  box-shadow: 0 0 0 3px rgba(96, 93, 255, .1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 10%, transparent);
 }
 
 .special-crate-modal input[readonly],
@@ -1299,7 +1299,7 @@ td small,
 .project-combobox.open .project-combobox-toggle {
   border-color: var(--primaryColor);
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(96, 93, 255, .1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 10%, transparent);
 }
 
 .project-combobox.open .project-combobox-toggle i {
@@ -1358,7 +1358,7 @@ td small,
 .project-combobox-search input:focus {
   border-color: var(--primaryColor);
   outline: 0;
-  box-shadow: 0 0 0 3px rgba(96, 93, 255, .08);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 8%, transparent);
 }
 
 .project-combobox-options {
@@ -1400,7 +1400,7 @@ td small,
 .project-combobox-option:focus-visible,
 .project-combobox-option.active {
   outline: 0;
-  background: var(--module-primary-soft, #eeedff);
+  background: var(--module-primary-soft, var(--brandColorSoft));
   color: var(--primaryColor);
 }
 
@@ -1475,7 +1475,7 @@ td small,
 
 .manual-checkbox .form-check-input:focus {
   border-color: var(--primaryColor);
-  box-shadow: 0 0 0 3px rgba(96, 93, 255, .12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 12%, transparent);
 }
 
 .manual-checkbox .form-check-label {
@@ -1753,7 +1753,7 @@ table tbody tr.completed-project:hover > td {
 
   &:focus-within {
     border-color: var(--primaryColor);
-    box-shadow: 0 0 0 3px rgba(96, 93, 255, .12);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 12%, transparent);
   }
   input {
     flex: 1;
@@ -1793,7 +1793,7 @@ table tbody tr.completed-project:hover > td {
   .batch-field__save {
     background: var(--primaryColor);
     color: #fff;
-    box-shadow: 0 4px 10px -4px rgba(96, 93, 255, .7);
+    box-shadow: 0 4px 10px -4px color-mix(in srgb, var(--primaryColor) 70%, transparent);
   }
 }
 
@@ -1832,8 +1832,8 @@ table tbody tr.completed-project:hover > td {
     margin-left: 6px;
     padding: 0 7px;
     border-radius: 999px;
-    background: #eef2ff;
-    color: #4338ca;
+    background: var(--brandColorSoft);
+    color: var(--brandColorHover);
     font-size: 11px;
     font-weight: 700;
   }

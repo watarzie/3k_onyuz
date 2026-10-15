@@ -1,51 +1,78 @@
-<aside class="sidebar-area" [ngClass]="{'active': toggleService.isSidebarToggled()}">
-  <div class="sidebar-header d-flex align-items-center justify-content-between">
-    <a routerLink="/dashboard" class="logo d-flex align-items-center gap-2">
-      <div class="logo-icon">
-        <img src="/images/3k-emblem.svg" alt="3K amblem" />
-      </div>
-      <span class="logo-text">3K</span>
+<!-- id: header'daki hamburger aria-controls ile bu menüyü gösterir. Esc yalnız mobil açılır menüyü kapatır. -->
+<aside id="kenar-menu" class="km" [class.active]="toggleService.isSidebarToggled()" [attr.aria-label]="metinler().kenarMenu"
+  (keydown.escape)="escIleKapat()">
+  <div class="km-logo">
+    <!-- Logonun altına bilinçli olarak hiçbir şey yazılmaz; ad "3K" metninden gelir, amblem dekoratiftir. -->
+    <a routerLink="/dashboard" class="km-logo__link" (click)="closeSidebar()">
+      <img class="km-logo__amblem" src="/images/3k-emblem.svg" alt="" width="30" height="30" />
+      <span class="km-logo__yazi">3K</span>
     </a>
-    <button class="sidebar-close d-xl-none border-0 bg-transparent" (click)="closeSidebar()">
-      <i class="ri-close-line"></i>
+    <button #kapatDugmesi type="button" class="km-kapat d-xl-none" [attr.aria-label]="metinler().menuyuKapat"
+      (click)="menuyuKapat()">
+      <i class="ri-close-line" aria-hidden="true"></i>
     </button>
   </div>
-  <nav class="sidebar-nav">
-    @for (item of menu(); track $index) {
-      @if (item.children && item.children.length > 0) {
-        <div class="nav-item has-children" [ngClass]="{'open': openIndex() === $index}">
-          @if (item.route) {
-            <div class="nav-parent-row">
-              <a class="nav-link parent-link" [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="closeSidebar()">
-                <i [class]="item.icon"></i>
-                <span>{{ item.label }}</span>
-              </a>
-              <button type="button" class="nav-toggle" [attr.aria-label]="item.label + ' alt menüsünü aç/kapat'" (click)="toggleSection($index)">
-                <i class="ri-arrow-down-s-line arrow"></i>
-              </button>
-            </div>
-          } @else {
-            <a class="nav-link" (click)="toggleSection($index)">
-              <i [class]="item.icon"></i>
-              <span>{{ item.label }}</span>
-              <i class="ri-arrow-down-s-line arrow"></i>
-            </a>
-          }
-          <div class="sub-menu">
-            @for (child of item.children; track child.route) {
-              <a class="sub-link" [routerLink]="child.route" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="closeSidebar()">
-                {{ child.label }}
-              </a>
+
+  <nav class="km-nav" [attr.aria-label]="metinler().anaMenu">
+    @for (bolum of bolumler(); track bolum.kod) {
+      <div class="km-bolum">
+        <!-- lang: büyük harf dönüşümü dile göre yapılsın (EN başlıkta "İ" çıkmasın). -->
+        <span class="km-bolum__baslik" [id]="'km-bolum-' + bolum.kod" [attr.lang]="ts.currentLang()">{{ bolum.baslik }}</span>
+        <ul class="km-liste" [attr.aria-labelledby]="'km-bolum-' + bolum.kod">
+          @for (item of bolum.ogeler; track item.kod) {
+            @if (item.children && item.children.length > 0) {
+              <li class="km-grup" [class.acik]="acikGrupKod() === item.kod" [class.icinde-aktif]="aktifGrupKod() === item.kod">
+                @if (item.route) {
+                  <div class="km-satir">
+                    <a class="km-link" [routerLink]="item.route" routerLinkActive="active"
+                      [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page"
+                      [title]="item.label" (click)="closeSidebar()">
+                      <i [class]="item.icon" aria-hidden="true"></i>
+                      <span class="km-etiket">{{ item.label }}</span>
+                    </a>
+                    <button type="button" class="km-ac" [attr.aria-expanded]="acikGrupKod() === item.kod"
+                      [attr.aria-controls]="altMenuId(item.kod)" [attr.aria-label]="acKapatEtiketi(item.label)"
+                      (click)="toggleSection(item.kod)">
+                      <i class="ri-arrow-down-s-line km-ok" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                } @else {
+                  <button type="button" class="km-link km-link--grup" [attr.aria-expanded]="acikGrupKod() === item.kod"
+                    [attr.aria-controls]="altMenuId(item.kod)" [title]="item.label" (click)="toggleSection(item.kod)">
+                    <i [class]="item.icon" aria-hidden="true"></i>
+                    <span class="km-etiket">{{ item.label }}</span>
+                    <i class="ri-arrow-down-s-line km-ok" aria-hidden="true"></i>
+                  </button>
+                }
+                <div class="km-alt" [id]="altMenuId(item.kod)" [class.acik]="acikGrupKod() === item.kod">
+                  <ul class="km-alt__liste">
+                    @for (child of item.children; track child.kod) {
+                      <li>
+                        <!-- exact: /projeler ile /projeler/sevk-edilen aynı anda aktif görünmesin. -->
+                        <a class="km-alt-link" [routerLink]="child.route" routerLinkActive="active"
+                          [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page"
+                          [title]="child.label" (click)="closeSidebar()">{{ child.label }}</a>
+                      </li>
+                    }
+                  </ul>
+                </div>
+              </li>
+            } @else {
+              <li>
+                <!-- exact değil: kök öğe kendi detay sayfalarında (ör. sandık detayı) da vurgulu kalsın.
+                     aria-current birebir rotada "page", detay sayfasında "true" (kokAriaCurrent). -->
+                <a class="km-link" [routerLink]="item.route" routerLinkActive="active"
+                  [routerLinkActiveOptions]="{ exact: false }" [ariaCurrentWhenActive]="kokAriaCurrent(item.route)"
+                  [title]="item.label" (click)="closeSidebar()">
+                  <i [class]="item.icon" aria-hidden="true"></i>
+                  <span class="km-etiket">{{ item.label }}</span>
+                </a>
+              </li>
             }
-          </div>
-        </div>
-      } @else {
-        <a class="nav-link" [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="closeSidebar()">
-          <i [class]="item.icon"></i>
-          <span>{{ item.label }}</span>
-        </a>
-      }
+          }
+        </ul>
+      </div>
     }
   </nav>
 </aside>
-<div class="sidebar-overlay" [ngClass]="{'active': toggleService.isSidebarToggled()}" (click)="closeSidebar()"></div>
+<div class="km-ortu" [class.active]="toggleService.isSidebarToggled()" (click)="menuyuKapat()" aria-hidden="true"></div>

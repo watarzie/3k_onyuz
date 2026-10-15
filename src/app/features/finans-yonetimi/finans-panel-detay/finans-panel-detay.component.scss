@@ -1,7 +1,7 @@
 // Finans paneli detay dökümü — panelin kart dilinde: sekmeler, sıralı tablo, açılır kalem listesi, pay çubukları.
 :host {
   display: block;
-  --dt-primary: var(--primaryColor, #605dff);
+  --dt-primary: var(--primaryColor);
   --dt-soft: color-mix(in srgb, var(--dt-primary) 8%, #fff);
   --dt-border: var(--borderColor, #eceef2);
   --dt-title: var(--blackColor, #3a4252);
@@ -161,7 +161,7 @@
     cursor: pointer;
   }
   &:hover {
-    background: #fafbff;
+    background: color-mix(in srgb, var(--primaryColor) 3%, #fff);
   }
   &.is-open {
     background: var(--dt-soft);
@@ -247,7 +247,7 @@
     display: block;
     height: 100%;
     border-radius: 999px;
-    background: var(--dt-primary);
+    background: #605dff;
   }
   &.is-invoice span {
     background: #25b003;
@@ -458,7 +458,7 @@
     display: block;
     height: 100%;
     border-radius: 999px;
-    background: linear-gradient(90deg, #8b89ff, var(--dt-primary));
+    background: linear-gradient(90deg, #14875A, var(--dt-primary));
   }
   &.is-expense span {
     background: linear-gradient(90deg, #fdb47c, #fd5812);
@@ -534,7 +534,7 @@
 
 // Proje grupları (Normal → Saha → Yedek → Bağımsız): başlık satırı grubun rengini ve ara toplamını taşır.
 .project-group {
-  --grup: var(--dt-primary);
+  --grup: #605dff;
   &[data-grup='2'] { --grup: #16a34a; }
   &[data-grup='3'] { --grup: #0ea5e9; }
   &[data-grup='4'] { --grup: #e8890c; }

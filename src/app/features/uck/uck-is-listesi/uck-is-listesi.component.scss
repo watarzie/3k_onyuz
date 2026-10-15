@@ -105,7 +105,7 @@
     border-color: var(--primaryColor);
     background: color-mix(in srgb, var(--primaryColor) 7%, #fff);
     color: var(--primaryColor);
-    box-shadow: 0 8px 18px -10px rgba(96, 93, 255, .6);
+    box-shadow: 0 8px 18px -10px color-mix(in srgb, var(--primaryColor) 60%, transparent);
     b { background: var(--primaryColor); color: #fff; }
   }
 }
@@ -121,7 +121,7 @@
 }
 
 .summary-card {
-  --kart: var(--primaryColor);
+  --kart: #605DFF; // Toplam (3K: Proje, Grid: Tümü) kartının rengi; 3K listesinde yeşil "Teslim Bekleyen" kartıyla karışmasın diye sabit.
   position: relative;
   display: flex;
   align-items: center;
@@ -207,7 +207,7 @@
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--kart) 14%, transparent), 0 16px 30px -24px var(--kart);
     .icon { background: var(--kart); color: #fff; }
   }
-  &:focus-visible { outline: 0; box-shadow: 0 0 0 3px rgba(96, 93, 255, .3); }
+  &:focus-visible { outline: 0; box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 30%, transparent); }
 }
 // Filtre olmayan bilgi kartı (3K listesi): tıklanabilir görünmesin.
 div.summary-card:hover {
@@ -351,7 +351,7 @@ div.summary-card:hover {
     &:focus {
       border-color: var(--primaryColor);
       background: #fff;
-      box-shadow: 0 0 0 3px rgba(96, 93, 255, .14);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 14%, transparent);
     }
   }
 }
@@ -420,7 +420,7 @@ div.summary-card:hover {
   }
   &.expanded {
     border-color: color-mix(in srgb, var(--primaryColor) 30%, transparent);
-    box-shadow: 0 18px 36px -28px rgba(96, 93, 255, .55);
+    box-shadow: 0 18px 36px -28px color-mix(in srgb, var(--primaryColor) 55%, transparent);
   }
 }
 
@@ -576,7 +576,7 @@ div.summary-card:hover {
   tbody tr.worklist-click-row {
     cursor: pointer;
     transition: background .15s ease;
-    &:hover { background: #f8f9ff; }
+    &:hover { background: color-mix(in srgb, var(--primaryColor) 3%, #fff); }
     &:hover .go-btn { border-color: var(--primaryColor); background: var(--primaryColor); color: #fff; }
     &:hover .go-btn i { transform: translateX(3px); }
     &:focus-visible {
@@ -584,9 +584,9 @@ div.summary-card:hover {
       z-index: 1;
       outline: 2px solid var(--primaryColor);
       outline-offset: -2px;
-      background: #f5f6ff;
+      background: color-mix(in srgb, var(--primaryColor) 4%, #fff);
     }
-    &:active { background: #eef0ff; }
+    &:active { background: color-mix(in srgb, var(--primaryColor) 7%, #fff); }
   }
   // Aksiyon sütunu sağa yapışıktır: geniş tablo yana kaysa da "Git" düğmesi hep görünür.
   thead th:last-child,
@@ -598,7 +598,7 @@ div.summary-card:hover {
     box-shadow: -12px 0 14px -12px rgba(15, 23, 42, .25);
   }
   thead th:last-child { z-index: 3; background: #f8fafc; }
-  tbody tr.worklist-click-row:hover td:last-child { background: #f8f9ff; }
+  tbody tr.worklist-click-row:hover td:last-child { background: color-mix(in srgb, var(--primaryColor) 3%, #fff); }
 
   .qty {
     font-weight: 700;
@@ -767,7 +767,7 @@ div.summary-card:hover {
     cursor: pointer;
     appearance: none;
     outline: 0;
-    &:focus { border-color: var(--primaryColor); box-shadow: 0 0 0 3px rgba(96, 93, 255, .14); }
+    &:focus { border-color: var(--primaryColor); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 14%, transparent); }
   }
 }
 .page-buttons {
@@ -792,7 +792,7 @@ div.summary-card:hover {
   &:hover:not(:disabled) {
     border-color: color-mix(in srgb, var(--primaryColor) 40%, transparent);
     color: var(--primaryColor);
-    box-shadow: 0 6px 14px -10px rgba(96, 93, 255, .7);
+    box-shadow: 0 6px 14px -10px color-mix(in srgb, var(--primaryColor) 70%, transparent);
   }
   &:active:not(:disabled) { transform: scale(.96); }
   &:disabled { opacity: .45; cursor: not-allowed; }
@@ -810,7 +810,7 @@ div.summary-card:hover {
   font-weight: 600;
   line-height: 34px;
   font-variant-numeric: tabular-nums;
-  box-shadow: 0 8px 16px -10px rgba(96, 93, 255, .9);
+  box-shadow: 0 8px 16px -10px color-mix(in srgb, var(--primaryColor) 90%, transparent);
   b { color: #fff; font-size: 13.5px; }
 }
 

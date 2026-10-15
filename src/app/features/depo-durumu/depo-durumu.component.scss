@@ -91,7 +91,8 @@
 }
 
 .report-menu-item {
-  --ton: var(--primaryColor);
+  // "Tümü" tonu mor kalır: yeşil, Saha proje tipinin rengidir.
+  --ton: #605DFF;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -138,7 +139,8 @@
 }
 
 .depo-kpi {
-  --ton: var(--primaryColor);
+  // "Genel toplam" tonu mor kalır: yeşil, Saha proje tipinin rengidir.
+  --ton: #605DFF;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -479,7 +481,7 @@
     &:focus {
       border-color: var(--primaryColor);
       background: #fff;
-      box-shadow: 0 0 0 3px rgba(96, 93, 255, .12);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 12%, transparent);
     }
   }
 }
@@ -519,7 +521,7 @@
   cursor: pointer;
   transition: background-color .15s ease;
 
-  &:hover { background: #fafbff; }
+  &:hover { background: color-mix(in srgb, var(--primaryColor) 3%, #fff); }
   &.is-open {
     background: color-mix(in srgb, var(--primaryColor) 5%, #fff);
     .row-toggle {
@@ -779,7 +781,7 @@
     border-color: var(--primaryColor);
     background: var(--primaryColor);
     color: #fff;
-    box-shadow: 0 6px 14px -8px rgba(96, 93, 255, .8);
+    box-shadow: 0 6px 14px -8px color-mix(in srgb, var(--primaryColor) 80%, transparent);
   }
   &:disabled { opacity: .45; cursor: not-allowed; }
 }

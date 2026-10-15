@@ -27,8 +27,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  background: rgba(96, 93, 255, 0.08);
-  color: var(--primaryColor, #605dff);
+  background: color-mix(in srgb, var(--primaryColor) 8%, transparent);
+  color: var(--primaryColor);
   font-size: 21px;
 }
 .lifecycle-heading h3 {
@@ -81,8 +81,8 @@
 }
 .reason-field input:focus {
   outline: 0;
-  border-color: var(--primaryColor, #605dff);
-  box-shadow: 0 0 0 3px rgba(96, 93, 255, 0.1);
+  border-color: var(--primaryColor);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 10%, transparent);
 }
 .form-actions {
   display: flex;
@@ -95,7 +95,7 @@ input[type='checkbox'] {
   width: 17px;
   height: 17px;
   flex-shrink: 0;
-  accent-color: var(--primaryColor, #605dff);
+  accent-color: var(--primaryColor);
   cursor: pointer;
 }
 button {
@@ -116,9 +116,9 @@ input:disabled {
   gap: 7px;
   min-height: 39px;
   padding: 8px 14px;
-  border: 1px solid var(--primaryColor, #605dff);
+  border: 1px solid var(--primaryColor);
   border-radius: 8px;
-  background: var(--primaryColor, #605dff);
+  background: var(--primaryColor);
   color: #fff;
   font-size: 12px;
   font-weight: 600;
@@ -140,7 +140,7 @@ input:disabled {
   border: 1px solid var(--borderColor, #e5e7eb);
   border-radius: 6px;
   background: #fff;
-  color: var(--primaryColor, #605dff);
+  color: var(--primaryColor);
   font-size: 11px;
 }
 .lifecycle-table-wrap {
@@ -168,7 +168,7 @@ input:disabled {
   font-size: 12px;
 }
 .lifecycle-table tr.selected {
-  background: rgba(96, 93, 255, 0.04);
+  background: color-mix(in srgb, var(--primaryColor) 4%, transparent);
 }
 .lifecycle-table small {
   display: block;
@@ -278,10 +278,11 @@ input:disabled {
     font-size: 12.5px;
     font-weight: 600;
   }
+  // Aktif adım mor kalır: yeşil, tamamlanan adımın rengidir.
   li.aktif {
-    border-color: var(--primaryColor, #605dff);
-    background: color-mix(in srgb, var(--primaryColor, #605dff) 7%, #fff);
-    color: var(--primaryColor, #605dff);
+    border-color: #605DFF;
+    background: color-mix(in srgb, #605DFF 7%, #fff);
+    color: #605DFF;
   }
   li.tamam:not(.aktif) {
     border-color: #bbe5c6;
@@ -405,7 +406,7 @@ input:disabled {
   padding: 2px 0;
   border: 0;
   background: transparent;
-  color: var(--primaryColor, #605dff);
+  color: var(--primaryColor);
   font-size: 12.5px;
   font-weight: 600;
   &:hover { text-decoration: underline; }
@@ -421,7 +422,7 @@ input:disabled {
   > li {
     position: relative;
     padding: 8px 0 10px 16px;
-    border-left: 2px solid #e0e7ff;
+    border-left: 2px solid var(--brandColorLine);
   }
   > li::before {
     content: "";
@@ -431,7 +432,7 @@ input:disabled {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #6366f1;
+    background: var(--primaryColor);
   }
 }
 .ozel-gecmis-baslik {

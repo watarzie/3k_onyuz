@@ -307,7 +307,7 @@ export class FinansPanelComponent implements OnInit {
         {
           anahtar: 'tutar',
           ad: `${this.t('AMOUNT')} (${this.para()})`,
-          renk: '#605dff',
+          renk: '#0e7a4e',
           data: grafik === 'siparis' ? [p.siparisBekleyen, p.siparisNetTutar] : [p.faturaBekleyen, p.gelir],
         },
       ];
@@ -318,7 +318,7 @@ export class FinansPanelComponent implements OnInit {
       result.push({
         anahtar: 'gelir',
         ad: grafik === 'beklenenTahsilat' ? this.t('PANEL_EXPECTED_COLLECTION') : this.t('NET_INCOME'),
-        renk: '#605dff',
+        renk: '#0e7a4e',
         data: rows.map((x) => x.gelir),
       });
     if (rows.some((x) => x.gider != null))

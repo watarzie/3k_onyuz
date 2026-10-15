@@ -9,7 +9,7 @@
 
 <!-- Özet -->
 <div class="ku-stats" *ngIf="ozet() as o">
-  <div class="ku-stat" style="--ton: #605dff; --i: 0">
+  <div class="ku-stat" style="--ton: var(--primaryColor); --i: 0">
     <span class="ku-stat__ikon"><i class="ri-group-line"></i></span>
     <div class="ku-stat__metin">
       <strong>{{ isLoading() ? '–' : o.toplam }}</strong>

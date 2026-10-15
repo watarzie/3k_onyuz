@@ -31,11 +31,11 @@ app-islemler-menusu .islemler-tetik {
   }
   &:hover:not(:disabled),
   &[aria-expanded='true'] {
-    border-color: color-mix(in srgb, var(--primaryColor, #605dff) 35%, transparent);
-    color: var(--primaryColor, #605dff);
-    box-shadow: 0 4px 12px -8px rgba(96, 93, 255, 0.55);
+    border-color: color-mix(in srgb, var(--primaryColor, #0e7a4e) 35%, transparent);
+    color: var(--primaryColor, #0e7a4e);
+    box-shadow: 0 4px 12px -8px color-mix(in srgb, var(--primaryColor, #0e7a4e) 55%, transparent);
     > i:first-child {
-      color: var(--primaryColor, #605dff);
+      color: var(--primaryColor, #0e7a4e);
     }
   }
   &:disabled {
@@ -53,9 +53,9 @@ app-islemler-menusu .islemler-tetik {
     gap: 7px;
     min-height: 39px;
     padding: 8px 14px;
-    border-color: var(--primaryColor, #605dff);
+    border-color: var(--primaryColor, #0e7a4e);
     border-radius: 8px;
-    background: var(--primaryColor, #605dff);
+    background: var(--primaryColor, #0e7a4e);
     color: #fff;
 
     > i:first-child {
@@ -63,7 +63,7 @@ app-islemler-menusu .islemler-tetik {
     }
     &:hover:not(:disabled),
     &[aria-expanded='true'] {
-      border-color: var(--primaryColor, #605dff);
+      border-color: var(--primaryColor, #0e7a4e);
       color: #fff;
       filter: brightness(0.96);
       > i:first-child {
@@ -116,8 +116,8 @@ app-islemler-menusu .islemler-panel {
     box-shadow: none;
 
     &:hover:not(:disabled) {
-      background: color-mix(in srgb, var(--primaryColor, #605dff) 9%, transparent);
-      color: var(--primaryColor, #605dff);
+      background: color-mix(in srgb, var(--primaryColor, #0e7a4e) 9%, transparent);
+      color: var(--primaryColor, #0e7a4e);
     }
     &:disabled {
       opacity: 0.5;

@@ -1,5 +1,5 @@
 .v2-finance-dialog {
-  --dialog-primary: var(--primaryColor, #605dff);
+  --dialog-primary: var(--primaryColor);
   --dialog-muted: var(--bodyColor, #64748b);
   --dialog-line: var(--borderColor, #e5eaf1);
   --dialog-soft: color-mix(in srgb, var(--dialog-primary) 6%, var(--whiteColor, #fff));
@@ -89,7 +89,7 @@
     color: #fff;
     background: var(--dialog-primary);
     border-color: var(--dialog-primary);
-    box-shadow: 0 3px 8px #605dff16;
+    box-shadow: 0 3px 8px color-mix(in srgb, var(--primaryColor) 9%, transparent);
   }
   .btn-primary:hover:not(:disabled) {
     background: color-mix(in srgb, var(--dialog-primary) 88%, #000);
@@ -126,7 +126,7 @@
     cursor: not-allowed;
   }
   button:focus-visible {
-    outline: 3px solid #605dff55;
+    outline: 3px solid color-mix(in srgb, var(--primaryColor) 33%, transparent);
     outline-offset: 3px;
   }
   .v2-dialog-close {
@@ -237,7 +237,7 @@
   select:focus,
   textarea:focus {
     border-color: var(--dialog-primary);
-    outline: 3px solid #605dff16;
+    outline: 3px solid color-mix(in srgb, var(--primaryColor) 9%, transparent);
   }
   input:disabled,
   select:disabled,
@@ -296,7 +296,7 @@
     font-size: 10px;
     font-weight: 600;
     line-height: 1.5;
-    border: 1px solid #605dff20;
+    border: 1px solid color-mix(in srgb, var(--primaryColor) 13%, transparent);
   }
   .v2-note {
     font-size: 12px;
@@ -422,7 +422,7 @@
   .v2-dialog-upload {
     gap: 10px;
     padding: 20px;
-    border: 1px dashed #605dff55;
+    border: 1px dashed color-mix(in srgb, var(--primaryColor) 33%, transparent);
     border-radius: 10px;
     background: var(--whiteColor, #fff);
     margin-bottom: 20px;

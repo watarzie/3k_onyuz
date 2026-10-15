@@ -183,7 +183,7 @@ table {
 
 @include kalan-row(row-kalan-yok, #25B003, #ECF8EF, #DFF3E7);
 @include kalan-row(row-kalan-var, #EF4444, #FFE7E5, #FFD6D3);
-tbody tr.row-selected > td { background-color: rgba(96,93,255,.08) !important; }
+tbody tr.row-selected > td { background-color: rgba(96,93,255,.08) !important; } // Seçim tonu mor kalır: yeşil "kalan yok" satırlarında seçim kaybolmasın.
 
 tbody tr.row-sevk-kilitli {
   cursor: not-allowed;
@@ -200,7 +200,7 @@ tbody tr.row-sevk-kilitli:hover > td {
 
 .barkod { font-size: 10px; background: #F0F0F5; padding: 2px 5px; border-radius: 3px; color: var(--bodyColor); font-family: monospace; }
 .badge-sandik {
-  background: rgba(96,93,255,.08); color: var(--primaryColor); padding: 2px 7px;
+  background: color-mix(in srgb, var(--primaryColor) 8%, transparent); color: var(--primaryColor); padding: 2px 7px;
   border-radius: 4px; font-size: 10px; font-weight: 600;
 }
 .miktar-cell {
