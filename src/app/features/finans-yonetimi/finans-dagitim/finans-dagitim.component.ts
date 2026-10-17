@@ -24,10 +24,13 @@ import { onayaAlindi } from '../../../shared/models';
 import {
   FINANS_KATEGORILERI,
   kategoriAnahtari,
+  poOnayDurumuAnahtari,
+  poOnayDurumuSinifi,
   siparisKarsilanmaAnahtari,
   uretimKategorisi,
 } from '../ortak/finans-etiketleri';
 import { finansFaturaGirilebilir, finansPoGirilebilir } from '../ortak/finans-izinleri';
+import { poOnayBildirimleri } from '../ortak/finans-po-onayi';
 
 /** PO'ya bağlanmak üzere seçilen proje × kategori / düzenli iş grubu ve girilen net tutar. */
 interface GrupSecimi {
@@ -94,6 +97,8 @@ export class FinansDagitimComponent implements OnInit {
   readonly kategoriAnahtari = kategoriAnahtari;
   readonly siparisKarsilanmaAnahtari = siparisKarsilanmaAnahtari;
   readonly uretimKategorisi = uretimKategorisi;
+  readonly poOnayDurumuAnahtari = poOnayDurumuAnahtari;
+  readonly poOnayDurumuSinifi = poOnayDurumuSinifi;
   readonly loading = signal(false);
   readonly saving = signal(false);
   readonly hata = signal('');
@@ -112,6 +117,10 @@ export class FinansDagitimComponent implements OnInit {
   readonly secimToplami = computed(() =>
     this.secimListesi().reduce((toplam, secim) => toplam + (Number(secim.tutar) || 0), 0),
   );
+  /** PO öncesi iş onayı: listede onay bekleyen/onaysız grup varsa açıklama ve toplu gönderme gösterilir. */
+  readonly onayGerekenGrupVar = computed(() => (this.gruplar()?.items ?? []).some((g) => g.poyaBaglanabilir === false));
+  readonly onayaGonderilebilirGruplar = computed(() => (this.gruplar()?.items ?? []).filter((g) => g.poOnayaGonderilebilir));
+  readonly onayaGonderiliyor = signal(false);
   grupArama = '';
   seciliKategoriler = new Set<FinansIsKategorisi>();
   tumDonemler = true;
@@ -250,6 +259,10 @@ export class FinansDagitimComponent implements OnInit {
   /** Seçilemeyen PO grubunun kullanıcıya gösterilen nedeni; seçilebilirse null. */
   grupEngeli(grup: FinansSiparisGrubu): string | null {
     if (this.grupSecilebilir(grup)) return null;
+    if (grup.poyaBaglanabilir === false) {
+      const durum = this.t(poOnayDurumuAnahtari(grup.poOnayDurumu) ?? 'PO_APPROVAL_NOT_SUBMITTED');
+      return this.t('PO_APPROVAL_BLOCK').replace('{0}', grup.poOnayAciklamasi ? `${durum}: ${grup.poOnayAciklamasi}` : durum);
+    }
     if (grup.kalanSiparisNetTutar == null) return this.t('ALLOC_BLOCK_HIDDEN');
     if (grup.kalanSiparisNetTutar <= 0)
       return this.t('ALLOC_BLOCK_ORDERED').replace('{0}', this.tutarMetni(grup.siparisNetTutar, grup.paraBirimi));
@@ -272,9 +285,10 @@ export class FinansDagitimComponent implements OnInit {
       ? paraBirimi
       : `${tutar.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${paraBirimi}`;
   }
-  /** Seçilebilir: kalan tutar görünür ve pozitif, para birimi PO'nun para birimiyle aynı. */
+  /** Seçilebilir: PO öncesi onayı tamam, kalan tutar görünür ve pozitif, para birimi PO'nun para birimiyle aynı. */
   grupSecilebilir(grup: FinansSiparisGrubu): boolean {
     return (
+      grup.poyaBaglanabilir !== false &&
       grup.kalanSiparisNetTutar != null &&
       grup.kalanSiparisNetTutar > 0 &&
       (!this.kilitliParaBirimi() || grup.paraBirimi === this.kilitliParaBirimi())
@@ -313,6 +327,40 @@ export class FinansDagitimComponent implements OnInit {
     const po = this.hedefPo();
     if (po) return po.paraBirimi || po.kalemler?.[0]?.paraBirimi || po.tutarlar[0]?.paraBirimi || '';
     return this.secimListesi()[0]?.grup.paraBirimi ?? '';
+  }
+
+  topluOnayMetni(): string {
+    return this.t('PO_APPROVAL_SEND_ALL').replace('{0}', String(this.onayaGonderilebilirGruplar().length));
+  }
+
+  /**
+   * Grupların kalemlerini PO öncesi onaya gönderir. Kural açıksa talepler İşlem Onay Merkezi'ne düşer; liste yeni
+   * onay durumlarıyla yenilenir ve gönderilen gruplar seçimden çıkar.
+   */
+  onayaGonder(gruplar: readonly FinansSiparisGrubu[]): void {
+    const ids = gruplar.flatMap((grup) => grup.isKaydiIds);
+    if (!ids.length || this.onayaGonderiliyor() || !this.izinli()) return;
+    this.onayaGonderiliyor.set(true);
+    this.hata.set('');
+    this.service
+      .poOnayinaGonder(ids)
+      .pipe(
+        finalize(() => this.onayaGonderiliyor.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((result) => {
+        if (!result.isSuccess) {
+          this.hata.set(result.error ?? this.t('PO_APPROVAL_SEND_ERROR'));
+          return;
+        }
+        for (const bildirim of poOnayBildirimleri(result)) {
+          const mesaj = this.t(bildirim.anahtar).replace('{0}', String(bildirim.sayi));
+          if (bildirim.tur === 'success') this.toast.success(mesaj);
+          else this.toast.info(mesaj);
+        }
+        gruplar.forEach((grup) => this.secimiKaldir(grup.anahtar));
+        this.grupIstekleri.next();
+      });
   }
 
   // ----- Fatura: PO seçimi -----

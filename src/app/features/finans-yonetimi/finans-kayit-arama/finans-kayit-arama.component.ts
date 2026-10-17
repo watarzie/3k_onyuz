@@ -13,7 +13,7 @@ import { ServerPagerComponent } from '../../../shared/components/server-pager/se
 import { ApiResult } from '../../../shared/models/common.model';
 import { FinansIsKaydi, FinansListelemeRequest, FinansSayfaliSonuc } from '../../../shared/models/finans.model';
 import { FinansBekleyen, FinansBekleyenAsama, FinansVarlikTuru } from '../../../shared/models/finans-v2.model';
-import { kategoriAnahtari } from '../ortak/finans-etiketleri';
+import { kategoriAnahtari, poOnayDurumuAnahtari, poOnayDurumuSinifi } from '../ortak/finans-etiketleri';
 import { FinansAramaProjeGrubu, FinansAramaSandikGrubu, aramaProjeGruplari, sarfKaydi } from '../ortak/finans-kirilim';
 import { FinansProjeSeciciComponent } from '../finans-proje-secici/finans-proje-secici.component';
 
@@ -64,6 +64,8 @@ export class FinansKayitAramaComponent implements OnInit {
   readonly bekleyenGorunur = computed(() => finansAltSekmeAcik(this.permissions, 'bekleyen'));
   readonly pager = computed(() => (this.gorunum() === 'arama' ? this.sonuclar() : this.bekleyenler()));
   readonly kategoriAnahtari = kategoriAnahtari;
+  readonly poOnayDurumuAnahtari = poOnayDurumuAnahtari;
+  readonly poOnayDurumuSinifi = poOnayDurumuSinifi;
   readonly sarfKaydi = sarfKaydi;
   /**
    * Sonuçlar proje → sandık başlıklarında, alt toplamlarla. Proje ve sandık no filtreleri sunucuda uygulanır;

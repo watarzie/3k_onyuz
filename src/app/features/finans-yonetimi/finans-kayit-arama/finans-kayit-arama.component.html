@@ -192,6 +192,11 @@
                     <td>{{ row.finansTarihi | date: 'dd.MM.yyyy' }}<small>{{ row.finansDonemi | date: 'MM.yyyy' }}</small></td>
                     <td>
                       <span class="v2-status" [class.is-active]="row.kaynakAktif">{{ row.kaynakAktif ? t('PANEL_ACTIVE_SOURCE') : t('PANEL_INACTIVE_SOURCE') }}</span>
+                      @if (poOnayDurumuAnahtari(row.poOnayDurumu); as onayAnahtari) {
+                        <span class="v2-status" [class]="poOnayDurumuSinifi(row.poOnayDurumu)" [title]="row.poOnayAciklamasi || t('PO_APPROVAL')"
+                          >{{ t('PO_APPROVAL') }}: {{ t(onayAnahtari) }}</span
+                        >
+                      }
                     </td>
                     <td class="text-end v2-nowrap">{{ row.netTutar | number: '1.2-2' }} {{ row.paraBirimi }}</td>
                     <td class="text-end">

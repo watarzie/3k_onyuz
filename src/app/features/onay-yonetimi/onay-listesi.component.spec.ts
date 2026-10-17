@@ -97,4 +97,45 @@ describe('OnayListesiComponent — dinamik onay kuralları penceresi', () => {
     kalite.click(); fixture.detectChanges();
     expect(onay.updateKural).toHaveBeenCalledWith(jasmine.objectContaining({ islemKodu: 'SANDIK_LOKASYON_GUNCELLE', yetkiliRolIdleri: [1, 2, 99] }));
   });
+
+  it('PO öncesi iş onayı talebini onaylarken kalemleri, tutarı ve değişen kalemi gösterir', () => {
+    const { fixture, c, el } = kur();
+    const kalem = {
+      isKaydiId: 1, isAdi: 'Normal Ambalaj - 2', sandikNo: '2', sandikAdi: null, sandikTipi: null, boy: null, en: null,
+      yukseklik: null, adet: 1, birim: 'm³', toplamM3: 0.293514, ahsapM3: 0.293514, kontraM3: 0, fiyatlandirmaBirimi: 2,
+      birimFiyat: 500, ahsapBirimFiyat: null, kdvOrani: 20, netTutar: 146.76, siparisNetTutar: 0, paraBirimi: 'EUR',
+      uretimTarihi: '2026-10-17T00:00:00', finansTarihi: '2026-10-17T00:00:00',
+    };
+    onay.getGecmisDetayi.and.returnValue(of({
+      isSuccess: true,
+      value: {
+        id: 9, islemKodu: 'FINANS_PO_IS_ONAYI', islemAdi: 'Finans: PO Öncesi İş Onayı',
+        islemAciklamasi: 'PA727-03 · Ana Ambalaj · 1 kalem · 146,76 EUR: PO öncesi iş onayı bekliyor.',
+        talepEdenKullaniciId: 2, talepEdenKisi: 'Finans Personeli', durumId: 1, durum: 'Bekliyor',
+        talepTarihi: '2026-10-17T10:00:00', calistirmaDurumuId: 1, calistirmaDurumu: 'Bekliyor', aksiyonAktifMi: true,
+        projeNo: 'PA727-03',
+        finansPoOnayDetayi: {
+          talepId: 4,
+          onizleme: {
+            projeId: 395, projeNo: 'PA727-03', musteri: 'GE Vernova', kategori: 1, kategoriAdi: 'Ana Ambalaj',
+            paraBirimi: 'EUR', kalemSayisi: 1, netTutar: 146.76, kdvTutari: 29.35, toplamTutar: 176.11, toplamM3: 0.293514,
+            ahsapM3: 0.293514, kontraM3: 0, ilkFinansTarihi: '2026-10-17T00:00:00', sonFinansTarihi: '2026-10-17T00:00:00',
+            kalemler: [kalem],
+          },
+          kalemDurumlari: [{ isKaydiId: 1, guncelNetTutar: 160, guncelParaBirimi: 'EUR', degisti: true, degisiklik: 'Net tutar 146,76 → 160,00 EUR.' }],
+          degisenKalemSayisi: 1,
+          uygulamaTarihi: null,
+        },
+      },
+    }) as never);
+    c.openOnayModal({ id: 9, islemKodu: 'FINANS_PO_IS_ONAYI', islemAciklamasi: 'PA727-03 · Ana Ambalaj', talepEdenKisi: 'Finans Personeli', olusturulmaTarihi: '2026-10-17T10:00:00', durum: 1 });
+    fixture.detectChanges();
+    expect(onay.getGecmisDetayi).toHaveBeenCalledWith(9);
+    const detay = el.querySelector('app-finans-po-onay-detayi')!;
+    expect(detay).not.toBeNull();
+    expect(detay.textContent).toContain('Normal Ambalaj - 2');
+    expect(detay.textContent).toContain('146.76 EUR');
+    expect(detay.querySelector('.change-badge')!.textContent).toContain('146,76 → 160,00');
+    expect(el.querySelector('.reject-modal-shell.has-revision-detail')).not.toBeNull();
+  });
 });

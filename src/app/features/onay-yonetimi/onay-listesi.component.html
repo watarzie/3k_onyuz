@@ -268,7 +268,7 @@
 @if (onayModalIslem(); as islem) {
   <div class="modal-backdrop fade show"></div>
   <div class="modal fade show reject-modal-shell"
-       [class.has-revision-detail]="!!onayModalDetay()?.revizyonDetayi?.onizleme"
+       [class.has-revision-detail]="!!onayModalDetay()?.revizyonDetayi?.onizleme || !!onayModalDetay()?.finansPoOnayDetayi"
        style="display: block;" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content reject-modal approve-modal">
@@ -322,6 +322,10 @@
                 class="approval-revision-preview"
                 [preview]="onizleme"
                 baslik="Onaylanacak Revizyon Değişiklikleri" />
+            }
+
+            @if (detay.finansPoOnayDetayi; as finansDetayi) {
+              <app-finans-po-onay-detayi class="approval-revision-preview" [detay]="finansDetayi" />
             }
 
             <div class="approve-info">

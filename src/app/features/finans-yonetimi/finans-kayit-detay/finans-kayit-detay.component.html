@@ -18,6 +18,13 @@
                 'Finans kaydı'
             }}
             <span class="v2-tag">{{ hedef().tur }} #{{ hedef().id }}</span>
+            @if (poOnayDurumuAnahtari(kayit()?.poOnayDurumu); as onayAnahtari) {
+              <span class="v2-status" [class]="poOnayDurumuSinifi(kayit()?.poOnayDurumu)" [title]="t('PO_APPROVAL')"
+                >{{ t('PO_APPROVAL') }}: {{ t(onayAnahtari) }}@if (kayit()?.poOnayTarihi) {
+                  · {{ kayit()?.poOnayTarihi | date: 'dd.MM.yyyy' }}
+                }</span
+              >
+            }
           </h3>
           @if (kayit()?.projeNo || siparis()?.projeNo || fatura()?.projeNo || kayit()?.musteri) {
             <p>
@@ -26,6 +33,9 @@
                 · {{ kayit()?.musteri }}
               }
             </p>
+          }
+          @if (kayit()?.poOnayAciklamasi; as onayAciklamasi) {
+            <p><i class="ri-information-line" aria-hidden="true"></i> {{ t('PO_APPROVAL') }}: {{ onayAciklamasi }}</p>
           }
         </div>
       </div>

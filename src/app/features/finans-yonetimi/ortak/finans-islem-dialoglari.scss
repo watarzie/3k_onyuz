@@ -506,6 +506,27 @@
     font-size: 11px;
     font-weight: 600;
   }
+  // PO öncesi iş onayı: satırdaki durum rozeti ve "Onaya gönder" düğmesi
+  .v2-po-approval {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      font-size: 11px;
+    }
+  }
+  .v2-po-approval-note .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+  }
   .v2-warning-banner {
     display: flex;
     align-items: center;

@@ -1,0 +1,114 @@
+@let d = detay();
+@let o = d.onizleme;
+<section class="po-approval-detail" aria-label="PO öncesi iş onayı detayı">
+  <header class="po-approval-detail__header">
+    <div>
+      <div class="po-approval-detail__title">{{ baslik() }}</div>
+      <div class="po-approval-detail__subtitle">
+        {{ o.projeNo }}@if (o.musteri) {
+          · {{ o.musteri }}
+        }
+        · {{ o.kategoriAdi }} · {{ o.paraBirimi }}
+      </div>
+    </div>
+    @if (d.uygulamaTarihi) {
+      <span class="po-approval-detail__status is-applied">Uygulandı · {{ d.uygulamaTarihi | date: 'dd.MM.yyyy HH:mm' }}</span>
+    } @else if (d.degisenKalemSayisi) {
+      <span class="po-approval-detail__status is-changed">{{ d.degisenKalemSayisi }} kalem değişti</span>
+    } @else {
+      <span class="po-approval-detail__status">Güncel</span>
+    }
+  </header>
+
+  <div class="po-approval-detail__summary">
+    <div><span>Kalem</span><strong>{{ o.kalemSayisi }}</strong></div>
+    <div>
+      <span>Net tutar</span><strong>{{ o.netTutar | number: '1.2-2' }} {{ o.paraBirimi }}</strong>
+    </div>
+    <div>
+      <span>KDV dahil</span><strong>{{ o.toplamTutar | number: '1.2-2' }} {{ o.paraBirimi }}</strong>
+    </div>
+    <div>
+      <span>Toplam m³</span><strong>{{ o.toplamM3 | number: '1.0-3' }}</strong>
+      @if (o.kontraM3) {
+        <small>Ahşap {{ o.ahsapM3 | number: '1.0-3' }} · Kontra {{ o.kontraM3 | number: '1.0-3' }}</small>
+      }
+    </div>
+    <div>
+      <span>Finans tarihi</span>
+      <strong>{{ o.ilkFinansTarihi | date: 'dd.MM.yyyy' }}</strong>
+      @if (o.sonFinansTarihi !== o.ilkFinansTarihi) {
+        <small>– {{ o.sonFinansTarihi | date: 'dd.MM.yyyy' }}</small>
+      }
+    </div>
+  </div>
+
+  @if (d.degisenKalemSayisi && !d.uygulamaTarihi) {
+    <div class="po-approval-detail__warning" role="alert">
+      <i class="ri-error-warning-line" aria-hidden="true"></i>
+      <span>
+        Talep onaya sunulduktan sonra {{ d.degisenKalemSayisi }} kalem değişti. Onaylansa da uygulanmaz; talebi
+        reddedip kalemlerin yeniden onaya gönderilmesini isteyin.
+      </span>
+    </div>
+  }
+
+  <div class="po-approval-detail__table-wrap">
+    <table class="po-approval-detail__table">
+      <thead>
+        <tr>
+          <th>Sandık</th>
+          <th>İş</th>
+          <th>Ölçü (B × E × Y)</th>
+          <th class="num">Adet</th>
+          <th class="num">m³</th>
+          <th class="num">Birim fiyat</th>
+          <th class="num">Net tutar</th>
+          <th class="num">PO'ya bağlı</th>
+          <th>Durum</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (kalem of o.kalemler; track kalem.isKaydiId) {
+          @let degisiklikMetni = degisiklik(kalem);
+          <tr [class.is-changed]="degisiklikMetni">
+            <td>
+              <strong>{{ kalem.sandikNo || '—' }}</strong>
+              @if (kalem.sandikTipi) {
+                <small>{{ kalem.sandikTipi }}</small>
+              }
+            </td>
+            <td>{{ kalem.isAdi }}</td>
+            <td class="nowrap">{{ olcu(kalem) }}</td>
+            <td class="num">{{ kalem.adet | number: '1.0-2' }}</td>
+            <td class="num">
+              @if (kalem.toplamM3 > 0) {
+                {{ kalem.toplamM3 | number: '1.0-3' }}
+                @if (kalem.kontraM3) {
+                  <small>A {{ kalem.ahsapM3 | number: '1.0-3' }} · K {{ kalem.kontraM3 | number: '1.0-3' }}</small>
+                }
+              } @else {
+                —
+              }
+            </td>
+            <td class="num">
+              {{ kalem.birimFiyat | number: '1.2-2' }}
+              @if (kalem.ahsapBirimFiyat != null) {
+                <small>Ahşap {{ kalem.ahsapBirimFiyat | number: '1.2-2' }}</small>
+              }
+            </td>
+            <td class="num"><strong>{{ kalem.netTutar | number: '1.2-2' }} {{ kalem.paraBirimi }}</strong></td>
+            <td class="num">{{ kalem.siparisNetTutar | number: '1.2-2' }}</td>
+            <td>
+              @if (degisiklikMetni) {
+                <span class="change-badge">{{ degisiklikMetni }}</span>
+              } @else {
+                <span class="ok-badge">Aynı</span>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

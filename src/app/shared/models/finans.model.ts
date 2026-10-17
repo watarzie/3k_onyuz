@@ -1,4 +1,4 @@
-import { FinansIsKategorisi, FinansKarsilanma, FinansOdemeDurumu, FinansOdemeFiltresi, FinansSandikMalzemesi } from '../../core/constants/enums';
+import { FinansIsKategorisi, FinansKarsilanma, FinansOdemeDurumu, FinansPoOnayDurumu, FinansOdemeFiltresi, FinansSandikMalzemesi } from '../../core/constants/enums';
 
 export type FinansFiyatlandirmaBirimi = 1 | 2 | 3 | 4;
 
@@ -242,6 +242,10 @@ export interface FinansIsKaydi {
   poNumaralari: string[];
   faturaNumaralari: string[];
   kaynakAktif: boolean;
+  /** PO öncesi onay durumu (liste, seçim ve detay uçlarında dolu). */
+  poOnayDurumu?: FinansPoOnayDurumu;
+  poOnayAciklamasi?: string | null;
+  poOnayTarihi?: string | null;
 }
 
 /** Münferit iş formunun ürün seçeneği; fiyat taşımaz (kayıt ürünün iş tarihindeki tarifesiyle fiyatlanır). */
@@ -414,6 +418,84 @@ export interface FinansSiparisGrubu {
   siparisKarsilanma: FinansKarsilanma;
   faturaKarsilanma: FinansKarsilanma;
   fiyatBekleyenKalem: number;
+  /**
+   * PO öncesi onay durumu. Kural açıkken grup aynı onay durumundaki kalemlerden oluşur; onaylı kısım ayrı satırdır.
+   * Eski sunucu yanıtında yoksa onay aranmıyor sayılır.
+   */
+  poOnayDurumu?: FinansPoOnayDurumu;
+  /** Ret nedeni veya onayın düşme/uygulanamama nedeni. */
+  poOnayAciklamasi?: string | null;
+  /** Grup PO'ya bağlanabilir (kural kapalı, kapsam dışı veya onaylı). */
+  poyaBaglanabilir?: boolean;
+  /** Kural açık ve grup "Onaya gönder" ile onaya sunulabilir. */
+  poOnayaGonderilebilir?: boolean;
+}
+
+/** "Onaya gönder" sonucu: grup başına talep; kural açıksa Onay Merkezi'ne düşer (202), kapalıysa hemen onaylanır. */
+export interface FinansPoOnayGonderSonucu {
+  talepler: { talepId: number; projeNo: string; ad: string; kalemSayisi: number; netTutar: number; paraBirimi: string }[];
+  kalemSayisi: number;
+  atlananKalemSayisi: number;
+  onayaAlinanTalepSayisi: number;
+  dogrudanOnaylananTalepSayisi: number;
+}
+
+/** Onaya sunulan kalemin onay anındaki değerleri (Onay Merkezi detayı). */
+export interface FinansPoOnayKalemi {
+  isKaydiId: number;
+  isAdi: string;
+  sandikNo: string | null;
+  sandikAdi: string | null;
+  sandikTipi: string | null;
+  boy: number | null;
+  en: number | null;
+  yukseklik: number | null;
+  adet: number;
+  birim: string;
+  toplamM3: number;
+  ahsapM3: number;
+  kontraM3: number;
+  fiyatlandirmaBirimi: FinansFiyatlandirmaBirimi;
+  birimFiyat: number;
+  ahsapBirimFiyat: number | null;
+  kdvOrani: number;
+  netTutar: number;
+  siparisNetTutar: number;
+  paraBirimi: string;
+  uretimTarihi: string;
+  finansTarihi: string;
+}
+
+/** Onaycıya gösterilen PO öncesi iş onayı talebi: onaya sunulan görüntü ve kalemlerin şimdiki durumu. */
+export interface FinansPoOnayDetay {
+  talepId: number;
+  onizleme: {
+    projeId: number | null;
+    projeNo: string;
+    musteri: string;
+    kategori: FinansIsKategorisi;
+    kategoriAdi: string;
+    paraBirimi: string;
+    kalemSayisi: number;
+    netTutar: number;
+    kdvTutari: number;
+    toplamTutar: number;
+    toplamM3: number;
+    ahsapM3: number;
+    kontraM3: number;
+    ilkFinansTarihi: string;
+    sonFinansTarihi: string;
+    kalemler: FinansPoOnayKalemi[];
+  };
+  kalemDurumlari: {
+    isKaydiId: number;
+    guncelNetTutar: number | null;
+    guncelParaBirimi: string | null;
+    degisti: boolean;
+    degisiklik: string | null;
+  }[];
+  degisenKalemSayisi: number;
+  uygulamaTarihi: string | null;
 }
 
 export interface FinansFatura {
@@ -698,6 +780,12 @@ export interface FinansAylikIs {
   kontraM3?: number | null;
   kalanSiparisNetTutar?: number | null;
   kalanFaturaNetTutar?: number | null;
+  /** Satırın kalemlerinden birleşik PO öncesi onay durumu. */
+  poOnayDurumu?: FinansPoOnayDurumu;
+  /** Onay kapsamındaki aktif kalem sayısı ve bunlardan onayı geçerli olanlar. */
+  poOnayGerekliKalemSayisi?: number;
+  poOnayliKalemSayisi?: number;
+  poOnayAciklamasi?: string | null;
 }
 
 /** Projenin tek para birimindeki net bedel, siparişe bağlanan ve faturalanan net tutarı. */
@@ -784,6 +872,8 @@ export interface FinansAylikSayfaliSonuc {
   projeOzelIsleri?: FinansAylikIs[];
   finansOzeti: FinansAylikFinansOzeti[];
   grupToplamlari: FinansAylikGrupToplami[];
+  /** PO öncesi iş onayı kuralı açık mı; kapalıyken PO onay aramaz ve "Onaya gönder" gösterilmez. */
+  poOnayKuraliAcik?: boolean;
   pageNumber: number;
   pageSize: number;
   totalCount: number;

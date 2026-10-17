@@ -304,6 +304,10 @@
             </section>
           }
 
+          @if (kayit.finansPoOnayDetayi; as finansDetayi) {
+            <app-finans-po-onay-detayi [detay]="finansDetayi" baslik="Onaya Sunulan PO Öncesi İş Kalemleri" />
+          }
+
           @if (kayit.calistirmaDurumuId === 0) {
             <section class="legacy-note" role="note">
               <i class="ri-information-line"></i>

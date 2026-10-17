@@ -158,6 +158,22 @@
       @if (satir.iptalAciklamasi) {
         <small class="cancel-reason">{{ satir.iptalAciklamasi }}</small>
       }
+      @if (!satir.iptalEdildi && poOnayDurumuAnahtari(satir.poOnayDurumu); as onayAnahtari) {
+        <span
+          class="status po-approval"
+          [class.complete]="satir.poOnayDurumu === poOnay.Onaylandi"
+          [class.cancel-status]="satir.poOnayDurumu === poOnay.Reddedildi || satir.poOnayDurumu === poOnay.OnayDustu"
+          [title]="satir.poOnayAciklamasi || t('PO_APPROVAL')"
+          ><i class="ri-shield-check-line" aria-hidden="true"></i>{{ t(onayAnahtari) }}@if (
+            satir.poOnayDurumu !== poOnay.Onaylandi && satir.poOnayliKalemSayisi
+          ) {
+            · {{ satir.poOnayliKalemSayisi }}/{{ satir.poOnayGerekliKalemSayisi }}
+          }</span
+        >
+        @if (satir.poOnayAciklamasi && satir.poOnayDurumu !== poOnay.Onaylandi) {
+          <small class="cancel-reason">{{ satir.poOnayAciklamasi }}</small>
+        }
+      }
     </td>
     <td (click)="$event.stopPropagation()">
       <app-islemler-menusu>
@@ -167,6 +183,11 @@
         ) {
           <button type="button" (click)="aylikDegerDuzenle(satir)">
             <i class="ri-edit-line"></i><span>Miktar / tarifeyi düzenle</span>
+          </button>
+        }
+        @if (satirOnayaGonderilebilir(satir)) {
+          <button type="button" [disabled]="poOnayaGonderiliyor()" (click)="satirOnayaGonder(satir)">
+            <i class="ri-shield-check-line"></i><span>{{ t('PO_APPROVAL_SEND') }}</span>
           </button>
         }
         @if (

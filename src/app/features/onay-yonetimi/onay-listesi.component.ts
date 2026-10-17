@@ -21,12 +21,13 @@ import { OnayGecmisiDto } from '../../shared/models/onay-gecmisi.model';
 import { RolDto } from '../../shared/models/rol.model';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
 import { CekiRevizyonOnizlemeComponent } from '../../shared/components/ceki-revizyon-onizleme/ceki-revizyon-onizleme.component';
+import { FinansPoOnayDetayiComponent } from '../../shared/components/finans-po-onay-detayi/finans-po-onay-detayi.component';
 import { YETKI } from '../../core/constants/yetki-kodlari';
 
 @Component({
   selector: 'app-onay-listesi',
   standalone: true,
-  imports: [DatePipe, NgClass, BreadcrumbComponent, CekiRevizyonOnizlemeComponent],
+  imports: [DatePipe, NgClass, BreadcrumbComponent, CekiRevizyonOnizlemeComponent, FinansPoOnayDetayiComponent],
   templateUrl: './onay-listesi.component.html',
   styleUrls: ['./onay-listesi.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

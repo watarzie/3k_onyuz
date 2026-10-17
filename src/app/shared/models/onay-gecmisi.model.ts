@@ -1,4 +1,5 @@
 import type { CekiRevizyonOnizlemeSonuc } from './ceki.model';
+import type { FinansPoOnayDetay } from './finans.model';
 
 export type OnayGecmisiKapsami = 'tumu' | 'kararVerdiklerim' | 'taleplerim' | 'bekleyenler';
 
@@ -39,6 +40,8 @@ export interface OnayGecmisiDto {
   hedefUrl?: string | null;
   aksiyonAktifMi: boolean;
   revizyonDetayi?: OnayRevizyonDetayiDto | null;
+  /** PO öncesi iş onayı talebinin görüntüsü ve kalemlerin şimdiki durumu (FINANS_PO_IS_ONAYI). */
+  finansPoOnayDetayi?: FinansPoOnayDetay | null;
 }
 
 export interface OnayRevizyonDetayiDto {

@@ -199,6 +199,21 @@
           <p class="v2-note v2-dialog-info">
             <i class="ri-information-line" aria-hidden="true"></i>{{ t('ALLOC_GROUP_NOTE') }}
           </p>
+          @if (onayGerekenGrupVar()) {
+            <p class="v2-note v2-dialog-info v2-po-approval-note">
+              <i class="ri-shield-check-line" aria-hidden="true"></i>{{ t('PO_APPROVAL_NOTE') }}
+              @if (onayaGonderilebilirGruplar().length > 1 && izinli()) {
+                <button
+                  class="btn btn-light btn-sm"
+                  type="button"
+                  [disabled]="onayaGonderiliyor()"
+                  (click)="onayaGonder(onayaGonderilebilirGruplar())"
+                >
+                  <i class="ri-send-plane-line" aria-hidden="true"></i>{{ topluOnayMetni() }}
+                </button>
+              }
+            </p>
+          }
           <div class="table-responsive v2-dialog-table-wrap v2-allocation-table">
             <table class="table v2-table">
               <thead>
@@ -241,6 +256,23 @@
                       <small>{{ t(siparisKarsilanmaAnahtari(grup.siparisKarsilanma)) }}@if (grup.fiyatBekleyenKalem) {
                           · {{ grup.fiyatBekleyenKalem }} {{ t('ALLOC_PRICE_PENDING') }}
                         }</small>
+                      @if (poOnayDurumuAnahtari(grup.poOnayDurumu); as onayAnahtari) {
+                        <span class="v2-po-approval">
+                          <span class="v2-status" [class]="poOnayDurumuSinifi(grup.poOnayDurumu)" [title]="t('PO_APPROVAL')">{{
+                            t(onayAnahtari)
+                          }}</span>
+                          @if (grup.poOnayaGonderilebilir && izinli()) {
+                            <button
+                              type="button"
+                              class="btn btn-light btn-sm"
+                              [disabled]="onayaGonderiliyor()"
+                              (click)="onayaGonder([grup])"
+                            >
+                              <i class="ri-send-plane-line" aria-hidden="true"></i>{{ t('PO_APPROVAL_SEND') }}
+                            </button>
+                          }
+                        </span>
+                      }
                       @if (engel) {
                         <span class="v2-block-reason"><i class="ri-information-line" aria-hidden="true"></i>{{ engel }}</span>
                       }

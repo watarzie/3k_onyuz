@@ -28,6 +28,7 @@ import {
   FinansUrunSecenegi,
   FinansSandikKirilimiRequest,
   FinansSayfaliSonuc,
+  FinansPoOnayGonderSonucu,
   FinansSiparis,
   FinansSiparisDetay,
   FinansSiparisGrubu,
@@ -201,6 +202,13 @@ export class FinansService {
   /** Mevcut aktif PO'ya yeni iş kalemi veya aynı işe ek tutar bağlar. */
   siparisKalemEkle(id: number, request: FinansSiparisKalemEkleRequest) {
     return this.api.post<FinansSiparis>(API.FINANS.SIPARIS_KALEMLER(id), request);
+  }
+  /**
+   * Seçilen işleri PO öncesi onaya gönderir; uygun kalemler proje × kategori × para birimi grubu başına bir talep olur.
+   * Kural açıksa 202 (Onay Merkezi'ne düştü), kapalıysa kalemler hemen onaylanır (200).
+   */
+  poOnayinaGonder(isKaydiIds: readonly number[]) {
+    return this.api.post<FinansPoOnayGonderSonucu>(API.FINANS.PO_ONAY_TALEPLERI, { isKaydiIds: [...isKaydiIds] });
   }
   /** PO açma ekranı: proje × kategori / düzenli iş grupları (sunucu sayfalaması). */
   siparisGruplari(filtre: FinansSiparisGrupFiltre) {

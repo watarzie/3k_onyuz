@@ -325,3 +325,15 @@ export enum FinansIsKategorisi {
   OzelIs = 8,
   DuzenliIs = 9,
 }
+
+// ===== Finans: PO öncesi iş onayı durumu (backend FinansPoOnayDurumu; kalemin onay alanları ve Onay Merkezi kararından) =====
+export enum FinansPoOnayDurumu {
+  /** Onay kapsamı dışında (özel/düzenli iş) veya iptal/pasif kalem. */
+  Gerekmiyor = 0,
+  OnayaSunulmadi = 1,
+  OnayBekliyor = 2,
+  Onaylandi = 3,
+  Reddedildi = 4,
+  /** Onaydan sonra net tutar/para birimi değişti veya onay uygulanamadı; yeniden onaya gönderilir. */
+  OnayDustu = 5,
+}

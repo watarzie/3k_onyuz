@@ -10,7 +10,7 @@ import {
   FinansSiparisGrubu,
   FinansSiparisKalemi,
 } from '../../../shared/models/finans.model';
-import { FinansIsKategorisi, FinansKarsilanma } from '../../../core/constants/enums';
+import { FinansIsKategorisi, FinansKarsilanma, FinansPoOnayDurumu } from '../../../core/constants/enums';
 
 function grup(ek: Partial<FinansSiparisGrubu> = {}): FinansSiparisGrubu {
   return {
@@ -105,6 +105,7 @@ describe('Finans PO ve fatura girişi', () => {
       'siparisDetay',
       'paraBirimleri',
       'parametreler',
+      'poOnayinaGonder',
     ]);
     api.parametreler.and.returnValue(of({ isSuccess: true, value: { varsayilanVadeGunu: 60, vadeUyariGunu: 7 } }));
     toast = jasmine.createSpyObj('ToastService', ['success', 'info']);
@@ -263,6 +264,74 @@ describe('Finans PO ve fatura girişi', () => {
     expect(component.secimListesi().length).toBe(0);
     component.kaydet();
     expect(api.siparisOlustur).not.toHaveBeenCalled();
+  });
+
+  it('PO öncesi onayı olmayan grup seçilemez ve nedeni yazılır; "Onaya gönder" kalemleri gönderir, listeyi yeniler', () => {
+    const onaysiz = grup({
+      poOnayDurumu: FinansPoOnayDurumu.OnayaSunulmadi,
+      poyaBaglanabilir: false,
+      poOnayaGonderilebilir: true,
+    });
+    const reddedilen = grup({
+      anahtar: 'P:1:9:EUR:A4',
+      kategori: FinansIsKategorisi.SarfKereste,
+      isKaydiIds: [13],
+      poOnayDurumu: FinansPoOnayDurumu.Reddedildi,
+      poOnayAciklamasi: 'Sarf m³ kontrol edilsin.',
+      poyaBaglanabilir: false,
+      poOnayaGonderilebilir: true,
+    });
+    api.siparisGruplari.and.returnValue(of({ isSuccess: true, value: sayfa([onaysiz, reddedilen]) }));
+    api.poOnayinaGonder.and.returnValue(
+      of({
+        isSuccess: true,
+        statusCode: 202,
+        value: {
+          message: 'İşleminiz yetkili onayına sunulmuştur.',
+          statusCode: 202,
+          value: { talepler: [], kalemSayisi: 2, atlananKalemSayisi: 1, onayaAlinanTalepSayisi: 1, dogrudanOnaylananTalepSayisi: 0 },
+        } as never,
+      }),
+    );
+    const { component, fixture } = setup();
+
+    // Satırdan açılışta onaysız grup ön seçilmez, elle de seçilemez.
+    expect(component.secimListesi().length).toBe(0);
+    expect(component.grupSecilebilir(onaysiz)).toBeFalse();
+    component.grupSecimiDegistir(onaysiz, true);
+    expect(component.secimListesi().length).toBe(0);
+    expect(component.grupEngeli(onaysiz)).toContain(component.t('PO_APPROVAL_NOT_SUBMITTED'));
+    expect(component.grupEngeli(reddedilen)).toContain('Sarf m³ kontrol edilsin.');
+    const el = fixture.nativeElement as HTMLElement;
+    expect(Array.from(el.querySelectorAll('.v2-po-approval .v2-status')).map((x) => x.textContent!.trim())).toEqual([
+      component.t('PO_APPROVAL_NOT_SUBMITTED'),
+      component.t('PO_APPROVAL_REJECTED'),
+    ]);
+    expect(el.querySelector('.v2-po-approval-note')).not.toBeNull();
+
+    const oncekiYukleme = api.siparisGruplari.calls.count();
+    component.onayaGonder([onaysiz]);
+    expect(api.poOnayinaGonder).toHaveBeenCalledWith([11, 12]);
+    expect(toast.info).toHaveBeenCalledWith(component.t('PO_APPROVAL_SENT').replace('{0}', '1'));
+    expect(toast.info).toHaveBeenCalledWith(component.t('PO_APPROVAL_SKIPPED').replace('{0}', '1'));
+    expect(api.siparisGruplari.calls.count()).toBe(oncekiYukleme + 1);
+    component.kaydet();
+    expect(api.siparisOlustur).not.toHaveBeenCalled();
+  });
+
+  it('onaylı grup ve onay alanı taşımayan grup seçilebilir; kural kapalıyken gönderme başarı bildirir', () => {
+    api.poOnayinaGonder.and.returnValue(
+      of({
+        isSuccess: true,
+        value: { talepler: [], kalemSayisi: 2, atlananKalemSayisi: 0, onayaAlinanTalepSayisi: 0, dogrudanOnaylananTalepSayisi: 1 },
+      }),
+    );
+    const { component } = setup();
+    expect(component.grupSecilebilir(grup({ poOnayDurumu: FinansPoOnayDurumu.Onaylandi, poyaBaglanabilir: true }))).toBeTrue();
+    expect(component.grupSecilebilir(grup())).toBeTrue();
+    component.onayaGonder([grup()]);
+    expect(toast.success).toHaveBeenCalledWith(component.t('PO_APPROVAL_DIRECT').replace('{0}', '1'));
+    expect(toast.info).not.toHaveBeenCalled();
   });
 
   it('fatura gruplarında gizli kalan tutar grubun kalanını da gizler', () => {

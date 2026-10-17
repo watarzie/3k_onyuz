@@ -1,4 +1,5 @@
 import { DatePipe, NgClass } from '@angular/common';
+import { FinansPoOnayDetayiComponent } from '../../../shared/components/finans-po-onay-detayi/finans-po-onay-detayi.component';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -30,7 +31,7 @@ type TarihFiltresi = 'tumu' | 'bugun' | 'son7Gun' | 'son30Gun' | 'ozel';
 @Component({
   selector: 'app-islem-onay-gecmisi',
   standalone: true,
-  imports: [DatePipe, NgClass],
+  imports: [DatePipe, NgClass, FinansPoOnayDetayiComponent],
   templateUrl: './islem-onay-gecmisi.component.html',
   styleUrl: './islem-onay-gecmisi.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

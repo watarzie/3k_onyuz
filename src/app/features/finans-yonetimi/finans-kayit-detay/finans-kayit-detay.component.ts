@@ -37,6 +37,8 @@ import {
   odemeDurumuAnahtari,
   odemeDurumuSinifi,
   poDurumuAnahtari,
+  poOnayDurumuAnahtari,
+  poOnayDurumuSinifi,
   uretimKategorisi,
 } from '../ortak/finans-etiketleri';
 import { TranslationService } from '../../../core/services/translation.service';
@@ -65,6 +67,8 @@ export class FinansKayitDetayComponent implements OnInit {
   readonly faturaAc = output<number>();
   readonly kategoriAnahtari = kategoriAnahtari;
   readonly poDurumuAnahtari = poDurumuAnahtari;
+  readonly poOnayDurumuAnahtari = poOnayDurumuAnahtari;
+  readonly poOnayDurumuSinifi = poOnayDurumuSinifi;
   readonly odemeDurumuAnahtari = odemeDurumuAnahtari;
   readonly odemeDurumuSinifi = odemeDurumuSinifi;
   private readonly service = inject(FinansService);

@@ -1,4 +1,4 @@
-import { FinansIsKategorisi, FinansKarsilanma, FinansOdemeDurumu } from '../../../core/constants/enums';
+import { FinansIsKategorisi, FinansKarsilanma, FinansOdemeDurumu, FinansPoOnayDurumu } from '../../../core/constants/enums';
 
 /**
  * PO/fatura alanındaki kategori kırılımı. Sıra ve anlam sunucudaki FinansKategoriKurali ile aynıdır;
@@ -97,6 +97,49 @@ export function odemeDurumuSinifi(durum: FinansOdemeDurumu | null | undefined): 
     default:
       return '';
   }
+}
+
+/**
+ * Sunucudaki FinansPoOnayDurumu (PO öncesi iş onayı) → çeviri anahtarı. Onay kapsamı dışındaki (özel/düzenli iş,
+ * iptal) veya durumu bilinmeyen kalemde rozet gösterilmez (null).
+ */
+export function poOnayDurumuAnahtari(durum: FinansPoOnayDurumu | null | undefined): string | null {
+  return (
+    (
+      {
+        [FinansPoOnayDurumu.OnayaSunulmadi]: 'PO_APPROVAL_NOT_SUBMITTED',
+        [FinansPoOnayDurumu.OnayBekliyor]: 'PO_APPROVAL_PENDING',
+        [FinansPoOnayDurumu.Onaylandi]: 'PO_APPROVAL_APPROVED',
+        [FinansPoOnayDurumu.Reddedildi]: 'PO_APPROVAL_REJECTED',
+        [FinansPoOnayDurumu.OnayDustu]: 'PO_APPROVAL_DROPPED',
+      } as Record<number, string>
+    )[durum ?? FinansPoOnayDurumu.Gerekmiyor] ?? null
+  );
+}
+
+/** PO onayı rozetinin rengi: onaylı yeşil, sunulmamış/bekleyen sarı, ret ve düşen onay kırmızı. */
+export function poOnayDurumuSinifi(durum: FinansPoOnayDurumu | null | undefined): string {
+  switch (durum) {
+    case FinansPoOnayDurumu.Onaylandi:
+      return 'is-active';
+    case FinansPoOnayDurumu.OnayaSunulmadi:
+    case FinansPoOnayDurumu.OnayBekliyor:
+      return 'is-warning';
+    case FinansPoOnayDurumu.Reddedildi:
+    case FinansPoOnayDurumu.OnayDustu:
+      return 'is-danger';
+    default:
+      return '';
+  }
+}
+
+/** Yeniden onaya gönderilebilir durum: hiç sunulmamış, reddedilmiş veya onayı düşmüş (sunucudaki OnayaGonderilebilir). */
+export function poOnayaGonderilebilir(durum: FinansPoOnayDurumu | null | undefined): boolean {
+  return (
+    durum === FinansPoOnayDurumu.OnayaSunulmadi ||
+    durum === FinansPoOnayDurumu.Reddedildi ||
+    durum === FinansPoOnayDurumu.OnayDustu
+  );
 }
 
 /** Sunucudaki FinansSiparisDurumu: 1 Açık, 2 Kısmi faturalandı, 3 Faturalandı, 4 İptal edildi. */

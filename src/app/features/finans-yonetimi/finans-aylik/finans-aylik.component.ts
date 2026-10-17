@@ -52,10 +52,13 @@ import {
   faturaKarsilanmaAnahtari,
   isDurumuAnahtari,
   kategoriAnahtari,
+  poOnayDurumuAnahtari,
+  poOnayaGonderilebilir,
   siparisKarsilanmaAnahtari,
 } from '../ortak/finans-etiketleri';
+import { poOnayBildirimleri } from '../ortak/finans-po-onayi';
 import { TranslationService } from '../../../core/services/translation.service';
-import { FinansIsKategorisi, FinansKarsilanma, FinansOdemeFiltresi } from '../../../core/constants/enums';
+import { FinansIsKategorisi, FinansKarsilanma, FinansOdemeFiltresi, FinansPoOnayDurumu } from '../../../core/constants/enums';
 import {
   FinansBekleyenAsama,
   FinansTarifeDuzeltmeOnizleme,
@@ -183,6 +186,11 @@ export class FinansYonetimiComponent implements OnInit {
   readonly faturaKarsilanmaAnahtari = faturaKarsilanmaAnahtari;
   readonly isDurumuAnahtari = isDurumuAnahtari;
   readonly karsilanma = FinansKarsilanma;
+  readonly poOnayDurumuAnahtari = poOnayDurumuAnahtari;
+  readonly poOnay = FinansPoOnayDurumu;
+  /** PO öncesi iş onayı kuralı açık mı (aylık listenin yanıtından); kapalıyken "Onaya gönder" gösterilmez. */
+  readonly poOnayKuraliAcik = signal(false);
+  readonly poOnayaGonderiliyor = signal(false);
 
   private readonly aylikListeIstekleri = new Subject<void>();
   private readonly aylikAramaIstekleri = new Subject<string>();
@@ -1101,6 +1109,35 @@ export class FinansYonetimiComponent implements OnInit {
     this.topluSiparisAc(satir.isKaydiIds);
   }
 
+  /** Satırın onaysız, reddedilmiş veya onayı düşmüş proje kalemleri PO öncesi onaya gönderilebilir. */
+  satirOnayaGonderilebilir(satir: FinansAylikIs): boolean {
+    return this.poOnayKuraliAcik() && this.poIzni() && !satir.iptalEdildi && poOnayaGonderilebilir(satir.poOnayDurumu);
+  }
+
+  /**
+   * Satırın kalemlerini PO öncesi onaya gönderir; sunucu uygun kalemleri grup başına bir talebe toplar ve onaylı ya
+   * da onaydaki kalemleri atlar. Talepler İşlem Onay Merkezi'ne düşer; liste yeni durumla yenilenir.
+   */
+  satirOnayaGonder(satir: FinansAylikIs): void {
+    if (!this.satirOnayaGonderilebilir(satir) || this.poOnayaGonderiliyor()) return;
+    this.poOnayaGonderiliyor.set(true);
+    this.service.poOnayinaGonder(satir.isKaydiIds).pipe(
+      finalize(() => this.poOnayaGonderiliyor.set(false)),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(result => {
+      if (!result.isSuccess) {
+        this.toast.error(result.error ?? this.t('PO_APPROVAL_SEND_ERROR'));
+        return;
+      }
+      for (const bildirim of poOnayBildirimleri(result)) {
+        const mesaj = this.t(bildirim.anahtar).replace('{0}', String(bildirim.sayi));
+        if (bildirim.tur === 'success') this.toast.success(mesaj);
+        else this.toast.info(mesaj);
+      }
+      this.aylikListeIstekleri.next();
+    });
+  }
+
   /** Projenin sipariş bekleyen bütün kategori satırları için tek PO ekranı açar. */
   projeSiparisAc(blok: AylikProjeBlogu): void {
     this.topluSiparisAc(blok.satirlar.filter(satir => this.poAcilabilir(satir)).flatMap(satir => satir.isKaydiIds));
@@ -1760,6 +1797,7 @@ export class FinansYonetimiComponent implements OnInit {
       this.kirilimlariYenile();
       this.aylikFinansOzeti.set(value.finansOzeti ?? []);
       this.aylikGrupToplamlari.set(value.grupToplamlari ?? []);
+      this.poOnayKuraliAcik.set(value.poOnayKuraliAcik ?? false);
       this.aylikPageNumber.set(value.pageNumber);
       this.aylikPageSize.set(value.pageSize);
       this.aylikTotalCount.set(value.totalCount);

@@ -459,6 +459,12 @@ input[type='checkbox'] { accent-color: var(--finance-primary); }
   background: #e8e7ff;
   color: #4b48c9;
 }
+// PO öncesi iş onayı rozeti: iş durumunun altında
+.status.po-approval {
+  align-items: center;
+  gap: 3px;
+  margin-top: 4px;
+}
 .project-status {
   display: flex;
   flex-direction: column;

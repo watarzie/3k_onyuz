@@ -107,6 +107,7 @@ export const API = {
     SIPARIS_IPTAL: (siparisId: number) => `${BASE}/finans/siparisler/${siparisId}/iptal`,
     SIPARIS_KALEMLER: (siparisId: number) => `${BASE}/finans/siparisler/${siparisId}/kalemler`,
     SIPARIS_GRUPLARI: `${BASE}/finans/siparis-gruplari`,
+    PO_ONAY_TALEPLERI: `${BASE}/finans/po-onay-talepleri`,
     FATURALAR: `${BASE}/finans/faturalar`,
     FATURA: (faturaId: number) => `${BASE}/finans/faturalar/${faturaId}`,
     FATURA_IPTAL: (faturaId: number) => `${BASE}/finans/faturalar/${faturaId}/iptal`,
