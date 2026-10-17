@@ -1,8 +1,11 @@
 @if (permissions.hasAccess(izin.Modul)) {
 <div class="page-title-area finance-page-title mb-4">
-  <div>
-    <h2 class="fw-bold mb-1">Finans ve Sipariş Takibi</h2>
-    <app-breadcrumb [items]="breadcrumb" />
+  <div class="sayfa-baslik">
+    <span class="sayfa-ikon" style="--ton: var(--successColor)"><i class="ri-line-chart-line" aria-hidden="true"></i></span>
+    <div>
+      <h2 class="fw-bold mb-1">Finans ve Sipariş Takibi</h2>
+      <app-breadcrumb [items]="breadcrumb" />
+    </div>
   </div>
 </div>
 

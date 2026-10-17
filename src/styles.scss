@@ -661,6 +661,41 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   }
 }
 
+// ===== Sayfa başlığı ikonu (bütün panel sayfaları) =====
+// Başlığın solundaki kare ikon çipi. --ton sayfanın vurgu rengidir: çipte ya da bir üst kapta
+// verilir (Projeler'de .pl-hero), verilmezse marka yeşili kullanılır.
+.sayfa-baslik {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+
+  > div { min-width: 0; }
+}
+.sayfa-ikon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--ton, var(--primaryColor)), color-mix(in srgb, var(--ton, var(--primaryColor)) 60%, #fff));
+  box-shadow: 0 12px 24px -12px var(--ton, var(--primaryColor));
+  color: #fff;
+  font-size: 22px;
+  animation: sayfa-ikon-pop .5s .1s cubic-bezier(.2, .9, .3, 1.3) backwards;
+}
+@keyframes sayfa-ikon-pop {
+  0% { opacity: 0; transform: scale(.6) rotate(-10deg); }
+  100% { opacity: 1; transform: none; }
+}
+@media (max-width: 768px) {
+  .sayfa-ikon { width: 42px; height: 42px; border-radius: 12px; font-size: 19px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sayfa-ikon { animation: none; }
+}
+
 @supports selector(:has(*)) {
   .row:has(> .col > app-stat-card) > .col {
     flex: 1 1 180px;

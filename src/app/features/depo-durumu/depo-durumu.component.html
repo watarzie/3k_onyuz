@@ -1,9 +1,12 @@
 <div class="depo-page">
   <!-- ===== Başlık ===== -->
   <header class="depo-head">
-    <div>
-      <h2>{{ 'MENU.DEPO_DURUMU' | translate }}</h2>
-      <app-breadcrumb [items]="breadcrumb" />
+    <div class="sayfa-baslik">
+      <span class="sayfa-ikon" style="--ton: var(--secondaryColor)"><i class="ri-building-2-line" aria-hidden="true"></i></span>
+      <div>
+        <h2>{{ 'MENU.DEPO_DURUMU' | translate }}</h2>
+        <app-breadcrumb [items]="breadcrumb" />
+      </div>
     </div>
     <div class="depo-head__actions">
       @if (canWriteCurrentMenu()) {

@@ -14,7 +14,7 @@
   background: #fff;
   animation: ku-gir .35s cubic-bezier(.2, .7, .2, 1) backwards;
 
-  h5 { margin: 0; color: var(--blackColor, #1e293b); font-weight: 700; }
+  h5 { margin: 0 0 3px; color: var(--blackColor, #1e293b); font-weight: 700; }
   .breadcrumb {
     display: flex;
     gap: 8px;

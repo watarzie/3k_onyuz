@@ -1,7 +1,10 @@
 <div class="sv-page">
-  <div class="page-title-area mb-4">
-    <h2 class="fw-bold mb-1">{{ t('MENU.SEVKIYATLAR') }}</h2>
-    <app-breadcrumb [items]="breadcrumb" />
+  <div class="page-title-area sayfa-baslik mb-4">
+    <span class="sayfa-ikon" style="--ton: var(--sv-ton)"><i class="ri-truck-line" aria-hidden="true"></i></span>
+    <div>
+      <h2 class="fw-bold mb-1">{{ t('MENU.SEVKIYATLAR') }}</h2>
+      <app-breadcrumb [items]="breadcrumb" />
+    </div>
   </div>
 
   <div class="sv-kpi" [attr.aria-busy]="istatistikYukleniyor()">

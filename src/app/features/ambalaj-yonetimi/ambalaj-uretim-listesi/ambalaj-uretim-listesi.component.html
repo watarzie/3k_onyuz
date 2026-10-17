@@ -1,8 +1,11 @@
 <section class="ambalaj-page">
   <header class="page-title-area mb-4">
-    <div>
-      <h2 class="fw-bold mb-1">Ambalaj Üretim Listesi</h2>
-      <app-breadcrumb [items]="[{ label: 'Üretim' }, { label: 'Ambalaj' }]" />
+    <div class="sayfa-baslik">
+      <span class="sayfa-ikon" style="--ton: var(--orangeColor)"><i class="ri-hammer-line" aria-hidden="true"></i></span>
+      <div>
+        <h2 class="fw-bold mb-1">Ambalaj Üretim Listesi</h2>
+        <app-breadcrumb [items]="[{ label: 'Üretim' }, { label: 'Ambalaj' }]" />
+      </div>
     </div>
     <button type="button" class="tz-btn refresh-button" title="Listeyi yenile" aria-label="Listeyi yenile" (click)="aktifListeyiYenile()">
       <i class="ri-refresh-line tz-ico-primary" [class.spin]="aktifListeLoading()"></i>
