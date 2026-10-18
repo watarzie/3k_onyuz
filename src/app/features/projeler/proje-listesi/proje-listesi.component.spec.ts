@@ -11,7 +11,13 @@ import { SandikService } from '../../../core/services/sandik.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { ProjeDto } from '../../../shared/models';
 import { ProjeListesiComponent } from './proje-listesi.component';
-import { fotografBaglantisiGecerli, fotografBaglantisiNormalize, fotografSitesi } from './proje-fotograf-baglantisi';
+import {
+  fotografAciklamasiGecerli,
+  fotografBaglantisiEtiketi,
+  fotografBaglantisiGecerli,
+  fotografBaglantisiNormalize,
+  fotografSitesi,
+} from './proje-fotograf-baglantisi';
 
 describe('Proje listesi: sevk edilen saha/yedek görünürlüğü (G1) ve toplu talep formu (G4)', () => {
   let projeApi: jasmine.SpyObj<ProjeService>;
@@ -32,7 +38,7 @@ describe('Proje listesi: sevk edilen saha/yedek görünürlüğü (G1) ve toplu 
   let confirm: jasmine.SpyObj<ConfirmService>;
 
   function setup(data: Record<string, unknown>) {
-    projeApi = jasmine.createSpyObj<ProjeService>('ProjeService', ['getProjeListesi', 'fotografBaglantisiGuncelle']);
+    projeApi = jasmine.createSpyObj<ProjeService>('ProjeService', ['getProjeListesi', 'fotografBaglantisiEkle', 'fotografBaglantisiGuncelle', 'fotografBaglantisiSil']);
     projeApi.getProjeListesi.and.returnValue(of({ isSuccess: true, value: {
       items: listeOgeleri, pageNumber: 1, pageSize: 15, totalCount: listeOgeleri.length, totalPages: 1,
       hasPreviousPage: false, hasNextPage: false,
@@ -166,34 +172,54 @@ describe('Proje listesi: sevk edilen saha/yedek görünürlüğü (G1) ve toplu 
     expect(toast.success).toHaveBeenCalled();
   });
 
-  describe('fotoğraf bağlantısı (proje-fotograf-baglantisi: R görür/açar, W düzenler)', () => {
+  describe('fotoğraf bağlantıları (proje-fotograf-baglantisi: R görür/açar, W ekler/düzenler/siler)', () => {
     const sahaYonetimi = { menuKod: YETKI.SAHA.YONETIMI, projeTipi: ProjeTipi.Saha };
+    const foto = (id: number, adres: string, aciklama: string | null = null) => ({ id, adres, aciklama });
+    const iki = [foto(5, 'https://foto.ornek.com/p-2'), foto(8, 'https://drive.ornek.com/sevk', 'Sevk günü')];
 
-    it('adres kuralı sunucuyla aynıdır: şemasız adrese https eklenir, http/https dışı ve boşluklu adres reddedilir', () => {
+    it('adres kuralı sunucuyla aynıdır: şemasız adrese https eklenir; boş, http/https dışı ve boşluklu adres reddedilir', () => {
       expect(fotografBaglantisiNormalize('  foto.ornek.com/pa727 ')).toBe('https://foto.ornek.com/pa727');
       expect(fotografBaglantisiNormalize('   ')).toBeNull();
       expect(fotografBaglantisiGecerli('http://192.168.1.20/galeri')).toBeTrue();
-      expect(fotografBaglantisiGecerli('')).toBeTrue();
-      for (const kotu of ['javascript:alert(1)', 'JAVASCRIPT://alert(1)', 'ftp://foto.ornek.com/a', 'https://foto ornek.com', 'https://']) {
+      for (const kotu of ['', '   ', 'javascript:alert(1)', 'JAVASCRIPT://alert(1)', 'ftp://foto.ornek.com/a', 'https://foto ornek.com', 'https://']) {
         expect(fotografBaglantisiGecerli(kotu)).withContext(kotu).toBeFalse();
       }
       expect(fotografBaglantisiGecerli('https://ornek.com/' + 'a'.repeat(1000))).toBeFalse();
+      expect(fotografAciklamasiGecerli(' ' + 'a'.repeat(100) + ' ')).toBeTrue();
+      expect(fotografAciklamasiGecerli('a'.repeat(101))).toBeFalse();
       expect(fotografSitesi('https://www.foto.ornek.com/pa727?x=1')).toBe('foto.ornek.com');
+      expect(fotografBaglantisiEtiketi(foto(1, 'https://www.foto.ornek.com/a'))).toBe('foto.ornek.com');
+      expect(fotografBaglantisiEtiketi(foto(1, 'https://foto.ornek.com/a', ' Paketleme '))).toBe('Paketleme');
     });
 
-    it('okuma izni olan kullanıcı bağlantıyı yeni sekmede açan "Fotoğraflar" çipini görür; izin yoksa çip ve düğme yoktur', () => {
-      listeOgeleri = [{ ...saha, fotografBaglantisi: 'https://foto.ornek.com/p-2' }, yedek];
+    it('okuma izniyle tek bağlantı çipten yeni sekmede açılır, çok bağlantı çipin açtığı listeden; izin yoksa çip yoktur', () => {
+      listeOgeleri = [{ ...saha, fotografBaglantilari: [iki[1]] }, { ...yedek, fotografBaglantilari: iki }];
       okuma.add(YETKI.PROJE.FOTOGRAF_BAGLANTISI);
-      const { fixture } = setup(sahaYonetimi);
+      const { fixture, c } = setup(sahaYonetimi);
       const el = fixture.nativeElement as HTMLElement;
-      const link = el.querySelector('a.pl-foto') as HTMLAnchorElement;
-      expect(link.getAttribute('href')).toBe('https://foto.ornek.com/p-2');
-      expect(link.target).toBe('_blank');
-      expect(link.rel).toContain('noopener');
-      expect(link.title).toContain('foto.ornek.com');
+      const tek = el.querySelector('a.pl-foto') as HTMLAnchorElement;
       expect(el.querySelectorAll('a.pl-foto').length).toBe(1);
+      expect(tek.getAttribute('href')).toBe('https://drive.ornek.com/sevk');
+      expect(tek.target).toBe('_blank');
+      expect(tek.rel).toBe('noopener noreferrer');
+      expect(tek.title).toContain('Sevk günü');
       expect(el.querySelector('.pl-foto--ekle')).toBeNull();
       expect(el.querySelector('.pl-foto-duzenle')).toBeNull();
+
+      const coklu = el.querySelector('button.pl-foto--coklu') as HTMLButtonElement;
+      expect(coklu.querySelector('.pl-foto__sayi')?.textContent?.trim()).toBe('2');
+      coklu.click();
+      fixture.detectChanges();
+      expect(c.fotografMenu()?.proje.id).toBe(yedek.id);
+      const ogeler = Array.from(el.querySelectorAll<HTMLAnchorElement>('.pl-foto-menu a.pl-foto-menu__oge'));
+      expect(ogeler.map(a => a.getAttribute('href'))).toEqual(['https://foto.ornek.com/p-2', 'https://drive.ornek.com/sevk']);
+      expect(ogeler.map(a => a.querySelector('.pl-foto-menu__metin > span')?.textContent?.trim())).toEqual(['foto.ornek.com', 'Sevk günü']);
+      expect(ogeler.every(a => a.target === '_blank' && a.rel === 'noopener noreferrer')).toBeTrue();
+      // Okuma izni düzenleme girişi göstermez; belgeye tıklamak listeyi kapatır.
+      expect(el.querySelector('.pl-foto-menu__yonet')).toBeNull();
+      document.body.click();
+      fixture.detectChanges();
+      expect(el.querySelector('.pl-foto-menu')).toBeNull();
 
       TestBed.resetTestingModule();
       okuma.clear();
@@ -201,19 +227,21 @@ describe('Proje listesi: sevk edilen saha/yedek görünürlüğü (G1) ve toplu 
       expect(yetkisiz.querySelector('.pl-foto')).toBeNull();
     });
 
-    it('yazma izniyle bağlantısız projeye bağlantı eklenir: şemasız adres https ile gönderilir, satır yerinde güncellenir', () => {
+    it('yazma izniyle bağlantısız projeye açıklamalı bağlantı eklenir: şemasız adres https ile gönderilir, satır ve pencere yerinde güncellenir', () => {
       yazma.add(YETKI.PROJE.FOTOGRAF_BAGLANTISI);
       const { fixture, c } = setup(sahaYonetimi);
-      projeApi.fotografBaglantisiGuncelle.and.returnValue(of({ isSuccess: true, value: { fotografBaglantisi: 'https://foto.ornek.com/p-2' } }));
+      projeApi.fotografBaglantisiEkle.and.returnValue(of({ isSuccess: true, value: [foto(5, 'https://foto.ornek.com/p-2', 'Paketleme')] }));
       const el = fixture.nativeElement as HTMLElement;
       expect(el.querySelectorAll('.pl-foto--ekle').length).toBe(2);
 
       (el.querySelector('.pl-foto--ekle') as HTMLButtonElement).click();
       fixture.detectChanges();
       const girdi = el.querySelector('.pl-foto-adres') as HTMLInputElement;
+      const aciklama = el.querySelector('.pl-foto-aciklama') as HTMLInputElement;
       const kaydet = el.querySelector('.pl-foto-kaydet') as HTMLButtonElement;
+      expect(el.querySelector('.pl-foto-bos')).not.toBeNull();
       expect(kaydet.disabled).toBeTrue();
-      expect(el.querySelector('.pl-foto-kaldir')).toBeNull();
+      expect(el.querySelector('.pl-foto-hata')).toBeNull();
 
       girdi.value = 'javascript:alert(1)';
       girdi.dispatchEvent(new Event('input'));
@@ -223,39 +251,89 @@ describe('Proje listesi: sevk edilen saha/yedek görünürlüğü (G1) ve toplu 
 
       girdi.value = ' foto.ornek.com/p-2 ';
       girdi.dispatchEvent(new Event('input'));
+      aciklama.value = ' Paketleme ';
+      aciklama.dispatchEvent(new Event('input'));
       fixture.detectChanges();
       expect(el.querySelector('.pl-foto-onizleme')?.textContent).toContain('foto.ornek.com');
       kaydet.click();
       fixture.detectChanges();
 
-      expect(projeApi.fotografBaglantisiGuncelle).toHaveBeenCalledOnceWith(saha.id, 'https://foto.ornek.com/p-2');
-      expect(c.projeler().find(p => p.id === saha.id)?.fotografBaglantisi).toBe('https://foto.ornek.com/p-2');
-      expect(c.fotografProje()).toBeNull();
+      expect(projeApi.fotografBaglantisiEkle).toHaveBeenCalledOnceWith(saha.id, { adres: 'https://foto.ornek.com/p-2', aciklama: 'Paketleme' });
+      expect(c.projeler().find(p => p.id === saha.id)?.fotografBaglantilari).toEqual([foto(5, 'https://foto.ornek.com/p-2', 'Paketleme')]);
       expect(projeApi.getProjeListesi).toHaveBeenCalledTimes(1);
-      expect(toast.success).toHaveBeenCalledWith('Fotoğraf bağlantısı kaydedildi.');
+      expect(toast.success).toHaveBeenCalledWith('Fotoğraf bağlantısı eklendi.');
+      // Pencere açık kalır, form boşalır; yeni bağlantı listede ve satırda görünür.
+      expect(c.fotografProje()?.id).toBe(saha.id);
+      expect((el.querySelector('.pl-foto-adres') as HTMLInputElement).value).toBe('');
+      expect(el.querySelector('.pl-foto-liste__baglanti')?.getAttribute('href')).toBe('https://foto.ornek.com/p-2');
+      expect(el.querySelector('.pl-foto-liste__baglanti')?.getAttribute('rel')).toBe('noopener noreferrer');
       expect((el.querySelector('a.pl-foto') as HTMLAnchorElement).getAttribute('href')).toBe('https://foto.ornek.com/p-2');
     });
 
-    it('kayıtlı bağlantı onayla kaldırılır (boş gönderilir); onay verilmezse istek gitmez', async () => {
-      listeOgeleri = [{ ...saha, fotografBaglantisi: 'https://foto.ornek.com/p-2' }];
+    it('kayıtlı bağlantı düzenlenir ve onayla silinir; onay verilmezse istek gitmez', async () => {
+      listeOgeleri = [{ ...saha, fotografBaglantilari: iki }];
       yazma.add(YETKI.PROJE.FOTOGRAF_BAGLANTISI);
       const { fixture, c } = setup(sahaYonetimi);
-      projeApi.fotografBaglantisiGuncelle.and.returnValue(of({ isSuccess: true, value: { fotografBaglantisi: null } }));
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('.pl-foto-duzenle')).not.toBeNull();
       c.fotografPenceresiniAc(c.projeler()[0]);
       fixture.detectChanges();
-      expect((fixture.nativeElement.querySelector('.pl-foto-adres') as HTMLInputElement).value).toBe('https://foto.ornek.com/p-2');
+      expect(el.querySelectorAll('.pl-foto-liste__oge').length).toBe(2);
 
+      (el.querySelectorAll('.pl-foto-liste__duzenle')[1] as HTMLButtonElement).click();
+      fixture.detectChanges();
+      const girdi = el.querySelector('.pl-foto-adres') as HTMLInputElement;
+      expect(girdi.value).toBe('https://drive.ornek.com/sevk');
+      expect((el.querySelector('.pl-foto-aciklama') as HTMLInputElement).value).toBe('Sevk günü');
+      girdi.value = 'drive.ornek.com/sevk-2';
+      girdi.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      const guncel = [iki[0], foto(8, 'https://drive.ornek.com/sevk-2', 'Sevk günü')];
+      projeApi.fotografBaglantisiGuncelle.and.returnValue(of({ isSuccess: true, value: guncel }));
+      (el.querySelector('.pl-foto-kaydet') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(projeApi.fotografBaglantisiGuncelle).toHaveBeenCalledOnceWith(saha.id, 8, { adres: 'https://drive.ornek.com/sevk-2', aciklama: 'Sevk günü' });
+      expect(c.projeler()[0].fotografBaglantilari).toEqual(guncel);
+      expect(c.fotografDuzenlenen()).toBeNull();
+
+      projeApi.fotografBaglantisiSil.and.returnValue(of({ isSuccess: true, value: [guncel[1]] }));
       confirm.ask.and.resolveTo(false);
-      await c.fotografBaglantisiKaldir();
-      expect(projeApi.fotografBaglantisiGuncelle).not.toHaveBeenCalled();
+      await c.fotografBaglantisiSil(guncel[0]);
+      expect(projeApi.fotografBaglantisiSil).not.toHaveBeenCalled();
 
       confirm.ask.and.resolveTo(true);
-      await c.fotografBaglantisiKaldir();
-      expect(projeApi.fotografBaglantisiGuncelle).toHaveBeenCalledOnceWith(saha.id, null);
-      expect(c.projeler()[0].fotografBaglantisi).toBeNull();
+      await c.fotografBaglantisiSil(guncel[0]);
+      expect(projeApi.fotografBaglantisiSil).toHaveBeenCalledOnceWith(saha.id, 5);
+      expect(c.projeler()[0].fotografBaglantilari).toEqual([guncel[1]]);
+      expect(toast.success).toHaveBeenCalledWith('Fotoğraf bağlantısı silindi.');
     });
 
-    it('okuma izni bağlantıyı düzenlemeyi açmaz', () => {
+    it('sınırda (20 bağlantı) yeni bağlantı eklenemez, var olan düzenlenebilir; sunucu reddi bildirilir', () => {
+      const yirmi = Array.from({ length: 20 }, (_, i) => foto(i + 1, 'https://foto.ornek.com/' + i));
+      listeOgeleri = [{ ...saha, fotografBaglantilari: yirmi }];
+      yazma.add(YETKI.PROJE.FOTOGRAF_BAGLANTISI);
+      const { fixture, c } = setup(sahaYonetimi);
+      c.fotografPenceresiniAc(c.projeler()[0]);
+      c.fotografTaslak.set('https://foto.ornek.com/fazla');
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('.pl-foto-hata')?.textContent).toContain('en fazla 20');
+      expect((el.querySelector('.pl-foto-kaydet') as HTMLButtonElement).disabled).toBeTrue();
+      c.fotografBaglantisiKaydet();
+      expect(projeApi.fotografBaglantisiEkle).not.toHaveBeenCalled();
+
+      c.fotografBaglantisiniDuzenle(yirmi[0]);
+      c.fotografTaslak.set('https://foto.ornek.com/0-yeni');
+      fixture.detectChanges();
+      expect((el.querySelector('.pl-foto-kaydet') as HTMLButtonElement).disabled).toBeFalse();
+      projeApi.fotografBaglantisiGuncelle.and.returnValue(of({ isSuccess: false, error: 'Bu adres projede zaten kayıtlı.' }));
+      c.fotografBaglantisiKaydet();
+      expect(toast.error).toHaveBeenCalledWith('Bu adres projede zaten kayıtlı.');
+      expect(c.projeler()[0].fotografBaglantilari).toEqual(yirmi);
+      expect(c.fotografDuzenlenen()).toEqual(yirmi[0]);
+    });
+
+    it('okuma izni bağlantıları düzenlemeyi açmaz', () => {
       okuma.add(YETKI.PROJE.FOTOGRAF_BAGLANTISI);
       const { c } = setup(sahaYonetimi);
       c.fotografPenceresiniAc(saha);

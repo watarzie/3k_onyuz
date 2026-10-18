@@ -1848,8 +1848,9 @@
   }
 }
 
-/* Fotoğraf bağlantısı: proje numarasının yanında yeni sekmede açılan çip; bağlantısız projede düzenleme izni varsa
-   sade "ekle" düğmesi (satırı kalabalıklaştırmamak için yalnız simge). */
+/* Fotoğraf bağlantıları: proje numarasının yanında çip. Tek bağlantı yeni sekmede doğrudan açılır; birden çok bağlantıda
+   çip sayıyı gösterir ve bağlantı listesini açar. Bağlantısız projede düzenleme izni varsa sade "ekle" düğmesi
+   (satırı kalabalıklaştırmamak için yalnız simge). */
 .pl-foto {
   display: inline-flex;
   flex: 0 0 auto;
@@ -1883,6 +1884,103 @@
   &:hover { opacity: 1; }
 }
 .pl-satir:hover .pl-foto--ekle { opacity: 1; }
+.pl-foto--coklu {
+  cursor: pointer;
+  .pl-foto__sayi {
+    min-width: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--primaryColor);
+    color: #fff;
+    font-size: 10.5px;
+    line-height: 16px;
+    text-align: center;
+  }
+  .pl-foto__dis { transition: transform .18s ease; }
+  &.is-acik .pl-foto__dis { transform: rotate(180deg); }
+}
+
+/* Çok bağlantılı satırın açılır listesi: rapor menüsü kalıbı, çipin sol kenarına hizalı. */
+.pl-foto-menu {
+  width: 280px;
+  max-height: 360px;
+  overflow-y: auto;
+  &::before { left: 18px; right: auto; }
+  &.is-yukari::before { display: none; }
+  .pl-foto-menu__oge { text-decoration: none; }
+  .report-download-icon {
+    color: var(--primaryColor);
+    background: color-mix(in srgb, var(--primaryColor) 10%, #fff);
+  }
+  .pl-foto-menu__metin {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+    > span, small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    small { color: #94a3b8; font-size: 11px; font-weight: 500; }
+  }
+  .pl-foto-menu__dis { flex: 0 0 auto; color: #94a3b8; font-size: 13px; }
+  .pl-foto-menu__yonet {
+    margin-top: 4px;
+    border-top: 1px solid var(--borderColor);
+    border-radius: 0 0 8px 8px;
+    color: #475569;
+    .report-download-icon { color: #475569; background: #f1f5f9; }
+  }
+}
+
+/* Bağlantıları yönetme penceresi: kayıtlı bağlantılar (aç / düzenle / sil) ve altında ekleme-düzenleme formu. */
+.pl-foto-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+.pl-foto-liste__oge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 4px 4px 0;
+  border-radius: 10px;
+  &.is-duzenleniyor { background: color-mix(in srgb, var(--primaryColor) 7%, #fff); }
+}
+.pl-foto-liste__baglanti {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid var(--borderColor);
+  border-radius: 10px;
+  color: var(--blackColor);
+  text-decoration: none;
+  > i { flex: 0 0 auto; color: var(--primaryColor); font-size: 16px; }
+  .pl-foto-liste__dis { color: #94a3b8; font-size: 13px; }
+  &:hover { border-color: var(--primaryColor); color: var(--blackColor); }
+}
+.pl-foto-liste__metin {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  > span { font-size: 13px; font-weight: 600; }
+  small { color: #94a3b8; font-size: 11.5px; }
+  > span, small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+.pl-foto-bos { margin: 0 0 14px; color: #94a3b8; font-size: 13px; }
+.pl-foto-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--borderColor);
+  h6 { margin: 0; color: #475569; font-size: 12.5px; font-weight: 700; }
+}
+.pl-foto-form__eylem { display: flex; justify-content: flex-end; gap: 8px; }
 .pl-foto-hata { display: flex; align-items: center; gap: 4px; color: #e5372a !important; }
 .pl-foto-onizleme {
   display: flex;

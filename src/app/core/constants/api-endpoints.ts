@@ -36,7 +36,8 @@ export const API = {
     SEVKIYATLAR: (id: number) => `${BASE}/proje/${id}/sevkiyatlar`,
     KILIDI_AC: (id: number) => `${BASE}/proje/${id}/kilidi-ac`,
     SEVK_TARIHI_GUNCELLE: `${BASE}/proje/sevk-tarihi-guncelle`,
-    FOTOGRAF_BAGLANTISI: (id: number) => `${BASE}/proje/${id}/fotograf-baglantisi`,
+    FOTOGRAF_BAGLANTILARI: (id: number) => `${BASE}/proje/${id}/fotograf-baglantilari`,
+    FOTOGRAF_BAGLANTISI: (id: number, baglantiId: number) => `${BASE}/proje/${id}/fotograf-baglantilari/${baglantiId}`,
     DELETE: (id: number) => `${BASE}/proje/${id}`,
   },
   /** Tır seferi (çok projeli toplu sevk), sefer listesi ve sevkiyat istatistikleri. */

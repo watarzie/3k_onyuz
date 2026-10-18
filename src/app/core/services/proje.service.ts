@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiRevizyonApiResult, CekiRevizyonYuklemeYaniti, CekiRevizyonOnizlemeSonuc, ProjeDropdownDto, SevkiyatDto, EksiklerdenSahaProjesiOlusturDto, SandiklardanSahaProjesiOlusturDto, SahaAktarimDto, SahaSandikAktarimGeriAlResultDto, ProjeFotografBaglantisiSonucu } from '../../shared/models/index';
+import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiRevizyonApiResult, CekiRevizyonYuklemeYaniti, CekiRevizyonOnizlemeSonuc, ProjeDropdownDto, SevkiyatDto, EksiklerdenSahaProjesiOlusturDto, SandiklardanSahaProjesiOlusturDto, SahaAktarimDto, SahaSandikAktarimGeriAlResultDto, ProjeFotografBaglantisi, ProjeFotografBaglantisiKaydetDto } from '../../shared/models/index';
 
 /**
  * ProjeController (2 endpoint) + CekiController (2 endpoint):
@@ -127,9 +127,19 @@ export class ProjeService {
     );
   }
 
-  /** Fotoğraf sayfası bağlantısını kaydeder; boş (null) bağlantıyı kaldırır. Dönen değer kaydedilen adrestir. */
-  fotografBaglantisiGuncelle(projeId: number, baglanti: string | null): Observable<ApiResult<ProjeFotografBaglantisiSonucu>> {
-    return this.api.put<ProjeFotografBaglantisiSonucu>(API.PROJE.FOTOGRAF_BAGLANTISI(projeId), { baglanti });
+  /** Projeye fotoğraf bağlantısı ekler; yanıt projenin güncel bağlantı listesidir. */
+  fotografBaglantisiEkle(projeId: number, istek: ProjeFotografBaglantisiKaydetDto): Observable<ApiResult<ProjeFotografBaglantisi[]>> {
+    return this.api.post<ProjeFotografBaglantisi[]>(API.PROJE.FOTOGRAF_BAGLANTILARI(projeId), istek);
+  }
+
+  /** Bir fotoğraf bağlantısının adresini/açıklamasını değiştirir; yanıt projenin güncel bağlantı listesidir. */
+  fotografBaglantisiGuncelle(projeId: number, baglantiId: number, istek: ProjeFotografBaglantisiKaydetDto): Observable<ApiResult<ProjeFotografBaglantisi[]>> {
+    return this.api.put<ProjeFotografBaglantisi[]>(API.PROJE.FOTOGRAF_BAGLANTISI(projeId, baglantiId), istek);
+  }
+
+  /** Bir fotoğraf bağlantısını siler; yanıt projenin güncel bağlantı listesidir. */
+  fotografBaglantisiSil(projeId: number, baglantiId: number): Observable<ApiResult<ProjeFotografBaglantisi[]>> {
+    return this.api.delete<ProjeFotografBaglantisi[]>(API.PROJE.FOTOGRAF_BAGLANTISI(projeId, baglantiId));
   }
 
   sevkTarihiGuncelle(projeId: number, planlananSevkTarihi: string | null): Observable<ApiResult<boolean>> {

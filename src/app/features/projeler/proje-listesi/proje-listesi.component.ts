@@ -1,7 +1,7 @@
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy, HostListener, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subject } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
@@ -17,11 +17,13 @@ import { CekiRevizyonOnizlemeComponent } from '../../../shared/components/ceki-r
 import { CekiRevizyonGecmisiComponent } from '../../../shared/components/ceki-revizyon-gecmisi/ceki-revizyon-gecmisi.component';
 import { TopluSevkComponent } from '../toplu-sevk/toplu-sevk.component';
 import {
+  ApiResult,
   CekiRevizyonOnizlemeSonuc,
   CekiRevizyonOnayKuyruguYaniti,
   CekiRevizyonSorunu,
   CekiRevizyonYuklemeYaniti,
   ProjeDto,
+  ProjeFotografBaglantisi,
   SahaAktarimDto,
   SandikDto,
   SevkiyatDto,
@@ -37,7 +39,15 @@ import { PdfService } from '../../../core/services/pdf.service';
 import { ProjeTipi, SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
 import { PROJE_TIPI_BAGLAMLARI, projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
-import { fotografBaglantisiGecerli, fotografBaglantisiNormalize, fotografSitesi } from './proje-fotograf-baglantisi';
+import {
+  FOTOGRAF_ACIKLAMASI_EN_FAZLA,
+  FOTOGRAF_BAGLANTISI_SAYISI_EN_FAZLA,
+  fotografAciklamasiGecerli,
+  fotografBaglantisiEtiketi,
+  fotografBaglantisiGecerli,
+  fotografBaglantisiNormalize,
+  fotografSitesi,
+} from './proje-fotograf-baglantisi';
 import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 
 interface SahaAktarimGrubu {
@@ -182,7 +192,7 @@ export class ProjeListesiComponent implements OnInit {
       this.canUpdatePlanlananSevkTarihiCurrent() || this.canDeleteProjectCurrent())
   );
   hasActionColumn = computed(() =>
-    (this.fotografBaglantisiDuzenlenebilir() && this.projeler().some(p => !!p.fotografBaglantisi)) ||
+    (this.fotografBaglantisiDuzenlenebilir() && this.projeler().some(p => this.fotografBaglantilari(p).length > 0)) ||
     this.projeler().some(proje => this.canSeeRevizyonGecmisi(proje)) ||
     this.hasSandikYonetimiActions() ||
     this.hasSahaYonetimiActions() ||
@@ -545,8 +555,8 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   shouldShowActions(p: ProjeDto): boolean {
-    // Bağlantı ekleme satırdaki "+" düğmesindedir; menüde yalnız kayıtlı bağlantıyı düzenleme/kaldırma bulunur.
-    if ((this.fotografBaglantisiDuzenlenebilir() && !!p.fotografBaglantisi) || this.canSeeRevizyonGecmisi(p)) return true;
+    // Bağlantısız projede ekleme satırdaki "+" düğmesindedir; bağlantısı olan projede yönetme (ekle/düzenle/sil) menüdedir.
+    if ((this.fotografBaglantisiDuzenlenebilir() && this.fotografBaglantilari(p).length > 0) || this.canSeeRevizyonGecmisi(p)) return true;
     if (this.isSahaYonetimi()) return this.hasSahaYonetimiActions();
     if (this.isYedekYonetimi()) return this.hasYedekYonetimiActions();
     if (this.isSandikYonetimi()) return this.hasSandikYonetimiActions();
@@ -615,6 +625,7 @@ export class ProjeListesiComponent implements OnInit {
     this.reportMenuPosition.set(null);
     this.reportMenuContext.set(null);
     this.bulkEksikRaporMenuPosition.set(null);
+    this.fotografMenu.set(null);
   }
 
   toggleBulkEksikRaporMenu(event: MouseEvent) {
@@ -782,6 +793,7 @@ export class ProjeListesiComponent implements OnInit {
       return;
     }
     this.bulkEksikRaporMenuPosition.set(null);
+    this.fotografMenu.set(null);
 
     const button = event.currentTarget as HTMLElement;
     const rect = button.getBoundingClientRect();
@@ -1144,17 +1156,34 @@ export class ProjeListesiComponent implements OnInit {
     return (bytes / 1048576).toFixed(1) + ' MB';
   }
 
-  // ===== Fotoğraf Bağlantısı =====
-  // Tek izin kodu, proje tipinden bağımsız: R bağlantıyı görür ve açar, W ekler/düzenler/kaldırır. Sunucu bağlantıyı
-  // listede yalnız R izniyle döndürür; ön yüz kontrolü yalnız görünürlük içindir.
+  // ===== Fotoğraf Bağlantıları =====
+  // Tek izin kodu, proje tipinden bağımsız: R bağlantıları görür ve açar, W ekler/düzenler/siler. Sunucu bağlantıları
+  // listede yalnız R izniyle döndürür; ön yüz kontrolü yalnız görünürlük içindir. Tek bağlantı satırdaki çipten
+  // doğrudan, birden çok bağlantı çipin açtığı listeden yeni sekmede açılır.
 
   readonly fotografSitesi = fotografSitesi;
+  readonly fotografBaglantisiEtiketi = fotografBaglantisiEtiketi;
+  readonly FOTOGRAF_BAGLANTISI_SAYISI_EN_FAZLA = FOTOGRAF_BAGLANTISI_SAYISI_EN_FAZLA;
+  readonly FOTOGRAF_ACIKLAMASI_EN_FAZLA = FOTOGRAF_ACIKLAMASI_EN_FAZLA;
+  /** Çok bağlantılı satırın açılır listesi (sabit konumlu; belge tıklamasıyla kapanır). */
+  readonly fotografMenu = signal<{ proje: ProjeDto; top: number; left: number; yukari: boolean } | null>(null);
+  /** Bağlantıları yönetme penceresinin projesi. */
   readonly fotografProje = signal<ProjeDto | null>(null);
+  /** Formda düzenlenen bağlantı; boşsa form yeni bağlantı ekler. */
+  readonly fotografDuzenlenen = signal<ProjeFotografBaglantisi | null>(null);
   readonly fotografTaslak = signal('');
+  readonly fotografAciklamaTaslak = signal('');
   readonly fotografKaydediliyor = signal(false);
-  /** Yazılan adresin kaydedilecek hali (şemasızsa https eklenmiş); geçersizse kaydet kapalıdır. */
+  readonly fotografPenceresiBaglantilari = computed(() => this.fotografProje()?.fotografBaglantilari ?? []);
+  /** Yazılan adresin kaydedilecek hali (şemasızsa https eklenmiş). */
   readonly fotografOnizleme = computed(() => fotografBaglantisiNormalize(this.fotografTaslak()));
-  readonly fotografTaslakGecerli = computed(() => fotografBaglantisiGecerli(this.fotografTaslak()));
+  /** Boş adres uyarı göstermez (Kaydet kapalıdır); dolu ve geçersiz adres uyarı gösterir. */
+  readonly fotografTaslakGecerli = computed(() => !this.fotografTaslak().trim() || fotografBaglantisiGecerli(this.fotografTaslak()));
+  readonly fotografSinirda = computed(() =>
+    !this.fotografDuzenlenen() && this.fotografPenceresiBaglantilari().length >= FOTOGRAF_BAGLANTISI_SAYISI_EN_FAZLA);
+  readonly fotografKaydedilebilir = computed(() =>
+    !this.fotografKaydediliyor() && !this.fotografSinirda() &&
+    fotografBaglantisiGecerli(this.fotografTaslak()) && fotografAciklamasiGecerli(this.fotografAciklamaTaslak()));
 
   fotografBaglantisiGorunur(): boolean {
     return this.permissions.hasAccess(YETKI.PROJE.FOTOGRAF_BAGLANTISI);
@@ -1164,57 +1193,99 @@ export class ProjeListesiComponent implements OnInit {
     return this.permissions.canWrite(YETKI.PROJE.FOTOGRAF_BAGLANTISI);
   }
 
+  fotografBaglantilari(proje: ProjeDto): ProjeFotografBaglantisi[] {
+    return proje.fotografBaglantilari ?? [];
+  }
+
+  fotografMenusunuAc(event: MouseEvent, proje: ProjeDto): void {
+    event.stopPropagation();
+    if (this.fotografMenu()?.proje.id === proje.id) {
+      this.closeReportMenu();
+      return;
+    }
+    this.closeReportMenu();
+
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const genislik = 280;
+    const ogeSayisi = this.fotografBaglantilari(proje).length + (this.fotografBaglantisiDuzenlenebilir() ? 1 : 0);
+    const yukseklik = Math.min(ogeSayisi * 48 + 14, 360);
+    const bosluk = 8;
+    const left = Math.min(Math.max(8, rect.left), window.innerWidth - genislik - 8);
+    const yukari = rect.bottom + bosluk + yukseklik > window.innerHeight - 8;
+    const top = yukari ? Math.max(8, rect.top - yukseklik - bosluk) : rect.bottom + bosluk;
+    this.fotografMenu.set({ proje, top, left, yukari });
+  }
+
   fotografPenceresiniAc(proje: ProjeDto): void {
     if (!this.fotografBaglantisiDuzenlenebilir()) return;
+    this.fotografMenu.set(null);
     this.fotografProje.set(proje);
-    this.fotografTaslak.set(proje.fotografBaglantisi ?? '');
+    this.fotografFormunuSifirla();
   }
 
   fotografPenceresiniKapat(): void {
     if (this.fotografKaydediliyor()) return;
     this.fotografProje.set(null);
+    this.fotografFormunuSifirla();
+  }
+
+  fotografBaglantisiniDuzenle(baglanti: ProjeFotografBaglantisi): void {
+    if (this.fotografKaydediliyor()) return;
+    this.fotografDuzenlenen.set(baglanti);
+    this.fotografTaslak.set(baglanti.adres);
+    this.fotografAciklamaTaslak.set(baglanti.aciklama ?? '');
+  }
+
+  fotografFormunuSifirla(): void {
+    this.fotografDuzenlenen.set(null);
     this.fotografTaslak.set('');
+    this.fotografAciklamaTaslak.set('');
   }
 
   fotografBaglantisiKaydet(): void {
+    const proje = this.fotografProje();
     const adres = this.fotografOnizleme();
-    if (!adres || !this.fotografTaslakGecerli()) {
-      this.toastService.error('Geçerli bir web adresi girin (ör. https://ornek.com/proje).');
-      return;
-    }
-    this.fotografBaglantisiGonder(adres, 'Fotoğraf bağlantısı kaydedildi.');
+    if (!proje || !adres || !this.fotografKaydedilebilir()) return;
+    const istek = { adres, aciklama: this.fotografAciklamaTaslak().trim() || null };
+    const duzenlenen = this.fotografDuzenlenen();
+    this.fotografIstegiGonder(
+      duzenlenen
+        ? this.projeService.fotografBaglantisiGuncelle(proje.id, duzenlenen.id, istek)
+        : this.projeService.fotografBaglantisiEkle(proje.id, istek),
+      duzenlenen ? 'Fotoğraf bağlantısı güncellendi.' : 'Fotoğraf bağlantısı eklendi.');
   }
 
-  async fotografBaglantisiKaldir(): Promise<void> {
+  async fotografBaglantisiSil(baglanti: ProjeFotografBaglantisi): Promise<void> {
     const proje = this.fotografProje();
-    if (!proje?.fotografBaglantisi || this.fotografKaydediliyor()) return;
+    if (!proje || this.fotografKaydediliyor()) return;
     const onay = await this.confirmService.ask({
-      title: 'Fotoğraf Bağlantısını Kaldır',
-      message: `${proje.projeNo} projesinin fotoğraf bağlantısı kaldırılacak. Fotoğraflar sitede kalır; yalnız bağlantı silinir.`,
-      confirmText: 'Bağlantıyı Kaldır',
+      title: 'Fotoğraf Bağlantısını Sil',
+      message: `${proje.projeNo} projesinin "${fotografBaglantisiEtiketi(baglanti)}" bağlantısı silinecek. Fotoğraflar sitede kalır; yalnız bağlantı silinir.`,
+      confirmText: 'Bağlantıyı Sil',
       cancelText: 'Vazgeç',
       type: 'warning'
     });
     if (!onay) return;
-    this.fotografBaglantisiGonder(null, 'Fotoğraf bağlantısı kaldırıldı.');
+    this.fotografIstegiGonder(this.projeService.fotografBaglantisiSil(proje.id, baglanti.id), 'Fotoğraf bağlantısı silindi.');
   }
 
-  private fotografBaglantisiGonder(adres: string | null, basariMesaji: string): void {
+  private fotografIstegiGonder(istek: Observable<ApiResult<ProjeFotografBaglantisi[]>>, basariMesaji: string): void {
     const proje = this.fotografProje();
     if (!proje || !this.fotografBaglantisiDuzenlenebilir() || this.fotografKaydediliyor()) return;
     this.fotografKaydediliyor.set(true);
-    this.projeService.fotografBaglantisiGuncelle(proje.id, adres).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    istek.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         this.fotografKaydediliyor.set(false);
         if (!res.isSuccess) {
           this.toastService.error(res.error || 'Fotoğraf bağlantısı kaydedilemedi.');
           return;
         }
-        // Liste yeniden yüklenmeden satır güncellenir (sayfa ve kaydırma yerinde kalır).
-        const kaydedilen = res.value?.fotografBaglantisi ?? null;
-        this.projeler.update(liste => liste.map(p => p.id === proje.id ? { ...p, fotografBaglantisi: kaydedilen } : p));
+        // Liste yeniden yüklenmeden satır ve pencere güncellenir (sayfa ve kaydırma yerinde kalır).
+        const baglantilar = res.value ?? [];
+        this.projeler.update(liste => liste.map(p => p.id === proje.id ? { ...p, fotografBaglantilari: baglantilar } : p));
+        this.fotografProje.set({ ...proje, fotografBaglantilari: baglantilar });
+        this.fotografFormunuSifirla();
         this.toastService.success(basariMesaji);
-        this.fotografPenceresiniKapat();
       },
       error: () => {
         this.fotografKaydediliyor.set(false);
