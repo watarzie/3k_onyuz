@@ -15,6 +15,9 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
+import {
+  UrunBilgisiDuzenleComponent, urunBilgisiKaydedilebilir, urunBilgisiKilitNedeni,
+} from '../../../shared/components/urun-bilgisi-duzenle/urun-bilgisi-duzenle.component';
 import { GridUrunDto, GridDurumGuncelleDto, ProjeDropdownDto, CekiSatiriAnaVeriGuncelleDto, SahaTamamlamaIzDto } from '../../../shared/models/index';
 import { GridDurum, GridSevkDurum, ProjeTipi, SurecDurum, UcKDurum } from '../../../core/constants/enums';
 import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
@@ -55,7 +58,7 @@ const SEVK_DURUMLARI: DurumSecenegi[] = [
 @Component({
   selector: 'app-grid-urunler',
   standalone: true,
-  imports: [NgClass, DatePipe, FormsModule, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent, TzSeciciComponent],
+  imports: [NgClass, DatePipe, FormsModule, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent, TzSeciciComponent, UrunBilgisiDuzenleComponent],
   templateUrl: './grid-urunler.component.html',
   styleUrl: './grid-urunler.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -99,6 +102,8 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   panelSaving = signal(false);
   panelError = signal('');
   panelUyari = signal('');
+  /** Ürün bilgisi penceresi açık olan sandık satırı; Grid durum panelinden bağımsızdır. */
+  urunBilgisiSatiri = signal<GridUrunDto | null>(null);
 
   canEditCekiVerisi = computed(() => this.permissions.canWrite(YETKI.SANDIK.CEKI_VERISI_DUZENLE));
   canDeleteCekiVerisi = computed(() => this.permissions.canWrite(YETKI.SANDIK.CEKI_VERISI_SIL));
@@ -690,6 +695,40 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     this.showPanel.set(false);
     this.panelUrun.set(null);
     this.panelError.set('');
+  }
+
+  // ===== Ürün bilgisi (seri no, SKT, lot) =====
+  // 3K ekranıyla aynı alan ve aynı kural; Grid işlem kilitleri (3K işlemi yapılmış, Tadilatta, sahaya aktarılmış)
+  // ürün bilgisini kilitlemez. Kayıt sandık satırına aittir; bölünmüş üründe her sandık parçası ayrı bilgi taşır.
+  satirUrunBilgisiKaydedilebilir(u: GridUrunDto): boolean {
+    return urunBilgisiKaydedilebilir(u, this.canGridWrite);
+  }
+
+  satirUrunBilgisiKilitNedeni(u: GridUrunDto): string {
+    return urunBilgisiKilitNedeni(u, this.canGridWrite, this.ts);
+  }
+
+  urunBilgisiAc(u: GridUrunDto) {
+    if (!this.satirUrunBilgisiKaydedilebilir(u)) return;
+    this.urunBilgisiSatiri.set(u);
+  }
+
+  urunBilgisiKapat() {
+    this.urunBilgisiSatiri.set(null);
+  }
+
+  urunBilgisiKaydedildi(urunBilgisi: string | null) {
+    const satir = this.urunBilgisiSatiri();
+    this.urunBilgisiSatiri.set(null);
+    if (!satir?.sandikIcerikId) return;
+    this.urunler.update(list => list.map(x => x.sandikIcerikId === satir.sandikIcerikId ? { ...x, urunBilgisi } : x));
+    this.applyFilter();
+  }
+
+  /** Bilgi arada başka biri tarafından (Grid veya 3K) değiştirildi: güncel değer görünsün diye liste tazelenir. */
+  urunBilgisiCakisti() {
+    this.urunBilgisiSatiri.set(null);
+    this.loadUrunler(false);
   }
 
   onDurumChange(durum: string) {

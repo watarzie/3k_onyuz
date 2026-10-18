@@ -23,7 +23,7 @@ export interface UcKUrunDto {
   kaynakCekiSatiriId?: number;
   kaynakProjeNo?: string;
   kaynakSandikNo?: string;
-  /** Seçili sandık satırının kalıcı ürün bilgisi (seri no, SKT, lot); 3K karşılama panelinden düzenlenir. */
+  /** Seçili sandık satırının kalıcı ürün bilgisi (seri no, SKT, lot); Grid ve 3K ekranlarında aynı alandır. */
   urunBilgisi?: string | null;
   kaynakSiraNo?: number;
   sahaTamamlamalari: SahaTamamlamaIzDto[];

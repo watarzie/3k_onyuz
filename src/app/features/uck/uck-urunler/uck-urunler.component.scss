@@ -794,7 +794,7 @@ tbody tr.row-sevk-kilitli:hover > td {
   to { transform: rotate(360deg); }
 }
 
-/* Kalıcı ürün bilgisi (seri no, SKT, lot) salt okunur gösterilir; sandık ekranından düzenlenir. */
+/* Kalıcı ürün bilgisi (seri no, SKT, lot): Grid ekranındakiyle aynı görünüm; satırdaki etiket düğmesiyle veya 3K panelinden düzenlenir. */
 .urun-bilgisi-meta {
   display: flex;
   align-items: center;

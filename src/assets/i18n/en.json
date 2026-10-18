@@ -983,8 +983,10 @@
   },
   "LABELS": {
     "URUN_BILGISI": "Product info (serial no, expiry, lot)",
-    "URUN_BILGISI_IPUCU": "Permanent details such as serial number and expiry date. 3K operations and undo actions do not clear this field; it moves with the product between crates.",
+    "URUN_BILGISI_IPUCU": "Permanent details such as serial number and expiry date. The same info is shown on the Grid and 3K screens; Grid/3K operations and undo actions do not clear it, and it moves with the product between crates.",
     "URUN_BILGISI_ORNEK": "E.g. SN: A-1001, Exp: 03.2027, Lot: L-42",
+    "URUN_BILGISI_DUZENLE": "Edit product info",
+    "URUN_BILGISI_KAYDET": "Save product info",
     "ISLEM_ACIKLAMASI_IPUCU": "Operation note — use the Product info field below for serial no/expiry",
     "PROJE_NO": "Project No",
     "MUSTERI": "Customer",

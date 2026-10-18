@@ -4,6 +4,10 @@ import { SahaTamamlamaIzDto } from './saha-iz.model';
 export interface GridUrunDto {
   cekiSatiriId: number;
   sandikIcerikId?: number;
+  /** Satırın sandığı; ürün bilgisi bu sandık ve içerik üzerinden kaydedilir (3K listesiyle aynı). */
+  sandikId?: number | null;
+  /** Sandık satırının kalıcı ürün bilgisi (seri no, SKT, lot); 3K listesindekiyle aynı alandır. */
+  urunBilgisi?: string | null;
   /** Çeki satırındaki sandık dağılımından bağımsız toplam talep. */
   anaIstenenAdet?: number;
   /** İlk miktar düzenlemesinden önceki çeki miktarı; null ise kayıtlı miktar düzenlemesi yoktur. */

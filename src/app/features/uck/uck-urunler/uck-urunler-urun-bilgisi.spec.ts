@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { of } from 'rxjs';
+import { GridDurum } from '../../../core/constants/enums';
 import { ApiResult, UcKUrunDto } from '../../../shared/models/index';
 import { UcKUrunlerComponent } from './uck-urunler.component';
 
@@ -8,6 +9,7 @@ describe('3K karşılama panelinde ürün bilgisi (seri no, SKT, lot)', () => {
   let istekler: unknown[];
   let yanit: ApiResult<unknown>;
   let yazabilir: boolean;
+  let sunucuListesi: UcKUrunDto[];
   let toast: jasmine.SpyObj<{ success: (m: string) => void; error: (m: string) => void }>;
 
   const urun = (values: Partial<UcKUrunDto> = {}): UcKUrunDto => ({
@@ -29,6 +31,11 @@ describe('3K karşılama panelinde ürün bilgisi (seri no, SKT, lot)', () => {
     component.filtered = signal([]);
     component.filterTip = signal('');
     component.searchTerm = signal('');
+    component.loading = signal(false);
+    component.sandikId = signal<number | null>(null);
+    component.sandikNo = signal('');
+    component.urunBilgisiSatiri = signal<UcKUrunDto | null>(null);
+    sunucuListesi = [];
     Object.defineProperty(component, 'urunBilgisiEnFazla', { value: 1000 });
     Object.defineProperty(component, 'canUcKWrite', { get: () => yazabilir });
     toast = jasmine.createSpyObj('ToastService', ['success', 'error']);
@@ -38,6 +45,7 @@ describe('3K karşılama panelinde ürün bilgisi (seri no, SKT, lot)', () => {
     ozel['sandikService'] = {
       icerikBilgisiGuncelle: (dto: unknown) => { istekler.push(dto); return of(yanit); },
     };
+    ozel['uckService'] = { getUrunler: () => of({ isSuccess: true, value: sunucuListesi }) };
   });
 
   function paneliAc(u: UcKUrunDto) {
@@ -53,7 +61,9 @@ describe('3K karşılama panelinde ürün bilgisi (seri no, SKT, lot)', () => {
     expect(component.urunBilgisiDegisti()).toBeTrue();
     component.urunBilgisiKaydet();
 
-    expect(istekler).toEqual([{ projeId: 10, sandikId: 30, sandikIcerikId: 401, urunBilgisi: 'seri no: 257890, SKT: 03.2027' }]);
+    expect(istekler).toEqual([{
+      projeId: 10, sandikId: 30, sandikIcerikId: 401, urunBilgisi: 'seri no: 257890, SKT: 03.2027', oncekiUrunBilgisi: 'seri no: 257890',
+    }]);
     expect(component.urunler()[0].urunBilgisi).toBe('seri no: 257890, SKT: 03.2027');
     expect(component.urunler()[1].urunBilgisi).toBeNull();
     expect(component.filtered()[0].urunBilgisi).toBe('seri no: 257890, SKT: 03.2027');
@@ -68,7 +78,51 @@ describe('3K karşılama panelinde ürün bilgisi (seri no, SKT, lot)', () => {
 
     component.urunBilgisiKaydet();
 
-    expect(istekler).toEqual([{ projeId: 10, sandikId: 30, sandikIcerikId: 401, urunBilgisi: null }]);
+    expect(istekler).toEqual([{ projeId: 10, sandikId: 30, sandikIcerikId: 401, urunBilgisi: null, oncekiUrunBilgisi: 'seri no: 257890' }]);
+  });
+
+  it('başkası arada değiştirdiyse (409) listeyi tazeler, panel güncel değeri gösterir', () => {
+    yanit = { isSuccess: false, error: 'Ürün bilgisi siz düzenlerken değiştirildi.', statusCode: 409 };
+    sunucuListesi = [urun({ urunBilgisi: 'SN: Grid-77' }), urun({ cekiSatiriId: 68, sandikIcerikId: 402, urunBilgisi: null })];
+    paneliAc(component.urunler()[0]);
+    component.panelUrunBilgisi.set('SN-2');
+
+    component.urunBilgisiKaydet();
+
+    expect(toast.error).toHaveBeenCalledWith('Ürün bilgisi siz düzenlerken değiştirildi.');
+    expect(component.urunler()[0].urunBilgisi).toBe('SN: Grid-77');
+    expect(component.panelUrun()!.urunBilgisi).toBe('SN: Grid-77');
+    expect(component.panelUrunBilgisi()).toBe('SN: Grid-77');
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it('satır düğmesi 3K paneli kilitli satırlarda da açılır; kayıt yalnız o sandık satırını günceller', () => {
+    const iptal = urun({ gridDurumuId: GridDurum.Iptal, kaliteDurumMetni: 'Tadilatta', sahaTamamlamalari: [] });
+    expect(component.isEditDisabled(iptal)).toBeTrue();
+    expect(component.satirUrunBilgisiKaydedilebilir(iptal)).toBeTrue();
+    expect(component.satirUrunBilgisiKaydedilebilir(urun({ sandikSevkEdildiMi: true }))).toBeFalse();
+    yazabilir = false;
+    expect(component.satirUrunBilgisiKaydedilebilir(iptal)).toBeFalse();
+    component.urunBilgisiAc(iptal);
+    expect(component.urunBilgisiSatiri()).toBeNull();
+    yazabilir = true;
+
+    component.urunBilgisiAc(component.urunler()[1]);
+    component.urunBilgisiKaydedildi('SKT: 03.2027');
+
+    expect(component.urunBilgisiSatiri()).toBeNull();
+    expect(component.urunler()[0].urunBilgisi).toBe('seri no: 257890');
+    expect(component.urunler()[1].urunBilgisi).toBe('SKT: 03.2027');
+  });
+
+  it('satır penceresinde çakışma olursa pencere kapanır ve liste tazelenir', () => {
+    sunucuListesi = [urun({ urunBilgisi: 'SN: Grid-77' })];
+    component.urunBilgisiAc(component.urunler()[0]);
+
+    component.urunBilgisiCakisti();
+
+    expect(component.urunBilgisiSatiri()).toBeNull();
+    expect(component.urunler().map(u => u.urunBilgisi)).toEqual(['SN: Grid-77']);
   });
 
   it('sunucu reddinde listeyi değiştirmez ve hatayı gösterir', () => {

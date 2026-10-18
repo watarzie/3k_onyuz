@@ -323,6 +323,13 @@
                   <i class="ri-edit-line"></i>
                 </button>
                 }
+                <!-- Ürün bilgisi 3K işlem kilitlerinden bağımsızdır; Grid ekranındaki düğmeyle aynı kural. -->
+                <button type="button" class="btn btn-sm btn-action btn-urun-bilgisi"
+                  (click)="urunBilgisiAc(u); $event.stopPropagation()"
+                  [disabled]="!satirUrunBilgisiKaydedilebilir(u)"
+                  [title]="satirUrunBilgisiKilitNedeni(u) || ts.translate('LABELS.URUN_BILGISI_DUZENLE')">
+                  <i class="ri-price-tag-3-line"></i>
+                </button>
                 @if (u.isManuelEklenen && !isSahaManuelIcerik(u)) {
                 <button class="btn btn-sm btn-outline-danger" (click)="manuelUrunSil(u); $event.stopPropagation()" title="Manuel ürünü sil">
                   <i class="ri-delete-bin-line"></i>
@@ -833,6 +840,12 @@
     </div>
   </div>
 </div>
+}
+
+<!-- ===== Ürün Bilgisi (seri no, SKT, lot): Grid ekranındakiyle aynı pencere ===== -->
+@if (urunBilgisiSatiri(); as satir) {
+<app-urun-bilgisi-duzenle [satir]="satir" [projeId]="projeId()" [yazabilir]="canUcKWrite"
+  (kaydedildi)="urunBilgisiKaydedildi($event)" (kapat)="urunBilgisiKapat()" (cakisti)="urunBilgisiCakisti()" />
 }
 
 <!-- ===== Toplu Tam Geldi Onay Modalı ===== -->

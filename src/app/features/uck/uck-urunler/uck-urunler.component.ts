@@ -18,6 +18,9 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { CanWriteDirective } from '../../../shared/directives/can-write.directive';
 import { ReadOnlyBannerComponent } from '../../../shared/components/readonly-banner/readonly-banner.component';
+import {
+  URUN_BILGISI_EN_FAZLA, UrunBilgisiDuzenleComponent, urunBilgisiIstegi, urunBilgisiKaydedilebilir, urunBilgisiKilitNedeni,
+} from '../../../shared/components/urun-bilgisi-duzenle/urun-bilgisi-duzenle.component';
 import { UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, UcKTopluSecimDto, ProjeDropdownDto, ProjedenKarsilamaKaynakDto, StokKaydiDto, CekiSatiriAnaVeriGuncelleDto, SahaTamamlamaIzDto, onayaAlindi } from '../../../shared/models/index';
 import { UcKDurum, GridSevkDurum, GridDurum, ProjeTipi, StokDurum } from '../../../core/constants/enums';
 import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
@@ -41,7 +44,7 @@ const KARSILAMA_TIPLERI: KarsilamaTipi[] = [
 @Component({
   selector: 'app-uck-urunler',
   standalone: true,
-  imports: [NgClass, DatePipe, FormsModule, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent],
+  imports: [NgClass, DatePipe, FormsModule, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent, UrunBilgisiDuzenleComponent],
   templateUrl: './uck-urunler.component.html',
   styleUrl: './uck-urunler.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -88,7 +91,9 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   // Karşılama Kaydet'iyle birleştirilmez: işlenmiş satırda yalnız bilgi girmek yeni hareket üretmemeli.
   panelUrunBilgisi = signal('');
   urunBilgisiSaving = signal(false);
-  readonly urunBilgisiEnFazla = 1000;
+  readonly urunBilgisiEnFazla = URUN_BILGISI_EN_FAZLA;
+  /** Satırdaki ürün bilgisi düğmesinin penceresi; 3K paneli açılamayan satırlarda da kullanılır (Grid ile aynı). */
+  urunBilgisiSatiri = signal<UcKUrunDto | null>(null);
 
   canEditCekiVerisi = computed(() => this.permissions.canWrite(YETKI.SANDIK.CEKI_VERISI_DUZENLE));
   canDeleteCekiVerisi = computed(() => this.permissions.canWrite(YETKI.SANDIK.CEKI_VERISI_SIL));
@@ -328,7 +333,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadUrunler(showLoader = true, focusCekiSatiriId: number | null = null) {
+  loadUrunler(showLoader = true, focusCekiSatiriId: number | null = null, sonra?: (liste: UcKUrunDto[]) => void) {
     if (showLoader) {
       this.loading.set(true);
     }
@@ -344,6 +349,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
         this.urunler.set(all);
         this.applyFilter();
         this.restoreRowPosition(focusCekiSatiriId, scrollSnapshot);
+        sonra?.(all);
       }
     });
   }
@@ -637,17 +643,13 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     this.panelError.set('');
   }
 
-  /** Ürün bilgisi gerçek sandık tahsisi olan, sevk kilidi bulunmayan satırda kaydedilir; sunucu aynı kuralı uygular. */
+  /** Ürün bilgisi gerçek sandık tahsisi olan, sevk kilidi bulunmayan satırda kaydedilir; sunucu ve Grid aynı kuralı uygular. */
   urunBilgisiKaydedilebilir(): boolean {
-    const u = this.panelUrun();
-    return !!u && this.canUcKWrite && (u.sandikIcerikId ?? 0) > 0 && (u.sandikId ?? 0) > 0 && !u.sandikSevkEdildiMi;
+    return urunBilgisiKaydedilebilir(this.panelUrun(), this.canUcKWrite);
   }
 
   urunBilgisiKilitNedeni(): string {
-    const u = this.panelUrun();
-    if (!u || this.urunBilgisiKaydedilebilir()) return '';
-    if (u.sandikSevkEdildiMi) return this.ts.translate('MESSAGES.URUN_BILGISI_KILITLI');
-    return 'Bu ürünün sandık tahsisi bulunmadığı için ürün bilgisi kaydedilemez.';
+    return urunBilgisiKilitNedeni(this.panelUrun(), this.canUcKWrite, this.ts);
   }
 
   urunBilgisiDegisti(): boolean {
@@ -657,35 +659,76 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   urunBilgisiKaydet() {
     const u = this.panelUrun();
     if (!u || this.urunBilgisiSaving() || !this.urunBilgisiKaydedilebilir()) return;
-    const bilgi = this.panelUrunBilgisi().trim();
-    if (bilgi.length > this.urunBilgisiEnFazla) {
+    const istek = urunBilgisiIstegi(this.projeId(), u, this.panelUrunBilgisi());
+    if ((istek.urunBilgisi?.length ?? 0) > this.urunBilgisiEnFazla) {
       this.toast.error(this.ts.translate('MESSAGES.URUN_BILGISI_UZUN'));
       return;
     }
 
     this.urunBilgisiSaving.set(true);
-    this.sandikService.icerikBilgisiGuncelle({
-      projeId: this.projeId(),
-      sandikId: u.sandikId!,
-      sandikIcerikId: u.sandikIcerikId!,
-      urunBilgisi: bilgi || null,
-    }).subscribe(res => {
+    this.sandikService.icerikBilgisiGuncelle(istek).subscribe(res => {
       this.urunBilgisiSaving.set(false);
       if (!res.isSuccess) {
         this.toast.error(res.error ?? this.ts.translate('MESSAGES.URUN_BILGISI_KAYDEDILEMEDI'));
+        if (res.statusCode === 409) this.urunBilgisiniTazele(u.sandikIcerikId!);
         return;
       }
-      const urunBilgisi = bilgi || null;
-      const guncelle = (x: UcKUrunDto): UcKUrunDto => x.sandikIcerikId === u.sandikIcerikId ? { ...x, urunBilgisi } : x;
-      this.urunler.update(list => list.map(guncelle));
-      this.applyFilter();
-      const acik = this.panelUrun();
-      if (acik && acik.sandikIcerikId === u.sandikIcerikId) {
-        this.panelUrun.set(guncelle(acik));
-        this.panelUrunBilgisi.set(bilgi);
-      }
+      this.urunBilgisiniUygula(u.sandikIcerikId!, istek.urunBilgisi);
       this.toast.success(this.ts.translate('MESSAGES.URUN_BILGISI_KAYDEDILDI'));
     });
+  }
+
+  /** Kaydedilen bilgi yalnız bu sandık satırına aittir; bölünmüş üründe diğer sandık parçaları değişmez. */
+  private urunBilgisiniUygula(sandikIcerikId: number, urunBilgisi: string | null) {
+    const guncelle = (x: UcKUrunDto): UcKUrunDto => x.sandikIcerikId === sandikIcerikId ? { ...x, urunBilgisi } : x;
+    this.urunler.update(list => list.map(guncelle));
+    this.applyFilter();
+    const acik = this.panelUrun();
+    if (acik && acik.sandikIcerikId === sandikIcerikId) {
+      this.panelUrun.set(guncelle(acik));
+      this.panelUrunBilgisi.set(urunBilgisi ?? '');
+    }
+  }
+
+  /** Bilgi arada başka biri tarafından (Grid veya 3K) değiştirildi: liste tazelenir, açık panel güncel değeri gösterir. */
+  private urunBilgisiniTazele(sandikIcerikId: number) {
+    this.loadUrunler(false, null, liste => {
+      const taze = liste.find(x => x.sandikIcerikId === sandikIcerikId);
+      const acik = this.panelUrun();
+      if (!taze || !acik || acik.sandikIcerikId !== sandikIcerikId) return;
+      this.panelUrun.set({ ...acik, urunBilgisi: taze.urunBilgisi ?? null });
+      this.panelUrunBilgisi.set(taze.urunBilgisi ?? '');
+    });
+  }
+
+  // ===== Satırdaki ürün bilgisi düğmesi (Grid ekranındakiyle aynı) =====
+  // 3K paneli Grid İptal/Kapandı, Tadilatta veya tam trafo satırlarında açılmaz; ürün bilgisi bu kilitlere bağlı değildir.
+  satirUrunBilgisiKaydedilebilir(u: UcKUrunDto): boolean {
+    return urunBilgisiKaydedilebilir(u, this.canUcKWrite);
+  }
+
+  satirUrunBilgisiKilitNedeni(u: UcKUrunDto): string {
+    return urunBilgisiKilitNedeni(u, this.canUcKWrite, this.ts);
+  }
+
+  urunBilgisiAc(u: UcKUrunDto) {
+    if (!this.satirUrunBilgisiKaydedilebilir(u)) return;
+    this.urunBilgisiSatiri.set(u);
+  }
+
+  urunBilgisiKapat() {
+    this.urunBilgisiSatiri.set(null);
+  }
+
+  urunBilgisiKaydedildi(urunBilgisi: string | null) {
+    const satir = this.urunBilgisiSatiri();
+    this.urunBilgisiSatiri.set(null);
+    if (satir?.sandikIcerikId) this.urunBilgisiniUygula(satir.sandikIcerikId, urunBilgisi);
+  }
+
+  urunBilgisiCakisti() {
+    this.urunBilgisiSatiri.set(null);
+    this.loadUrunler(false);
   }
 
   onTipChange(tip: string) {

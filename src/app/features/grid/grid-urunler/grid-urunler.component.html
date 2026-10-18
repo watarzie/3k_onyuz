@@ -200,6 +200,9 @@
                   <span class="badge bg-secondary-subtle text-secondary" style="font-size:10px">Manuel</span>
                   }
                 </div>
+                @if (u.urunBilgisi) {
+                <small class="urun-bilgisi-meta" [title]="u.urunBilgisi"><i class="ri-price-tag-3-line"></i>{{ u.urunBilgisi }}</small>
+                }
                 <div class="saha-inline-meta">
                   @if (hasKaynakSahaIz(u)) {
                   <span class="saha-source-pill" [title]="getKaynakSahaLabel(u)">
@@ -384,6 +387,13 @@
                     <i class="ri-edit-line"></i>
                   </button>
                   }
+                  <!-- Ürün bilgisi Grid işlem kilitlerinden bağımsızdır; 3K ekranındaki düğmeyle aynı kural. -->
+                  <button type="button" class="btn btn-sm btn-action btn-urun-bilgisi"
+                    (click)="urunBilgisiAc(u); $event.stopPropagation()"
+                    [disabled]="!satirUrunBilgisiKaydedilebilir(u)"
+                    [title]="satirUrunBilgisiKilitNedeni(u) || ts.translate('LABELS.URUN_BILGISI_DUZENLE')">
+                    <i class="ri-price-tag-3-line"></i>
+                  </button>
                 }
               </div>
             </td>
@@ -568,6 +578,9 @@
         <span class="ozet-chip"><i class="ri-barcode-line"></i> {{ panelUrun()!.barkodNo }}</span>
         <span class="ozet-chip"><i class="ri-archive-line"></i> {{ panelUrun()!.sandikNo }}</span>
         <span class="ozet-chip"><i class="ri-stack-line"></i> Bu sandıkta: {{ formatMiktar(getSandikMiktari(panelUrun()!)) }} {{ panelUrun()!.birim }}</span>
+        @if (panelUrun()!.urunBilgisi) {
+        <span class="ozet-chip urun-bilgisi-chip" [title]="ts.translate('LABELS.URUN_BILGISI')"><i class="ri-price-tag-3-line"></i> {{ panelUrun()!.urunBilgisi }}</span>
+        }
         @if (hasAnaToplamFarki(panelUrun()!)) {
         <span class="ozet-chip"><i class="ri-file-list-3-line"></i> Ana toplam: {{ formatMiktar(getAnaIstenenAdet(panelUrun()!)) }} {{ panelUrun()!.birim }}</span>
         }
@@ -685,6 +698,12 @@
     </div>
   </div>
 </div>
+}
+
+<!-- ===== Ürün Bilgisi (seri no, SKT, lot): 3K ekranındakiyle aynı pencere ===== -->
+@if (urunBilgisiSatiri(); as satir) {
+<app-urun-bilgisi-duzenle [satir]="satir" [projeId]="projeId()" [yazabilir]="canGridWrite"
+  (kaydedildi)="urunBilgisiKaydedildi($event)" (kapat)="urunBilgisiKapat()" (cakisti)="urunBilgisiCakisti()" />
 }
 
 <!-- ===== Toplu Sevk Modal ===== -->

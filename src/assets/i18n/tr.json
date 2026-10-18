@@ -983,8 +983,10 @@
   },
   "LABELS": {
     "URUN_BILGISI": "Ürün bilgisi (seri no, SKT, lot)",
-    "URUN_BILGISI_IPUCU": "Seri numarası, son kullanma tarihi gibi kalıcı bilgiler. 3K işlemleri ve geri almalar bu alanı silmez; sandık taşımasında ürünle birlikte taşınır.",
+    "URUN_BILGISI_IPUCU": "Seri numarası, son kullanma tarihi gibi kalıcı bilgiler. Grid ve 3K ekranlarında aynı bilgidir; Grid/3K işlemleri ve geri almalar bu alanı silmez, sandık taşımasında ürünle birlikte taşınır.",
     "URUN_BILGISI_ORNEK": "Örn. SN: A-1001, SKT: 03.2027, Lot: L-42",
+    "URUN_BILGISI_DUZENLE": "Ürün bilgisini düzenle",
+    "URUN_BILGISI_KAYDET": "Ürün bilgisini kaydet",
     "ISLEM_ACIKLAMASI_IPUCU": "İşlem açıklaması — seri no/SKT için aşağıdaki Ürün bilgisi alanını kullanın",
     "PROJE_NO": "Proje No",
     "MUSTERI": "Müşteri",

@@ -1,0 +1,38 @@
+<div class="urun-bilgisi-overlay" (click)="kapat.emit()"></div>
+<div class="urun-bilgisi-modal" role="dialog" aria-modal="true" aria-labelledby="urunBilgisiBaslik">
+  <div class="urun-bilgisi-modal__header">
+    <h5 id="urunBilgisiBaslik" class="fw-semibold mb-0">
+      <i class="ri-price-tag-3-line me-2"></i>{{ ts.translate('LABELS.URUN_BILGISI_DUZENLE') }}
+    </h5>
+    <button type="button" class="btn btn-sm border-0" (click)="kapat.emit()" [title]="ts.translate('COMMON.CLOSE')">
+      <i class="ri-close-line fs-5"></i>
+    </button>
+  </div>
+  <div class="urun-bilgisi-modal__body">
+    <div class="urun-bilgisi-modal__urun mb-3">
+      <h6 class="fw-semibold mb-2">{{ satir().aciklama }}</h6>
+      <div class="d-flex gap-2 flex-wrap">
+        <span class="urun-bilgisi-modal__chip"><i class="ri-barcode-line"></i> {{ satir().barkodNo }}</span>
+        <span class="urun-bilgisi-modal__chip"><i class="ri-archive-line"></i> {{ satir().sandikNo }}</span>
+      </div>
+    </div>
+
+    <label class="form-label fw-semibold" for="urunBilgisiDeger">{{ ts.translate('LABELS.URUN_BILGISI') }}</label>
+    <small class="text-muted d-block mb-2">{{ ts.translate('LABELS.URUN_BILGISI_IPUCU') }}</small>
+    <textarea id="urunBilgisiDeger" class="form-control urun-bilgisi-modal__input" rows="3" [attr.maxlength]="enFazla"
+      [placeholder]="ts.translate('LABELS.URUN_BILGISI_ORNEK')" [ngModel]="deger()" (ngModelChange)="deger.set($event)"
+      [disabled]="!kaydedilebilir() || kaydediliyor()"></textarea>
+    <small class="text-muted d-block mt-1">{{ deger().length }} / {{ enFazla }}</small>
+    @if (kilitNedeni()) {
+    <small class="text-muted d-block mt-1 urun-bilgisi-modal__kilit"><i class="ri-lock-line me-1"></i>{{ kilitNedeni() }}</small>
+    }
+  </div>
+  <div class="urun-bilgisi-modal__footer d-flex gap-2">
+    <button type="button" class="btn btn-outline flex-grow-1" (click)="kapat.emit()">{{ ts.translate('COMMON.CANCEL') }}</button>
+    <button type="button" class="btn btn-save flex-grow-1 urun-bilgisi-kaydet" (click)="kaydet()"
+      [disabled]="!kaydedilebilir() || kaydediliyor() || !degisti()">
+      @if (kaydediliyor()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+      <i class="ri-save-line me-1"></i>{{ ts.translate('LABELS.URUN_BILGISI_KAYDET') }}
+    </button>
+  </div>
+</div>

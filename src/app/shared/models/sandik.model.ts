@@ -86,12 +86,14 @@ export interface SandikIcerikDto {
   urunBilgisi?: string | null;
 }
 
-/** Sandık satırının kalıcı ürün bilgisini günceller; boş değer bilgiyi siler. */
+/** Sandık satırının kalıcı ürün bilgisini günceller; boş değer bilgiyi siler. Grid ve 3K aynı ucu kullanır. */
 export interface SandikIcerikBilgisiGuncelleDto {
   projeId: number;
   sandikId: number;
   sandikIcerikId: number;
   urunBilgisi: string | null;
+  /** Düzenlemeye başlanırken ekranda görülen değer; başkası arada değiştirdiyse sunucu 409 döner. */
+  oncekiUrunBilgisi: string | null;
 }
 
 export interface SandikEkleDto {
