@@ -139,6 +139,7 @@ describe('Toplu sevk penceresi (tır seferi, C-08)', () => {
 
     sevkiyatApi.topluSevk.and.returnValue(of({ isSuccess: true, value: { seferId: 5, seferNo: '2026-000005', projeSayisi: 1, sandikSayisi: 2 } }));
     c.gonder();
-    expect(sevkEdildi).toHaveBeenCalledOnceWith(jasmine.objectContaining({ seferNo: '2026-000005' }));
+    // Liste, sefere giren projeleri seçimden çıkarır; sefere girmeyen seçili projeler seçimde kalır.
+    expect(sevkEdildi).toHaveBeenCalledOnceWith(jasmine.objectContaining({ seferNo: '2026-000005', sevkEdilenProjeIds: [1] }));
   });
 });

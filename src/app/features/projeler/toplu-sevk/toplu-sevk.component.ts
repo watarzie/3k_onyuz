@@ -33,6 +33,11 @@ export interface TopluSevkProjeSatiri {
   digerSandikSayisi: number;
 }
 
+/** Başarılı toplu sevk: sunucu sonucu ve sefere giren projeler (liste, kalan seçimi bunlarla ayırır). */
+export interface TopluSevkTamamlandi extends TopluSevkSonucu {
+  sevkEdilenProjeIds: number[];
+}
+
 /**
  * Çok projeli toplu sevk (tır seferi): seçilen projelerin sevke hazır sandıkları tek seferde, hepsi ya da hiçbiri
  * sevk edilir. Sunucu bütün projeleri tekil sevkle aynı kurallarla doğrular; bir projede engel varsa hiçbir proje
@@ -55,7 +60,7 @@ export class TopluSevkComponent implements OnInit {
 
   readonly projeler = input.required<readonly ProjeDto[]>();
   readonly kapandi = output<void>();
-  readonly sevkEdildi = output<TopluSevkSonucu>();
+  readonly sevkEdildi = output<TopluSevkTamamlandi>();
 
   protected readonly plakaEnFazla = ARAC_PLAKA_EN_FAZLA;
   protected readonly soforEnFazla = SOFOR_EN_FAZLA;
@@ -231,7 +236,7 @@ export class TopluSevkComponent implements OnInit {
       next: sonuc => {
         if (sonuc.isSuccess && sonuc.value && !onayaAlindi(sonuc)) {
           this.sorunlar.set([]);
-          this.sevkEdildi.emit(sonuc.value);
+          this.sevkEdildi.emit({ ...sonuc.value, sevkEdilenProjeIds: payload.projeler.map(p => p.projeId) });
           return;
         }
         const sorunlar = Array.isArray(sonuc.issues)

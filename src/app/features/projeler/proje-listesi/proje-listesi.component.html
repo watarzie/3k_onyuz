@@ -127,7 +127,7 @@
     <div class="project-list-header-actions">
       @if (canUseBulkSecim()) {
         <div class="toolbar-group" role="group" aria-label="Seçili projeler için toplu işlemler" [class.has-selection]="selectedEksikRaporCount() > 0">
-          <span class="toolbar-group-label" title="Toplu işlemler seçili projelere uygulanır">
+          <span class="toolbar-group-label" title="Toplu işlemler bütün sayfalardaki seçili projelere uygulanır">
             <span class="toolbar-count">{{ selectedEksikRaporCount() }}</span>seçili
           </span>
           @if (canUseBulkEksikRapor()) {
@@ -200,6 +200,43 @@
       </label>
     </div>
   </div>
+
+  @if (canUseBulkSecim() && selectedEksikRaporCount() > 0) {
+    <!-- Seçim şeridi: sayfa, arama ve filtreden bağımsız bütün seçim; görünmeyen seçili projeler de buradan çıkarılır. -->
+    <div class="pl-secim" role="region" aria-label="Toplu işlem için seçili projeler">
+      <div class="pl-secim__ozet">
+        <i class="ri-checkbox-multiple-line" aria-hidden="true"></i>
+        <span><b>{{ selectedEksikRaporCount() }}</b> proje seçili</span>
+        @if (gorunmeyenSeciliSayisi() > 0) {
+          <span class="pl-secim__not">{{ gorunmeyenSeciliSayisi() }} tanesi bu sayfada değil</span>
+        }
+      </div>
+      <ul class="pl-secim__liste">
+        @for (p of seciliProjeListesi(); track p.id) {
+          @let sevkEdilmedi = sevkEdilmeyenProjeIds().has(p.id);
+          @let gizli = !gorunenProjeIds().has(p.id);
+          <li class="pl-secim__oge" [class.is-uyari]="sevkEdilmedi" [class.is-gizli]="gizli"
+            [title]="sevkEdilmedi ? 'Son toplu sevkte sevk edilmedi; seçimde bırakıldı.' : gizli ? 'Bu sayfada değil' : ''">
+            @if (sevkEdilmedi) {
+              <i class="ri-error-warning-line" aria-hidden="true"></i>
+            }
+            <span>{{ p.projeNo }}</span>
+            <button type="button" class="pl-secim__kaldir"
+              [disabled]="bulkEksikRaporDownloading() !== null"
+              [attr.aria-label]="p.projeNo + ' projesini seçimden çıkar'"
+              (click)="seciliProjeyiKaldir(p.id)">
+              <i class="ri-close-line" aria-hidden="true"></i>
+            </button>
+          </li>
+        }
+      </ul>
+      <button type="button" class="pl-secim__temizle"
+        [disabled]="bulkEksikRaporDownloading() !== null"
+        (click)="seciminiTemizle()">
+        <i class="ri-close-circle-line" aria-hidden="true"></i>Seçimi temizle
+      </button>
+    </div>
+  }
 
   <div class="card-body p-0">
     @if (loading()) {
@@ -305,7 +342,7 @@
                       [disabled]="bulkEksikRaporDownloading() !== null"
                       [attr.aria-label]="p.projeNo + ' projesini toplu işlem için seç'"
                       (click)="$event.stopPropagation()"
-                      (change)="toggleEksikRaporProjeSelection(p.id)" />
+                      (change)="toggleEksikRaporProjeSelection(p)" />
                   </td>
                 }
                 <td class="pl-proje">

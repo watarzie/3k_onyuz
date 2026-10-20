@@ -15,7 +15,7 @@ import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/bread
 import { IslemlerMenusuComponent } from '../../../shared/components/islemler-menusu/islemler-menusu.component';
 import { CekiRevizyonOnizlemeComponent } from '../../../shared/components/ceki-revizyon-onizleme/ceki-revizyon-onizleme.component';
 import { CekiRevizyonGecmisiComponent } from '../../../shared/components/ceki-revizyon-gecmisi/ceki-revizyon-gecmisi.component';
-import { TopluSevkComponent } from '../toplu-sevk/toplu-sevk.component';
+import { TopluSevkComponent, TopluSevkTamamlandi } from '../toplu-sevk/toplu-sevk.component';
 import {
   ApiResult,
   CekiRevizyonOnizlemeSonuc,
@@ -28,7 +28,6 @@ import {
   SandikDto,
   SevkiyatDto,
   TOPLU_SEVK_EN_FAZLA_PROJE,
-  TopluSevkSonucu,
   onayaAlindi,
   sandikSevkAdayiMi,
   sandikSevkEdildiMi,
@@ -117,7 +116,14 @@ export class ProjeListesiComponent implements OnInit {
   bulkEksikRaporDownloading = signal<'pdf' | 'excel' | null>(null);
   /** G4: seçili projelerin talep formu Excel'i indiriliyor. */
   topluTalepFormuIndiriliyor = signal(false);
-  selectedEksikRaporProjeIds = signal<Set<number>>(new Set());
+  /**
+   * Toplu işlem seçimi (eksik raporu, talep formu, toplu sevk): proje Id → seçim anındaki satır. Sayfa, arama ve tip
+   * filtresi değişince korunur; toplu işlemler görünen sayfadan bağımsız olarak bütün seçimi gönderir. Seçili proje
+   * yeniden listelenince satırı güncel haliyle yenilenir; sunucu her projeyi ayrıca doğrular.
+   */
+  seciliProjeler = signal<ReadonlyMap<number, ProjeDto>>(new Map());
+  /** Son toplu sevkte sefere girmeyip seçimde bırakılan projeler; seçim şeridinde uyarıyla gösterilir. */
+  sevkEdilmeyenProjeIds = signal<ReadonlySet<number>>(new Set());
   revizyonGecmisiProje = signal<ProjeDto | null>(null);
 
   /**
@@ -217,14 +223,21 @@ export class ProjeListesiComponent implements OnInit {
 
   projeler = signal<ProjeDto[]>([]);
   loading = signal(true);
-  selectedEksikRaporCount = computed(() => this.selectedEksikRaporProjeIds().size);
+  selectedEksikRaporCount = computed(() => this.seciliProjeler().size);
+  seciliProjeListesi = computed(() => Array.from(this.seciliProjeler().values()));
+  gorunenProjeIds = computed(() => new Set(this.projeler().map(proje => proje.id)));
+  /** Seçili olup görünen sayfada bulunmayan (başka sayfa, arama veya filtrede kalan) proje sayısı. */
+  gorunmeyenSeciliSayisi = computed(() => {
+    const gorunen = this.gorunenProjeIds();
+    return this.seciliProjeListesi().filter(proje => !gorunen.has(proje.id)).length;
+  });
   allCurrentPageSelectedForEksikRapor = computed(() => {
     const projeler = this.projeler();
-    const selected = this.selectedEksikRaporProjeIds();
+    const selected = this.seciliProjeler();
     return projeler.length > 0 && projeler.length <= 25 && projeler.every(proje => selected.has(proje.id));
   });
   someCurrentPageSelectedForEksikRapor = computed(() => {
-    const selected = this.selectedEksikRaporProjeIds();
+    const selected = this.seciliProjeler();
     return !this.allCurrentPageSelectedForEksikRapor() && this.projeler().some(proje => selected.has(proje.id));
   });
 
@@ -420,7 +433,7 @@ export class ProjeListesiComponent implements OnInit {
 
   loadProjeler() {
     const istekSurumu = ++this.projeListeIstekSurumu;
-    this.clearBulkEksikRaporSelection();
+    // Toplu işlem seçimi sayfa, arama ve filtre değişiminde korunur; yalnız işlem veya kullanıcı temizler.
     this.loading.set(true);
 
     // Mode'a gore parametreleri belirle
@@ -456,6 +469,7 @@ export class ProjeListesiComponent implements OnInit {
       this.loading.set(false);
       if (res.isSuccess && res.value) {
         this.projeler.set(res.value.items);
+        this.seciliProjeleriYenile(res.value.items);
         this.totalCount.set(res.value.totalCount);
         this.totalPages.set(res.value.totalPages);
       } else {
@@ -468,7 +482,6 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   onSearch(event: Event) {
-    this.clearBulkEksikRaporSelection();
     const term = (event.target as HTMLInputElement).value;
     this.searchSubject.next(term);
   }
@@ -649,29 +662,27 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   isEksikRaporProjeSelected(projeId: number): boolean {
-    return this.selectedEksikRaporProjeIds().has(projeId);
+    return this.seciliProjeler().has(projeId);
   }
 
-  toggleEksikRaporProjeSelection(projeId: number) {
+  toggleEksikRaporProjeSelection(proje: ProjeDto) {
     if (!this.canUseBulkSecim() || this.bulkEksikRaporDownloading() !== null) return;
 
-    const next = new Set(this.selectedEksikRaporProjeIds());
-    if (next.has(projeId)) {
-      next.delete(projeId);
+    const next = new Map(this.seciliProjeler());
+    if (next.has(proje.id)) {
+      next.delete(proje.id);
     } else {
       if (next.size >= TOPLU_SEVK_EN_FAZLA_PROJE) {
         this.toastService.warning(`Toplu işlemler için en fazla ${TOPLU_SEVK_EN_FAZLA_PROJE} proje seçebilirsiniz.`);
         return;
       }
-      next.add(projeId);
+      next.set(proje.id, proje);
     }
 
-    this.selectedEksikRaporProjeIds.set(next);
-    if (next.size === 0) {
-      this.bulkEksikRaporMenuPosition.set(null);
-    }
+    this.seciliProjeleriAyarla(next);
   }
 
+  /** Başlık kutusu yalnız görünen sayfayı seçer veya bırakır; başka sayfalardaki seçim korunur. */
   toggleAllEksikRaporProjects() {
     if (!this.canUseBulkSecim() || this.bulkEksikRaporDownloading() !== null) return;
 
@@ -681,18 +692,60 @@ export class ProjeListesiComponent implements OnInit {
       return;
     }
 
+    const next = new Map(this.seciliProjeler());
     if (this.allCurrentPageSelectedForEksikRapor()) {
-      this.selectedEksikRaporProjeIds.set(new Set());
+      for (const proje of projeler) next.delete(proje.id);
     } else {
-      this.selectedEksikRaporProjeIds.set(new Set(projeler.map(proje => proje.id)));
+      const eklenecekler = projeler.filter(proje => !next.has(proje.id));
+      if (next.size + eklenecekler.length > TOPLU_SEVK_EN_FAZLA_PROJE) {
+        this.toastService.warning(
+          `Toplu işlemler için en fazla ${TOPLU_SEVK_EN_FAZLA_PROJE} proje seçebilirsiniz. ` +
+          `${next.size} proje seçili; bu sayfadaki ${eklenecekler.length} proje eklenince sınır aşılıyor.`);
+        return;
+      }
+      for (const proje of eklenecekler) next.set(proje.id, proje);
     }
+    this.seciliProjeleriAyarla(next);
     this.bulkEksikRaporMenuPosition.set(null);
+  }
+
+  seciliProjeyiKaldir(projeId: number) {
+    if (!this.seciliProjeler().has(projeId)) return;
+    const next = new Map(this.seciliProjeler());
+    next.delete(projeId);
+    this.seciliProjeleriAyarla(next);
+  }
+
+  seciminiTemizle() {
+    if (this.bulkEksikRaporDownloading() !== null) return;
+    this.seciliProjeleriAyarla(new Map());
+  }
+
+  private seciliProjeleriAyarla(next: ReadonlyMap<number, ProjeDto>) {
+    this.seciliProjeler.set(next);
+    const sevkEdilmeyenler = this.sevkEdilmeyenProjeIds();
+    if ([...sevkEdilmeyenler].some(id => !next.has(id))) {
+      this.sevkEdilmeyenProjeIds.set(new Set([...sevkEdilmeyenler].filter(id => next.has(id))));
+    }
+    if (next.size === 0) {
+      this.bulkEksikRaporMenuPosition.set(null);
+    }
+  }
+
+  /** Yeni gelen sayfadaki seçili projelerin saklanan satırlarını güncel haliyle yeniler; seçim değişmez. */
+  private seciliProjeleriYenile(projeler: readonly ProjeDto[]) {
+    const secili = this.seciliProjeler();
+    const guncel = projeler.filter(proje => secili.has(proje.id));
+    if (guncel.length === 0) return;
+    const next = new Map(secili);
+    for (const proje of guncel) next.set(proje.id, proje);
+    this.seciliProjeler.set(next);
   }
 
   indirTopluEksikRapor(format: 'pdf' | 'excel') {
     if (!this.canUseBulkEksikRapor() || this.bulkEksikRaporDownloading() !== null) return;
 
-    const projeIds = Array.from(this.selectedEksikRaporProjeIds());
+    const projeIds = Array.from(this.seciliProjeler().keys());
     if (projeIds.length === 0) {
       this.toastService.warning('Rapor için en az bir proje seçmelisiniz.');
       return;
@@ -724,7 +777,7 @@ export class ProjeListesiComponent implements OnInit {
   /** G4 / G-110: seçili projelerde Grid eksiği olup 3K kalanı süren ürünler tek sayfalık talep formu Excel'i olarak indirilir. */
   indirTopluTalepFormu() {
     if (!this.canUseBulkTalepFormu() || this.topluTalepFormuIndiriliyor()) return;
-    const projeIds = Array.from(this.selectedEksikRaporProjeIds());
+    const projeIds = Array.from(this.seciliProjeler().keys());
     if (projeIds.length === 0) {
       this.toastService.warning('Talep formu için en az bir proje seçmelisiniz.');
       return;
@@ -745,13 +798,15 @@ export class ProjeListesiComponent implements OnInit {
 
   // ===== Toplu Sevk (tır seferi) =====
 
-  /** Pencereye giden seçili projeler; seçim yalnız bu sayfanın projelerini kapsar (liste yenilenince temizlenir). */
+  /**
+   * Pencereye giden seçili projeler: bütün sayfalardaki seçim. Görünen sayfada olmayanlar seçim anındaki satırlarıyla
+   * gider; pencere sandıkları güncel olarak yükler, sevk edilemeyeni nedeniyle dışarıda gösterir, sunucu ayrıca doğrular.
+   */
   topluSevkProjeleri = signal<ProjeDto[] | null>(null);
 
   openTopluSevk() {
     if (!this.canUseTopluSevk()) return;
-    const secili = this.selectedEksikRaporProjeIds();
-    const projeler = this.projeler().filter(p => secili.has(p.id));
+    const projeler = this.seciliProjeListesi();
     if (projeler.length === 0) {
       this.toastService.warning('Toplu sevk için en az bir proje seçmelisiniz.');
       return;
@@ -764,16 +819,20 @@ export class ProjeListesiComponent implements OnInit {
     this.topluSevkProjeleri.set(null);
   }
 
-  onTopluSevkEdildi(sonuc: TopluSevkSonucu) {
+  /** Sevk edilen projeler seçimden çıkar; sefere girmeyen seçili projeler seçimde kalır ve açıkça bildirilir. */
+  onTopluSevkEdildi(sonuc: TopluSevkTamamlandi) {
     this.topluSevkProjeleri.set(null);
+    const sevkEdilenler = new Set(sonuc.sevkEdilenProjeIds);
+    const kalanlar = new Map([...this.seciliProjeler()].filter(([projeId]) => !sevkEdilenler.has(projeId)));
+    this.seciliProjeleriAyarla(kalanlar);
+    this.sevkEdilmeyenProjeIds.set(new Set(kalanlar.keys()));
     this.toastService.success(
       `Sefer ${sonuc.seferNo}: ${sonuc.projeSayisi} projenin ${sonuc.sandikSayisi} sandığı sevk edildi.`);
+    if (kalanlar.size > 0) {
+      const projeNolari = [...kalanlar.values()].map(proje => proje.projeNo).join(', ');
+      this.toastService.warning(`Sefere girmeyen ${kalanlar.size} proje sevk edilmedi ve seçimde bırakıldı: ${projeNolari}.`);
+    }
     this.loadProjeler();
-  }
-
-  private clearBulkEksikRaporSelection() {
-    this.selectedEksikRaporProjeIds.set(new Set());
-    this.bulkEksikRaporMenuPosition.set(null);
   }
 
   private downloadBlobFile(blob: Blob, fileName: string) {
@@ -1799,6 +1858,7 @@ export class ProjeListesiComponent implements OnInit {
         next: (res) => {
           if (res.isSuccess) {
             this.toastService.success(`${proje.projeNo} projesi ve tüm verileri başarıyla silindi.`);
+            this.seciliProjeyiKaldir(proje.id);
             this.loadProjeler();
           } else {
             this.toastService.error(res.error || 'Proje silinemedi.');

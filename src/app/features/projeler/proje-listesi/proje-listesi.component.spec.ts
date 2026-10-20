@@ -1,4 +1,5 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { ProjeTipi } from '../../../core/constants/enums';
@@ -8,8 +9,10 @@ import { PdfService } from '../../../core/services/pdf.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { ProjeService } from '../../../core/services/proje.service';
 import { SandikService } from '../../../core/services/sandik.service';
+import { SevkiyatService } from '../../../core/services/sevkiyat.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { ProjeDto } from '../../../shared/models';
+import { ProjeDto, SandikDto } from '../../../shared/models';
+import { TopluSevkComponent } from '../toplu-sevk/toplu-sevk.component';
 import { ProjeListesiComponent } from './proje-listesi.component';
 import {
   fotografAciklamasiGecerli,
@@ -35,24 +38,37 @@ describe('Proje listesi: sevk edilen saha/yedek görünürlüğü (G1) ve toplu 
   const saha = proje(2, ProjeTipi.Saha);
   const yedek = proje(3, ProjeTipi.Yedek);
   let listeOgeleri: ProjeDto[] = [saha, yedek];
+  /** Verilirse liste bu boyla sayfalanır; arama proje numarasında eşleşenleri döndürür (sunucu davranışının taklidi). */
+  let sayfaBoyu: number | null = null;
+  let sandikApi: jasmine.SpyObj<SandikService>;
+  let sevkiyatApi: jasmine.SpyObj<SevkiyatService>;
   let confirm: jasmine.SpyObj<ConfirmService>;
 
   function setup(data: Record<string, unknown>) {
     projeApi = jasmine.createSpyObj<ProjeService>('ProjeService', ['getProjeListesi', 'fotografBaglantisiEkle', 'fotografBaglantisiGuncelle', 'fotografBaglantisiSil']);
-    projeApi.getProjeListesi.and.returnValue(of({ isSuccess: true, value: {
-      items: listeOgeleri, pageNumber: 1, pageSize: 15, totalCount: listeOgeleri.length, totalPages: 1,
-      hasPreviousPage: false, hasNextPage: false,
-    } }));
-    pdf = jasmine.createSpyObj<PdfService>('PdfService', ['topluTalepFormuExcel', 'downloadErrorMessage']);
+    projeApi.getProjeListesi.and.callFake((sayfa = 1, _boyut?: number, _tip?: number, arama?: string) => {
+      const eslesen = arama ? listeOgeleri.filter(p => p.projeNo.includes(arama)) : listeOgeleri;
+      const boy = sayfaBoyu ?? Math.max(eslesen.length, 1);
+      const toplamSayfa = Math.ceil(eslesen.length / boy);
+      return of({ isSuccess: true, value: {
+        items: eslesen.slice((sayfa - 1) * boy, sayfa * boy), pageNumber: sayfa, pageSize: boy,
+        totalCount: eslesen.length, totalPages: toplamSayfa, hasPreviousPage: sayfa > 1, hasNextPage: sayfa < toplamSayfa,
+      } });
+    });
+    pdf = jasmine.createSpyObj<PdfService>('PdfService', ['topluTalepFormuExcel', 'topluEksikUrunlerPdf', 'downloadErrorMessage']);
     pdf.topluTalepFormuExcel.and.returnValue(of(new Blob(['x'])));
+    pdf.topluEksikUrunlerPdf.and.returnValue(of(new Blob(['x'])));
     toast = jasmine.createSpyObj<ToastService>('ToastService', ['success', 'error', 'warning', 'info']);
+    sandikApi = jasmine.createSpyObj<SandikService>('SandikService', ['getSandiklar']);
+    sevkiyatApi = jasmine.createSpyObj<SevkiyatService>('SevkiyatService', ['topluSevk']);
     TestBed.configureTestingModule({
       imports: [ProjeListesiComponent],
       providers: [
         provideRouter([]),
         { provide: ActivatedRoute, useValue: { snapshot: { data } } },
         { provide: ProjeService, useValue: projeApi },
-        { provide: SandikService, useValue: {} },
+        { provide: SandikService, useValue: sandikApi },
+        { provide: SevkiyatService, useValue: sevkiyatApi },
         { provide: PdfService, useValue: pdf },
         { provide: ToastService, useValue: toast },
         { provide: ConfirmService, useValue: confirm },
@@ -72,7 +88,8 @@ describe('Proje listesi: sevk edilen saha/yedek görünürlüğü (G1) ve toplu 
     okuma.clear();
     yazma.clear();
     listeOgeleri = [saha, yedek];
-    confirm = jasmine.createSpyObj<ConfirmService>('ConfirmService', ['ask']);
+    sayfaBoyu = null;
+    confirm =jasmine.createSpyObj<ConfirmService>('ConfirmService', ['ask']);
   });
 
   for (const [ad, data, tip] of [
@@ -116,15 +133,160 @@ describe('Proje listesi: sevk edilen saha/yedek görünürlüğü (G1) ve toplu 
     c.openTopluSevk();
     expect(c.topluSevkProjeleri()).toBeNull();
     expect(toast.warning).toHaveBeenCalled();
-    c.toggleEksikRaporProjeSelection(yedek.id);
+    c.toggleEksikRaporProjeSelection(yedek);
     c.openTopluSevk();
     expect(c.topluSevkProjeleri()).toEqual([yedek]);
 
-    c.onTopluSevkEdildi({ seferId: 1, seferNo: '2026-000001', projeSayisi: 1, sandikSayisi: 2 });
+    c.onTopluSevkEdildi({ seferId: 1, seferNo: '2026-000001', projeSayisi: 1, sandikSayisi: 2, sevkEdilenProjeIds: [yedek.id] });
     expect(c.topluSevkProjeleri()).toBeNull();
     expect(toast.success).toHaveBeenCalledWith('Sefer 2026-000001: 1 projenin 2 sandığı sevk edildi.');
+    expect(toast.warning).toHaveBeenCalledTimes(1);
     expect(projeApi.getProjeListesi).toHaveBeenCalledTimes(2);
     expect(c.selectedEksikRaporCount()).toBe(0);
+  });
+
+  describe('toplu işlem seçimi sayfa, arama ve filtreden bağımsızdır', () => {
+    const normal = (id: number) => proje(id, ProjeTipi.Normal);
+    const aktifProjeler = { menuKod: YETKI.PROJE.AKTIF_PROJELER };
+    const seciliIdler = (c: ProjeListesiComponent) => [...c.seciliProjeler().keys()];
+    const aramaYap = (c: ProjeListesiComponent, deger: string) => {
+      c.onSearch({ target: { value: deger } } as unknown as Event);
+      tick(400);
+    };
+
+    beforeEach(() => {
+      // Sayfa 1: P-1..P-3, sayfa 2: P-4, P-5; P-9 yalnız aramayla ikinci sayfadan bulunur.
+      listeOgeleri = [1, 2, 3, 4, 5, 9].map(normal);
+      sayfaBoyu = 3;
+      yazma.add(YETKI.PROJE.SEVK_ET);
+    });
+
+    it('sayfa değişimi, arama, aramayı temizleme ve tip filtresi seçimi sıfırlamaz; sayaç bütün seçimi gösterir', fakeAsync(() => {
+      const { c, fixture } = setup(aktifProjeler);
+      const el = fixture.nativeElement as HTMLElement;
+      c.toggleEksikRaporProjeSelection(c.projeler()[0]);
+
+      c.goToPage(2);
+      expect(c.projeler().map(p => p.id)).toEqual([4, 5, 9]);
+      c.toggleEksikRaporProjeSelection(c.projeler()[0]);
+      expect(seciliIdler(c)).toEqual([1, 4]);
+      expect(c.gorunmeyenSeciliSayisi()).toBe(1);
+
+      aramaYap(c, 'P-9');
+      expect(c.projeler().map(p => p.id)).toEqual([9]);
+      c.toggleEksikRaporProjeSelection(c.projeler()[0]);
+      aramaYap(c, '');
+      expect(c.currentPage()).toBe(1);
+      c.setProjeTipiFilter(ProjeTipi.Saha);
+      c.setProjeTipiFilter(null);
+      c.onPageSizeChange(25);
+
+      expect(seciliIdler(c)).toEqual([1, 4, 9]);
+      fixture.detectChanges();
+      expect(el.querySelector('.toolbar-count')?.textContent?.trim()).toBe('3');
+      expect(Array.from(el.querySelectorAll('.pl-secim__oge')).map(o => o.textContent?.trim())).toEqual(['P-1', 'P-4', 'P-9']);
+      expect(el.querySelector('.pl-secim__not')?.textContent).toContain('2 tanesi bu sayfada değil');
+      // Görünen ilk sayfada (P-1..P-3) satır kutusu yalnız P-1'de işaretlidir.
+      const isaretliler = Array.from(el.querySelectorAll<HTMLInputElement>('tbody .bulk-report-select-column input'))
+        .map(kutu => kutu.checked);
+      expect(isaretliler).toEqual([true, false, false]);
+    }));
+
+    it('başlıktaki "tümünü seç" yalnız görünen sayfayı seçer ve bırakır; sınır aşılırsa seçimi değiştirmez', () => {
+      const { c } = setup(aktifProjeler);
+      c.goToPage(2);
+      c.toggleEksikRaporProjeSelection(c.projeler()[1]);
+      c.goToPage(1);
+
+      c.toggleAllEksikRaporProjects();
+      expect(seciliIdler(c)).toEqual([5, 1, 2, 3]);
+      expect(c.allCurrentPageSelectedForEksikRapor()).toBeTrue();
+      c.toggleAllEksikRaporProjects();
+      expect(seciliIdler(c)).toEqual([5]);
+
+      const dolu = new Map(Array.from({ length: 23 }, (_, i) => [100 + i, normal(100 + i)] as const));
+      c.seciliProjeler.set(dolu);
+      c.toggleAllEksikRaporProjects();
+      expect(c.selectedEksikRaporCount()).toBe(23);
+      expect(toast.warning).toHaveBeenCalledWith(jasmine.stringContaining('sınır aşılıyor'));
+    });
+
+    it('seçim şeridinden tek proje çıkarılır ve seçim temizlenir', () => {
+      const { c, fixture } = setup(aktifProjeler);
+      const el = fixture.nativeElement as HTMLElement;
+      c.toggleAllEksikRaporProjects();
+      c.goToPage(2);
+      fixture.detectChanges();
+      expect(el.querySelectorAll('.pl-secim__oge.is-gizli').length).toBe(3);
+
+      (el.querySelector('.pl-secim__kaldir') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(seciliIdler(c)).toEqual([2, 3]);
+
+      (el.querySelector('.pl-secim__temizle') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(c.selectedEksikRaporCount()).toBe(0);
+      expect(el.querySelector('.pl-secim')).toBeNull();
+    });
+
+    it('toplu sevk farklı sayfalardaki bütün seçili projeleri gönderir; sevk edilenler seçimden çıkar, sefere girmeyen bildirilir', () => {
+      const sandik = (id: number) =>
+        ({ id, sandikNo: String(id), ad: `Sandık ${id}`, durumId: 3, durumMetni: 'Kapalı', urunSayisi: 1 }) as SandikDto;
+      const { c, fixture } = setup(aktifProjeler);
+      // P-5'te sevke hazır sandık yok; pencerede dışarıda kalır.
+      sandikApi.getSandiklar.and.callFake((id: number) => of({ isSuccess: true, value: id === 5 ? [] : [sandik(id * 100 + 1)] }));
+      sevkiyatApi.topluSevk.and.returnValue(of({ isSuccess: true, value: { seferId: 7, seferNo: '2026-000007', projeSayisi: 2, sandikSayisi: 2 } }));
+
+      c.toggleEksikRaporProjeSelection(c.projeler()[0]);
+      c.goToPage(2);
+      c.toggleEksikRaporProjeSelection(c.projeler()[0]);
+      c.toggleEksikRaporProjeSelection(c.projeler()[1]);
+      c.openTopluSevk();
+      fixture.detectChanges();
+      expect(c.topluSevkProjeleri()!.map(p => p.id)).toEqual([1, 4, 5]);
+
+      const pencere = fixture.debugElement.query(By.directive(TopluSevkComponent)).componentInstance as TopluSevkComponent;
+      expect(sandikApi.getSandiklar.calls.allArgs().map(a => a[0])).toEqual([1, 4, 5]);
+      expect(pencere.disaridaKalanlar().map(s => s.proje.id)).toEqual([5]);
+      pencere.aracPlaka.set('34 ABC 123');
+      pencere.gonder();
+      expect(sevkiyatApi.topluSevk).toHaveBeenCalledOnceWith(jasmine.objectContaining({
+        projeler: [{ projeId: 1, sandikIds: [101] }, { projeId: 4, sandikIds: [401] }],
+      }));
+
+      fixture.detectChanges();
+      expect(c.topluSevkProjeleri()).toBeNull();
+      expect(seciliIdler(c)).toEqual([5]);
+      expect(toast.warning).toHaveBeenCalledWith('Sefere girmeyen 1 proje sevk edilmedi ve seçimde bırakıldı: P-5.');
+      const uyari = (fixture.nativeElement as HTMLElement).querySelector('.pl-secim__oge.is-uyari');
+      expect(uyari?.textContent?.trim()).toBe('P-5');
+
+      c.seciminiTemizle();
+      expect(c.sevkEdilmeyenProjeIds().size).toBe(0);
+    });
+
+    it('toplu eksik raporu ve talep formu farklı sayfalardaki bütün seçimi gönderir', () => {
+      yazma.clear();
+      okuma.add(YETKI.SANDIK.EKSIK_RAPORU);
+      okuma.add(YETKI.SANDIK.GRID_MODULU);
+      spyOn(URL, 'createObjectURL').and.returnValue('blob:toplu');
+      spyOn(URL, 'revokeObjectURL');
+      spyOn(HTMLAnchorElement.prototype, 'click');
+      const { c } = setup({ menuKod: YETKI.SANDIK.YONETIMI, projeTipi: ProjeTipi.Normal });
+      expect(c.canUseBulkEksikRapor()).toBeTrue();
+      expect(c.canUseBulkTalepFormu()).toBeTrue();
+
+      c.toggleEksikRaporProjeSelection(c.projeler()[2]);
+      c.goToPage(2);
+      c.toggleEksikRaporProjeSelection(c.projeler()[0]);
+
+      c.indirTopluEksikRapor('pdf');
+      expect(pdf.topluEksikUrunlerPdf).toHaveBeenCalledOnceWith([3, 4], ProjeTipi.Normal);
+      c.indirTopluTalepFormu();
+      expect(pdf.topluTalepFormuExcel).toHaveBeenCalledOnceWith([3, 4], ProjeTipi.Normal);
+      // İndirme seçimi değiştirmez; kullanıcı aynı seçimle başka toplu işlem yapabilir.
+      expect(seciliIdler(c)).toEqual([3, 4]);
+    });
   });
 
   it('toplu sevk sevk edilmemiş saha/yedek listelerinde ekranın sevk izniyle açılır; normal sandık yönetimi ve Sevk Edilen dışarıda', () => {
@@ -161,8 +323,8 @@ describe('Proje listesi: sevk edilen saha/yedek görünürlüğü (G1) ve toplu 
     expect(pdf.topluTalepFormuExcel).not.toHaveBeenCalled();
     expect(toast.warning).toHaveBeenCalled();
 
-    c.toggleEksikRaporProjeSelection(saha.id);
-    c.toggleEksikRaporProjeSelection(yedek.id);
+    c.toggleEksikRaporProjeSelection(saha);
+    c.toggleEksikRaporProjeSelection(yedek);
     spyOn(URL, 'createObjectURL').and.returnValue('blob:talep');
     spyOn(URL, 'revokeObjectURL');
     spyOn(HTMLAnchorElement.prototype, 'click');

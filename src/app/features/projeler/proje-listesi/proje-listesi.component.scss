@@ -208,6 +208,98 @@
     color: #fff;
   }
 }
+// Seçim şeridi: bütün sayfalardaki toplu işlem seçimi; görünmeyen seçili proje kesik kenarla, sevk edilmeyen uyarıyla.
+.pl-secim {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 22px;
+  border-bottom: 1px solid var(--borderColor);
+  background: color-mix(in srgb, var(--primaryColor) 4%, #fff);
+}
+.pl-secim__ozet {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #475569;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  i { color: var(--primaryColor); font-size: 16px; }
+  b { color: var(--blackColor); }
+}
+.pl-secim__not {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: #64748b;
+  font-size: 11.5px;
+}
+.pl-secim__liste {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pl-secim__oge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 2px 0 9px;
+  border: 1px solid color-mix(in srgb, var(--primaryColor) 28%, transparent);
+  border-radius: 999px;
+  background: var(--whiteColor);
+  color: var(--blackColor);
+  font-size: 12px;
+  font-weight: 600;
+
+  &.is-gizli { border-style: dashed; color: #475569; }
+  &.is-uyari {
+    border-style: solid;
+    border-color: #f5c27a;
+    background: #fff7ea;
+    color: #9a5b06;
+    i { font-size: 13px; }
+  }
+}
+.pl-secim__kaldir {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 14px;
+
+  &:hover:not(:disabled) { background: #fde8e6; color: #e5372a; }
+  &:disabled { opacity: .5; cursor: not-allowed; }
+}
+.pl-secim__temizle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  margin-left: auto;
+  padding: 0 10px;
+  border: 1px solid var(--borderColor);
+  border-radius: 8px;
+  background: var(--whiteColor);
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) { border-color: #f3b4ae; color: #e5372a; }
+  &:disabled { opacity: .5; cursor: not-allowed; }
+}
 .toolbar-search {
   position: relative;
   display: inline-flex;
@@ -1621,6 +1713,7 @@
     flex: 1;
   }
   .toolbar-search { width: 100%; }
+  .pl-secim { padding: 10px 16px; }
   .pl-sayfalama { flex-direction: column; align-items: stretch; padding: 14px 16px; }
   .pl-sayfalama__sol { justify-content: space-between; }
   .pl-sayfalama__nav { justify-content: space-between; }
