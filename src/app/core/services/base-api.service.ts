@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpResponse } from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
 import { ApiResult } from '../../shared/models/index';
 
@@ -49,6 +49,15 @@ export class BaseApiService {
 
   downloadFile(url: string, options?: any): Observable<Blob> {
     return this.http.get(url, { ...(options ?? {}), responseType: 'blob' as const }) as unknown as Observable<Blob>;
+  }
+
+  /** Dosyayı başlıklarıyla indirir: sunucunun verdiği dosya adı `Content-Disposition` başlığındadır. */
+  downloadFileResponse(url: string, options?: any): Observable<HttpResponse<Blob>> {
+    return this.http.get(url, {
+      ...(options ?? {}),
+      observe: 'response' as const,
+      responseType: 'blob' as const,
+    }) as unknown as Observable<HttpResponse<Blob>>;
   }
 
   downloadPostFile(url: string, body: unknown, options?: any): Observable<Blob> {

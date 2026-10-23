@@ -2,11 +2,16 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { BaseApiService } from '../../core/services/base-api.service';
 import { API } from '../../core/constants/api-endpoints';
-import { ApiResult, GridUrunDto, GridDurumGuncelleDto, GridTopluSevkDto, GridDurumSifirlaDto, KaliteDurumGuncelleDto, SurecDurumGuncelleDto, GridIsListesiDto } from '../../shared/models/index';
+import { HttpParams } from '@angular/common/http';
+import {
+  ApiResult, GridUrunDto, GridDurumGuncelleDto, GridTopluSevkDto, GridDurumSifirlaDto, KaliteDurumGuncelleDto, SurecDurumGuncelleDto,
+  GridIsListesiDto, GridSahaUrunleriParams, GridSahaUrunleriDto, GridMalKabulParams, GridMalKabulGecmisiDto,
+} from '../../shared/models/index';
 
 /**
  * GridController endpoints:
  *  GET  /api/grid/urunler/{projeId}
+ *  GET  /api/grid/saha/urunler, GET /api/grid/saha/mal-kabul (Grid Sahası, salt okuma)
  *  PUT  /api/grid/durum-guncelle
  *  PUT  /api/grid/durum-sifirla
  *  POST /api/grid/toplu-sevk
@@ -59,6 +64,35 @@ export class GridService {
     return this.api.get<GridIsListesiDto>(`${API.GRID.IS_LISTESI}?${query.toString()}`);
   }
 
+  /** Grid Sahası: Grid'e gelmiş ürünler (varsayılan Grid'de bekleyenler; proje tipinden bağımsız, sunucu sayfalı). */
+  getSahaUrunleri(params: GridSahaUrunleriParams = {}): Observable<ApiResult<GridSahaUrunleriDto>> {
+    let query = new HttpParams()
+      .set('pageNumber', String(params.pageNumber ?? 1))
+      .set('pageSize', String(params.pageSize ?? 25));
+    if (params.kapsam === 'tumu') query = query.set('kapsam', 'tumu');
+    query = metinEkle(query, 'arama', params.arama);
+    query = sayiEkle(query, 'projeTipiId', params.projeTipiId);
+    query = sayiEkle(query, 'projeId', params.projeId);
+    query = sayiEkle(query, 'gridDurumuId', params.gridDurumuId);
+    query = metinEkle(query, 'siralama', params.siralama);
+    if (params.azalan) query = query.set('azalan', 'true');
+    return this.api.get<GridSahaUrunleriDto>(API.GRID.SAHA_URUNLER, { params: query });
+  }
+
+  /** Grid Sahası: Grid personelinin mal kabul kayıtları (canlı ve arşiv hareketleri, sunucu sayfalı). */
+  getMalKabulKayitlari(params: GridMalKabulParams = {}): Observable<ApiResult<GridMalKabulGecmisiDto>> {
+    let query = new HttpParams()
+      .set('pageNumber', String(params.pageNumber ?? 1))
+      .set('pageSize', String(params.pageSize ?? 25));
+    query = metinEkle(query, 'baslangic', params.baslangic);
+    query = metinEkle(query, 'bitis', params.bitis);
+    query = sayiEkle(query, 'personelId', params.personelId);
+    query = sayiEkle(query, 'projeId', params.projeId);
+    query = metinEkle(query, 'arama', params.arama);
+    if (params.tur && params.tur !== 'mal-kabul') query = query.set('tur', params.tur);
+    return this.api.get<GridMalKabulGecmisiDto>(API.GRID.SAHA_MAL_KABUL, { params: query });
+  }
+
   /** Tekli ürün durumu güncelle */
   durumGuncelle(dto: GridDurumGuncelleDto): Observable<ApiResult<unknown>> {
     return this.api.put<unknown>(API.GRID.DURUM_GUNCELLE, dto);
@@ -100,3 +134,14 @@ export class GridService {
   }
 }
 
+
+/** Boş/boşluk metin parametresi gönderilmez; değer kırpılır. */
+function metinEkle(query: HttpParams, ad: string, deger: string | null | undefined): HttpParams {
+  const kirpik = deger?.trim();
+  return kirpik ? query.set(ad, kirpik) : query;
+}
+
+/** Yalnız pozitif sayı gönderilir. */
+function sayiEkle(query: HttpParams, ad: string, deger: number | null | undefined): HttpParams {
+  return deger && deger > 0 ? query.set(ad, String(deger)) : query;
+}

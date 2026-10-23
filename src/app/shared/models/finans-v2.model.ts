@@ -1,4 +1,11 @@
-import { FinansIsKategorisi, FinansKarsilanma, FinansOdemeDurumu, FinansSandikMalzemesi } from '../../core/constants/enums';
+import {
+  FinansGiderRaporuGruplamasi,
+  FinansIsKategorisi,
+  FinansIsRaporuKapsami,
+  FinansKarsilanma,
+  FinansOdemeDurumu,
+  FinansSandikMalzemesi,
+} from '../../core/constants/enums';
 import { FinansFiyatlandirmaBirimi, FinansParaToplami } from './finans.model';
 
 export type FinansVarlikTuru = 'IsKaydi' | 'Siparis' | 'Fatura' | 'Gider';
@@ -174,12 +181,25 @@ export interface FinansOdemeKaydet {
   aciklama: string | null;
 }
 /** Para birimi tanımı (F1); yeni para birimi kartlarda, grafiklerde, filtrelerde ve raporlarda görünür. */
-/** Rapor önizlemesi: indirilecek dosyanın başlığı, sütunları, ilk satırları ve toplam satır sayısı. */
+/** Bölümlü rapor satırının türü (sunucu `FinansRaporOnizlemeModel.Satir*` sabitleri). */
+export type FinansRaporSatirTuru = 'veri' | 'bolum' | 'ara-toplam' | 'genel-toplam';
+/**
+ * Rapor önizlemesi: indirilecek dosyanın başlığı, sütunları, ilk satırları ve kayıt sayısı. Bölümlü raporlarda
+ * (işler, gider, finansal durum) `satirTurleri` her satırın türünü, `tablolar` dosyadaki tabloların adlarını verir;
+ * `toplamSatir` yalnız veri satırlarını sayar ve satır sınırı aşılsa da genel toplam önizlemenin sonundadır.
+ */
 export interface FinansRaporOnizleme {
   baslik: string;
   sutunlar: string[];
   satirlar: string[][];
   toplamSatir: number;
+  satirTurleri?: FinansRaporSatirTuru[] | null;
+  tablolar?: string[] | null;
+}
+/** Rapora özel seçim: işler raporunun kapsamı, gider raporunun gruplaması (diğer raporlarda gönderilmez). */
+export interface FinansRaporSecenekleri {
+  kapsam?: FinansIsRaporuKapsami;
+  gruplama?: FinansGiderRaporuGruplamasi;
 }
 export interface FinansParaBirimi {
   id: number;

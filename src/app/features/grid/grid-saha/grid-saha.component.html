@@ -1,0 +1,379 @@
+<div class="gs-page">
+  <div class="page-title-area mb-4">
+    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+      <div class="sayfa-baslik">
+        <span class="sayfa-ikon" style="--ton: var(--gs-ton)"><i class="ri-inbox-archive-line" aria-hidden="true"></i></span>
+        <div>
+          <h2 class="fw-bold mb-1">{{ t('GRID_SAHA.TITLE') }}</h2>
+          <app-breadcrumb [items]="breadcrumb" />
+        </div>
+      </div>
+      <div class="gs-head-actions">
+        <app-readonly-banner [menuKod]="izin.GRID_SAHA_GORUNUMU" />
+        <button type="button" class="tz-btn gs-yenile" [disabled]="urunYukleniyor()" (click)="yukle()">
+          <i class="ri-refresh-line tz-ico-primary" [class.tz-spin]="urunYukleniyor()" aria-hidden="true"></i>{{ t('GRID_SAHA.REFRESH') }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI'lar süzgeçten bağımsızdır: her zaman Grid'de bekleyen ürünlerin toplamını gösterir. -->
+  <div class="gs-kpi" [attr.aria-busy]="urunYukleniyor()">
+    <app-stat-card [loading]="urunYukleniyor()" [value]="ozet()?.bekleyenSatir ?? '—'" [label]="t('GRID_SAHA.KPI_ROWS')"
+      [hint]="t('GRID_SAHA.KPI_HINT')" icon="ri-inbox-archive-line" color="primary" />
+    <app-stat-card [loading]="urunYukleniyor()" [value]="ozet() ? (ozet()!.bekleyenAdet | number: '1.0-4') ?? '0' : '—'" [label]="t('GRID_SAHA.KPI_QTY')"
+      icon="ri-stack-line" color="info" />
+    <app-stat-card [loading]="urunYukleniyor()" [value]="ozet()?.projeSayisi ?? '—'" [label]="t('GRID_SAHA.KPI_PROJECTS')"
+      icon="ri-folder-3-line" color="secondary" />
+    <app-stat-card [loading]="urunYukleniyor()" [value]="ozet()?.eksikGelenSatir ?? '—'" [label]="t('GRID_SAHA.KPI_PARTIAL')"
+      icon="ri-error-warning-line" color="warning" />
+    <app-stat-card [loading]="urunYukleniyor()" [value]="ozet()?.bugunMalKabul ?? '—'" [label]="t('GRID_SAHA.KPI_TODAY')"
+      [hint]="t('GRID_SAHA.KPI_TODAY_HINT')" icon="ri-calendar-check-line" color="success" />
+  </div>
+
+  <section class="trezo-card border-0 bg-white gs-card">
+    <header class="gs-card__head">
+      <div class="gs-card__title">
+        <span class="gs-card__icon" aria-hidden="true"><i class="ri-truck-line"></i></span>
+        <div>
+          <h3>{{ t(sekme() === 'urunler' ? 'GRID_SAHA.TAB_PRODUCTS' : 'GRID_SAHA.TAB_RECEIPTS') }}</h3>
+          <p>{{ t(sekme() === 'urunler' ? 'GRID_SAHA.SUBTITLE' : 'GRID_SAHA.RECEIPT_SUBTITLE') }}</p>
+        </div>
+      </div>
+      <div class="tz-segmented gs-sekmeler" role="tablist">
+        <button type="button" role="tab" class="gs-sekme-urunler" [class.active]="sekme() === 'urunler'"
+          [attr.aria-selected]="sekme() === 'urunler'" (click)="sekmeDegistir('urunler')">
+          <i class="ri-inbox-archive-line" aria-hidden="true"></i>{{ t('GRID_SAHA.TAB_PRODUCTS') }}
+        </button>
+        <button type="button" role="tab" class="gs-sekme-mal-kabul" [class.active]="sekme() === 'malKabul'"
+          [attr.aria-selected]="sekme() === 'malKabul'" (click)="sekmeDegistir('malKabul')">
+          <i class="ri-history-line" aria-hidden="true"></i>{{ t('GRID_SAHA.TAB_RECEIPTS') }}
+        </button>
+      </div>
+    </header>
+
+    @switch (sekme()) {
+      @case ('urunler') {
+        <div class="gs-filtreler">
+          <div class="tz-field">
+            <span>{{ t('GRID_SAHA.SCOPE') }}</span>
+            <div class="tz-segmented gs-kapsam" role="group" [attr.aria-label]="t('GRID_SAHA.SCOPE')">
+              <button type="button" class="gs-kapsam-bekleyen" [class.active]="kapsam() === 'bekleyen'" [attr.aria-pressed]="kapsam() === 'bekleyen'"
+                [title]="t('GRID_SAHA.SCOPE_WAITING_HINT')" (click)="kapsamDegisti('bekleyen')">{{ t('GRID_SAHA.SCOPE_WAITING') }}</button>
+              <button type="button" class="gs-kapsam-tumu" [class.active]="kapsam() === 'tumu'" [attr.aria-pressed]="kapsam() === 'tumu'"
+                [title]="t('GRID_SAHA.SCOPE_ALL_HINT')" (click)="kapsamDegisti('tumu')">{{ t('GRID_SAHA.SCOPE_ALL') }}</button>
+            </div>
+          </div>
+          <label class="search-box gs-arama">
+            <i class="ri-search-line" aria-hidden="true"></i>
+            <input type="search" [placeholder]="t('GRID_SAHA.SEARCH')" [attr.aria-label]="t('GRID_SAHA.SEARCH')" [value]="arama()"
+              (input)="aramaDegisti($any($event.target).value)" />
+          </label>
+          <label class="tz-field">
+            <span>{{ t('GRID_SAHA.PROJECT_TYPE') }}</span>
+            <select class="form-select gs-proje-tipi" [value]="projeTipiId() ?? ''" (change)="projeTipiDegisti($any($event.target).value)">
+              @for (secenek of projeTipiSecenekleri; track secenek.deger) {
+                <option [value]="secenek.deger ?? ''" [selected]="secenek.deger === projeTipiId()">{{ t(secenek.etiket) }}</option>
+              }
+            </select>
+          </label>
+          <div class="tz-field">
+            <span>{{ t('GRID_SAHA.STATUS') }}</span>
+            <div class="gs-cipler" role="group" [attr.aria-label]="t('GRID_SAHA.STATUS')">
+              <button type="button" class="gs-cip gs-cip--tam" [class.active]="gridDurumuId() === GridDurum.TamGeldi"
+                [attr.aria-pressed]="gridDurumuId() === GridDurum.TamGeldi" (click)="durumDegisti(GridDurum.TamGeldi)">
+                <span class="gs-nokta" data-ton="success"></span>{{ t('GRID_SAHA.STATUS_FULL') }}
+              </button>
+              <button type="button" class="gs-cip gs-cip--eksik" [class.active]="gridDurumuId() === GridDurum.EksikGeldi"
+                [attr.aria-pressed]="gridDurumuId() === GridDurum.EksikGeldi" (click)="durumDegisti(GridDurum.EksikGeldi)">
+                <span class="gs-nokta" data-ton="warning"></span>{{ t('GRID_SAHA.STATUS_PARTIAL') }}
+              </button>
+            </div>
+          </div>
+          <label class="tz-field">
+            <span>{{ t('GRID_SAHA.SORT') }}</span>
+            <div class="gs-siralama">
+              <select class="form-select gs-siralama-alani" [value]="siralama()" (change)="siralamaDegisti($any($event.target).value)">
+                @for (s of siralamaSecenekleri; track s.deger) {
+                  <option [value]="s.deger" [selected]="s.deger === siralama()">{{ t(s.etiket) }}</option>
+                }
+              </select>
+              <button type="button" class="tz-btn tz-btn--sm gs-azalan" [class.active]="azalan()" [attr.aria-pressed]="azalan()"
+                [title]="t('GRID_SAHA.DESC')" (click)="azalanDegistir()">
+                <i [class]="azalan() ? 'ri-sort-desc' : 'ri-sort-asc'" aria-hidden="true"></i>
+              </button>
+            </div>
+          </label>
+          @if (filtreVar()) {
+            <button type="button" class="tz-btn gs-temizle" (click)="filtreleriTemizle()">
+              <i class="ri-filter-off-line" aria-hidden="true"></i>{{ t('GRID_SAHA.CLEAR_FILTERS') }}
+            </button>
+          }
+        </div>
+
+        @if (urunYukleniyor()) {
+          <div class="gs-state" role="status"><span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>{{ t('GRID_SAHA.LOADING') }}</div>
+        } @else if (urunHata()) {
+          <div class="gs-state gs-state--hata" role="alert">
+            <i class="ri-error-warning-line" aria-hidden="true"></i>{{ urunHata() }}
+            <button type="button" class="tz-btn tz-btn--sm" (click)="yukle()">{{ t('GRID_SAHA.RETRY') }}</button>
+          </div>
+        } @else if (satirlar().length === 0) {
+          <div class="gs-empty">
+            <span class="gs-empty__icon" aria-hidden="true"><i class="ri-inbox-line"></i></span>
+            <h4>{{ t('GRID_SAHA.EMPTY_TITLE') }}</h4>
+            <p>{{ t(filtreVar() ? 'GRID_SAHA.EMPTY_FILTERED' : kapsam() === 'tumu' ? 'GRID_SAHA.EMPTY_ALL' : 'GRID_SAHA.EMPTY') }}</p>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="gs-table gs-urunler">
+              <thead>
+                <tr>
+                  <th>{{ t('GRID_SAHA.COL_PROJECT') }}</th>
+                  <th>{{ t('GRID_SAHA.COL_CRATE') }}</th>
+                  <th class="text-end">{{ t('GRID_SAHA.COL_ROW') }}</th>
+                  <th>{{ t('GRID_SAHA.COL_BARCODE') }}</th>
+                  <th>{{ t('GRID_SAHA.COL_PRODUCT') }}</th>
+                  <th class="text-end">{{ t('GRID_SAHA.COL_REQUESTED') }}</th>
+                  <th class="text-end">{{ t('GRID_SAHA.COL_GRID_RECEIVED') }}</th>
+                  <th class="text-end">{{ t('GRID_SAHA.COL_SENT_3K') }}</th>
+                  <th class="text-end">{{ t('GRID_SAHA.COL_IN_TRANSIT') }}</th>
+                  <th class="text-end gs-th-bekleyen">{{ t('GRID_SAHA.COL_WAITING') }}</th>
+                  <th>{{ t('GRID_SAHA.COL_STATUS') }}</th>
+                  <th>{{ t('GRID_SAHA.COL_SHIP_STATUS') }}</th>
+                  <th>{{ t('GRID_SAHA.COL_LAST_RECEIPT') }}</th>
+                  <th class="text-end" aria-hidden="true"></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (satir of satirlar(); track satir.cekiSatiriId) {
+                  <tr class="gs-satir" [attr.data-proje-tipi]="satir.projeTipiId">
+                    <td>
+                      <div class="gs-proje">
+                        @if (gridRotasi(satir); as rota) {
+                          <a class="gs-proje-link" [routerLink]="rota" [queryParams]="gridOdak(satir)">{{ satir.projeNo }}</a>
+                        } @else {
+                          <strong class="gs-proje-metin" [title]="t('GRID_SAHA.NO_GRID_ACCESS')">{{ satir.projeNo }}</strong>
+                        }
+                        <span class="gs-tip">{{ projeTipiAdi(satir.projeTipiId) }}</span>
+                        @if (satir.musteri) { <small>{{ satir.musteri }}</small> }
+                      </div>
+                    </td>
+                    <td><span class="gs-sandik">{{ satir.sandikNo || '—' }}</span></td>
+                    <td class="text-end">{{ satir.siraNo }}</td>
+                    <td><code class="gs-barkod">{{ satir.barkodNo || '—' }}</code></td>
+                    <td class="gs-urun">
+                      <div class="gs-urun__ad">{{ satir.aciklama }}</div>
+                      @if (satir.olcuResmiPozNo) { <small>{{ satir.olcuResmiPozNo }}</small> }
+                      @if (satir.sahayaAktarildiMi) {
+                        <span class="gs-rozet gs-rozet--saha" [title]="t('GRID_SAHA.FIELD_BADGE_HINT')"><i class="ri-map-pin-line"></i>{{ t('GRID_SAHA.FIELD_BADGE') }}</span>
+                      }
+                      @if (satir.gridAciklama) { <small class="gs-grid-not" [title]="satir.gridAciklama">{{ satir.gridAciklama }}</small> }
+                    </td>
+                    <td class="text-end">{{ satir.istenenAdet | number: '1.0-4' }} <small>{{ satir.birim }}</small></td>
+                    <td class="text-end">{{ satir.gridGelenAdet | number: '1.0-4' }}</td>
+                    <td class="text-end">{{ satir.ucKGelenMiktar | number: '1.0-4' }}</td>
+                    <td class="text-end">{{ satir.yoldakiMiktar | number: '1.0-4' }}</td>
+                    <td class="text-end gs-bekleyen"><strong>{{ satir.griddeBekleyenMiktar | number: '1.0-4' }}</strong></td>
+                    <td>
+                      <span class="gs-hap" [attr.data-ton]="durumTonu(satir.gridDurumuId)">
+                        <span class="gs-hap__nokta" aria-hidden="true"></span>{{ satir.gridDurumuMetni }}
+                      </span>
+                    </td>
+                    <td>{{ satir.gridSevkDurumuMetni || '—' }}</td>
+                    <td class="gs-tarih">
+                      @if (satir.sonMalKabulTarihi) {
+                        <strong>{{ satir.sonMalKabulTarihi | date: 'dd.MM.yyyy HH:mm' }}</strong>
+                        <small>{{ satir.sonMalKabulPersoneli || '—' }}</small>
+                      } @else {
+                        <span class="gs-yok" [title]="t('GRID_SAHA.NO_RECEIPT_HINT')">{{ t('GRID_SAHA.NO_RECEIPT') }}</span>
+                      }
+                    </td>
+                    <td class="text-end">
+                      @if (gridRotasi(satir) || projeRotasi(satir)) {
+                        <app-islemler-menusu>
+                          @if (gridRotasi(satir); as rota) {
+                            <a class="gs-islem-grid" [routerLink]="rota" [queryParams]="gridOdak(satir)"><i class="ri-grid-line"></i>{{ t('GRID_SAHA.GO_GRID') }}</a>
+                          }
+                          @if (projeRotasi(satir); as rota) {
+                            <a class="gs-islem-proje" [routerLink]="rota"><i class="ri-folder-open-line"></i>{{ t('GRID_SAHA.GO_PROJECT') }}</a>
+                          }
+                        </app-islemler-menusu>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <footer class="gs-card__foot">
+            <app-server-pager [pageNumber]="urunler()!.liste.pageNumber" [pageSize]="urunler()!.liste.pageSize"
+              [totalCount]="urunler()!.liste.totalCount" [totalPages]="urunler()!.liste.totalPages"
+              [hasPreviousPage]="urunler()!.liste.hasPreviousPage" [hasNextPage]="urunler()!.liste.hasNextPage"
+              [pageSizeOptions]="[15, 25, 50, 100]" (pageChange)="sayfaDegisti($event)" (pageSizeChange)="sayfaBoyutuDegisti($event)" />
+          </footer>
+        }
+      }
+
+      @case ('malKabul') {
+        <div class="gs-filtreler">
+          <div class="tz-field">
+            <span>{{ t('GRID_SAHA.KIND') }}</span>
+            <div class="tz-segmented gs-mk-tur" role="group" [attr.aria-label]="t('GRID_SAHA.KIND')">
+              @for (s of turSecenekleri; track s.deger) {
+                <button type="button" [class]="'gs-mk-tur-' + s.deger" [class.active]="mkTur() === s.deger" [attr.aria-pressed]="mkTur() === s.deger"
+                  (click)="mkTurDegisti(s.deger)">{{ t(s.etiket) }}</button>
+              }
+            </div>
+          </div>
+          <label class="search-box gs-mk-arama">
+            <i class="ri-search-line" aria-hidden="true"></i>
+            <input type="search" [placeholder]="t('GRID_SAHA.RECEIPT_SEARCH')" [attr.aria-label]="t('GRID_SAHA.RECEIPT_SEARCH')" [value]="mkArama()"
+              (input)="mkAramaDegisti($any($event.target).value)" />
+          </label>
+          <label class="tz-field">
+            <span>{{ t('GRID_SAHA.RECEIPT_FROM') }}</span>
+            <input type="date" class="form-control gs-mk-baslangic" [value]="mkBaslangic()" (change)="mkTarihDegisti('mkBaslangic', $any($event.target).value)" />
+          </label>
+          <label class="tz-field">
+            <span>{{ t('GRID_SAHA.RECEIPT_TO') }}</span>
+            <input type="date" class="form-control gs-mk-bitis" [value]="mkBitis()" (change)="mkTarihDegisti('mkBitis', $any($event.target).value)" />
+          </label>
+          <label class="tz-field">
+            <span>{{ t('GRID_SAHA.PERSONNEL') }}</span>
+            <select class="form-select gs-mk-personel" [value]="mkPersonelId() ?? ''" (change)="mkPersonelDegisti($any($event.target).value)">
+              <option value="">{{ t('GRID_SAHA.ALL_PERSONNEL') }}</option>
+              @for (p of malKabul()?.personelOzeti ?? []; track p.kullaniciId) {
+                <option [value]="p.kullaniciId" [selected]="p.kullaniciId === mkPersonelId()">{{ p.kullaniciAdi }}</option>
+              }
+            </select>
+          </label>
+          @if (mkFiltreVar()) {
+            <button type="button" class="tz-btn gs-mk-temizle" (click)="mkFiltreleriTemizle()">
+              <i class="ri-filter-off-line" aria-hidden="true"></i>{{ t('GRID_SAHA.CLEAR_FILTERS') }}
+            </button>
+          }
+          <button type="button" class="tz-btn gs-mk-yenile" [disabled]="mkYukleniyor()" (click)="mkYukle()">
+            <i class="ri-refresh-line tz-ico-primary" [class.tz-spin]="mkYukleniyor()" aria-hidden="true"></i>{{ t('GRID_SAHA.REFRESH') }}
+          </button>
+        </div>
+
+        @if (mkYukleniyor()) {
+          <div class="gs-state" role="status"><span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>{{ t('GRID_SAHA.LOADING') }}</div>
+        } @else if (mkHata()) {
+          <div class="gs-state gs-state--hata" role="alert">
+            <i class="ri-error-warning-line" aria-hidden="true"></i>{{ mkHata() }}
+            <button type="button" class="tz-btn tz-btn--sm" (click)="mkYukle()">{{ t('GRID_SAHA.RETRY') }}</button>
+          </div>
+        } @else if (malKabul(); as mk) {
+          <p class="gs-not"><i class="ri-information-line" aria-hidden="true"></i>
+            {{ t('GRID_SAHA.RECEIPT_RANGE', { baslangic: (mk.baslangic | date: 'dd.MM.yyyy') ?? '', bitis: (mk.bitis | date: 'dd.MM.yyyy') ?? '', n: mk.liste.totalCount }) }}
+          </p>
+          <div class="gs-mk">
+            <div class="gs-mk__liste">
+              @if (gunGruplari().length === 0) {
+                <div class="gs-empty">
+                  <span class="gs-empty__icon" aria-hidden="true"><i class="ri-history-line"></i></span>
+                  <h4>{{ t('GRID_SAHA.RECEIPT_EMPTY_TITLE') }}</h4>
+                  <p>{{ t('GRID_SAHA.RECEIPT_EMPTY') }}</p>
+                </div>
+              } @else {
+                <div class="table-responsive">
+                  <table class="gs-table gs-mal-kabul">
+                    <thead>
+                      <tr>
+                        <th>{{ t('GRID_SAHA.COL_DATE') }}</th>
+                        <th>{{ t('GRID_SAHA.COL_USER') }}</th>
+                        <th>{{ t('GRID_SAHA.COL_PROJECT') }}</th>
+                        <th>{{ t('GRID_SAHA.COL_PRODUCT_CRATE') }}</th>
+                        <th>{{ t('GRID_SAHA.COL_OPERATION') }}</th>
+                        <th class="text-end">{{ t('GRID_SAHA.COL_RECEIVED_QTY') }}</th>
+                        <th>{{ t('GRID_SAHA.COL_NOTE') }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (gun of gunGruplari(); track gun.gun) {
+                        <tr class="gs-gun"><td colspan="7"><i class="ri-calendar-line" aria-hidden="true"></i>{{ gunEtiketi(gun.gun) }} <span>{{ gun.hareketler.length }} {{ t('GRID_SAHA.OPERATIONS') }}</span></td></tr>
+                        @for (h of gun.hareketler; track h.anahtar) {
+                          <tr class="gs-hareket" [class.is-arsiv]="h.anahtar.startsWith('A-')">
+                            <td class="gs-tarih"><strong>{{ h.tarih | date: 'HH:mm' }}</strong><small>{{ h.tarih | date: 'dd.MM.yyyy' }}</small></td>
+                            <td>
+                              <div class="gs-kullanici">
+                                <span class="gs-avatar" aria-hidden="true">{{ h.kullaniciAdi ? h.kullaniciAdi.charAt(0).toLocaleUpperCase('tr-TR') : '?' }}</span>
+                                <span>{{ h.kullaniciAdi || '—' }}</span>
+                              </div>
+                            </td>
+                            <td>
+                              <div class="gs-proje">
+                                @if (h.cekiSatiriId && gridRotasi(h); as rota) {
+                                  <a class="gs-proje-link" [routerLink]="rota" [queryParams]="gridOdak(h)">{{ h.projeNo }}</a>
+                                } @else {
+                                  <strong class="gs-proje-metin">{{ h.projeNo }}</strong>
+                                }
+                                @if (h.projeTipiId) { <span class="gs-tip">{{ projeTipiAdi(h.projeTipiId) }}</span> }
+                                @if (h.anahtar.startsWith('A-')) {
+                                  <span class="gs-rozet gs-rozet--arsiv" [title]="t('GRID_SAHA.ARCHIVED_HINT')"><i class="ri-archive-drawer-line"></i>{{ t('GRID_SAHA.ARCHIVED') }}</span>
+                                }
+                              </div>
+                            </td>
+                            <td class="gs-urun">
+                              <div class="gs-urun__ad">{{ h.urunMetni }}</div>
+                              @if (h.sandikNo) { <small>{{ t('GRID_SAHA.COL_CRATE') }} {{ h.sandikNo }}</small> }
+                            </td>
+                            <td>
+                              <div class="gs-degisim">
+                                @if (h.oncekiDurumMetni) {
+                                  <span class="gs-degisim__eski">{{ h.oncekiDurumMetni }}</span>
+                                  <i class="ri-arrow-right-line" aria-hidden="true"></i>
+                                }
+                                <span class="gs-hap" [attr.data-ton]="islemTonu(h)"><span class="gs-hap__nokta" aria-hidden="true"></span>{{ h.islemMetni }}</span>
+                                @if (h.topluMu) { <span class="gs-rozet gs-rozet--toplu">{{ t('GRID_SAHA.BULK') }}</span> }
+                              </div>
+                            </td>
+                            <td class="text-end">
+                              @if (h.gelenAdet != null) {
+                                {{ h.gelenAdet | number: '1.0-4' }}
+                              } @else if (h.topluUrunSayisi != null) {
+                                <span class="gs-yok">{{ t('GRID_SAHA.BULK_COUNT', { n: h.topluUrunSayisi }) }}</span>
+                              } @else if (h.guncelGridGelenAdet != null) {
+                                <span class="gs-yok" [title]="t('GRID_SAHA.CURRENT_QTY_HINT')">{{ h.guncelGridGelenAdet | number: '1.0-4' }}*</span>
+                              } @else {
+                                <span class="gs-yok">—</span>
+                              }
+                            </td>
+                            <td class="gs-aciklama" [title]="h.aciklama ?? ''">{{ h.aciklama || '—' }}</td>
+                          </tr>
+                        }
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                <footer class="gs-card__foot">
+                  <app-server-pager [pageNumber]="mk.liste.pageNumber" [pageSize]="mk.liste.pageSize" [totalCount]="mk.liste.totalCount"
+                    [totalPages]="mk.liste.totalPages" [hasPreviousPage]="mk.liste.hasPreviousPage" [hasNextPage]="mk.liste.hasNextPage"
+                    [pageSizeOptions]="[15, 25, 50, 100]" (pageChange)="mkSayfaDegisti($event)" (pageSizeChange)="mkSayfaBoyutuDegisti($event)" />
+                </footer>
+              }
+            </div>
+            <aside class="gs-mk__ozet">
+              <h4><i class="ri-team-line" aria-hidden="true"></i>{{ t('GRID_SAHA.PERSONNEL_SUMMARY') }}</h4>
+              @if (mk.personelOzeti.length === 0) {
+                <p class="gs-yok">—</p>
+              } @else {
+                <ul class="gs-personel-listesi">
+                  @for (p of mk.personelOzeti; track p.kullaniciId) {
+                    <li>
+                      <span class="gs-avatar" aria-hidden="true">{{ p.kullaniciAdi ? p.kullaniciAdi.charAt(0).toLocaleUpperCase('tr-TR') : '?' }}</span>
+                      <span class="gs-personel-ad">{{ p.kullaniciAdi }}</span>
+                      <b>{{ p.islemSayisi }}</b>
+                    </li>
+                  }
+                </ul>
+              }
+            </aside>
+          </div>
+        }
+      }
+    }
+  </section>
+</div>

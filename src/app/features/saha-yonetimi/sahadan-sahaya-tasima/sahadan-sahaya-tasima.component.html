@@ -1,0 +1,122 @@
+<div class="tz-modal-backdrop" (click)="kapat()"></div>
+<div class="tz-modal tz-modal--lg sst-modal" role="dialog" aria-modal="true" aria-labelledby="sst-baslik" data-ton="info" (keydown.escape)="kapat()">
+  <header class="tz-modal__header">
+    <span class="tz-modal__icon"><i class="ri-arrow-left-right-line"></i></span>
+    <div class="tz-modal__title">
+      <h5 id="sst-baslik">{{ 'SAHA_TASIMA.TITLE' | translate }}</h5>
+      <p>{{ kaynak().projeNo }} · {{ baslik() }}</p>
+    </div>
+    <button type="button" class="tz-modal__close" [attr.aria-label]="'SAHA_TASIMA.CLOSE' | translate" (click)="kapat()"><i class="ri-close-line"></i></button>
+  </header>
+
+  <div class="tz-modal__body">
+    <div class="tz-form">
+      <div class="tz-field">
+        <label for="sst-hedef">{{ 'SAHA_TASIMA.TARGET_PROJECT' | translate }}</label>
+        <input id="sst-ara" type="search" class="form-control sst-ara" [ngModel]="hedefArama()" (ngModelChange)="hedefAramaDegisti($event)"
+          [placeholder]="'SAHA_TASIMA.TARGET_SEARCH' | translate" [attr.aria-label]="'SAHA_TASIMA.TARGET_SEARCH' | translate" [disabled]="saving()" />
+        <select id="sst-hedef" class="form-select" [ngModel]="hedefProjeId()?.toString() ?? ''" (ngModelChange)="hedefProjeSecildi($event)" [disabled]="saving()">
+          <option value="">{{ 'SAHA_TASIMA.TARGET_CHOOSE' | translate }}</option>
+          @for (p of hedefProjeler(); track p.id) {
+            <option [value]="p.id.toString()">{{ p.projeNo }} · {{ p.musteri }}</option>
+          }
+        </select>
+      </div>
+
+      @if (hedefProjeId()) {
+        <div class="tz-field-grid">
+          <div class="tz-field">
+            <label for="sst-sandik">{{ 'SAHA_TASIMA.TARGET_CRATE' | translate }}</label>
+            <select id="sst-sandik" class="form-select" [ngModel]="hedefSandik()" (ngModelChange)="hedefSandikSecildi($event)" [disabled]="saving()">
+              <option value="yeni">{{ 'SAHA_TASIMA.NEW_CRATE' | translate }}</option>
+              @for (s of hedefSandiklar(); track s.id) {
+                <option [value]="s.id.toString()">{{ s.sandikNo }}{{ s.ad ? ' · ' + s.ad : '' }} ({{ s.urunSayisi }})</option>
+              }
+            </select>
+          </div>
+          @if (hedefSandik() === 'yeni') {
+            <div class="tz-field">
+              <label for="sst-no">{{ 'SAHA_TASIMA.NEW_CRATE_NO' | translate }}</label>
+              <input id="sst-no" class="form-control" maxlength="100" [ngModel]="yeniSandikNo()" (ngModelChange)="yeniSandikNoDegisti($event)"
+                (keydown.enter)="onizle()" [placeholder]="'SAHA_TASIMA.NEW_CRATE_NO_HINT' | translate" [disabled]="saving()" />
+            </div>
+          }
+        </div>
+        <div class="tz-field">
+          <label for="sst-aciklama">{{ 'SAHA_TASIMA.NOTE' | translate }}</label>
+          <input id="sst-aciklama" class="form-control" maxlength="500" [ngModel]="aciklama()" (ngModelChange)="aciklama.set($event)" [disabled]="saving()" />
+        </div>
+      }
+    </div>
+
+    @if (error()) {
+      <div class="sst-alert sst-alert--danger" role="alert"><i class="ri-error-warning-line" aria-hidden="true"></i><span>{{ error() }}</span></div>
+    }
+
+    @if (loading()) {
+      <div class="sst-state"><span class="spinner-border spinner-border-sm text-primary"></span>{{ 'SAHA_TASIMA.LOADING' | translate }}</div>
+    } @else if (onizleme(); as o) {
+      <div class="tz-summary" [attr.data-ton]="tasinabilir() ? 'success' : 'warning'">
+        <i class="ri-inbox-archive-line" aria-hidden="true"></i>
+        <div>
+          <span>{{ 'SAHA_TASIMA.TARGET_SUMMARY' | translate }}</span>
+          <strong>{{ o.hedefSahaProjeNo }} · {{ 'SAHA_TASIMA.CRATE' | translate }} {{ o.hedefSandikNo || '—' }}
+            @if (o.yeniSandik) { ({{ 'SAHA_TASIMA.NEW' | translate }}) }</strong>
+        </div>
+      </div>
+      @if (o.numaraDegisti) {
+        <div class="sst-alert sst-alert--warning"><i class="ri-information-line" aria-hidden="true"></i><span>{{ 'SAHA_TASIMA.NUMBER_CHANGED' | translate }}</span></div>
+      }
+      @if (o.bosalacakSandikNolari.length) {
+        <div class="sst-alert sst-alert--info"><i class="ri-inbox-line" aria-hidden="true"></i><span>{{ 'SAHA_TASIMA.WILL_EMPTY' | translate }}: {{ o.bosalacakSandikNolari.join(', ') }}</span></div>
+      }
+
+      @if (engeller().length) {
+        <div class="sst-blockers" role="alert">
+          <strong><i class="ri-forbid-line" aria-hidden="true"></i>{{ 'SAHA_TASIMA.BLOCKED' | translate }}</strong>
+          <ul>
+            @for (e of engeller(); track $index) { <li>{{ e }}</li> }
+          </ul>
+        </div>
+      }
+
+      @if (o.satirlar.length) {
+        <div class="sst-table-wrap">
+          <table class="sst-table">
+            <thead>
+              <tr>
+                <th>{{ 'SAHA_TASIMA.COL_SOURCE_PROJECT' | translate }}</th>
+                <th>{{ 'SAHA_TASIMA.COL_PRODUCT' | translate }}</th>
+                <th>{{ 'SAHA_TASIMA.COL_CRATE' | translate }}</th>
+                <th class="num">{{ 'SAHA_TASIMA.COL_QTY' | translate }}</th>
+                <th class="num">{{ 'SAHA_TASIMA.COL_RECEIVED' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (s of o.satirlar; track s.sahaCekiSatiriId) {
+                <tr>
+                  <td>{{ s.kaynakProjeNo }}</td>
+                  <td><strong>#{{ s.siraNo }} {{ s.aciklama }}</strong>@if (s.barkodNo) {<small>{{ s.barkodNo }}</small>}</td>
+                  <td>{{ s.kaynakSandikNo }}</td>
+                  <td class="num">{{ s.miktar | number: '1.0-4' }} {{ s.birim }}</td>
+                  <td class="num">{{ s.konulanAdet | number: '1.0-4' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+      @if (o.manuelIcerikSayisi > 0) {
+        <p class="sst-note">{{ 'SAHA_TASIMA.MANUAL_CONTENTS' | translate }}: {{ o.manuelIcerikSayisi }}</p>
+      }
+      <p class="sst-note">{{ 'SAHA_TASIMA.REVERSE_HINT' | translate }}</p>
+    }
+  </div>
+
+  <footer class="tz-modal__footer">
+    <button type="button" class="tz-btn" (click)="kapat()" [disabled]="saving()">{{ 'SAHA_TASIMA.CANCEL' | translate }}</button>
+    <button type="button" class="tz-btn tz-btn--primary" (click)="tasi()" [disabled]="!tasinabilir()" [attr.aria-busy]="saving()">
+      <i [class]="saving() ? 'ri-loader-4-line tz-spin' : 'ri-arrow-left-right-line'"></i>{{ 'SAHA_TASIMA.APPLY' | translate }}
+    </button>
+  </footer>
+</div>

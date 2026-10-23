@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
 import { BaseApiService } from './base-api.service';
 import { API } from '../constants/api-endpoints';
-import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiRevizyonApiResult, CekiRevizyonYuklemeYaniti, CekiRevizyonOnizlemeSonuc, ProjeDropdownDto, SevkiyatDto, EksiklerdenSahaProjesiOlusturDto, SandiklardanSahaProjesiOlusturDto, SahaAktarimDto, SahaSandikAktarimGeriAlResultDto, ProjeFotografBaglantisi, ProjeFotografBaglantisiKaydetDto } from '../../shared/models/index';
+import { ApiResult, PaginatedList, ProjeDto, ProjeOlusturDto, CekiYuklemeResultDto, CekiRevizyonApiResult, CekiRevizyonYuklemeYaniti, CekiRevizyonOnizlemeSonuc, ProjeDropdownDto, SevkiyatDto, EksiklerdenSahaProjesiOlusturDto, SandiklardanSahaProjesiOlusturDto, SahaAktarimDto, SahaSandikAktarimGeriAlResultDto, SahaAktarimiGeriAlSonucDto, OtomatikSahaAktarimOnizlemeDto, OtomatikSahaAktarimParametreleri, OtomatikSahayaAktarDto, OtomatikSahaAktarimSonucDto, SahadanSahayaTasimaTalebi, SahadanSahayaTasiDto, SahadanSahayaTasimaOnizlemeDto, SahadanSahayaTasimaSonucDto, ProjeFotografBaglantisi, ProjeFotografBaglantisiKaydetDto } from '../../shared/models/index';
 
 /**
  * ProjeController (2 endpoint) + CekiController (2 endpoint):
@@ -94,6 +94,35 @@ export class ProjeService {
         aciklama: aciklama?.trim() || null
       }
     );
+  }
+
+  /** Bir saha aktarımının (otomatik ya da elle) bütün satırlarını hepsi-ya-hiçbiri geri alır. */
+  sahaAktarimiGeriAl(sahaAktarimId: number, aciklama?: string): Observable<ApiResult<SahaAktarimiGeriAlSonucDto>> {
+    return this.api.post<SahaAktarimiGeriAlSonucDto>(API.PROJE.SAHA_AKTARIMI_GERI_AL, {
+      sahaAktarimId,
+      aciklama: aciklama?.trim() || null
+    });
+  }
+
+  /** Sevk edilmiş normal projenin kalanlarının otomatik sahaya aktarım önizlemesi (veri değiştirmez). */
+  otomatikSahaAktarimOnizle(projeId: number, secim: OtomatikSahaAktarimParametreleri = {}): Observable<ApiResult<OtomatikSahaAktarimOnizlemeDto>> {
+    let params = new HttpParams();
+    if (secim.yeniProje) params = params.set('yeniProje', 'true');
+    else if (secim.hedefSahaProjeId) params = params.set('hedefSahaProjeId', secim.hedefSahaProjeId.toString());
+    return this.api.get<OtomatikSahaAktarimOnizlemeDto>(API.PROJE.OTOMATIK_SAHA_AKTARIM_ONIZLE(projeId), { params });
+  }
+
+  otomatikSahayaAktar(projeId: number, dto: OtomatikSahayaAktarDto): Observable<ApiResult<OtomatikSahaAktarimSonucDto>> {
+    return this.api.post<OtomatikSahaAktarimSonucDto>(API.PROJE.OTOMATIK_SAHA_AKTARIM(projeId), dto);
+  }
+
+  /** Sahadan sahaya taşıma önizlemesi: satırlar, hedef sandık numarası ve engeller (veri değiştirmez). */
+  sahadanSahayaTasimaOnizle(talep: SahadanSahayaTasimaTalebi): Observable<ApiResult<SahadanSahayaTasimaOnizlemeDto>> {
+    return this.api.post<SahadanSahayaTasimaOnizlemeDto>(API.PROJE.SAHADAN_SAHAYA_TASIMA_ONIZLE, talep);
+  }
+
+  sahadanSahayaTasi(dto: SahadanSahayaTasiDto): Observable<ApiResult<SahadanSahayaTasimaSonucDto>> {
+    return this.api.post<SahadanSahayaTasimaSonucDto>(API.PROJE.SAHADAN_SAHAYA_TASIMA, dto);
   }
 
   sandikKapat(sandikId: number, kapali: boolean): Observable<ApiResult<boolean>> {

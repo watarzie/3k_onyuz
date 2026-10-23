@@ -1,0 +1,165 @@
+<div class="tz-modal-backdrop" (click)="kapat()"></div>
+<div class="tz-modal tz-modal--xl osa-modal" role="dialog" aria-modal="true" aria-labelledby="osa-baslik" data-ton="success" (keydown.escape)="kapat()">
+  <header class="tz-modal__header">
+    <span class="tz-modal__icon"><i class="ri-magic-line"></i></span>
+    <div class="tz-modal__title">
+      <h5 id="osa-baslik">{{ 'SAHA_OTOMATIK.TITLE' | translate }}</h5>
+      <p>{{ proje().projeNo }} · {{ 'SAHA_OTOMATIK.SUBTITLE' | translate }}</p>
+    </div>
+    <button type="button" class="tz-modal__close" [attr.aria-label]="'SAHA_OTOMATIK.CLOSE' | translate" (click)="kapat()"><i class="ri-close-line"></i></button>
+  </header>
+
+  <div class="tz-modal__body">
+    @if (error()) {
+      <div class="osa-alert osa-alert--danger" role="alert"><i class="ri-error-warning-line" aria-hidden="true"></i><span>{{ error() }}</span></div>
+    }
+    @if (planDegisti()) {
+      <div class="osa-alert osa-alert--warning" role="alert">
+        <i class="ri-refresh-line" aria-hidden="true"></i>
+        <span>{{ 'SAHA_OTOMATIK.PLAN_CHANGED' | translate }}</span>
+        <button type="button" class="tz-btn tz-btn--sm" (click)="yenile()"><i class="ri-refresh-line tz-ico-primary"></i>{{ 'SAHA_OTOMATIK.REFRESH' | translate }}</button>
+      </div>
+    }
+
+    @if (loading() && !onizleme()) {
+      <div class="osa-state"><span class="spinner-border spinner-border-sm text-primary"></span>{{ 'SAHA_OTOMATIK.LOADING' | translate }}</div>
+    } @else if (onizleme(); as o) {
+      <div class="osa-kpis" [class.is-loading]="loading()">
+        <app-stat-card [value]="o.aktarilacakSandikSayisi" [label]="'SAHA_OTOMATIK.KPI_CRATES' | translate" icon="ri-inbox-archive-line" color="success" />
+        <app-stat-card [value]="o.eksikSatirSayisi" [label]="'SAHA_OTOMATIK.KPI_ROWS' | translate" icon="ri-list-check-2" color="primary" />
+        <app-stat-card [value]="(o.eksikToplamAdet | number: '1.0-4') ?? '0'" [label]="'SAHA_OTOMATIK.KPI_QTY' | translate" icon="ri-stack-line" color="info" />
+        <app-stat-card [value]="o.atlananSayisi" [label]="'SAHA_OTOMATIK.KPI_SKIPPED' | translate" icon="ri-hand-coin-line" color="warning" />
+      </div>
+
+      <section class="osa-target">
+        <div class="tz-field">
+          <label for="osa-hedef">{{ 'SAHA_OTOMATIK.TARGET' | translate }}</label>
+          <select id="osa-hedef" class="form-select" [ngModel]="hedefDegeri()" (ngModelChange)="hedefDegisti($event)" [disabled]="saving()">
+            @if (o.hedefSecimiGerekli) {
+              <option value="">{{ 'SAHA_OTOMATIK.TARGET_CHOOSE' | translate }}</option>
+            }
+            @for (h of o.hedefSecenekleri; track h.sahaProjeId) {
+              <option [value]="h.sahaProjeId.toString()">{{ h.sahaProjeNo }} · {{ h.durumMetni }} · {{ h.sandikSayisi }} {{ 'SAHA_OTOMATIK.CRATE_SHORT' | translate }}</option>
+            }
+            <option value="yeni">{{ 'SAHA_OTOMATIK.TARGET_NEW' | translate }}</option>
+          </select>
+          @if (o.hedefSecimiGerekli) {
+            <small class="osa-warn">{{ 'SAHA_OTOMATIK.TARGET_REQUIRED' | translate }}</small>
+          }
+        </div>
+        @if (o.yeniSahaProjesi) {
+          <div class="tz-field">
+            <label for="osa-proje-no">{{ 'SAHA_OTOMATIK.NEW_PROJECT_NO' | translate }}</label>
+            <input id="osa-proje-no" class="form-control" maxlength="100" [ngModel]="yeniProjeNo()" (ngModelChange)="yeniProjeNo.set($event)" [placeholder]="o.yeniSahaProjeNoOnerisi" [disabled]="saving()" />
+          </div>
+        }
+        <div class="tz-field osa-target__note">
+          <label for="osa-aciklama">{{ 'SAHA_OTOMATIK.NOTE' | translate }}</label>
+          <input id="osa-aciklama" class="form-control" maxlength="500" [ngModel]="aciklama()" (ngModelChange)="aciklama.set($event)" [disabled]="saving()" />
+        </div>
+      </section>
+
+      @if (!o.aktarilacakVarMi) {
+        <div class="osa-empty">
+          <span class="osa-empty__icon" aria-hidden="true"><i class="ri-checkbox-circle-line"></i></span>
+          <p>{{ 'SAHA_OTOMATIK.EMPTY' | translate }}</p>
+        </div>
+      }
+
+      @if (o.sandiklar.length) {
+        <h6 class="tz-section"><i class="ri-inbox-archive-line"></i>{{ 'SAHA_OTOMATIK.SECTION_CRATES' | translate }}<small>{{ 'SAHA_OTOMATIK.SECTION_CRATES_HINT' | translate }}</small></h6>
+        <div class="osa-table-wrap">
+          <table class="osa-table">
+            <thead>
+              <tr>
+                <th>{{ 'SAHA_OTOMATIK.COL_SOURCE_CRATE' | translate }}</th>
+                <th>{{ 'SAHA_OTOMATIK.COL_TARGET_CRATE' | translate }}</th>
+                <th class="num">{{ 'SAHA_OTOMATIK.COL_PRODUCTS' | translate }}</th>
+                <th class="num">{{ 'SAHA_OTOMATIK.COL_QTY' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (s of o.sandiklar; track s.kaynakSandikId) {
+                <tr>
+                  <td><strong>{{ s.kaynakSandikNo }}</strong>@if (s.sandikAdi) {<small>{{ s.sandikAdi }}</small>}</td>
+                  <td>
+                    <strong>{{ s.hedefSandikNo }}</strong>
+                    @if (s.mevcutSandigaEklenir) { <span class="osa-chip">{{ 'SAHA_OTOMATIK.EXISTING_CRATE' | translate }}</span> }
+                    @if (s.numaraDegisti) { <span class="osa-chip osa-chip--warning">{{ 'SAHA_OTOMATIK.NUMBER_CHANGED' | translate }}</span> }
+                  </td>
+                  <td class="num">{{ s.urunSayisi }}</td>
+                  <td class="num">{{ s.toplamAdet | number: '1.0-4' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      @if (o.eksiklerSandigi; as e) {
+        <h6 class="tz-section">
+          <i class="ri-archive-drawer-line"></i>{{ 'SAHA_OTOMATIK.SECTION_MISSING' | translate }} {{ e.sandikNo }}
+          <small>{{ e.mevcutSandigaEklenir ? ('SAHA_OTOMATIK.EXISTING_CRATE' | translate) : (e.sandikAdi || '') }}</small>
+        </h6>
+        <div class="osa-table-wrap">
+          <table class="osa-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>{{ 'SAHA_OTOMATIK.COL_PRODUCT' | translate }}</th>
+                <th>{{ 'SAHA_OTOMATIK.COL_SOURCE_CRATE' | translate }}</th>
+                <th class="num">{{ 'SAHA_OTOMATIK.COL_REQUESTED' | translate }}</th>
+                <th class="num">{{ 'SAHA_OTOMATIK.COL_TRANSFER' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (u of e.urunler; track u.cekiSatiriId) {
+                <tr>
+                  <td>{{ u.siraNo }}</td>
+                  <td><strong>{{ u.aciklama }}</strong>@if (u.barkodNo) {<small>{{ u.barkodNo }}</small>}</td>
+                  <td>{{ u.kaynakSandikNo || '—' }}</td>
+                  <td class="num">{{ u.istenenAdet | number: '1.0-4' }} {{ u.birim }}</td>
+                  <td class="num"><strong>{{ u.miktar | number: '1.0-4' }}</strong> {{ u.birim }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      @if (o.atlananlar.length) {
+        <h6 class="tz-section"><i class="ri-hand-coin-line"></i>{{ 'SAHA_OTOMATIK.SECTION_SKIPPED' | translate }}<small>{{ 'SAHA_OTOMATIK.SECTION_SKIPPED_HINT' | translate }}</small></h6>
+        <ul class="osa-skipped">
+          @for (a of o.atlananlar; track $index) {
+            <li>
+              <span class="osa-skipped__who">
+                @if (a.sandikNo) { <strong>{{ 'SAHA_OTOMATIK.CRATE' | translate }} {{ a.sandikNo }}</strong> }
+                @if (a.urun) { <span>{{ a.urun }}</span> }
+              </span>
+              <span class="osa-skipped__why">
+                {{ a.neden }}
+                @if (a.ayrintilar?.length) {
+                  <details class="osa-skipped__details">
+                    <summary>{{ 'SAHA_OTOMATIK.SKIPPED_DETAILS' | translate }} ({{ a.ayrintilar!.length }})</summary>
+                    <ul>
+                      @for (ayrinti of a.ayrintilar; track $index) {
+                        <li>{{ ayrinti }}</li>
+                      }
+                    </ul>
+                  </details>
+                }
+              </span>
+            </li>
+          }
+        </ul>
+      }
+    }
+  </div>
+
+  <footer class="tz-modal__footer">
+    <button type="button" class="tz-btn" (click)="kapat()" [disabled]="saving()">{{ 'SAHA_OTOMATIK.CANCEL' | translate }}</button>
+    <button type="button" class="tz-btn tz-btn--primary" (click)="uygula()" [disabled]="!uygulanabilir()" [attr.aria-busy]="saving()">
+      <i [class]="saving() ? 'ri-loader-4-line tz-spin' : 'ri-send-plane-line'"></i>{{ 'SAHA_OTOMATIK.APPLY' | translate }}
+    </button>
+  </footer>
+</div>

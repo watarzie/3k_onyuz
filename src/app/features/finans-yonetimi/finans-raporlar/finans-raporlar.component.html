@@ -11,27 +11,105 @@
       <i class="ri-filter-off-line" aria-hidden="true"></i>{{ t('FILTERS_RESET') }}
     </button>
   </header>
+
+  <div class="rapor-katalog" role="radiogroup" [attr.aria-label]="t('REPORT')">
+    @for (grup of raporGruplari; track grup.anahtar) {
+      <p class="rapor-katalog-baslik">{{ t(grup.baslik) }}</p>
+      <div class="rapor-kartlari" [class.rapor-kartlari-ozet]="grup.anahtar === 'ozet'">
+        @for (r of grup.raporlar; track r.tur) {
+          <button
+            type="button"
+            role="radio"
+            class="rapor-karti"
+            [class.secili]="tur === r.tur"
+            [attr.aria-checked]="tur === r.tur"
+            [attr.data-tur]="r.tur"
+            (click)="sec(r.tur)"
+          >
+            <span class="rapor-karti-ikon"><i [class]="r.ikon" aria-hidden="true"></i></span>
+            <span class="rapor-karti-metin">
+              <strong>{{ t(r.baslik) }}</strong>
+              @if (grup.anahtar === 'ana') {
+                <small>{{ t(r.aciklama) }}</small>
+              }
+            </span>
+            @if (tur === r.tur) {
+              <i class="ri-checkbox-circle-fill rapor-karti-isaret" aria-hidden="true"></i>
+            }
+          </button>
+        }
+      </div>
+    }
+  </div>
+
   <div class="v2-report-layout">
     <div>
+      @if (tanim.secim || tur === 'finansal-durum') {
+        <article class="v2-card rapor-secenekleri">
+          <header class="v2-card-heading">
+            <h4><i class="ri-settings-4-line" aria-hidden="true"></i>{{ t('REPORT_OPTIONS') }}</h4>
+          </header>
+          @if (tanim.secim === 'kapsam') {
+            <div class="rapor-secim">
+              <span class="rapor-secim-etiket" id="rapor-kapsam">{{ t('REPORT_SCOPE_LABEL') }}</span>
+              <div class="v2-segmented" role="radiogroup" aria-labelledby="rapor-kapsam">
+                @for (k of kapsamlar; track k.deger) {
+                  <button
+                    type="button"
+                    role="radio"
+                    [class.active]="kapsam === k.deger"
+                    [attr.aria-checked]="kapsam === k.deger"
+                    [attr.data-kapsam]="k.deger"
+                    (click)="kapsam = k.deger"
+                  >
+                    {{ t(k.etiket) }}
+                  </button>
+                }
+              </div>
+            </div>
+            <p class="v2-note">{{ t('REPORT_SCOPE_HINT') }}</p>
+          } @else if (tanim.secim === 'gruplama') {
+            <div class="rapor-secim">
+              <span class="rapor-secim-etiket" id="rapor-gruplama">{{ t('REPORT_GROUPING_LABEL') }}</span>
+              <div class="v2-segmented" role="radiogroup" aria-labelledby="rapor-gruplama">
+                @for (g of gruplamalar; track g.deger) {
+                  <button
+                    type="button"
+                    role="radio"
+                    [class.active]="gruplama === g.deger"
+                    [attr.aria-checked]="gruplama === g.deger"
+                    [attr.data-gruplama]="g.deger"
+                    (click)="gruplama = g.deger"
+                  >
+                    {{ t(g.etiket) }}
+                  </button>
+                }
+              </div>
+            </div>
+            <p class="v2-note">{{ t('REPORT_GROUPING_HINT') }}</p>
+          } @else {
+            <p class="v2-note">{{ t('REPORT_FINANCIAL_HINT') }}</p>
+          }
+        </article>
+      }
+
       <article class="v2-card">
         <header class="v2-card-heading">
-          <h4><i class="ri-equalizer-line" aria-hidden="true"></i>{{ t('REPORT_SCOPE') }}</h4>
+          <h4><i class="ri-equalizer-line" aria-hidden="true"></i>{{ t('REPORT_FILTERS') }}</h4>
         </header>
         <div class="v2-fields">
+          <label>{{ t('START') }}<input type="date" [(ngModel)]="filtre.baslangic" /></label>
+          <label>{{ t('END') }}<input type="date" [(ngModel)]="filtre.bitis" /></label>
           <label
-            >{{ t('REPORT')
-            }}<select [(ngModel)]="tur">
-              <option value="is">{{ t('REPORT_WORK') }}</option>
-              <option value="gider">{{ t('REPORT_EXPENSE') }}</option>
-              <option value="genel">{{ t('REPORT_SUMMARY') }}</option>
-              <option value="gider-kategori">{{ t('REPORT_CATEGORY') }}</option>
-              <option value="proje-maliyet">{{ t('REPORT_COST') }}</option>
-              <option value="siparis-bekleyen">{{ t('REPORT_PENDING_ORDER') }}</option>
-              <option value="fatura-bekleyen">{{ t('REPORT_PENDING_INVOICE') }}</option>
-              <option value="alacak">{{ t('REPORT_RECEIVABLES') }}</option>
+            >{{ t('CURRENCY')
+            }}<select [(ngModel)]="filtre.paraBirimi">
+              <option [ngValue]="undefined">{{ t('REPORT_ALL_CURRENCIES') }}</option>
+              @for (kod of paraBirimleri.secenekler(filtre.paraBirimi); track kod) {
+                <option [ngValue]="kod">{{ kod }}</option>
+              }
             </select></label
           >
-          @if (tur === 'alacak') {
+          @if (tanim.odeme) {
             <label
               >{{ t('PAYMENT_FILTER')
               }}<select [(ngModel)]="filtre.odemeDurumu">
@@ -43,119 +121,114 @@
               </select></label
             >
           }
-          <label
-            >{{ t('CURRENCY')
-            }}<select [(ngModel)]="filtre.paraBirimi">
-              <option [ngValue]="undefined">{{ t('REPORT_ALL_CURRENCIES') }}</option>
-              @for (kod of paraBirimleri.secenekler(filtre.paraBirimi); track kod) {
-                <option [ngValue]="kod">{{ kod }}</option>
-              }
-            </select></label
-          >
-          <label>{{ t('START') }}<input type="date" [(ngModel)]="filtre.baslangic" /></label>
-          <label>{{ t('END') }}<input type="date" [(ngModel)]="filtre.bitis" /></label>
         </div>
-        @if (tur === 'alacak') {
+        @if (tanim.odeme) {
           <p class="v2-note">{{ t('REPORT_RECEIVABLES_NOTE') }}</p>
         }
-        <div class="v2-fields v2-report-search">
-          <label
-            >{{ t('PROJECT_NUMBER')
-            }}<input [(ngModel)]="filtre.projeNo" placeholder="PA699-02" /></label
-          ><label
-            >{{ t('SEARCH')
-            }}<input [(ngModel)]="filtre.arama" [placeholder]="t('REPORT_SEARCH_HINT')"
-          /></label>
-        </div>
+        @if (tanim.projeVeArama) {
+          <div class="v2-fields v2-report-search">
+            <label
+              >{{ t('PROJECT_NUMBER')
+              }}<input [(ngModel)]="filtre.projeNo" placeholder="PA699-02" /></label
+            ><label
+              >{{ t('SEARCH')
+              }}<input [(ngModel)]="filtre.arama" [placeholder]="t('REPORT_SEARCH_HINT')"
+            /></label>
+          </div>
+        }
       </article>
-      <details class="v2-card v2-advanced">
-        <summary>
-          <span><i class="ri-filter-3-line" aria-hidden="true"></i>{{ t('ADVANCED_FILTERS') }}</span
-          ><i class="ri-arrow-down-s-line v2-disclosure" aria-hidden="true"></i>
-        </summary>
-        <div class="v2-advanced-content">
-          <fieldset class="v2-filter-group">
-            <legend>{{ t('DOCUMENT') }}</legend>
-            <div class="v2-fields">
-              <label>{{ t('PO_NUMBER') }}<input [(ngModel)]="filtre.poNumarasi" /></label
-              ><label>{{ t('INVOICE_NUMBER') }}<input [(ngModel)]="filtre.faturaNumarasi" /></label
-              ><label
-                >{{ t('REPORT_PO_STATUS')
-                }}<select [(ngModel)]="filtre.siparisDurumu">
-                  <option [ngValue]="undefined">{{ t('ALL') }}</option>
-                  <option [ngValue]="1">{{ t('REPORT_OPEN_PO') }}</option>
-                  <option [ngValue]="2">{{ t('REPORT_PARTLY_INVOICED') }}</option>
-                  <option [ngValue]="3">{{ t('REPORT_FULLY_INVOICED') }}</option>
-                  <option [ngValue]="4">{{ t('CANCELLED') }}</option>
-                </select></label
-              ><label
-                >{{ t('REPORT_INVOICE_DOCUMENT')
-                }}<select [(ngModel)]="filtre.faturaDurumu">
-                  <option [ngValue]="undefined">{{ t('ALL') }}</option>
-                  <option [ngValue]="1">{{ t('ACTIVE') }}</option>
-                  <option [ngValue]="2">{{ t('CANCELLED') }}</option>
-                </select></label
-              >
-            </div>
-          </fieldset>
-          <fieldset class="v2-filter-group">
-            <legend>{{ t('PROJECT_WORK') }}</legend>
-            <div class="v2-fields">
-              <label>{{ t('COMPANY_PERSON') }}<input [(ngModel)]="filtre.firma" /></label
-              ><label>{{ t('REQUESTER') }}<input [(ngModel)]="filtre.talepEden" /></label
-              ><label
-                >{{ t('TYPE')
-                }}<select [(ngModel)]="filtre.isTuru">
-                  <option [ngValue]="undefined">{{ t('ALL') }}</option>
-                  <option [ngValue]="1">{{ t('MAIN_PACKAGING') }}</option>
-                  <option [ngValue]="9">{{ t('WASTE_TIMBER') }}</option>
-                  <option [ngValue]="2">{{ t('ADDITIONAL') }}</option>
-                  <option [ngValue]="3">{{ t('INNER_CRATE') }}</option>
-                  <option [ngValue]="4">{{ t('SITE') }}</option>
-                  <option [ngValue]="5">{{ t('SPARE') }}</option>
-                  <option [ngValue]="8">{{ t('CUSTOM_REGULAR') }}</option>
-                  <option [ngValue]="6">{{ t('REPAIR') }}</option>
-                  <option [ngValue]="7">{{ t('OTHER') }}</option>
-                </select></label
-              ><label
-                >{{ t('REPORT_CRATE_TYPE')
-                }}<select [(ngModel)]="filtre.sandikCinsi">
-                  <option [ngValue]="undefined">{{ t('ALL') }}</option>
-                  <option value="1">{{ t('WOOD') }}</option>
-                  <option value="2">{{ t('CAGE') }}</option>
-                  <option value="3">{{ t('PLYWOOD') }}</option>
-                  <option value="4">{{ t('FOLDABLE') }}</option>
-                  <option value="99">{{ t('OTHER') }}</option>
-                </select></label
-              ><label
-                >{{ t('WORK_STATUS')
-                }}<select [(ngModel)]="filtre.durum">
-                  <option [ngValue]="undefined">{{ t('ALL') }}</option>
-                  <option [ngValue]="1">{{ t('PENDING_ORDER') }}</option>
-                  <option [ngValue]="2">{{ t('PARTIAL_ORDER') }}</option>
-                  <option [ngValue]="3">{{ t('FULL_ORDER') }}</option>
-                  <option [ngValue]="4">{{ t('PARTIAL_INVOICE') }}</option>
-                  <option [ngValue]="5">{{ t('FULL_INVOICE') }}</option>
-                </select></label
-              >
-              <label
-                >{{ t('REPORT_CATEGORY_LABEL')
-                }}<select [(ngModel)]="filtre.giderKategoriId">
-                  <option [ngValue]="undefined">{{ t('REPORT_ALL_CATEGORIES') }}</option>
-                  @for (k of kategoriler(); track k.id) {
-                    <option [ngValue]="k.id">{{ k.ad }}</option>
-                  }
-                </select></label
-              >
-            </div>
-          </fieldset>
-          <label class="v2-check mt-3"
-            ><input type="checkbox" [(ngModel)]="filtre.iptalEdilenleriDahilEt" />{{
-              t('REPORT_INCLUDE_CANCELLED')
-            }}</label
-          >
-        </div>
-      </details>
+
+      @if (tanim.gelismis) {
+        <details class="v2-card v2-advanced">
+          <summary>
+            <span><i class="ri-filter-3-line" aria-hidden="true"></i>{{ t('ADVANCED_FILTERS') }}</span
+            ><i class="ri-arrow-down-s-line v2-disclosure" aria-hidden="true"></i>
+          </summary>
+          <div class="v2-advanced-content">
+            <fieldset class="v2-filter-group">
+              <legend>{{ t('DOCUMENT') }}</legend>
+              <div class="v2-fields">
+                <label>{{ t('PO_NUMBER') }}<input [(ngModel)]="filtre.poNumarasi" /></label
+                ><label>{{ t('INVOICE_NUMBER') }}<input [(ngModel)]="filtre.faturaNumarasi" /></label
+                ><label
+                  >{{ t('REPORT_PO_STATUS')
+                  }}<select [(ngModel)]="filtre.siparisDurumu">
+                    <option [ngValue]="undefined">{{ t('ALL') }}</option>
+                    <option [ngValue]="1">{{ t('REPORT_OPEN_PO') }}</option>
+                    <option [ngValue]="2">{{ t('REPORT_PARTLY_INVOICED') }}</option>
+                    <option [ngValue]="3">{{ t('REPORT_FULLY_INVOICED') }}</option>
+                    <option [ngValue]="4">{{ t('CANCELLED') }}</option>
+                  </select></label
+                ><label
+                  >{{ t('REPORT_INVOICE_DOCUMENT')
+                  }}<select [(ngModel)]="filtre.faturaDurumu">
+                    <option [ngValue]="undefined">{{ t('ALL') }}</option>
+                    <option [ngValue]="1">{{ t('ACTIVE') }}</option>
+                    <option [ngValue]="2">{{ t('CANCELLED') }}</option>
+                  </select></label
+                >
+              </div>
+            </fieldset>
+            <fieldset class="v2-filter-group">
+              <legend>{{ t('PROJECT_WORK') }}</legend>
+              <div class="v2-fields">
+                <label>{{ t('COMPANY_PERSON') }}<input [(ngModel)]="filtre.firma" /></label
+                ><label>{{ t('REQUESTER') }}<input [(ngModel)]="filtre.talepEden" /></label
+                ><label
+                  >{{ t('TYPE')
+                  }}<select [(ngModel)]="filtre.isTuru">
+                    <option [ngValue]="undefined">{{ t('ALL') }}</option>
+                    <option [ngValue]="1">{{ t('MAIN_PACKAGING') }}</option>
+                    <option [ngValue]="9">{{ t('WASTE_TIMBER') }}</option>
+                    <option [ngValue]="2">{{ t('ADDITIONAL') }}</option>
+                    <option [ngValue]="3">{{ t('INNER_CRATE') }}</option>
+                    <option [ngValue]="4">{{ t('SITE') }}</option>
+                    <option [ngValue]="5">{{ t('SPARE') }}</option>
+                    <option [ngValue]="8">{{ t('CUSTOM_REGULAR') }}</option>
+                    <option [ngValue]="6">{{ t('REPAIR') }}</option>
+                    <option [ngValue]="7">{{ t('OTHER') }}</option>
+                  </select></label
+                ><label
+                  >{{ t('REPORT_CRATE_TYPE')
+                  }}<select [(ngModel)]="filtre.sandikCinsi">
+                    <option [ngValue]="undefined">{{ t('ALL') }}</option>
+                    <option value="1">{{ t('WOOD') }}</option>
+                    <option value="2">{{ t('CAGE') }}</option>
+                    <option value="3">{{ t('PLYWOOD') }}</option>
+                    <option value="4">{{ t('FOLDABLE') }}</option>
+                    <option value="99">{{ t('OTHER') }}</option>
+                  </select></label
+                ><label
+                  >{{ t('WORK_STATUS')
+                  }}<select [(ngModel)]="filtre.durum">
+                    <option [ngValue]="undefined">{{ t('ALL') }}</option>
+                    <option [ngValue]="1">{{ t('PENDING_ORDER') }}</option>
+                    <option [ngValue]="2">{{ t('PARTIAL_ORDER') }}</option>
+                    <option [ngValue]="3">{{ t('FULL_ORDER') }}</option>
+                    <option [ngValue]="4">{{ t('PARTIAL_INVOICE') }}</option>
+                    <option [ngValue]="5">{{ t('FULL_INVOICE') }}</option>
+                  </select></label
+                >
+                <label
+                  >{{ t('REPORT_CATEGORY_LABEL')
+                  }}<select [(ngModel)]="filtre.giderKategoriId">
+                    <option [ngValue]="undefined">{{ t('REPORT_ALL_CATEGORIES') }}</option>
+                    @for (k of kategoriler(); track k.id) {
+                      <option [ngValue]="k.id">{{ k.ad }}</option>
+                    }
+                  </select></label
+                >
+              </div>
+            </fieldset>
+            <label class="v2-check mt-3"
+              ><input type="checkbox" [(ngModel)]="filtre.iptalEdilenleriDahilEt" />{{
+                t('REPORT_INCLUDE_CANCELLED')
+              }}</label
+            >
+          </div>
+        </details>
+      }
+
       <article class="v2-card v2-report-preview">
         <header class="v2-card-heading v2-toolbar">
           <h4><i class="ri-eye-line" aria-hidden="true"></i>{{ t('REPORT_PREVIEW') }}</h4>
@@ -172,10 +245,13 @@
           }
           <p class="v2-note">
             <strong>{{ o.baslik }}</strong> · {{ t('REPORT_PREVIEW_COUNT').replace('{0}', '' + o.toplamSatir) }}
-            @if (o.toplamSatir > o.satirlar.length) {
-              · {{ t('REPORT_PREVIEW_LIMIT').replace('{0}', '' + o.satirlar.length) }}
+            @if (o.toplamSatir > gorunenVeriSatiri(o)) {
+              · {{ t('REPORT_PREVIEW_LIMIT').replace('{0}', '' + gorunenVeriSatiri(o)) }}
             }
           </p>
+          @if (tabloNotu(o); as not) {
+            <p class="v2-note rapor-tablo-notu"><i class="ri-table-line" aria-hidden="true"></i>{{ not }}</p>
+          }
           @if (o.satirlar.length) {
             <div class="v2-preview-wrap">
               <table class="table v2-table v2-preview-table">
@@ -187,12 +263,24 @@
                   </tr>
                 </thead>
                 <tbody>
-                  @for (satir of o.satirlar; track $index) {
-                    <tr>
-                      @for (deger of satir; track $index) {
-                        <td>{{ deger }}</td>
+                  @for (satir of o.satirlar; track $index; let i = $index) {
+                    @switch (satirTuru(o, i)) {
+                      @case ('bolum') {
+                        <tr class="rapor-satir-bolum">
+                          <td [attr.colspan]="o.sutunlar.length">{{ satir[0] }}</td>
+                        </tr>
                       }
-                    </tr>
+                      @default {
+                        <tr
+                          [class.rapor-satir-ara]="satirTuru(o, i) === 'ara-toplam'"
+                          [class.rapor-satir-genel]="satirTuru(o, i) === 'genel-toplam'"
+                        >
+                          @for (deger of satir; track $index) {
+                            <td>{{ deger }}</td>
+                          }
+                        </tr>
+                      }
+                    }
                   }
                 </tbody>
               </table>
@@ -207,9 +295,15 @@
     </div>
     <aside class="v2-card v2-export-card">
       <span class="v2-export-icon"
-        ><i class="ri-download-cloud-2-line" aria-hidden="true"></i
+        ><i [class]="tanim.ikon" aria-hidden="true"></i
       ></span>
-      <h4>{{ t('REPORT_OUTPUT') }}</h4>
+      <p class="rapor-secili-etiket">{{ t('REPORT_SELECTED') }}</p>
+      <h4 class="rapor-secili-baslik">{{ t(tanim.baslik) }}</h4>
+      @if (tanim.secim === 'kapsam') {
+        <span class="v2-tag rapor-secili-secim">{{ t(kapsamlar[kapsam].etiket) }}</span>
+      } @else if (tanim.secim === 'gruplama') {
+        <span class="v2-tag rapor-secili-secim">{{ t(gruplamalar[gruplama].etiket) }}</span>
+      }
       <p>{{ t('REPORT_OUTPUT_HELP') }}</p>
       <div class="v2-export-actions">
         <button class="btn btn-primary" [disabled]="loading()" (click)="indir('pdf')">

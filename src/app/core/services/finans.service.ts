@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpParams } from '@angular/common/http';
+import { HttpParams, HttpResponse } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { API } from '../constants/api-endpoints';
 import {
@@ -54,6 +54,7 @@ import {
   FinansOdemeKaydet,
   FinansParaBirimi,
   FinansRaporOnizleme,
+  FinansRaporSecenekleri,
   FinansParaBirimiKaydet,
   FinansParametreler,
   FinansVadeUyarilari,
@@ -439,10 +440,50 @@ export class FinansService {
     return this.api.downloadFile(sorgu ? `${endpoint}?${sorgu}` : endpoint);
   }
   /** Rapor önizlemesi: dosyayla aynı başlık, sütunlar ve ilk satırlar (sunucuda aynı üreticiden). */
-  raporOnizleme(tur: string, request: FinansListelemeRequest = this.varsayilanListeleme()) {
+  raporOnizleme(
+    tur: string,
+    request: FinansListelemeRequest = this.varsayilanListeleme(),
+    secenekler: FinansRaporSecenekleri = {},
+  ) {
     return this.api.get<FinansRaporOnizleme>(API.FINANS.RAPOR_ONIZLEME(tur), {
-      params: this.listelemeParametreleri(request),
+      params: this.raporParametreleri(tur, request, secenekler),
     });
+  }
+  /**
+   * Raporlar sekmesindeki dosya: tür, biçim, filtre ve rapora özel seçim (işlerde kapsam, giderde gruplama). Yanıt
+   * başlıklarıyla döner; dosya adı sunucunun `Content-Disposition` başlığındadır.
+   */
+  raporDosyasi(
+    tur: string,
+    format: 'pdf' | 'excel',
+    request: FinansListelemeRequest,
+    secenekler: FinansRaporSecenekleri = {},
+  ): Observable<HttpResponse<Blob>> {
+    return this.api.downloadFileResponse(this.raporDosyaAdresi(tur, format), {
+      params: this.raporParametreleri(tur, request, secenekler),
+    });
+  }
+  private raporDosyaAdresi(tur: string, format: 'pdf' | 'excel'): string {
+    const pdf = format === 'pdf';
+    switch (tur) {
+      case 'is':
+        return pdf ? API.FINANS.IS_RAPORU_PDF : API.FINANS.IS_RAPORU_EXCEL;
+      case 'gider':
+        return pdf ? API.FINANS.GIDER_RAPOR_PDF : API.FINANS.GIDER_RAPOR_EXCEL;
+      case 'alacak':
+        return pdf ? API.FINANS.ALACAK_RAPOR_PDF : API.FINANS.ALACAK_RAPOR_EXCEL;
+      case 'finansal-durum':
+        return pdf ? API.FINANS.FINANSAL_DURUM_RAPOR_PDF : API.FINANS.FINANSAL_DURUM_RAPOR_EXCEL;
+      default:
+        return API.FINANS.OZET_RAPOR(tur, format);
+    }
+  }
+  /** Kapsam yalnız işler raporuna, gruplama yalnız gider raporuna gönderilir. */
+  private raporParametreleri(tur: string, request: FinansListelemeRequest, secenekler: FinansRaporSecenekleri): HttpParams {
+    let params = this.listelemeParametreleri(request);
+    if (tur === 'is' && secenekler.kapsam !== undefined) params = params.set('kapsam', secenekler.kapsam);
+    if (tur === 'gider' && secenekler.gruplama !== undefined) params = params.set('gruplama', secenekler.gruplama);
+    return params;
   }
   /** Alacak (vade/tahsilat) raporu: fatura listesiyle aynı filtreler. */
   alacakRaporu(format: 'pdf' | 'excel', request: FinansListelemeRequest = this.varsayilanListeleme()) {

@@ -34,6 +34,8 @@ export const YETKI = {
     CEKI_VERISI_SIL: 'ceki-verisi-sil',
     UCK_IS_LISTESI: '3k-is-listesi',
     GRID_IS_LISTESI: 'grid-is-listesi',
+    /** Grid Sahası: Grid'e gelmiş ürünler ve mal kabul kayıtları; proje tipinden bağımsız salt görüntüleme (R). */
+    GRID_SAHA_GORUNUMU: 'grid-saha-gorunumu',
     CEKI_REVIZYON_YUKLE: 'ceki-revizyon-yukle',
     UCK_SANDIK_DURUM_RAPORU: '3k-sandik-durum-raporu',
     LOKASYON_ATAMA: 'sandik-lokasyon-atama',

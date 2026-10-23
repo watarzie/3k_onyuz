@@ -16,13 +16,17 @@ import { IslemlerMenusuComponent } from '../../../shared/components/islemler-men
 import { CekiRevizyonOnizlemeComponent } from '../../../shared/components/ceki-revizyon-onizleme/ceki-revizyon-onizleme.component';
 import { CekiRevizyonGecmisiComponent } from '../../../shared/components/ceki-revizyon-gecmisi/ceki-revizyon-gecmisi.component';
 import { TopluSevkComponent, TopluSevkTamamlandi } from '../toplu-sevk/toplu-sevk.component';
+import { OtomatikSahaAktarimComponent } from '../otomatik-saha-aktarim/otomatik-saha-aktarim.component';
+import { SahaTasimaKaynagi, SahadanSahayaTasimaComponent } from '../../saha-yonetimi/sahadan-sahaya-tasima/sahadan-sahaya-tasima.component';
 import {
   ApiResult,
   CekiRevizyonOnizlemeSonuc,
   CekiRevizyonOnayKuyruguYaniti,
   CekiRevizyonSorunu,
   CekiRevizyonYuklemeYaniti,
+  OtomatikSahaAktarimSonucDto,
   ProjeDto,
+  SahadanSahayaTasimaSonucDto,
   ProjeFotografBaglantisi,
   SahaAktarimDto,
   SandikDto,
@@ -35,7 +39,7 @@ import {
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmService, duzMetin } from '../../../core/services/confirm.service';
 import { PdfService } from '../../../core/services/pdf.service';
-import { ProjeTipi, SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
+import { ProjeDurum, ProjeTipi, SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
 import { PROJE_TIPI_BAGLAMLARI, projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
 import {
@@ -57,6 +61,25 @@ interface SahaAktarimGrubu {
   geriAlinamamaNedeni: string | null;
 }
 
+/** Aktarımlar penceresinde bir aktarım başlığı (otomatik ya da elle); tamamı tek işlemde geri alınır. */
+interface SahaAktarimIslemi {
+  sahaAktarimId: number;
+  tarih: string | null;
+  aciklama: string;
+  satirSayisi: number;
+  geriAlinabilirMi: boolean;
+  /** Sahadan sahaya taşıma başlığı: tamamı geri alınmaz, ters yönde taşınır. */
+  tasimaMi: boolean;
+}
+
+/** Aktarımlar penceresinden açılan sahadan sahaya taşıma: satırlar ya da bir saha sandığının tamamı. */
+interface SahaTasimaSecimi {
+  kaynak: SahaTasimaKaynagi;
+  satirIds: number[];
+  sandikId: number | null;
+  baslik: string;
+}
+
 interface RevisionIssueViewModel {
   issue: CekiRevizyonSorunu;
   context: string[];
@@ -66,7 +89,7 @@ interface RevisionIssueViewModel {
 @Component({
   selector: 'app-proje-listesi',
   standalone: true,
-  imports: [TranslatePipe, RouterLink, NgClass, StatusBadgeComponent, BreadcrumbComponent, CekiRevizyonOnizlemeComponent, CekiRevizyonGecmisiComponent, FormsModule, DatePipe, IslemlerMenusuComponent, TopluSevkComponent],
+  imports: [TranslatePipe, RouterLink, NgClass, StatusBadgeComponent, BreadcrumbComponent, CekiRevizyonOnizlemeComponent, CekiRevizyonGecmisiComponent, FormsModule, DatePipe, IslemlerMenusuComponent, TopluSevkComponent, OtomatikSahaAktarimComponent, SahadanSahayaTasimaComponent],
   templateUrl: './proje-listesi.component.html',
   styleUrl: './proje-listesi.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -125,6 +148,10 @@ export class ProjeListesiComponent implements OnInit {
   /** Son toplu sevkte sefere girmeyip seçimde bırakılan projeler; seçim şeridinde uyarıyla gösterilir. */
   sevkEdilmeyenProjeIds = signal<ReadonlySet<number>>(new Set());
   revizyonGecmisiProje = signal<ProjeDto | null>(null);
+  /** Otomatik sahaya aktarım önizlemesi açık olan normal proje. */
+  otomatikSahaAktarimProje = signal<ProjeDto | null>(null);
+  /** Aktarımlar penceresinden açılan sahadan sahaya taşıma. */
+  sahaTasimaSecimi = signal<SahaTasimaSecimi | null>(null);
 
   /**
    * Grid/3K buton gösterimi — Rol Yetki ekranından yönetilir.
@@ -313,9 +340,34 @@ export class ProjeListesiComponent implements OnInit {
   sahaAktarimLoading = signal(false);
   sahaAktarimGeriAlSaving = signal<number | null>(null);
   sahaSandikAktarimGeriAlSaving = signal<number | null>(null);
+  sahaAktarimIslemiGeriAlSaving = signal<number | null>(null);
   sahaAktarimIslemVar = computed(() =>
-    this.sahaAktarimGeriAlSaving() !== null || this.sahaSandikAktarimGeriAlSaving() !== null
+    this.sahaAktarimGeriAlSaving() !== null || this.sahaSandikAktarimGeriAlSaving() !== null ||
+    this.sahaAktarimIslemiGeriAlSaving() !== null
   );
+  /** Aktarımlar penceresindeki satırların aktarım başlıkları (otomatik ya da elle); en yeni üstte. */
+  sahaAktarimIslemleri = computed<SahaAktarimIslemi[]>(() => {
+    const islemler = new Map<number, SahaAktarimIslemi>();
+    for (const aktarim of this.sahaAktarimlari()) {
+      if (!aktarim.sahaAktarimId) continue;
+      const mevcut = islemler.get(aktarim.sahaAktarimId);
+      if (mevcut) {
+        mevcut.satirSayisi++;
+        mevcut.geriAlinabilirMi = mevcut.geriAlinabilirMi && aktarim.geriAlinabilirMi;
+        continue;
+      }
+      const tasimaMi = aktarim.sahaAktarimTasimaMi === true;
+      islemler.set(aktarim.sahaAktarimId, {
+        sahaAktarimId: aktarim.sahaAktarimId,
+        tarih: aktarim.sahaAktarimTarihi ?? null,
+        aciklama: aktarim.sahaAktarimAciklama?.trim() || `#${aktarim.sahaAktarimId}`,
+        satirSayisi: 1,
+        geriAlinabilirMi: aktarim.geriAlinabilirMi && !tasimaMi,
+        tasimaMi,
+      });
+    }
+    return [...islemler.values()].sort((a, b) => b.sahaAktarimId - a.sahaAktarimId);
+  });
   sahaAktarimGruplari = computed<SahaAktarimGrubu[]>(() => {
     const gruplar = new Map<string, SahaAktarimGrubu>();
 
@@ -575,6 +627,7 @@ export class ProjeListesiComponent implements OnInit {
     if (this.isSandikYonetimi()) return this.hasSandikYonetimiActions();
 
     return this.canShowGerceklesenRapor(p) ||
+      this.otomatikSahaAktarimYapilabilir(p) ||
       (this.isSevkEdilen() && this.kilidiAcabilir(p)) ||
       (!this.isSandikMode() && this.hasSevkiyatGecmisi(p)) ||
       (!this.isSandikMode() && this.canSevkEtProje(p)) ||
@@ -1547,6 +1600,87 @@ export class ProjeListesiComponent implements OnInit {
     return Array.from(birimler.entries())
       .map(([birim, miktar]) => `${this.formatAktarimMiktar(miktar)} ${birim}`)
       .join(' + ');
+  }
+
+  /** Otomatik sahaya aktarım: yalnız sevk görmüş (tam/kısmi) normal projede, sahaya aktarma yazma izniyle. */
+  otomatikSahaAktarimYapilabilir(p: ProjeDto): boolean {
+    if (this.isSandikMode() || !this.canUseEksikTamamlama()) return false;
+    if (p.projeTipiId !== ProjeTipi.Normal) return false;
+    return p.fizikselSevkEdilmisSandikVarMi ||
+      p.durumId === ProjeDurum.SevkEdildi ||
+      p.durumId === ProjeDurum.EksikSevkEdildi;
+  }
+
+  otomatikSahaAktarildi(sonuc: OtomatikSahaAktarimSonucDto): void {
+    this.otomatikSahaAktarimProje.set(null);
+    this.loadProjeler();
+    void this.router.navigate(['/saha-yonetimi', sonuc.sahaProjeId]);
+  }
+
+  async sahaAktarimIsleminiGeriAl(islem: SahaAktarimIslemi): Promise<void> {
+    const proje = this.sahaAktarimProje();
+    if (!proje || !this.canWriteSahaAktarimGeriAl() || !islem.geriAlinabilirMi || this.sahaAktarimIslemVar()) return;
+
+    const onay = await this.confirmService.ask({
+      title: this.ts.translate('SAHA_OTOMATIK.UNDO_TITLE'),
+      message: `<strong>${duzMetin(islem.aciklama)}</strong> (${islem.satirSayisi})<br>${duzMetin(this.ts.translate('SAHA_OTOMATIK.UNDO_CONFIRM'))}`,
+      confirmText: this.ts.translate('SAHA_OTOMATIK.UNDO_TRANSFER'),
+      cancelText: this.ts.translate('SAHA_OTOMATIK.CANCEL'),
+      type: 'warning'
+    });
+    if (!onay) return;
+
+    this.sahaAktarimIslemiGeriAlSaving.set(islem.sahaAktarimId);
+    this.projeService.sahaAktarimiGeriAl(islem.sahaAktarimId, 'Saha Yönetimi üzerinden aktarımın tamamı geri alındı.').subscribe({
+      next: (res) => {
+        this.sahaAktarimIslemiGeriAlSaving.set(null);
+        if (res.isSuccess) {
+          this.toastService.success(`${this.ts.translate('SAHA_OTOMATIK.UNDO_DONE')}: ${res.value?.geriAlinanSatirSayisi ?? islem.satirSayisi}`);
+          this.loadSahaAktarimlari(proje.id);
+          this.loadProjeler();
+        } else {
+          // 409 gövdesi engelleri listeler; hiçbir kayıt değişmemiştir.
+          const issues = (res as { issues?: unknown }).issues;
+          const ayrinti = Array.isArray(issues) && issues.length > 0 ? ` ${issues.map(String).join(' ')}` : '';
+          this.toastService.error((res.error || this.ts.translate('SAHA_OTOMATIK.UNDO_DISABLED')) + ayrinti, 8000);
+        }
+      },
+      error: () => {
+        this.sahaAktarimIslemiGeriAlSaving.set(null);
+        this.toastService.error(this.ts.translate('SAHA_OTOMATIK.UNDO_SERVER_ERROR'));
+      }
+    });
+  }
+
+  /** Aktarımlar penceresindeki tek satırı başka saha projesine taşır. */
+  sahayaTasiSatir(aktarim: SahaAktarimDto): void {
+    const proje = this.sahaAktarimProje();
+    if (!proje || !this.canUseEksikTamamlama() || this.sahaAktarimIslemVar()) return;
+    this.sahaTasimaSecimi.set({
+      kaynak: { id: proje.id, projeNo: proje.projeNo },
+      satirIds: [aktarim.sahaCekiSatiriId],
+      sandikId: null,
+      baslik: `#${aktarim.siraNo} ${aktarim.aciklama || aktarim.barkodNo}`,
+    });
+  }
+
+  /** Saha sandığının bütün içeriğini (manuel içerikler dahil) başka saha projesine taşır. */
+  sahayaTasiSandik(grup: SahaAktarimGrubu): void {
+    const proje = this.sahaAktarimProje();
+    if (!proje || !this.canUseEksikTamamlama() || grup.sahaSandikId === null || this.sahaAktarimIslemVar()) return;
+    this.sahaTasimaSecimi.set({
+      kaynak: { id: proje.id, projeNo: proje.projeNo },
+      satirIds: [],
+      sandikId: grup.sahaSandikId,
+      baslik: `${this.ts.translate('SAHA_TASIMA.CRATE')} ${grup.sahaSandikNo}`,
+    });
+  }
+
+  sahaTasindi(_sonuc: SahadanSahayaTasimaSonucDto): void {
+    const proje = this.sahaAktarimProje();
+    this.sahaTasimaSecimi.set(null);
+    if (proje) this.loadSahaAktarimlari(proje.id);
+    this.loadProjeler();
   }
 
   async sahaAktarimGeriAl(aktarim: SahaAktarimDto): Promise<void> {

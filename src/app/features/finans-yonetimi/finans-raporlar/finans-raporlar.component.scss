@@ -1,0 +1,190 @@
+// Raporlar sekmesi: rapor kataloğu, rapora özel seçim ve bölümlü önizleme. Ortak görünüm ../ortak/finans-v2.scss'tedir.
+
+.rapor-katalog {
+  margin-bottom: 18px;
+}
+
+.rapor-katalog-baslik {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--v2-muted);
+}
+
+.rapor-kartlari {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.rapor-kartlari-ozet {
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+}
+
+.rapor-karti {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  text-align: left;
+  background: var(--whiteColor, #fff);
+  border: 1px solid var(--borderColor, #e5eaf1);
+  border-radius: 12px;
+  color: var(--blackColor, #334155);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--v2-primary) 35%, var(--borderColor, #e5eaf1));
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--v2-primary);
+    outline-offset: 2px;
+  }
+
+  &.secili {
+    border-color: var(--v2-primary);
+    background: var(--v2-soft);
+    box-shadow: 0 0 0 1px var(--v2-primary) inset;
+  }
+}
+
+.rapor-kartlari-ozet .rapor-karti {
+  align-items: center;
+  padding: 11px 14px;
+}
+
+.rapor-karti-ikon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  font-size: 19px;
+  color: var(--v2-primary);
+  border-radius: 10px;
+  background: var(--v2-soft);
+}
+
+.rapor-karti.secili .rapor-karti-ikon {
+  background: var(--whiteColor, #fff);
+}
+
+.rapor-kartlari-ozet .rapor-karti-ikon {
+  width: 30px;
+  height: 30px;
+  font-size: 16px;
+  border-radius: 8px;
+}
+
+.rapor-karti-metin {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding-right: 16px;
+
+  strong {
+    font-size: 13px;
+    font-weight: 650;
+  }
+
+  small {
+    font-size: 11px;
+    line-height: 1.55;
+    color: var(--v2-muted);
+  }
+}
+
+.rapor-karti-isaret {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 16px;
+  color: var(--v2-primary);
+}
+
+.rapor-secim {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.rapor-secim-etiket {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--blackColor, #334155);
+}
+
+.rapor-secenekleri .v2-note {
+  margin-top: 12px;
+  line-height: 1.6;
+}
+
+.rapor-tablo-notu {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+// Önizlemede dosyadaki bölüm, ara toplam ve genel toplam satırlarının aynası.
+.v2-preview-table {
+  .rapor-satir-bolum td {
+    font-weight: 700;
+    color: var(--v2-primary);
+    background: var(--v2-soft);
+  }
+
+  .rapor-satir-ara td {
+    font-weight: 650;
+    background: #f1f5f9;
+  }
+
+  .rapor-satir-genel td {
+    font-weight: 700;
+    color: var(--blackColor, #334155);
+    background: color-mix(in srgb, var(--v2-primary) 14%, var(--whiteColor, #fff));
+  }
+}
+
+.rapor-secili-etiket {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--v2-muted);
+}
+
+.rapor-secili-baslik {
+  margin: 4px 0 8px;
+}
+
+.rapor-secili-secim {
+  display: inline-block;
+  margin-bottom: 6px;
+}
+
+@media (max-width: 700px) {
+  .rapor-kartlari,
+  .rapor-kartlari-ozet {
+    grid-template-columns: 1fr;
+  }
+
+  .rapor-secim .v2-segmented {
+    width: 100%;
+  }
+
+  // Dar ekranda üç seçim yan yana sığsın: uzun etiket ("Siparişi açılmayan") iki satıra iner.
+  .rapor-secim .v2-segmented button {
+    white-space: normal;
+    text-align: center;
+  }
+}

@@ -14,7 +14,7 @@ import { ProjeTipi, SevkiyatKilitAcmaTipi } from '../../../core/constants/enums'
 import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
-import { SandikDto, LookupResponse, ProjeDropdownDto, aktifSahaProjeleri, onayaAlindi } from '../../../shared/models/index';
+import { SandikDto, LookupResponse, ProjeDropdownDto, aktifSahaProjeleri, birNumaraliSandikMi, onayaAlindi } from '../../../shared/models/index';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
 import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 
@@ -620,11 +620,18 @@ export class UcKSandiklarComponent implements OnInit {
     return this.sandiklar()
       .filter(s => selected.has(s.id))
       .filter(s => !this.isSandikKilitli(s))
+      .filter(s => !birNumaraliSandikMi(s.sandikNo))
       .filter(s => s.urunSayisi > 0);
   }
 
   seciliSandiklariSahayaAktar() {
     if (!this.canSandiklariSahayaAktar() || this.sahayaAktarSaving()) return;
+
+    const selected = this.selectedSandikIds();
+    if (this.sandiklar().some(s => selected.has(s.id) && birNumaraliSandikMi(s.sandikNo))) {
+      // Sunucu da reddeder; seçimden çıkarıldığı kullanıcıya önceden söylenir.
+      this.toast.warning(this.ts.translate('SAHA_OTOMATIK.CRATE_ONE_RULE'));
+    }
 
     const sandiklar = this.getSahayaAktarilabilirSeciliSandiklar();
     if (sandiklar.length === 0) {

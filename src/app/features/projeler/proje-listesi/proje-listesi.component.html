@@ -463,6 +463,11 @@
                           </button>
                         </div>
                       }
+                      @if (otomatikSahaAktarimYapilabilir(p)) {
+                        <button type="button" class="btn btn-sm btn-outline-success" (click)="otomatikSahaAktarimProje.set(p)" [title]="'SAHA_OTOMATIK.SUBTITLE' | translate">
+                          <i class="ri-magic-line me-1"></i>{{ 'SAHA_OTOMATIK.MENU_BUTTON' | translate }}
+                        </button>
+                      }
                       @if (!isSandikMode() && hasSevkiyatGecmisi(p)) {
                         <button type="button" class="btn btn-sm btn-outline-primary" (click)="openSevkGecmisiModal(p)" title="Sevkiyat Geçmişi">
                           <i class="ri-route-line me-1"></i>Sevkiyatlar
@@ -974,6 +979,34 @@
               <p class="text-muted mb-0">Bu saha projesinde normal projeden gelen eksik aktarımı yok.</p>
             </div>
           } @else {
+            @if (sahaAktarimIslemleri().length > 0) {
+              <section class="saha-aktarim-islemler" [attr.aria-label]="'SAHA_OTOMATIK.TRANSFERS' | translate">
+                <h6>{{ 'SAHA_OTOMATIK.TRANSFERS' | translate }}</h6>
+                @for (islem of sahaAktarimIslemleri(); track islem.sahaAktarimId) {
+                  <div class="saha-aktarim-islem" [class.is-blocked]="!islem.geriAlinabilirMi">
+                    <div class="saha-aktarim-islem__bilgi">
+                      <strong>{{ islem.aciklama }}</strong>
+                      <small>#{{ islem.sahaAktarimId }} · {{ islem.tarih | date: 'dd.MM.yyyy HH:mm' }} · {{ islem.satirSayisi }} satır</small>
+                    </div>
+                    @if (canWriteSahaAktarimGeriAl()) {
+                      <button
+                        type="button"
+                        class="tz-btn tz-btn--sm"
+                        (click)="sahaAktarimIsleminiGeriAl(islem)"
+                        [disabled]="!islem.geriAlinabilirMi || sahaAktarimIslemVar()"
+                        [title]="islem.tasimaMi ? ('SAHA_OTOMATIK.TRANSFER_MOVE_NO_UNDO' | translate) : islem.geriAlinabilirMi ? ('SAHA_OTOMATIK.UNDO_TRANSFER' | translate) : ('SAHA_OTOMATIK.UNDO_DISABLED' | translate)">
+                        @if (sahaAktarimIslemiGeriAlSaving() === islem.sahaAktarimId) {
+                          <span class="spinner-border spinner-border-sm"></span>
+                        } @else {
+                          <i class="ri-arrow-go-back-line tz-ico-warning"></i>
+                        }
+                        {{ 'SAHA_OTOMATIK.UNDO_TRANSFER' | translate }}
+                      </button>
+                    }
+                  </div>
+                }
+              </section>
+            }
             <div class="saha-aktarim-list">
               @for (grup of sahaAktarimGruplari(); track grup.sahaSandikId ?? grup.sahaSandikNo) {
                 <section class="saha-aktarim-group" [class.is-blocked]="!grup.geriAlinabilirMi">
@@ -998,6 +1031,15 @@
                       }
                     </div>
 
+                    @if (canUseEksikTamamlama() && grup.sahaSandikId !== null) {
+                      <button
+                        type="button"
+                        class="tz-btn tz-btn--sm saha-aktarim-group-action"
+                        (click)="sahayaTasiSandik(grup)"
+                        [disabled]="sahaAktarimIslemVar()">
+                        <i class="ri-arrow-left-right-line tz-ico-info"></i>{{ 'SAHA_TASIMA.MOVE_CRATE' | translate }}
+                      </button>
+                    }
                     <button
                       type="button"
                       class="btn btn-sm btn-warning saha-aktarim-group-action"
@@ -1040,6 +1082,16 @@
                         </div>
 
                         <div class="saha-aktarim-action">
+                          @if (canUseEksikTamamlama()) {
+                            <button
+                              type="button"
+                              class="tz-btn tz-btn--sm"
+                              (click)="sahayaTasiSatir(aktarim)"
+                              [disabled]="aktarim.sevkEdildiMi || sahaAktarimIslemVar()"
+                              [title]="'SAHA_TASIMA.TITLE' | translate">
+                              <i class="ri-arrow-left-right-line tz-ico-info"></i>{{ 'SAHA_TASIMA.MOVE_ROW' | translate }}
+                            </button>
+                          }
                           <button
                             type="button"
                             class="btn btn-sm btn-outline-warning"
@@ -1372,6 +1424,13 @@
   </div>
 }
 
+@if (sahaTasimaSecimi(); as secim) {
+  <app-sahadan-sahaya-tasima [kaynak]="secim.kaynak" [satirIds]="secim.satirIds" [sandikId]="secim.sandikId" [baslik]="secim.baslik"
+    (closed)="sahaTasimaSecimi.set(null)" (tasindi)="sahaTasindi($event)" />
+}
+@if (otomatikSahaAktarimProje(); as project) {
+  <app-otomatik-saha-aktarim [proje]="project" (closed)="otomatikSahaAktarimProje.set(null)" (aktarildi)="otomatikSahaAktarildi($event)" />
+}
 @if (revizyonGecmisiProje(); as project) {
   <app-ceki-revizyon-gecmisi [projeId]="project.id" [projeNo]="project.projeNo" (closed)="revizyonGecmisiProje.set(null)" />
 }

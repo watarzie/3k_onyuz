@@ -122,6 +122,176 @@ export interface SahaAktarimDto {
   islemGormusMu: boolean;
   geriAlinabilirMi: boolean;
   geriAlinamamaNedeni?: string | null;
+  /** Satırın bağlı olduğu aktarım başlığı; aktarımın tamamı bu kimlikle geri alınır. */
+  sahaAktarimId?: number | null;
+  sahaAktarimTarihi?: string | null;
+  sahaAktarimAciklama?: string | null;
+  /** Başlık sahadan sahaya taşımaysa tamamı geri alınmaz; ters yönde yeni taşıma yapılır. */
+  sahaAktarimTasimaMi?: boolean;
+}
+
+/** Sahadan sahaya taşıma: ya satırlar (sahaCekiSatiriIds) ya da bir sandığın bütün içeriği (kaynakSandikId). */
+export interface SahadanSahayaTasimaTalebi {
+  kaynakSahaProjeId: number;
+  sahaCekiSatiriIds: number[];
+  kaynakSandikId?: number | null;
+  hedefSahaProjeId: number;
+  hedefSandikId?: number | null;
+  yeniSandikNo?: string | null;
+}
+
+export interface SahadanSahayaTasiDto extends SahadanSahayaTasimaTalebi {
+  /** Pencere açık kaldıkça sabit; ağ tekrarında aynı taşıma ikinci kez yazılmaz. */
+  islemAnahtari: string;
+  aciklama?: string | null;
+}
+
+export interface SahadanSahayaTasimaSatiriDto {
+  sahaCekiSatiriId: number;
+  kaynakProjeNo: string;
+  siraNo: number;
+  barkodNo: string;
+  aciklama: string;
+  kaynakSandikNo: string;
+  miktar: number;
+  konulanAdet: number;
+  birim: string;
+}
+
+export interface SahadanSahayaTasimaOnizlemeDto {
+  kaynakSahaProjeNo: string;
+  hedefSahaProjeNo: string;
+  hedefSandikNo: string;
+  yeniSandik: boolean;
+  numaraDegisti: boolean;
+  tasinabilirMi: boolean;
+  manuelIcerikSayisi: number;
+  toplamMiktar: number;
+  bosalacakSandikNolari: string[];
+  engeller: string[];
+  satirlar: SahadanSahayaTasimaSatiriDto[];
+}
+
+export interface SahadanSahayaTasimaSonucDto {
+  sahaAktarimId: number;
+  hedefSahaProjeId: number;
+  hedefSahaProjeNo: string;
+  hedefSandikId: number;
+  hedefSandikNo: string;
+  tasinanSatirSayisi: number;
+  tasinanManuelIcerikSayisi: number;
+  toplamMiktar: number;
+  bosalanSandikNolari: string[];
+}
+
+/** Bir saha aktarımının (otomatik ya da elle) bütün satırlarının geri alınma sonucu. */
+export interface SahaAktarimiGeriAlSonucDto {
+  sahaAktarimId: number;
+  sahaProjeId: number;
+  geriAlinanSatirSayisi: number;
+  geriAlinanToplamMiktar: number;
+  bosalanSandikSayisi: number;
+}
+
+/**
+ * Ana projenin 1 numaralı sandığı (transformatör) sahaya sandık olarak aktarılamaz; sunucudaki
+ * KoliNoKurali.Normalize ile aynı karşılaştırma: "01", "1.0" ve " 1 " de 1 numaralı sandıktır.
+ */
+export function birNumaraliSandikMi(sandikNo: string | null | undefined): boolean {
+  const metin = (sandikNo ?? '').replace(/\s/g, '');
+  return /^\+?\d+(\.\d*)?$/.test(metin) && Number(metin) === 1;
+}
+
+export interface OtomatikSahaAktarimParametreleri {
+  hedefSahaProjeId?: number | null;
+  yeniProje?: boolean;
+}
+
+export interface OtomatikSahaHedefDto {
+  sahaProjeId: number;
+  sahaProjeNo: string;
+  durumMetni: string;
+  sandikSayisi: number;
+}
+
+export interface OtomatikSahaUrunDto {
+  cekiSatiriId: number;
+  siraNo: number;
+  barkodNo: string;
+  aciklama: string;
+  kaynakSandikNo?: string | null;
+  istenenAdet: number;
+  miktar: number;
+  birim: string;
+}
+
+export interface OtomatikSahaSandikDto {
+  kaynakSandikId: number;
+  kaynakSandikNo: string;
+  sandikAdi?: string | null;
+  hedefSandikNo: string;
+  mevcutSandigaEklenir: boolean;
+  numaraDegisti: boolean;
+  urunSayisi: number;
+  toplamAdet: number;
+  urunler: OtomatikSahaUrunDto[];
+}
+
+export interface OtomatikSahaEksiklerSandigiDto {
+  sandikNo: string;
+  sandikAdi?: string | null;
+  mevcutSandigaEklenir: boolean;
+  toplamAdet: number;
+  urunler: OtomatikSahaUrunDto[];
+}
+
+export interface OtomatikSahaAtlananDto {
+  sandikNo?: string | null;
+  cekiSatiriId?: number | null;
+  urun?: string | null;
+  /** Kısa neden (tek cümle). */
+  neden: string;
+  /** Ürün ürün ayrıntı (elle sandık aktarımının ret gerekçeleri); açılır listede gösterilir. */
+  ayrintilar?: string[] | null;
+}
+
+/** Otomatik sahaya aktarım önizlemesi; uygulama planOzeti ile gönderilir. */
+export interface OtomatikSahaAktarimOnizlemeDto {
+  projeId: number;
+  projeNo: string;
+  planOzeti: string;
+  aktarilacakVarMi: boolean;
+  aktarilacakSandikSayisi: number;
+  eksikSatirSayisi: number;
+  eksikToplamAdet: number;
+  atlananSayisi: number;
+  hedefSahaProjeId?: number | null;
+  hedefSahaProjeNo?: string | null;
+  yeniSahaProjesi: boolean;
+  hedefSecimiGerekli: boolean;
+  yeniSahaProjeNoOnerisi: string;
+  hedefSecenekleri: OtomatikSahaHedefDto[];
+  sandiklar: OtomatikSahaSandikDto[];
+  eksiklerSandigi?: OtomatikSahaEksiklerSandigiDto | null;
+  atlananlar: OtomatikSahaAtlananDto[];
+}
+
+export interface OtomatikSahayaAktarDto {
+  hedefSahaProjeId?: number | null;
+  yeniProje: boolean;
+  yeniProjeNo?: string | null;
+  aciklama?: string | null;
+  planOzeti: string;
+}
+
+export interface OtomatikSahaAktarimSonucDto {
+  sahaProjeId: number;
+  sahaProjeNo: string;
+  sahaAktarimId: number;
+  aktarilanSandikSayisi: number;
+  eksikSatirSayisi: number;
+  toplamSatirSayisi: number;
+  toplamAdet: number;
 }
 
 export interface SahaSandikAktarimGeriAlResultDto {

@@ -117,6 +117,14 @@ export const routes: Routes = [
         data: { menuKod: YETKI.SANDIK.GRID_IS_LISTESI },
       },
       {
+        // Grid Sahası: proje tipinden bağımsız salt görüntüleme (sunucu menü ağacındaki Route ile aynı).
+        path: 'grid-saha',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/grid/grid-saha/grid-saha.component').then(m => m.GridSahaComponent),
+        data: { menuKod: YETKI.SANDIK.GRID_SAHA_GORUNUMU },
+      },
+      {
         path: 'grid/:projeId',
         canActivate: [menuGuard],
         loadComponent: () =>
