@@ -44,6 +44,8 @@ export interface GridSahaUrunDto {
   birim: string;
   istenenAdet: number;
   gridGelenAdet: number;
+  /** Sahadan doğrudan trafoya sevk edilen miktar (Trafo Sevk); Grid'e gelen adede girmez. */
+  trafoSevkAdet: number;
   ucKGelenMiktar: number;
   yoldakiMiktar: number;
   griddeBekleyenMiktar: number;
@@ -94,6 +96,10 @@ export interface GridMalKabulHareketDto {
   sandikNo?: string | null;
   oncekiDurumMetni?: string | null;
   gelenAdet?: number | null;
+  /** Trafo Sevk kaydında trafoya giden adet (açıklamadaki "Trafo:" eki); eski kayıtta boş. */
+  trafoAdet?: number | null;
+  /** Kaydın yeni Grid durumu (8, 9, 11, 14); manuel ürün ve toplu sevkte boş. */
+  gridDurumuId?: number | null;
   guncelGridGelenAdet?: number | null;
   topluUrunSayisi?: number | null;
   aciklama?: string | null;

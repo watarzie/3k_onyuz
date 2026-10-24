@@ -15,7 +15,7 @@ describe('Grid Sahası görünümü', () => {
 
   const satir = (id: number, projeId: number, tip: ProjeTipi, ek: Partial<GridSahaUrunDto> = {}): GridSahaUrunDto => ({
     cekiSatiriId: id, projeId, projeNo: `PA-${projeId}`, projeTipiId: tip, musteri: 'Müşteri', sandikNo: '1', siraNo: id,
-    barkodNo: `B-${id}`, olcuResmiPozNo: null, aciklama: `Ürün ${id}`, birim: 'Adet', istenenAdet: 10, gridGelenAdet: 10,
+    barkodNo: `B-${id}`, olcuResmiPozNo: null, aciklama: `Ürün ${id}`, birim: 'Adet', istenenAdet: 10, gridGelenAdet: 10, trafoSevkAdet: 0,
     ucKGelenMiktar: 2, yoldakiMiktar: 4, griddeBekleyenMiktar: 4, gridDurumuId: 8, gridDurumuMetni: 'Tam Geldi',
     gridSevkDurumuId: 1, gridSevkDurumuMetni: 'Sevk Edildi', sonMalKabulTarihi: '2026-10-19T09:00:00',
     sonMalKabulPersoneli: 'Ayşe Grid', sahayaAktarildiMi: false, gridAciklama: null, ...ek,
@@ -28,8 +28,11 @@ describe('Grid Sahası görünümü', () => {
         satir(2, 11, ProjeTipi.Saha, {
           gridDurumuId: 9, gridDurumuMetni: 'Eksik Geldi', sonMalKabulTarihi: null, sonMalKabulPersoneli: null, griddeBekleyenMiktar: 3.5,
         }),
+        satir(3, 10, ProjeTipi.Normal, {
+          gridDurumuId: 11, gridDurumuMetni: 'Trafo Sevk', gridGelenAdet: 2, trafoSevkAdet: 6, ucKGelenMiktar: 0, yoldakiMiktar: 0, griddeBekleyenMiktar: 2,
+        }),
       ],
-      pageNumber: 1, pageSize: 25, totalCount: 2, totalPages: 1, hasPreviousPage: false, hasNextPage: false,
+      pageNumber: 1, pageSize: 25, totalCount: 3, totalPages: 1, hasPreviousPage: false, hasNextPage: false,
     },
   };
   const malKabul: GridMalKabulGecmisiDto = {
@@ -40,6 +43,7 @@ describe('Grid Sahası görünümü', () => {
           anahtar: 'C-1', tarih: '2026-10-21T10:00:00', kullaniciId: 70, kullaniciAdi: 'Ayşe Grid', projeId: 10, projeNo: 'PA-10',
           projeTipiId: ProjeTipi.Normal, islemMetni: 'Tam Geldi', topluMu: false, cekiSatiriId: 1, urunMetni: 'B-1 - Kapak', sandikNo: '3',
           oncekiDurumMetni: 'Bekliyor', gelenAdet: 5, guncelGridGelenAdet: 5, topluUrunSayisi: null, aciklama: 'Durum: TamGeldi | Gelen: 5',
+          gridDurumuId: 8,
         },
         {
           anahtar: 'A-7', tarih: '2026-10-19T15:00:00', kullaniciId: 71, kullaniciAdi: 'Mehmet Grid', projeId: 11, projeNo: 'PA-11',
@@ -50,9 +54,16 @@ describe('Grid Sahası görünümü', () => {
           anahtar: 'C-9', tarih: '2026-10-19T11:00:00', kullaniciId: 71, kullaniciAdi: 'Mehmet Grid', projeId: 10, projeNo: 'PA-10',
           projeTipiId: ProjeTipi.Normal, islemMetni: 'Eksik Geldi', topluMu: false, cekiSatiriId: 2, urunMetni: 'B-2 - Vida',
           sandikNo: '1', oncekiDurumMetni: 'Gelmedi', gelenAdet: null, guncelGridGelenAdet: 6, topluUrunSayisi: null, aciklama: null,
+          gridDurumuId: 9,
+        },
+        {
+          anahtar: 'C-12', tarih: '2026-10-19T09:00:00', kullaniciId: 70, kullaniciAdi: 'Ayşe Grid', projeId: 10, projeNo: 'PA-10',
+          projeTipiId: ProjeTipi.Normal, islemMetni: 'Trafo Sevk', topluMu: false, cekiSatiriId: 3, urunMetni: 'B-3 - Röle',
+          sandikNo: '1', oncekiDurumMetni: 'Gelmedi', gelenAdet: 1, trafoAdet: 4, guncelGridGelenAdet: 1, topluUrunSayisi: null,
+          aciklama: 'Durum: TrafoSevk | Trafo: 4 | Gelen: 1', gridDurumuId: 11,
         },
       ],
-      pageNumber: 1, pageSize: 25, totalCount: 3, totalPages: 1, hasPreviousPage: false, hasNextPage: false,
+      pageNumber: 1, pageSize: 25, totalCount: 4, totalPages: 1, hasPreviousPage: false, hasNextPage: false,
     },
     personelOzeti: [{ kullaniciId: 71, kullaniciAdi: 'Mehmet Grid', islemSayisi: 7 }, { kullaniciId: 70, kullaniciAdi: 'Ayşe Grid', islemSayisi: 3 }],
   };
@@ -85,7 +96,11 @@ describe('Grid Sahası görünümü', () => {
     expect(el.querySelector('.gs-kpi')?.textContent).toMatch(/7[.,]5/); // ondalık ayraç test yereline bağlı
     expect(el.querySelector('.gs-kapsam-bekleyen')?.classList).toContain('active');
     const satirlar = el.querySelectorAll('.gs-urunler tbody tr.gs-satir');
-    expect(satirlar.length).toBe(2);
+    expect(satirlar.length).toBe(3);
+    // Trafo sevk adedi ayrı sütundadır; trafo payı olmayan satırda tire görünür.
+    expect(satirlar[2].querySelector('.gs-trafo')?.textContent?.trim()).toBe('6');
+    expect(satirlar[0].querySelector('.gs-trafo')?.textContent?.trim()).toBe('—');
+    expect(satirlar[2].querySelector('.gs-hap')?.getAttribute('data-ton')).toBe('info');
     expect(satirlar[0].querySelector('.gs-rozet--saha')).not.toBeNull();
     expect(satirlar[0].textContent).toContain('Ayşe Grid');
     expect(satirlar[0].textContent).toContain('Sevk Edildi');
@@ -128,6 +143,13 @@ describe('Grid Sahası görünümü', () => {
     expect(son().gridDurumuId).toBe(9);
     c.durumDegisti(9);
     expect(son().gridDurumuId).toBeNull();
+    // Sahada sonuçlanan durumlar da süzülebilir: Trafo Sevk ve Grid Kapandı.
+    c.durumDegisti(11);
+    expect(son().gridDurumuId).toBe(11);
+    c.durumDegisti(14);
+    expect(son().gridDurumuId).toBe(14);
+    c.durumDegisti(14);
+    expect(son().gridDurumuId).toBeNull();
     c.siralamaDegisti('bekleyen');
     c.azalanDegistir();
     expect(son()).toEqual(jasmine.objectContaining({ siralama: 'bekleyen', azalan: true }));
@@ -150,7 +172,7 @@ describe('Grid Sahası görünümü', () => {
     expect(api.getMalKabulKayitlari).toHaveBeenCalledOnceWith(jasmine.objectContaining({
       pageNumber: 1, pageSize: 25, tur: 'mal-kabul', baslangic: undefined, bitis: undefined, personelId: null, arama: undefined,
     }));
-    expect(c.gunGruplari().map(g => [g.gun, g.hareketler.length])).toEqual([['2026-10-21', 1], ['2026-10-19', 2]]);
+    expect(c.gunGruplari().map(g => [g.gun, g.hareketler.length])).toEqual([['2026-10-21', 1], ['2026-10-19', 3]]);
     expect(el.querySelectorAll('.gs-mal-kabul tr.gs-gun').length).toBe(2);
     const hareketler = el.querySelectorAll('.gs-mal-kabul tr.gs-hareket');
     expect(hareketler[0].textContent).toContain('Bekliyor');
@@ -163,6 +185,11 @@ describe('Grid Sahası görünümü', () => {
     expect(hareketler[1].querySelector('.gs-proje-link')).toBeNull();
     // Eski kayıtta gelen adet yok: satırın güncel Grid'e gelen miktarı yıldızla gösterilir.
     expect(hareketler[2].textContent).toContain('6*');
+    // Durum geçişinin rengi ürün listesindekiyle aynıdır; Trafo Sevk'te trafoya giden adet gelen adedin altında görünür.
+    expect(hareketler[0].querySelector('.gs-hap')?.getAttribute('data-ton')).toBe('success');
+    expect(hareketler[2].querySelector('.gs-hap')?.getAttribute('data-ton')).toBe('warning');
+    expect(hareketler[3].querySelector('.gs-hap')?.getAttribute('data-ton')).toBe('info');
+    expect(hareketler[3].querySelector('.gs-trafo-not')?.textContent).toContain('4');
     const ozet = el.querySelectorAll('.gs-personel-listesi li');
     expect(ozet.length).toBe(2);
     expect(ozet[0].textContent).toContain('Mehmet Grid');
