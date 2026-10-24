@@ -1,44 +1,115 @@
-// Barkodla ürün arama — arama formu, özet kartları ve projeler arası satır tablosu (Grid Sahası düzeniyle aynı aile).
+// Barkodla ürün arama — Grid Sahası ailesi: tek satırlık filtre çubuğu, özet kartları ve projeler arası satır tablosu.
 .ba-page {
   --ba-ton: #0f766e;
   --ba-border: var(--borderColor, #eceef2);
+  --ba-title: var(--blackColor, #3a4252);
   --ba-muted: var(--bodyColor, #64748b);
+  --ba-yukseklik: 42px;
 }
 
 .ba-card { overflow: hidden; border-radius: 12px; }
 
-.ba-arama {
+// Filtre çubuğu: bütün denetimler aynı yükseklikte, tek satırda (dar ekranda alt satıra kayar).
+.ba-filtreler {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 14px 18px;
-  padding: 18px 24px;
-  border-bottom: 1px solid var(--ba-border);
+  align-items: center;
+  gap: 10px 12px;
+  padding: 18px 24px 8px;
   background: #fafbfc;
-  .tz-field { flex: 0 0 auto; }
-  .tz-field > small { color: var(--ba-muted); font-size: 11.5px; }
-  .tz-btn { min-height: 42px; }
+
+  .tz-btn { min-height: var(--ba-yukseklik); }
 }
-.ba-barkod { flex: 1 1 320px !important; }
-.ba-barkod__kutu {
+
+.ba-arama-kutusu {
   position: relative;
-  i { position: absolute; top: 50%; left: 12px; transform: translateY(-50%); color: var(--ba-muted); }
-  input { padding-left: 36px; font-family: var(--bs-font-monospace, monospace); letter-spacing: .02em; }
+  display: block;
+  flex: 1 1 320px;
+  max-width: 520px;
+  margin: 0;
+  i {
+    position: absolute;
+    top: 50%;
+    left: 12px;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 17px;
+    pointer-events: none;
+  }
+  input {
+    width: 100%;
+    min-height: var(--ba-yukseklik);
+    padding: 0 12px 0 38px;
+    border: 1px solid var(--ba-border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--ba-title);
+    font-family: var(--bs-font-monospace, monospace);
+    font-size: 13px;
+    letter-spacing: .02em;
+    &::placeholder { font-family: inherit; letter-spacing: 0; color: #94a3b8; }
+    &:focus {
+      outline: none;
+      border-color: var(--primaryColor);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primaryColor) 15%, transparent);
+    }
+  }
 }
-.ba-tip { width: 170px; }
-.ba-anahtar {
+
+// Proje / müşteri süzgeci: barkod kutusundan dar, aynı görünüm.
+.ba-proje-arama {
+  flex: 0 1 220px;
+  input { font-family: inherit; letter-spacing: 0; }
+}
+
+.ba-tip-secici {
+  width: 170px;
+  min-height: var(--ba-yukseklik);
+  border-color: var(--ba-border);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+// "Yalnız eksikler": Grid Sahası'ndaki durum çipleriyle aynı görünüm.
+.ba-cip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 42px;
-  font-size: 13px;
+  gap: 7px;
+  min-height: var(--ba-yukseklik);
+  padding: 0 14px;
+  border: 1px solid var(--ba-border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ba-title);
+  font-size: 12.5px;
   font-weight: 600;
-  cursor: pointer;
-  .form-check-input { margin: 0; }
+  white-space: nowrap;
+  transition: border-color .15s ease, background .15s ease, color .15s ease;
+  i { font-size: 16px; color: #94a3b8; }
+  &:hover { border-color: color-mix(in srgb, var(--primaryColor) 40%, var(--ba-border)); }
+  &.active {
+    border-color: var(--primaryColor);
+    background: color-mix(in srgb, var(--primaryColor) 9%, #fff);
+    color: var(--primaryColor);
+    i { color: var(--primaryColor); }
+  }
 }
+
 .ba-rapor { display: flex; gap: 8px; margin-left: auto; }
 .ba-pdf i { color: #dc3545; }
 .ba-excel i { color: #14804a; }
+
+.ba-ipucu {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0 24px 14px;
+  border-bottom: 1px solid var(--ba-border);
+  background: #fafbfc;
+  color: var(--ba-muted);
+  font-size: 11.5px;
+}
 
 .ba-baslik {
   display: flex;
@@ -61,48 +132,87 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 24px 18px;
+  margin: 18px 24px;
   padding: 14px 16px;
   border-radius: 10px;
   background: #f8fafc;
   color: var(--ba-muted);
   font-size: 13px;
-  &--hata { margin-top: 18px; background: #fef2f2; color: #b91c1c; }
+  &--hata { background: #fef2f2; color: #b91c1c; }
 }
-.ba-arama + .ba-durum { margin-top: 18px; }
 
+// Tablo: başlık ve sayılar tek satır, açıklama kırılabilir; sayılar sağa ve eşit genişlikli rakamla.
 .ba-tablo {
   width: 100%;
-  font-size: 12.5px;
+  border-collapse: collapse;
   th {
-    padding: 10px 12px;
+    padding: 11px 14px;
     border-bottom: 1px solid var(--ba-border);
     background: #f8fafc;
     color: var(--ba-muted);
-    font-size: 11.5px;
-    font-weight: 700;
+    font-size: 12px;
+    font-weight: 600;
     white-space: nowrap;
   }
-  td { padding: 9px 12px; border-bottom: 1px solid var(--ba-border); vertical-align: top; }
-  tr.is-eksik td { background: #fff7f7; }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--ba-border);
+    color: var(--ba-title);
+    font-size: 13px;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover td { background: #fafbfc; }
+  // Eksik satır: sol kenarda ince vurgu (bütün satırı boyamaz).
+  tr.is-eksik td:first-child { box-shadow: inset 3px 0 0 #ef4444; }
 }
+.ba-th-aciklama { min-width: 240px; }
+
 .ba-proje {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  a, strong { font-weight: 700; white-space: nowrap; }
-  small { color: var(--ba-muted); }
+  gap: 3px;
+  small { color: var(--ba-muted); font-size: 11.5px; }
 }
+.ba-proje__ust {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  a, strong { font-weight: 700; }
+  a { color: var(--primaryColor); text-decoration: none; &:hover { text-decoration: underline; } }
+}
+// Proje tipi: Grid Sahası'ndaki tip rozeti; saha/yedek kendi renginde.
 .ba-tip {
-  align-self: flex-start;
-  padding: 1px 7px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primaryColor) 10%, #fff);
+  color: var(--primaryColor);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+  &[data-tip='2'] { background: #fff5ed; color: #c2410c; }
+  &[data-tip='3'] { background: #f3e8ff; color: #7e22ce; }
+}
+.ba-sandik {
+  display: inline-flex;
+  align-items: center;
+  min-width: 34px;
+  padding: 2px 8px;
+  border: 1px solid var(--ba-border);
   border-radius: 6px;
-  background: #f1f5f9;
-  color: #475569;
-  font-size: 10.5px;
+  background: #fff;
+  font-size: 12px;
   font-weight: 600;
 }
-.ba-aciklama { min-width: 220px; white-space: pre-line; }
+.ba-sayi { font-variant-numeric: tabular-nums; }
+.ba-aciklama {
+  white-space: pre-line !important;
+  min-width: 240px;
+  line-height: 1.45;
+}
 .ba-rozet {
   display: inline-block;
   margin-left: 6px;
@@ -113,12 +223,14 @@
   font-size: 10.5px;
   font-weight: 600;
 }
-.ba-birim { margin-left: 4px; color: var(--ba-muted); }
+.ba-birim { margin-left: 4px; color: var(--ba-muted); font-size: 11.5px; }
 .ba-eksik strong { color: #94a3b8; }
 tr.is-eksik .ba-eksik strong { color: #dc2626; }
 
 @media (max-width: 767.98px) {
-  .ba-arama, .ba-kpi { padding-left: 16px; padding-right: 16px; }
+  .ba-filtreler, .ba-kpi { padding-left: 16px; padding-right: 16px; }
+  .ba-ipucu { padding-left: 16px; padding-right: 16px; }
+  .ba-arama-kutusu { max-width: none; }
+  .ba-tip-secici { width: 100%; }
   .ba-rapor { margin-left: 0; }
-  .ba-tip { width: 100%; }
 }

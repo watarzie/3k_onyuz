@@ -21,4 +21,6 @@ export * from './ambalaj.model';
 export * from './finans.model';
 export * from './sevkiyat.model';
 export * from './barkod-arama.model';
+export * from './genel-arama.model';
+export * from './sandik-durum.model';
 

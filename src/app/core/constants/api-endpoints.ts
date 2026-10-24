@@ -204,9 +204,22 @@ export const API = {
     SEVKIYAT_DUZELTME_TAMAMLA: `${BASE}/sandik/sevkiyat-duzeltme-tamamla`,
     SEVKIYAT_DUZELTME_TOPLU_TAMAMLA: `${BASE}/sandik/sevkiyat-duzeltme-toplu-tamamla`,
     SEVK_SONRASI_DUZELTME: (sandikId: number) => `${BASE}/sandik/${sandikId}/sevk-sonrasi-duzeltme`,
+    DURUM_GECMISI: (sandikId: number) => `${BASE}/sandik/${sandikId}/durum-gecmisi`,
     MANUEL_URUN_SIL: `${BASE}/sandik/manuel-urun-sil`,
     SIL: `${BASE}/sandik/sil`,
     EKSIK_URUNLER_BY_PROJE: (projeId: number) => `${BASE}/sandik/eksik-urunler-by-proje/${projeId}`,
+  },
+  /** Üst çubuktaki genel arama: projeler, ürünler (barkod), sandıklar; her grup izne göre. */
+  ARAMA: `${BASE}/arama`,
+  /** Sandık açılış/kapanış istatistiği (sandik-acilis-istatistigi R) ve Excel çıktısı. */
+  SANDIK_ISTATISTIK: {
+    GETIR: `${BASE}/sandik-istatistik`,
+    /** Sayfalı tablolar (sayfa, boyut ve özetle aynı süzgeç). */
+    PROJELER: `${BASE}/sandik-istatistik/projeler`,
+    MUSTERILER: `${BASE}/sandik-istatistik/musteriler`,
+    KISILER: `${BASE}/sandik-istatistik/kisiler`,
+    OLAYLAR: `${BASE}/sandik-istatistik/olaylar`,
+    EXCEL: `${BASE}/sandik-istatistik/excel`,
   },
   BARKOD_ARAMA: {
     ARA: `${BASE}/barkod-arama`,

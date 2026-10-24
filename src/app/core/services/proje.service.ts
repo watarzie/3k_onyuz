@@ -125,8 +125,9 @@ export class ProjeService {
     return this.api.post<SahadanSahayaTasimaSonucDto>(API.PROJE.SAHADAN_SAHAYA_TASIMA, dto);
   }
 
-  sandikKapat(sandikId: number, kapali: boolean): Observable<ApiResult<boolean>> {
-    return this.api.put<boolean>(API.PROJE.SANDIK_KAPAT, { sandikId, kapali });
+  /** Kapatır ya da "Hazırlanıyor"a geri alır; geri almada sebep zorunlu, not isteğe bağlı. */
+  sandikKapat(sandikId: number, kapali: boolean, acilmaSebebiId?: number | null, not?: string | null): Observable<ApiResult<boolean>> {
+    return this.api.put<boolean>(API.PROJE.SANDIK_KAPAT, { sandikId, kapali, acilmaSebebiId: acilmaSebebiId ?? null, not: not ?? null });
   }
 
   sevkEt(projeId: number, sevkTarihi?: string, sandikIds?: number[], aciklama?: string, aracPlaka?: string): Observable<ApiResult<boolean>> {

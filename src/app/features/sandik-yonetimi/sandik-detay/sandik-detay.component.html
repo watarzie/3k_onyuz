@@ -15,16 +15,29 @@
           Düzeltmeyi Tamamla
         </button>
       }
-      @if (canWriteSandik() && sandik()?.durumMetni !== 'Kapandı' && !isSandikSevkEdildi()) {
-        <button type="button" class="tz-btn" (click)="sandikHazirla()">
-          <i class="ri-lock-line tz-ico-success"></i>Sandığı Kapat
-        </button>
-      }
       @if (canWriteSandik()) {
       <button type="button" class="tz-btn tz-btn--primary" (click)="openUrunEkleModal()" [disabled]="isSandikKilitli()">
         <i class="ri-add-line"></i>{{ isSahaYedek ? 'Malzeme Ekle' : 'Manuel Ürün Ekle' }}
       </button>
       }
+      <!-- Ana işlem (ürün ekleme) ve açık düzeltme açıkta; sandık işlemleri tek menüde (boşsa menü gizlenir). -->
+      <app-islemler-menusu etiket="Diğer" ikon="ri-more-line" [buyuk]="true" class="sd-diger">
+        @if (canWriteSandik() && sandik()?.durumMetni !== 'Kapandı' && !isSandikSevkEdildi()) {
+          <button type="button" class="sd-diger-kapat" (click)="sandikHazirla()">
+            <i class="ri-lock-line tz-ico-success"></i>Sandığı Kapat
+          </button>
+        }
+        @if (canWriteSandik() && sandik()?.durumMetni === 'Kapandı' && !isSandikKilitli()) {
+          <button type="button" class="sd-diger-geri-ac" (click)="geriAcPenceresiAcik.set(true)">
+            <i class="ri-arrow-go-back-line tz-ico-warning"></i>Sandığı Geri Aç
+          </button>
+        }
+        @if (canWriteSandik() && sandik()) {
+          <button type="button" class="sd-diger-ozellik" (click)="openOzellikGuncelleModal()" [disabled]="isSandikKilitli()">
+            <i class="ri-ruler-line tz-ico-primary"></i>Özellikleri Güncelle
+          </button>
+        }
+      </app-islemler-menusu>
     </div>
   </div>
 </div>
@@ -95,6 +108,10 @@
             <i class="ri-file-list-3-line" aria-hidden="true"></i>{{ sandik()!.icerikler.length }} {{ 'LABELS.URUN' | translate }}
             <span class="crate-hero__dot" aria-hidden="true"></span>
             <i class="ri-map-pin-2-line" aria-hidden="true"></i>{{ sandik()!.depoLokasyonMetni || '—' }}
+            @if (sandikTarihMetni(sandik()!.kapanmaTarihi); as kapanma) {
+              <span class="crate-hero__dot" aria-hidden="true"></span>
+              <i class="ri-lock-2-line" aria-hidden="true"></i><span class="sd-kapanma">Kapandı: {{ kapanma }}</span>
+            }
           </span>
         </div>
       </div>
@@ -119,13 +136,37 @@
       <div class="crate-spec"><span>Yükseklik</span><strong>{{ sandik()!.yukseklik ? sandik()!.yukseklik + ' mm' : '—' }}</strong></div>
       <div class="crate-spec"><span>Net</span><strong>{{ sandik()!.netKg ? sandik()!.netKg + ' kg' : '—' }}</strong></div>
       <div class="crate-spec"><span>Gross</span><strong>{{ sandik()!.grossKg ? sandik()!.grossKg + ' kg' : '—' }}</strong></div>
-      @if (canWriteSandik()) {
-        <button type="button" class="tz-btn tz-btn--sm crate-hero__edit" (click)="openOzellikGuncelleModal()" [disabled]="isSandikKilitli()">
-          <i class="ri-ruler-line tz-ico-primary"></i>Özellikleri Güncelle
-        </button>
-      }
     </div>
   </section>
+
+  <!-- ===== Açılış/kapanış geçmişi (kim, ne zaman, nasıl, hangi sebeple) ===== -->
+  @if (durumGecmisi().length) {
+    <details class="durum-gecmisi mb-4">
+      <summary>
+        <i class="ri-history-line" aria-hidden="true"></i>
+        Açılış/kapanış geçmişi
+        <span class="durum-gecmisi__sayac">
+          {{ durumGecmisi().length }} olay
+        </span>
+      </summary>
+      <ol class="durum-gecmisi__liste">
+        @for (o of durumGecmisi(); track o.id) {
+          <li class="durum-olayi" [class.is-acildi]="o.tur === SandikDurumOlayTuru.Acildi">
+            <span class="durum-olayi__ikon" aria-hidden="true">
+              <i [class]="o.tur === SandikDurumOlayTuru.Acildi ? 'ri-lock-unlock-line' : 'ri-lock-2-line'"></i>
+            </span>
+            <div class="durum-olayi__metin">
+              <strong>{{ o.turMetni }}</strong>
+              <span class="durum-olayi__kaynak">{{ o.kaynakMetni }}</span>
+              @if (o.sebepMetni) { <span class="durum-olayi__sebep">{{ o.sebepMetni }}</span> }
+              <small>{{ sandikTarihMetni(o.tarih) }} · {{ o.kullaniciAdi || 'Sistem' }}</small>
+              @if (o.not) { <p class="durum-olayi__not">{{ o.not }}</p> }
+            </div>
+          </li>
+        }
+      </ol>
+    </details>
+  }
 
     <!-- Özellik Güncelleme Modal -->
     @if (canWriteSandik() && showOzellikModal()) {
@@ -594,4 +635,10 @@
       </div>
     </div>
   }
+}
+
+<!-- ===== Sandık Geri Açma (sebep zorunlu) ===== -->
+@if (geriAcPenceresiAcik() && sandik(); as gs) {
+  <app-sandik-geri-ac [sandikId]="gs.id" [sandikNo]="gs.sandikNo" (kapat)="geriAcPenceresiAcik.set(false)"
+    (tamamlandi)="sandikGeriAcildi()" />
 }

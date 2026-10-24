@@ -30,8 +30,9 @@ describe('Sandık detayı sevk sonrası düzeltme', () => {
 
   beforeEach(() => {
     sandikApi = jasmine.createSpyObj('SandikService',
-      ['getSandikIcerik', 'getSandiklar', 'sevkSonrasiDuzeltmeDurumu']);
+      ['getSandikIcerik', 'getSandiklar', 'sevkSonrasiDuzeltmeDurumu', 'durumGecmisi']);
     sandikApi.getSandikIcerik.and.returnValue(of({ isSuccess: true, value: sandik(true) }));
+    sandikApi.durumGecmisi.and.returnValue(of({ isSuccess: true, value: [] }));
     sandikApi.getSandiklar.and.returnValue(of({ isSuccess: true, value: [] }));
     sandikApi.sevkSonrasiDuzeltmeDurumu.and.returnValue(of({ isSuccess: true, value: durum() }));
     TestBed.configureTestingModule({

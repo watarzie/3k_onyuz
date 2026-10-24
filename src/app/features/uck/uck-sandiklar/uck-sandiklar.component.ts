@@ -13,15 +13,17 @@ import { PdfService } from '../../../core/services/pdf.service';
 import { ProjeTipi, SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
 import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
+import { IslemlerMenusuComponent } from '../../../shared/components/islemler-menusu/islemler-menusu.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
-import { SandikDto, LookupResponse, ProjeDropdownDto, aktifSahaProjeleri, birNumaraliSandikMi, onayaAlindi } from '../../../shared/models/index';
+import { SandikDto, LookupResponse, ProjeDropdownDto, aktifSahaProjeleri, birNumaraliSandikMi, onayaAlindi, sandikEksikMetni, sandikTarihMetni } from '../../../shared/models/index';
+import { SandikGeriAcComponent } from '../../../shared/components/sandik-geri-ac/sandik-geri-ac.component';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
 import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 
 @Component({
   selector: 'app-uck-sandiklar',
   standalone: true,
-  imports: [RouterLink, NgClass, FormsModule, BreadcrumbComponent, StatCardComponent],
+  imports: [RouterLink, NgClass, FormsModule, BreadcrumbComponent, StatCardComponent, IslemlerMenusuComponent, SandikGeriAcComponent],
   templateUrl: './uck-sandiklar.component.html',
   styleUrl: './uck-sandiklar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -61,6 +63,12 @@ export class UcKSandiklarComponent implements OnInit {
     this.canWriteSandik() || this.canAssignLocation() || this.canSandiklariSahayaAktar()
   );
   canSeeSandikDurumRaporu = computed(() => this.permissionService.hasAccess(this.projeTipi.yetki.ucKSandikDurumRaporu));
+  /** Açılış/kapanış istatistiği kenar menüde yok; bu projeyle süzülmüş olarak "Diğer" menüsünden açılır. */
+  canSeeSandikAcilisIstatistigi = computed(() => this.permissionService.hasAccess(YETKI.SANDIK.SANDIK_ACILIS_ISTATISTIGI));
+  /** Sebep penceresi açık olan (geri alınacak) kapalı sandık. */
+  geriAcilacakSandik = signal<SandikDto | null>(null);
+  readonly sandikTarihMetni = sandikTarihMetni;
+  readonly sandikEksikMetni = sandikEksikMetni;
 
   projeId = signal(0);
   mevcutProje = signal<ProjeDropdownDto | null>(null);
@@ -907,36 +915,28 @@ export class UcKSandiklarComponent implements OnInit {
       return;
     }
 
-    const isKapandi = sandik.durumMetni === 'Kapandı';
-    const actionText = isKapandi ? 'Sandığı tekrar "Hazırlanıyor" durumuna almak' : 'Sandığı kapatmak';
+    // Geri alma sebep ister: onay yerine sebep penceresi açılır.
+    if (sandik.durumMetni === 'Kapandı') {
+      this.geriAcilacakSandik.set(sandik);
+      return;
+    }
 
     const confirm = await this.confirmService.ask({
       title: 'Sandık Durumu',
-      message: `${actionText} istediğinize emin misiniz?`,
+      message: 'Sandığı kapatmak istediğinize emin misiniz?',
       confirmText: 'Evet, Değiştir',
       cancelText: 'İptal',
-      type: isKapandi ? 'warning' : 'info'
+      type: 'info'
     });
 
     if (confirm) {
-      if (isKapandi) {
-        // Sandığı Aç ("Hazırlanıyor" yap)
-        this.projeService.sandikKapat(sandik.id, false).subscribe({
-          next: (res) => {
-            if (res.isSuccess) {
-              this.toast.success('Sandık tekrar hazırlanıyor konumuna alındı.');
-              this.refreshSandiklar();
-            } else {
-              this.toast.error(res.error || 'İşlem başarısız oldu.');
-            }
-          },
-          error: () => this.toast.error('Beklenmeyen bir hata oluştu.')
-        });
-      } else {
-        // Sandığı Kapat ("Kapandı" yap)
-        this.kapatSandikConfirm(sandik.id, false);
-      }
+      this.kapatSandikConfirm(sandik.id, false);
     }
+  }
+
+  sandikGeriAcildi() {
+    this.geriAcilacakSandik.set(null);
+    this.refreshSandiklar();
   }
 
   private kapatSandikConfirm(sandikId: number, forceClose: boolean) {

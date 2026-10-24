@@ -10,16 +10,6 @@
       <app-breadcrumb [items]="breadcrumb" />
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
-      @if (canSeeSandikDurumRaporu()) {
-      <button type="button" class="tz-btn" (click)="indirSandikDurumRaporu()" [disabled]="downloadingSandikDurumRaporu()">
-        @if (downloadingSandikDurumRaporu()) {
-          <span class="spinner-border spinner-border-sm"></span>
-        } @else {
-          <i class="ri-file-list-3-line tz-ico-primary"></i>
-        }
-        Sandık Durum Raporu
-      </button>
-      }
       @if (canWriteSevk() && duzeltmedekiSandiklar().length) {
       <button type="button" class="tz-btn duzeltme-toplu-btn" (click)="tumDuzeltmeleriTamamla()" [disabled]="topluDuzeltmeTamamlaSaving()"
         title="Düzeltmeye açık bütün sandıkları tek işlemde kilitler">
@@ -36,6 +26,24 @@
         <i class="ri-add-line"></i>Yeni Sandık Ekle
       </button>
       }
+      <!-- Seyrek kullanılan işlemler tek menüde; her öğe kendi izniyle görünür (boşsa menü gizlenir). -->
+      <app-islemler-menusu etiket="Diğer" ikon="ri-more-line" [buyuk]="true" class="us-diger">
+        @if (canSeeSandikDurumRaporu()) {
+        <button type="button" class="us-diger-durum-raporu" (click)="indirSandikDurumRaporu()" [disabled]="downloadingSandikDurumRaporu()">
+          @if (downloadingSandikDurumRaporu()) {
+            <span class="spinner-border spinner-border-sm"></span>
+          } @else {
+            <i class="ri-file-list-3-line tz-ico-primary"></i>
+          }
+          Sandık Durum Raporu
+        </button>
+        }
+        @if (canSeeSandikAcilisIstatistigi()) {
+        <a routerLink="/sandik-acilis-istatistigi" [queryParams]="{ proje: mevcutProje()?.projeNo ?? null }" class="us-diger-acilis-istatistigi">
+          <i class="ri-bar-chart-box-line tz-ico-primary"></i>Açılış/Kapanış İstatistiği
+        </a>
+        }
+      </app-islemler-menusu>
     </div>
   </div>
 </div>
@@ -204,6 +212,17 @@
             <span class="status-dot" [style.background]="getCardDurumColor(s)"></span>
             <span class="status-text" [style.color]="getCardDurumColor(s)">{{ getCardDurumLabel(s) }}</span>
           </div>
+          <!-- Kapanma zamanı (kapalı ve sevkli sandıkta) ve eksik uyarısı (sandık detayındaki satır eksiğiyle aynı hesap). -->
+          @if (sandikTarihMetni(s.kapanmaTarihi); as kapanma) {
+          <div class="card-kapanma" [title]="'Kapanma: ' + kapanma">
+            <i class="ri-lock-2-line" aria-hidden="true"></i>{{ kapanma }}
+          </div>
+          }
+          @if (sandikEksikMetni(s); as eksik) {
+          <div class="card-eksik" role="status" [title]="eksik + ' — ayrıntı sandık detayında'">
+            <i class="ri-error-warning-fill" aria-hidden="true"></i>{{ eksik }}
+          </div>
+          }
           <!-- Meta -->
           <div class="card-meta d-flex justify-content-between align-items-end w-100 mt-auto pt-2"
             style="flex-wrap: wrap;">
@@ -549,4 +568,10 @@
     </button>
   </div>
 </div>
+}
+
+<!-- ===== Sandık Geri Açma (sebep zorunlu) ===== -->
+@if (geriAcilacakSandik(); as gs) {
+<app-sandik-geri-ac [sandikId]="gs.id" [sandikNo]="getDisplayNo(gs.sandikNo)" (kapat)="geriAcilacakSandik.set(null)"
+  (tamamlandi)="sandikGeriAcildi()" />
 }

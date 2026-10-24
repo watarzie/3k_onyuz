@@ -11,11 +11,12 @@ import { BildirimDto, BildirimTipi } from '../../shared/models';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { ToggleService } from '../../core/services/toggle.service';
 import { YETKI } from '../../core/constants/yetki-kodlari';
+import { GenelAramaComponent } from '../genel-arama/genel-arama.component';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [TranslatePipe, RouterLink, NgClass, DatePipe],
+  imports: [TranslatePipe, RouterLink, NgClass, DatePipe, GenelAramaComponent],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
 })

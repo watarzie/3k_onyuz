@@ -46,6 +46,8 @@ export const YETKI = {
      * izniyle birlikte istenir; düzeltmedeki işlemler mevcut izinlerle yapılır.
      */
     SEVK_SONRASI_DUZELTME: 'sevk-sonrasi-duzeltme',
+    /** Sandık açılış/kapanış istatistiği: kaç kez kapanıp geri açıldığı, sebep/kişi/proje kırılımları ve Excel (R). */
+    SANDIK_ACILIS_ISTATISTIGI: 'sandik-acilis-istatistigi',
   },
   STOK: { KOK: 'stok', SIL: 'stok-sil' },
   SAHA: {

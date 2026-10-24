@@ -195,6 +195,9 @@ export class ProjeListesiComponent implements OnInit {
   /** Grid Sahası kenar menüde yoktur; Sandık Yönetimi ve Projeler listesindeki düğmeyle açılır. */
   canSeeGridSaha = computed(() =>
     (this.isSandikYonetimi() || this.isAktifProjeler()) && this.permissions.hasAccess(YETKI.SANDIK.GRID_SAHA_GORUNUMU));
+  /** Sandık açılış/kapanış istatistiği kenar menüde yoktur; Grid Sahası gibi bu listenin "Diğer" menüsünden açılır. */
+  canSeeSandikAcilisIstatistigi = computed(() =>
+    (this.isSandikYonetimi() || this.isAktifProjeler()) && this.permissions.hasAccess(YETKI.SANDIK.SANDIK_ACILIS_ISTATISTIGI));
   canUseEksikTamamlama = computed(() => this.permissions.canWrite(YETKI.SAHA.SAHAYA_AKTAR));
   canUploadCeki = computed(() => this.permissions.canWrite(YETKI.PROJE.CEKI_YUKLE));
   canSeeSahaGrid = computed(() => this.permissions.hasAccess(YETKI.SAHA.GRID_MODULU));
@@ -247,6 +250,7 @@ export class ProjeListesiComponent implements OnInit {
     (!this.isSandikMode() && this.projeler().some(p => this.canSevkEtProje(p) || this.canUpdatePlanlananSevkTarihiProje(p))) ||
     (!this.isSandikMode() && this.hasAnySevkiyatGecmisi()) ||
     this.isSevkEdilen() ||
+    this.projeler().some(p => this.listeGridRotasi(p) !== null || this.liste3KRotasi(p) !== null) ||
     (!this.isSandikMode() && this.canDeleteProjectCurrent())
   );
   canWriteCurrentMenu = computed(() => {
@@ -639,8 +643,8 @@ export class ProjeListesiComponent implements OnInit {
     if (this.isSandikYonetimi()) return this.hasSandikYonetimiActions();
 
     return this.canShowGerceklesenRapor(p) ||
-      this.sevkEdilenGridRotasi(p) !== null ||
-      this.sevkEdilen3KRotasi(p) !== null ||
+      this.listeGridRotasi(p) !== null ||
+      this.liste3KRotasi(p) !== null ||
       this.otomatikSahaAktarimYapilabilir(p) ||
       (this.isSevkEdilen() && this.kilidiAcabilir(p)) ||
       (!this.isSandikMode() && this.hasSevkiyatGecmisi(p)) ||
@@ -685,19 +689,22 @@ export class ProjeListesiComponent implements OnInit {
     return this.isSevkEdilen() && this.permissions.hasAccess(projeTipiBaglami(p.projeTipiId).yetki.gerceklesenCekiRaporu);
   }
 
+  /** Bütün tipleri listeleyen ekranlar (Aktif Projeler, Sevk Edilen): Grid/3K kısayolu satırın tipine göre verilir. */
+  private tumTiplerListesi = computed(() => this.isAktifProjeler() || this.isSevkEdilen());
+
   /**
-   * Sevk Edilen listesinden projenin kendi tipindeki Grid ekranına kısayol (Sandık Yönetimi'ndeki Grid düğmesinin
-   * karşılığı). İzin satırın proje tipine göre denetlenir; izin yoksa null.
+   * Aktif Projeler ve Sevk Edilen listesinden projenin kendi tipindeki Grid ekranına kısayol (Sandık Yönetimi'ndeki Grid
+   * düğmesinin karşılığı). İzin satırın proje tipine göre denetlenir; izin yoksa null.
    */
-  sevkEdilenGridRotasi(p: ProjeDto): string | null {
+  listeGridRotasi(p: ProjeDto): string | null {
     const baglam = projeTipiBaglami(p.projeTipiId);
-    return this.isSevkEdilen() && this.permissions.hasAccess(baglam.yetki.gridModulu) ? baglam.gridRotasi : null;
+    return this.tumTiplerListesi() && this.permissions.hasAccess(baglam.yetki.gridModulu) ? baglam.gridRotasi : null;
   }
 
-  /** Sevk Edilen listesinden projenin kendi tipindeki 3K ekranına kısayol; izin yoksa null. */
-  sevkEdilen3KRotasi(p: ProjeDto): string | null {
+  /** Aktif Projeler ve Sevk Edilen listesinden projenin kendi tipindeki 3K ekranına kısayol; izin yoksa null. */
+  liste3KRotasi(p: ProjeDto): string | null {
     const baglam = projeTipiBaglami(p.projeTipiId);
-    return this.isSevkEdilen() && this.permissions.hasAccess(baglam.yetki.ucKModulu) ? baglam.ucKRotasi : null;
+    return this.tumTiplerListesi() && this.permissions.hasAccess(baglam.yetki.ucKModulu) ? baglam.ucKRotasi : null;
   }
 
   /**

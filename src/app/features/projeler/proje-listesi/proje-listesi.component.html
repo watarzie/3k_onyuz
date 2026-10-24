@@ -28,18 +28,39 @@
       <button type="button" class="tz-btn tz-btn--primary" (click)="openProjeOlusturModal()">
         <i class="ri-add-line"></i>Proje Oluştur
       </button>
-    } @else if (!isSevkEdilen() && !isSahaYonetimi() && !isYedekYonetimi() && (canUploadCeki() || canUploadRevision())) {
+    } @else if (!isSevkEdilen() && !isSahaYonetimi() && !isYedekYonetimi() && canUploadCeki()) {
+      <button type="button" class="tz-btn tz-btn--primary" (click)="openUploadModal('normal')">
+        <i class="ri-upload-2-line"></i>Çeki Yükle
+      </button>
+    }
+    <!-- Seyrek kullanılan işlemler ve diğer ekranlara geçişler tek menüde; her öğe kendi izniyle görünür. -->
+    <app-islemler-menusu etiket="Diğer" ikon="ri-more-line" [buyuk]="true" class="pl-diger">
       @if (canUploadRevision()) {
-        <button type="button" class="tz-btn" (click)="openUploadModal('revizyon')">
+        <button type="button" class="pl-diger-revizyon" (click)="openUploadModal('revizyon')">
           <i class="ri-git-branch-line tz-ico-warning"></i>Revizyon Yükle
         </button>
       }
-      @if (canUploadCeki()) {
-        <button type="button" class="tz-btn tz-btn--primary" (click)="openUploadModal('normal')">
-          <i class="ri-upload-2-line"></i>Çeki Yükle
-        </button>
+      @if (canSee3KIsListesi()) {
+        <a routerLink="/uck-is-listesi" class="pl-diger-uck-is-listesi">
+          <i class="ri-archive-stack-line toolbar-icon is-3k"></i>3K İş Listesi
+        </a>
       }
-    }
+      @if (canSeeGridIsListesi()) {
+        <a routerLink="/grid-is-listesi" class="pl-diger-grid-is-listesi">
+          <i class="ri-database-2-line toolbar-icon is-grid"></i>Grid İş Listesi
+        </a>
+      }
+      @if (canSeeGridSaha()) {
+        <a routerLink="/grid-saha" class="grid-saha-trigger">
+          <i class="ri-inbox-archive-line toolbar-icon is-grid"></i>{{ 'MENU.GRID_SAHA_GORUNUMU' | translate }}
+        </a>
+      }
+      @if (canSeeSandikAcilisIstatistigi()) {
+        <a routerLink="/sandik-acilis-istatistigi" class="pl-diger-acilis-istatistigi">
+          <i class="ri-bar-chart-box-line toolbar-icon"></i>{{ 'MENU.SANDIK_ACILIS_ISTATISTIGI' | translate }}
+        </a>
+      }
+    </app-islemler-menusu>
   </div>
 </div>
 
@@ -135,7 +156,8 @@
       <span class="pl-sayac">{{ totalCount() }}</span>
     </div>
     <div class="project-list-header-actions">
-      @if (canUseBulkSecim()) {
+      <!-- Seçime bağlı toplu işlemler yalnız proje seçilince çıkar (satırdaki kutularla seçilir). -->
+      @if (canUseBulkSecim() && selectedEksikRaporCount() > 0) {
         <div class="toolbar-group" role="group" aria-label="Seçili projeler için toplu işlemler" [class.has-selection]="selectedEksikRaporCount() > 0">
           <span class="toolbar-group-label" title="Toplu işlemler bütün sayfalardaki seçili projelere uygulanır">
             <span class="toolbar-count">{{ selectedEksikRaporCount() }}</span>seçili
@@ -178,24 +200,6 @@
             </button>
           }
         </div>
-      }
-      @if (canSee3KIsListesi()) {
-        <a routerLink="/uck-is-listesi" class="toolbar-btn">
-          <i class="ri-archive-stack-line toolbar-icon is-3k"></i>
-          <span>3K İş Listesi</span>
-        </a>
-      }
-      @if (canSeeGridIsListesi()) {
-        <a routerLink="/grid-is-listesi" class="toolbar-btn">
-          <i class="ri-database-2-line toolbar-icon is-grid"></i>
-          <span>Grid İş Listesi</span>
-        </a>
-      }
-      @if (canSeeGridSaha()) {
-        <a routerLink="/grid-saha" class="toolbar-btn grid-saha-trigger">
-          <i class="ri-inbox-archive-line toolbar-icon is-grid"></i>
-          <span>{{ 'MENU.GRID_SAHA_GORUNUMU' | translate }}</span>
-        </a>
       }
       @if (showProjeTipiFilter()) {
         <div class="proje-type-filter" role="group" aria-label="Proje tipi filtresi">
@@ -485,12 +489,12 @@
                           <i class="ri-magic-line me-1"></i>{{ 'SAHA_OTOMATIK.MENU_BUTTON' | translate }}
                         </button>
                       }
-                      @if (sevkEdilenGridRotasi(p); as gridRotasi) {
+                      @if (listeGridRotasi(p); as gridRotasi) {
                         <a [routerLink]="[gridRotasi, p.id]" class="btn btn-sm btn-action-grid" title="Grid Modülü">
                           <i class="ri-database-2-line me-1"></i>Grid
                         </a>
                       }
-                      @if (sevkEdilen3KRotasi(p); as ucKRotasi) {
+                      @if (liste3KRotasi(p); as ucKRotasi) {
                         <a [routerLink]="[ucKRotasi, p.id]" class="btn btn-sm btn-action-3k" title="3K Modülü">
                           <i class="ri-archive-stack-line me-1"></i>3K
                         </a>

@@ -7,9 +7,17 @@ export interface BarkodUrunAramaSonucu {
   aciklama?: string | null;
   yalnizEksikler: boolean;
   projeTipiId?: number | null;
+  /** Uygulanan proje no / müşteri süzgeci; yoksa null. */
+  projeArama?: string | null;
   olusturmaTarihi: string;
+  /** Yalnız istenen sayfanın satırları (sunucuda sayfalanır). */
   satirlar: BarkodUrunSatiri[];
-  /** Süzgeçten önce barkodun bütün satırları. */
+  /** Bütün süzgeçlerden sonra, sayfalamadan önce satır sayısı. */
+  filtreliSatir: number;
+  sayfa: number;
+  sayfaBoyutu: number;
+  toplamSayfa: number;
+  /** "Yalnız eksikler"den önce (proje tipi ve proje/müşteri süzgecindeki) bütün satırlar; özet kartları bunlarındır. */
   toplamSatir: number;
   projeSayisi: number;
   eksikSatir: number;
@@ -46,4 +54,6 @@ export interface BarkodUrunAramaParams {
   barkod: string;
   yalnizEksikler: boolean;
   projeTipiId?: number | null;
+  /** Barkod sonuçları içinde proje no veya müşteri adında arama. */
+  projeArama?: string | null;
 }

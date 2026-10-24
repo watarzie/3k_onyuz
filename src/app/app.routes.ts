@@ -125,12 +125,22 @@ export const routes: Routes = [
         data: { menuKod: YETKI.SANDIK.GRID_SAHA_GORUNUMU },
       },
       {
-        // Barkodla ürün arama: proje tipinden bağımsız salt görüntüleme (sunucu menü ağacındaki Route ile aynı).
+        // Barkodla ürün arama: proje tipinden bağımsız salt görüntüleme; kenar menüde yok, genel aramadan açılır.
         path: 'barkod-arama',
         canActivate: [menuGuard],
         loadComponent: () =>
           import('./features/sandik-yonetimi/barkod-arama/barkod-arama.component').then(m => m.BarkodAramaComponent),
         data: { menuKod: YETKI.SANDIK.BARKOD_URUN_ARAMA },
+      },
+      {
+        // Sandık açılış/kapanış istatistiği: kenar menüde yok; Projeler ve 3K sandık listesindeki "Diğer" menüsünden açılır.
+        path: 'sandik-acilis-istatistigi',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/sandik-yonetimi/sandik-acilis-istatistigi/sandik-acilis-istatistigi.component').then(
+            m => m.SandikAcilisIstatistigiComponent,
+          ),
+        data: { menuKod: YETKI.SANDIK.SANDIK_ACILIS_ISTATISTIGI },
       },
       {
         path: 'grid/:projeId',
@@ -177,6 +187,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/onay-yonetimi/onay-listesi.component').then(m => m.OnayListesiComponent),
         data: { menuKod: YETKI.ONAY.MERKEZI, title: 'İşlem Onay Merkezi' },
+      },
+
+      // --- Genel arama sonuçları (oturum açan tüm kullanıcılar; gruplar sunucuda izne göre dolar) ---
+      {
+        path: 'arama',
+        loadComponent: () =>
+          import('./features/arama/arama-sonuclari.component').then(m => m.AramaSonuclariComponent),
       },
 
       // --- Kullanıcı Bildirim Merkezi (oturum açan tüm kullanıcılar) ---

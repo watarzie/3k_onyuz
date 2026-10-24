@@ -7,7 +7,7 @@ import {
   ApiResult, SandikDto, SandikDetayDto, SandikEkleDto, ManuelUrunEkleDto,
   UrunGuncelleDto, UrunTasiDto, SandikOzellikGuncelleDto, SandikIcerikBilgisiGuncelleDto,
   CekiSatiriAnaVeriGuncelleDto, CekiSatirlariSilDto, CekiSatirlariSilResultDto,
-  EksikUrunForSandikDto, SandikDuzeltmeDurumuDto
+  EksikUrunForSandikDto, SandikDuzeltmeDurumuDto, SandikDurumOlayi
 } from '../../shared/models/index';
 
 /**
@@ -113,6 +113,11 @@ export class SandikService {
   /** Sevk sonrası düzeltme durumu: gerekçe, açılıştan bu yana değişiklikler ve geçmiş. */
   sevkSonrasiDuzeltmeDurumu(sandikId: number): Observable<ApiResult<SandikDuzeltmeDurumuDto>> {
     return this.api.get<SandikDuzeltmeDurumuDto>(API.SANDIK.SEVK_SONRASI_DUZELTME(sandikId));
+  }
+
+  /** Sandığın açılış/kapanış zaman çizelgesi (en yeniden eskiye). */
+  durumGecmisi(sandikId: number): Observable<ApiResult<SandikDurumOlayi[]>> {
+    return this.api.get<SandikDurumOlayi[]>(API.SANDIK.DURUM_GECMISI(sandikId));
   }
 
   lokasyonGuncelle(sandikIds: number[], depoLokasyonId: number): Observable<ApiResult<unknown>> {

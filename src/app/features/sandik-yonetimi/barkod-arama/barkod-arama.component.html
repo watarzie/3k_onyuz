@@ -10,35 +10,33 @@
   </div>
 
   <section class="trezo-card border-0 bg-white ba-card">
-    <form class="ba-arama" (submit)="$event.preventDefault(); ara()">
-      <label class="tz-field ba-barkod">
-        <span>Barkod numarası</span>
-        <div class="ba-barkod__kutu">
-          <i class="ri-barcode-line" aria-hidden="true"></i>
-          <input type="search" class="form-control" autocomplete="off" [attr.maxlength]="BARKOD_EN_FAZLA"
-                 placeholder="ör. FC4324045" aria-label="Barkod numarası"
-                 [value]="barkodTaslak()" (input)="barkodTaslak.set($any($event.target).value)" />
-        </div>
-        <small>Barkod tam eşleşir; büyük/küçük harf önemsiz. "-01" gibi ekli barkodlar ayrı üründür.</small>
+    <!-- Filtre çubuğu (Grid Sahası düzeni): bütün denetimler tek satırda, eşit yükseklikte. -->
+    <form class="ba-filtreler" (submit)="$event.preventDefault(); ara()">
+      <label class="ba-arama-kutusu">
+        <i class="ri-barcode-line" aria-hidden="true"></i>
+        <input type="search" autocomplete="off" [attr.maxlength]="BARKOD_EN_FAZLA"
+               placeholder="Barkod numarası, ör. FC4324045" aria-label="Barkod numarası"
+               [value]="barkodTaslak()" (input)="barkodTaslak.set($any($event.target).value)" />
       </label>
       <button type="submit" class="tz-btn tz-btn--primary ba-ara" [disabled]="!aranabilir()">
         <i [class]="yukleniyor() ? 'ri-loader-4-line tz-spin' : 'ri-search-line'" aria-hidden="true"></i>Ara
       </button>
-      <label class="ba-anahtar">
-        <input type="checkbox" class="form-check-input" [checked]="yalnizEksikler()"
-               (change)="yalnizEksiklerDegisti($any($event.target).checked)" />
-        <span>Yalnız eksikler</span>
+      <label class="ba-arama-kutusu ba-proje-arama">
+        <i class="ri-folder-3-line" aria-hidden="true"></i>
+        <input type="search" autocomplete="off" maxlength="100" placeholder="Proje / müşteri ara" aria-label="Sonuçlarda proje no veya müşteri ara"
+               [value]="projeArama()" (input)="projeAramaDegisti($any($event.target).value)" />
       </label>
-      <label class="tz-field ba-tip">
-        <span>Proje tipi</span>
-        <select class="form-select" [value]="projeTipiId() ?? ''" (change)="projeTipiDegisti($any($event.target).value)">
-          @for (secenek of projeTipiSecenekleri; track secenek.deger) {
-            <option [value]="secenek.deger ?? ''" [selected]="secenek.deger === projeTipiId()">{{ secenek.etiket }}</option>
-          }
-        </select>
-      </label>
+      <select class="form-select ba-tip-secici" aria-label="Proje tipi" [value]="projeTipiId() ?? ''" (change)="projeTipiDegisti($any($event.target).value)">
+        @for (secenek of projeTipiSecenekleri; track secenek.deger) {
+          <option [value]="secenek.deger ?? ''" [selected]="secenek.deger === projeTipiId()">{{ secenek.etiket }}</option>
+        }
+      </select>
+      <button type="button" class="ba-cip ba-yalniz-eksik" [class.active]="yalnizEksikler()" [attr.aria-pressed]="yalnizEksikler()"
+              (click)="yalnizEksiklerDegisti(!yalnizEksikler())">
+        <i [class]="yalnizEksikler() ? 'ri-checkbox-circle-fill' : 'ri-checkbox-blank-circle-line'" aria-hidden="true"></i>Yalnız eksikler
+      </button>
       @if (sonuc()) {
-        <div class="ba-rapor">
+        <div class="ba-rapor" role="group" aria-label="Rapor">
           <button type="button" class="tz-btn ba-pdf" [disabled]="indiriliyor() !== null" (click)="raporIndir('pdf')">
             <i [class]="indiriliyor() === 'pdf' ? 'ri-loader-4-line tz-spin' : 'ri-file-pdf-2-line'" aria-hidden="true"></i>PDF
           </button>
@@ -48,6 +46,7 @@
         </div>
       }
     </form>
+    <p class="ba-ipucu"><i class="ri-information-line" aria-hidden="true"></i>Barkod tam eşleşir; büyük/küçük harf önemsiz. "-01" gibi ekli barkodlar ayrı üründür.</p>
 
     @if (hata()) {
       <div class="ba-durum ba-durum--hata" role="alert"><i class="ri-error-warning-line" aria-hidden="true"></i>{{ hata() }}</div>
@@ -67,7 +66,9 @@
       @if (satirlar().length === 0) {
         <div class="ba-durum" role="status">
           <i class="ri-inbox-line" aria-hidden="true"></i>
-          @if (s.toplamSatir === 0) {
+          @if (s.toplamSatir === 0 && s.projeArama) {
+            Bu barkod "{{ s.projeArama }}" ile eşleşen projelerde yok.
+          } @else if (s.toplamSatir === 0) {
             Bu barkod hiçbir projede yok.
           } @else {
             Süzgece uyan satır yok{{ yalnizEksikler() ? ': bu barkodun eksik satırı yok' : '' }}.
@@ -79,10 +80,10 @@
             <thead>
               <tr>
                 <th>Proje</th>
-                <th>Durum</th>
+                <th>Proje durumu</th>
                 <th>Sandık</th>
                 <th class="text-end">Sıra</th>
-                <th>Açıklama</th>
+                <th class="ba-th-aciklama">Açıklama</th>
                 <th class="text-end">İstenen</th>
                 <th class="text-end">Grid'e gelen</th>
                 <th class="text-end">3K'ya gelen</th>
@@ -97,34 +98,40 @@
                 <tr [class.is-eksik]="satir.eksik > 0">
                   <td>
                     <div class="ba-proje">
-                      @if (gridRotasi(satir); as rota) {
-                        <a [routerLink]="rota" title="Grid ekranına git">{{ satir.projeNo }}</a>
-                      } @else {
-                        <strong>{{ satir.projeNo }}</strong>
-                      }
-                      <span class="ba-tip">{{ projeTipiAdi(satir.projeTipiId) }}</span>
+                      <div class="ba-proje__ust">
+                        @if (gridRotasi(satir); as rota) {
+                          <a [routerLink]="rota" title="Grid ekranına git">{{ satir.projeNo }}</a>
+                        } @else {
+                          <strong>{{ satir.projeNo }}</strong>
+                        }
+                        <span class="ba-tip" [attr.data-tip]="satir.projeTipiId">{{ projeTipiAdi(satir.projeTipiId) }}</span>
+                      </div>
                       <small>{{ satir.musteri }}</small>
                     </div>
                   </td>
-                  <td>{{ satir.projeDurumu }}</td>
-                  <td>{{ satir.sandikNo }}</td>
-                  <td class="text-end">{{ satir.siraNo ?? '—' }}</td>
+                  <td><app-status-badge [status]="satir.projeDurumu" [label]="satir.projeDurumu" /></td>
+                  <td><span class="ba-sandik">{{ satir.sandikNo }}</span></td>
+                  <td class="text-end ba-sayi">{{ satir.siraNo ?? '—' }}</td>
                   <td class="ba-aciklama">
-                    {{ satir.aciklama }}
+                    <span>{{ satir.aciklama }}</span>
                     @if (satir.elleEklenen) { <span class="ba-rozet">Elle eklenen</span> }
                   </td>
-                  <td class="text-end">{{ satir.istenen | number: '1.0-4' }}<small class="ba-birim">{{ satir.birim }}</small></td>
-                  <td class="text-end">{{ satir.gridGelen | number: '1.0-4' }}</td>
-                  <td class="text-end">{{ satir.ucKGelen | number: '1.0-4' }}</td>
-                  <td class="text-end ba-eksik"><strong>{{ satir.eksik | number: '1.0-4' }}</strong></td>
-                  <td>{{ satir.gridDurumu }}</td>
-                  <td>{{ satir.ucKDurumu }}</td>
-                  <td>{{ satir.sevkDurumu }}</td>
+                  <td class="text-end ba-sayi">{{ satir.istenen | number: '1.0-4' }}<small class="ba-birim">{{ satir.birim }}</small></td>
+                  <td class="text-end ba-sayi">{{ satir.gridGelen | number: '1.0-4' }}</td>
+                  <td class="text-end ba-sayi">{{ satir.ucKGelen | number: '1.0-4' }}</td>
+                  <td class="text-end ba-sayi ba-eksik"><strong>{{ satir.eksik | number: '1.0-4' }}</strong></td>
+                  <td><app-status-badge [status]="satir.gridDurumu" [label]="satir.gridDurumu" /></td>
+                  <td><app-status-badge [status]="satir.ucKDurumu" [label]="satir.ucKDurumu" /></td>
+                  <td><app-status-badge [status]="sevkRozeti(satir.sevkDurumu)" [label]="satir.sevkDurumu" /></td>
                 </tr>
               }
             </tbody>
           </table>
         </div>
+        <!-- Sunucu sayfalaması: özet kartları bütün sonucundur; rapor da bütün sonucu yazar. -->
+        <app-server-pager [pageNumber]="s.sayfa" [pageSize]="s.sayfaBoyutu" [totalCount]="s.filtreliSatir"
+          [totalPages]="s.toplamSayfa" [hasPreviousPage]="s.sayfa > 1" [hasNextPage]="s.sayfa < s.toplamSayfa"
+          [pageSizeOptions]="SAYFA_BOYUTLARI" (pageChange)="sayfaDegisti($event)" (pageSizeChange)="boyutDegisti($event)" />
       }
     } @else if (!yukleniyor()) {
       <div class="ba-durum" role="status">

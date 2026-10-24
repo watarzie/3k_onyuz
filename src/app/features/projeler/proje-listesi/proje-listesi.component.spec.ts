@@ -120,26 +120,34 @@ describe('Proje listesi: sevk edilen saha/yedek görünürlüğü (G1) ve toplu 
     expect(c.kilidiAcabilir(saha)).toBeTrue();
   });
 
-  it('Sevk Edilen listesinden projenin kendi tipindeki Grid ve 3K ekranına kısayol; izin satırın proje tipine göre', () => {
+  it('Sevk Edilen ve Aktif Projeler listesinden projenin kendi tipindeki Grid ve 3K ekranına kısayol; izin satırın proje tipine göre', () => {
     const normal = proje(1, ProjeTipi.Normal);
     listeOgeleri = [normal, saha, yedek];
     okuma.add(YETKI.SANDIK.GRID_MODULU);
     okuma.add(YETKI.SANDIK.UCK_MODULU);
     okuma.add(YETKI.SAHA.UCK_MODULU);
     const { fixture, c } = setup({ menuKod: YETKI.PROJE.SEVK_EDILEN });
-    expect([c.sevkEdilenGridRotasi(normal), c.sevkEdilen3KRotasi(normal)]).toEqual(['/grid', '/uck']);
-    expect([c.sevkEdilenGridRotasi(saha), c.sevkEdilen3KRotasi(saha)]).toEqual([null, '/saha-yonetimi/uck']);
-    expect([c.sevkEdilenGridRotasi(yedek), c.sevkEdilen3KRotasi(yedek)]).toEqual([null, null]);
+    expect([c.listeGridRotasi(normal), c.liste3KRotasi(normal)]).toEqual(['/grid', '/uck']);
+    expect([c.listeGridRotasi(saha), c.liste3KRotasi(saha)]).toEqual([null, '/saha-yonetimi/uck']);
+    expect([c.listeGridRotasi(yedek), c.liste3KRotasi(yedek)]).toEqual([null, null]);
     expect(c.shouldShowActions(normal)).toBeTrue();
 
     const el = fixture.nativeElement as HTMLElement;
     const hrefler = Array.from(el.querySelectorAll<HTMLAnchorElement>('a.btn-action-grid, a.btn-action-3k')).map(a => a.getAttribute('href'));
     expect(hrefler).toEqual(['/grid/1', '/uck/1', '/saha-yonetimi/uck/2']);
 
-    // Sevk Edilen dışındaki listede bu kısayol yoktur (Sandık Yönetimi'nin kendi düğmeleri vardır).
+    // Aktif Projeler de bütün tipleri listeler: aynı kısayol aynı izin kuralıyla çıkar.
     TestBed.resetTestingModule();
-    const aktif = setup({ menuKod: YETKI.PROJE.AKTIF_PROJELER }).c;
-    expect(aktif.sevkEdilenGridRotasi(normal)).toBeNull();
+    const aktif = setup({ menuKod: YETKI.PROJE.AKTIF_PROJELER });
+    expect([aktif.c.listeGridRotasi(normal), aktif.c.liste3KRotasi(saha), aktif.c.listeGridRotasi(yedek)]).toEqual(['/grid', '/saha-yonetimi/uck', null]);
+    expect(aktif.c.shouldShowActions(normal)).toBeTrue();
+    expect(Array.from((aktif.fixture.nativeElement as HTMLElement).querySelectorAll<HTMLAnchorElement>('a.btn-action-grid, a.btn-action-3k'))
+      .map(a => a.getAttribute('href'))).toEqual(['/grid/1', '/uck/1', '/saha-yonetimi/uck/2']);
+
+    // Sandık Yönetimi'nin kendi Grid/3K düğmeleri vardır; bu kısayol orada çıkmaz (çift düğme olmaz).
+    TestBed.resetTestingModule();
+    const sandik = setup({ menuKod: YETKI.SANDIK.YONETIMI, projeTipi: ProjeTipi.Normal }).c;
+    expect(sandik.listeGridRotasi(normal)).toBeNull();
   });
 
   it('Gerçekleşen çeki menüsünde müşteri listesi PDF/Excel olarak iner; sevk edilmemiş projede sunucu iletisi gösterilir', fakeAsync(() => {
@@ -177,7 +185,12 @@ describe('Proje listesi: sevk edilen saha/yedek görünürlüğü (G1) ve toplu 
     expect(c.canSevkEtProje(proje(1, ProjeTipi.Normal))).toBeFalse();
     expect(c.canUseTopluSevk()).toBeTrue();
     expect(c.canUseBulkSecim()).toBeTrue();
+    // Toplu işlem düğmeleri yalnız seçim varken çıkar.
+    expect(fixture.nativeElement.querySelector('.toplu-sevk-trigger')).toBeNull();
+    c.toggleEksikRaporProjeSelection(saha);
+    fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.toplu-sevk-trigger')).not.toBeNull();
+    c.seciminiTemizle();
 
     c.openTopluSevk();
     expect(c.topluSevkProjeleri()).toBeNull();

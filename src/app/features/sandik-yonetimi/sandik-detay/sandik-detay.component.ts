@@ -13,9 +13,12 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
+import { IslemlerMenusuComponent } from '../../../shared/components/islemler-menusu/islemler-menusu.component';
 import {
-  EksikUrunForSandikDto, SahaProjeBagDto, SandikDetayDto, SandikDuzeltmeDurumuDto, SandikIcerikDto, SandikDto
+  EksikUrunForSandikDto, SahaProjeBagDto, SandikDetayDto, SandikDuzeltmeDurumuDto, SandikIcerikDto, SandikDto,
+  SandikDurumOlayi, SandikDurumOlayTuru, sandikTarihMetni
 } from '../../../shared/models/index';
+import { SandikGeriAcComponent } from '../../../shared/components/sandik-geri-ac/sandik-geri-ac.component';
 import { Birim, ProjeTipi } from '../../../core/constants/enums';
 import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { SandikTopluTasiComponent } from '../sandik-toplu-tasi/sandik-toplu-tasi.component';
@@ -27,7 +30,7 @@ import { YETKI } from '../../../core/constants/yetki-kodlari';
 @Component({
   selector: 'app-sandik-detay',
   standalone: true,
-  imports: [TranslatePipe, NgClass, DatePipe, FormsModule, RouterLink, StatusBadgeComponent, BreadcrumbComponent, SandikTopluTasiComponent],
+  imports: [TranslatePipe, NgClass, DatePipe, FormsModule, RouterLink, StatusBadgeComponent, BreadcrumbComponent, SandikTopluTasiComponent, IslemlerMenusuComponent, SandikGeriAcComponent],
   templateUrl: './sandik-detay.component.html',
   styleUrl: './sandik-detay.component.scss',
 })
@@ -111,6 +114,12 @@ export class SandikDetayComponent implements OnInit {
 
   // Sevk sonrası düzeltme: gerekçe, açılıştan bu yana değişiklikler ve geçmiş
   duzeltmeDurumu = signal<SandikDuzeltmeDurumuDto | null>(null);
+
+  // Açılış/kapanış zaman çizelgesi ve sebep penceresiyle geri açma
+  durumGecmisi = signal<SandikDurumOlayi[]>([]);
+  geriAcPenceresiAcik = signal(false);
+  readonly SandikDurumOlayTuru = SandikDurumOlayTuru;
+  readonly sandikTarihMetni = sandikTarihMetni;
 
   breadcrumb: { label: string; link?: string }[] = [];
 
@@ -236,6 +245,17 @@ export class SandikDetayComponent implements OnInit {
     return !!item && this.sahaProjeleri(item).length > 0;
   }
 
+  loadDurumGecmisi() {
+    this.sandikService.durumGecmisi(this.sandikId())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(res => this.durumGecmisi.set(res.isSuccess && res.value ? res.value : []));
+  }
+
+  sandikGeriAcildi() {
+    this.geriAcPenceresiAcik.set(false);
+    this.loadSandik();
+  }
+
   loadDuzeltmeDurumu() {
     this.sandikService.sevkSonrasiDuzeltmeDurumu(this.sandikId())
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -292,6 +312,7 @@ export class SandikDetayComponent implements OnInit {
       this.loading.set(false);
       if (res.isSuccess && res.value) {
         this.sandik.set(res.value);
+        this.loadDurumGecmisi();
         if (res.value.durumId === 4) {
           this.loadDuzeltmeDurumu();
         } else {

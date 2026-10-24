@@ -19,6 +19,11 @@ export interface SandikDto {
   sahayaAktarildiMi?: boolean;
   sahaUzerindenSevkEdildiMi?: boolean;
   sahayaAktarilanMiktar?: number;
+  /** Son kapanma zamanı; yalnız kapalı ve sevkli sandıkta dolu (eski kayıtlarda bilinmeyebilir). */
+  kapanmaTarihi?: string | null;
+  /** Eksiği olan satır sayısı ve toplam eksik adet; sandık detayındaki satır eksiğiyle aynı hesap. */
+  eksikUrunSayisi?: number;
+  eksikAdet?: number;
   en?: number;
   boy?: number;
   yukseklik?: number;
@@ -40,6 +45,8 @@ export interface SandikDetayDto {
   sahayaAktarildiMi?: boolean;
   sahaUzerindenSevkEdildiMi?: boolean;
   sahayaAktarilanMiktar?: number;
+  /** Son kapanma zamanı; yalnız kapalı ve sevkli sandıkta dolu. */
+  kapanmaTarihi?: string | null;
   en?: number;
   boy?: number;
   yukseklik?: number;

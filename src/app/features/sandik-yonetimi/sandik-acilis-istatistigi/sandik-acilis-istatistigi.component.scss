@@ -1,0 +1,375 @@
+// Sandık açılış/kapanış istatistiği — Hareket Geçmişi / Stok liste düzeni: başlık + süzgeç kartı + KPI + tablo kartı
+// (başlıkta simge, başlık ve tz-segmented sekmeler; tablo; altta ortak sayfalayıcı).
+.sai-page {
+  --sai-primary: var(--primaryColor);
+  --sai-soft: color-mix(in srgb, var(--sai-primary) 8%, #fff);
+  --sai-border: var(--borderColor, #eceef2);
+  --sai-title: var(--blackColor, #3a4252);
+  --sai-muted: var(--bodyColor, #64748b);
+}
+
+.sai-kart {
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+// Süzgeç
+.sai-filtreler {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 18px 24px;
+}
+.sai-alan {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  span {
+    color: var(--sai-muted);
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  input {
+    height: 40px;
+    min-width: 150px;
+    border-color: var(--sai-border);
+    border-radius: 9px;
+    font-size: 13px;
+  }
+}
+.sai-arama {
+  position: relative;
+  flex: 1 1 180px;
+  margin: 0;
+  i {
+    position: absolute;
+    top: 50%;
+    left: 13px;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 16px;
+    pointer-events: none;
+  }
+  input {
+    width: 100%;
+    height: 40px;
+    padding: 0 14px 0 38px;
+    border: 1px solid var(--sai-border);
+    border-radius: 9px;
+    background: #f6f7f9;
+    color: var(--sai-title);
+    font-size: 13px;
+    outline: 0;
+    transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+    &:focus {
+      border-color: color-mix(in srgb, var(--sai-primary) 45%, transparent);
+      background: #fff;
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--sai-primary) 12%, transparent);
+    }
+  }
+}
+.sai-hazir { flex-shrink: 0; }
+.sai-uygula { height: 40px; }
+.sai-uyari {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 24px 16px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: #fff1ef;
+  color: #b42318;
+  font-size: 13px;
+}
+
+// KPI
+.sai-kpi {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+// Tablo kartı başlığı
+.sai-kart__bas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--sai-border);
+}
+.sai-kart__baslik {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  h3 {
+    margin: 0;
+    color: var(--sai-title);
+    font-size: 17px;
+    font-weight: 700;
+  }
+}
+.sai-kirilim {
+  margin: 3px 0 0;
+  color: var(--sai-muted);
+  font-size: 12.5px;
+}
+.sai-ayrac {
+  margin: 0 8px;
+  color: #cbd5e1;
+}
+.sai-kart__ikon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  background: var(--sai-soft);
+  color: var(--sai-primary);
+  font-size: 20px;
+}
+.sai-sekmeler { flex-shrink: 0; flex-wrap: wrap; }
+.sai-sayac {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, .06);
+  color: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+.sai-kart__alt {
+  padding: 12px 20px;
+  border-top: 1px solid var(--sai-border);
+}
+
+// Özet bölümleri
+.sai-bolum { padding: 18px 24px 8px; }
+.sai-bolum__baslik {
+  margin: 0 0 12px;
+  color: var(--sai-title);
+  font-size: 14px;
+  font-weight: 700;
+  &--tablo {
+    margin: 0;
+    padding: 18px 24px 12px;
+    border-top: 1px solid var(--sai-border);
+  }
+}
+.sai-cubuklar {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+  li {
+    display: grid;
+    grid-template-columns: minmax(140px, 30%) 1fr auto;
+    align-items: center;
+    gap: 12px;
+    color: var(--sai-title);
+    font-size: 13px;
+  }
+  strong { min-width: 40px; text-align: right; font-variant-numeric: tabular-nums; }
+}
+.sai-cubuk__ad { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sai-cubuk {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #f1f5f9;
+  span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: #f97316;
+  }
+  span.is-sebepsiz { background: #94a3b8; }
+}
+
+// Tablo (history-table ile aynı ölçüler)
+.table-responsive.is-yukleniyor { opacity: .55; transition: opacity .15s ease; }
+.sai-tablo {
+  width: 100%;
+  border-collapse: collapse;
+  th {
+    padding: 13px 20px;
+    background: #f8fafc;
+    color: var(--sai-muted);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  td {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--sai-border);
+    color: var(--sai-title);
+    font-size: 13px;
+    vertical-align: middle;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  tbody tr {
+    transition: background .15s ease;
+    &:hover { background: color-mix(in srgb, var(--primaryColor) 3%, #fff); }
+    &:last-child td { border-bottom: 0; }
+  }
+}
+.sai-tarih {
+  strong { display: block; font-weight: 600; }
+  small {
+    display: block;
+    margin-top: 2px;
+    color: #94a3b8;
+    font-size: 11.5px;
+  }
+}
+.sai-proje-hucre {
+  strong { display: block; font-weight: 600; }
+  small {
+    display: block;
+    max-width: 260px;
+    margin-top: 1px;
+    overflow: hidden;
+    color: #94a3b8;
+    font-size: 11.5px;
+    text-overflow: ellipsis;
+  }
+}
+.sai-kisi {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+}
+.sai-avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--primaryColor) 16%, #fff), var(--brandColorSoft));
+  color: var(--brandColorHover);
+  font-size: 12px;
+  font-weight: 700;
+  &.is-musteri { font-size: 14px; }
+}
+.sai-sandik-no {
+  display: inline-block;
+  min-width: 32px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+.sai-sayi {
+  font-weight: 600;
+  &.is-acildi { color: #c2410c; }
+}
+.sai-olay-hucre {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  small { color: #94a3b8; font-size: 11.5px; }
+}
+.sai-hap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  &[data-ton='primary'] { background: #ecf0ff; color: #4f46e5; }
+  &[data-ton='success'] { background: #eeffe5; color: #1e8308; }
+  &[data-ton='warning'] { background: #fff5ed; color: #c2410c; }
+}
+.sai-hap__nokta {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.sai-not {
+  max-width: 260px;
+  overflow: hidden;
+  color: #475569;
+  text-overflow: ellipsis;
+}
+.sai-soluk { color: #b6c0cd; }
+
+// Durumlar (history-state / history-empty)
+.sai-durum {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 56px 20px;
+  color: var(--sai-muted);
+  font-size: 13px;
+}
+.sai-bos {
+  padding: 56px 20px 60px;
+  text-align: center;
+  h4 {
+    margin: 16px 0 6px;
+    color: var(--sai-title);
+    font-size: 17px;
+    font-weight: 700;
+  }
+  p {
+    margin: 0;
+    color: var(--sai-muted);
+    font-size: 13px;
+  }
+  &--kucuk {
+    padding: 24px 20px 32px;
+    p { margin-top: 10px; }
+  }
+}
+.sai-bos__ikon {
+  display: inline-grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--sai-soft);
+  color: var(--sai-primary);
+  font-size: 30px;
+  box-shadow: 0 0 0 10px color-mix(in srgb, var(--sai-primary) 4%, #fff);
+  &.is-hata { background: #fff1ef; color: #d92d20; box-shadow: 0 0 0 10px #fff8f6; }
+}
+.sai-ipucu {
+  display: flex;
+  gap: 6px;
+  margin: 12px 4px 0;
+  color: var(--sai-muted);
+  font-size: 12.5px;
+  i { flex-shrink: 0; margin-top: 2px; }
+}
+
+@media (max-width: 767.98px) {
+  .sai-filtreler,
+  .sai-kart__bas,
+  .sai-bolum,
+  .sai-tablo th,
+  .sai-tablo td {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .sai-alan { flex: 1 1 45%; input { min-width: 0; width: 100%; } }
+  .sai-arama, .sai-hazir, .sai-uygula { width: 100%; }
+  .sai-sekmeler { width: 100%; }
+}
