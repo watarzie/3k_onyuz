@@ -12,15 +12,47 @@
   <div class="tz-modal__body">
     <div class="tz-form">
       <div class="tz-field">
-        <label for="sst-hedef">{{ 'SAHA_TASIMA.TARGET_PROJECT' | translate }}</label>
-        <input id="sst-ara" type="search" class="form-control sst-ara" [ngModel]="hedefArama()" (ngModelChange)="hedefAramaDegisti($event)"
-          [placeholder]="'SAHA_TASIMA.TARGET_SEARCH' | translate" [attr.aria-label]="'SAHA_TASIMA.TARGET_SEARCH' | translate" [disabled]="saving()" />
-        <select id="sst-hedef" class="form-select" [ngModel]="hedefProjeId()?.toString() ?? ''" (ngModelChange)="hedefProjeSecildi($event)" [disabled]="saving()">
-          <option value="">{{ 'SAHA_TASIMA.TARGET_CHOOSE' | translate }}</option>
-          @for (p of hedefProjeler(); track p.id) {
-            <option [value]="p.id.toString()">{{ p.projeNo }} · {{ p.musteri }}</option>
+        <label id="sst-hedef-etiket">{{ 'SAHA_TASIMA.TARGET_PROJECT' | translate }}</label>
+        <!-- Tek seçici: arama kutusu açılır listenin içindedir (Hareket Geçmişi proje seçicisiyle aynı görünüm). -->
+        <div class="sst-combobox" [class.open]="hedefAcik()" (click)="$event.stopPropagation()">
+          <button type="button" class="sst-combobox__toggle" id="sst-hedef" aria-haspopup="listbox" aria-labelledby="sst-hedef-etiket sst-hedef"
+            [attr.aria-expanded]="hedefAcik()" [disabled]="saving()" (click)="hedefListesiniAcKapat()">
+            <span class="sst-combobox__icon" aria-hidden="true"><i class="ri-folder-3-line"></i></span>
+            <span class="sst-combobox__text">
+              @if (seciliHedef(); as h) {
+                <strong>{{ h.projeNo }}</strong>
+                <small>{{ h.musteri || '-' }}</small>
+              } @else {
+                <span class="sst-combobox__placeholder">{{ 'SAHA_TASIMA.TARGET_CHOOSE' | translate }}</span>
+              }
+            </span>
+            <i class="ri-arrow-down-s-line sst-combobox__chevron" aria-hidden="true"></i>
+          </button>
+
+          @if (hedefAcik()) {
+            <div class="sst-combobox__menu">
+              <div class="sst-combobox__search">
+                <i class="ri-search-line" aria-hidden="true"></i>
+                <input #hedefAramaKutusu type="text" class="sst-ara" autocomplete="off" [ngModel]="hedefArama()" (ngModelChange)="hedefAramaDegisti($event)"
+                  [placeholder]="'SAHA_TASIMA.TARGET_SEARCH' | translate" [attr.aria-label]="'SAHA_TASIMA.TARGET_SEARCH' | translate"
+                  (keydown.escape)="hedefListesiniKapat($event)" />
+              </div>
+              <div class="sst-combobox__options" role="listbox" aria-labelledby="sst-hedef-etiket">
+                @for (p of hedefProjeler(); track p.id) {
+                  <button type="button" role="option" class="sst-combobox__option" [class.active]="hedefProjeId() === p.id"
+                    [attr.aria-selected]="hedefProjeId() === p.id" (click)="hedefSec(p.id)">
+                    <span>{{ p.projeNo }}</span>
+                    <small>{{ p.musteri || '-' }}</small>
+                    @if (hedefProjeId() === p.id) { <i class="ri-check-line" aria-hidden="true"></i> }
+                  </button>
+                } @empty {
+                  <div class="sst-combobox__empty">{{ 'SAHA_TASIMA.TARGET_EMPTY' | translate }}</div>
+                }
+              </div>
+              <p class="sst-combobox__hint"><i class="ri-information-line" aria-hidden="true"></i>{{ 'SAHA_TASIMA.TARGET_SHIPPED_HINT' | translate }}</p>
+            </div>
           }
-        </select>
+        </div>
       </div>
 
       @if (hedefProjeId()) {
@@ -95,7 +127,7 @@
             <tbody>
               @for (s of o.satirlar; track s.sahaCekiSatiriId) {
                 <tr>
-                  <td>{{ s.kaynakProjeNo }}</td>
+                  <td class="sst-proje">{{ s.kaynakProjeNo }}</td>
                   <td><strong>#{{ s.siraNo }} {{ s.aciklama }}</strong>@if (s.barkodNo) {<small>{{ s.barkodNo }}</small>}</td>
                   <td>{{ s.kaynakSandikNo }}</td>
                   <td class="num">{{ s.miktar | number: '1.0-4' }} {{ s.birim }}</td>

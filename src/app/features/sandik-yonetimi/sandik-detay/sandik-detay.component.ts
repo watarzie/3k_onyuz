@@ -1,8 +1,8 @@
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { Component, DestroyRef, inject, signal, computed, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute } from '@angular/router';
-import { NgClass } from '@angular/common';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslationService } from '../../../core/services/translation.service';
 import { SandikService } from '../../../core/services/sandik.service';
@@ -13,7 +13,9 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
-import { EksikUrunForSandikDto, SandikDetayDto, SandikIcerikDto, SandikDto } from '../../../shared/models/index';
+import {
+  EksikUrunForSandikDto, SahaProjeBagDto, SandikDetayDto, SandikDuzeltmeDurumuDto, SandikIcerikDto, SandikDto
+} from '../../../shared/models/index';
 import { Birim, ProjeTipi } from '../../../core/constants/enums';
 import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { SandikTopluTasiComponent } from '../sandik-toplu-tasi/sandik-toplu-tasi.component';
@@ -25,7 +27,7 @@ import { YETKI } from '../../../core/constants/yetki-kodlari';
 @Component({
   selector: 'app-sandik-detay',
   standalone: true,
-  imports: [TranslatePipe, NgClass, FormsModule, StatusBadgeComponent, BreadcrumbComponent, SandikTopluTasiComponent],
+  imports: [TranslatePipe, NgClass, DatePipe, FormsModule, RouterLink, StatusBadgeComponent, BreadcrumbComponent, SandikTopluTasiComponent],
   templateUrl: './sandik-detay.component.html',
   styleUrl: './sandik-detay.component.scss',
 })
@@ -107,6 +109,9 @@ export class SandikDetayComponent implements OnInit {
   guncelleSaving = signal(false);
   duzeltmeTamamlaSaving = signal(false);
 
+  // Sevk sonrası düzeltme: gerekçe, açılıştan bu yana değişiklikler ve geçmiş
+  duzeltmeDurumu = signal<SandikDuzeltmeDurumuDto | null>(null);
+
   breadcrumb: { label: string; link?: string }[] = [];
 
   private readonly projeTipi = projeTipiBaglami(rotaProjeTipi(this.route.snapshot));
@@ -154,8 +159,9 @@ export class SandikDetayComponent implements OnInit {
       (this.isSandikSevkEdildi() && !this.isSandikDuzeltmeyeAcik());
   }
 
+  /** Sevkli sandık yalnız sevk sonrası düzeltmeye açıkken taşımaya katılır (sunucu da aynı kuralı uygular). */
   isSandikTasimayaKilitli(): boolean {
-    return this.isSandikKilitli() || this.isSandikSevkEdildi();
+    return this.isSandikKilitli();
   }
 
   getSandikDurumMetni(): string {
@@ -169,9 +175,14 @@ export class SandikDetayComponent implements OnInit {
       return;
     }
 
+    // Onaydan önce açılıştan bu yana yapılan değişiklikler gösterilir; tamamlanınca düzeltme kaydına yazılır.
+    const degisiklikler = this.duzeltmeDurumu()?.degisiklikler ?? [];
+    const ozet = degisiklikler.length
+      ? `<br><br><strong>Bu düzeltmedeki değişiklikler:</strong><ul class="text-start mb-0">${degisiklikler.map(d => `<li>${duzMetin(d)}</li>`).join('')}</ul>`
+      : '';
     const onay = await this.confirmService.ask({
       title: 'Düzeltmeyi Tamamla',
-      message: `<strong>${duzMetin(s.sandikNo)}</strong> numaralı sandık tekrar kilitlenecek. Sevkiyat kaydı korunmaya devam edecek ve yeni sevkiyat oluşturulmayacak. Onaylıyor musunuz?`,
+      message: `<strong>${duzMetin(s.sandikNo)}</strong> numaralı sandık tekrar kilitlenecek. Sevkiyat kaydı korunmaya devam edecek ve yeni sevkiyat oluşturulmayacak. Onaylıyor musunuz?${ozet}`,
       confirmText: 'Evet, Tamamla',
       cancelText: 'Vazgeç',
       type: 'success'
@@ -213,7 +224,22 @@ export class SandikDetayComponent implements OnInit {
   }
 
   private isSandikDtoTasimayaKilitli(sandik: SandikDto): boolean {
-    return this.isSandikDtoKilitli(sandik) || this.isSandikDtoSevkEdildi(sandik);
+    return this.isSandikDtoKilitli(sandik);
+  }
+
+  /** Ürün aktif olarak sahaya aktarıldıysa takip edildiği saha projeleri; ana projede değiştirilemez. */
+  sahaProjeleri(item: SandikIcerikDto): SahaProjeBagDto[] {
+    return item.aktifSahaProjeleri ?? [];
+  }
+
+  isSahadaTakipte(item: SandikIcerikDto | null): boolean {
+    return !!item && this.sahaProjeleri(item).length > 0;
+  }
+
+  loadDuzeltmeDurumu() {
+    this.sandikService.sevkSonrasiDuzeltmeDurumu(this.sandikId())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(res => this.duzeltmeDurumu.set(res.isSuccess && res.value ? res.value : null));
   }
 
   ngOnInit() {
@@ -266,6 +292,11 @@ export class SandikDetayComponent implements OnInit {
       this.loading.set(false);
       if (res.isSuccess && res.value) {
         this.sandik.set(res.value);
+        if (res.value.durumId === 4) {
+          this.loadDuzeltmeDurumu();
+        } else {
+          this.duzeltmeDurumu.set(null);
+        }
         const mevcutIdler = new Set(res.value.icerikler.map(item => item.id));
         this.seciliTasimaIcerikleri.update(ids => new Set([...ids].filter(id => mevcutIdler.has(id))));
         

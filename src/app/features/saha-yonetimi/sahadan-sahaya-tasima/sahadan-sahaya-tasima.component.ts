@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import {
+  ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, computed, effect, inject, input, output, signal, untracked, viewChild,
+} from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -15,7 +17,7 @@ import {
   SahadanSahayaTasimaSonucDto,
   SahadanSahayaTasimaTalebi,
   SandikDto,
-  aktifSahaProjeleri,
+  tasimaHedefiSahaProjeleri,
 } from '../../../shared/models/index';
 
 /** Kaynak saha projesi: taşıma penceresinin açıldığı proje. */
@@ -70,6 +72,13 @@ export class SahadanSahayaTasimaComponent {
   readonly islemAnahtari = crypto.randomUUID();
   /** Hedef saha araması: liste sunucuda süzülür (en çok 100 kayıt), seçili saha listede kalır. */
   readonly hedefArama = signal('');
+  /** Hedef seçicinin açılır listesi (arama kutusu listenin içindedir). */
+  readonly hedefAcik = signal(false);
+  readonly seciliHedef = computed(() => {
+    const id = this.hedefProjeId();
+    return id ? this.hedefProjeler().find(p => p.id === id) ?? null : null;
+  });
+  private readonly hedefAramaKutusu = viewChild<ElementRef<HTMLInputElement>>('hedefAramaKutusu');
   private onizlemeSurumu = 0;
   /** Gösterilen önizlemenin talebi; seçim ya da numara değişince taşıma yeni önizleme gelene kadar kapalıdır. */
   private readonly onizlemeImzasi = signal('');
@@ -89,6 +98,34 @@ export class SahadanSahayaTasimaComponent {
       clearTimeout(this.aramaZamanlayici);
       clearTimeout(this.onizlemeZamanlayici);
     });
+  }
+
+  hedefListesiniAcKapat(): void {
+    if (this.hedefAcik()) {
+      this.hedefAcik.set(false);
+      return;
+    }
+    this.hedefAcik.set(true);
+    // Liste açılınca arama kutusuna odaklanılır; yazmaya hemen başlanabilir.
+    setTimeout(() => this.hedefAramaKutusu()?.nativeElement.focus());
+  }
+
+  /** Escape yalnız listeyi kapatır, pencereyi kapatmaz. */
+  hedefListesiniKapat(olay?: Event): void {
+    olay?.stopPropagation();
+    this.hedefAcik.set(false);
+  }
+
+  hedefSec(id: number): void {
+    this.hedefAcik.set(false);
+    if (this.hedefProjeId() === id) return;
+    this.hedefProjeSecildi(String(id));
+  }
+
+  /** Seçicinin dışına tıklanınca liste kapanır (seçici kendi tıklamasını yukarı iletmez). */
+  @HostListener('document:click')
+  disariTiklandi(): void {
+    if (this.hedefAcik()) this.hedefAcik.set(false);
   }
 
   hedefAramaDegisti(deger: string): void {
@@ -220,7 +257,7 @@ export class SahadanSahayaTasimaComponent {
     })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(sonuc => {
-        this.hedefProjeler.set(aktifSahaProjeleri(sonuc.value ?? []).filter(p => p.id !== kaynakId));
+        this.hedefProjeler.set(tasimaHedefiSahaProjeleri(sonuc.value ?? []).filter(p => p.id !== kaynakId));
       });
   }
 }

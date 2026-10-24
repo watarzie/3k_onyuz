@@ -58,12 +58,21 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: 12px;
-  padding: 16px 24px;
+  gap: 14px 18px;
+  padding: 18px 24px;
   border-bottom: 1px solid var(--gs-border);
   background: #fafbfc;
-  .tz-field { width: 170px; }
-  .tz-field:has(.gs-cipler) { width: auto; }
+  // Sabit genişlik yalnız seçici/tarih kutularında; segment, çip ve sıralama grubu kendi içeriği kadar yer alır
+  // (dar kutuya sıkışıp yazıları kırılmasın).
+  .tz-field { flex: 0 0 auto; width: auto; }
+  .tz-field:has(> .form-select), .tz-field:has(> .form-control) { width: 180px; }
+  .tz-field > span { white-space: nowrap; }
+  .tz-segmented {
+    align-items: center;
+    min-height: 42px;
+    padding: 3px;
+    button { min-height: 34px; padding: 6px 14px; white-space: nowrap; }
+  }
   // Arama kutusu: global .search-box yalnız mobil genişliği verir; masaüstü görünümü burada.
   .search-box {
     position: relative;
@@ -101,17 +110,18 @@
 .gs-siralama {
   display: flex;
   gap: 6px;
-  .form-select { min-width: 0; }
+  .form-select { width: 180px; min-width: 0; }
   .gs-azalan { min-height: 42px; padding-inline: 10px; }
   .gs-azalan.active { border-color: var(--primaryColor); color: var(--primaryColor); }
 }
-.gs-cipler { display: flex; flex-wrap: wrap; gap: 6px; }
+.gs-cipler { display: flex; flex-wrap: nowrap; gap: 8px; }
 .gs-cip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   min-height: 42px;
-  padding: 0 12px;
+  padding: 0 14px;
+  white-space: nowrap;
   border: 1px solid var(--gs-border);
   border-radius: 999px;
   background: #fff;
@@ -126,6 +136,8 @@
   width: 8px; height: 8px; border-radius: 50%; background: #94a3b8;
   &[data-ton='success'] { background: #25b003; }
   &[data-ton='warning'] { background: #fd5812; }
+  &[data-ton='info'] { background: #1d8cf8; }
+  &[data-ton='dark'] { background: #475569; }
 }
 
 .gs-state {
@@ -259,6 +271,7 @@
   &[data-ton='warning'] { --ton: #c2410c; --soft: #fff5ed; }
   &[data-ton='danger'] { --ton: #c62828; --soft: #ffe8e4; }
   &[data-ton='info'] { --ton: #1d5fb5; --soft: #e9f3ff; }
+  &[data-ton='dark'] { --ton: #334155; --soft: #eef1f5; }
   &[data-ton='primary'] { --ton: var(--primaryColor); --soft: color-mix(in srgb, var(--primaryColor) 10%, #fff); }
 }
 .gs-hap__nokta { width: 7px; height: 7px; border-radius: 50%; background: var(--ton); }
@@ -285,7 +298,17 @@
   b { margin-left: auto; color: var(--gs-ton); font-variant-numeric: tabular-nums; }
 }
 .gs-personel-ad { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
-.gs-kullanici { display: flex; align-items: center; gap: 8px; }
+.gs-kullanici { display: flex; align-items: center; gap: 10px; min-width: 180px; white-space: nowrap; }
+// Mal kabul tablosu: saat ve personel sütunları birbirine değmesin; gün başlığı tek satırda kalsın.
+.gs-mal-kabul {
+  th:first-child, td.gs-tarih { width: 1%; min-width: 104px; padding-right: 20px; }
+  td.gs-tarih strong { font-size: 13.5px; }
+  td.gs-tarih small { margin-top: 2px; }
+  .gs-gun td { white-space: nowrap; }
+  .gs-urun { min-width: 260px; }
+}
+// Ürün tablosu: birim, miktarın yanında aynı satırda.
+.gs-birim { display: inline !important; margin-left: 4px; }
 .gs-avatar {
   display: inline-grid;
   flex: 0 0 auto;
@@ -327,11 +350,16 @@ td.gs-degisim { display: table-cell; }
 }
 @media (max-width: 767.98px) {
   .gs-card__head, .gs-filtreler, .gs-card__foot, .gs-not { padding-inline: 16px; }
-  .gs-filtreler .tz-field { width: 100%; }
+  .gs-filtreler .tz-field,
+  .gs-filtreler .tz-field:has(> .form-select),
+  .gs-filtreler .tz-field:has(> .form-control) { width: 100%; }
+  .gs-filtreler .tz-segmented, .gs-filtreler .gs-cipler { max-width: 100%; overflow-x: auto; }
+  .gs-siralama .form-select { flex: 1 1 auto; width: auto; }
   .gs-filtreler .search-box { flex-basis: 100%; }
   .gs-filtreler .gs-mk-yenile { margin-left: 0; width: 100%; justify-content: center; }
   .gs-table th, .gs-table td { padding: 10px 12px; }
   .gs-kpi { gap: 12px; }
 }
+.gs-trafo-not { color: #1d5fb5 !important; font-weight: 600; }
 .gs-grid-not { display: block; margin-top: 2px; color: var(--gs-muted); max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gs-kapsam, .gs-mk-tur { flex-wrap: nowrap; }

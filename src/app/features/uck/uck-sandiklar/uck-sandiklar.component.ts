@@ -51,6 +51,8 @@ export class UcKSandiklarComponent implements OnInit {
   readonly uckSandikRoutePrefix = `${this.projeTipi.ucKRotasi}/sandik`;
   canWriteSandik = computed(() => this.permissionService.canWrite(this.activeMenuKod));
   canWriteSevk = computed(() => this.permissionService.canWrite(this.activeMenuKod));
+  /** Sevkiyat kaydı korunarak açma (sevk sonrası düzeltme) ayrı, dar bir izin ister. */
+  canSevkSonrasiDuzeltme = computed(() => this.permissionService.canWrite(YETKI.SANDIK.SEVK_SONRASI_DUZELTME));
   canAssignLocation = computed(() => this.permissionService.canWrite(YETKI.SANDIK.LOKASYON_ATAMA));
   canSandiklariSahayaAktar = computed(() =>
     this.projeTipi.tip === ProjeTipi.Normal && this.permissionService.canWrite(YETKI.SAHA.SAHAYA_AKTAR)
@@ -127,6 +129,9 @@ export class UcKSandiklarComponent implements OnInit {
   kilitAcAciklama = signal('');
   kilitAcSaving = signal(false);
   duzeltmeTamamlaSavingId = signal<number | null>(null);
+  topluDuzeltmeTamamlaSaving = signal(false);
+  /** Sevk sonrası düzeltmeye açık sandıklar; hepsi tek düğmeyle tamamlanır. */
+  duzeltmedekiSandiklar = computed(() => this.sandiklar().filter(s => this.isSandikDuzeltmeyeAcik(s)));
   readonly kilitAcmaTipleri = SevkiyatKilitAcmaTipi;
 
   breadcrumb: { label: string; link?: string }[] = [];
@@ -447,7 +452,9 @@ export class UcKSandiklarComponent implements OnInit {
     }
 
     this.kilitAcSandik.set(sandik);
-    this.kilitAcmaTipiId.set(SevkiyatKilitAcmaTipi.SevkiyatKaydiKorunarakAc);
+    this.kilitAcmaTipiId.set(this.canSevkSonrasiDuzeltme()
+      ? SevkiyatKilitAcmaTipi.SevkiyatKaydiKorunarakAc
+      : SevkiyatKilitAcmaTipi.SevkiyatGeriAlinarakAc);
     this.kilitAcAciklama.set('');
     this.showKilitAcModal.set(true);
   }
@@ -468,6 +475,10 @@ export class UcKSandiklarComponent implements OnInit {
     const aciklama = this.kilitAcAciklama().trim();
     if (!aciklama) {
       this.toast.error('Kilit açma gerekçesi girilmelidir.');
+      return;
+    }
+    if (this.kilitAcmaTipiId() === SevkiyatKilitAcmaTipi.SevkiyatKaydiKorunarakAc && !this.canSevkSonrasiDuzeltme()) {
+      this.toast.error('Sevkiyat kaydı korunarak açma "Sevk Sonrası Düzeltme" yetkisi ister.');
       return;
     }
 
@@ -535,6 +546,40 @@ export class UcKSandiklarComponent implements OnInit {
       },
       error: () => {
         this.duzeltmeTamamlaSavingId.set(null);
+        this.toast.error('Düzeltme tamamlanırken sunucu ile iletişim kurulamadı.');
+      }
+    });
+  }
+
+  /** Projede düzeltmeye açık bütün sandıkların düzeltmesini tek işlemde tamamlar (sunucu tek transaction'da kilitler). */
+  async tumDuzeltmeleriTamamla() {
+    const sandiklar = this.duzeltmedekiSandiklar();
+    if (!this.canWriteSevk() || !sandiklar.length || this.topluDuzeltmeTamamlaSaving()) return;
+
+    const sandikNolari = sandiklar.map(s => duzMetin(s.sandikNo)).join(', ');
+    const onay = await this.confirmService.ask({
+      title: 'Düzeltmeyi Tamamla',
+      message: `Düzeltmeye açık <strong>${sandiklar.length}</strong> sandık (${sandikNolari}) tekrar kilitlenecek. Sevkiyat kaydı korunmaya devam edecek ve yeni sevkiyat oluşturulmayacak; her sandığın değişiklikleri düzeltme kaydına yazılır. Onaylıyor musunuz?`,
+      confirmText: 'Evet, Hepsini Tamamla',
+      cancelText: 'Vazgeç',
+      type: 'success'
+    });
+    if (!onay) return;
+
+    this.topluDuzeltmeTamamlaSaving.set(true);
+    this.sandikService.sevkiyatDuzeltmeTopluTamamla(this.projeId()).subscribe({
+      next: (res) => {
+        this.topluDuzeltmeTamamlaSaving.set(false);
+        if (res.isSuccess) {
+          this.toast.success(`${res.value ?? sandiklar.length} sandığın düzeltmesi tamamlandı ve kilitlendi.`);
+          this.selectedSandikIds.set(new Set());
+          this.refreshSandiklar();
+        } else {
+          this.toast.error(res.error ?? 'Düzeltme tamamlanamadı.');
+        }
+      },
+      error: () => {
+        this.topluDuzeltmeTamamlaSaving.set(false);
         this.toast.error('Düzeltme tamamlanırken sunucu ile iletişim kurulamadı.');
       }
     });

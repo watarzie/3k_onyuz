@@ -158,6 +158,8 @@ export class ProjeListesiComponent implements OnInit {
    * MenuTanimi'deki "grid-modulu" ve "3k-modulu" kayıtlarına göre kontrol edilir.
    */
   canSeeGrid = computed(() => this.permissions.hasAccess(YETKI.SANDIK.GRID_MODULU));
+  /** Sevkiyat kaydı korunarak açma (sevk sonrası düzeltme) ayrı, dar bir izin ister. */
+  canSevkSonrasiDuzeltme = computed(() => this.permissions.canWrite(YETKI.SANDIK.SEVK_SONRASI_DUZELTME));
   canSee3K = computed(() => this.permissions.hasAccess(YETKI.SANDIK.UCK_MODULU));
   canSeeEksikRapor = computed(() => this.permissions.hasAccess(YETKI.SANDIK.EKSIK_RAPORU));
   canUseBulkEksikRapor = computed(() =>
@@ -183,6 +185,9 @@ export class ProjeListesiComponent implements OnInit {
   canSeeGerceklesenRapor = computed(() => this.permissions.hasAccess(YETKI.SANDIK.GERCEKLESEN_CEKI_RAPORU));
   canSee3KIsListesi = computed(() => this.isSandikYonetimi() && this.permissions.hasAccess(YETKI.SANDIK.UCK_IS_LISTESI));
   canSeeGridIsListesi = computed(() => this.isSandikYonetimi() && this.permissions.hasAccess(YETKI.SANDIK.GRID_IS_LISTESI));
+  /** Grid Sahası kenar menüde yoktur; Sandık Yönetimi ve Projeler listesindeki düğmeyle açılır. */
+  canSeeGridSaha = computed(() =>
+    (this.isSandikYonetimi() || this.isAktifProjeler()) && this.permissions.hasAccess(YETKI.SANDIK.GRID_SAHA_GORUNUMU));
   canUseEksikTamamlama = computed(() => this.permissions.canWrite(YETKI.SAHA.SAHAYA_AKTAR));
   canUploadCeki = computed(() => this.permissions.canWrite(YETKI.PROJE.CEKI_YUKLE));
   canSeeSahaGrid = computed(() => this.permissions.hasAccess(YETKI.SAHA.GRID_MODULU));
@@ -1926,7 +1931,9 @@ export class ProjeListesiComponent implements OnInit {
 
   openKilitAcModal(proje: ProjeDto) {
     this.kilitAcProje.set(proje);
-    this.kilitAcmaTipiId.set(SevkiyatKilitAcmaTipi.SevkiyatKaydiKorunarakAc);
+    this.kilitAcmaTipiId.set(this.canSevkSonrasiDuzeltme()
+      ? SevkiyatKilitAcmaTipi.SevkiyatKaydiKorunarakAc
+      : SevkiyatKilitAcmaTipi.SevkiyatGeriAlinarakAc);
     this.kilitAcAciklama.set('');
     this.showKilitAcModal.set(true);
   }
@@ -1945,6 +1952,10 @@ export class ProjeListesiComponent implements OnInit {
     const aciklama = this.kilitAcAciklama().trim();
     if (!aciklama) {
       this.toastService.error('Kilit açma gerekçesi girilmelidir.');
+      return;
+    }
+    if (this.kilitAcmaTipiId() === SevkiyatKilitAcmaTipi.SevkiyatKaydiKorunarakAc && !this.canSevkSonrasiDuzeltme()) {
+      this.toastService.error('Sevkiyat kaydı korunarak açma "Sevk Sonrası Düzeltme" yetkisi ister.');
       return;
     }
 

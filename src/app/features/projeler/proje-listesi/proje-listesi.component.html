@@ -181,6 +181,12 @@
           <span>Grid İş Listesi</span>
         </a>
       }
+      @if (canSeeGridSaha()) {
+        <a routerLink="/grid-saha" class="toolbar-btn grid-saha-trigger">
+          <i class="ri-inbox-archive-line toolbar-icon is-grid"></i>
+          <span>{{ 'MENU.GRID_SAHA_GORUNUMU' | translate }}</span>
+        </a>
+      }
       @if (showProjeTipiFilter()) {
         <div class="proje-type-filter" role="group" aria-label="Proje tipi filtresi">
           @for (option of projeTipiFilterOptions; track option.label) {
@@ -1372,11 +1378,15 @@
               type="button"
               class="kilit-ac-option"
               [class.active]="kilitAcmaTipiId() === kilitAcmaTipleri.SevkiyatKaydiKorunarakAc"
+              [disabled]="!canSevkSonrasiDuzeltme()"
               (click)="kilitAcmaTipiId.set(kilitAcmaTipleri.SevkiyatKaydiKorunarakAc)">
               <span class="option-icon keep"><i class="ri-route-line"></i></span>
               <span>
-                <strong>Sevkiyat kaydı korunsun</strong>
-                <small>Sandıklar işlem için açılır; sevkiyat geçmişi ve gerçekleşen sevk kaydı korunur.</small>
+                <strong>Sevkiyat kaydı korunsun (sevk sonrası düzeltme)</strong>
+                <small>Sevkli sandıklar düzeltmeye açılır: unutulan ürün eklenebilir, ürün taşınabilir/silinebilir, Grid/3K işlemleri geri alınabilir. Sevkiyat kaydı korunur; her sandığın değişiklikleri düzeltme kaydına yazılır.</small>
+                @if (!canSevkSonrasiDuzeltme()) {
+                  <small class="text-danger">Bu seçenek "Sevk Sonrası Düzeltme" yetkisi ister.</small>
+                }
               </span>
             </button>
 

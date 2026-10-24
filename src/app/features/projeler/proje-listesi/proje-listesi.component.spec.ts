@@ -301,6 +301,22 @@ describe('Proje listesi: sevk edilen saha/yedek görünürlüğü (G1) ve toplu 
     expect(setup({ menuKod: YETKI.PROJE.SEVK_EDILEN }).c.canUseTopluSevk()).toBeFalse();
   });
 
+  it('Grid Sahası düğmesi Sandık Yönetimi ve Projeler listesinde, yalnız grid-saha-gorunumu izniyle çıkar (kenar menüde yoktur)', () => {
+    const dugme = (f: { nativeElement: HTMLElement }) => f.nativeElement.querySelector<HTMLAnchorElement>('a.grid-saha-trigger');
+    let { fixture } = setup({ menuKod: YETKI.SANDIK.YONETIMI, projeTipi: ProjeTipi.Normal });
+    expect(dugme(fixture)).toBeNull();
+    TestBed.resetTestingModule();
+
+    okuma.add(YETKI.SANDIK.GRID_SAHA_GORUNUMU);
+    for (const data of [{ menuKod: YETKI.SANDIK.YONETIMI, projeTipi: ProjeTipi.Normal }, { menuKod: YETKI.PROJE.AKTIF_PROJELER }]) {
+      ({ fixture } = setup(data));
+      expect(dugme(fixture)?.getAttribute('href')).withContext(data.menuKod).toBe('/grid-saha');
+      TestBed.resetTestingModule();
+    }
+    ({ fixture } = setup({ menuKod: YETKI.SAHA.YONETIMI, projeTipi: ProjeTipi.Saha }));
+    expect(dugme(fixture)).toBeNull();
+  });
+
   it('modül listesinde kilit açma sunucu kuralına uyar: sevk izni yetmez, projenin tipinin proje yönetimi W gerekir', () => {
     yazma.add(YETKI.SAHA.SEVK_ET);
     const { c } = setup({ menuKod: YETKI.SAHA.YONETIMI, projeTipi: ProjeTipi.Saha });

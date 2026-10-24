@@ -39,6 +39,11 @@ export const YETKI = {
     CEKI_REVIZYON_YUKLE: 'ceki-revizyon-yukle',
     UCK_SANDIK_DURUM_RAPORU: '3k-sandik-durum-raporu',
     LOKASYON_ATAMA: 'sandik-lokasyon-atama',
+    /**
+     * Sevk sonrası düzeltme (W): sevkli sandığı sevkiyat kaydı korunarak düzeltmeye açma. Proje tipinin sandık/proje
+     * izniyle birlikte istenir; düzeltmedeki işlemler mevcut izinlerle yapılır.
+     */
+    SEVK_SONRASI_DUZELTME: 'sevk-sonrasi-duzeltme',
   },
   STOK: { KOK: 'stok', SIL: 'stok-sil' },
   SAHA: {

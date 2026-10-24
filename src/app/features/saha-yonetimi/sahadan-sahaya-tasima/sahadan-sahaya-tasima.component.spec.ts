@@ -39,6 +39,7 @@ describe('Sahadan sahaya taşıma penceresi', () => {
         { id: 2, projeNo: 'PA723-01-SAHA', musteri: 'M', projeTipiId: ProjeTipi.Saha, durumId: ProjeDurum.Hazirlaniyor },
         { id: 3, projeNo: 'PA573-01-SAHA', musteri: 'M', projeTipiId: ProjeTipi.Saha, durumId: ProjeDurum.Hazirlaniyor },
         { id: 4, projeNo: 'PA100-SAHA', musteri: 'M', projeTipiId: ProjeTipi.Saha, durumId: ProjeDurum.SevkEdildi },
+        { id: 5, projeNo: 'PA600-42-SAHA', musteri: 'SONELGAZ', projeTipiId: ProjeTipi.Saha, durumId: ProjeDurum.EksikSevkEdildi },
       ],
     }));
     projeService.sahadanSahayaTasimaOnizle.and.returnValue(of({ isSuccess: true, value: onizleme() }));
@@ -69,8 +70,8 @@ describe('Sahadan sahaya taşıma penceresi', () => {
     fixture.detectChanges();
   });
 
-  it('hedef listesinde kaynak saha ve sevk edilmiş sahalar yoktur; sevkli hedef sandık seçilemez', () => {
-    expect(fixture.componentInstance.hedefProjeler().map(p => p.id)).toEqual([3]);
+  it('hedef listesinde kaynak saha ve tamamen sevk edilmiş sahalar yoktur, eksik sevk edilmiş saha vardır; sevkli hedef sandık seçilemez', () => {
+    expect(fixture.componentInstance.hedefProjeler().map(p => p.id)).toEqual([3, 5]);
 
     fixture.componentInstance.hedefProjeSecildi('3');
 
@@ -114,6 +115,47 @@ describe('Sahadan sahaya taşıma penceresi', () => {
     tick(300);
 
     expect(projeService.getProjeDropdownListesi).toHaveBeenCalledWith(jasmine.objectContaining({ searchTerm: 'PA5', includeIds: [3] }));
+  }));
+
+  it('hedef seçici tek kutudur: arama listenin içindedir, seçim listeyi kapatır, Escape pencereyi kapatmaz', fakeAsync(() => {
+    const c = fixture.componentInstance;
+    const el = fixture.nativeElement as HTMLElement;
+    let kapandi = false;
+    c.closed.subscribe(() => (kapandi = true));
+    // Ayrı arama kutusu ya da yerel <select> yoktur.
+    expect(el.querySelector('select#sst-hedef')).toBeNull();
+    expect(el.querySelector('.sst-ara')).toBeNull();
+
+    el.querySelector<HTMLButtonElement>('.sst-combobox__toggle')!.click();
+    fixture.detectChanges();
+    tick();
+    const arama = el.querySelector<HTMLInputElement>('.sst-combobox__search input')!;
+    expect(arama).not.toBeNull();
+    expect(document.activeElement).toBe(arama);
+    expect(Array.from(el.querySelectorAll('.sst-combobox__option span')).map(x => x.textContent?.trim())).toEqual(['PA573-01-SAHA', 'PA600-42-SAHA']);
+    expect(el.querySelector('.sst-combobox__hint')?.textContent).toContain('SAHA_TASIMA.TARGET_SHIPPED_HINT');
+
+    arama.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+    expect(c.hedefAcik()).toBeFalse();
+    expect(kapandi).toBeFalse();
+
+    c.hedefListesiniAcKapat();
+    fixture.detectChanges();
+    tick();
+    el.querySelector<HTMLButtonElement>('.sst-combobox__option')!.click();
+    fixture.detectChanges();
+
+    expect(c.hedefAcik()).toBeFalse();
+    expect(c.hedefProjeId()).toBe(3);
+    expect(sandikService.getSandiklar).toHaveBeenCalledWith(3);
+    expect(el.querySelector('.sst-combobox__text strong')?.textContent).toContain('PA573-01-SAHA');
+
+    // Dışarı tıklama listeyi kapatır.
+    c.hedefListesiniAcKapat();
+    tick();
+    document.body.click();
+    expect(c.hedefAcik()).toBeFalse();
   }));
 
   it('engel varsa taşıma kapalıdır ve engeller listelenir', () => {

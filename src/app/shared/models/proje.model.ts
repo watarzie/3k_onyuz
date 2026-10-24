@@ -336,3 +336,13 @@ export function aktifSahaProjeleri(projeler: ProjeDropdownDto[]): ProjeDropdownD
     .filter(p => p.durumId !== ProjeDurum.SevkEdildi && p.durumId !== ProjeDurum.EksikSevkEdildi)
     .sort((a, b) => a.projeNo.localeCompare(b.projeNo, 'tr-TR'));
 }
+
+/**
+ * Sahadan sahaya taşımanın hedefi olabilecek saha projeleri: tamamen sevk edilmiş olanlar dışında hepsi (Eksik Sevk
+ * Edildi dahil; ürün yalnız sevk edilmemiş ya da yeni açılan sandığa gider, sunucu sandık düzeyinde denetler).
+ */
+export function tasimaHedefiSahaProjeleri(projeler: ProjeDropdownDto[]): ProjeDropdownDto[] {
+  return projeler
+    .filter(p => p.projeTipiId === ProjeTipi.Saha && p.durumId !== ProjeDurum.SevkEdildi)
+    .sort((a, b) => a.projeNo.localeCompare(b.projeNo, 'tr-TR'));
+}

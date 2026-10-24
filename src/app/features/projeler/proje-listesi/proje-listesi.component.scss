@@ -1611,7 +1611,8 @@
 
 .saha-aktarim-item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 88px 150px 100px;
+  // İşlem sütunu içeriği kadardır: "Taşı" ve "Geri Al" yan yana, yazıları kırılmadan sığar.
+  grid-template-columns: minmax(0, 1fr) 88px 150px max-content;
   align-items: center;
   gap: 12px;
   padding: 12px;
@@ -1717,7 +1718,23 @@
 
 .saha-aktarim-action {
   display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
   justify-content: flex-end;
+  gap: 8px;
+
+  .btn,
+  .tz-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 34px;
+    padding: 6px 12px;
+    white-space: nowrap;
+  }
+
+  .btn i { margin: 0 !important; }
 }
 
 // ===== Pagination =====
@@ -1970,8 +1987,9 @@
   .saha-aktarim-action {
     justify-content: stretch;
 
-    .btn {
-      width: 100%;
+    .btn,
+    .tz-btn {
+      flex: 1 1 0;
     }
   }
 }

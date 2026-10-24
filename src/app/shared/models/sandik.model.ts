@@ -84,6 +84,33 @@ export interface SandikIcerikDto {
   kaynakProjeNo?: string;
   /** Kalıcı ürün bilgisi (seri no, SKT, lot); 3K işlem açıklamasından bağımsızdır. */
   urunBilgisi?: string | null;
+  /** Ürün aktif olarak sahaya aktarıldıysa takip edildiği saha projeleri; ana projede değiştirilemez. */
+  aktifSahaProjeleri?: SahaProjeBagDto[];
+}
+
+export interface SahaProjeBagDto {
+  projeId: number;
+  projeNo: string;
+}
+
+/** Sevk sonrası düzeltme durumu: açık düzeltme, açılıştan bu yana değişiklikler ve tamamlanmış düzeltmeler. */
+export interface SandikDuzeltmeDurumuDto {
+  sandikId: number;
+  acikMi: boolean;
+  gerekce?: string | null;
+  acanKullanici?: string | null;
+  acilisTarihi?: string | null;
+  degisiklikler: string[];
+  gecmis: SandikDuzeltmeGecmisDto[];
+}
+
+export interface SandikDuzeltmeGecmisDto {
+  gerekce: string;
+  acanKullanici?: string | null;
+  acilisTarihi: string;
+  tamamlayanKullanici?: string | null;
+  tamamlanmaTarihi?: string | null;
+  degisiklikler: string[];
 }
 
 /** Sandık satırının kalıcı ürün bilgisini günceller; boş değer bilgiyi siler. Grid ve 3K aynı ucu kullanır. */

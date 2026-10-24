@@ -64,7 +64,7 @@ export class GridSahaComponent implements OnInit {
 
   readonly breadcrumb = [
     { label: 'Ana Kontrol Paneli', link: '/dashboard' },
-    { label: 'Sandık Yönetimi' },
+    { label: 'Sandık Yönetimi', link: '/sandik-yonetimi' },
     { label: 'Grid Sahası' },
   ];
   readonly projeTipiSecenekleri = [
@@ -337,13 +337,16 @@ export class GridSahaComponent implements OnInit {
   durumTonu(gridDurumuId: number): string {
     if (gridDurumuId === GridDurum.TamGeldi) return 'success';
     if (gridDurumuId === GridDurum.EksikGeldi) return 'warning';
+    if (gridDurumuId === GridDurum.TrafoSevk) return 'info';
+    if (gridDurumuId === GridDurum.GridKapandi) return 'dark';
     return 'secondary';
   }
 
   islemTonu(h: GridMalKabulHareketDto): string {
     if (h.topluUrunSayisi != null) return 'info';
     if (h.islemMetni === 'Manuel ürün') return 'primary';
-    return h.gelenAdet != null || h.oncekiDurumMetni ? 'success' : 'secondary';
+    // Durum geçişinin rengi ürün listesindekiyle aynıdır (Tam Geldi yeşil, Eksik turuncu, Trafo Sevk mavi, Grid Kapandı gri).
+    return h.gridDurumuId ? this.durumTonu(h.gridDurumuId) : 'secondary';
   }
 
   gunEtiketi(gun: string): string {

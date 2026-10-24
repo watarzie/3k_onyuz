@@ -88,6 +88,15 @@
                 [attr.aria-pressed]="gridDurumuId() === GridDurum.EksikGeldi" (click)="durumDegisti(GridDurum.EksikGeldi)">
                 <span class="gs-nokta" data-ton="warning"></span>{{ t('GRID_SAHA.STATUS_PARTIAL') }}
               </button>
+              <button type="button" class="gs-cip gs-cip--trafo" [class.active]="gridDurumuId() === GridDurum.TrafoSevk"
+                [attr.aria-pressed]="gridDurumuId() === GridDurum.TrafoSevk" (click)="durumDegisti(GridDurum.TrafoSevk)">
+                <span class="gs-nokta" data-ton="info"></span>{{ t('GRID_SAHA.STATUS_TRAFO') }}
+              </button>
+              <button type="button" class="gs-cip gs-cip--kapandi" [class.active]="gridDurumuId() === GridDurum.GridKapandi"
+                [attr.aria-pressed]="gridDurumuId() === GridDurum.GridKapandi" [title]="t('GRID_SAHA.STATUS_CLOSED_HINT')"
+                (click)="durumDegisti(GridDurum.GridKapandi)">
+                <span class="gs-nokta" data-ton="dark"></span>{{ t('GRID_SAHA.STATUS_CLOSED') }}
+              </button>
             </div>
           </div>
           <label class="tz-field">
@@ -136,6 +145,7 @@
                   <th>{{ t('GRID_SAHA.COL_PRODUCT') }}</th>
                   <th class="text-end">{{ t('GRID_SAHA.COL_REQUESTED') }}</th>
                   <th class="text-end">{{ t('GRID_SAHA.COL_GRID_RECEIVED') }}</th>
+                  <th class="text-end">{{ t('GRID_SAHA.COL_TRAFO') }}</th>
                   <th class="text-end">{{ t('GRID_SAHA.COL_SENT_3K') }}</th>
                   <th class="text-end">{{ t('GRID_SAHA.COL_IN_TRANSIT') }}</th>
                   <th class="text-end gs-th-bekleyen">{{ t('GRID_SAHA.COL_WAITING') }}</th>
@@ -170,8 +180,11 @@
                       }
                       @if (satir.gridAciklama) { <small class="gs-grid-not" [title]="satir.gridAciklama">{{ satir.gridAciklama }}</small> }
                     </td>
-                    <td class="text-end">{{ satir.istenenAdet | number: '1.0-4' }} <small>{{ satir.birim }}</small></td>
+                    <td class="text-end">{{ satir.istenenAdet | number: '1.0-4' }}<small class="gs-birim">{{ satir.birim }}</small></td>
                     <td class="text-end">{{ satir.gridGelenAdet | number: '1.0-4' }}</td>
+                    <td class="text-end gs-trafo">
+                      @if (satir.trafoSevkAdet > 0) { {{ satir.trafoSevkAdet | number: '1.0-4' }} } @else { <span class="gs-yok">—</span> }
+                    </td>
                     <td class="text-end">{{ satir.ucKGelenMiktar | number: '1.0-4' }}</td>
                     <td class="text-end">{{ satir.yoldakiMiktar | number: '1.0-4' }}</td>
                     <td class="text-end gs-bekleyen"><strong>{{ satir.griddeBekleyenMiktar | number: '1.0-4' }}</strong></td>
@@ -333,6 +346,7 @@
                             <td class="text-end">
                               @if (h.gelenAdet != null) {
                                 {{ h.gelenAdet | number: '1.0-4' }}
+                                @if (h.trafoAdet != null) { <small class="gs-trafo-not">{{ t('GRID_SAHA.TRAFO_QTY', { n: (h.trafoAdet | number: '1.0-4') ?? '' }) }}</small> }
                               } @else if (h.topluUrunSayisi != null) {
                                 <span class="gs-yok">{{ t('GRID_SAHA.BULK_COUNT', { n: h.topluUrunSayisi }) }}</span>
                               } @else if (h.guncelGridGelenAdet != null) {

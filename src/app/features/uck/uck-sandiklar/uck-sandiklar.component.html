@@ -20,6 +20,17 @@
         Sandık Durum Raporu
       </button>
       }
+      @if (canWriteSevk() && duzeltmedekiSandiklar().length) {
+      <button type="button" class="tz-btn duzeltme-toplu-btn" (click)="tumDuzeltmeleriTamamla()" [disabled]="topluDuzeltmeTamamlaSaving()"
+        title="Düzeltmeye açık bütün sandıkları tek işlemde kilitler">
+        @if (topluDuzeltmeTamamlaSaving()) {
+          <span class="spinner-border spinner-border-sm"></span>
+        } @else {
+          <i class="ri-lock-line tz-ico-success"></i>
+        }
+        Düzeltmeyi Tamamla ({{ duzeltmedekiSandiklar().length }} sandık)
+      </button>
+      }
       @if (canWriteSandik()) {
       <button type="button" class="tz-btn tz-btn--primary" (click)="openSandikEkleModal()">
         <i class="ri-add-line"></i>Yeni Sandık Ekle
@@ -129,7 +140,8 @@
           <div class="card-top">
             <div class="d-flex align-items-center">
               <span class="sandik-no ms-3">{{ getDisplayNo(s.sandikNo) }}</span>
-              @if (canWriteSandik() && !isSandikKilitli(s)) {
+              <!-- Sevk edilmiş sandık (düzeltmeye açık olsa da) kapatılmaz/geri alınmaz; sevkli kalır. -->
+              @if (canWriteSandik() && !isSandikKilitli(s) && !isSandikSevkEdildi(s)) {
               <button type="button" class="card-state-btn ms-2"
                 [class.is-undo]="s.durumMetni === 'Kapandı'"
                 (click)="toggleSandikDurum($event, s)"
@@ -487,11 +499,15 @@
         type="button"
         class="kilit-ac-option"
         [class.active]="kilitAcmaTipiId() === kilitAcmaTipleri.SevkiyatKaydiKorunarakAc"
+        [disabled]="!canSevkSonrasiDuzeltme()"
         (click)="kilitAcmaTipiId.set(kilitAcmaTipleri.SevkiyatKaydiKorunarakAc)">
         <span class="option-icon keep"><i class="ri-route-line"></i></span>
         <span>
-          <strong>Sevkiyat kaydı korunsun</strong>
-          <small>Sandık işlem için açılır; sevkiyat geçmişi ve gerçekleşen sevk kaydı korunur.</small>
+          <strong>Sevkiyat kaydı korunsun (sevk sonrası düzeltme)</strong>
+          <small>Sandık düzeltmeye açılır: unutulan ürün eklenebilir, ürün taşınabilir/silinebilir, Grid/3K işlemleri geri alınabilir. Sevkiyat kaydı korunur; değişiklikler düzeltme kaydına yazılır.</small>
+          @if (!canSevkSonrasiDuzeltme()) {
+            <small class="text-danger">Bu seçenek "Sevk Sonrası Düzeltme" yetkisi ister.</small>
+          }
         </span>
       </button>
 

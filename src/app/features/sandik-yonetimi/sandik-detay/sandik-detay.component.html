@@ -32,6 +32,55 @@
 @if (loading()) {
   <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
 } @else if (sandik()) {
+  <!-- ===== Sevk sonrası düzeltme ===== -->
+  @if (duzeltmeDurumu(); as dz) {
+    @if (dz.acikMi || dz.gecmis.length) {
+      <section class="duzeltme-panel mb-4" [class.is-acik]="dz.acikMi" aria-labelledby="duzeltme-baslik">
+        <div class="duzeltme-panel__head">
+          <span class="duzeltme-panel__icon" aria-hidden="true"><i class="ri-tools-line"></i></span>
+          <div class="duzeltme-panel__title">
+            @if (dz.acikMi) {
+              <strong id="duzeltme-baslik">Sevk sonrası düzeltme açık</strong>
+              <span>{{ dz.gerekce || 'Gerekçe yok' }} · {{ dz.acanKullanici || '—' }} · {{ dz.acilisTarihi | date: 'dd.MM.yyyy HH:mm' }}</span>
+            } @else {
+              <strong id="duzeltme-baslik">Sevk sonrası düzeltme geçmişi</strong>
+            }
+          </div>
+        </div>
+        @if (dz.acikMi) {
+          <div class="duzeltme-panel__body">
+            <span class="duzeltme-panel__label">Açılıştan bu yana değişiklikler</span>
+            <ul class="duzeltme-panel__list">
+              @for (d of dz.degisiklikler; track $index) {
+                <li>{{ d }}</li>
+              }
+            </ul>
+            <small class="text-muted">
+              Unutulan ürünü "Manuel Ürün Ekle" ile, yanlış sandıktakini "Taşı" ile düzeltin; Grid/3K durumunu ilgili modülden
+              geri alabilirsiniz. Sahada takip edilen ürünler yalnız saha projesinden düzeltilir. Bitince "Düzeltmeyi Tamamla".
+            </small>
+          </div>
+        }
+        @if (dz.gecmis.length) {
+          <details class="duzeltme-panel__gecmis">
+            <summary>Tamamlanan düzeltmeler ({{ dz.gecmis.length }})</summary>
+            @for (g of dz.gecmis; track $index) {
+              <div class="duzeltme-gecmis">
+                <strong>{{ g.tamamlanmaTarihi | date: 'dd.MM.yyyy HH:mm' }} · {{ g.tamamlayanKullanici || '—' }}</strong>
+                <span>{{ g.gerekce }}{{ g.acanKullanici ? ' (açan: ' + g.acanKullanici + ')' : '' }}</span>
+                <ul>
+                  @for (d of g.degisiklikler; track $index) {
+                    <li>{{ d }}</li>
+                  }
+                </ul>
+              </div>
+            }
+          </details>
+        }
+      </section>
+    }
+  }
+
   <!-- Sandik Header Card -->
   <section class="crate-hero mb-4">
     <div class="crate-hero__main">
@@ -184,7 +233,7 @@
             @for (item of sandik()!.icerikler; track item.id) {
               <tr (click)="selectUrun(item)" class="cursor-pointer" [class.bulk-selected]="seciliTasimaIcerikleri().has(item.id)">
                 @if (canWriteSandik()) {
-                  <td class="bulk-select-cell" (click)="$event.stopPropagation()"><input type="checkbox" class="form-check-input" [checked]="seciliTasimaIcerikleri().has(item.id)" [disabled]="isSandikTasimayaKilitli() || getSandikMiktari(item) <= 0" (change)="tasimaSeciminiDegistir(item)" [attr.aria-label]="('BULK_CRATE_MOVE.SELECT_ROW' | translate) + ' #' + item.id" /></td>
+                  <td class="bulk-select-cell" (click)="$event.stopPropagation()"><input type="checkbox" class="form-check-input" [checked]="seciliTasimaIcerikleri().has(item.id)" [disabled]="isSandikTasimayaKilitli() || isSahadaTakipte(item) || getSandikMiktari(item) <= 0" (change)="tasimaSeciminiDegistir(item)" [attr.aria-label]="('BULK_CRATE_MOVE.SELECT_ROW' | translate) + ' #' + item.id" /></td>
                 }
                 <td>
                   <div class="d-flex align-items-center gap-2">
@@ -202,6 +251,12 @@
                       }
                       @if (item.urunBilgisi) {
                         <small class="urun-bilgisi-meta" [title]="item.urunBilgisi"><i class="ri-price-tag-3-line"></i>{{ item.urunBilgisi }}</small>
+                      }
+                      @for (saha of sahaProjeleri(item); track saha.projeId) {
+                        <a class="saha-takip-pill" [routerLink]="['/saha-yonetimi', saha.projeId]" (click)="$event.stopPropagation()"
+                          title="Bu ürün saha projesinde takip ediliyor; düzeltmeyi orada yapın.">
+                          <i class="ri-map-pin-line"></i>Sahada: {{ saha.projeNo }}
+                        </a>
                       }
                       @if (getSandikTransferOzeti(item)) {
                         <small class="sandik-transfer-pill" [title]="getSandikTransferOzeti(item)">
@@ -234,7 +289,7 @@
                       <button type="button" class="tz-btn tz-btn--sm" (click)="selectUrun(item)" title="Konulan miktarı düzenle">
                         <i class="ri-edit-line tz-ico-primary"></i>Düzenle
                       </button>
-                      <button type="button" class="tz-btn tz-btn--sm" (click)="openTasiModal(item)" title="Ürünü başka sandığa taşı" [disabled]="isSandikTasimayaKilitli()">
+                      <button type="button" class="tz-btn tz-btn--sm" (click)="openTasiModal(item)" title="Ürünü başka sandığa taşı" [disabled]="isSandikTasimayaKilitli() || isSahadaTakipte(item)">
                         <i class="ri-arrow-left-right-line tz-ico-info"></i>Taşı
                       </button>
                       @if (item.manuelSilinebilirMi === true) {
@@ -305,7 +360,7 @@
             <input type="number" class="form-control" style="width: 100px;" min="0" [max]="getSandikMiktari(selectedUrun()!)"
               [ngModel]="guncelKonulanAdet()" (ngModelChange)="guncelKonulanAdet.set($event)" />
             <span class="text-muted">/ {{ formatMiktar(getSandikMiktari(selectedUrun()!)) }}</span>
-            <button class="btn btn-save btn-sm" (click)="konulanGuncelle()" [disabled]="guncelleSaving() || isSandikKilitli()">
+            <button class="btn btn-save btn-sm" (click)="konulanGuncelle()" [disabled]="guncelleSaving() || isSandikKilitli() || isSahadaTakipte(selectedUrun())">
               @if (guncelleSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
               Güncelle
             </button>
@@ -313,7 +368,7 @@
 
           <hr />
           <div class="d-flex gap-2">
-            <button type="button" class="tz-btn flex-grow-1" (click)="openTasiModal(selectedUrun()!)" [disabled]="isSandikTasimayaKilitli()">
+            <button type="button" class="tz-btn flex-grow-1" (click)="openTasiModal(selectedUrun()!)" [disabled]="isSandikTasimayaKilitli() || isSahadaTakipte(selectedUrun())">
               <i class="ri-arrow-left-right-line tz-ico-info"></i>Başka Sandığa Taşı
             </button>
           </div>

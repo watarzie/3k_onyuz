@@ -43,6 +43,36 @@ describe('SidebarComponent yetki filtresi', () => {
       .toEqual(['gorunur-alt']);
     expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('sandik-yonetimi');
   });
+
+  it('iş listeleri ve Grid Sahası rotalı kalsa da kenar menüde çıkmaz; ekran proje listesindeki düğmeyle açılır', () => {
+    const dugum = (id: number, kod: string, children: MenuTreeDto[] = []): MenuTreeDto => ({
+      id, kod, labelKey: kod, icon: '', route: `/${kod}`, sira: id,
+      yetkiTipiId: YetkiTipi.R, yetkiTipiMetni: YetkiTipi[YetkiTipi.R], children,
+    });
+    TestBed.configureTestingModule({
+      imports: [SidebarComponent],
+      providers: [
+        provideRouter([]),
+        // Betik 23'ün ilk sürümü düğümü /grid-saha rotasıyla kurmuştu: sunucu ağacı bu hâliyle gelse de gizlenir.
+        { provide: PermissionService, useValue: { menuAgaci: signal([
+          dugum(1, YETKI.SANDIK.YONETIMI, [
+            dugum(2, YETKI.SANDIK.GRID_SAHA_GORUNUMU),
+            dugum(3, YETKI.SANDIK.GRID_IS_LISTESI),
+            dugum(4, YETKI.SANDIK.UCK_IS_LISTESI),
+          ]),
+        ]) } },
+        { provide: TranslationService, useValue: { currentLang: signal('tr'), translate: (key: string) => key } },
+        { provide: ToggleService, useValue: { isSidebarToggled: signal(false), toggle: () => {} } },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(SidebarComponent);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.menu().map(item => item.kod)).toEqual([YETKI.SANDIK.YONETIMI]);
+    expect(fixture.componentInstance.menu()[0].children).toEqual([]);
+    expect((fixture.nativeElement as HTMLElement).querySelector('a[href="/grid-saha"]')).toBeNull();
+  });
 });
 
 /** Gezinme testleri için boş hedef sayfa; kenar menüde router-outlet olmadığından çizilmez. */

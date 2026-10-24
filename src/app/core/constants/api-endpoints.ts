@@ -202,6 +202,8 @@ export const API = {
     SAHA_YEDEK_MALZEME_EKLE: `${BASE}/sandik/saha-yedek-malzeme-ekle`,
     KILIDI_AC: `${BASE}/sandik/kilidi-ac`,
     SEVKIYAT_DUZELTME_TAMAMLA: `${BASE}/sandik/sevkiyat-duzeltme-tamamla`,
+    SEVKIYAT_DUZELTME_TOPLU_TAMAMLA: `${BASE}/sandik/sevkiyat-duzeltme-toplu-tamamla`,
+    SEVK_SONRASI_DUZELTME: (sandikId: number) => `${BASE}/sandik/${sandikId}/sevk-sonrasi-duzeltme`,
     MANUEL_URUN_SIL: `${BASE}/sandik/manuel-urun-sil`,
     SIL: `${BASE}/sandik/sil`,
     EKSIK_URUNLER_BY_PROJE: (projeId: number) => `${BASE}/sandik/eksik-urunler-by-proje/${projeId}`,
