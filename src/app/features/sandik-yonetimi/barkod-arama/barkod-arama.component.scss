@@ -1,0 +1,124 @@
+// Barkodla ürün arama — arama formu, özet kartları ve projeler arası satır tablosu (Grid Sahası düzeniyle aynı aile).
+.ba-page {
+  --ba-ton: #0f766e;
+  --ba-border: var(--borderColor, #eceef2);
+  --ba-muted: var(--bodyColor, #64748b);
+}
+
+.ba-card { overflow: hidden; border-radius: 12px; }
+
+.ba-arama {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px 18px;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--ba-border);
+  background: #fafbfc;
+  .tz-field { flex: 0 0 auto; }
+  .tz-field > small { color: var(--ba-muted); font-size: 11.5px; }
+  .tz-btn { min-height: 42px; }
+}
+.ba-barkod { flex: 1 1 320px !important; }
+.ba-barkod__kutu {
+  position: relative;
+  i { position: absolute; top: 50%; left: 12px; transform: translateY(-50%); color: var(--ba-muted); }
+  input { padding-left: 36px; font-family: var(--bs-font-monospace, monospace); letter-spacing: .02em; }
+}
+.ba-tip { width: 170px; }
+.ba-anahtar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  .form-check-input { margin: 0; }
+}
+.ba-rapor { display: flex; gap: 8px; margin-left: auto; }
+.ba-pdf i { color: #dc3545; }
+.ba-excel i { color: #14804a; }
+
+.ba-baslik {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  padding: 16px 24px 0;
+  code { color: var(--ba-ton); font-size: 15px; font-weight: 700; }
+}
+.ba-baslik__aciklama { color: var(--ba-muted); font-size: 13px; white-space: pre-line; }
+
+.ba-kpi {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 16px;
+  padding: 16px 24px;
+}
+
+.ba-durum {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 24px 18px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: var(--ba-muted);
+  font-size: 13px;
+  &--hata { margin-top: 18px; background: #fef2f2; color: #b91c1c; }
+}
+.ba-arama + .ba-durum { margin-top: 18px; }
+
+.ba-tablo {
+  width: 100%;
+  font-size: 12.5px;
+  th {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--ba-border);
+    background: #f8fafc;
+    color: var(--ba-muted);
+    font-size: 11.5px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  td { padding: 9px 12px; border-bottom: 1px solid var(--ba-border); vertical-align: top; }
+  tr.is-eksik td { background: #fff7f7; }
+}
+.ba-proje {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  a, strong { font-weight: 700; white-space: nowrap; }
+  small { color: var(--ba-muted); }
+}
+.ba-tip {
+  align-self: flex-start;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.ba-aciklama { min-width: 220px; white-space: pre-line; }
+.ba-rozet {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #ecfeff;
+  color: #0e7490;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.ba-birim { margin-left: 4px; color: var(--ba-muted); }
+.ba-eksik strong { color: #94a3b8; }
+tr.is-eksik .ba-eksik strong { color: #dc2626; }
+
+@media (max-width: 767.98px) {
+  .ba-arama, .ba-kpi { padding-left: 16px; padding-right: 16px; }
+  .ba-rapor { margin-left: 0; }
+  .ba-tip { width: 100%; }
+}

@@ -125,6 +125,14 @@ export const routes: Routes = [
         data: { menuKod: YETKI.SANDIK.GRID_SAHA_GORUNUMU },
       },
       {
+        // Barkodla ürün arama: proje tipinden bağımsız salt görüntüleme (sunucu menü ağacındaki Route ile aynı).
+        path: 'barkod-arama',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/sandik-yonetimi/barkod-arama/barkod-arama.component').then(m => m.BarkodAramaComponent),
+        data: { menuKod: YETKI.SANDIK.BARKOD_URUN_ARAMA },
+      },
+      {
         path: 'grid/:projeId',
         canActivate: [menuGuard],
         loadComponent: () =>

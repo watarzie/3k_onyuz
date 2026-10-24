@@ -271,7 +271,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   toplamProje = computed(() => this.ozet()?.toplamProje ?? 0);
   aktifProje = computed(() => this.ozet()?.hazirlananProje ?? 0);
   toplamSandik = computed(() => this.ozet()?.toplamSandik ?? 0);
-  eksikUrun = computed(() => this.ozet()?.eksikUrunSayisi ?? 0);
+  /** Depo Durumu ekranının genel toplamıyla aynı sayım: sevk edilmemiş, depoda sayılan, depo yeri belli sandıklar. */
+  depodakiSandik = computed(() => this.ozet()?.toplamDepoSandik ?? 0);
   sevkEdilen = computed(() => this.ozet()?.sevkEdilenProje ?? 0);
   eksikSevkEdilen = computed(() => this.ozet()?.eksikSevkEdilenProje ?? 0);
 

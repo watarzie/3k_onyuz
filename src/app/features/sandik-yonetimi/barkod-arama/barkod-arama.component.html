@@ -1,0 +1,135 @@
+<div class="ba-page">
+  <div class="page-title-area mb-4">
+    <div class="sayfa-baslik">
+      <span class="sayfa-ikon" style="--ton: var(--ba-ton)"><i class="ri-barcode-line" aria-hidden="true"></i></span>
+      <div>
+        <h2 class="fw-bold mb-1">Barkodla Ürün Arama</h2>
+        <app-breadcrumb [items]="breadcrumb" />
+      </div>
+    </div>
+  </div>
+
+  <section class="trezo-card border-0 bg-white ba-card">
+    <form class="ba-arama" (submit)="$event.preventDefault(); ara()">
+      <label class="tz-field ba-barkod">
+        <span>Barkod numarası</span>
+        <div class="ba-barkod__kutu">
+          <i class="ri-barcode-line" aria-hidden="true"></i>
+          <input type="search" class="form-control" autocomplete="off" [attr.maxlength]="BARKOD_EN_FAZLA"
+                 placeholder="ör. FC4324045" aria-label="Barkod numarası"
+                 [value]="barkodTaslak()" (input)="barkodTaslak.set($any($event.target).value)" />
+        </div>
+        <small>Barkod tam eşleşir; büyük/küçük harf önemsiz. "-01" gibi ekli barkodlar ayrı üründür.</small>
+      </label>
+      <button type="submit" class="tz-btn tz-btn--primary ba-ara" [disabled]="!aranabilir()">
+        <i [class]="yukleniyor() ? 'ri-loader-4-line tz-spin' : 'ri-search-line'" aria-hidden="true"></i>Ara
+      </button>
+      <label class="ba-anahtar">
+        <input type="checkbox" class="form-check-input" [checked]="yalnizEksikler()"
+               (change)="yalnizEksiklerDegisti($any($event.target).checked)" />
+        <span>Yalnız eksikler</span>
+      </label>
+      <label class="tz-field ba-tip">
+        <span>Proje tipi</span>
+        <select class="form-select" [value]="projeTipiId() ?? ''" (change)="projeTipiDegisti($any($event.target).value)">
+          @for (secenek of projeTipiSecenekleri; track secenek.deger) {
+            <option [value]="secenek.deger ?? ''" [selected]="secenek.deger === projeTipiId()">{{ secenek.etiket }}</option>
+          }
+        </select>
+      </label>
+      @if (sonuc()) {
+        <div class="ba-rapor">
+          <button type="button" class="tz-btn ba-pdf" [disabled]="indiriliyor() !== null" (click)="raporIndir('pdf')">
+            <i [class]="indiriliyor() === 'pdf' ? 'ri-loader-4-line tz-spin' : 'ri-file-pdf-2-line'" aria-hidden="true"></i>PDF
+          </button>
+          <button type="button" class="tz-btn ba-excel" [disabled]="indiriliyor() !== null" (click)="raporIndir('excel')">
+            <i [class]="indiriliyor() === 'excel' ? 'ri-loader-4-line tz-spin' : 'ri-file-excel-2-line'" aria-hidden="true"></i>Excel
+          </button>
+        </div>
+      }
+    </form>
+
+    @if (hata()) {
+      <div class="ba-durum ba-durum--hata" role="alert"><i class="ri-error-warning-line" aria-hidden="true"></i>{{ hata() }}</div>
+    } @else if (sonuc(); as s) {
+      <div class="ba-baslik">
+        <code>{{ s.barkod }}</code>
+        @if (s.aciklama) { <span class="ba-baslik__aciklama">{{ s.aciklama }}</span> }
+      </div>
+      <div class="ba-kpi">
+        <app-stat-card [value]="s.projeSayisi" label="Projede bulundu" [hint]="s.toplamSatir + ' satır'" icon="ri-folder-3-line" color="primary" />
+        <app-stat-card [value]="s.eksikProjeSayisi" label="Eksik olan proje" [hint]="s.eksikSatir + ' eksik satır'" icon="ri-error-warning-line" color="danger" />
+        <app-stat-card [value]="(s.toplamEksik | number: '1.0-4') ?? '0'" label="Toplam eksik adet" icon="ri-stack-line" color="warning" />
+      </div>
+      @if (s.sinirli) {
+        <div class="ba-durum" role="status"><i class="ri-information-line" aria-hidden="true"></i>Çok sayıda satır var; yalnız ilk satırlar gösteriliyor.</div>
+      }
+      @if (satirlar().length === 0) {
+        <div class="ba-durum" role="status">
+          <i class="ri-inbox-line" aria-hidden="true"></i>
+          @if (s.toplamSatir === 0) {
+            Bu barkod hiçbir projede yok.
+          } @else {
+            Süzgece uyan satır yok{{ yalnizEksikler() ? ': bu barkodun eksik satırı yok' : '' }}.
+          }
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="ba-tablo">
+            <thead>
+              <tr>
+                <th>Proje</th>
+                <th>Durum</th>
+                <th>Sandık</th>
+                <th class="text-end">Sıra</th>
+                <th>Açıklama</th>
+                <th class="text-end">İstenen</th>
+                <th class="text-end">Grid'e gelen</th>
+                <th class="text-end">3K'ya gelen</th>
+                <th class="text-end">Eksik</th>
+                <th>Grid</th>
+                <th>3K</th>
+                <th>Sevk</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (satir of satirlar(); track $index) {
+                <tr [class.is-eksik]="satir.eksik > 0">
+                  <td>
+                    <div class="ba-proje">
+                      @if (gridRotasi(satir); as rota) {
+                        <a [routerLink]="rota" title="Grid ekranına git">{{ satir.projeNo }}</a>
+                      } @else {
+                        <strong>{{ satir.projeNo }}</strong>
+                      }
+                      <span class="ba-tip">{{ projeTipiAdi(satir.projeTipiId) }}</span>
+                      <small>{{ satir.musteri }}</small>
+                    </div>
+                  </td>
+                  <td>{{ satir.projeDurumu }}</td>
+                  <td>{{ satir.sandikNo }}</td>
+                  <td class="text-end">{{ satir.siraNo ?? '—' }}</td>
+                  <td class="ba-aciklama">
+                    {{ satir.aciklama }}
+                    @if (satir.elleEklenen) { <span class="ba-rozet">Elle eklenen</span> }
+                  </td>
+                  <td class="text-end">{{ satir.istenen | number: '1.0-4' }}<small class="ba-birim">{{ satir.birim }}</small></td>
+                  <td class="text-end">{{ satir.gridGelen | number: '1.0-4' }}</td>
+                  <td class="text-end">{{ satir.ucKGelen | number: '1.0-4' }}</td>
+                  <td class="text-end ba-eksik"><strong>{{ satir.eksik | number: '1.0-4' }}</strong></td>
+                  <td>{{ satir.gridDurumu }}</td>
+                  <td>{{ satir.ucKDurumu }}</td>
+                  <td>{{ satir.sevkDurumu }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    } @else if (!yukleniyor()) {
+      <div class="ba-durum" role="status">
+        <i class="ri-barcode-line" aria-hidden="true"></i>Barkodu yazıp arayın; ürünün bütün projelerdeki satırları, eksikler önde listelenir.
+      </div>
+    }
+  </section>
+</div>

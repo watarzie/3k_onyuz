@@ -11,7 +11,7 @@ import { ProjeService } from '../../../core/services/proje.service';
 import { SandikService } from '../../../core/services/sandik.service';
 import { SevkiyatService } from '../../../core/services/sevkiyat.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { ProjeDto, SandikDto } from '../../../shared/models';
+import { ProjeBaglantiTuru, ProjeDto, SandikDto } from '../../../shared/models';
 import { TopluSevkComponent } from '../toplu-sevk/toplu-sevk.component';
 import { ProjeListesiComponent } from './proje-listesi.component';
 import {
@@ -119,6 +119,55 @@ describe('Proje listesi: sevk edilen saha/yedek görünürlüğü (G1) ve toplu 
     yazma.add(YETKI.PROJE.SEVK_EDILEN);
     expect(c.kilidiAcabilir(saha)).toBeTrue();
   });
+
+  it('Sevk Edilen listesinden projenin kendi tipindeki Grid ve 3K ekranına kısayol; izin satırın proje tipine göre', () => {
+    const normal = proje(1, ProjeTipi.Normal);
+    listeOgeleri = [normal, saha, yedek];
+    okuma.add(YETKI.SANDIK.GRID_MODULU);
+    okuma.add(YETKI.SANDIK.UCK_MODULU);
+    okuma.add(YETKI.SAHA.UCK_MODULU);
+    const { fixture, c } = setup({ menuKod: YETKI.PROJE.SEVK_EDILEN });
+    expect([c.sevkEdilenGridRotasi(normal), c.sevkEdilen3KRotasi(normal)]).toEqual(['/grid', '/uck']);
+    expect([c.sevkEdilenGridRotasi(saha), c.sevkEdilen3KRotasi(saha)]).toEqual([null, '/saha-yonetimi/uck']);
+    expect([c.sevkEdilenGridRotasi(yedek), c.sevkEdilen3KRotasi(yedek)]).toEqual([null, null]);
+    expect(c.shouldShowActions(normal)).toBeTrue();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const hrefler = Array.from(el.querySelectorAll<HTMLAnchorElement>('a.btn-action-grid, a.btn-action-3k')).map(a => a.getAttribute('href'));
+    expect(hrefler).toEqual(['/grid/1', '/uck/1', '/saha-yonetimi/uck/2']);
+
+    // Sevk Edilen dışındaki listede bu kısayol yoktur (Sandık Yönetimi'nin kendi düğmeleri vardır).
+    TestBed.resetTestingModule();
+    const aktif = setup({ menuKod: YETKI.PROJE.AKTIF_PROJELER }).c;
+    expect(aktif.sevkEdilenGridRotasi(normal)).toBeNull();
+  });
+
+  it('Gerçekleşen çeki menüsünde müşteri listesi PDF/Excel olarak iner; sevk edilmemiş projede sunucu iletisi gösterilir', fakeAsync(() => {
+    okuma.add(YETKI.SAHA.GERCEKLESEN_CEKI_RAPORU);
+    const { fixture, c } = setup({ menuKod: YETKI.PROJE.SEVK_EDILEN });
+    (pdf as any).musteriCekiListesi = jasmine.createSpy('musteriCekiListesi').and.returnValue(of(new Blob(['x'])));
+    spyOn(URL, 'createObjectURL').and.returnValue('blob:x');
+    const tetik = document.createElement('button');
+    document.body.appendChild(tetik);
+    tetik.addEventListener('click', e => c.toggleReportMenu(e, 'gerceklesen-2', saha, 'gerceklesen'));
+    tetik.click();
+    tetik.remove();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const ogeler = Array.from(el.querySelectorAll('.report-download-menu-global .report-download-item')).map(b => b.textContent?.trim());
+    expect(ogeler).toEqual(['PDF olarak indir', 'Excel olarak indir', 'Müşteri listesi (PDF)', 'Müşteri listesi (Excel)']);
+
+    c.indirMusteriCekiListesi(saha, 'excel');
+    expect((pdf as any).musteriCekiListesi).toHaveBeenCalledWith(saha.id, 'excel');
+    expect(toast.success).toHaveBeenCalledWith('Müşteri çeki listesi indirildi.');
+    expect(c.downloadingMusteriCeki()).toBeNull();
+
+    (pdf as any).musteriCekiListesi.and.returnValue(new (class { subscribe(o: any) { o.error('400'); } })());
+    pdf.downloadErrorMessage.and.resolveTo('Projenin sevk edilmiş sandığı yok.');
+    c.indirMusteriCekiListesi(saha, 'pdf');
+    tick();
+    expect(toast.error).toHaveBeenCalledWith('Projenin sevk edilmiş sandığı yok.');
+  }));
 
   it('Aktif Projeler satırın gerçek tipinin sevk iznine bakar; toplu sevk yalnız seçili projeleri pencereye verir (C-08)', () => {
     yazma.add(YETKI.SAHA.SEVK_ET);
@@ -351,6 +400,37 @@ describe('Proje listesi: sevk edilen saha/yedek görünürlüğü (G1) ve toplu 
   });
 
   describe('fotoğraf bağlantıları (proje-fotograf-baglantisi: R görür/açar, W ekler/düzenler/siler)', () => {
+    it('gerçekleşen çeki sekmesi ayrı listelenir ve açık sekmenin türüyle ekler; çip adı türlere göre değişir', () => {
+      const cekiBaglantisi = { id: 9, tur: ProjeBaglantiTuru.GerceklesenCeki, adres: 'https://drive.ornek.com/ceki', aciklama: 'Final' };
+      listeOgeleri = [
+        { ...saha, fotografBaglantilari: [{ id: 5, adres: 'https://foto.ornek.com/p-2' }, cekiBaglantisi] },
+        { ...yedek, fotografBaglantilari: [cekiBaglantisi] },
+      ];
+      yazma.add(YETKI.PROJE.FOTOGRAF_BAGLANTISI);
+      const { fixture, c } = setup({ menuKod: YETKI.SAHA.YONETIMI, projeTipi: ProjeTipi.Saha });
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('button.pl-foto--coklu span')?.textContent?.trim()).toBe('Fotoğraflar ve Gerçekleşen Çeki');
+      expect(el.querySelector('a.pl-foto span')?.textContent?.trim()).toBe('Gerçekleşen Çeki');
+      expect(el.querySelector('.pl-foto-duzenle')?.textContent?.trim()).toBe('Fotoğraflar ve Gerçekleşen Çeki');
+
+      c.fotografPenceresiniAc(c.projeler()[0]);
+      fixture.detectChanges();
+      expect(el.querySelector('#pl-foto-baslik')?.textContent?.trim()).toBe('Fotoğraflar ve Gerçekleşen Çeki');
+      const sekmeler = Array.from(el.querySelectorAll<HTMLButtonElement>('.pl-foto-sekme'));
+      expect(sekmeler.map(b => b.textContent?.replace(/\s+/g, ' ').trim())).toEqual(['Fotoğraflar1', 'Gerçekleşen Çeki1']);
+      expect(c.fotografPenceresiBaglantilari().map(b => b.id)).toEqual([5]);
+
+      sekmeler[1].click();
+      fixture.detectChanges();
+      expect(c.fotografPenceresiBaglantilari().map(b => b.id)).toEqual([9]);
+      projeApi.fotografBaglantisiEkle.and.returnValue(of({ isSuccess: true, value: [] }));
+      c.fotografTaslak.set('drive.ornek.com/ceki-2');
+      c.fotografBaglantisiKaydet();
+      expect(projeApi.fotografBaglantisiEkle).toHaveBeenCalledOnceWith(saha.id,
+        { adres: 'https://drive.ornek.com/ceki-2', aciklama: null, tur: ProjeBaglantiTuru.GerceklesenCeki });
+      expect(toast.success).toHaveBeenCalledWith('Gerçekleşen çeki bağlantısı eklendi.');
+    });
+
     const sahaYonetimi = { menuKod: YETKI.SAHA.YONETIMI, projeTipi: ProjeTipi.Saha };
     const foto = (id: number, adres: string, aciklama: string | null = null) => ({ id, adres, aciklama });
     const iki = [foto(5, 'https://foto.ornek.com/p-2'), foto(8, 'https://drive.ornek.com/sevk', 'Sevk günü')];
@@ -436,7 +516,7 @@ describe('Proje listesi: sevk edilen saha/yedek görünürlüğü (G1) ve toplu 
       kaydet.click();
       fixture.detectChanges();
 
-      expect(projeApi.fotografBaglantisiEkle).toHaveBeenCalledOnceWith(saha.id, { adres: 'https://foto.ornek.com/p-2', aciklama: 'Paketleme' });
+      expect(projeApi.fotografBaglantisiEkle).toHaveBeenCalledOnceWith(saha.id, { adres: 'https://foto.ornek.com/p-2', aciklama: 'Paketleme', tur: ProjeBaglantiTuru.Fotograf });
       expect(c.projeler().find(p => p.id === saha.id)?.fotografBaglantilari).toEqual([foto(5, 'https://foto.ornek.com/p-2', 'Paketleme')]);
       expect(projeApi.getProjeListesi).toHaveBeenCalledTimes(1);
       expect(toast.success).toHaveBeenCalledWith('Fotoğraf bağlantısı eklendi.');

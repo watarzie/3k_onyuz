@@ -1,8 +1,10 @@
+import { ProjeBaglantiTuru } from '../../../shared/models';
+
 /**
- * Proje fotoğraf bağlantıları; sunucudaki ProjeFotografBaglantisiKurali ile aynı: yalnız http/https adresi, en fazla
- * 1000 karakter, boşluk içermez. Şemasız yazılan adres (ör. foto.ornek.com/pa727) https kabul edilir. Açıklama isteğe
- * bağlıdır (en fazla 100 karakter); bir projede en fazla 20 bağlantı olur. Son karar sunucunundur; bu fonksiyonlar
- * kullanıcıya anında geri bildirim içindir.
+ * Proje bağlantıları (fotoğraf ve gerçekleşen çeki); sunucudaki ProjeFotografBaglantisiKurali ile aynı: yalnız
+ * http/https adresi, en fazla 1000 karakter, boşluk içermez. Şemasız yazılan adres (ör. foto.ornek.com/pa727) https
+ * kabul edilir. Açıklama isteğe bağlıdır (en fazla 100 karakter); bir projede her türden en fazla 20 bağlantı olur.
+ * Son karar sunucunundur; bu fonksiyonlar kullanıcıya anında geri bildirim içindir.
  */
 export const FOTOGRAF_BAGLANTISI_EN_FAZLA = 1000;
 export const FOTOGRAF_ACIKLAMASI_EN_FAZLA = 100;
@@ -46,4 +48,26 @@ export function fotografSitesi(adres: string | null | undefined): string {
 /** Listede görünen ad: açıklama, yoksa sitenin adı. */
 export function fotografBaglantisiEtiketi(baglanti: { adres: string; aciklama?: string | null }): string {
   return baglanti.aciklama?.trim() || fotografSitesi(baglanti.adres);
+}
+
+/** Bağlantının türü; eski kayıtta (tür yok) fotoğraf. */
+export function baglantiTuru(baglanti: { tur?: ProjeBaglantiTuru | null }): ProjeBaglantiTuru {
+  return baglanti.tur === ProjeBaglantiTuru.GerceklesenCeki ? ProjeBaglantiTuru.GerceklesenCeki : ProjeBaglantiTuru.Fotograf;
+}
+
+/** Türün ekrandaki adı (sekme ve çip). */
+export function baglantiTuruAdi(tur: ProjeBaglantiTuru): string {
+  return tur === ProjeBaglantiTuru.GerceklesenCeki ? 'Gerçekleşen Çeki' : 'Fotoğraflar';
+}
+
+/** Satırdaki çipin adı: bağlantıların türlerine göre "Fotoğraflar", "Gerçekleşen Çeki" ya da ikisi birlikte. */
+export function baglantiCipiAdi(baglantilar: readonly { tur?: ProjeBaglantiTuru | null }[]): string {
+  const turler = new Set(baglantilar.map(baglantiTuru));
+  if (turler.size > 1) return 'Fotoğraflar ve Gerçekleşen Çeki';
+  return baglantiTuruAdi(turler.values().next().value ?? ProjeBaglantiTuru.Fotograf);
+}
+
+/** Fotoğraflar önce, sonra gerçekleşen çeki; tür içinde eklenme sırası korunur. */
+export function baglantilariSirala<T extends { tur?: ProjeBaglantiTuru | null }>(baglantilar: readonly T[]): T[] {
+  return [...baglantilar].sort((a, b) => baglantiTuru(a) - baglantiTuru(b));
 }

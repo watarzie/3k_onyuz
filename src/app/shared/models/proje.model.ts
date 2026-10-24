@@ -39,19 +39,31 @@ export interface ProjeDto {
   nakilOlcuResmiNo?: string;
   sonMontajResmiNo?: string;
   projeMuduru?: string;
-  /** Fotoğraf bağlantıları (eklenme sırasıyla); sunucu yalnız proje-fotograf-baglantisi R izniyle doldurur. */
+  /**
+   * Fotoğraf ve gerçekleşen çeki bağlantıları (eklenme sırasıyla, türüyle); sunucu yalnız proje-fotograf-baglantisi R
+   * izniyle doldurur.
+   */
   fotografBaglantilari?: ProjeFotografBaglantisi[];
 }
 
-/** Projenin bir fotoğraf bağlantısı. Ekleme, düzenleme ve silme yanıtı projenin güncel bağlantı listesidir. */
+/** Proje bağlantısının türü; sunucudaki ProjeBaglantiTuru ile aynı sayılar. */
+export enum ProjeBaglantiTuru {
+  Fotograf = 1,
+  GerceklesenCeki = 2,
+}
+
+/** Projenin bir bağlantısı. Ekleme, düzenleme ve silme yanıtı projenin güncel bağlantı listesidir (her iki tür). */
 export interface ProjeFotografBaglantisi {
   id: number;
+  /** Boşsa fotoğraf sayılır. */
+  tur?: ProjeBaglantiTuru;
   adres: string;
   aciklama?: string | null;
 }
 
-/** Fotoğraf bağlantısı ekleme/düzenleme isteği. */
+/** Bağlantı ekleme/düzenleme isteği; tür yalnız eklemede okunur (düzenlemede değişmez). */
 export interface ProjeFotografBaglantisiKaydetDto {
+  tur?: ProjeBaglantiTuru;
   adres: string;
   aciklama: string | null;
 }

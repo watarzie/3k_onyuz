@@ -50,6 +50,11 @@ export class PdfService {
     return this.api.downloadFile(API.PDF.GERCEKLESEN_CEKI_LISTESI_EXCEL(projeId));
   }
 
+  /** Müşteri gerçekleşen çeki listesi; sevk edilmiş sandığı olmayan projede sunucu 400 ve açıklama döner. */
+  musteriCekiListesi(projeId: number, format: 'pdf' | 'excel'): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.MUSTERI_CEKI_LISTESI(projeId, format));
+  }
+
   sahaGerceklesenCekiListesiPdf(projeId: number): Observable<Blob> {
     return this.api.downloadFile(API.PDF.SAHA_GERCEKLESEN_CEKI_LISTESI(projeId));
   }

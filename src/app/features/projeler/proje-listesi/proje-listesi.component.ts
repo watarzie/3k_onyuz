@@ -27,6 +27,7 @@ import {
   OtomatikSahaAktarimSonucDto,
   ProjeDto,
   SahadanSahayaTasimaSonucDto,
+  ProjeBaglantiTuru,
   ProjeFotografBaglantisi,
   SahaAktarimDto,
   SandikDto,
@@ -45,6 +46,10 @@ import { YETKI } from '../../../core/constants/yetki-kodlari';
 import {
   FOTOGRAF_ACIKLAMASI_EN_FAZLA,
   FOTOGRAF_BAGLANTISI_SAYISI_EN_FAZLA,
+  baglantiCipiAdi,
+  baglantiTuru,
+  baglantiTuruAdi,
+  baglantilariSirala,
   fotografAciklamasiGecerli,
   fotografBaglantisiEtiketi,
   fotografBaglantisiGecerli,
@@ -132,6 +137,8 @@ export class ProjeListesiComponent implements OnInit {
   downloadingEksikExcel = signal<number | null>(null);
   downloadingGerceklesenPdf = signal<number | null>(null);
   downloadingGerceklesenExcel = signal<number | null>(null);
+  /** Müşteri çeki listesi indirilen proje ve biçim. */
+  downloadingMusteriCeki = signal<{ projeId: number; format: 'pdf' | 'excel' } | null>(null);
   reportMenuKey = signal<string | null>(null);
   reportMenuPosition = signal<{ top: number; left: number } | null>(null);
   reportMenuContext = signal<{ key: string; proje: ProjeDto; type: 'eksik' | 'gerceklesen' } | null>(null);
@@ -632,6 +639,8 @@ export class ProjeListesiComponent implements OnInit {
     if (this.isSandikYonetimi()) return this.hasSandikYonetimiActions();
 
     return this.canShowGerceklesenRapor(p) ||
+      this.sevkEdilenGridRotasi(p) !== null ||
+      this.sevkEdilen3KRotasi(p) !== null ||
       this.otomatikSahaAktarimYapilabilir(p) ||
       (this.isSevkEdilen() && this.kilidiAcabilir(p)) ||
       (!this.isSandikMode() && this.hasSevkiyatGecmisi(p)) ||
@@ -674,6 +683,21 @@ export class ProjeListesiComponent implements OnInit {
 
     // G1: Sevk Edilen listesi bütün tipleri gösterir; rapor izni satırın kendi proje tipine göre denetlenir.
     return this.isSevkEdilen() && this.permissions.hasAccess(projeTipiBaglami(p.projeTipiId).yetki.gerceklesenCekiRaporu);
+  }
+
+  /**
+   * Sevk Edilen listesinden projenin kendi tipindeki Grid ekranına kısayol (Sandık Yönetimi'ndeki Grid düğmesinin
+   * karşılığı). İzin satırın proje tipine göre denetlenir; izin yoksa null.
+   */
+  sevkEdilenGridRotasi(p: ProjeDto): string | null {
+    const baglam = projeTipiBaglami(p.projeTipiId);
+    return this.isSevkEdilen() && this.permissions.hasAccess(baglam.yetki.gridModulu) ? baglam.gridRotasi : null;
+  }
+
+  /** Sevk Edilen listesinden projenin kendi tipindeki 3K ekranına kısayol; izin yoksa null. */
+  sevkEdilen3KRotasi(p: ProjeDto): string | null {
+    const baglam = projeTipiBaglami(p.projeTipiId);
+    return this.isSevkEdilen() && this.permissions.hasAccess(baglam.yetki.ucKModulu) ? baglam.ucKRotasi : null;
   }
 
   /**
@@ -915,7 +939,8 @@ export class ProjeListesiComponent implements OnInit {
     const button = event.currentTarget as HTMLElement;
     const rect = button.getBoundingClientRect();
     const menuWidth = 210;
-    const menuHeight = 118;
+    // Gerçekleşen çeki menüsünde müşteri listesi de vardır (dört seçenek).
+    const menuHeight = type === 'gerceklesen' ? 230 : 118;
     const gap = 8;
     const left = Math.min(Math.max(8, rect.right - menuWidth), window.innerWidth - menuWidth - 8);
     const opensBelow = rect.bottom + gap + menuHeight <= window.innerHeight - 8;
@@ -938,7 +963,8 @@ export class ProjeListesiComponent implements OnInit {
   }
 
   isGerceklesenDownloading(projeId: number): boolean {
-    return this.downloadingGerceklesenPdf() === projeId || this.downloadingGerceklesenExcel() === projeId;
+    return this.downloadingGerceklesenPdf() === projeId || this.downloadingGerceklesenExcel() === projeId ||
+      this.downloadingMusteriCeki()?.projeId === projeId;
   }
 
   indirSahaProjePdf(proje: ProjeDto) {
@@ -993,6 +1019,26 @@ export class ProjeListesiComponent implements OnInit {
       error: () => {
         this.downloadingEksikExcel.set(null);
         this.toastService.error('Excel raporu indirilirken bir hata oluştu.');
+      }
+    });
+  }
+
+  /**
+   * Müşteriye verilen gerçekleşen çeki listesi (TR/EN başlıklı, yalnız sevk edilen sandık ve ürünler). Sevk edilmiş
+   * sandığı olmayan projede sunucunun açıklaması gösterilir.
+   */
+  indirMusteriCekiListesi(proje: ProjeDto, format: 'pdf' | 'excel') {
+    this.closeReportMenu();
+    this.downloadingMusteriCeki.set({ projeId: proje.id, format });
+    this.pdfService.musteriCekiListesi(proje.id, format).subscribe({
+      next: (blob) => {
+        this.downloadingMusteriCeki.set(null);
+        dosyayiKaydet(blob, `${proje.projeNo}_GerceklesenCekiListesi_Musteri.${format === 'excel' ? 'xlsx' : 'pdf'}`);
+        this.toastService.success('Müşteri çeki listesi indirildi.');
+      },
+      error: async (error) => {
+        this.downloadingMusteriCeki.set(null);
+        this.toastService.error(await this.pdfService.downloadErrorMessage(error, 'Müşteri çeki listesi indirilirken bir hata oluştu.'));
       }
     });
   }
@@ -1273,11 +1319,17 @@ export class ProjeListesiComponent implements OnInit {
     return (bytes / 1048576).toFixed(1) + ' MB';
   }
 
-  // ===== Fotoğraf Bağlantıları =====
+  // ===== Fotoğraf ve Gerçekleşen Çeki Bağlantıları =====
   // Tek izin kodu, proje tipinden bağımsız: R bağlantıları görür ve açar, W ekler/düzenler/siler. Sunucu bağlantıları
   // listede yalnız R izniyle döndürür; ön yüz kontrolü yalnız görünürlük içindir. Tek bağlantı satırdaki çipten
-  // doğrudan, birden çok bağlantı çipin açtığı listeden yeni sekmede açılır.
+  // doğrudan, birden çok bağlantı çipin açtığı listeden yeni sekmede açılır. Pencerede iki sekme vardır (Fotoğraflar,
+  // Gerçekleşen Çeki); eklenen bağlantı açık sekmenin türünü alır, düzenlemede tür değişmez.
 
+  readonly ProjeBaglantiTuru = ProjeBaglantiTuru;
+  readonly BAGLANTI_TURLERI = [ProjeBaglantiTuru.Fotograf, ProjeBaglantiTuru.GerceklesenCeki] as const;
+  readonly baglantiTuru = baglantiTuru;
+  readonly baglantiTuruAdi = baglantiTuruAdi;
+  readonly baglantiCipiAdi = baglantiCipiAdi;
   readonly fotografSitesi = fotografSitesi;
   readonly fotografBaglantisiEtiketi = fotografBaglantisiEtiketi;
   readonly FOTOGRAF_BAGLANTISI_SAYISI_EN_FAZLA = FOTOGRAF_BAGLANTISI_SAYISI_EN_FAZLA;
@@ -1286,12 +1338,15 @@ export class ProjeListesiComponent implements OnInit {
   readonly fotografMenu = signal<{ proje: ProjeDto; top: number; left: number; yukari: boolean } | null>(null);
   /** Bağlantıları yönetme penceresinin projesi. */
   readonly fotografProje = signal<ProjeDto | null>(null);
+  /** Pencerenin açık sekmesi; yeni bağlantı bu türle eklenir. */
+  readonly fotografSekme = signal<ProjeBaglantiTuru>(ProjeBaglantiTuru.Fotograf);
   /** Formda düzenlenen bağlantı; boşsa form yeni bağlantı ekler. */
   readonly fotografDuzenlenen = signal<ProjeFotografBaglantisi | null>(null);
   readonly fotografTaslak = signal('');
   readonly fotografAciklamaTaslak = signal('');
   readonly fotografKaydediliyor = signal(false);
-  readonly fotografPenceresiBaglantilari = computed(() => this.fotografProje()?.fotografBaglantilari ?? []);
+  readonly fotografPenceresiBaglantilari = computed(() =>
+    (this.fotografProje()?.fotografBaglantilari ?? []).filter(b => baglantiTuru(b) === this.fotografSekme()));
   /** Yazılan adresin kaydedilecek hali (şemasızsa https eklenmiş). */
   readonly fotografOnizleme = computed(() => fotografBaglantisiNormalize(this.fotografTaslak()));
   /** Boş adres uyarı göstermez (Kaydet kapalıdır); dolu ve geçersiz adres uyarı gösterir. */
@@ -1310,8 +1365,20 @@ export class ProjeListesiComponent implements OnInit {
     return this.permissions.canWrite(YETKI.PROJE.FOTOGRAF_BAGLANTISI);
   }
 
+  /** Satır çipi ve açılır liste için: fotoğraflar önce, sonra gerçekleşen çeki. */
   fotografBaglantilari(proje: ProjeDto): ProjeFotografBaglantisi[] {
-    return proje.fotografBaglantilari ?? [];
+    return baglantilariSirala(proje.fotografBaglantilari ?? []);
+  }
+
+  /** Penceredeki sekme başlığının sayacı. */
+  fotografSekmeSayisi(tur: ProjeBaglantiTuru): number {
+    return (this.fotografProje()?.fotografBaglantilari ?? []).filter(b => baglantiTuru(b) === tur).length;
+  }
+
+  fotografSekmeSec(tur: ProjeBaglantiTuru): void {
+    if (this.fotografKaydediliyor() || this.fotografSekme() === tur) return;
+    this.fotografSekme.set(tur);
+    this.fotografFormunuSifirla();
   }
 
   fotografMenusunuAc(event: MouseEvent, proje: ProjeDto): void {
@@ -1333,10 +1400,11 @@ export class ProjeListesiComponent implements OnInit {
     this.fotografMenu.set({ proje, top, left, yukari });
   }
 
-  fotografPenceresiniAc(proje: ProjeDto): void {
+  fotografPenceresiniAc(proje: ProjeDto, tur = ProjeBaglantiTuru.Fotograf): void {
     if (!this.fotografBaglantisiDuzenlenebilir()) return;
     this.fotografMenu.set(null);
     this.fotografProje.set(proje);
+    this.fotografSekme.set(tur);
     this.fotografFormunuSifirla();
   }
 
@@ -1365,25 +1433,29 @@ export class ProjeListesiComponent implements OnInit {
     if (!proje || !adres || !this.fotografKaydedilebilir()) return;
     const istek = { adres, aciklama: this.fotografAciklamaTaslak().trim() || null };
     const duzenlenen = this.fotografDuzenlenen();
+    const ad = this.fotografSekme() === ProjeBaglantiTuru.GerceklesenCeki ? 'Gerçekleşen çeki bağlantısı' : 'Fotoğraf bağlantısı';
     this.fotografIstegiGonder(
       duzenlenen
         ? this.projeService.fotografBaglantisiGuncelle(proje.id, duzenlenen.id, istek)
-        : this.projeService.fotografBaglantisiEkle(proje.id, istek),
-      duzenlenen ? 'Fotoğraf bağlantısı güncellendi.' : 'Fotoğraf bağlantısı eklendi.');
+        : this.projeService.fotografBaglantisiEkle(proje.id, { ...istek, tur: this.fotografSekme() }),
+      duzenlenen ? `${ad} güncellendi.` : `${ad} eklendi.`);
   }
 
   async fotografBaglantisiSil(baglanti: ProjeFotografBaglantisi): Promise<void> {
     const proje = this.fotografProje();
     if (!proje || this.fotografKaydediliyor()) return;
+    const cekiMi = baglantiTuru(baglanti) === ProjeBaglantiTuru.GerceklesenCeki;
     const onay = await this.confirmService.ask({
-      title: 'Fotoğraf Bağlantısını Sil',
-      message: `${proje.projeNo} projesinin "${fotografBaglantisiEtiketi(baglanti)}" bağlantısı silinecek. Fotoğraflar sitede kalır; yalnız bağlantı silinir.`,
+      title: cekiMi ? 'Gerçekleşen Çeki Bağlantısını Sil' : 'Fotoğraf Bağlantısını Sil',
+      message: `${proje.projeNo} projesinin "${fotografBaglantisiEtiketi(baglanti)}" bağlantısı silinecek. ` +
+        `${cekiMi ? 'Çeki listesi' : 'Fotoğraflar'} sitede kalır; yalnız bağlantı silinir.`,
       confirmText: 'Bağlantıyı Sil',
       cancelText: 'Vazgeç',
       type: 'warning'
     });
     if (!onay) return;
-    this.fotografIstegiGonder(this.projeService.fotografBaglantisiSil(proje.id, baglanti.id), 'Fotoğraf bağlantısı silindi.');
+    this.fotografIstegiGonder(this.projeService.fotografBaglantisiSil(proje.id, baglanti.id),
+      cekiMi ? 'Gerçekleşen çeki bağlantısı silindi.' : 'Fotoğraf bağlantısı silindi.');
   }
 
   private fotografIstegiGonder(istek: Observable<ApiResult<ProjeFotografBaglantisi[]>>, basariMesaji: string): void {
@@ -1394,7 +1466,7 @@ export class ProjeListesiComponent implements OnInit {
       next: (res) => {
         this.fotografKaydediliyor.set(false);
         if (!res.isSuccess) {
-          this.toastService.error(res.error || 'Fotoğraf bağlantısı kaydedilemedi.');
+          this.toastService.error(res.error || 'Bağlantı kaydedilemedi.');
           return;
         }
         // Liste yeniden yüklenmeden satır ve pencere güncellenir (sayfa ve kaydırma yerinde kalır).

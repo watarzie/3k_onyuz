@@ -20,4 +20,5 @@ export * from './bildirim.model';
 export * from './ambalaj.model';
 export * from './finans.model';
 export * from './sevkiyat.model';
+export * from './barkod-arama.model';
 

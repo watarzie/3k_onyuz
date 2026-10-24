@@ -208,6 +208,10 @@ export const API = {
     SIL: `${BASE}/sandik/sil`,
     EKSIK_URUNLER_BY_PROJE: (projeId: number) => `${BASE}/sandik/eksik-urunler-by-proje/${projeId}`,
   },
+  BARKOD_ARAMA: {
+    ARA: `${BASE}/barkod-arama`,
+    RAPOR: (format: 'pdf' | 'excel') => `${BASE}/barkod-arama/rapor/${format}`,
+  },
   GRID: {
     URUNLER: (projeId: number) => `${BASE}/grid/${projeId}/urunler`,
     IS_LISTESI: `${BASE}/grid/is-listesi`,
@@ -276,6 +280,8 @@ export const API = {
     TOPLU_TALEP_FORMU_EXCEL: `${BASE}/pdf/talep-formu/toplu/excel`,
     GERCEKLESEN_CEKI_LISTESI: (projeId: number) => `${BASE}/pdf/gerceklesen-ceki-listesi/${projeId}`,
     GERCEKLESEN_CEKI_LISTESI_EXCEL: (projeId: number) => `${BASE}/pdf/gerceklesen-ceki-listesi/${projeId}/excel`,
+    /** Müşteri gerçekleşen çeki listesi (TR/EN, yalnız sevk edilen sandık ve ürünler); izin gerçekleşen çeki raporuyla aynı. */
+    MUSTERI_CEKI_LISTESI: (projeId: number, format: 'pdf' | 'excel') => `${BASE}/pdf/gerceklesen-ceki-listesi/${projeId}/musteri/${format}`,
     SAHA_GERCEKLESEN_CEKI_LISTESI: (projeId: number) => `${BASE}/pdf/saha-gerceklesen-ceki-listesi/${projeId}`,
     SAHA_GERCEKLESEN_CEKI_LISTESI_EXCEL: (projeId: number) => `${BASE}/pdf/saha-gerceklesen-ceki-listesi/${projeId}/excel`,
     UCK_SANDIK_DURUM: (projeId: number) => `${BASE}/pdf/uck-sandik-durum/${projeId}`,
