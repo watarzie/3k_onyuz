@@ -1,0 +1,264 @@
+<div class="be-page">
+  <div class="page-title-area mb-4">
+    <div class="sayfa-baslik">
+      <span class="sayfa-ikon" style="--ton: var(--be-ton)"><i class="ri-printer-line" aria-hidden="true"></i></span>
+      <div>
+        <h2 class="fw-bold mb-1">Barkod Etiketi</h2>
+        <app-breadcrumb [items]="breadcrumb" />
+      </div>
+    </div>
+  </div>
+
+  <section class="trezo-card border-0 bg-white be-card">
+    @if (proje(); as p) {
+      <!-- Seçili proje: etiketin ortak alanları (FB NO, müşteri, varış yeri). -->
+      <div class="be-proje">
+        <div class="be-proje__bilgi">
+          <strong class="be-proje__no">{{ p.projeNo }}</strong>
+          <span class="be-tip" [attr.data-tip]="p.projeTipiId">{{ projeTipiAdi(p.projeTipiId) }}</span>
+          <span class="be-alan"><small>FB NO</small>{{ p.seriNo }}</span>
+          <span class="be-alan"><small>CLIENT</small>{{ p.musteri || '—' }}</span>
+          <span class="be-alan"><small>DESTINATION</small>{{ p.lokasyon || '—' }}</span>
+        </div>
+        <button type="button" class="tz-btn be-proje-degistir" (click)="projeyiDegistir()">
+          <i class="ri-arrow-left-right-line" aria-hidden="true"></i>Proje değiştir
+        </button>
+      </div>
+
+      <div class="be-sekmeler" role="tablist" aria-label="Etiket türü">
+        <button type="button" role="tab" class="be-sekme be-sekme--sandik" [class.active]="sekme() === 'sandik'"
+                [attr.aria-selected]="sekme() === 'sandik'" (click)="sekmeSec('sandik')">
+          <i class="ri-archive-stack-line" aria-hidden="true"></i>Sandık etiketleri <small>100×75 mm</small>
+          @if (sandikSecimleri().size) { <span class="be-sayac">{{ sandikSecimleri().size }}</span> }
+        </button>
+        <button type="button" role="tab" class="be-sekme be-sekme--urun" [class.active]="sekme() === 'urun'"
+                [attr.aria-selected]="sekme() === 'urun'" (click)="sekmeSec('urun')">
+          <i class="ri-price-tag-3-line" aria-hidden="true"></i>Ürün etiketleri <small>60×40 mm</small>
+          @if (urunSecimleri().size) { <span class="be-sayac">{{ urunSecimleri().size }}</span> }
+        </button>
+      </div>
+
+      <div class="be-filtreler">
+        <label class="be-arama-kutusu">
+          <i class="ri-search-line" aria-hidden="true"></i>
+          <input type="search" autocomplete="off" [attr.maxlength]="SINIR.arama"
+                 [placeholder]="sekme() === 'sandik' ? 'Sandık no veya adı ara' : 'Barkod veya açıklama ara'"
+                 [attr.aria-label]="sekme() === 'sandik' ? 'Sandık ara' : 'Ürün ara'"
+                 [value]="sekme() === 'sandik' ? sandikArama() : urunArama()" (input)="aramaDegisti($any($event.target).value)" />
+        </label>
+        @if (sekme() === 'urun') {
+          <select class="form-select be-sandik-suzgeci" aria-label="Sandık süzgeci" (change)="urunSandigiDegisti($any($event.target).value)">
+            <option value="" [selected]="urunSandikId() === null">Tüm sandıklar</option>
+            @for (s of sandikSecenekleri(); track s.sandikId) {
+              <option [value]="s.sandikId" [selected]="s.sandikId === urunSandikId()">Sandık {{ s.sandikNo }}{{ s.ad ? ' · ' + s.ad : '' }}</option>
+            }
+          </select>
+          @if (sandikToplami() > sandikSecenekleri().length) {
+            <span class="be-ikincil be-suzgec-notu">Süzgeçte ilk {{ sandikSecenekleri().length }} sandık var; diğerlerini sandık sekmesinde arayın.</span>
+          }
+        }
+        @if (listeYukleniyor()) { <i class="ri-loader-4-line tz-spin be-yukleniyor" aria-label="Yükleniyor"></i> }
+      </div>
+
+      @if (hata()) {
+        <div class="be-durum be-durum--hata" role="alert"><i class="ri-error-warning-line" aria-hidden="true"></i>{{ hata() }}</div>
+      } @else if (sekme() === 'sandik') {
+        @if (sandiklar(); as liste) {
+          @if (liste.items.length === 0) {
+            <div class="be-durum" role="status"><i class="ri-inbox-line" aria-hidden="true"></i>{{ sandikArama() ? 'Aramaya uyan sandık yok.' : 'Bu projede sandık yok.' }}</div>
+          } @else {
+            <div class="table-responsive">
+              <table class="be-tablo">
+                <thead>
+                  <tr>
+                    <th class="be-th-sec"><input type="checkbox" class="form-check-input" aria-label="Sayfadaki sandıkları seç"
+                        [checked]="sayfaTamSecili()" (change)="sayfayiSec()" /></th>
+                    <th>Sandık</th>
+                    <th>Ad</th>
+                    <th>Durum</th>
+                    <th>Etiket barkodu</th>
+                    <th class="text-end">Ürün</th>
+                    <th class="be-th-adet">Adet</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (s of liste.items; track s.sandikId) {
+                    <tr [class.is-secili]="sandikSecili(s)">
+                      <td><input type="checkbox" class="form-check-input" [attr.aria-label]="'Sandık ' + s.sandikNo + ' seç'"
+                          [checked]="sandikSecili(s)" (change)="sandikSecimDegistir(s, $any($event.target).checked)" /></td>
+                      <td><span class="be-sandik">{{ s.sandikNo }}</span></td>
+                      <td>{{ s.ad || '—' }}@if (s.adIngilizce) { <small class="be-ikincil">{{ s.adIngilizce }}</small> }</td>
+                      <td>{{ s.durum }}</td>
+                      <td><code>{{ s.barkod }}</code></td>
+                      <td class="text-end be-sayi">{{ s.urunSayisi }}</td>
+                      <td>
+                        @if (sandikSecili(s)) {
+                          <input type="number" class="form-control be-adet" min="1" [attr.max]="SINIR.adet" [attr.aria-label]="'Sandık ' + s.sandikNo + ' etiket adedi'"
+                                 [value]="sandikAdedi(s)" (change)="sandikAdediDegisti(s, $any($event.target).value)" />
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <app-server-pager [pageNumber]="liste.pageNumber" [pageSize]="liste.pageSize" [totalCount]="liste.totalCount"
+              [totalPages]="liste.totalPages" [hasPreviousPage]="liste.hasPreviousPage" [hasNextPage]="liste.hasNextPage"
+              [pageSizeOptions]="SAYFA_BOYUTLARI" (pageChange)="sayfaDegisti($event)" (pageSizeChange)="boyutDegisti($event)" />
+          }
+        }
+      } @else {
+        @if (urunler(); as liste) {
+          @if (liste.items.length === 0) {
+            <div class="be-durum" role="status"><i class="ri-inbox-line" aria-hidden="true"></i>{{ urunArama() || urunSandikId() ? 'Süzgece uyan ürün yok.' : 'Bu projede ürün yok.' }}</div>
+          } @else {
+            <div class="table-responsive">
+              <table class="be-tablo">
+                <thead>
+                  <tr>
+                    <th class="be-th-sec"><input type="checkbox" class="form-check-input" aria-label="Sayfadaki ürünleri seç"
+                        [checked]="sayfaTamSecili()" (change)="sayfayiSec()" /></th>
+                    <th>Barkod</th>
+                    <th class="be-th-aciklama">Tanım / Description</th>
+                    <th>Sandık</th>
+                    <th class="text-end">Miktar</th>
+                    <th class="be-th-remarks">Remarks</th>
+                    <th class="be-th-adet">Adet</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (u of liste.items; track u.kaynak + '-' + u.id) {
+                    <tr [class.is-secili]="urunSecili(u)" [class.is-basilamaz]="!u.etiketBarkodu">
+                      <td><input type="checkbox" class="form-check-input" [attr.aria-label]="u.barkodNo + ' seç'" [disabled]="!u.etiketBarkodu"
+                          [title]="u.etiketBarkodu ? '' : 'Barkod etikete basılamaz: boş, 16 karakterden uzun ya da Türkçe harf içeriyor.'"
+                          [checked]="urunSecili(u)" (change)="urunSecimDegistir(u, $any($event.target).checked)" /></td>
+                      <td>
+                        <code>{{ u.barkodNo || '—' }}</code>
+                        @if (u.etiketBarkodu) {
+                          <small class="be-ikincil">{{ u.etiketBarkodu }}</small>
+                        } @else {
+                          <small class="be-uyari">Etikete basılamaz</small>
+                        }
+                      </td>
+                      <td class="be-aciklama">
+                        <span>{{ u.tanim || '—' }}</span>
+                        @if (u.aciklama) { <small class="be-ikincil">{{ u.aciklama }}</small> }
+                        @if (u.kaynak === 2) { <span class="be-rozet">Elle eklenen</span> }
+                      </td>
+                      <td><span class="be-sandik">{{ u.sandikNolari }}</span></td>
+                      <td class="text-end be-sayi">
+                        {{ u.miktar | number: '1.0-4' }}<small class="be-birim">{{ u.birim }}</small>
+                        @if (u.sandiktakiMiktar !== null && u.sandiktakiMiktar !== u.miktar) {
+                          <small class="be-ikincil">sandıkta {{ u.sandiktakiMiktar | number: '1.0-4' }}</small>
+                        }
+                      </td>
+                      <td>
+                        @if (urunSecili(u)) {
+                          <input type="text" class="form-control be-remarks" [attr.maxlength]="SINIR.remarks" placeholder="-"
+                                 [attr.aria-label]="u.barkodNo + ' remarks'" [value]="urunRemarks(u)"
+                                 (input)="urunRemarksDegisti(u, $any($event.target).value)" />
+                        } @else {
+                          <span class="be-ikincil">{{ u.remarks || '—' }}</span>
+                        }
+                      </td>
+                      <td>
+                        @if (urunSecili(u)) {
+                          <div class="be-adet-grup">
+                            <input type="number" class="form-control be-adet" min="1" [attr.max]="SINIR.adet" [attr.aria-label]="u.barkodNo + ' etiket adedi'"
+                                   [value]="urunAdedi(u)" (change)="urunAdediDegisti(u, $any($event.target).value)" />
+                            @if (etiketMiktari(u) > 1) {
+                              <button type="button" class="be-miktar" [title]="(u.sandiktakiMiktar !== null ? 'Sandıktaki' : 'İstenen') + ' miktar kadar etiket'"
+                                      (click)="adediMiktarYap(u)">= {{ etiketMiktari(u) | number: '1.0-0' }}</button>
+                            }
+                          </div>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <app-server-pager [pageNumber]="liste.pageNumber" [pageSize]="liste.pageSize" [totalCount]="liste.totalCount"
+              [totalPages]="liste.totalPages" [hasPreviousPage]="liste.hasPreviousPage" [hasNextPage]="liste.hasNextPage"
+              [pageSizeOptions]="SAYFA_BOYUTLARI" (pageChange)="sayfaDegisti($event)" (pageSizeChange)="boyutDegisti($event)" />
+          }
+        }
+      }
+
+      <!-- Çıktı çubuğu: seçim bu sekmenin seçimidir; diğer sekmenin seçimi korunur. -->
+      <div class="be-cikti">
+        <div class="be-cikti__ozet">
+          <strong>{{ secimSayisi() }}</strong> {{ sekme() === 'sandik' ? 'sandık' : 'ürün' }} ·
+          <strong>{{ etiketSayisi() }}</strong> etiket
+          @if (etiketSayisi() > SINIR.toplam) { <span class="be-uyari">(en fazla {{ SINIR.toplam }})</span> }
+          @if (secimSayisi()) {
+            <button type="button" class="be-temizle" (click)="secimiTemizle()">Seçimi temizle</button>
+          }
+        </div>
+        @if (sekme() === 'sandik') {
+          <label class="be-tarih">
+            <span>Tarih</span>
+            <input type="month" class="form-control" [value]="tarih()" (change)="tarih.set($any($event.target).value)" aria-label="Etiket tarihi (ay/yıl)" />
+          </label>
+        }
+        <!-- İndirme: yazdırmadan dosya almak isteyenler için; biçim menüden seçilir. Yazdır her zaman PDF'tir. -->
+        <app-islemler-menusu etiket="İndir" [ikon]="olusturuluyor() === 'indir' ? 'ri-loader-4-line tz-spin' : 'ri-download-2-line'"
+                             [buyuk]="true" [disabled]="!olusturulabilir()" class="be-indir">
+          <button type="button" class="be-indir-pdf" (click)="indir(Bicim.Pdf)">
+            <i class="ri-file-pdf-2-line" aria-hidden="true"></i>PDF olarak indir
+          </button>
+          <button type="button" class="be-indir-prn" (click)="indir(Bicim.Ezpl)">
+            <i class="ri-terminal-box-line" aria-hidden="true"></i>Godex dosyası (.prn) indir
+          </button>
+        </app-islemler-menusu>
+        <button type="button" class="tz-btn tz-btn--primary be-yazdir" [disabled]="!olusturulabilir()" (click)="yazdir()">
+          <i [class]="olusturuluyor() === 'yazdir' ? 'ri-loader-4-line tz-spin' : 'ri-printer-line'" aria-hidden="true"></i>Yazdır
+        </button>
+      </div>
+      <p class="be-ipucu">
+        <i class="ri-information-line" aria-hidden="true"></i>
+        Yazdır'a basınca yazdırma penceresi açılır: yazıcı olarak
+        <strong>{{ sekme() === 'sandik' ? 'Godex Sandık (100×75 mm)' : 'Godex Ürün (60×40 mm)' }}</strong>
+        seçilip Yazdır'a basılır; ölçek "Varsayılan" kalmalıdır.
+        Etikette Türkçe harfler yazıcının fontu için ASCII'ye çevrilir (Ç → C).
+      </p>
+    } @else {
+      <!-- Proje seçimi: Normal/Saha/Yedek bütün projeler, en yeni önce. -->
+      <div class="be-filtreler">
+        <label class="be-arama-kutusu">
+          <i class="ri-folder-3-line" aria-hidden="true"></i>
+          <input type="search" autocomplete="off" [attr.maxlength]="SINIR.arama" placeholder="Proje no, FB no veya müşteri ara"
+                 aria-label="Proje ara" [value]="projeArama()" (input)="projeAramaDegisti($any($event.target).value)" />
+        </label>
+        @if (projeYukleniyor()) { <i class="ri-loader-4-line tz-spin be-yukleniyor" aria-label="Yükleniyor"></i> }
+      </div>
+      @if (projeler(); as liste) {
+        @if (liste.items.length === 0) {
+          <div class="be-durum" role="status"><i class="ri-inbox-line" aria-hidden="true"></i>Aramaya uyan proje yok.</div>
+        } @else {
+          <div class="table-responsive">
+            <table class="be-tablo be-tablo--proje">
+              <thead>
+                <tr><th>Proje</th><th>FB NO</th><th>Müşteri</th><th>Varış yeri</th><th></th></tr>
+              </thead>
+              <tbody>
+                @for (p of liste.items; track p.projeId) {
+                  <tr>
+                    <td><strong>{{ p.projeNo }}</strong> <span class="be-tip" [attr.data-tip]="p.projeTipiId">{{ projeTipiAdi(p.projeTipiId) }}</span></td>
+                    <td>{{ p.seriNo }}</td>
+                    <td>{{ p.musteri }}</td>
+                    <td>{{ p.lokasyon || '—' }}</td>
+                    <td class="text-end"><button type="button" class="tz-btn tz-btn--primary be-proje-sec" (click)="projeSec(p)">Seç</button></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <app-server-pager [pageNumber]="liste.pageNumber" [pageSize]="liste.pageSize" [totalCount]="liste.totalCount"
+            [totalPages]="liste.totalPages" [hasPreviousPage]="liste.hasPreviousPage" [hasNextPage]="liste.hasNextPage"
+            (pageChange)="projeSayfasi($event)" />
+        }
+      }
+    }
+  </section>
+</div>

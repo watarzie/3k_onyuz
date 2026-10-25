@@ -198,6 +198,9 @@ export class ProjeListesiComponent implements OnInit {
   /** Sandık açılış/kapanış istatistiği kenar menüde yoktur; Grid Sahası gibi bu listenin "Diğer" menüsünden açılır. */
   canSeeSandikAcilisIstatistigi = computed(() =>
     (this.isSandikYonetimi() || this.isAktifProjeler()) && this.permissions.hasAccess(YETKI.SANDIK.SANDIK_ACILIS_ISTATISTIGI));
+  /** Barkod etiketi kenar menüde yoktur; bu listenin "Diğer" menüsünden açılır, proje ekranda seçilir. */
+  canSeeBarkodEtiket = computed(() =>
+    (this.isSandikYonetimi() || this.isAktifProjeler()) && this.permissions.hasAccess(YETKI.SANDIK.BARKOD_ETIKET));
   canUseEksikTamamlama = computed(() => this.permissions.canWrite(YETKI.SAHA.SAHAYA_AKTAR));
   canUploadCeki = computed(() => this.permissions.canWrite(YETKI.PROJE.CEKI_YUKLE));
   canSeeSahaGrid = computed(() => this.permissions.hasAccess(YETKI.SAHA.GRID_MODULU));

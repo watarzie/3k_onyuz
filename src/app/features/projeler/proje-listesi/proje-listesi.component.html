@@ -60,6 +60,11 @@
           <i class="ri-bar-chart-box-line toolbar-icon"></i>{{ 'MENU.SANDIK_ACILIS_ISTATISTIGI' | translate }}
         </a>
       }
+      @if (canSeeBarkodEtiket()) {
+        <a routerLink="/barkod-etiket" class="pl-diger-barkod-etiket">
+          <i class="ri-printer-line toolbar-icon"></i>{{ 'MENU.BARKOD_ETIKET' | translate }}
+        </a>
+      }
     </app-islemler-menusu>
   </div>
 </div>

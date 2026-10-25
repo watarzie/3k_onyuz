@@ -39,7 +39,8 @@ describe('Proje listesi: İşlemler menüsü', () => {
     document.body.appendChild(fixture.nativeElement);
     fixture.detectChanges();
     await new Promise(r => setTimeout(r, 1200)); // giriş animasyonları biter
-    const tetik = fixture.nativeElement.querySelector('.islemler-tetik') as HTMLButtonElement;
+    // Satırdaki İşlemler menüsü (başlıktaki "Diğer" menüsü satır animasyonundan etkilenmez).
+    const tetik = fixture.nativeElement.querySelector('tbody tr .islemler-tetik') as HTMLButtonElement;
     tetik.click();
     fixture.detectChanges();
     await fixture.whenStable();

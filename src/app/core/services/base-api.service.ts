@@ -60,6 +60,15 @@ export class BaseApiService {
     }) as unknown as Observable<HttpResponse<Blob>>;
   }
 
+  /** POST ile üretilen dosyayı başlıklarıyla indirir (dosya adı `Content-Disposition` başlığında). */
+  downloadPostFileResponse(url: string, body: unknown, options?: any): Observable<HttpResponse<Blob>> {
+    return this.http.post(url, body, {
+      ...(options ?? {}),
+      observe: 'response' as const,
+      responseType: 'blob' as const,
+    }) as unknown as Observable<HttpResponse<Blob>>;
+  }
+
   downloadPostFile(url: string, body: unknown, options?: any): Observable<Blob> {
     return this.http.post(url, body, { ...(options ?? {}), responseType: 'blob' as const }) as unknown as Observable<Blob>;
   }

@@ -48,6 +48,8 @@ export const YETKI = {
     SEVK_SONRASI_DUZELTME: 'sevk-sonrasi-duzeltme',
     /** Sandık açılış/kapanış istatistiği: kaç kez kapanıp geri açıldığı, sebep/kişi/proje kırılımları ve Excel (R). */
     SANDIK_ACILIS_ISTATISTIGI: 'sandik-acilis-istatistigi',
+    /** Barkod etiketi: seçilen sandık ve ürünlerin Grid etiketleri (PDF veya Godex EZPL); veri değiştirmez (R). */
+    BARKOD_ETIKET: 'barkod-etiket',
   },
   STOK: { KOK: 'stok', SIL: 'stok-sil' },
   SAHA: {

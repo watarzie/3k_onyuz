@@ -1,0 +1,157 @@
+import { TestBed } from '@angular/core/testing';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
+import { HttpParams, HttpResponse } from '@angular/common/http';
+import { of } from 'rxjs';
+import { API } from '../../../core/constants/api-endpoints';
+import { BaseApiService } from '../../../core/services/base-api.service';
+import { ToastService } from '../../../core/services/toast.service';
+import { PdfYazdirService } from '../../../core/services/pdf-yazdir.service';
+import {
+  BarkodEtiketBicimi,
+  BarkodEtiketProjesi,
+  BarkodEtiketSandikSatiri,
+  BarkodEtiketUrunKaynagi,
+  BarkodEtiketUrunSatiri,
+  PaginatedList,
+} from '../../../shared/models';
+import { BarkodEtiketComponent, adetDuzelt, buAy, urunAnahtari } from './barkod-etiket.component';
+
+describe('Barkod etiketi', () => {
+  let api: jasmine.SpyObj<BaseApiService>;
+  let yazici: jasmine.SpyObj<PdfYazdirService>;
+
+  const proje: BarkodEtiketProjesi = {
+    projeId: 45, projeNo: 'PA600-22', projeTipiId: 1, seriNo: 'PA600-22', musteri: 'SONELGAZ', lokasyon: 'ALGERIA',
+  };
+  const sandik = (id: number, no: string): BarkodEtiketSandikSatiri => ({
+    sandikId: id, sandikNo: no, ad: 'Aksesuar', adIngilizce: 'ACCESSORIES', durum: 'Kapandı', barkod: String(id).padStart(12, '0'), urunSayisi: 3,
+  });
+  const urun = (id: number, kaynak: BarkodEtiketUrunKaynagi, etiketBarkodu: string | null, miktar = 4,
+    sandiktakiMiktar: number | null = null): BarkodEtiketUrunSatiri => ({
+    kaynak, id, barkodNo: 'FCT00967433', etiketBarkodu, tanim: 'TEKERLEK', aciklama: 'Wheel Assembly', remarks: '38.39',
+    sandikNolari: '8', miktar, sandiktakiMiktar, birim: 'Adet',
+  });
+  const sayfa = <T>(items: T[]): PaginatedList<T> => ({
+    items, pageNumber: 1, pageSize: 25, totalCount: items.length, totalPages: 1, hasPreviousPage: false, hasNextPage: false,
+  });
+
+  function kur(sorgu: Record<string, string> = {}) {
+    api = jasmine.createSpyObj<BaseApiService>('BaseApiService', ['get', 'downloadPostFileResponse', 'downloadErrorMessage']);
+    api.get.and.callFake(((url: string) => {
+      if (url === API.BARKOD_ETIKET.PROJE(45)) return of({ isSuccess: true, value: proje });
+      if (url === API.BARKOD_ETIKET.PROJELER) return of({ isSuccess: true, value: sayfa([proje]) });
+      if (url === API.BARKOD_ETIKET.SANDIKLAR(45)) return of({ isSuccess: true, value: sayfa([sandik(723, '8'), sandik(724, '9')]) });
+      return of({ isSuccess: true, value: sayfa([urun(1, BarkodEtiketUrunKaynagi.CekiSatiri, '00000FCT00967433'),
+        urun(1, BarkodEtiketUrunKaynagi.SandikIcerik, '0000000FC4324042'), urun(2, BarkodEtiketUrunKaynagi.CekiSatiri, null)]) });
+    }) as any);
+    yazici = jasmine.createSpyObj<PdfYazdirService>('PdfYazdirService', ['yazdir']);
+    yazici.yazdir.and.resolveTo();
+    TestBed.configureTestingModule({
+      imports: [BarkodEtiketComponent],
+      providers: [
+        provideRouter([]),
+        { provide: BaseApiService, useValue: api },
+        { provide: PdfYazdirService, useValue: yazici },
+        { provide: ToastService, useValue: jasmine.createSpyObj('ToastService', ['error', 'success']) },
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(sorgu) } } },
+      ],
+    });
+    spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+    const fixture = TestBed.createComponent(BarkodEtiketComponent);
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('adet 1–100 arasına çekilir; ay seçici bu ayla açılır; ürün anahtarı kaynağı ayırır', () => {
+    expect([adetDuzelt('0'), adetDuzelt('7'), adetDuzelt(250), adetDuzelt('x'), adetDuzelt(2.9)]).toEqual([1, 7, 100, 1, 2]);
+    expect(buAy(new Date(2026, 8, 3))).toBe('2026-09');
+    expect(urunAnahtari({ kaynak: BarkodEtiketUrunKaynagi.CekiSatiri, id: 5 }))
+      .not.toBe(urunAnahtari({ kaynak: BarkodEtiketUrunKaynagi.SandikIcerik, id: 5 }));
+  });
+
+  it('proje yoksa proje listesini gösterir; seçince sandıklar sunucudan sayfalı gelir', () => {
+    const fixture = kur();
+    expect(api.get.calls.mostRecent().args[0]).toBe(API.BARKOD_ETIKET.PROJELER);
+    fixture.componentInstance.projeSec(proje);
+    fixture.detectChanges();
+    const sandikIstegi = api.get.calls.all().find(c => c.args[0] === API.BARKOD_ETIKET.SANDIKLAR(45)
+      && (c.args[1] as { params: HttpParams }).params.get('boyut') === '25');
+    expect(sandikIstegi).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('000000000723');
+  });
+
+  it('sandık seçimi ve adediyle tarih AA/YY için yıl/ay gönderilir; PDF iner', () => {
+    const fixture = kur({ projeId: '45' });
+    const c = fixture.componentInstance;
+    expect(c.proje()?.projeNo).toBe('PA600-22');
+    expect(c.olusturulabilir()).toBeFalse();
+
+    c.sandikSecimDegistir(sandik(723, '8'), true);
+    c.sandikAdediDegisti(sandik(723, '8'), '3');
+    c.sandikSecimDegistir(sandik(724, '9'), true);
+    c.sandikSecimDegistir(sandik(724, '9'), false);
+    c.tarih.set('2026-09');
+    expect(c.etiketSayisi()).toBe(3);
+
+    api.downloadPostFileResponse.and.returnValue(of(new HttpResponse({ body: new Blob(['%PDF']) })));
+    spyOn(URL, 'createObjectURL').and.returnValue('blob:x');
+    c.indir(BarkodEtiketBicimi.Pdf);
+    const [adres, govde] = api.downloadPostFileResponse.calls.mostRecent().args;
+    expect(adres).toBe(API.BARKOD_ETIKET.SANDIK_ETIKETLERI(45));
+    expect(govde).toEqual({ bicim: BarkodEtiketBicimi.Pdf, yil: 2026, ay: 9, secimler: [{ sandikId: 723, adet: 3 }] });
+  });
+
+  it('Yazdır PDF ister ve indirmeden yazdırma penceresine verir', async () => {
+    const fixture = kur({ projeId: '45' });
+    const c = fixture.componentInstance;
+    c.sandikSecimDegistir(sandik(723, '8'), true);
+    const pdf = new Blob(['%PDF'], { type: 'application/pdf' });
+    api.downloadPostFileResponse.and.returnValue(of(new HttpResponse({ body: pdf })));
+    const indirme = spyOn(URL, 'createObjectURL').and.returnValue('blob:x');
+
+    c.yazdir();
+    await fixture.whenStable();
+    const [adres, govde] = api.downloadPostFileResponse.calls.mostRecent().args as [string, { bicim: BarkodEtiketBicimi }];
+    expect(adres).toBe(API.BARKOD_ETIKET.SANDIK_ETIKETLERI(45));
+    expect(govde.bicim).toBe(BarkodEtiketBicimi.Pdf);
+    expect(yazici.yazdir).toHaveBeenCalledOnceWith(pdf);
+    expect(indirme).not.toHaveBeenCalled();
+    expect(c.olusturuluyor()).toBeNull();
+  });
+
+  it('ürün sekmesi: basılamayan barkod seçilmez, sayfa seçimi yalnız basılabilenleri alır; remarks ve EZPL gider', () => {
+    const fixture = kur({ projeId: '45', tur: 'urun' });
+    const c = fixture.componentInstance;
+    expect(c.sekme()).toBe('urun');
+    c.sayfayiSec();
+    expect(c.urunSecimleri().size).toBe(2);
+    c.urunSecimDegistir(urun(2, BarkodEtiketUrunKaynagi.CekiSatiri, null), true);
+    expect(c.urunSecimleri().size).toBe(2);
+
+    const tekerlek = urun(1, BarkodEtiketUrunKaynagi.CekiSatiri, '00000FCT00967433');
+    c.adediMiktarYap(tekerlek);
+    c.urunRemarksDegisti(urun(1, BarkodEtiketUrunKaynagi.SandikIcerik, '0000000FC4324042'), '  ');
+    api.downloadPostFileResponse.and.returnValue(of(new HttpResponse({ body: new Blob(['^Q40,3']) })));
+    spyOn(URL, 'createObjectURL').and.returnValue('blob:x');
+    // İndir menüsündeki "Godex dosyası (.prn)" seçeneği.
+    c.indir(BarkodEtiketBicimi.Ezpl);
+    const [adres, govde] = api.downloadPostFileResponse.calls.mostRecent().args;
+    expect(adres).toBe(API.BARKOD_ETIKET.URUN_ETIKETLERI(45));
+    expect(govde).toEqual({
+      bicim: BarkodEtiketBicimi.Ezpl,
+      secimler: [
+        { kaynak: BarkodEtiketUrunKaynagi.CekiSatiri, id: 1, adet: 4, remarks: '38.39' },
+        { kaynak: BarkodEtiketUrunKaynagi.SandikIcerik, id: 1, adet: 1, remarks: null },
+      ],
+    });
+
+    // Sandıkla süzülmüş bölünmüş satırda "= miktar" o sandıktaki tahsisi alır (istenen 4, sandıkta 2).
+    const bolunmus = urun(1, BarkodEtiketUrunKaynagi.CekiSatiri, '00000FCT00967433', 4, 2);
+    c.adediMiktarYap(bolunmus);
+    expect(c.urunAdedi(bolunmus)).toBe(2);
+
+    // Sayfa seçimi ikinci kez tıklanınca sayfadakileri kaldırır.
+    c.sayfayiSec();
+    expect(c.urunSecimleri().size).toBe(0);
+  });
+});

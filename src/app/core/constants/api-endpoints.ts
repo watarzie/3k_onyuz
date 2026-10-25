@@ -225,6 +225,15 @@ export const API = {
     ARA: `${BASE}/barkod-arama`,
     RAPOR: (format: 'pdf' | 'excel') => `${BASE}/barkod-arama/rapor/${format}`,
   },
+  /** Barkod etiketi (barkod-etiket R): proje seçimi, sayfalı sandık/ürün listeleri ve etiket dosyası (PDF / EZPL). */
+  BARKOD_ETIKET: {
+    PROJELER: `${BASE}/barkod-etiket/projeler`,
+    PROJE: (projeId: number) => `${BASE}/barkod-etiket/projeler/${projeId}`,
+    SANDIKLAR: (projeId: number) => `${BASE}/barkod-etiket/projeler/${projeId}/sandiklar`,
+    URUNLER: (projeId: number) => `${BASE}/barkod-etiket/projeler/${projeId}/urunler`,
+    SANDIK_ETIKETLERI: (projeId: number) => `${BASE}/barkod-etiket/projeler/${projeId}/sandik-etiketleri`,
+    URUN_ETIKETLERI: (projeId: number) => `${BASE}/barkod-etiket/projeler/${projeId}/urun-etiketleri`,
+  },
   GRID: {
     URUNLER: (projeId: number) => `${BASE}/grid/${projeId}/urunler`,
     IS_LISTESI: `${BASE}/grid/is-listesi`,

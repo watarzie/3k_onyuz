@@ -133,6 +133,14 @@ export const routes: Routes = [
         data: { menuKod: YETKI.SANDIK.BARKOD_URUN_ARAMA },
       },
       {
+        // Barkod etiketi: kenar menüde yok; Projeler ve 3K sandık listesindeki "Diğer" menüsünden açılır.
+        path: 'barkod-etiket',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/sandik-yonetimi/barkod-etiket/barkod-etiket.component').then(m => m.BarkodEtiketComponent),
+        data: { menuKod: YETKI.SANDIK.BARKOD_ETIKET },
+      },
+      {
         // Sandık açılış/kapanış istatistiği: kenar menüde yok; Projeler ve 3K sandık listesindeki "Diğer" menüsünden açılır.
         path: 'sandik-acilis-istatistigi',
         canActivate: [menuGuard],

@@ -43,6 +43,11 @@
           <i class="ri-bar-chart-box-line tz-ico-primary"></i>Açılış/Kapanış İstatistiği
         </a>
         }
+        @if (canSeeBarkodEtiket()) {
+        <a routerLink="/barkod-etiket" [queryParams]="{ projeId: projeId() }" class="us-diger-barkod-etiket">
+          <i class="ri-printer-line tz-ico-primary"></i>Barkod Etiketi
+        </a>
+        }
       </app-islemler-menusu>
     </div>
   </div>

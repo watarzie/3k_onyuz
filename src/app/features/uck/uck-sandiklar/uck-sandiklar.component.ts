@@ -65,6 +65,8 @@ export class UcKSandiklarComponent implements OnInit {
   canSeeSandikDurumRaporu = computed(() => this.permissionService.hasAccess(this.projeTipi.yetki.ucKSandikDurumRaporu));
   /** Açılış/kapanış istatistiği kenar menüde yok; bu projeyle süzülmüş olarak "Diğer" menüsünden açılır. */
   canSeeSandikAcilisIstatistigi = computed(() => this.permissionService.hasAccess(YETKI.SANDIK.SANDIK_ACILIS_ISTATISTIGI));
+  /** Barkod etiketi kenar menüde yok; bu proje seçili olarak "Diğer" menüsünden açılır. */
+  canSeeBarkodEtiket = computed(() => this.permissionService.hasAccess(YETKI.SANDIK.BARKOD_ETIKET));
   /** Sebep penceresi açık olan (geri alınacak) kapalı sandık. */
   geriAcilacakSandik = signal<SandikDto | null>(null);
   readonly sandikTarihMetni = sandikTarihMetni;
