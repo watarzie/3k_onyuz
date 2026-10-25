@@ -4,7 +4,7 @@ import { FinansSandikMalzemesi } from '../../../core/constants/enums';
 export const FINANS_HACIM_EN_FAZLA = 999_999;
 
 /**
- * Hacim gösterimi: ahşap kapalı sandıkta yalnız ahşap m³; kontrplak/katlanır sandıkta ahşap ve kontra m³ ayrı ayrı
+ * Hacim gösterimi: ahşap kapalı sandıkta yalnız ahşap m³; kontrplak sandıkta ahşap ve kontra m³ ayrı ayrı
  * (ahşap sandığa ek kontra girildiyse o da görünür). Ahşap ve kontra ekranda toplanıp tek değer olarak gösterilmez.
  */
 export function finansKontraGosterilir(malzeme: FinansSandikMalzemesi | 0 | null | undefined, kontraM3: number | null | undefined): boolean {
@@ -26,14 +26,19 @@ export function finansHacimGecerli(ahsap: number | null | undefined, kontra: num
 
 /**
  * Ahşap/kontra m³ elle girilebilir mi (sunucudaki FinansHacimKurallari.ElleGirilebilir ile aynı): Ambalaj'ın m³
- * hesaplamadığı kontrplak/katlanır sandıkta; daha önce elle girilmiş hacim (ör. özel iş) düzeltilebilir kalır.
+ * hesaplamadığı kontrplak sandıkta; daha önce elle girilmiş hacim (ör. özel iş) düzeltilebilir kalır. Katlanır sandık
+ * (elleFiyatlanir) m³ tutmaz; eski kayıtta elle hacim girilmiş olsa da girilmez.
  */
-export function finansHacimElleGirilir(malzeme: FinansSandikMalzemesi | 0 | null | undefined, hacimManuel: boolean | null | undefined): boolean {
-  return hacimManuel === true || malzeme === FinansSandikMalzemesi.Kontra;
+export function finansHacimElleGirilir(
+  malzeme: FinansSandikMalzemesi | 0 | null | undefined,
+  hacimManuel: boolean | null | undefined,
+  elleFiyatlanir?: boolean | null,
+): boolean {
+  return elleFiyatlanir !== true && (hacimManuel === true || malzeme === FinansSandikMalzemesi.Kontra);
 }
 
 /**
- * Ahşap sandıkta ahşap m³ üretimden gelir ve ekranda salt okunur kalır; kontra/katlanır ve malzemesi belirsiz
+ * Ahşap sandıkta ahşap m³ üretimden gelir ve ekranda salt okunur kalır; kontrplak ve malzemesi belirsiz
  * işlerde (ör. özel iş) iki değer de elle girilir.
  */
 export function finansAhsapUretimden(malzeme: FinansSandikMalzemesi | 0 | null | undefined): boolean {

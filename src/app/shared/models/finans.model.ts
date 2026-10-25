@@ -180,8 +180,13 @@ export interface FinansFaturaGrupKalemi {
 export interface FinansIsKaydi {
   /** Ahşap/kontra m³ "Hacim" bölümünden elle girildi; üretim aktarımı ezmez. */
   hacimManuel?: boolean;
-  /** Sandık malzemesi (1 ahşap, 2 kontra/katlanır, 0 bilinmiyor); hacim girişinin biçimini belirler. */
+  /** Sandık malzemesi (1 ahşap, 2 kontra, 0 bilinmiyor; katlanır sandıkta 0); hacim girişinin biçimini belirler. */
   sandikMalzemesi?: FinansSandikMalzemesi | 0;
+  /**
+   * Katlanır sandık: fiyat tarifeden ve m³'ten hesaplanmaz, elle girilir (adet × birim fiyat veya net toplam). Ekran m³
+   * yöntemini ve hacim girişini kapatır; sunucudaki FinansKatlanirKurali ile aynı.
+   */
+  elleFiyatlanir?: boolean;
   manuelNetTutar?: number | null;
   bilesenler?: import('./finans-v2.model').FinansFiyatBileseni[] | null;
   isAdi?: string;
@@ -230,7 +235,7 @@ export interface FinansIsKaydi {
   birim?: string;
   birimM3: number;
   toplamM3: number;
-  /** Ahşap ve kontra/katlanır m³ payı (F11); m³ izni yoksa sunucudan null gelir. */
+  /** Ahşap ve kontra m³ payı (F11); m³ izni yoksa sunucudan null gelir. */
   ahsapM3?: number | null;
   kontraM3?: number | null;
   siparisAdedi: number;
@@ -653,8 +658,8 @@ export interface FinansUrunEslesmesi {
   sandikTipi?: string | null;
   icSandikSablonId?: number | null;
   /**
-   * Malzemeli m³ tarifesi (1 ahşap, 2 kontra; boş = genel tek m³ tarifesi). Kontrplak/katlanır sandıkta ahşap m³
-   * ahşap, kontra m³ kontra tarifesiyle fiyatlanır. Katlanır sandık boyutla eşleşmez.
+   * Malzemeli m³ tarifesi (1 ahşap, 2 kontra; boş = genel tek m³ tarifesi). Kontrplak sandıkta ahşap m³
+   * ahşap, kontra m³ kontra tarifesiyle fiyatlanır. Katlanır sandık tarifeyle eşleşmez, elle fiyatlanır.
    */
   malzeme?: FinansSandikMalzemesi | null;
   aktif?: boolean;
