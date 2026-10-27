@@ -10,6 +10,7 @@ import { IslemlerMenusuComponent } from '../../../shared/components/islemler-men
 import { BaseApiService } from '../../../core/services/base-api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PdfYazdirService } from '../../../core/services/pdf-yazdir.service';
+import { QzTrayCalismiyorHatasi, QzTrayService } from '../../../core/services/qz-tray.service';
 import { API } from '../../../core/constants/api-endpoints';
 import { projeTipiBaglami } from '../../../core/constants/proje-tipi';
 import { dosyaAdiBasliktan, dosyayiKaydet } from '../../../core/services/dosya-kaydet';
@@ -36,6 +37,18 @@ export const urunAnahtari = (satir: Pick<BarkodEtiketUrunSatiri, 'kaynak' | 'id'
 /** Bu ay "YYYY-AA" (ay seçici biçimi). */
 export function buAy(bugun = new Date()): string {
   return `${bugun.getFullYear()}-${String(bugun.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** QZ Tray yazıcı seçiminin tarayıcıdaki anahtarı ({ sandik, urun }). */
+export const QZ_YAZICI_ANAHTARI = 'barkodEtiket.qzYazici';
+
+function qzYazicilariOku(): Partial<Record<'sandik' | 'urun', string>> {
+  try {
+    const deger = JSON.parse(localStorage.getItem(QZ_YAZICI_ANAHTARI) ?? '{}');
+    return deger && typeof deger === 'object' ? deger : {};
+  } catch {
+    return {};
+  }
 }
 
 /** Adet kutusundaki değer 1–100 arasına çekilir; sayı değilse 1. */
@@ -65,6 +78,7 @@ export class BarkodEtiketComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
   private readonly yazici = inject(PdfYazdirService);
+  private readonly qz = inject(QzTrayService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly SINIR = ETIKET_SINIRLARI;
@@ -80,6 +94,7 @@ export class BarkodEtiketComponent implements OnInit {
   readonly projeArama = signal('');
   readonly projeler = signal<PaginatedList<BarkodEtiketProjesi> | null>(null);
   readonly projeYukleniyor = signal(false);
+  readonly projeBoyut = signal(25);
   private readonly projeIstegi$ = new Subject<number>();
   private readonly projeAramaDegisti$ = new Subject<void>();
 
@@ -107,8 +122,16 @@ export class BarkodEtiketComponent implements OnInit {
   readonly urunSecimleri = signal(new Map<string, UrunSecimi>());
   /** Sandık etiketindeki tarih (AA/YY basılır); varsayılan bu ay. */
   readonly tarih = signal(buAy());
-  /** Süren çıktı isteği: yazdırma (PDF, yazdırma penceresi) ya da indirme (seçilen biçim). */
-  readonly olusturuluyor = signal<'yazdir' | 'indir' | null>(null);
+  /** Süren çıktı isteği: yazdırma (PDF penceresi), indirme ya da QZ Tray ile yazıcıya gönderme (EZPL). */
+  readonly olusturuluyor = signal<'yazdir' | 'indir' | 'gonder' | null>(null);
+  /** QZ Tray'in gördüğü yazıcılar; boşsa liste henüz alınmamıştır. */
+  readonly qzYazicilari = signal<string[]>([]);
+  readonly qzYukleniyor = signal(false);
+  /** QZ Tray bu sayfada henüz yoklanmadı / çalışıyor / bulunamadı. */
+  readonly qzDurum = signal<'bilinmiyor' | 'var' | 'yok'>('bilinmiyor');
+  /** Sekme başına seçili QZ Tray yazıcısı; "" yazdırma penceresi (PDF) demektir (bu tarayıcıda hatırlanır). */
+  private readonly qzYazicilariSekme = signal<Partial<Record<Sekme, string>>>(qzYazicilariOku());
+  readonly qzYazici = computed(() => this.qzYazicilariSekme()[this.sekme()] ?? '');
 
   readonly secimSayisi = computed(() => this.sekme() === 'sandik' ? this.sandikSecimleri().size : this.urunSecimleri().size);
   readonly etiketSayisi = computed(() => {
@@ -125,7 +148,7 @@ export class BarkodEtiketComponent implements OnInit {
       .pipe(
         switchMap(sayfa => {
           this.projeYukleniyor.set(true);
-          let params = new HttpParams().set('sayfa', String(sayfa)).set('boyut', '10');
+          let params = new HttpParams().set('sayfa', String(sayfa)).set('boyut', String(this.projeBoyut()));
           const arama = this.projeArama().trim();
           if (arama) params = params.set('arama', arama);
           return this.api.get<PaginatedList<BarkodEtiketProjesi>>(API.BARKOD_ETIKET.PROJELER, { params });
@@ -183,6 +206,11 @@ export class BarkodEtiketComponent implements OnInit {
 
   projeSayfasi(sayfa: number): void {
     this.projeIstegi$.next(sayfa);
+  }
+
+  projeBoyutuDegisti(boyut: number): void {
+    this.projeBoyut.set(boyut);
+    this.projeIstegi$.next(1);
   }
 
   projeSec(proje: BarkodEtiketProjesi): void {
@@ -387,10 +415,15 @@ export class BarkodEtiketComponent implements OnInit {
   // --- Çıktı ---
 
   /**
-   * Yazdır: etiket PDF'i indirilmeden yazdırma penceresinde açılır; kullanıcı Godex yazıcısını seçip basar.
+   * Tek Yazdır düğmesi: QZ Tray çalışıyor ve bir yazıcı seçiliyse Godex komutu (EZPL) pencere açılmadan o yazıcıya
+   * gider; QZ Tray yoksa ya da "Yazdırma penceresi (PDF)" seçiliyse PDF tarayıcının yazdırma penceresinde açılır.
+   * QZ Tray sayfada ilk Yazdır'da yoklanır; bulunamazsa sessizce pencereye düşülür.
    */
-  yazdir(): void {
-    this.cikti('yazdir', BarkodEtiketBicimi.Pdf);
+  async yazdir(): Promise<void> {
+    if (!this.olusturulabilir()) return;
+    if (this.qzDurum() === 'bilinmiyor') await this.qzYazicilariniGetir(true);
+    if (this.qzDurum() === 'var' && this.qzYazici()) this.cikti('gonder', BarkodEtiketBicimi.Ezpl);
+    else this.cikti('yazdir', BarkodEtiketBicimi.Pdf);
   }
 
   /** İndir menüsü: PDF ya da Godex EZPL (.prn; GoLabel gibi bir araçla yazıcıya ham gönderilir) dosyası. */
@@ -398,7 +431,42 @@ export class BarkodEtiketComponent implements OnInit {
     this.cikti('indir', bicim);
   }
 
-  private cikti(tur: 'yazdir' | 'indir', bicim: BarkodEtiketBicimi): void {
+  /**
+   * QZ Tray yazıcıları: bilgisayardaki QZ Tray'in gördüğü yazıcılar listelenir. Bu sekme için hiç seçim yapılmamışsa
+   * (ya da seçilen yazıcı artık yoksa) listede tek Godex varsa o seçilir, yoksa yazdırma penceresi kalır. Kullanıcının
+   * bilerek seçtiği "Yazdırma penceresi (PDF)" korunur. <paramref name="sessiz"/> ise QZ Tray yokluğu uyarı vermez.
+   */
+  async qzYazicilariniGetir(sessiz = false): Promise<void> {
+    this.qzYukleniyor.set(true);
+    try {
+      const yazicilar = await this.qz.yazicilar();
+      this.qzYazicilari.set(yazicilar);
+      this.qzDurum.set('var');
+      const kayitli = this.qzYazicilariSekme()[this.sekme()];
+      if (kayitli === undefined || (kayitli !== '' && !yazicilar.includes(kayitli))) {
+        const godex = yazicilar.filter(y => /godex/i.test(y));
+        this.qzYaziciSec(godex.length === 1 ? godex[0] : '');
+      }
+    } catch (hata) {
+      this.qzDurum.set('yok');
+      if (!sessiz) this.toast.error(hata instanceof QzTrayCalismiyorHatasi ? hata.message : 'QZ Tray yazıcıları alınamadı.');
+    } finally {
+      this.qzYukleniyor.set(false);
+    }
+  }
+
+  /** Seçilen yazıcı sekme başına bu tarayıcıda hatırlanır (sandık ve ürün rulosu farklı yazıcıda olabilir). */
+  qzYaziciSec(yazici: string): void {
+    const yeni = { ...this.qzYazicilariSekme(), [this.sekme()]: yazici };
+    this.qzYazicilariSekme.set(yeni);
+    try {
+      localStorage.setItem(QZ_YAZICI_ANAHTARI, JSON.stringify(yeni));
+    } catch {
+      // Tarayıcı depolaması kapalıysa seçim yalnız bu oturumda kalır.
+    }
+  }
+
+  private cikti(tur: 'yazdir' | 'indir' | 'gonder', bicim: BarkodEtiketBicimi): void {
     const proje = this.proje();
     if (!proje || !this.olusturulabilir()) return;
     const sandik = this.sekme() === 'sandik';
@@ -418,6 +486,26 @@ export class BarkodEtiketComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: async yanit => {
+          if (tur === 'gonder') {
+            const yazici = this.qzYazici();
+            try {
+              await this.qz.hamGonder(yazici, await yanit.body!.text());
+              this.toast.success(`${etiketSayisi} etiket ${yazici} yazıcısına gönderildi.`);
+            } catch (hata) {
+              this.olusturuluyor.set(null);
+              if (hata instanceof QzTrayCalismiyorHatasi) {
+                // QZ Tray bu arada kapandı: kullanıcı hata görmez, yazdırma penceresi açılır.
+                this.qzDurum.set('yok');
+                this.toast.info('QZ Tray çalışmıyor; yazdırma penceresi açılıyor.');
+                this.cikti('yazdir', BarkodEtiketBicimi.Pdf);
+                return;
+              }
+              this.toast.error(`Etiketler yazıcıya gönderilemedi: ${hata instanceof Error ? hata.message : String(hata)}`);
+              return;
+            }
+            this.olusturuluyor.set(null);
+            return;
+          }
           if (tur === 'yazdir') {
             await this.yazici.yazdir(yanit.body!);
             this.olusturuluyor.set(null);

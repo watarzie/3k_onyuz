@@ -21,7 +21,6 @@ describe('Sahadan sahaya taşıma penceresi', () => {
     hedefSahaProjeNo: 'PA573-01-SAHA',
     hedefSandikNo: '3',
     yeniSandik: false,
-    numaraDegisti: false,
     tasinabilirMi: true,
     manuelIcerikSayisi: 0,
     toplamMiktar: 4,

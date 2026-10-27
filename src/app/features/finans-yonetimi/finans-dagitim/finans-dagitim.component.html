@@ -126,6 +126,7 @@
               [hasPreviousPage]="page.hasPreviousPage"
               [hasNextPage]="page.hasNextPage"
               (pageChange)="poSayfa($event)"
+              (pageSizeChange)="poBoyut($event)"
             />
           }
         }
@@ -325,6 +326,7 @@
               [hasPreviousPage]="page.hasPreviousPage"
               [hasNextPage]="page.hasNextPage"
               (pageChange)="grupSayfa($event)"
+              (pageSizeChange)="grupBoyut($event)"
             />
           }
           @if (secimListesi().length) {
@@ -413,6 +415,7 @@
             [hasPreviousPage]="page.hasPreviousPage"
             [hasNextPage]="page.hasNextPage"
             (pageChange)="poSayfa($event)"
+            (pageSizeChange)="poBoyut($event)"
           />
         }
       } @else if (seciliPo(); as po) {

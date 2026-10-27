@@ -120,6 +120,21 @@
         <span class="report-download-icon"><i class="ri-file-excel-2-line"></i></span>
         <span>Müşteri listesi (Excel)</span>
       </button>
+    } @else if (menu.type === 'saha') {
+      <button type="button" class="report-download-item is-pdf" (click)="indirSahaProjePdf(menu.proje)" [disabled]="downloadingPdf() === menu.proje.id">
+        <span class="report-download-icon"><i class="ri-file-pdf-2-line"></i></span>
+        <span>Tüm sandıklar (PDF)</span>
+      </button>
+      <div class="report-download-ayrac" role="separator"></div>
+      <small class="report-download-baslik">Sevke hazır · kapalı, ölçü/ağırlık girilmiş</small>
+      <button type="button" class="report-download-item is-pdf" (click)="indirSevkeHazirSandikRaporu(menu.proje, 'pdf')" [disabled]="downloadingSevkeHazir()?.projeId === menu.proje.id">
+        <span class="report-download-icon"><i class="ri-file-pdf-2-line"></i></span>
+        <span>Sevke hazır (PDF)</span>
+      </button>
+      <button type="button" class="report-download-item is-excel" (click)="indirSevkeHazirSandikRaporu(menu.proje, 'excel')" [disabled]="downloadingSevkeHazir()?.projeId === menu.proje.id">
+        <span class="report-download-icon"><i class="ri-file-excel-2-line"></i></span>
+        <span>Sevke hazır (Excel)</span>
+      </button>
     } @else {
       <button type="button" class="report-download-item is-pdf" (click)="indirEksikUrunlerPdf(menu.proje)" [disabled]="downloadingEksikPdf() === menu.proje.id">
         <span class="report-download-icon"><i class="ri-file-pdf-2-line"></i></span>
@@ -555,15 +570,17 @@
                             </a>
                           }
                           @if ((isYedekYonetimi() && canSeeYedekRapor()) || (isSahaYonetimi() && canSeeSahaRapor())) {
-
-                            <button class="btn btn-sm btn-danger" (click)="indirSahaProjePdf(p)" [disabled]="downloadingPdf() === p.id" [title]="isSahaYonetimi() ? 'Saha Raporu' : 'Yedek Raporu'">
-                            @if (downloadingPdf() === p.id) {
-                              <span class="spinner-border spinner-border-sm"></span>
-                            } @else {
-                              <i class="ri-file-pdf-2-line me-1"></i>{{ isYedekYonetimi() ? 'Yedek Raporu' : 'Saha Raporu' }}
-                            }
-                          </button>
-
+                            <div class="report-download" (click)="$event.stopPropagation()">
+                              <button type="button" class="btn btn-sm btn-danger report-download-trigger" (click)="toggleReportMenu($event, 'saha-rapor-' + p.id, p, 'saha')" [disabled]="isSahaRaporDownloading(p.id)" [title]="isSahaYonetimi() ? 'Saha Raporu' : 'Yedek Raporu'">
+                                @if (isSahaRaporDownloading(p.id)) {
+                                  <span class="spinner-border spinner-border-sm"></span>
+                                } @else {
+                                  <i class="ri-file-pdf-2-line"></i>
+                                }
+                                <span>{{ isYedekYonetimi() ? 'Yedek Raporu' : 'Saha Raporu' }}</span>
+                                <i class="ri-arrow-down-s-line report-download-chevron" [class.open]="isReportMenuOpen('saha-rapor-' + p.id)"></i>
+                              </button>
+                            </div>
                           }
 
                           @if (isYedekYonetimi() && canSeeYedekEksikRapor()) {

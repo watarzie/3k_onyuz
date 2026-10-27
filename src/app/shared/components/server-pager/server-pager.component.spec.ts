@@ -77,6 +77,23 @@ describe('ServerPagerComponent', () => {
     expect(emittedPageSizes).toEqual([50]);
   });
 
+  it('keeps showing the real page size until the screen applies the selected one', () => {
+    fixture.componentRef.setInput('pageSize', 25);
+    fixture.componentRef.setInput('pageSizeOptions', [25, 50, 100]);
+    fixture.detectChanges();
+
+    const select = (fixture.nativeElement as HTMLElement).querySelector<HTMLSelectElement>('select')!;
+    select.value = '50';
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    // Ekran yeni boyutu uygulamadı (ör. işleyici bağlı değil): kutu gerçek boyutu gösterir.
+    expect(select.value).toBe('25');
+
+    fixture.componentRef.setInput('pageSize', 50);
+    fixture.detectChanges();
+    expect(select.value).toBe('50');
+  });
+
   it('shows the current page size as the selected option', () => {
     fixture.componentRef.setInput('pageSize', 25);
     fixture.detectChanges();

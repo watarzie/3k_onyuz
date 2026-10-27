@@ -96,9 +96,6 @@
             @if (o.yeniSandik) { ({{ 'SAHA_TASIMA.NEW' | translate }}) }</strong>
         </div>
       </div>
-      @if (o.numaraDegisti) {
-        <div class="sst-alert sst-alert--warning"><i class="ri-information-line" aria-hidden="true"></i><span>{{ 'SAHA_TASIMA.NUMBER_CHANGED' | translate }}</span></div>
-      }
       @if (o.bosalacakSandikNolari.length) {
         <div class="sst-alert sst-alert--info"><i class="ri-inbox-line" aria-hidden="true"></i><span>{{ 'SAHA_TASIMA.WILL_EMPTY' | translate }}: {{ o.bosalacakSandikNolari.join(', ') }}</span></div>
       }

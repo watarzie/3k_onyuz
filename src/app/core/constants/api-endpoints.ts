@@ -295,6 +295,8 @@ export const API = {
   },
   PDF: {
     SAHA_PROJE: (projeId: number) => `${BASE}/pdf/saha-proje/${projeId}`,
+    /** Saha/Yedek sevke hazır sandık raporu (yalnız kapalı, ölçü/ağırlığı girilmiş sandıklar); izin saha/yedek raporuyla aynı. */
+    SAHA_PROJE_SEVKE_HAZIR: (projeId: number, format: 'pdf' | 'excel') => `${BASE}/pdf/saha-proje/${projeId}/sevke-hazir/${format}`,
     EKSIK_URUNLER: (projeId: number) => `${BASE}/pdf/eksik-urunler/${projeId}`,
     EKSIK_URUNLER_EXCEL: (projeId: number) => `${BASE}/pdf/eksik-urunler/${projeId}/excel`,
     TOPLU_EKSIK_URUNLER: `${BASE}/pdf/eksik-urunler/toplu/pdf`,

@@ -175,7 +175,6 @@ export interface SahadanSahayaTasimaOnizlemeDto {
   hedefSahaProjeNo: string;
   hedefSandikNo: string;
   yeniSandik: boolean;
-  numaraDegisti: boolean;
   tasinabilirMi: boolean;
   manuelIcerikSayisi: number;
   toplamMiktar: number;

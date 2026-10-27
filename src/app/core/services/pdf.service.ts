@@ -16,6 +16,11 @@ export class PdfService {
     return this.api.downloadFile(API.PDF.SAHA_PROJE(projeId));
   }
 
+  /** Sevke hazır sandık raporu; hazır sandık yoksa sunucu 400 ve listelenmeme nedenini döner. */
+  sevkeHazirSandikRaporu(projeId: number, format: 'pdf' | 'excel'): Observable<Blob> {
+    return this.api.downloadFile(API.PDF.SAHA_PROJE_SEVKE_HAZIR(projeId, format));
+  }
+
   eksikUrunlerPdf(projeId: number): Observable<Blob> {
     return this.api.downloadFile(API.PDF.EKSIK_URUNLER(projeId));
   }

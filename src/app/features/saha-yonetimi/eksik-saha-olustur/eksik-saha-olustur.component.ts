@@ -574,8 +574,9 @@ export class EksikSahaOlusturComponent implements OnInit {
       return;
     }
 
+    // Çeki biçimiyle karşılaştırılır (sunucudaki KoliNoKurali.Normalize): "05" ile "5" aynı sandıktır.
     const tekrarEdenSandik = sandiklar
-      .map(s => s.sandikNo.toLocaleLowerCase('tr-TR'))
+      .map(s => s.sandikNo.replace(/\s/g, '').replace(/^0+(?=\d)/, '').toLocaleLowerCase('tr-TR'))
       .find((value, index, list) => list.indexOf(value) !== index);
 
     if (tekrarEdenSandik) {
@@ -668,11 +669,16 @@ export class EksikSahaOlusturComponent implements OnInit {
     return `SAHA-${y}${m}${d}`;
   }
 
+  /**
+   * Yeni sandığa önerilen numara: listedeki (hedef sahanın mevcut sandıkları dahil) en büyük sayısal numara + 1; sunucudaki
+   * KoliNoKurali.SiradakiNumara ile aynı kural ("05" = 5, "2-2" gibi sayısal olmayan numara sıraya katılmaz).
+   */
   private getNextSandikNo(): string {
-    const used = new Set(this.sandiklar().map(s => s.sandikNo.trim()));
-    let index = this.sandiklar().length + 1;
-    while (used.has(index.toString())) index++;
-    return index.toString();
+    const enBuyuk = this.sandiklar()
+      .map(s => s.sandikNo.replace(/\s/g, ''))
+      .filter(no => /^\d+$/.test(no))
+      .reduce((max, no) => Math.max(max, Number(no)), 0);
+    return String(enBuyuk + 1);
   }
 
   private createDraftId(): string {

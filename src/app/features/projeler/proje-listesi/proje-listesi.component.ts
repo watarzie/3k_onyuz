@@ -91,6 +91,9 @@ interface RevisionIssueViewModel {
   categoryLabel: string;
 }
 
+/** Satırdaki rapor açılır menüsünün türü; 'saha' Saha/Yedek sandık raporu ve sevke hazır sandık raporudur. */
+type RaporMenuTuru = 'eksik' | 'gerceklesen' | 'saha';
+
 @Component({
   selector: 'app-proje-listesi',
   standalone: true,
@@ -139,9 +142,11 @@ export class ProjeListesiComponent implements OnInit {
   downloadingGerceklesenExcel = signal<number | null>(null);
   /** Müşteri çeki listesi indirilen proje ve biçim. */
   downloadingMusteriCeki = signal<{ projeId: number; format: 'pdf' | 'excel' } | null>(null);
+  /** Sevke hazır sandık raporu indirilen proje ve biçim. */
+  downloadingSevkeHazir = signal<{ projeId: number; format: 'pdf' | 'excel' } | null>(null);
   reportMenuKey = signal<string | null>(null);
   reportMenuPosition = signal<{ top: number; left: number } | null>(null);
-  reportMenuContext = signal<{ key: string; proje: ProjeDto; type: 'eksik' | 'gerceklesen' } | null>(null);
+  reportMenuContext = signal<{ key: string; proje: ProjeDto; type: RaporMenuTuru } | null>(null);
   bulkEksikRaporMenuPosition = signal<{ top: number; left: number } | null>(null);
   bulkEksikRaporDownloading = signal<'pdf' | 'excel' | null>(null);
   /** G4: seçili projelerin talep formu Excel'i indiriliyor. */
@@ -937,7 +942,7 @@ export class ProjeListesiComponent implements OnInit {
     return `${today.getFullYear()}${pad(today.getMonth() + 1)}${pad(today.getDate())}`;
   }
 
-  toggleReportMenu(event: MouseEvent, key: string, proje: ProjeDto, type: 'eksik' | 'gerceklesen') {
+  toggleReportMenu(event: MouseEvent, key: string, proje: ProjeDto, type: RaporMenuTuru) {
     event.stopPropagation();
     if (this.reportMenuKey() === key) {
       this.closeReportMenu();
@@ -949,8 +954,8 @@ export class ProjeListesiComponent implements OnInit {
     const button = event.currentTarget as HTMLElement;
     const rect = button.getBoundingClientRect();
     const menuWidth = 210;
-    // Gerçekleşen çeki menüsünde müşteri listesi de vardır (dört seçenek).
-    const menuHeight = type === 'gerceklesen' ? 230 : 118;
+    // Gerçekleşen çeki menüsünde müşteri listesi, saha/yedek raporunda sevke hazır raporu da vardır.
+    const menuHeight = type === 'gerceklesen' ? 230 : type === 'saha' ? 190 : 118;
     const gap = 8;
     const left = Math.min(Math.max(8, rect.right - menuWidth), window.innerWidth - menuWidth - 8);
     const opensBelow = rect.bottom + gap + menuHeight <= window.innerHeight - 8;
@@ -977,7 +982,12 @@ export class ProjeListesiComponent implements OnInit {
       this.downloadingMusteriCeki()?.projeId === projeId;
   }
 
+  isSahaRaporDownloading(projeId: number): boolean {
+    return this.downloadingPdf() === projeId || this.downloadingSevkeHazir()?.projeId === projeId;
+  }
+
   indirSahaProjePdf(proje: ProjeDto) {
+    this.closeReportMenu();
     this.downloadingPdf.set(proje.id);
     const tipStr = this.isYedekYonetimi() ? 'YedekRaporu' : 'SahaRaporu';
     this.pdfService.sahaProjePdf(proje.id).subscribe({
@@ -989,6 +999,27 @@ export class ProjeListesiComponent implements OnInit {
       error: () => {
         this.downloadingPdf.set(null);
         this.toastService.error('Rapor indirilirken bir hata oluştu.');
+      }
+    });
+  }
+
+  /**
+   * Beyanname için yalnız kapalı ve ölçü/ağırlığı girilmiş sandıklar; raporun başında listelenmeyen sandıkların nedeni
+   * yazar. Hiç hazır sandık yoksa sunucunun açıklaması (hangi sandık neden) gösterilir.
+   */
+  indirSevkeHazirSandikRaporu(proje: ProjeDto, format: 'pdf' | 'excel') {
+    this.closeReportMenu();
+    this.downloadingSevkeHazir.set({ projeId: proje.id, format });
+    const tipStr = this.isYedekYonetimi() ? 'YedekRaporu' : 'SahaRaporu';
+    this.pdfService.sevkeHazirSandikRaporu(proje.id, format).subscribe({
+      next: (blob) => {
+        this.downloadingSevkeHazir.set(null);
+        dosyayiKaydet(blob, `${proje.projeNo}_${tipStr}_SevkeHazir.${format === 'excel' ? 'xlsx' : 'pdf'}`);
+        this.toastService.success('Sevke hazır sandık raporu indirildi.');
+      },
+      error: async (error) => {
+        this.downloadingSevkeHazir.set(null);
+        this.toastService.error(await this.pdfService.downloadErrorMessage(error, 'Sevke hazır sandık raporu indirilirken bir hata oluştu.'));
       }
     });
   }

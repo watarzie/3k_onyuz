@@ -558,10 +558,16 @@ export class FinansKayitDetayComponent implements OnInit {
     }
     return ozet;
   }
+  /** Değişiklik geçmişinin sayfa başı kaydı (sunucuda sayfalı). */
+  gecmisBoyutu = 25;
+  gecmisBoyut(boyut: number): void {
+    this.gecmisBoyutu = boyut;
+    this.gecmisSayfa(1);
+  }
   gecmisSayfa(page: number): void {
     const h = this.hedef();
     this.service
-      .denetim(h.tur, h.id, page)
+      .denetim(h.tur, h.id, page, this.gecmisBoyutu)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((r) => {
         if (r.isSuccess) this.denetim.set(r.value ?? null);

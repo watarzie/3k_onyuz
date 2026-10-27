@@ -1,3 +1,4 @@
+import { Subscription } from 'rxjs';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
@@ -128,11 +129,15 @@ export class UcKIsListesiComponent implements OnInit {
     this.load();
   }
 
+  /** Süren liste isteği: yeni istek (sayfa, sayfa başı, arama) eskisini iptal eder; geç dönen eski yanıt yeni listeyi ezmez. */
+  private listeIstegi?: Subscription;
+
   load(): void {
     this.loading.set(true);
     this.errorMessage.set('');
 
-    this.uckService.getIsListesi({
+    this.listeIstegi?.unsubscribe();
+    this.listeIstegi = this.uckService.getIsListesi({
       page: this.page(),
       pageSize: this.pageSize(),
       sadeceBugun: this.todayOnly(),

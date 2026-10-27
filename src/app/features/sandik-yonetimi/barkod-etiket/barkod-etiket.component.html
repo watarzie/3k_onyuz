@@ -211,15 +211,35 @@
             <i class="ri-terminal-box-line" aria-hidden="true"></i>Godex dosyası (.prn) indir
           </button>
         </app-islemler-menusu>
+        <!-- Yazıcı seçimi yalnız QZ Tray bulununca görünür; "Yazdırma penceresi" PDF yoludur. -->
+        @if (qzDurum() === 'var') {
+          <div class="be-qz" role="group" aria-label="Yazıcı">
+            <select class="form-select be-qz-yazici" aria-label="Yazıcı" (change)="qzYaziciSec($any($event.target).value)">
+              <option value="" [selected]="!qzYazici()">Yazdırma penceresi (PDF)</option>
+              @for (y of qzYazicilari(); track y) {
+                <option [value]="y" [selected]="y === qzYazici()">{{ y }}</option>
+              }
+            </select>
+            <button type="button" class="tz-btn be-qz-yenile" title="Yazıcı listesini yenile" aria-label="Yazıcı listesini yenile"
+                    [disabled]="qzYukleniyor()" (click)="qzYazicilariniGetir()">
+              <i [class]="qzYukleniyor() ? 'ri-loader-4-line tz-spin' : 'ri-refresh-line'" aria-hidden="true"></i>
+            </button>
+          </div>
+        }
         <button type="button" class="tz-btn tz-btn--primary be-yazdir" [disabled]="!olusturulabilir()" (click)="yazdir()">
-          <i [class]="olusturuluyor() === 'yazdir' ? 'ri-loader-4-line tz-spin' : 'ri-printer-line'" aria-hidden="true"></i>Yazdır
+          <i [class]="olusturuluyor() === 'yazdir' || olusturuluyor() === 'gonder' ? 'ri-loader-4-line tz-spin' : 'ri-printer-line'"
+             aria-hidden="true"></i>Yazdır
         </button>
       </div>
       <p class="be-ipucu">
         <i class="ri-information-line" aria-hidden="true"></i>
-        Yazdır'a basınca yazdırma penceresi açılır: yazıcı olarak
-        <strong>{{ sekme() === 'sandik' ? 'Godex Sandık (100×75 mm)' : 'Godex Ürün (60×40 mm)' }}</strong>
-        seçilip Yazdır'a basılır; ölçek "Varsayılan" kalmalıdır.
+        @if (qzDurum() === 'var' && qzYazici()) {
+          Yazdır'a basınca etiket pencere açılmadan doğrudan <strong>{{ qzYazici() }}</strong> yazıcısından çıkar.
+        } @else {
+          Yazdır'a basınca yazdırma penceresi açılır: yazıcı olarak
+          <strong>{{ sekme() === 'sandik' ? 'Godex Sandık (100×75 mm)' : 'Godex Ürün (60×40 mm)' }}</strong>
+          seçilip Yazdır'a basılır; ölçek "Varsayılan" kalmalıdır.
+        }
         Etikette Türkçe harfler yazıcının fontu için ASCII'ye çevrilir (Ç → C).
       </p>
     } @else {
@@ -256,7 +276,7 @@
           </div>
           <app-server-pager [pageNumber]="liste.pageNumber" [pageSize]="liste.pageSize" [totalCount]="liste.totalCount"
             [totalPages]="liste.totalPages" [hasPreviousPage]="liste.hasPreviousPage" [hasNextPage]="liste.hasNextPage"
-            (pageChange)="projeSayfasi($event)" />
+            [pageSizeOptions]="SAYFA_BOYUTLARI" (pageChange)="projeSayfasi($event)" (pageSizeChange)="projeBoyutuDegisti($event)" />
         }
       }
     }

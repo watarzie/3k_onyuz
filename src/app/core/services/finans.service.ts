@@ -172,13 +172,13 @@ export class FinansService {
   downloadErrorMessage(error: unknown, fallback: string): Promise<string> {
     return this.api.downloadErrorMessage(error, fallback);
   }
-  denetim(varlikTuru: FinansVarlikTuru, varlikId: number, pageNumber = 1) {
+  denetim(varlikTuru: FinansVarlikTuru, varlikId: number, pageNumber = 1, pageSize = 25) {
     return this.api.get<FinansSayfaliSonuc<FinansDegisiklik>>(API.FINANS.DENETIM, {
       params: new HttpParams()
         .set('varlikTuru', varlikTuru)
         .set('varlikId', varlikId)
         .set('pageNumber', pageNumber)
-        .set('pageSize', 25),
+        .set('pageSize', pageSize),
     });
   }
   siparisIptal(id: number, aciklama: string) {

@@ -253,6 +253,10 @@
 .be-indir-pdf i { color: #dc3545; }
 .be-indir-prn i { color: var(--be-ton); }
 .be-yazdir { min-height: var(--be-yukseklik); }
+.be-qz { display: flex; align-items: center; gap: 6px; }
+.be-qz-yazici { width: 230px; min-height: var(--be-yukseklik); border-color: var(--be-border); border-radius: 8px; font-size: 13px; }
+.be-qz-yenile { min-height: var(--be-yukseklik); }
+.be-qz-yenile { padding: 0 12px; }
 .be-yazdir { padding-left: 22px; padding-right: 22px; font-size: 14px; }
 
 .be-ipucu {

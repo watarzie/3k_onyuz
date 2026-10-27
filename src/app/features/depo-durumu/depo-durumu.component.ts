@@ -1,7 +1,7 @@
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { Component, HostListener, computed, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Subject } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { ActivatedRoute } from '@angular/router';
 import { TranslationService } from '../../core/services/translation.service';
@@ -326,9 +326,13 @@ export class DepoDurumuComponent implements OnInit, OnDestroy {
   }
 
   // --- Load paginated project list ---
+  /** Süren liste isteği: yeni istek (sayfa, sayfa başı, arama) eskisini iptal eder; geç dönen eski yanıt yeni listeyi ezmez. */
+  private listeIstegi?: Subscription;
+
   loadProjeler() {
     this.loading.set(true);
-    this.projeService.getProjeListesi(
+    this.listeIstegi?.unsubscribe();
+    this.listeIstegi = this.projeService.getProjeListesi(
       this.currentPage(),
       this.pageSize(),
       undefined,

@@ -6,6 +6,7 @@ import { API } from '../../../core/constants/api-endpoints';
 import { BaseApiService } from '../../../core/services/base-api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PdfYazdirService } from '../../../core/services/pdf-yazdir.service';
+import { QzTrayCalismiyorHatasi, QzTrayService } from '../../../core/services/qz-tray.service';
 import {
   BarkodEtiketBicimi,
   BarkodEtiketProjesi,
@@ -14,11 +15,12 @@ import {
   BarkodEtiketUrunSatiri,
   PaginatedList,
 } from '../../../shared/models';
-import { BarkodEtiketComponent, adetDuzelt, buAy, urunAnahtari } from './barkod-etiket.component';
+import { BarkodEtiketComponent, QZ_YAZICI_ANAHTARI, adetDuzelt, buAy, urunAnahtari } from './barkod-etiket.component';
 
 describe('Barkod etiketi', () => {
   let api: jasmine.SpyObj<BaseApiService>;
   let yazici: jasmine.SpyObj<PdfYazdirService>;
+  let qz: jasmine.SpyObj<QzTrayService>;
 
   const proje: BarkodEtiketProjesi = {
     projeId: 45, projeNo: 'PA600-22', projeTipiId: 1, seriNo: 'PA600-22', musteri: 'SONELGAZ', lokasyon: 'ALGERIA',
@@ -46,13 +48,18 @@ describe('Barkod etiketi', () => {
     }) as any);
     yazici = jasmine.createSpyObj<PdfYazdirService>('PdfYazdirService', ['yazdir']);
     yazici.yazdir.and.resolveTo();
+    qz = jasmine.createSpyObj<QzTrayService>('QzTrayService', ['yazicilar', 'hamGonder']);
+    qz.yazicilar.and.resolveTo(['Microsoft Print to PDF', 'Godex Sandık']);
+    qz.hamGonder.and.resolveTo();
+    localStorage.removeItem(QZ_YAZICI_ANAHTARI);
     TestBed.configureTestingModule({
       imports: [BarkodEtiketComponent],
       providers: [
         provideRouter([]),
         { provide: BaseApiService, useValue: api },
         { provide: PdfYazdirService, useValue: yazici },
-        { provide: ToastService, useValue: jasmine.createSpyObj('ToastService', ['error', 'success']) },
+        { provide: QzTrayService, useValue: qz },
+        { provide: ToastService, useValue: jasmine.createSpyObj('ToastService', ['error', 'success', 'info']) },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(sorgu) } } },
       ],
     });
@@ -101,22 +108,92 @@ describe('Barkod etiketi', () => {
     expect(govde).toEqual({ bicim: BarkodEtiketBicimi.Pdf, yil: 2026, ay: 9, secimler: [{ sandikId: 723, adet: 3 }] });
   });
 
-  it('Yazdır PDF ister ve indirmeden yazdırma penceresine verir', async () => {
+  /** Blob.text() ve yazdırma servisi tarayıcının kendi async işlemleridir; çıktı bitene kadar beklenir. */
+  async function ciktiBitsin(c: BarkodEtiketComponent): Promise<void> {
+    for (let i = 0; i < 50 && c.olusturuluyor() !== null; i++) await new Promise(r => setTimeout(r, 5));
+  }
+
+  it('Yazdır: QZ Tray yoksa uyarı vermeden PDF dosyasını indirmeden yazdırma penceresine verir', async () => {
     const fixture = kur({ projeId: '45' });
     const c = fixture.componentInstance;
+    const toast = TestBed.inject(ToastService) as jasmine.SpyObj<ToastService>;
+    qz.yazicilar.and.rejectWith(new QzTrayCalismiyorHatasi());
     c.sandikSecimDegistir(sandik(723, '8'), true);
     const pdf = new Blob(['%PDF'], { type: 'application/pdf' });
     api.downloadPostFileResponse.and.returnValue(of(new HttpResponse({ body: pdf })));
     const indirme = spyOn(URL, 'createObjectURL').and.returnValue('blob:x');
 
-    c.yazdir();
-    await fixture.whenStable();
+    await c.yazdir();
+    await ciktiBitsin(c);
     const [adres, govde] = api.downloadPostFileResponse.calls.mostRecent().args as [string, { bicim: BarkodEtiketBicimi }];
     expect(adres).toBe(API.BARKOD_ETIKET.SANDIK_ETIKETLERI(45));
     expect(govde.bicim).toBe(BarkodEtiketBicimi.Pdf);
     expect(yazici.yazdir).toHaveBeenCalledOnceWith(pdf);
+    expect(qz.hamGonder).not.toHaveBeenCalled();
     expect(indirme).not.toHaveBeenCalled();
-    expect(c.olusturuluyor()).toBeNull();
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(c.qzDurum()).toBe('yok');
+    // QZ Tray bir kez bulunamayınca sonraki Yazdır'da yeniden yoklanmaz.
+    await c.yazdir();
+    expect(qz.yazicilar).toHaveBeenCalledTimes(1);
+  });
+
+  it('Yazdır: QZ Tray listesindeki tek Godex seçilir, EZPL metni o yazıcıya ham gider, seçim sekme başına hatırlanır', async () => {
+    const fixture = kur({ projeId: '45' });
+    const c = fixture.componentInstance;
+    c.sandikSecimDegistir(sandik(723, '8'), true);
+    const ezpl = '^Q75,3\r\n^L\r\nE\r\n';
+    api.downloadPostFileResponse.and.returnValue(of(new HttpResponse({ body: new Blob([ezpl]) })));
+
+    await c.yazdir();
+    await ciktiBitsin(c);
+    const [adres, govde] = api.downloadPostFileResponse.calls.mostRecent().args as [string, { bicim: BarkodEtiketBicimi }];
+    expect(adres).toBe(API.BARKOD_ETIKET.SANDIK_ETIKETLERI(45));
+    expect(govde.bicim).toBe(BarkodEtiketBicimi.Ezpl);
+    expect(qz.hamGonder).toHaveBeenCalledOnceWith('Godex Sandık', ezpl);
+    expect(yazici.yazdir).not.toHaveBeenCalled();
+    expect(JSON.parse(localStorage.getItem(QZ_YAZICI_ANAHTARI)!)).toEqual({ sandik: 'Godex Sandık' });
+    // Ürün sekmesinin yazıcısı ayrıdır; henüz seçilmedi.
+    c.sekmeSec('urun');
+    expect(c.qzYazici()).toBe('');
+    localStorage.removeItem(QZ_YAZICI_ANAHTARI);
+  });
+
+  it('Yazdır: kullanıcı "Yazdırma penceresi"ni seçtiyse Godex olsa da PDF penceresi açılır ve seçim korunur', async () => {
+    const fixture = kur({ projeId: '45' });
+    const c = fixture.componentInstance;
+    c.sandikSecimDegistir(sandik(723, '8'), true);
+    await c.qzYazicilariniGetir();
+    expect(c.qzYazici()).toBe('Godex Sandık');
+    c.qzYaziciSec('');
+    // Liste yenilense de bilerek seçilen pencere yolu değişmez.
+    await c.qzYazicilariniGetir();
+    expect(c.qzYazici()).toBe('');
+    const pdf = new Blob(['%PDF'], { type: 'application/pdf' });
+    api.downloadPostFileResponse.and.returnValue(of(new HttpResponse({ body: pdf })));
+
+    await c.yazdir();
+    await ciktiBitsin(c);
+    expect(yazici.yazdir).toHaveBeenCalledOnceWith(pdf);
+    expect(qz.hamGonder).not.toHaveBeenCalled();
+    localStorage.removeItem(QZ_YAZICI_ANAHTARI);
+  });
+
+  it('Yazdır: QZ Tray gönderim anında kapandıysa hata yerine yazdırma penceresine geçer', async () => {
+    const fixture = kur({ projeId: '45' });
+    const c = fixture.componentInstance;
+    const toast = TestBed.inject(ToastService) as jasmine.SpyObj<ToastService>;
+    qz.hamGonder.and.rejectWith(new QzTrayCalismiyorHatasi());
+    c.sandikSecimDegistir(sandik(723, '8'), true);
+    api.downloadPostFileResponse.and.returnValue(of(new HttpResponse({ body: new Blob(['x']) })));
+
+    await c.yazdir();
+    for (let i = 0; i < 50 && !yazici.yazdir.calls.count(); i++) await new Promise(r => setTimeout(r, 5));
+    expect(yazici.yazdir).toHaveBeenCalledTimes(1);
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(c.qzDurum()).toBe('yok');
+    expect((api.downloadPostFileResponse.calls.mostRecent().args[1] as { bicim: BarkodEtiketBicimi }).bicim).toBe(BarkodEtiketBicimi.Pdf);
+    localStorage.removeItem(QZ_YAZICI_ANAHTARI);
   });
 
   it('ürün sekmesi: basılamayan barkod seçilmez, sayfa seçimi yalnız basılabilenleri alır; remarks ve EZPL gider', () => {

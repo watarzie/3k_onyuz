@@ -1,3 +1,4 @@
+import { Subscription } from 'rxjs';
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { HttpParams } from '@angular/common/http';
@@ -168,12 +169,16 @@ export class SandikAcilisIstatistigiComponent implements OnInit {
     this.tabloYukle(tablo);
   }
 
+  /** Tablo başına süren istek: yeni istek eskisini iptal eder; geç dönen eski sayfa yeni boyutu ezmez. */
+  private readonly tabloIstekleri = new Map<SayfaliTablo<unknown>, Subscription>();
+
   tabloYukle<T>(tablo: SayfaliTablo<T>): void {
     const params = this.httpParams(this.uygulananKriter)
       .set('sayfa', String(tablo.sayfa()))
       .set('boyut', String(tablo.boyut()));
     tablo.yukleniyor.set(true);
-    this.api.get<PaginatedList<T>>(tablo.url, { params })
+    this.tabloIstekleri.get(tablo as SayfaliTablo<unknown>)?.unsubscribe();
+    const istek = this.api.get<PaginatedList<T>>(tablo.url, { params })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(res => {
         tablo.yukleniyor.set(false);
@@ -184,6 +189,7 @@ export class SandikAcilisIstatistigiComponent implements OnInit {
           this.toast.error(res.error || 'Tablo yüklenemedi.');
         }
       });
+    this.tabloIstekleri.set(tablo as SayfaliTablo<unknown>, istek);
   }
 
   excelIndir(): void {

@@ -177,6 +177,38 @@ describe('Proje listesi: sevk edilen saha/yedek görünürlüğü (G1) ve toplu 
     expect(toast.error).toHaveBeenCalledWith('Projenin sevk edilmiş sandığı yok.');
   }));
 
+  it('Yedek Raporu menüsünde tüm sandıklar ve sevke hazır raporu iner; hazır sandık yoksa sunucunun nedeni gösterilir', fakeAsync(() => {
+    listeOgeleri = [yedek];
+    okuma.add(YETKI.YEDEK.RAPORU);
+    const { fixture, c } = setup({ menuKod: YETKI.YEDEK.YONETIMI, projeTipi: ProjeTipi.Yedek });
+    (pdf as any).sevkeHazirSandikRaporu = jasmine.createSpy('sevkeHazirSandikRaporu').and.returnValue(of(new Blob(['x'])));
+    (pdf as any).sahaProjePdf = jasmine.createSpy('sahaProjePdf').and.returnValue(of(new Blob(['x'])));
+    spyOn(URL, 'createObjectURL').and.returnValue('blob:x');
+    const el = fixture.nativeElement as HTMLElement;
+    const tetik = el.querySelector<HTMLButtonElement>('.report-download-trigger[title="Yedek Raporu"]')!;
+    expect(tetik.textContent).toContain('Yedek Raporu');
+    tetik.click();
+    fixture.detectChanges();
+    const ogeler = Array.from(el.querySelectorAll('.report-download-menu-global .report-download-item')).map(b => b.textContent?.trim());
+    expect(ogeler).toEqual(['Tüm sandıklar (PDF)', 'Sevke hazır (PDF)', 'Sevke hazır (Excel)']);
+
+    // Mevcut rapor aynı uçtan iner.
+    c.indirSahaProjePdf(yedek);
+    expect((pdf as any).sahaProjePdf).toHaveBeenCalledWith(yedek.id);
+    expect(c.reportMenuKey()).toBeNull();
+
+    c.indirSevkeHazirSandikRaporu(yedek, 'excel');
+    expect((pdf as any).sevkeHazirSandikRaporu).toHaveBeenCalledWith(yedek.id, 'excel');
+    expect(toast.success).toHaveBeenCalledWith('Sevke hazır sandık raporu indirildi.');
+    expect(c.downloadingSevkeHazir()).toBeNull();
+
+    (pdf as any).sevkeHazirSandikRaporu.and.returnValue(new (class { subscribe(o: any) { o.error('400'); } })());
+    pdf.downloadErrorMessage.and.resolveTo('Sevke hazır sandık bulunamadı. 1 sandık kapanmadığı için listelenmedi (No: 3).');
+    c.indirSevkeHazirSandikRaporu(yedek, 'pdf');
+    tick();
+    expect(toast.error).toHaveBeenCalledWith('Sevke hazır sandık bulunamadı. 1 sandık kapanmadığı için listelenmedi (No: 3).');
+  }));
+
   it('Aktif Projeler satırın gerçek tipinin sevk iznine bakar; toplu sevk yalnız seçili projeleri pencereye verir (C-08)', () => {
     yazma.add(YETKI.SAHA.SEVK_ET);
     const { c, fixture } = setup({ menuKod: YETKI.PROJE.AKTIF_PROJELER });

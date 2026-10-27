@@ -223,9 +223,12 @@ export class UcKSandiklarComponent implements OnInit {
   }
 
   /** Sadece numarayı göster */
+  /**
+   * Kartta sandık numarası olduğu gibi gösterilir: eskiden yalnız ilk rakam grubu alınıyordu, "2-2" ile "2" ya da "1-SH"
+   * ile "1" aynı görünüp mükerrer sandık izlenimi veriyordu.
+   */
   getDisplayNo(sandikNo: string): string {
-    const match = sandikNo.match(/(\d+)/);
-    return match ? match[1] : sandikNo;
+    return (sandikNo ?? '').trim();
   }
 
   onSearch(event: Event) {

@@ -56,7 +56,7 @@
               "node_modules/remixicon/fonts/remixicon.css",
               "src/styles.scss"
             ],
-            "allowedCommonJsDependencies": ["pdfmake"],
+            "allowedCommonJsDependencies": ["pdfmake", "qz-tray"],
             "scripts": []
           },
           "configurations": {
