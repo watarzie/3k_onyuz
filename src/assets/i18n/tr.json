@@ -889,7 +889,13 @@
     "APPLY": "Taşı",
     "CANCEL": "Vazgeç",
     "MOVE_ROW": "Taşı",
-    "MOVE_CRATE": "Başka sahaya taşı"
+    "MOVE_CRATE": "Başka sahaya taşı",
+    "SELECT_ALL": "Taşınabilir ürünlerin tümünü seç",
+    "SELECT_CRATE": "Sandıktakileri seç",
+    "SELECTED": "ürün seçili",
+    "MOVE_SELECTED": "Seçilenleri başka sahaya taşı",
+    "CLEAR_SELECTION": "Seçimi temizle",
+    "SELECTED_TITLE": "Seçilen ürünler"
   },
   "GRID_SAHA": {
     "TITLE": "Grid Sahası",
@@ -923,6 +929,10 @@
     "STATUS": "Grid durumu",
     "STATUS_FULL": "Tam Geldi",
     "STATUS_PARTIAL": "Eksik Geldi",
+    "STATUS_TRAFO": "Trafo Sevk",
+    "STATUS_CLOSED": "Grid Kapandı",
+    "STATUS_CLOSED_HINT": "Grid'de kapanmış (terminal) iş; Grid'de bekleyen sayılmaz, yalnız \"Tümü\" kapsamında görünür.",
+    "COL_TRAFO": "Trafo sevk",
     "SORT": "Sıralama",
     "SORT_PROJECT": "Proje / sandık",
     "SORT_WAITING": "Grid'de bekleyen",
@@ -980,10 +990,6 @@
     "PERSONNEL_SUMMARY": "Personel özeti"
   },
   "REV_HISTORY": {
-    "STATUS_TRAFO": "Trafo Sevk",
-    "STATUS_CLOSED": "Grid Kapandı",
-    "STATUS_CLOSED_HINT": "Grid'de kapanmış (terminal) iş; Grid'de bekleyen sayılmaz, yalnız \"Tümü\" kapsamında görünür.",
-    "COL_TRAFO": "Trafo sevk",
     "TITLE": "Revizyon Geçmişi",
     "CLOSE": "Kapat",
     "LOADING": "Yükleniyor…",

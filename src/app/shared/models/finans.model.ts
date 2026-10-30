@@ -753,6 +753,8 @@ export interface FinansAylikIs {
   boy: number | null;
   en: number | null;
   yukseklik: number | null;
+  /** Satırın talep edenleri ("Kişi / Bölüm", birden çoksa virgülle); İlave/Saha/Yedek satırı ölçüye göre ayrılır. */
+  talepEden?: string | null;
   uretimBaslangic: string;
   uretimBitis: string;
   sandikAdedi: number;

@@ -15,6 +15,17 @@
     </div>
   </div>
   <div class="pl-hero__eylem">
+    <!-- İş listeleri sık kullanıldığı için menüye girmez, başlıkta ayrı düğme kalır. -->
+    @if (canSee3KIsListesi()) {
+      <a routerLink="/uck-is-listesi" class="tz-btn pl-uck-is-listesi">
+        <i class="ri-archive-stack-line toolbar-icon is-3k"></i>3K İş Listesi
+      </a>
+    }
+    @if (canSeeGridIsListesi()) {
+      <a routerLink="/grid-is-listesi" class="tz-btn pl-grid-is-listesi">
+        <i class="ri-database-2-line toolbar-icon is-grid"></i>Grid İş Listesi
+      </a>
+    }
     @if (isSahaYonetimi() && canUseEksikTamamlama()) {
       <a routerLink="/saha-yonetimi/eksik-olustur" class="tz-btn">
         <i class="ri-tools-line tz-ico-success"></i>Eksiklerden Oluştur
@@ -39,16 +50,6 @@
         <button type="button" class="pl-diger-revizyon" (click)="openUploadModal('revizyon')">
           <i class="ri-git-branch-line tz-ico-warning"></i>Revizyon Yükle
         </button>
-      }
-      @if (canSee3KIsListesi()) {
-        <a routerLink="/uck-is-listesi" class="pl-diger-uck-is-listesi">
-          <i class="ri-archive-stack-line toolbar-icon is-3k"></i>3K İş Listesi
-        </a>
-      }
-      @if (canSeeGridIsListesi()) {
-        <a routerLink="/grid-is-listesi" class="pl-diger-grid-is-listesi">
-          <i class="ri-database-2-line toolbar-icon is-grid"></i>Grid İş Listesi
-        </a>
       }
       @if (canSeeGridSaha()) {
         <a routerLink="/grid-saha" class="grid-saha-trigger">
@@ -1070,11 +1071,44 @@
                 }
               </section>
             }
+            @if (canUseEksikTamamlama() && sahaTasimaSecilebilirIds().length > 0) {
+              <!-- Toplu taşıma: seçilen ürünler (farklı sandıklardan da) tek işlemde, hepsi ya da hiçbiri taşınır. -->
+              <div class="saha-tasima-secim" [class.is-active]="sahaTasimaSeciliIds().length > 0">
+                <label class="saha-tasima-secim__tumu">
+                  <input type="checkbox" class="form-check-input saha-tasima-tumu"
+                         [checked]="sahaTasimaTumuSecili()"
+                         [disabled]="sahaAktarimIslemVar()"
+                         (change)="sahaTasimaTumunuSec($any($event.target).checked)" />
+                  <span>{{ 'SAHA_TASIMA.SELECT_ALL' | translate }}</span>
+                </label>
+                <span class="saha-tasima-secim__sayac">
+                  <strong>{{ sahaTasimaSeciliIds().length }}</strong> {{ 'SAHA_TASIMA.SELECTED' | translate }}
+                </span>
+                @if (sahaTasimaSeciliIds().length > 0) {
+                  <button type="button" class="btn btn-link btn-sm saha-tasima-temizle" (click)="sahaTasimaTumunuSec(false)">
+                    {{ 'SAHA_TASIMA.CLEAR_SELECTION' | translate }}
+                  </button>
+                }
+                <button type="button" class="tz-btn tz-btn--sm saha-tasima-secilenler"
+                        (click)="sahayaTasiSecilenler()"
+                        [disabled]="sahaTasimaSeciliIds().length === 0 || sahaAktarimIslemVar()">
+                  <i class="ri-arrow-left-right-line tz-ico-info"></i>{{ 'SAHA_TASIMA.MOVE_SELECTED' | translate }}
+                </button>
+              </div>
+            }
             <div class="saha-aktarim-list">
               @for (grup of sahaAktarimGruplari(); track grup.sahaSandikId ?? grup.sahaSandikNo) {
                 <section class="saha-aktarim-group" [class.is-blocked]="!grup.geriAlinabilirMi">
                   <div class="saha-aktarim-group-header">
                     <div class="saha-aktarim-group-identity">
+                      @if (canUseEksikTamamlama()) {
+                        <input type="checkbox" class="form-check-input saha-tasima-grup"
+                               [checked]="sahaTasimaGrupSecili(grup)"
+                               [disabled]="!sahaTasimaGrupSecilebilir(grup) || sahaAktarimIslemVar()"
+                               [attr.aria-label]="('SAHA_TASIMA.SELECT_CRATE' | translate) + ' ' + grup.sahaSandikNo"
+                               [title]="'SAHA_TASIMA.SELECT_CRATE' | translate"
+                               (change)="sahaTasimaGrubuSec(grup, $any($event.target).checked)" />
+                      }
                       <span class="saha-aktarim-group-icon"><i class="ri-inbox-line"></i></span>
                       <div>
                         <strong>Saha Sandığı {{ grup.sahaSandikNo }}</strong>
@@ -1118,7 +1152,15 @@
 
                   <div class="saha-aktarim-group-items">
                     @for (aktarim of grup.aktarimlar; track aktarim.sahaCekiSatiriId) {
-                      <div class="saha-aktarim-item" [class.is-blocked]="!aktarim.geriAlinabilirMi">
+                      <div class="saha-aktarim-item" [class.is-blocked]="!aktarim.geriAlinabilirMi"
+                           [class.is-secili]="sahaTasimaSeciliMi(aktarim)">
+                        @if (canUseEksikTamamlama()) {
+                          <input type="checkbox" class="form-check-input saha-tasima-satir"
+                                 [checked]="sahaTasimaSeciliMi(aktarim)"
+                                 [disabled]="aktarim.sevkEdildiMi || sahaAktarimIslemVar()"
+                                 [attr.aria-label]="'#' + aktarim.siraNo + ' ' + ('SAHA_TASIMA.MOVE_ROW' | translate)"
+                                 (change)="sahaTasimaSec(aktarim, $any($event.target).checked)" />
+                        }
                         <div class="saha-aktarim-main">
                           <div class="saha-aktarim-title">
                             <span class="source-project">{{ aktarim.kaynakProjeNo }}</span>
@@ -1188,7 +1230,7 @@
 @if (showSevkEtModal()) {
   <div class="modal-backdrop fade show" (click)="closeSevkEtModal()"></div>
   <div class="modal d-block fade show" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content border-0 shadow-lg">
         <div class="modal-header bg-warning text-dark border-0">
           <h5 class="modal-title"><i class="ri-truck-line me-2"></i> Sandıkları Sevk Et</h5>
@@ -1218,22 +1260,45 @@
                    (input)="sevkEtTarihi.set($any($event.target).value)" />
           </div>
 
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Araç Plakası</label>
-            <input type="text"
-                   class="form-control"
-                   maxlength="30"
-                   placeholder="Örn. 34 ABC 123"
-                   [value]="sevkEtAracPlaka()"
-                   (input)="sevkEtAracPlaka.set($any($event.target).value)" />
-            <small class="text-muted">Boş bırakılabilir.</small>
+          <!-- Sefer bilgileri toplu sevkle (tır seferi) aynı alanlar ve kurallar; tekil sevk de bir sefer açar. -->
+          <div class="row g-2 mb-3">
+            <div class="col-sm-4">
+              <label class="form-label fw-semibold">Araç Plakası <span class="text-danger">*</span></label>
+              <input type="text"
+                     class="form-control sevk-et-plaka"
+                     [attr.maxlength]="sevkPlakaEnFazla"
+                     autocomplete="off"
+                     placeholder="34 ABC 123"
+                     [value]="sevkEtAracPlaka()"
+                     (input)="sevkEtAracPlaka.set($any($event.target).value)" />
+              @if (sevkEtPlakaOnizleme() && sevkEtPlakaOnizleme() !== sevkEtAracPlaka().trim()) {
+                <small class="text-muted">Kaydedilecek: <strong>{{ sevkEtPlakaOnizleme() }}</strong></small>
+              }
+            </div>
+            <div class="col-sm-4">
+              <label class="form-label fw-semibold">Şoför</label>
+              <input type="text"
+                     class="form-control sevk-et-sofor"
+                     [attr.maxlength]="sevkSoforEnFazla"
+                     [value]="sevkEtSofor()"
+                     (input)="sevkEtSofor.set($any($event.target).value)" />
+            </div>
+            <div class="col-sm-4">
+              <label class="form-label fw-semibold">Dorse Plakası</label>
+              <input type="text"
+                     class="form-control sevk-et-dorse"
+                     [attr.maxlength]="sevkPlakaEnFazla"
+                     autocomplete="off"
+                     [value]="sevkEtDorsePlaka()"
+                     (input)="sevkEtDorsePlaka.set($any($event.target).value)" />
+            </div>
           </div>
 
           <div class="mb-3">
             <label class="form-label fw-semibold">Açıklama</label>
             <textarea class="form-control"
                       rows="2"
-                      maxlength="500"
+                      [attr.maxlength]="sevkAciklamaEnFazla"
                       placeholder="Opsiyonel sevkiyat açıklaması"
                       [value]="sevkEtAciklama()"
                       (input)="sevkEtAciklama.set($any($event.target).value)"></textarea>
@@ -1337,7 +1402,7 @@
         </div>
         <div class="modal-footer border-0 d-flex gap-2">
           <button class="btn btn-light flex-grow-1" (click)="closeSevkEtModal()">Vazgeç</button>
-          <button class="btn btn-warning flex-grow-1" (click)="sevkEtOnayla()" [disabled]="sevkEtSaving() || sevkEtSandikLoading() || selectedSevkSandikIds().length === 0">
+          <button class="btn btn-warning flex-grow-1" (click)="sevkEtOnayla()" [disabled]="sevkEtSaving() || sevkEtSandikLoading() || selectedSevkSandikIds().length === 0 || !sevkEtPlakaOnizleme()">
             @if (sevkEtSaving()) {
               <span class="spinner-border spinner-border-sm me-2"></span>
             }

@@ -196,11 +196,64 @@ describe('Barkod etiketi', () => {
     localStorage.removeItem(QZ_YAZICI_ANAHTARI);
   });
 
-  it('ürün sekmesi: basılamayan barkod seçilmez, sayfa seçimi yalnız basılabilenleri alır; remarks ve EZPL gider', () => {
+  it('tümünü seç bütün sayfaları seçer (yalnız görünen sayfayı değil); ikinci tıklama bırakır; seçim sınırı aşılmaz', async () => {
+    const fixture = kur({ projeId: '45' });
+    const c = fixture.componentInstance;
+    const toast = TestBed.inject(ToastService) as jasmine.SpyObj<ToastService>;
+    // 130 sandıklık proje: 100'erli iki sayfa (ekranda 25'lik ilk sayfa görünür).
+    const tumu = Array.from({ length: 130 }, (_, i) => sandik(1000 + i, String(i + 1)));
+    const sayfali = (sayfaNo: number, boyut: number): PaginatedList<BarkodEtiketSandikSatiri> => {
+      const toplamSayfa = Math.ceil(tumu.length / boyut);
+      return {
+        items: tumu.slice((sayfaNo - 1) * boyut, sayfaNo * boyut), pageNumber: sayfaNo, pageSize: boyut, totalCount: tumu.length,
+        totalPages: toplamSayfa, hasPreviousPage: sayfaNo > 1, hasNextPage: sayfaNo < toplamSayfa,
+      };
+    };
+    api.get.and.callFake(((url: string, secenek?: { params: HttpParams }) => url === API.BARKOD_ETIKET.SANDIKLAR(45)
+      ? of({ isSuccess: true, value: sayfali(Number(secenek!.params.get('sayfa')), Number(secenek!.params.get('boyut'))) })
+      : of({ isSuccess: true, value: proje })) as any);
+    c.sayfaDegisti(1);
+    expect(c.sandiklar()!.items.length).toBe(25);
+    expect(c.tumuSecili()).toBeFalse();
+
+    api.get.calls.reset();
+    await c.tumunuSec();
+    expect(c.sandikSecimleri().size).toBe(130);
+    expect(c.tumuSecili()).toBeTrue();
+    const istenenSayfalar = api.get.calls.all()
+      .map(cagri => (cagri.args[1] as { params?: HttpParams } | undefined)?.params)
+      .filter(p => p?.get('boyut') === '100').map(p => p!.get('sayfa'));
+    expect(istenenSayfalar).toEqual(['1', '2']);
+
+    // Bir satır kaldırılınca kutu boşalır; tekrar tıklanınca hepsi seçilir, bir daha tıklanınca bu süzgeçtekiler bırakılır.
+    c.sandikSecimDegistir(tumu[129], false);
+    expect(c.tumuSecili()).toBeFalse();
+    await c.tumunuSec();
+    expect(c.sandikSecimleri().size).toBe(130);
+    await c.tumunuSec();
+    expect(c.sandikSecimleri().size).toBe(0);
+
+    // Seçim sayısının sınırı yok: 253 sandığın hepsi seçilir ve yazdırılabilir.
+    tumu.push(...Array.from({ length: 123 }, (_, i) => sandik(2000 + i, String(200 + i))));
+    await c.tumunuSec();
+    expect(c.sandikSecimleri().size).toBe(253);
+    expect(c.olusturulabilir()).toBeTrue();
+    expect(toast.info).not.toHaveBeenCalled();
+
+    // Yalnız tek dosyadaki etiket toplamı (1000) aşılmaz; kullanıcıya söylenir.
+    await c.tumunuSec();
+    tumu.push(...Array.from({ length: 800 }, (_, i) => sandik(5000 + i, String(500 + i))));
+    await c.tumunuSec();
+    expect(c.sandikSecimleri().size).toBe(1000);
+    expect(c.etiketSayisi()).toBe(1000);
+    expect(toast.info).toHaveBeenCalled();
+  });
+
+  it('ürün sekmesi: basılamayan barkod seçilmez, tümünü seç yalnız basılabilenleri alır; remarks ve EZPL gider', async () => {
     const fixture = kur({ projeId: '45', tur: 'urun' });
     const c = fixture.componentInstance;
     expect(c.sekme()).toBe('urun');
-    c.sayfayiSec();
+    await c.tumunuSec();
     expect(c.urunSecimleri().size).toBe(2);
     c.urunSecimDegistir(urun(2, BarkodEtiketUrunKaynagi.CekiSatiri, null), true);
     expect(c.urunSecimleri().size).toBe(2);
@@ -227,8 +280,8 @@ describe('Barkod etiketi', () => {
     c.adediMiktarYap(bolunmus);
     expect(c.urunAdedi(bolunmus)).toBe(2);
 
-    // Sayfa seçimi ikinci kez tıklanınca sayfadakileri kaldırır.
-    c.sayfayiSec();
+    // Tümünü seç ikinci kez tıklanınca seçilenleri kaldırır.
+    await c.tumunuSec();
     expect(c.urunSecimleri().size).toBe(0);
   });
 });

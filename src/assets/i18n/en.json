@@ -889,7 +889,13 @@
     "APPLY": "Move",
     "CANCEL": "Cancel",
     "MOVE_ROW": "Move",
-    "MOVE_CRATE": "Move to another site"
+    "MOVE_CRATE": "Move to another site",
+    "SELECT_ALL": "Select all movable items",
+    "SELECT_CRATE": "Select crate items",
+    "SELECTED": "items selected",
+    "MOVE_SELECTED": "Move selected to another site",
+    "CLEAR_SELECTION": "Clear selection",
+    "SELECTED_TITLE": "Selected items"
   },
   "GRID_SAHA": {
     "TITLE": "Grid Site",
@@ -923,6 +929,10 @@
     "STATUS": "Grid status",
     "STATUS_FULL": "Fully Received",
     "STATUS_PARTIAL": "Partially Received",
+    "STATUS_TRAFO": "Transformer Shipment",
+    "STATUS_CLOSED": "Grid Closed",
+    "STATUS_CLOSED_HINT": "Closed (terminal) at Grid; not counted as waiting, shown only in the \"All\" scope.",
+    "COL_TRAFO": "To transformer",
     "SORT": "Sort",
     "SORT_PROJECT": "Project / crate",
     "SORT_WAITING": "Waiting at Grid",
@@ -980,10 +990,6 @@
     "PERSONNEL_SUMMARY": "Staff summary"
   },
   "REV_HISTORY": {
-    "STATUS_TRAFO": "Transformer Shipment",
-    "STATUS_CLOSED": "Grid Closed",
-    "STATUS_CLOSED_HINT": "Closed (terminal) at Grid; not counted as waiting, shown only in the \"All\" scope.",
-    "COL_TRAFO": "To transformer",
     "TITLE": "Revision History",
     "CLOSE": "Close",
     "LOADING": "Loading…",

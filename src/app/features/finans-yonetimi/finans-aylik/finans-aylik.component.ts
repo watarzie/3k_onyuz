@@ -785,6 +785,13 @@ export class FinansYonetimiComponent implements OnInit {
     const kategori = this.t(kategoriAnahtari(satir.kategori));
     return satir.isAdi && satir.isAdi.toLocaleLowerCase('tr-TR') !== kategori.toLocaleLowerCase('tr-TR') ? `${kategori} · ${satir.isAdi}` : kategori;
   }
+  /** "B × E × Y mm"; sunucu yalnız İlave/Saha/Yedek ve Özel İş satırına ölçü yazar, üçü dolu değilse boş. */
+  olcuMetni(satir: FinansAylikIs): string | null {
+    const { boy, en, yukseklik } = satir;
+    if (!boy || !en || !yukseklik) return null;
+    const sayi = (deger: number) => deger.toLocaleString('tr-TR', { maximumFractionDigits: 2 });
+    return `${sayi(boy)} × ${sayi(en)} × ${sayi(yukseklik)} mm`;
+  }
   /** Sandık dökümü olan kategori satırı (projeden gelen kayıtlar). */
   sandikliSatir(satir: FinansAylikIs): boolean {
     return satir.kaynakTuru === 'Proje' && satir.isKaydiIds.length > 0;

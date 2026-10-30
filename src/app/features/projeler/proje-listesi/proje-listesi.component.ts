@@ -20,6 +20,7 @@ import { OtomatikSahaAktarimComponent } from '../otomatik-saha-aktarim/otomatik-
 import { SahaTasimaKaynagi, SahadanSahayaTasimaComponent } from '../../saha-yonetimi/sahadan-sahaya-tasima/sahadan-sahaya-tasima.component';
 import {
   ApiResult,
+  ARAC_PLAKA_EN_FAZLA,
   CekiRevizyonOnizlemeSonuc,
   CekiRevizyonOnayKuyruguYaniti,
   CekiRevizyonSorunu,
@@ -32,7 +33,10 @@ import {
   SahaAktarimDto,
   SandikDto,
   SevkiyatDto,
+  SEFER_ACIKLAMA_EN_FAZLA,
+  SOFOR_EN_FAZLA,
   TOPLU_SEVK_EN_FAZLA_PROJE,
+  aracPlakaBicimle,
   onayaAlindi,
   sandikSevkAdayiMi,
   sandikSevkEdildiMi,
@@ -345,6 +349,13 @@ export class ProjeListesiComponent implements OnInit {
   sevkEtTarihi = signal('');
   sevkEtAciklama = signal('');
   sevkEtAracPlaka = signal('');
+  sevkEtSofor = signal('');
+  sevkEtDorsePlaka = signal('');
+  /** Sunucunun kaydedeceği plaka biçimi; boşsa plaka geçersizdir (toplu sevkle aynı kural). */
+  readonly sevkEtPlakaOnizleme = computed(() => aracPlakaBicimle(this.sevkEtAracPlaka()));
+  protected readonly sevkPlakaEnFazla = ARAC_PLAKA_EN_FAZLA;
+  protected readonly sevkSoforEnFazla = SOFOR_EN_FAZLA;
+  protected readonly sevkAciklamaEnFazla = SEFER_ACIKLAMA_EN_FAZLA;
   sevkEtSaving = signal(false);
   sevkEtSandiklar = signal<SandikDto[]>([]);
   sevkEtSandikLoading = signal(false);
@@ -369,6 +380,18 @@ export class ProjeListesiComponent implements OnInit {
     this.sahaAktarimGeriAlSaving() !== null || this.sahaSandikAktarimGeriAlSaving() !== null ||
     this.sahaAktarimIslemiGeriAlSaving() !== null
   );
+  /**
+   * Toplu sahadan sahaya taşıma seçimi (saha satırı kimlikleri). Sevk edilmiş satır seçilemez; seçilenler tek işlemde,
+   * hepsi ya da hiçbiri taşınır (sunucu önizlemesi engelleri gösterir). Liste her yüklendiğinde seçim sıfırlanır.
+   */
+  sahaTasimaSeciliIds = signal<number[]>([]);
+  sahaTasimaSecilebilirIds = computed(() =>
+    this.sahaAktarimlari().filter(a => !a.sevkEdildiMi).map(a => a.sahaCekiSatiriId));
+  sahaTasimaTumuSecili = computed(() => {
+    const secilebilir = this.sahaTasimaSecilebilirIds();
+    const secili = new Set(this.sahaTasimaSeciliIds());
+    return secilebilir.length > 0 && secilebilir.every(id => secili.has(id));
+  });
   /** Aktarımlar penceresindeki satırların aktarım başlıkları (otomatik ya da elle); en yeni üstte. */
   sahaAktarimIslemleri = computed<SahaAktarimIslemi[]>(() => {
     const islemler = new Map<number, SahaAktarimIslemi>();
@@ -1676,10 +1699,12 @@ export class ProjeListesiComponent implements OnInit {
     this.showSahaAktarimModal.set(false);
     this.sahaAktarimProje.set(null);
     this.sahaAktarimlari.set([]);
+    this.sahaTasimaSeciliIds.set([]);
     this.sahaAktarimLoading.set(false);
   }
 
   private loadSahaAktarimlari(projeId: number) {
+    this.sahaTasimaSeciliIds.set([]);
     this.sahaAktarimLoading.set(true);
     this.projeService.getSahaAktarimlari(projeId).subscribe({
       next: (res) => {
@@ -1780,6 +1805,57 @@ export class ProjeListesiComponent implements OnInit {
       sandikId: null,
       baslik: `#${aktarim.siraNo} ${aktarim.aciklama || aktarim.barkodNo}`,
     });
+  }
+
+  sahaTasimaSeciliMi(aktarim: SahaAktarimDto): boolean {
+    return this.sahaTasimaSeciliIds().includes(aktarim.sahaCekiSatiriId);
+  }
+
+  sahaTasimaSec(aktarim: SahaAktarimDto, secili: boolean): void {
+    if (aktarim.sevkEdildiMi) return;
+    this.secimiGuncelle([aktarim.sahaCekiSatiriId], secili);
+  }
+
+  sahaTasimaTumunuSec(secili: boolean): void {
+    this.sahaTasimaSeciliIds.set(secili ? [...this.sahaTasimaSecilebilirIds()] : []);
+  }
+
+  /** Sandığın taşınabilir (sevk edilmemiş) satırlarının hepsi seçili mi; seçilebilir satırı yoksa false. */
+  sahaTasimaGrupSecili(grup: SahaAktarimGrubu): boolean {
+    const ids = grup.aktarimlar.filter(a => !a.sevkEdildiMi).map(a => a.sahaCekiSatiriId);
+    const secili = new Set(this.sahaTasimaSeciliIds());
+    return ids.length > 0 && ids.every(id => secili.has(id));
+  }
+
+  sahaTasimaGrupSecilebilir(grup: SahaAktarimGrubu): boolean {
+    return grup.aktarimlar.some(a => !a.sevkEdildiMi);
+  }
+
+  sahaTasimaGrubuSec(grup: SahaAktarimGrubu, secili: boolean): void {
+    this.secimiGuncelle(grup.aktarimlar.filter(a => !a.sevkEdildiMi).map(a => a.sahaCekiSatiriId), secili);
+  }
+
+  /** Seçilen satırları tek taşıma penceresinde başka saha projesine taşır (farklı kaynak sandıklardan olabilir). */
+  sahayaTasiSecilenler(): void {
+    const proje = this.sahaAktarimProje();
+    const secilebilir = new Set(this.sahaTasimaSecilebilirIds());
+    const satirIds = this.sahaTasimaSeciliIds().filter(id => secilebilir.has(id));
+    if (!proje || !this.canUseEksikTamamlama() || satirIds.length === 0 || this.sahaAktarimIslemVar()) return;
+    this.sahaTasimaSecimi.set({
+      kaynak: { id: proje.id, projeNo: proje.projeNo },
+      satirIds,
+      sandikId: null,
+      baslik: `${this.ts.translate('SAHA_TASIMA.SELECTED_TITLE')}: ${satirIds.length}`,
+    });
+  }
+
+  private secimiGuncelle(ids: number[], secili: boolean): void {
+    const kume = new Set(this.sahaTasimaSeciliIds());
+    for (const id of ids) {
+      if (secili) kume.add(id);
+      else kume.delete(id);
+    }
+    this.sahaTasimaSeciliIds.set([...kume]);
   }
 
   /** Saha sandığının bütün içeriğini (manuel içerikler dahil) başka saha projesine taşır. */
@@ -1889,6 +1965,8 @@ export class ProjeListesiComponent implements OnInit {
     this.sevkEtTarihi.set(this.toDateTimeLocalInputValue());
     this.sevkEtAciklama.set('');
     this.sevkEtAracPlaka.set('');
+    this.sevkEtSofor.set('');
+    this.sevkEtDorsePlaka.set('');
     this.sevkEtSandiklar.set([]);
     this.selectedSevkSandikIds.set([]);
     this.sevkGecmisi.set([]);
@@ -1904,6 +1982,8 @@ export class ProjeListesiComponent implements OnInit {
     this.sevkEtTarihi.set('');
     this.sevkEtAciklama.set('');
     this.sevkEtAracPlaka.set('');
+    this.sevkEtSofor.set('');
+    this.sevkEtDorsePlaka.set('');
     this.sevkEtSandiklar.set([]);
     this.selectedSevkSandikIds.set([]);
     this.sevkEtSandikLoading.set(false);
@@ -2016,6 +2096,10 @@ export class ProjeListesiComponent implements OnInit {
       this.toastService.error('Sevk tarihi girilmelidir.');
       return;
     }
+    if (!this.sevkEtPlakaOnizleme()) {
+      this.toastService.error('Araç plakası girilmelidir.');
+      return;
+    }
     if (this.selectedSevkSandikIds().length === 0) {
       this.toastService.error('Sevk edilecek en az bir sandık seçilmelidir.');
       return;
@@ -2023,8 +2107,11 @@ export class ProjeListesiComponent implements OnInit {
     this.sevkEtSaving.set(true);
     const tarih = this.toApiDateTime(this.sevkEtTarihi())!;
     const aciklama = this.sevkEtAciklama().trim() || undefined;
-    const aracPlaka = this.sevkEtAracPlaka().trim() || undefined;
-    this.projeService.sevkEt(proje.id, tarih, this.selectedSevkSandikIds(), aciklama, aracPlaka).subscribe({
+    this.projeService.sevkEt(proje.id, tarih, this.selectedSevkSandikIds(), aciklama, {
+      aracPlaka: this.sevkEtAracPlaka().trim(),
+      sofor: this.sevkEtSofor().trim() || undefined,
+      dorsePlaka: this.sevkEtDorsePlaka().trim() || undefined,
+    }).subscribe({
       next: (res) => {
         this.sevkEtSaving.set(false);
         if (res.isSuccess) {

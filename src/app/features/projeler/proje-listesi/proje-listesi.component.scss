@@ -1637,6 +1637,60 @@
   &.is-blocked {
     background: #fbfcfe;
   }
+
+  // Toplu taşıma seçim kutusu olan satırda ilk sütun kutudur.
+  &:has(> .saha-tasima-satir) {
+    grid-template-columns: 18px minmax(0, 1fr) 88px 150px max-content;
+  }
+  &.is-secili {
+    border-color: color-mix(in srgb, var(--primaryColor) 45%, transparent);
+    background: color-mix(in srgb, var(--primaryColor) 5%, #fff);
+  }
+}
+
+.saha-tasima-satir,
+.saha-tasima-grup,
+.saha-tasima-tumu {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+  &:disabled { cursor: not-allowed; }
+}
+
+// Toplu taşıma çubuğu: tümünü seç, seçili sayısı ve tek "taşı" düğmesi.
+.saha-tasima-secim {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border: 1px dashed #d5dbe5;
+  border-radius: 12px;
+  background: #f8fafc;
+
+  &.is-active {
+    border-style: solid;
+    border-color: color-mix(in srgb, var(--primaryColor) 30%, transparent);
+    background: color-mix(in srgb, var(--primaryColor) 5%, #fff);
+  }
+  .saha-tasima-secim__tumu {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .saha-tasima-secim__sayac {
+    color: #64748b;
+    font-size: 12.5px;
+    strong { color: var(--blackColor); }
+  }
+  .saha-tasima-secilenler { margin-left: auto; }
 }
 
 .saha-aktarim-main {
@@ -1991,6 +2045,7 @@
 
   .saha-aktarim-item {
     grid-template-columns: minmax(0, 1fr) 76px;
+    &:has(> .saha-tasima-satir) { grid-template-columns: 18px minmax(0, 1fr) 76px; }
   }
 
   .saha-aktarim-status,

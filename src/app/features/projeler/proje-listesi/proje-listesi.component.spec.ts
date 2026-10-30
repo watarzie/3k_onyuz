@@ -411,6 +411,73 @@ describe('Proje listesi: sevk edilen saha/yedek görünürlüğü (G1) ve toplu 
     expect(dugme(fixture)).toBeNull();
   });
 
+  it('3K ve Grid İş Listesi Sandık Yönetimi başlığında ayrı düğmedir, "Diğer" menüsünde değildir; her biri kendi izniyle', () => {
+    const baslik = (f: { nativeElement: HTMLElement }, sec: string) => f.nativeElement.querySelector<HTMLAnchorElement>(`.pl-hero__eylem > ${sec}`);
+    const menude = (f: { nativeElement: HTMLElement }, rota: string) => f.nativeElement.querySelector(`.pl-diger a[href="${rota}"]`);
+    okuma.add(YETKI.SANDIK.UCK_IS_LISTESI);
+    let { fixture } = setup({ menuKod: YETKI.SANDIK.YONETIMI, projeTipi: ProjeTipi.Normal });
+    expect(baslik(fixture, 'a.pl-uck-is-listesi')?.getAttribute('href')).toBe('/uck-is-listesi');
+    expect(baslik(fixture, 'a.pl-grid-is-listesi')).toBeNull();
+    TestBed.resetTestingModule();
+
+    okuma.add(YETKI.SANDIK.GRID_IS_LISTESI);
+    ({ fixture } = setup({ menuKod: YETKI.SANDIK.YONETIMI, projeTipi: ProjeTipi.Normal }));
+    expect(baslik(fixture, 'a.pl-grid-is-listesi')?.getAttribute('href')).toBe('/grid-is-listesi');
+    expect(menude(fixture, '/uck-is-listesi')).toBeNull();
+    expect(menude(fixture, '/grid-is-listesi')).toBeNull();
+  });
+
+  it('aktarımlar penceresinde seçilen ürünler (farklı sandıklardan) tek taşıma penceresine gider; sevkli satır seçilmez', () => {
+    yazma.add(YETKI.SAHA.SAHAYA_AKTAR);
+    const { c } = setup({ menuKod: YETKI.SAHA.YONETIMI, projeTipi: ProjeTipi.Saha });
+    const satir = (id: number, sandikId: number, sevkEdildiMi = false) => ({
+      sahaCekiSatiriId: id, sahaProjeId: saha.id, sahaProjeNo: saha.projeNo, sahaSandikId: sandikId, sahaSandikNo: String(sandikId),
+      kaynakProjeId: 1, kaynakProjeNo: 'PA1', kaynakSandikNo: '24', siraNo: id, barkodNo: `B${id}`, aciklama: `Ürün ${id}`, miktar: 1,
+      birim: 'Adet', durumMetni: '', sevkEdildiMi, islemGormusMu: false, geriAlinabilirMi: !sevkEdildiMi,
+    });
+    c.sahaAktarimProje.set(saha);
+    c.sahaAktarimlari.set([satir(11, 1), satir(12, 1), satir(13, 1, true), satir(21, 2)]);
+
+    expect(c.sahaTasimaSecilebilirIds()).toEqual([11, 12, 21]);
+    const [grup1, grup2] = c.sahaAktarimGruplari();
+    c.sahaTasimaGrubuSec(grup1, true);
+    expect(c.sahaTasimaSeciliIds()).toEqual([11, 12]);
+    expect(c.sahaTasimaGrupSecili(grup1)).toBeTrue();
+    c.sahaTasimaSec(c.sahaAktarimlari()[2], true);
+    expect(c.sahaTasimaSeciliIds()).toEqual([11, 12]);
+    c.sahaTasimaSec(grup2.aktarimlar[0], true);
+    expect(c.sahaTasimaTumuSecili()).toBeTrue();
+
+    c.sahayaTasiSecilenler();
+    expect(c.sahaTasimaSecimi()?.satirIds).toEqual([11, 12, 21]);
+    expect(c.sahaTasimaSecimi()?.sandikId).toBeNull();
+
+    c.sahaTasimaTumunuSec(false);
+    expect(c.sahaTasimaSeciliIds()).toEqual([]);
+  });
+
+  it('tekil sevk toplu sevkteki sefer alanlarını gönderir; araç plakası zorunludur', () => {
+    const { c } = setup({ menuKod: YETKI.SAHA.YONETIMI, projeTipi: ProjeTipi.Saha });
+    projeApi.sevkEt = jasmine.createSpy('sevkEt').and.returnValue(of({ isSuccess: true, value: true }));
+    c.sevkEtProje.set(saha);
+    c.sevkEtTarihi.set('2026-10-30T10:00');
+    c.selectedSevkSandikIds.set([5]);
+
+    c.sevkEtAracPlaka.set(' - ');
+    c.sevkEtOnayla();
+    expect(projeApi.sevkEt).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith('Araç plakası girilmelidir.');
+
+    c.sevkEtAracPlaka.set('34-abc-123');
+    c.sevkEtSofor.set(' Ahmet ');
+    c.sevkEtDorsePlaka.set('34 XYZ 99');
+    c.sevkEtAciklama.set('Not');
+    c.sevkEtOnayla();
+    const [projeId, , sandikIds, aciklama, sefer] = (projeApi.sevkEt as jasmine.Spy).calls.mostRecent().args;
+    expect([projeId, sandikIds, aciklama]).toEqual([saha.id, [5], 'Not']);
+    expect(sefer).toEqual({ aracPlaka: '34-abc-123', sofor: 'Ahmet', dorsePlaka: '34 XYZ 99' });
+  });
+
   it('modül listesinde kilit açma sunucu kuralına uyar: sevk izni yetmez, projenin tipinin proje yönetimi W gerekir', () => {
     yazma.add(YETKI.SAHA.SEVK_ET);
     const { c } = setup({ menuKod: YETKI.SAHA.YONETIMI, projeTipi: ProjeTipi.Saha });

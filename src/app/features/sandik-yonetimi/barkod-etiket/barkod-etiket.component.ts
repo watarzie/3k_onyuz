@@ -3,7 +3,7 @@ import { DecimalPipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpParams } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subject, debounceTime, switchMap } from 'rxjs';
+import { Subject, debounceTime, firstValueFrom, switchMap } from 'rxjs';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { ServerPagerComponent } from '../../../shared/components/server-pager/server-pager.component';
 import { IslemlerMenusuComponent } from '../../../shared/components/islemler-menusu/islemler-menusu.component';
@@ -25,7 +25,9 @@ import {
 } from '../../../shared/models/index';
 
 /** Sunucudaki BarkodEtiketKurali sınırlarıyla aynı. */
-export const ETIKET_SINIRLARI = { secim: 200, adet: 100, toplam: 1000, remarks: 60, arama: 100 } as const;
+export const ETIKET_SINIRLARI = { adet: 100, toplam: 1000, remarks: 60, arama: 100 } as const;
+/** "Tümünü seç" sayfaları sunucunun en büyük sayfa boyutuyla çeker (SayfaKurali: en fazla 100). */
+const TUMUNU_SEC_SAYFA_BOYUTU = 100;
 
 type Sekme = 'sandik' | 'urun';
 interface SandikSecimi { satir: BarkodEtiketSandikSatiri; adet: number; }
@@ -140,7 +142,7 @@ export class BarkodEtiketComponent implements OnInit {
   });
   readonly tarihGecerli = computed(() => /^20\d{2}-(0[1-9]|1[0-2])$/.test(this.tarih()));
   readonly olusturulabilir = computed(() =>
-    !!this.proje() && this.olusturuluyor() === null && this.secimSayisi() > 0 && this.secimSayisi() <= ETIKET_SINIRLARI.secim
+    !!this.proje() && this.olusturuluyor() === null && this.secimSayisi() > 0
     && this.etiketSayisi() <= ETIKET_SINIRLARI.toplam && (this.sekme() === 'urun' || this.tarihGecerli()));
 
   ngOnInit(): void {
@@ -166,10 +168,7 @@ export class BarkodEtiketComponent implements OnInit {
       .pipe(
         switchMap(sayfa => {
           this.listeYukleniyor.set(true);
-          let params = new HttpParams().set('sayfa', String(sayfa)).set('boyut', String(this.sandikBoyut()));
-          const arama = this.sandikArama().trim();
-          if (arama) params = params.set('arama', arama);
-          return this.api.get<PaginatedList<BarkodEtiketSandikSatiri>>(API.BARKOD_ETIKET.SANDIKLAR(this.proje()!.projeId), { params });
+          return this.sandikSayfasi(sayfa, this.sandikBoyut());
         }),
         takeUntilDestroyed(this.destroyRef),
       )
@@ -178,12 +177,7 @@ export class BarkodEtiketComponent implements OnInit {
       .pipe(
         switchMap(sayfa => {
           this.listeYukleniyor.set(true);
-          let params = new HttpParams().set('sayfa', String(sayfa)).set('boyut', String(this.urunBoyut()));
-          const arama = this.urunArama().trim();
-          if (arama) params = params.set('arama', arama);
-          const sandikId = this.urunSandikId();
-          if (sandikId) params = params.set('sandikId', String(sandikId));
-          return this.api.get<PaginatedList<BarkodEtiketUrunSatiri>>(API.BARKOD_ETIKET.URUNLER(this.proje()!.projeId), { params });
+          return this.urunSayfasi(sayfa, this.urunBoyut());
         }),
         takeUntilDestroyed(this.destroyRef),
       )
@@ -299,6 +293,24 @@ export class BarkodEtiketComponent implements OnInit {
     (this.sekme() === 'sandik' ? this.sandikIstegi$ : this.urunIstegi$).next(sayfa);
   }
 
+  /** Sandık sekmesinin bir sayfası (arama süzgeciyle); liste ve "tümünü seç" aynı isteği kullanır. */
+  private sandikSayfasi(sayfa: number, boyut: number) {
+    let params = new HttpParams().set('sayfa', String(sayfa)).set('boyut', String(boyut));
+    const arama = this.sandikArama().trim();
+    if (arama) params = params.set('arama', arama);
+    return this.api.get<PaginatedList<BarkodEtiketSandikSatiri>>(API.BARKOD_ETIKET.SANDIKLAR(this.proje()!.projeId), { params });
+  }
+
+  /** Ürün sekmesinin bir sayfası (arama ve sandık süzgeciyle). */
+  private urunSayfasi(sayfa: number, boyut: number) {
+    let params = new HttpParams().set('sayfa', String(sayfa)).set('boyut', String(boyut));
+    const arama = this.urunArama().trim();
+    if (arama) params = params.set('arama', arama);
+    const sandikId = this.urunSandikId();
+    if (sandikId) params = params.set('sandikId', String(sandikId));
+    return this.api.get<PaginatedList<BarkodEtiketUrunSatiri>>(API.BARKOD_ETIKET.URUNLER(this.proje()!.projeId), { params });
+  }
+
   private listeGeldi<T>(res: ApiResult<PaginatedList<T>>, hedef: WritableSignal<PaginatedList<T> | null>): void {
     this.listeYukleniyor.set(false);
     if (res.isSuccess && res.value) {
@@ -323,8 +335,7 @@ export class BarkodEtiketComponent implements OnInit {
   sandikSecimDegistir(satir: BarkodEtiketSandikSatiri, secili: boolean): void {
     const yeni = new Map(this.sandikSecimleri());
     if (!secili) yeni.delete(satir.sandikId);
-    else if (yeni.size < ETIKET_SINIRLARI.secim) yeni.set(satir.sandikId, { satir, adet: 1 });
-    else this.toast.error(`En fazla ${ETIKET_SINIRLARI.secim} sandık seçilebilir.`);
+    else if (!yeni.has(satir.sandikId)) yeni.set(satir.sandikId, { satir, adet: 1 });
     this.sandikSecimleri.set(yeni);
   }
 
@@ -333,34 +344,132 @@ export class BarkodEtiketComponent implements OnInit {
     const yeni = new Map(this.urunSecimleri());
     const anahtar = urunAnahtari(satir);
     if (!secili) yeni.delete(anahtar);
-    else if (yeni.size < ETIKET_SINIRLARI.secim) yeni.set(anahtar, { satir, adet: 1, remarks: satir.remarks?.trim() ?? '' });
-    else this.toast.error(`En fazla ${ETIKET_SINIRLARI.secim} ürün seçilebilir.`);
+    else if (!yeni.has(anahtar)) yeni.set(anahtar, { satir, adet: 1, remarks: satir.remarks?.trim() ?? '' });
     this.urunSecimleri.set(yeni);
   }
 
-  /** Başlıktaki kutu: sayfadaki seçilebilir satırların hepsi seçiliyse kaldırır, değilse ekler. */
-  sayfayiSec(): void {
-    if (this.sekme() === 'sandik') {
-      const satirlar = this.sandiklar()?.items ?? [];
-      const hepsi = satirlar.length > 0 && satirlar.every(s => this.sandikSecili(s));
-      satirlar.forEach(s => { if (this.sandikSecili(s) === hepsi) this.sandikSecimDegistir(s, !hepsi); });
+  /** "Tümünü seç" sürerken (sayfalar sunucudan çekilirken) başlık kutusu kilitlenir. */
+  readonly tumuSeciliyor = signal(false);
+  /**
+   * Son "tümünü seç"in kapsamı: hangi sekme/süzgeçte hangi satırları seçtiği. Bütün sayfalar seçili mi sorusu buna göre
+   * cevaplanır; süzgeç değişince ya da satırlardan biri kaldırılınca kutu yeniden boş görünür.
+   */
+  private readonly tumSecimKapsami = signal<{ suzgec: string; anahtarlar: string[] } | null>(null);
+
+  /** Başlık kutusu: süzgece uyan bütün sayfalardaki seçilebilir satırlar seçili mi. */
+  readonly tumuSecili = computed(() => {
+    const sandik = this.sekme() === 'sandik';
+    const kapsam = this.tumSecimKapsami();
+    const secili = (anahtar: string) =>
+      sandik ? this.sandikSecimleri().has(Number(anahtar)) : this.urunSecimleri().has(anahtar);
+    if (kapsam && kapsam.suzgec === this.suzgecAnahtari() && kapsam.anahtarlar.length > 0)
+      return kapsam.anahtarlar.every(secili);
+    // Tek sayfalık listede sayfadaki satırlar bütün kümedir.
+    const liste = sandik ? this.sandiklar() : this.urunler();
+    if (!liste || liste.totalPages > 1) return false;
+    const anahtarlar = this.sayfaAnahtarlari();
+    return anahtarlar.length > 0 && anahtarlar.every(secili);
+  });
+
+  /**
+   * Başlıktaki kutu: süzgece uyan bütün sayfalardaki seçilebilir satırları seçer (sunucudan 100'erli sayfalarla çekilir).
+   * Seçim sayısının sınırı yoktur; yalnız tek dosyadaki etiket toplamı (1000) aşılmaz, her yeni seçim bir etikettir.
+   * Hepsi zaten seçiliyse bu süzgecin satırlarını bırakır; başka süzgeçteki seçim kalır.
+   */
+  async tumunuSec(): Promise<void> {
+    if (!this.proje() || this.tumuSeciliyor()) return;
+    const sandik = this.sekme() === 'sandik';
+    const suzgec = this.suzgecAnahtari();
+    if (this.tumuSecili()) {
+      const kapsam = this.tumSecimKapsami();
+      const anahtarlar = kapsam?.suzgec === suzgec ? kapsam.anahtarlar : this.sayfaAnahtarlari();
+      this.secimdenCikar(sandik, anahtarlar);
+      this.tumSecimKapsami.set(null);
       return;
     }
-    const satirlar = (this.urunler()?.items ?? []).filter(u => u.etiketBarkodu);
-    const hepsi = satirlar.length > 0 && satirlar.every(u => this.urunSecili(u));
-    satirlar.forEach(u => { if (this.urunSecili(u) === hepsi) this.urunSecimDegistir(u, !hepsi); });
+
+    this.tumuSeciliyor.set(true);
+    try {
+      const sandiklar: BarkodEtiketSandikSatiri[] = [];
+      const urunler: BarkodEtiketUrunSatiri[] = [];
+      // Bu sekmedeki etiket toplamıyla eklenebilecek yeni seçim sayısı (her biri adet 1).
+      const yer = Math.max(ETIKET_SINIRLARI.toplam - this.etiketSayisi(), 0);
+      let kesildi = false;
+      for (let sayfa = 1; ; sayfa++) {
+        const res = sandik
+          ? await firstValueFrom(this.sandikSayfasi(sayfa, TUMUNU_SEC_SAYFA_BOYUTU))
+          : await firstValueFrom(this.urunSayfasi(sayfa, TUMUNU_SEC_SAYFA_BOYUTU));
+        if (!res.isSuccess || !res.value) {
+          this.toast.error(res.error || 'Liste yüklenemedi.');
+          return;
+        }
+        if (sandik) sandiklar.push(...(res.value.items as BarkodEtiketSandikSatiri[]));
+        else urunler.push(...(res.value.items as BarkodEtiketUrunSatiri[]).filter(u => u.etiketBarkodu));
+        const toplanan = sandik ? sandiklar.length : urunler.length;
+        if (!res.value.hasNextPage) break;
+        if (toplanan >= ETIKET_SINIRLARI.toplam) { kesildi = true; break; }
+      }
+      // Süzgeç beklerken değiştiyse eski süzgecin sonucu yazılmaz.
+      if (this.suzgecAnahtari() !== suzgec || this.sekme() !== (sandik ? 'sandik' : 'urun')) return;
+
+      let sigmayan = 0;
+      let eklenen = 0;
+      if (sandik) {
+        const yeni = new Map(this.sandikSecimleri());
+        for (const satir of sandiklar) {
+          if (yeni.has(satir.sandikId)) continue;
+          if (eklenen >= yer) { sigmayan++; continue; }
+          yeni.set(satir.sandikId, { satir, adet: 1 });
+          eklenen++;
+        }
+        this.sandikSecimleri.set(yeni);
+        this.tumSecimKapsami.set({ suzgec, anahtarlar: sandiklar.filter(s => yeni.has(s.sandikId)).map(s => String(s.sandikId)) });
+      } else {
+        const yeni = new Map(this.urunSecimleri());
+        for (const satir of urunler) {
+          const anahtar = urunAnahtari(satir);
+          if (yeni.has(anahtar)) continue;
+          if (eklenen >= yer) { sigmayan++; continue; }
+          yeni.set(anahtar, { satir, adet: 1, remarks: satir.remarks?.trim() ?? '' });
+          eklenen++;
+        }
+        this.urunSecimleri.set(yeni);
+        this.tumSecimKapsami.set({ suzgec, anahtarlar: urunler.map(urunAnahtari).filter(a => yeni.has(a)) });
+      }
+      if (sigmayan > 0 || kesildi) {
+        this.toast.info(`Tek dosyada en fazla ${ETIKET_SINIRLARI.toplam} etiket basılabilir; sınıra kadar seçildi.`);
+      }
+    } finally {
+      this.tumuSeciliyor.set(false);
+    }
   }
 
-  readonly sayfaTamSecili = computed(() => {
-    if (this.sekme() === 'sandik') {
-      const satirlar = this.sandiklar()?.items ?? [];
-      const secimler = this.sandikSecimleri();
-      return satirlar.length > 0 && satirlar.every(s => secimler.has(s.sandikId));
+  /** Sekme, proje ve süzgeçlerin anahtarı: "tümünü seç" kapsamı bununla eşlenir. */
+  private suzgecAnahtari(): string {
+    const projeId = this.proje()?.projeId ?? 0;
+    return this.sekme() === 'sandik'
+      ? `sandik|${projeId}|${this.sandikArama().trim()}`
+      : `urun|${projeId}|${this.urunArama().trim()}|${this.urunSandikId() ?? ''}`;
+  }
+
+  /** Görünen sayfadaki seçilebilir satırların seçim anahtarları. */
+  private sayfaAnahtarlari(): string[] {
+    return this.sekme() === 'sandik'
+      ? (this.sandiklar()?.items ?? []).map(s => String(s.sandikId))
+      : (this.urunler()?.items ?? []).filter(u => u.etiketBarkodu).map(urunAnahtari);
+  }
+
+  private secimdenCikar(sandik: boolean, anahtarlar: string[]): void {
+    if (sandik) {
+      const yeni = new Map(this.sandikSecimleri());
+      anahtarlar.forEach(a => yeni.delete(Number(a)));
+      this.sandikSecimleri.set(yeni);
+    } else {
+      const yeni = new Map(this.urunSecimleri());
+      anahtarlar.forEach(a => yeni.delete(a));
+      this.urunSecimleri.set(yeni);
     }
-    const satirlar = (this.urunler()?.items ?? []).filter(u => u.etiketBarkodu);
-    const secimler = this.urunSecimleri();
-    return satirlar.length > 0 && satirlar.every(u => secimler.has(urunAnahtari(u)));
-  });
+  }
 
   sandikAdedi(satir: BarkodEtiketSandikSatiri): number {
     return this.sandikSecimleri().get(satir.sandikId)?.adet ?? 1;
@@ -410,6 +519,7 @@ export class BarkodEtiketComponent implements OnInit {
   secimiTemizle(): void {
     this.sandikSecimleri.set(new Map());
     this.urunSecimleri.set(new Map());
+    this.tumSecimKapsami.set(null);
   }
 
   // --- Çıktı ---

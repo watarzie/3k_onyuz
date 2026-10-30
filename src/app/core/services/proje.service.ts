@@ -130,12 +130,21 @@ export class ProjeService {
     return this.api.put<boolean>(API.PROJE.SANDIK_KAPAT, { sandikId, kapali, acilmaSebebiId: acilmaSebebiId ?? null, not: not ?? null });
   }
 
-  sevkEt(projeId: number, sevkTarihi?: string, sandikIds?: number[], aciklama?: string, aracPlaka?: string): Observable<ApiResult<boolean>> {
+  /** Tekil sevk; sefer bilgileri (araç plakası zorunlu, şoför, dorse) toplu sevkteki alanlarla aynıdır. */
+  sevkEt(
+    projeId: number,
+    sevkTarihi?: string,
+    sandikIds?: number[],
+    aciklama?: string,
+    sefer?: { aracPlaka?: string; sofor?: string; dorsePlaka?: string },
+  ): Observable<ApiResult<boolean>> {
     return this.api.post<boolean>(API.PROJE.SEVK_ET(projeId), {
       sevkTarihi: sevkTarihi || null,
       sandikIds: sandikIds ?? null,
       aciklama: aciklama?.trim() || null,
-      aracPlaka: aracPlaka?.trim() || null,
+      aracPlaka: sefer?.aracPlaka?.trim() || null,
+      sofor: sefer?.sofor?.trim() || null,
+      dorsePlaka: sefer?.dorsePlaka?.trim() || null,
     });
   }
 

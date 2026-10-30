@@ -208,19 +208,14 @@
   &:hover { border-color: var(--be-ton); color: var(--be-ton); }
 }
 
-// Çıktı çubuğu: listenin altında, uzun listede ekranın altına yapışır.
+// Çıktı çubuğu: sekmelerin hemen altında, listenin üstünde; ipucu satırıyla birlikte tek blok.
 .be-cikti {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px 16px;
-  padding: 14px 24px;
-  border-top: 1px solid var(--be-border);
+  padding: 14px 24px 10px;
   background: #fff;
-  box-shadow: 0 -4px 12px rgba(15, 23, 42, .04);
 }
 .be-cikti__ozet {
   display: flex;
@@ -265,7 +260,8 @@
   align-items: center;
   gap: 6px;
   margin: 0;
-  padding: 0 24px 16px;
+  padding: 0 24px 14px;
+  border-bottom: 1px solid var(--be-border);
   background: #fff;
   color: var(--be-muted);
   font-size: 11.5px;
