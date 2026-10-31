@@ -183,6 +183,18 @@
         <div class="tz-modal__body">
           <div class="tz-form">
             <div class="tz-field-grid">
+              <label class="tz-field ozellik-sandik-no">
+                <span>Sandık no @if (sandikNoKilitNedeni()) { <i class="ri-lock-line" aria-hidden="true"></i> }</span>
+                <input type="text" class="form-control" maxlength="100" [ngModel]="ozellikSandikNo()" (ngModelChange)="ozellikSandikNo.set($event)"
+                  [disabled]="!!sandikNoKilitNedeni()" [attr.title]="sandikNoKilitNedeni()" />
+              </label>
+            </div>
+            @if (sandikNoKilitNedeni(); as neden) {
+              <small class="text-muted ozellik-sandik-no-kilit">{{ neden }}</small>
+            } @else {
+              <small class="text-muted">Numara yalnız elle eklenen sandıkta değişir; çeki satırları, taşıma geçmişi ve planlı Ambalaj kaydı birlikte güncellenir.</small>
+            }
+            <div class="tz-field-grid">
               <label class="tz-field">
                 <span>Sandık ismi</span>
                 <input type="text" class="form-control" [ngModel]="ozellikSandikIsmi()" (ngModelChange)="ozellikSandikIsmi.set($event)" placeholder="Ör: Elektrik, Mekanik" />

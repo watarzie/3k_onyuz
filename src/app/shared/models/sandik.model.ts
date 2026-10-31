@@ -14,6 +14,8 @@ export interface SandikDto {
   depoLokasyonMetni: string;
   urunSayisi: number;
   isManuelSandik: boolean;
+  /** Numara "Sandık Özellikleri"nde değiştirilemiyorsa nedeni (çekiden gelen, sevkli, 1 numara, Ambalaj üretimi); null ise değişebilir. */
+  sandikNoKilitNedeni?: string | null;
   silinebilirMi: boolean;
   depodaSayilacakMi: boolean;
   sahayaAktarildiMi?: boolean;
@@ -39,6 +41,8 @@ export interface SandikDetayDto {
   durumMetni: string;
   tipId?: number;
   tipMetni?: string;
+  /** Numara "Sandık Özellikleri"nde değiştirilemiyorsa nedeni; null ise yalnız elle eklenen sandık olarak değişebilir. */
+  sandikNoKilitNedeni?: string | null;
   sevkiyatDuzeltmeAcikMi?: boolean;
   depoLokasyonId: number;
   depoLokasyonMetni: string;
@@ -170,6 +174,8 @@ export interface UrunGuncelleDto {
 
 export interface SandikOzellikGuncelleDto {
   sandikId: number;
+  /** Yeni sandık numarası; yalnız değiştiyse gönderilir (sunucu çekiden gelen/sevkli sandıkta reddeder). */
+  sandikNo?: string;
   sandikIsmi?: string;
   /** Sandık tipi zorunludur (G2). */
   tipId: number;

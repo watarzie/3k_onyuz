@@ -27,11 +27,12 @@ describe('Sandık detayı kalıcı ürün bilgisi gösterimi', () => {
 
   beforeEach(() => {
     yazabilir = true;
-    sandikApi = jasmine.createSpyObj('SandikService', ['getSandikIcerik', 'getSandiklar', 'icerikBilgisiGuncelle', 'durumGecmisi']);
+    sandikApi = jasmine.createSpyObj('SandikService', ['getSandikIcerik', 'getSandiklar', 'icerikBilgisiGuncelle', 'durumGecmisi', 'ozellikGuncelle']);
     sandikApi.getSandikIcerik.and.returnValue(of({ isSuccess: true, value: sandik() }));
     sandikApi.durumGecmisi.and.returnValue(of({ isSuccess: true, value: [] }));
     sandikApi.getSandiklar.and.returnValue(of({ isSuccess: true, value: [] }));
     sandikApi.icerikBilgisiGuncelle.and.returnValue(of({ isSuccess: true, value: null }));
+    sandikApi.ozellikGuncelle.and.returnValue(of({ isSuccess: true, value: null }));
     TestBed.configureTestingModule({
       imports: [SandikDetayComponent],
       providers: [
@@ -105,5 +106,50 @@ describe('Sandık detayı kalıcı ürün bilgisi gösterimi', () => {
 
     expect(el.querySelector('.urun-bilgisi-meta')).toBeNull();
     expect(el.querySelector('.panel-urun-bilgisi')).toBeNull();
+  });
+
+  describe('Sandık Özellikleri: sandık no', () => {
+    function ozellikPenceresi(kilitNedeni: string | null) {
+      sandikApi.getSandikIcerik.and.returnValue(of({ isSuccess: true, value: { ...sandik(), sandikNo: '12', tipId: 1, sandikNoKilitNedeni: kilitNedeni } }));
+      const r = render();
+      r.c.sandikTipleri.set([{ id: 1, deger: 'Ahşap Kapalı' }]);
+      r.c.openOzellikGuncelleModal();
+      r.fixture.detectChanges();
+      return { ...r, input: r.el.querySelector('.ozellik-sandik-no input') as HTMLInputElement };
+    }
+
+    it('elle eklenen sandıkta numara açıktır ve yalnız değişince gönderilir', async () => {
+      const { fixture, c, input } = ozellikPenceresi(null);
+      await fixture.whenStable();
+      expect(input.disabled).toBeFalse();
+      expect(input.value).toBe('12');
+
+      c.kaydetOzellikler();
+      expect(sandikApi.ozellikGuncelle.calls.mostRecent().args[0].sandikNo).toBeUndefined();
+
+      c.openOzellikGuncelleModal();
+      c.ozellikSandikNo.set(' 15 ');
+      c.kaydetOzellikler();
+      expect(sandikApi.ozellikGuncelle.calls.mostRecent().args[0].sandikNo).toBe('15');
+    });
+
+    it('boş numarayla istek göndermez', () => {
+      const { c } = ozellikPenceresi(null);
+      c.ozellikSandikNo.set('  ');
+      c.kaydetOzellikler();
+      expect(sandikApi.ozellikGuncelle).not.toHaveBeenCalled();
+    });
+
+    it('çekiden gelen sandıkta numara pasiftir, nedeni yazar ve gönderilmez', async () => {
+      const neden = 'Çekiden gelen sandığın numarası çeki satırlarına bağlıdır; yalnız elle eklenen sandığın numarası değiştirilebilir.';
+      const { fixture, c, el, input } = ozellikPenceresi(neden);
+      await fixture.whenStable();
+      expect(input.disabled).toBeTrue();
+      expect(el.querySelector('.ozellik-sandik-no-kilit')!.textContent).toContain(neden);
+
+      c.ozellikSandikNo.set('99');
+      c.kaydetOzellikler();
+      expect(sandikApi.ozellikGuncelle.calls.mostRecent().args[0].sandikNo).toBeUndefined();
+    });
   });
 });

@@ -81,6 +81,9 @@ export class SandikDetayComponent implements OnInit {
   showOzellikModal = signal(false);
   ozellikSaving = signal(false);
   ozellikSandikIsmi = signal('');
+  ozellikSandikNo = signal('');
+  /** Numara alanının kilidi sunucudan gelir (çekiden gelen, sevkli, 1 numara, Ambalaj üretimi); null ise düzenlenebilir. */
+  sandikNoKilitNedeni = computed(() => this.sandik()?.sandikNoKilitNedeni ?? null);
   /** Sandık tipi güncellemede zorunludur (G2); mevcut tip önceden doldurulur. */
   ozellikTipId = signal<number | null>(null);
   sandikTipleri = signal<{ id: number; deger: string }[]>([]);
@@ -583,6 +586,7 @@ export class SandikDetayComponent implements OnInit {
     }
 
     this.ozellikSandikIsmi.set(s.ad ?? '');
+    this.ozellikSandikNo.set(s.sandikNo);
     this.ozellikTipId.set(s.tipId ?? null);
     if (!this.sandikTipleri().length) {
       this.lookupService.getLookups(['LookupSandikTipi'])
@@ -615,9 +619,18 @@ export class SandikDetayComponent implements OnInit {
       return;
     }
 
+    const mevcutNo = this.sandik()?.sandikNo ?? '';
+    const yeniNo = this.ozellikSandikNo().trim();
+    const numaraDegisiyor = !this.sandikNoKilitNedeni() && yeniNo !== mevcutNo.trim();
+    if (numaraDegisiyor && !yeniNo) {
+      this.toast.error('Sandık numarası boş olamaz.');
+      return;
+    }
+
     this.ozellikSaving.set(true);
     this.sandikService.ozellikGuncelle({
       sandikId: this.sandikId(),
+      sandikNo: numaraDegisiyor ? yeniNo : undefined,
       sandikIsmi: this.ozellikSandikIsmi().trim() || undefined,
       tipId,
       en: this.ozellikEn() ?? undefined,
@@ -629,7 +642,9 @@ export class SandikDetayComponent implements OnInit {
       next: (res) => {
         this.ozellikSaving.set(false);
         if (res.isSuccess) {
-          this.toast.success('Sandık özellikleri güncellendi.');
+          this.toast.success(numaraDegisiyor
+            ? `Sandık özellikleri güncellendi; numara ${mevcutNo} → ${yeniNo}.`
+            : 'Sandık özellikleri güncellendi.');
           this.closeOzellikModal();
           this.loadSandik();
         } else {
