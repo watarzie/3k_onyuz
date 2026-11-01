@@ -32,11 +32,6 @@
             <i class="ri-arrow-go-back-line tz-ico-warning"></i>Sandığı Geri Aç
           </button>
         }
-        @if (canWriteSandik() && sandik()) {
-          <button type="button" class="sd-diger-ozellik" (click)="openOzellikGuncelleModal()" [disabled]="isSandikKilitli()">
-            <i class="ri-ruler-line tz-ico-primary"></i>Özellikleri Güncelle
-          </button>
-        }
       </app-islemler-menusu>
     </div>
   </div>
@@ -136,6 +131,11 @@
       <div class="crate-spec"><span>Yükseklik</span><strong>{{ sandik()!.yukseklik ? sandik()!.yukseklik + ' mm' : '—' }}</strong></div>
       <div class="crate-spec"><span>Net</span><strong>{{ sandik()!.netKg ? sandik()!.netKg + ' kg' : '—' }}</strong></div>
       <div class="crate-spec"><span>Gross</span><strong>{{ sandik()!.grossKg ? sandik()!.grossKg + ' kg' : '—' }}</strong></div>
+      @if (canWriteSandik()) {
+        <button type="button" class="tz-btn crate-hero__edit" (click)="openOzellikGuncelleModal()" [disabled]="isSandikKilitli()">
+          <i class="ri-ruler-line tz-ico-primary"></i>Özellikleri Güncelle
+        </button>
+      }
     </div>
   </section>
 
