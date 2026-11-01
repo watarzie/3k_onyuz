@@ -324,9 +324,9 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
       expect(fiyatSekmesinde()).toBeNull();
     });
 
-    it('adetle fiyatlanan katlanır işte m³ girilir ama tutarı değiştirmediği söylenir; elle fiyat kartı kendiliğinden açılmaz', () => {
-      const katlanir = { ...kontraIs, sandikTipi: 'Katlanır Sandık', fiyatlandirmaBirimi: 1 as const };
-      api.isDetay.and.returnValue(of({ isSuccess: true, value: katlanir }));
+    it('adetle fiyatlanan kontrplak işte m³ girilir ama tutarı değiştirmediği söylenir; elle fiyat kartı kendiliğinden açılmaz', () => {
+      const adetli = { ...kontraIs, fiyatlandirmaBirimi: 1 as const };
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: adetli }));
       const { fixture, component } = setup('IsKaydi');
       expect(component.fiyatDuzenlenebilir()).toBeTrue();
       const el = fixture.nativeElement as HTMLElement;
@@ -386,6 +386,63 @@ describe('Finans kayıt detayı revizyon ve kalıcı silme', () => {
       expect(alanlar(4)).toEqual(['.finans-manuel-net']);
       // Yöntem değişse de gizlenen alanın değeri silinmez.
       expect(component.fiyat.birimM3).toBe(1.5);
+    });
+  });
+
+  describe('Katlanır sandık (elle fiyat)', () => {
+    const katlanirIs: FinansIsKaydi = {
+      ...work, id: 51, sandikTipi: 'Katlanır Sandık', sandikMalzemesi: 0, elleFiyatlanir: true,
+      adet: 3, birimM3: 0, toplamM3: 0, ahsapM3: 0, kontraM3: 0, fiyatlandirmaBirimi: 1, birimFiyat: 0, netTutar: 0,
+      manuelNetTutar: null, bilesenler: [],
+    };
+
+    it('fiyatsız katlanır işte Bilgiler fiyat girişine yönlendirir; hacim yoktur, yöntem yalnız adet ve net toplamdır', () => {
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: katlanirIs }));
+      const { fixture, component } = setup('IsKaydi');
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('.hacim-ozet__kutu')).toBeNull();
+      (el.querySelector('.elle-fiyat-gir') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(component.sekme()).toBe('fiyat');
+      expect(el.querySelector('.finans-hacim-karti')).toBeNull();
+      expect(el.querySelector('.elle-fiyat-kapali')).toBeNull();
+      expect(el.querySelector('.v2-pricing-card')).not.toBeNull();
+      expect(el.querySelector('.elle-fiyat-katlanir')).not.toBeNull();
+      const yontemler = Array.from((el.querySelector('.fiyat-yontemi') as HTMLSelectElement).options).map((o) => o.textContent?.trim());
+      expect(yontemler).toEqual(['Adet', 'Manuel net toplam']);
+      expect(el.querySelector('.finans-birim-m3')).toBeNull();
+    });
+
+    it('gerekçesiz adet × birim fiyat gönderilir; m³ gönderilmez, yeni bileşen adetle açılır', () => {
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: { ...katlanirIs, fiyatlandirmaBirimi: 2 as const, birimM3: 0.4 } }));
+      const { component } = setup('IsKaydi');
+      component.tab('fiyat');
+      expect(component.fiyat.fiyatlandirmaBirimi).toBe(1);
+      expect(component.fiyat.birimM3).toBe(0);
+      component.fiyat.birimFiyat = 450;
+      component.fiyatKaydet();
+      expect(api.fiyatlandir).toHaveBeenCalledOnceWith(31, jasmine.objectContaining({ fiyatlandirmaBirimi: 1, adet: 3, birimM3: 0, birimFiyat: 450, aciklama: '' }));
+      component.bilesenEkle();
+      expect(component.fiyat.bilesenler?.at(-1)?.yontem).toBe(1);
+    });
+
+    it('m³ yöntemi veya m³ bileşeni gönderilmez; eski elle hacim olsa da hacim girişi açılmaz', () => {
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: { ...katlanirIs, hacimManuel: true, ahsapM3: 0.5, kontraM3: 1 } }));
+      const { component } = setup('IsKaydi');
+      expect(component.hacimDuzenlenebilir()).toBeFalse();
+      component.fiyat.fiyatlandirmaBirimi = 2;
+      component.fiyatKaydet();
+      component.fiyat.fiyatlandirmaBirimi = 4;
+      component.fiyat.bilesenler = [{ ad: 'Kontra', yontem: 2, miktar: 1, birimFiyat: 300 }];
+      component.fiyatKaydet();
+      expect(api.fiyatlandir).not.toHaveBeenCalled();
+      expect(component.hata()).toBe(component.t('FOLDING_PRICE_METHOD'));
+    });
+
+    it('fiyatı girilmiş katlanır işte fiyat uyarısı görünmez', () => {
+      api.isDetay.and.returnValue(of({ isSuccess: true, value: { ...katlanirIs, birimFiyat: 450, netTutar: 1350 } }));
+      const { fixture } = setup('IsKaydi');
+      expect((fixture.nativeElement as HTMLElement).querySelector('.elle-fiyat-bekliyor')).toBeNull();
     });
   });
 

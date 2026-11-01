@@ -166,10 +166,12 @@ export class SidebarComponent {
         icon: node.icon || '',
         route: node.route,
         yetkiTipiId: node.yetkiTipiId,
-        // Route=null olanları sidebar'da GİZLE (grid-modulu, 3k-modulu gibi)
+        // Route=null olanları sidebar'da GİZLE (grid-modulu, 3k-modulu gibi). İş listeleri ve Grid Sahası proje
+        // listesindeki düğmelerden açılır; sunucu ağacında rotalı kalmış eski kayıt da menüye çıkmaz.
         children: node.children
           ?.filter(child => child.yetkiTipiId >= YetkiTipi.R && !!child.route &&
-            child.kod !== YETKI.SANDIK.UCK_IS_LISTESI && child.kod !== YETKI.SANDIK.GRID_IS_LISTESI)
+            child.kod !== YETKI.SANDIK.UCK_IS_LISTESI && child.kod !== YETKI.SANDIK.GRID_IS_LISTESI &&
+            child.kod !== YETKI.SANDIK.GRID_SAHA_GORUNUMU)
           .map(child => ({
             label: this.ts.translate(child.labelKey),
             kod: child.kod,

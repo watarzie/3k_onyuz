@@ -8,7 +8,7 @@ import { LookupService } from '../../../core/services/lookup.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
-import { SandikDto } from '../../../shared/models/index';
+import { SandikDto, sandikEksikMetni, sandikTarihMetni } from '../../../shared/models/index';
 import { SandikTipi, DepoLokasyon, ProjeTipi } from '../../../core/constants/enums';
 import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { ConfirmService, duzMetin } from '../../../core/services/confirm.service';
@@ -58,6 +58,8 @@ export class SandikListesiComponent implements OnInit {
   breadcrumb: { label: string; link?: string }[] = [];
   private readonly projeTipi = projeTipiBaglami(rotaProjeTipi(this.route.snapshot));
   readonly routePrefix = this.projeTipi.yonetimRotasi;
+  readonly sandikTarihMetni = sandikTarihMetni;
+  readonly sandikEksikMetni = sandikEksikMetni;
   readonly isSahaYedek = this.projeTipi.tip !== ProjeTipi.Normal;
   canWriteSandik = computed(() => {
     const menuKod = this.route.snapshot.data['menuKod'] || YETKI.SANDIK.YONETIMI;

@@ -68,7 +68,7 @@ describe('Finans ürün ve tarife kaydı', () => {
     api.urunOlustur.and.returnValue(of({ isSuccess: true }));
     const c = TestBed.createComponent(FinansYonetimiComponent).componentInstance;
     c.urunForm = { ...c.urunForm, kod: 'KONTRA', ad: 'Kontra ambalaj', isTuru: 1 };
-    c.urunSandikTipiSecildi('Katlanır Sandık');
+    c.urunSandikTipiSecildi('Kafes Sandık');
     expect(c.urunForm.fiyatlandirmaBirimi).toBe(2);
     c.urunForm = { ...c.urunForm, fiyatlandirmaBirimi: 1 };
     c.urunSandikTipiSecildi('Kontrplak Sandık');
@@ -81,12 +81,20 @@ describe('Finans ürün ve tarife kaydı', () => {
     expect(api.urunOlustur.calls.mostRecent().args[0].eslesmeler[0].sandikTipi).toBeNull();
   });
 
-  it('katlanır sandık tarifesi boyut istemez; malzeme (ahşap/kontra) m³ ile gönderilir, ahşap kapalıda malzeme kalkar', () => {
-    api.urunOlustur.and.returnValue(of({ isSuccess: true }));
+  it('katlanır sandık tarifeyle eşleşmez: sandık tipi seçeneklerinde yoktur, malzeme seçimi açılmaz', () => {
     const c = TestBed.createComponent(FinansYonetimiComponent).componentInstance;
-    c.urunForm = { ...c.urunForm, kod: 'KAT-AHS', ad: 'Katlanır ahşap m³' };
+    expect(c.sandikTipleri).not.toContain('Katlanır Sandık');
     c.urunIsTuruDegisti(4);
     c.urunSandikTipiDegisti('Katlanır Sandık');
+    expect(c.urunMalzemesiSecilebilir()).toBeFalse();
+  });
+
+  it('kontrplak saha sandığı tarifesi boyut istemez; malzeme (ahşap/kontra) m³ ile gönderilir, ahşap kapalıda malzeme kalkar', () => {
+    api.urunOlustur.and.returnValue(of({ isSuccess: true }));
+    const c = TestBed.createComponent(FinansYonetimiComponent).componentInstance;
+    c.urunForm = { ...c.urunForm, kod: 'KON-AHS', ad: 'Kontrplak ahşap m³' };
+    c.urunIsTuruDegisti(4);
+    c.urunSandikTipiDegisti('Kontrplak Sandık');
     expect(c.urunMalzemesiSecilebilir()).toBeTrue();
     c.urunForm = { ...c.urunForm, fiyatlandirmaBirimi: 1 };
     c.urunMalzemesiSecildi(1);
@@ -94,11 +102,11 @@ describe('Finans ürün ve tarife kaydı', () => {
     c.urunKaydet();
 
     const eslesme = api.urunOlustur.calls.mostRecent().args[0].eslesmeler[0];
-    expect(eslesme).toEqual(jasmine.objectContaining({ isTuru: 4, sandikTipi: 'Katlanır Sandık', malzeme: 1 }));
+    expect(eslesme).toEqual(jasmine.objectContaining({ isTuru: 4, sandikTipi: 'Kontrplak Sandık', malzeme: 1 }));
     expect('boy' in eslesme).toBeFalse();
     expect(c.urunHatasi()).toBe('');
-    expect(c.urunEslesmeMetni({ ...urun, eslesmeler: [{ isTuru: 4, sandikAdi: null, sandikTipi: 'Katlanır Sandık', malzeme: 1 }] }))
-      .toBe('SAHA SANDIĞI · Katlanır Sandık · ' + c.t('WOOD_M3'));
+    expect(c.urunEslesmeMetni({ ...urun, eslesmeler: [{ isTuru: 4, sandikAdi: null, sandikTipi: 'Kontrplak Sandık', malzeme: 1 }] }))
+      .toBe('SAHA SANDIĞI · Kontrplak Sandık · ' + c.t('WOOD_M3'));
 
     // Ahşap kapalı sandık tek tarifeyle fiyatlanır; malzeme seçimi gizlenir ve gönderilmez.
     c.urunAcik.set(true);

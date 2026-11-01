@@ -1,3 +1,4 @@
+import { Subscription } from 'rxjs';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -136,11 +137,15 @@ export class GridIsListesiComponent implements OnInit {
     this.load();
   }
 
+  /** Süren liste isteği: yeni istek (sayfa, sayfa başı, arama) eskisini iptal eder; geç dönen eski yanıt yeni listeyi ezmez. */
+  private listeIstegi?: Subscription;
+
   load(): void {
     this.loading.set(true);
     this.errorMessage.set('');
 
-    this.gridService.getIsListesi({
+    this.listeIstegi?.unsubscribe();
+    this.listeIstegi = this.gridService.getIsListesi({
       page: this.page(),
       pageSize: this.pageSize(),
       isTipi: this.activeTip(),

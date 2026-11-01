@@ -1,8 +1,8 @@
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { Component, DestroyRef, inject, signal, computed, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute } from '@angular/router';
-import { NgClass } from '@angular/common';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslationService } from '../../../core/services/translation.service';
 import { SandikService } from '../../../core/services/sandik.service';
@@ -13,7 +13,12 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
-import { EksikUrunForSandikDto, SandikDetayDto, SandikIcerikDto, SandikDto } from '../../../shared/models/index';
+import { IslemlerMenusuComponent } from '../../../shared/components/islemler-menusu/islemler-menusu.component';
+import {
+  EksikUrunForSandikDto, SahaProjeBagDto, SandikDetayDto, SandikDuzeltmeDurumuDto, SandikIcerikDto, SandikDto,
+  SandikDurumOlayi, SandikDurumOlayTuru, sandikTarihMetni
+} from '../../../shared/models/index';
+import { SandikGeriAcComponent } from '../../../shared/components/sandik-geri-ac/sandik-geri-ac.component';
 import { Birim, ProjeTipi } from '../../../core/constants/enums';
 import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { SandikTopluTasiComponent } from '../sandik-toplu-tasi/sandik-toplu-tasi.component';
@@ -25,7 +30,7 @@ import { YETKI } from '../../../core/constants/yetki-kodlari';
 @Component({
   selector: 'app-sandik-detay',
   standalone: true,
-  imports: [TranslatePipe, NgClass, FormsModule, StatusBadgeComponent, BreadcrumbComponent, SandikTopluTasiComponent],
+  imports: [TranslatePipe, NgClass, DatePipe, FormsModule, RouterLink, StatusBadgeComponent, BreadcrumbComponent, SandikTopluTasiComponent, IslemlerMenusuComponent, SandikGeriAcComponent],
   templateUrl: './sandik-detay.component.html',
   styleUrl: './sandik-detay.component.scss',
 })
@@ -76,6 +81,9 @@ export class SandikDetayComponent implements OnInit {
   showOzellikModal = signal(false);
   ozellikSaving = signal(false);
   ozellikSandikIsmi = signal('');
+  ozellikSandikNo = signal('');
+  /** Numara alanının kilidi sunucudan gelir (çekiden gelen, sevkli, 1 numara, Ambalaj üretimi); null ise düzenlenebilir. */
+  sandikNoKilitNedeni = computed(() => this.sandik()?.sandikNoKilitNedeni ?? null);
   /** Sandık tipi güncellemede zorunludur (G2); mevcut tip önceden doldurulur. */
   ozellikTipId = signal<number | null>(null);
   sandikTipleri = signal<{ id: number; deger: string }[]>([]);
@@ -106,6 +114,15 @@ export class SandikDetayComponent implements OnInit {
   guncelKonulanAdet = signal(0);
   guncelleSaving = signal(false);
   duzeltmeTamamlaSaving = signal(false);
+
+  // Sevk sonrası düzeltme: gerekçe, açılıştan bu yana değişiklikler ve geçmiş
+  duzeltmeDurumu = signal<SandikDuzeltmeDurumuDto | null>(null);
+
+  // Açılış/kapanış zaman çizelgesi ve sebep penceresiyle geri açma
+  durumGecmisi = signal<SandikDurumOlayi[]>([]);
+  geriAcPenceresiAcik = signal(false);
+  readonly SandikDurumOlayTuru = SandikDurumOlayTuru;
+  readonly sandikTarihMetni = sandikTarihMetni;
 
   breadcrumb: { label: string; link?: string }[] = [];
 
@@ -154,8 +171,9 @@ export class SandikDetayComponent implements OnInit {
       (this.isSandikSevkEdildi() && !this.isSandikDuzeltmeyeAcik());
   }
 
+  /** Sevkli sandık yalnız sevk sonrası düzeltmeye açıkken taşımaya katılır (sunucu da aynı kuralı uygular). */
   isSandikTasimayaKilitli(): boolean {
-    return this.isSandikKilitli() || this.isSandikSevkEdildi();
+    return this.isSandikKilitli();
   }
 
   getSandikDurumMetni(): string {
@@ -169,9 +187,14 @@ export class SandikDetayComponent implements OnInit {
       return;
     }
 
+    // Onaydan önce açılıştan bu yana yapılan değişiklikler gösterilir; tamamlanınca düzeltme kaydına yazılır.
+    const degisiklikler = this.duzeltmeDurumu()?.degisiklikler ?? [];
+    const ozet = degisiklikler.length
+      ? `<br><br><strong>Bu düzeltmedeki değişiklikler:</strong><ul class="text-start mb-0">${degisiklikler.map(d => `<li>${duzMetin(d)}</li>`).join('')}</ul>`
+      : '';
     const onay = await this.confirmService.ask({
       title: 'Düzeltmeyi Tamamla',
-      message: `<strong>${duzMetin(s.sandikNo)}</strong> numaralı sandık tekrar kilitlenecek. Sevkiyat kaydı korunmaya devam edecek ve yeni sevkiyat oluşturulmayacak. Onaylıyor musunuz?`,
+      message: `<strong>${duzMetin(s.sandikNo)}</strong> numaralı sandık tekrar kilitlenecek. Sevkiyat kaydı korunmaya devam edecek ve yeni sevkiyat oluşturulmayacak. Onaylıyor musunuz?${ozet}`,
       confirmText: 'Evet, Tamamla',
       cancelText: 'Vazgeç',
       type: 'success'
@@ -213,7 +236,33 @@ export class SandikDetayComponent implements OnInit {
   }
 
   private isSandikDtoTasimayaKilitli(sandik: SandikDto): boolean {
-    return this.isSandikDtoKilitli(sandik) || this.isSandikDtoSevkEdildi(sandik);
+    return this.isSandikDtoKilitli(sandik);
+  }
+
+  /** Ürün aktif olarak sahaya aktarıldıysa takip edildiği saha projeleri; ana projede değiştirilemez. */
+  sahaProjeleri(item: SandikIcerikDto): SahaProjeBagDto[] {
+    return item.aktifSahaProjeleri ?? [];
+  }
+
+  isSahadaTakipte(item: SandikIcerikDto | null): boolean {
+    return !!item && this.sahaProjeleri(item).length > 0;
+  }
+
+  loadDurumGecmisi() {
+    this.sandikService.durumGecmisi(this.sandikId())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(res => this.durumGecmisi.set(res.isSuccess && res.value ? res.value : []));
+  }
+
+  sandikGeriAcildi() {
+    this.geriAcPenceresiAcik.set(false);
+    this.loadSandik();
+  }
+
+  loadDuzeltmeDurumu() {
+    this.sandikService.sevkSonrasiDuzeltmeDurumu(this.sandikId())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(res => this.duzeltmeDurumu.set(res.isSuccess && res.value ? res.value : null));
   }
 
   ngOnInit() {
@@ -266,6 +315,12 @@ export class SandikDetayComponent implements OnInit {
       this.loading.set(false);
       if (res.isSuccess && res.value) {
         this.sandik.set(res.value);
+        this.loadDurumGecmisi();
+        if (res.value.durumId === 4) {
+          this.loadDuzeltmeDurumu();
+        } else {
+          this.duzeltmeDurumu.set(null);
+        }
         const mevcutIdler = new Set(res.value.icerikler.map(item => item.id));
         this.seciliTasimaIcerikleri.update(ids => new Set([...ids].filter(id => mevcutIdler.has(id))));
         
@@ -531,6 +586,7 @@ export class SandikDetayComponent implements OnInit {
     }
 
     this.ozellikSandikIsmi.set(s.ad ?? '');
+    this.ozellikSandikNo.set(s.sandikNo);
     this.ozellikTipId.set(s.tipId ?? null);
     if (!this.sandikTipleri().length) {
       this.lookupService.getLookups(['LookupSandikTipi'])
@@ -563,9 +619,18 @@ export class SandikDetayComponent implements OnInit {
       return;
     }
 
+    const mevcutNo = this.sandik()?.sandikNo ?? '';
+    const yeniNo = this.ozellikSandikNo().trim();
+    const numaraDegisiyor = !this.sandikNoKilitNedeni() && yeniNo !== mevcutNo.trim();
+    if (numaraDegisiyor && !yeniNo) {
+      this.toast.error('Sandık numarası boş olamaz.');
+      return;
+    }
+
     this.ozellikSaving.set(true);
     this.sandikService.ozellikGuncelle({
       sandikId: this.sandikId(),
+      sandikNo: numaraDegisiyor ? yeniNo : undefined,
       sandikIsmi: this.ozellikSandikIsmi().trim() || undefined,
       tipId,
       en: this.ozellikEn() ?? undefined,
@@ -577,7 +642,9 @@ export class SandikDetayComponent implements OnInit {
       next: (res) => {
         this.ozellikSaving.set(false);
         if (res.isSuccess) {
-          this.toast.success('Sandık özellikleri güncellendi.');
+          this.toast.success(numaraDegisiyor
+            ? `Sandık özellikleri güncellendi; numara ${mevcutNo} → ${yeniNo}.`
+            : 'Sandık özellikleri güncellendi.');
           this.closeOzellikModal();
           this.loadSandik();
         } else {

@@ -1,3 +1,4 @@
+import { Subscription } from 'rxjs';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -113,9 +114,13 @@ export class StokYonetimiComponent implements OnInit {
     });
   }
 
+  /** Süren liste isteği: yeni istek (sayfa, sayfa başı, arama) eskisini iptal eder; geç dönen eski yanıt yeni listeyi ezmez. */
+  private listeIstegi?: Subscription;
+
   loadStoklar() {
     this.loading.set(true);
-    this.stokService.getStokListesi(this.searchTerm(), this.currentPage(), this.pageSize(), this.durumSekmesi()).subscribe({
+    this.listeIstegi?.unsubscribe();
+    this.listeIstegi = this.stokService.getStokListesi(this.searchTerm(), this.currentPage(), this.pageSize(), this.durumSekmesi()).subscribe({
       next: (res: any) => {
         if (res.isSuccess && res.value) {
           // Pagination data binding

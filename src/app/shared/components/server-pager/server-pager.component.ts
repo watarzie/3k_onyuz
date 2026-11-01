@@ -101,10 +101,14 @@ export class ServerPagerComponent {
   }
 
   onPageSizeSelect(event: Event): void {
-    const selectedPageSize = Number((event.target as HTMLSelectElement).value);
+    const select = event.target as HTMLSelectElement;
+    const selectedPageSize = Number(select.value);
     if (Number.isInteger(selectedPageSize) && selectedPageSize > 0) {
       this.requestPageSize(selectedPageSize);
     }
+    // Kutu, liste yeni boyutla gelene kadar gerçek boyutu gösterir: [pageSize] değişince seçenek kendiliğinden
+    // seçilir. Ekran isteği uygulamazsa "25 görünüyor ama 10 geliyor" yanıltması olmaz.
+    select.value = String(this.safePageSize());
   }
 
   requestPageSize(pageSize: number): void {

@@ -1,16 +1,49 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpParams } from '@angular/common/http';
+import { HttpParams, HttpResponse } from '@angular/common/http';
 import { of } from 'rxjs';
 import { BaseApiService } from './base-api.service';
 import { FinansService } from './finans.service';
-import { FinansIsKategorisi, FinansKarsilanma, FinansOdemeFiltresi } from '../constants/enums';
+import {
+  FinansGiderRaporuGruplamasi,
+  FinansIsKategorisi,
+  FinansIsRaporuKapsami,
+  FinansKarsilanma,
+  FinansOdemeFiltresi,
+} from '../constants/enums';
 
 describe('FinansService referans sözleşmesi', () => {
   let service: FinansService;
   let api: jasmine.SpyObj<BaseApiService>;
 
+  it('rapor dosyası türüne göre uca gider; kapsam yalnız işlere, gruplama yalnız gidere eklenir', () => {
+    api.downloadFileResponse.and.returnValue(of(new HttpResponse({ body: new Blob() })));
+    const istek = { pageNumber: 1, pageSize: 25, projeNo: 'PA-1' };
+    const secenek = { kapsam: FinansIsRaporuKapsami.SiparisiAcilmayan, gruplama: FinansGiderRaporuGruplamasi.Proje };
+    const cagri = (tur: string, format: 'pdf' | 'excel') => {
+      service.raporDosyasi(tur, format, istek, secenek).subscribe();
+      const [url, options] = api.downloadFileResponse.calls.mostRecent().args;
+      return { url, params: (options as { params: HttpParams }).params };
+    };
+
+    const is = cagri('is', 'excel');
+    expect(is.url).toContain('/api/finans/raporlar/isler/excel');
+    expect([is.params.get('kapsam'), is.params.has('gruplama'), is.params.get('projeNo')]).toEqual(['2', false, 'PA-1']);
+    const gider = cagri('gider', 'pdf');
+    expect(gider.url).toContain('/api/finans/raporlar/giderler/pdf');
+    expect([gider.params.get('gruplama'), gider.params.has('kapsam')]).toEqual(['2', false]);
+    const durum = cagri('finansal-durum', 'pdf');
+    expect(durum.url).toContain('/api/finans/raporlar/finansal-durum/pdf');
+    expect([durum.params.has('kapsam'), durum.params.has('gruplama')]).toEqual([false, false]);
+    expect(cagri('proje-maliyet', 'excel').url).toContain('/api/finans/raporlar/ozet/proje-maliyet/excel');
+
+    service.raporOnizleme('is', istek, secenek).subscribe();
+    const [onizlemeUrl, onizlemeOptions] = api.get.calls.mostRecent().args;
+    expect(onizlemeUrl).toContain('/api/finans/raporlar/onizleme/is');
+    expect((onizlemeOptions as { params: HttpParams }).params.get('kapsam')).toBe('2');
+  });
+
   beforeEach(() => {
-    api = jasmine.createSpyObj<BaseApiService>('BaseApiService', ['get', 'post', 'put', 'downloadFile']);
+    api = jasmine.createSpyObj<BaseApiService>('BaseApiService', ['get', 'post', 'put', 'downloadFile', 'downloadFileResponse']);
     api.get.and.returnValue(of({ isSuccess: true, value: {
       items: [], toplamlar: [], pageNumber: 1, pageSize: 25, totalCount: 0, totalPages: 0,
       hasPreviousPage: false, hasNextPage: false,

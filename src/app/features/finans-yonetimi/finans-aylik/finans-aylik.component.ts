@@ -211,7 +211,8 @@ export class FinansYonetimiComponent implements OnInit {
   readonly ozelGrupSirasi = ['Sabit İşler', 'Özel ve Düzenli İşler'];
   readonly ozelIsGrubuSecenekleri = ['Haliade-X', 'SKIT', 'Diğer'];
   readonly birimler = ['Adet', 'm³', 'Ay', 'Sefer', 'Hizmet'];
-  readonly sandikTipleri = ['Ahşap Kapalı', 'Kafes Sandık', 'Kontrplak Sandık', 'Katlanır Sandık'];
+  /** Tarife eşleşmesinin sandık tipleri. Katlanır sandık tarifeyle eşleşmez (elle fiyatlanır; sunucu 400 döner). */
+  readonly sandikTipleri = ['Ahşap Kapalı', 'Kafes Sandık', 'Kontrplak Sandık'];
   readonly sayfaBoyutuSecenekleri = [25, 50, 100] as const;
   readonly isTuruSecenekleri = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(id => ({ id, ad: this.isTuruMetni(id) }));
 
@@ -783,6 +784,13 @@ export class FinansYonetimiComponent implements OnInit {
   kategoriEtiketi(satir: FinansAylikIs): string {
     const kategori = this.t(kategoriAnahtari(satir.kategori));
     return satir.isAdi && satir.isAdi.toLocaleLowerCase('tr-TR') !== kategori.toLocaleLowerCase('tr-TR') ? `${kategori} · ${satir.isAdi}` : kategori;
+  }
+  /** "B × E × Y mm"; sunucu yalnız İlave/Saha/Yedek ve Özel İş satırına ölçü yazar, üçü dolu değilse boş. */
+  olcuMetni(satir: FinansAylikIs): string | null {
+    const { boy, en, yukseklik } = satir;
+    if (!boy || !en || !yukseklik) return null;
+    const sayi = (deger: number) => deger.toLocaleString('tr-TR', { maximumFractionDigits: 2 });
+    return `${sayi(boy)} × ${sayi(en)} × ${sayi(yukseklik)} mm`;
   }
   /** Sandık dökümü olan kategori satırı (projeden gelen kayıtlar). */
   sandikliSatir(satir: FinansAylikIs): boolean {
@@ -1663,11 +1671,11 @@ export class FinansYonetimiComponent implements OnInit {
 
   /**
    * Malzeme (ahşap/kontra m³ tarifesi) seçilebilir mi: iç sandık ve özel iş dışındaki eşleşmede, sandık tipi boş ya da
-   * kontrplak/katlanır iken. Ahşap kapalı/kafes sandığın m³'ü tek tarifeyle fiyatlanır (ahşap tarifesi de uyar).
+   * kontrplak iken. Ahşap kapalı/kafes sandığın m³'ü tek tarifeyle fiyatlanır (ahşap tarifesi de uyar).
    */
   urunMalzemesiSecilebilir(): boolean {
     const f = this.urunForm;
-    return f.isTuru !== 0 && f.isTuru !== 3 && f.isTuru !== 8 && ['', 'Kontrplak Sandık', 'Katlanır Sandık'].includes(f.sandikTipi);
+    return f.isTuru !== 0 && f.isTuru !== 3 && f.isTuru !== 8 && ['', 'Kontrplak Sandık'].includes(f.sandikTipi);
   }
 
   /** Malzemeli tarife m³ fiyatıdır; seçilince fiyatlandırma m³'e sabitlenir. */
@@ -1678,7 +1686,7 @@ export class FinansYonetimiComponent implements OnInit {
 
   /**
    * Üretim iş türlerinde (4/5 dışı) isteğe bağlı sandık tipi: boş seçim bütün tiplere uyar; Kontrplak gibi bir tip
-   * seçilirse tarife yalnız o tipe eşleşir ve fiyatlandırma birimi m³ önerilir (kontrplak/katlanır sandıkta m³ işin
+   * seçilirse tarife yalnız o tipe eşleşir ve fiyatlandırma birimi m³ önerilir (kontrplak sandıkta m³ işin
    * Fiyatlandırma sekmesinde ahşap + kontra olarak girilir). Kullanıcı birimi değiştirebilir.
    */
   urunSandikTipiSecildi(sandikTipi: string): void {
@@ -1687,7 +1695,7 @@ export class FinansYonetimiComponent implements OnInit {
     if (!this.urunMalzemesiSecilebilir()) this.urunForm.malzeme = null;
   }
 
-  /** Saha/yedek sandık tipi: katlanır sandık da kontrplak gibi ahşap/kontra m³ ile fiyatlanır; boyut istenmez. */
+  /** Saha/yedek sandık tipi: boyut istenmez; katlanır sandık listede yoktur (tarifeyle değil, elle fiyatlanır). */
   urunSandikTipiDegisti(sandikTipi: string): void {
     this.urunForm.sandikTipi = sandikTipi;
     this.urunForm.fiyatlandirmaBirimi = 2;

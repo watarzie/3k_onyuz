@@ -1,0 +1,295 @@
+<div class="sai-page">
+  <div class="page-title-area mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div class="sayfa-baslik">
+        <span class="sayfa-ikon" style="--ton: var(--orangeColor)"><i class="ri-bar-chart-box-line" aria-hidden="true"></i></span>
+        <div>
+          <h2 class="fw-bold mb-1">Sandık Açılış/Kapanış İstatistiği</h2>
+          <app-breadcrumb [items]="breadcrumb" />
+        </div>
+      </div>
+      <button type="button" class="tz-btn sai-excel" [disabled]="indiriliyor() || tarihHatali() || !sonuc()" (click)="excelIndir()">
+        <i [class]="indiriliyor() ? 'ri-loader-4-line tz-spin' : 'ri-file-excel-2-line tz-ico-success'" aria-hidden="true"></i>Excel
+      </button>
+    </div>
+  </div>
+
+  <!-- Süzgeç: Hareket Geçmişi / Stok kartlarının başlık düzeni. -->
+  <section class="sai-kart mb-4">
+    <form class="sai-filtreler" (submit)="$event.preventDefault(); getir()">
+      <label class="sai-alan">
+        <span>Başlangıç</span>
+        <input type="date" class="form-control sai-baslangic" [value]="baslangic()" (change)="baslangic.set($any($event.target).value)" />
+      </label>
+      <label class="sai-alan">
+        <span>Bitiş</span>
+        <input type="date" class="form-control sai-bitis" [value]="bitis()" (change)="bitis.set($any($event.target).value)" />
+      </label>
+      <label class="sai-arama">
+        <i class="ri-folder-3-line" aria-hidden="true"></i>
+        <input type="search" class="sai-proje" maxlength="100" placeholder="Proje no, ör. PA600" autocomplete="off" aria-label="Proje no"
+               [value]="projeArama()" (input)="projeArama.set($any($event.target).value)" />
+      </label>
+      <label class="sai-arama">
+        <i class="ri-building-line" aria-hidden="true"></i>
+        <input type="search" class="sai-musteri" maxlength="100" placeholder="Müşteri adı" autocomplete="off" aria-label="Müşteri"
+               [value]="musteri()" (input)="musteri.set($any($event.target).value)" />
+      </label>
+      <div class="tz-segmented sai-hazir" role="group" aria-label="Hazır tarih aralıkları">
+        <button type="button" (click)="hazirAralikSec('30')">Son 30 gün</button>
+        <button type="button" (click)="hazirAralikSec('yil')">Bu yıl</button>
+        <button type="button" (click)="hazirAralikSec('tumu')">Tümü</button>
+      </div>
+      <button type="submit" class="tz-btn tz-btn--primary sai-uygula" [disabled]="yukleniyor() || tarihHatali()">
+        <i [class]="yukleniyor() ? 'ri-loader-4-line tz-spin' : 'ri-filter-3-line'" aria-hidden="true"></i>Uygula
+      </button>
+    </form>
+    @if (tarihHatali()) {
+      <div class="sai-uyari" role="alert"><i class="ri-error-warning-line" aria-hidden="true"></i>Başlangıç tarihi bitiş tarihinden sonra olamaz.</div>
+    }
+  </section>
+
+  @if (hata()) {
+    <section class="sai-kart">
+      <div class="sai-bos">
+        <span class="sai-bos__ikon is-hata" aria-hidden="true"><i class="ri-error-warning-line"></i></span>
+        <h4>İstatistik yüklenemedi</h4>
+        <p role="alert">{{ hata() }}</p>
+      </div>
+    </section>
+  } @else if (sonuc(); as s) {
+    <div class="sai-kpi mb-4">
+      <app-stat-card [value]="s.ozet.kapanmaSayisi" label="Kapanma"
+        [hint]="'Toplu ' + s.ozet.topluKapanmaSayisi + ' · otomatik ' + s.ozet.otomatikKapanmaSayisi" icon="ri-lock-2-line" color="success" />
+      <app-stat-card [value]="s.ozet.acilmaSayisi" label="Geri açılma"
+        [hint]="'Elle ' + s.ozet.elleAcilmaSayisi + ' · otomatik ' + s.ozet.otomatikAcilmaSayisi + ' · geçmiş ' + s.ozet.gecmistenAktarilanAcilmaSayisi"
+        icon="ri-lock-unlock-line" color="warning" />
+      <app-stat-card [value]="s.ozet.acilanSandikSayisi" label="Geri açılan sandık" icon="ri-archive-line" color="danger" />
+      <app-stat-card [value]="s.ozet.projeSayisi" label="Proje" icon="ri-folder-3-line" color="primary" />
+    </div>
+
+    <section class="sai-kart">
+      <header class="sai-kart__bas">
+        <div class="sai-kart__baslik">
+          <span class="sai-kart__ikon" aria-hidden="true"><i class="ri-history-line"></i></span>
+          <div>
+            <h3>Açılış ve kapanışlar</h3>
+            <p class="sai-kirilim">
+              Geri açılma: elle {{ s.ozet.elleAcilmaSayisi }} · otomatik {{ s.ozet.otomatikAcilmaSayisi }} · geçmişten {{ s.ozet.gecmistenAktarilanAcilmaSayisi }}
+              <span class="sai-ayrac" aria-hidden="true">|</span>
+              Kapanma: toplu {{ s.ozet.topluKapanmaSayisi }} · otomatik {{ s.ozet.otomatikKapanmaSayisi }} · elle/geçmiş {{ s.ozet.kapanmaSayisi - s.ozet.topluKapanmaSayisi - s.ozet.otomatikKapanmaSayisi }}
+            </p>
+          </div>
+        </div>
+        <div class="tz-segmented sai-sekmeler" role="tablist" aria-label="İstatistik tabloları">
+          <button type="button" role="tab" class="sai-sekme--ozet" [class.active]="sekme() === 'ozet'" [attr.aria-selected]="sekme() === 'ozet'" (click)="sekmeSec('ozet')">
+            <i class="ri-pie-chart-2-line" aria-hidden="true"></i>Özet
+          </button>
+          <button type="button" role="tab" class="sai-sekme--projeler" [class.active]="sekme() === 'projeler'" [attr.aria-selected]="sekme() === 'projeler'" (click)="sekmeSec('projeler')">
+            <i class="ri-folder-3-line" aria-hidden="true"></i>Projeler<span class="sai-sayac">{{ s.ozet.projeSayisi }}</span>
+          </button>
+          <button type="button" role="tab" class="sai-sekme--musteriler" [class.active]="sekme() === 'musteriler'" [attr.aria-selected]="sekme() === 'musteriler'" (click)="sekmeSec('musteriler')">
+            <i class="ri-building-line" aria-hidden="true"></i>Müşteriler<span class="sai-sayac">{{ s.ozet.musteriSayisi }}</span>
+          </button>
+          <button type="button" role="tab" class="sai-sekme--kisiler" [class.active]="sekme() === 'kisiler'" [attr.aria-selected]="sekme() === 'kisiler'" (click)="sekmeSec('kisiler')">
+            <i class="ri-user-3-line" aria-hidden="true"></i>Kişiler<span class="sai-sayac">{{ s.ozet.kisiSayisi }}</span>
+          </button>
+          <button type="button" role="tab" class="sai-sekme--olaylar" [class.active]="sekme() === 'olaylar'" [attr.aria-selected]="sekme() === 'olaylar'" (click)="sekmeSec('olaylar')">
+            <i class="ri-list-check-3" aria-hidden="true"></i>Olaylar<span class="sai-sayac">{{ s.ozet.olaySayisi }}</span>
+          </button>
+        </div>
+      </header>
+
+      @switch (sekme()) {
+        @case ('ozet') {
+          <div class="sai-bolum">
+            <h4 class="sai-bolum__baslik">Geri açılma sebepleri</h4>
+            @if (s.sebepler.length === 0) {
+              <p class="sai-soluk mb-0">Bu aralıkta geri açılma yok.</p>
+            } @else {
+              <ul class="sai-cubuklar">
+                @for (sb of s.sebepler; track sb.sebep) {
+                  <li>
+                    <span class="sai-cubuk__ad">{{ sb.sebep }}</span>
+                    <span class="sai-cubuk"><span [style.width.%]="oran(sb.sayi, enBuyukSebep())" [class.is-sebepsiz]="!sb.sebepId"></span></span>
+                    <strong>{{ sb.sayi }}</strong>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+          <h4 class="sai-bolum__baslik sai-bolum__baslik--tablo">En çok geri açılan {{ s.enCokAcilanlar.length }} sandık</h4>
+          @if (s.enCokAcilanlar.length === 0) {
+            <div class="sai-bos sai-bos--kucuk">
+              <span class="sai-bos__ikon" aria-hidden="true"><i class="ri-archive-line"></i></span>
+              <p>Bu aralıkta geri açılan sandık yok.</p>
+            </div>
+          } @else {
+            <div class="table-responsive">
+              <table class="sai-tablo sai-en-cok">
+                <thead>
+                  <tr><th>Proje</th><th>Sandık</th><th class="text-end">Geri açılma</th><th class="text-end">Elle</th><th class="text-end">Kapanma</th><th>Son geri açılma</th></tr>
+                </thead>
+                <tbody>
+                  @for (x of s.enCokAcilanlar; track x.projeId + '-' + x.sandikNo) {
+                    <tr>
+                      <td><div class="sai-proje-hucre"><strong>{{ x.projeNo }}</strong><small>{{ x.musteri || '—' }}</small></div></td>
+                      <td><span class="sai-sandik-no">{{ x.sandikNo }}</span></td>
+                      <td class="text-end"><span class="sai-sayi is-acildi">{{ x.acilmaSayisi }}</span></td>
+                      <td class="text-end">{{ x.elleAcilmaSayisi }}</td>
+                      <td class="text-end">{{ x.kapanmaSayisi }}</td>
+                      <td class="sai-tarih"><strong>{{ x.sonAcilma | date: 'dd.MM.yyyy' }}</strong><small>{{ x.sonAcilma | date: 'HH:mm' }}</small></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+        @case ('projeler') {
+          @if (!projeler.veri()) {
+            <div class="sai-durum" role="status"><span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span><span>Projeler yükleniyor...</span></div>
+          } @else if (projeler.veri()!.items.length === 0) {
+            <div class="sai-bos"><span class="sai-bos__ikon" aria-hidden="true"><i class="ri-folder-3-line"></i></span><h4>Proje yok</h4><p>Bu süzgeçte açılış/kapanış olayı olan proje bulunmuyor.</p></div>
+          } @else {
+            <div class="table-responsive" [class.is-yukleniyor]="projeler.yukleniyor()">
+              <table class="sai-tablo sai-projeler">
+                <thead><tr><th>Proje</th><th class="text-end">Kapanma</th><th class="text-end">Geri açılma</th><th class="text-end">Elle</th><th class="text-end">Geri açılan sandık</th></tr></thead>
+                <tbody>
+                  @for (p of projeler.veri()!.items; track p.projeId) {
+                    <tr>
+                      <td><div class="sai-proje-hucre"><strong>{{ p.projeNo }}</strong><small>{{ p.musteri || '—' }}</small></div></td>
+                      <td class="text-end">{{ p.kapanmaSayisi }}</td>
+                      <td class="text-end"><span class="sai-sayi" [class.is-acildi]="p.acilmaSayisi > 0">{{ p.acilmaSayisi }}</span></td>
+                      <td class="text-end">{{ p.elleAcilmaSayisi }}</td>
+                      <td class="text-end">{{ p.acilanSandikSayisi }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+          @if (projeler.veri(); as v) {
+            <div class="sai-kart__alt">
+              <app-server-pager [pageNumber]="v.pageNumber" [pageSize]="v.pageSize" [totalCount]="v.totalCount" [totalPages]="v.totalPages"
+                [hasPreviousPage]="v.hasPreviousPage" [hasNextPage]="v.hasNextPage" [pageSizeOptions]="SAYFA_BOYUTLARI"
+                (pageChange)="sayfaDegisti(projeler, $event)" (pageSizeChange)="boyutDegisti(projeler, $event)" />
+            </div>
+          }
+        }
+        @case ('musteriler') {
+          @if (!musteriler.veri()) {
+            <div class="sai-durum" role="status"><span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span><span>Müşteriler yükleniyor...</span></div>
+          } @else if (musteriler.veri()!.items.length === 0) {
+            <div class="sai-bos"><span class="sai-bos__ikon" aria-hidden="true"><i class="ri-building-line"></i></span><h4>Müşteri yok</h4><p>Bu süzgeçte açılış/kapanış olayı olan müşteri bulunmuyor.</p></div>
+          } @else {
+            <div class="table-responsive" [class.is-yukleniyor]="musteriler.yukleniyor()">
+              <table class="sai-tablo sai-musteriler">
+                <thead><tr><th>Müşteri</th><th class="text-end">Proje</th><th class="text-end">Kapanma</th><th class="text-end">Geri açılma</th><th class="text-end">Elle</th></tr></thead>
+                <tbody>
+                  @for (m of musteriler.veri()!.items; track m.musteri) {
+                    <tr>
+                      <td><div class="sai-kisi"><span class="sai-avatar is-musteri" aria-hidden="true"><i class="ri-building-line"></i></span><strong>{{ m.musteri }}</strong></div></td>
+                      <td class="text-end">{{ m.projeSayisi }}</td>
+                      <td class="text-end">{{ m.kapanmaSayisi }}</td>
+                      <td class="text-end"><span class="sai-sayi" [class.is-acildi]="m.acilmaSayisi > 0">{{ m.acilmaSayisi }}</span></td>
+                      <td class="text-end">{{ m.elleAcilmaSayisi }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+          @if (musteriler.veri(); as v) {
+            <div class="sai-kart__alt">
+              <app-server-pager [pageNumber]="v.pageNumber" [pageSize]="v.pageSize" [totalCount]="v.totalCount" [totalPages]="v.totalPages"
+                [hasPreviousPage]="v.hasPreviousPage" [hasNextPage]="v.hasNextPage" [pageSizeOptions]="SAYFA_BOYUTLARI"
+                (pageChange)="sayfaDegisti(musteriler, $event)" (pageSizeChange)="boyutDegisti(musteriler, $event)" />
+            </div>
+          }
+        }
+        @case ('kisiler') {
+          @if (!kisiler.veri()) {
+            <div class="sai-durum" role="status"><span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span><span>Kişiler yükleniyor...</span></div>
+          } @else if (kisiler.veri()!.items.length === 0) {
+            <div class="sai-bos"><span class="sai-bos__ikon" aria-hidden="true"><i class="ri-user-3-line"></i></span><h4>Kayıt yok</h4><p>Bu süzgeçte açılış/kapanış olayı yok.</p></div>
+          } @else {
+            <div class="table-responsive" [class.is-yukleniyor]="kisiler.yukleniyor()">
+              <table class="sai-tablo sai-kisiler">
+                <thead><tr><th>Kullanıcı</th><th class="text-end">Kapatma</th><th class="text-end">Geri açma</th></tr></thead>
+                <tbody>
+                  @for (k of kisiler.veri()!.items; track k.kullaniciId ?? 0) {
+                    <tr>
+                      <td><div class="sai-kisi"><span class="sai-avatar" aria-hidden="true">{{ basHarf(k.kullaniciAdi) }}</span><span>{{ k.kullaniciAdi }}</span></div></td>
+                      <td class="text-end">{{ k.kapatmaSayisi }}</td>
+                      <td class="text-end"><span class="sai-sayi" [class.is-acildi]="k.geriAcmaSayisi > 0">{{ k.geriAcmaSayisi }}</span></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+          @if (kisiler.veri(); as v) {
+            <div class="sai-kart__alt">
+              <app-server-pager [pageNumber]="v.pageNumber" [pageSize]="v.pageSize" [totalCount]="v.totalCount" [totalPages]="v.totalPages"
+                [hasPreviousPage]="v.hasPreviousPage" [hasNextPage]="v.hasNextPage" [pageSizeOptions]="SAYFA_BOYUTLARI"
+                (pageChange)="sayfaDegisti(kisiler, $event)" (pageSizeChange)="boyutDegisti(kisiler, $event)" />
+            </div>
+          }
+        }
+        @case ('olaylar') {
+          @if (!olaylar.veri()) {
+            <div class="sai-durum" role="status"><span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span><span>Olaylar yükleniyor...</span></div>
+          } @else if (olaylar.veri()!.items.length === 0) {
+            <div class="sai-bos"><span class="sai-bos__ikon" aria-hidden="true"><i class="ri-history-line"></i></span><h4>Olay bulunamadı</h4><p>Bu süzgeçte açılış/kapanış olayı yok.</p></div>
+          } @else {
+            <div class="table-responsive" [class.is-yukleniyor]="olaylar.yukleniyor()">
+              <table class="sai-tablo sai-olaylar">
+                <thead><tr><th>Tarih</th><th>Kullanıcı</th><th>Olay</th><th>Proje</th><th>Sandık</th><th>Sebep</th><th>Not</th></tr></thead>
+                <tbody>
+                  @for (o of olaylar.veri()!.items; track o.id) {
+                    <tr>
+                      <td class="sai-tarih"><strong>{{ o.tarih | date: 'dd.MM.yyyy' }}</strong><small>{{ o.tarih | date: 'HH:mm:ss' }}</small></td>
+                      <td><div class="sai-kisi"><span class="sai-avatar" aria-hidden="true">{{ basHarf(o.kullaniciAdi) }}</span><span>{{ o.kullaniciAdi || 'Sistem' }}</span></div></td>
+                      <td>
+                        <div class="sai-olay-hucre">
+                          <span class="sai-hap" [attr.data-ton]="o.tur === SandikDurumOlayTuru.Acildi ? 'warning' : 'success'">
+                            <span class="sai-hap__nokta" aria-hidden="true"></span>{{ o.turMetni }}
+                          </span>
+                          <small>{{ o.kaynakMetni }}</small>
+                        </div>
+                      </td>
+                      <td><div class="sai-proje-hucre"><strong>{{ o.projeNo }}</strong><small>{{ o.musteri || '—' }}</small></div></td>
+                      <td><span class="sai-sandik-no">{{ o.sandikNo }}</span></td>
+                      <td>
+                        @if (o.sebepMetni) { <span class="sai-hap" data-ton="primary">{{ o.sebepMetni }}</span> } @else { <span class="sai-soluk">—</span> }
+                      </td>
+                      <td class="sai-not" [title]="o.not || ''">{{ o.not || '—' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+          @if (olaylar.veri(); as v) {
+            <div class="sai-kart__alt">
+              <app-server-pager [pageNumber]="v.pageNumber" [pageSize]="v.pageSize" [totalCount]="v.totalCount" [totalPages]="v.totalPages"
+                [hasPreviousPage]="v.hasPreviousPage" [hasNextPage]="v.hasNextPage" [pageSizeOptions]="SAYFA_BOYUTLARI"
+                (pageChange)="sayfaDegisti(olaylar, $event)" (pageSizeChange)="boyutDegisti(olaylar, $event)" />
+            </div>
+          }
+        }
+      }
+    </section>
+
+    <p class="sai-ipucu">
+      <i class="ri-information-line" aria-hidden="true"></i>
+      Elle: "Geri Al" ile sebep seçilerek. Otomatik: ürün güncelleme, taşıma, saha aktarımı gibi işlemlerin sandığı kendiliğinden
+      açması/kapatması. Geçmiş: sistemden önceki hareket kayıtlarından aktarılan, sebebi bilinmeyen olaylar.
+    </p>
+  } @else if (yukleniyor()) {
+    <section class="sai-kart">
+      <div class="sai-durum" role="status"><span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span><span>İstatistik yükleniyor...</span></div>
+    </section>
+  }
+</div>

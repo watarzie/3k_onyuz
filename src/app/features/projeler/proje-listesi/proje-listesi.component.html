@@ -15,6 +15,17 @@
     </div>
   </div>
   <div class="pl-hero__eylem">
+    <!-- İş listeleri sık kullanıldığı için menüye girmez, başlıkta ayrı düğme kalır. -->
+    @if (canSee3KIsListesi()) {
+      <a routerLink="/uck-is-listesi" class="tz-btn pl-uck-is-listesi">
+        <i class="ri-archive-stack-line toolbar-icon is-3k"></i>3K İş Listesi
+      </a>
+    }
+    @if (canSeeGridIsListesi()) {
+      <a routerLink="/grid-is-listesi" class="tz-btn pl-grid-is-listesi">
+        <i class="ri-database-2-line toolbar-icon is-grid"></i>Grid İş Listesi
+      </a>
+    }
     @if (isSahaYonetimi() && canUseEksikTamamlama()) {
       <a routerLink="/saha-yonetimi/eksik-olustur" class="tz-btn">
         <i class="ri-tools-line tz-ico-success"></i>Eksiklerden Oluştur
@@ -28,18 +39,34 @@
       <button type="button" class="tz-btn tz-btn--primary" (click)="openProjeOlusturModal()">
         <i class="ri-add-line"></i>Proje Oluştur
       </button>
-    } @else if (!isSevkEdilen() && !isSahaYonetimi() && !isYedekYonetimi() && (canUploadCeki() || canUploadRevision())) {
+    } @else if (!isSevkEdilen() && !isSahaYonetimi() && !isYedekYonetimi() && canUploadCeki()) {
+      <button type="button" class="tz-btn tz-btn--primary" (click)="openUploadModal('normal')">
+        <i class="ri-upload-2-line"></i>Çeki Yükle
+      </button>
+    }
+    <!-- Seyrek kullanılan işlemler ve diğer ekranlara geçişler tek menüde; her öğe kendi izniyle görünür. -->
+    <app-islemler-menusu etiket="Diğer" ikon="ri-more-line" [buyuk]="true" class="pl-diger">
       @if (canUploadRevision()) {
-        <button type="button" class="tz-btn" (click)="openUploadModal('revizyon')">
+        <button type="button" class="pl-diger-revizyon" (click)="openUploadModal('revizyon')">
           <i class="ri-git-branch-line tz-ico-warning"></i>Revizyon Yükle
         </button>
       }
-      @if (canUploadCeki()) {
-        <button type="button" class="tz-btn tz-btn--primary" (click)="openUploadModal('normal')">
-          <i class="ri-upload-2-line"></i>Çeki Yükle
-        </button>
+      @if (canSeeGridSaha()) {
+        <a routerLink="/grid-saha" class="grid-saha-trigger">
+          <i class="ri-inbox-archive-line toolbar-icon is-grid"></i>{{ 'MENU.GRID_SAHA_GORUNUMU' | translate }}
+        </a>
       }
-    }
+      @if (canSeeSandikAcilisIstatistigi()) {
+        <a routerLink="/sandik-acilis-istatistigi" class="pl-diger-acilis-istatistigi">
+          <i class="ri-bar-chart-box-line toolbar-icon"></i>{{ 'MENU.SANDIK_ACILIS_ISTATISTIGI' | translate }}
+        </a>
+      }
+      @if (canSeeBarkodEtiket()) {
+        <a routerLink="/barkod-etiket" class="pl-diger-barkod-etiket">
+          <i class="ri-printer-line toolbar-icon"></i>{{ 'MENU.BARKOD_ETIKET' | translate }}
+        </a>
+      }
+    </app-islemler-menusu>
   </div>
 </div>
 
@@ -48,15 +75,15 @@
 }
 @if (fotografMenu(); as fm) {
   <div class="report-download-menu report-download-menu-global pl-foto-menu" [class.is-yukari]="fm.yukari" role="menu"
-       [attr.aria-label]="fm.proje.projeNo + ' fotoğraf bağlantıları'"
+       [attr.aria-label]="fm.proje.projeNo + ' fotoğraf ve gerçekleşen çeki bağlantıları'"
        [style.top.px]="fm.top" [style.left.px]="fm.left" (click)="$event.stopPropagation()">
     @for (b of fotografBaglantilari(fm.proje); track b.id) {
       <a class="report-download-item pl-foto-menu__oge" role="menuitem" [href]="b.adres" target="_blank" rel="noopener noreferrer"
          [title]="b.adres" (click)="closeReportMenu()">
-        <span class="report-download-icon"><i class="ri-image-line"></i></span>
+        <span class="report-download-icon"><i [class]="baglantiTuru(b) === ProjeBaglantiTuru.GerceklesenCeki ? 'ri-file-list-3-line' : 'ri-image-line'"></i></span>
         <span class="pl-foto-menu__metin">
           <span>{{ fotografBaglantisiEtiketi(b) }}</span>
-          @if (b.aciklama) { <small>{{ fotografSitesi(b.adres) }}</small> }
+          <small>{{ baglantiTuruAdi(baglantiTuru(b)) }}@if (b.aciklama) { · {{ fotografSitesi(b.adres) }} }</small>
         </span>
         <i class="ri-external-link-line pl-foto-menu__dis" aria-hidden="true"></i>
       </a>
@@ -83,6 +110,31 @@
       <button type="button" class="report-download-item is-excel" (click)="indirGerceklesenCekiListesiExcel(menu.proje)" [disabled]="downloadingGerceklesenExcel() === menu.proje.id">
         <span class="report-download-icon"><i class="ri-file-excel-2-line"></i></span>
         <span>Excel olarak indir</span>
+      </button>
+      <div class="report-download-ayrac" role="separator"></div>
+      <small class="report-download-baslik">Müşteri listesi · TR/EN · yalnız sevk edilenler</small>
+      <button type="button" class="report-download-item is-pdf" (click)="indirMusteriCekiListesi(menu.proje, 'pdf')" [disabled]="downloadingMusteriCeki()?.projeId === menu.proje.id">
+        <span class="report-download-icon"><i class="ri-file-pdf-2-line"></i></span>
+        <span>Müşteri listesi (PDF)</span>
+      </button>
+      <button type="button" class="report-download-item is-excel" (click)="indirMusteriCekiListesi(menu.proje, 'excel')" [disabled]="downloadingMusteriCeki()?.projeId === menu.proje.id">
+        <span class="report-download-icon"><i class="ri-file-excel-2-line"></i></span>
+        <span>Müşteri listesi (Excel)</span>
+      </button>
+    } @else if (menu.type === 'saha') {
+      <button type="button" class="report-download-item is-pdf" (click)="indirSahaProjePdf(menu.proje)" [disabled]="downloadingPdf() === menu.proje.id">
+        <span class="report-download-icon"><i class="ri-file-pdf-2-line"></i></span>
+        <span>Tüm sandıklar (PDF)</span>
+      </button>
+      <div class="report-download-ayrac" role="separator"></div>
+      <small class="report-download-baslik">Sevke hazır · kapalı, ölçü/ağırlık girilmiş</small>
+      <button type="button" class="report-download-item is-pdf" (click)="indirSevkeHazirSandikRaporu(menu.proje, 'pdf')" [disabled]="downloadingSevkeHazir()?.projeId === menu.proje.id">
+        <span class="report-download-icon"><i class="ri-file-pdf-2-line"></i></span>
+        <span>Sevke hazır (PDF)</span>
+      </button>
+      <button type="button" class="report-download-item is-excel" (click)="indirSevkeHazirSandikRaporu(menu.proje, 'excel')" [disabled]="downloadingSevkeHazir()?.projeId === menu.proje.id">
+        <span class="report-download-icon"><i class="ri-file-excel-2-line"></i></span>
+        <span>Sevke hazır (Excel)</span>
       </button>
     } @else {
       <button type="button" class="report-download-item is-pdf" (click)="indirEksikUrunlerPdf(menu.proje)" [disabled]="downloadingEksikPdf() === menu.proje.id">
@@ -125,7 +177,8 @@
       <span class="pl-sayac">{{ totalCount() }}</span>
     </div>
     <div class="project-list-header-actions">
-      @if (canUseBulkSecim()) {
+      <!-- Seçime bağlı toplu işlemler yalnız proje seçilince çıkar (satırdaki kutularla seçilir). -->
+      @if (canUseBulkSecim() && selectedEksikRaporCount() > 0) {
         <div class="toolbar-group" role="group" aria-label="Seçili projeler için toplu işlemler" [class.has-selection]="selectedEksikRaporCount() > 0">
           <span class="toolbar-group-label" title="Toplu işlemler bütün sayfalardaki seçili projelere uygulanır">
             <span class="toolbar-count">{{ selectedEksikRaporCount() }}</span>seçili
@@ -168,18 +221,6 @@
             </button>
           }
         </div>
-      }
-      @if (canSee3KIsListesi()) {
-        <a routerLink="/uck-is-listesi" class="toolbar-btn">
-          <i class="ri-archive-stack-line toolbar-icon is-3k"></i>
-          <span>3K İş Listesi</span>
-        </a>
-      }
-      @if (canSeeGridIsListesi()) {
-        <a routerLink="/grid-is-listesi" class="toolbar-btn">
-          <i class="ri-database-2-line toolbar-icon is-grid"></i>
-          <span>Grid İş Listesi</span>
-        </a>
       }
       @if (showProjeTipiFilter()) {
         <div class="proje-type-filter" role="group" aria-label="Proje tipi filtresi">
@@ -351,22 +392,23 @@
                     <span class="pl-proje__no">{{ p.projeNo }}</span>
                     @let fotograflar = fotografBaglantilari(p);
                     @if (fotografBaglantisiGorunur() && fotograflar.length === 1) {
+                      @let tekAdi = baglantiTuruAdi(baglantiTuru(fotograflar[0]));
                       <a class="pl-foto" [href]="fotograflar[0].adres" target="_blank" rel="noopener noreferrer"
-                         [title]="'Fotoğrafları yeni sekmede aç · ' + fotografBaglantisiEtiketi(fotograflar[0])"
-                         [attr.aria-label]="p.projeNo + ' fotoğraflarını yeni sekmede aç'">
-                        <i class="ri-camera-line" aria-hidden="true"></i><span>Fotoğraflar</span><i class="ri-external-link-line pl-foto__dis" aria-hidden="true"></i>
+                         [title]="tekAdi + ' · yeni sekmede aç · ' + fotografBaglantisiEtiketi(fotograflar[0])"
+                         [attr.aria-label]="p.projeNo + ' ' + tekAdi + ' bağlantısını yeni sekmede aç'">
+                        <i [class]="baglantiTuru(fotograflar[0]) === ProjeBaglantiTuru.GerceklesenCeki ? 'ri-file-list-3-line' : 'ri-camera-line'" aria-hidden="true"></i><span>{{ tekAdi }}</span><i class="ri-external-link-line pl-foto__dis" aria-hidden="true"></i>
                       </a>
                     } @else if (fotografBaglantisiGorunur() && fotograflar.length > 1) {
                       <button type="button" class="pl-foto pl-foto--coklu" [class.is-acik]="fotografMenu()?.proje?.id === p.id"
                               aria-haspopup="menu" [attr.aria-expanded]="fotografMenu()?.proje?.id === p.id"
-                              [title]="fotograflar.length + ' fotoğraf bağlantısı'"
-                              [attr.aria-label]="p.projeNo + ' için ' + fotograflar.length + ' fotoğraf bağlantısını listele'"
+                              [title]="fotograflar.length + ' bağlantı · ' + baglantiCipiAdi(fotograflar)"
+                              [attr.aria-label]="p.projeNo + ' için ' + fotograflar.length + ' bağlantıyı listele (' + baglantiCipiAdi(fotograflar) + ')'"
                               (click)="fotografMenusunuAc($event, p)">
-                        <i class="ri-camera-line" aria-hidden="true"></i><span>Fotoğraflar</span><span class="pl-foto__sayi">{{ fotograflar.length }}</span><i class="ri-arrow-down-s-line pl-foto__dis" aria-hidden="true"></i>
+                        <i class="ri-camera-line" aria-hidden="true"></i><span>{{ baglantiCipiAdi(fotograflar) }}</span><span class="pl-foto__sayi">{{ fotograflar.length }}</span><i class="ri-arrow-down-s-line pl-foto__dis" aria-hidden="true"></i>
                       </button>
                     } @else if (fotografBaglantisiDuzenlenebilir()) {
-                      <button type="button" class="pl-foto pl-foto--ekle" title="Fotoğraf bağlantısı ekle"
-                              [attr.aria-label]="p.projeNo + ' için fotoğraf bağlantısı ekle'" (click)="fotografPenceresiniAc(p)">
+                      <button type="button" class="pl-foto pl-foto--ekle" title="Fotoğraf veya gerçekleşen çeki bağlantısı ekle"
+                              [attr.aria-label]="p.projeNo + ' için fotoğraf veya gerçekleşen çeki bağlantısı ekle'" (click)="fotografPenceresiniAc(p)">
                         <i class="ri-camera-line" aria-hidden="true"></i><i class="ri-add-line pl-foto__arti" aria-hidden="true"></i>
                       </button>
                     }
@@ -444,7 +486,7 @@
                     <app-islemler-menusu>
                       @if (fotografBaglantisiDuzenlenebilir() && fotografBaglantilari(p).length > 0) {
                         <button type="button" class="btn btn-sm btn-outline-primary pl-foto-duzenle" (click)="fotografPenceresiniAc(p)">
-                          <i class="ri-camera-line me-1"></i>Fotoğraf Bağlantıları
+                          <i class="ri-camera-line me-1"></i>Fotoğraflar ve Gerçekleşen Çeki
                         </button>
                       }
                       @if (canSeeRevizyonGecmisi(p)) {
@@ -462,6 +504,21 @@
                             <i class="ri-arrow-down-s-line report-download-chevron" [class.open]="isReportMenuOpen('gerceklesen-' + p.id)"></i>
                           </button>
                         </div>
+                      }
+                      @if (otomatikSahaAktarimYapilabilir(p)) {
+                        <button type="button" class="btn btn-sm btn-outline-success" (click)="otomatikSahaAktarimProje.set(p)" [title]="'SAHA_OTOMATIK.SUBTITLE' | translate">
+                          <i class="ri-magic-line me-1"></i>{{ 'SAHA_OTOMATIK.MENU_BUTTON' | translate }}
+                        </button>
+                      }
+                      @if (listeGridRotasi(p); as gridRotasi) {
+                        <a [routerLink]="[gridRotasi, p.id]" class="btn btn-sm btn-action-grid" title="Grid Modülü">
+                          <i class="ri-database-2-line me-1"></i>Grid
+                        </a>
+                      }
+                      @if (liste3KRotasi(p); as ucKRotasi) {
+                        <a [routerLink]="[ucKRotasi, p.id]" class="btn btn-sm btn-action-3k" title="3K Modülü">
+                          <i class="ri-archive-stack-line me-1"></i>3K
+                        </a>
                       }
                       @if (!isSandikMode() && hasSevkiyatGecmisi(p)) {
                         <button type="button" class="btn btn-sm btn-outline-primary" (click)="openSevkGecmisiModal(p)" title="Sevkiyat Geçmişi">
@@ -514,15 +571,17 @@
                             </a>
                           }
                           @if ((isYedekYonetimi() && canSeeYedekRapor()) || (isSahaYonetimi() && canSeeSahaRapor())) {
-
-                            <button class="btn btn-sm btn-danger" (click)="indirSahaProjePdf(p)" [disabled]="downloadingPdf() === p.id" [title]="isSahaYonetimi() ? 'Saha Raporu' : 'Yedek Raporu'">
-                            @if (downloadingPdf() === p.id) {
-                              <span class="spinner-border spinner-border-sm"></span>
-                            } @else {
-                              <i class="ri-file-pdf-2-line me-1"></i>{{ isYedekYonetimi() ? 'Yedek Raporu' : 'Saha Raporu' }}
-                            }
-                          </button>
-
+                            <div class="report-download" (click)="$event.stopPropagation()">
+                              <button type="button" class="btn btn-sm btn-danger report-download-trigger" (click)="toggleReportMenu($event, 'saha-rapor-' + p.id, p, 'saha')" [disabled]="isSahaRaporDownloading(p.id)" [title]="isSahaYonetimi() ? 'Saha Raporu' : 'Yedek Raporu'">
+                                @if (isSahaRaporDownloading(p.id)) {
+                                  <span class="spinner-border spinner-border-sm"></span>
+                                } @else {
+                                  <i class="ri-file-pdf-2-line"></i>
+                                }
+                                <span>{{ isYedekYonetimi() ? 'Yedek Raporu' : 'Saha Raporu' }}</span>
+                                <i class="ri-arrow-down-s-line report-download-chevron" [class.open]="isReportMenuOpen('saha-rapor-' + p.id)"></i>
+                              </button>
+                            </div>
                           }
 
                           @if (isYedekYonetimi() && canSeeYedekEksikRapor()) {
@@ -656,18 +715,28 @@
     <header class="tz-modal__header">
       <span class="tz-modal__icon"><i class="ri-camera-line"></i></span>
       <div class="tz-modal__title">
-        <h5 id="pl-foto-baslik">Fotoğraf Bağlantıları</h5>
+        <h5 id="pl-foto-baslik">Fotoğraflar ve Gerçekleşen Çeki</h5>
         <p>{{ fp.projeNo }}@if (fp.musteri) { · {{ fp.musteri }} }</p>
       </div>
       <button type="button" class="tz-modal__close" aria-label="Kapat" (click)="fotografPenceresiniKapat()"><i class="ri-close-line"></i></button>
     </header>
+    @let cekiSekmesi = fotografSekme() === ProjeBaglantiTuru.GerceklesenCeki;
     <div class="tz-modal__body">
+      <div class="pl-foto-sekmeler" role="tablist" aria-label="Bağlantı türü">
+        @for (tur of BAGLANTI_TURLERI; track tur) {
+          <button type="button" role="tab" class="pl-foto-sekme" [class.is-aktif]="fotografSekme() === tur"
+                  [attr.aria-selected]="fotografSekme() === tur" [disabled]="fotografKaydediliyor()" (click)="fotografSekmeSec(tur)">
+            <i [class]="tur === ProjeBaglantiTuru.GerceklesenCeki ? 'ri-file-list-3-line' : 'ri-image-line'" aria-hidden="true"></i>
+            {{ baglantiTuruAdi(tur) }}<span class="pl-foto-sekme__sayi">{{ fotografSekmeSayisi(tur) }}</span>
+          </button>
+        }
+      </div>
       @if (fotografPenceresiBaglantilari().length) {
         <ul class="pl-foto-liste">
           @for (b of fotografPenceresiBaglantilari(); track b.id) {
             <li class="pl-foto-liste__oge" [class.is-duzenleniyor]="fotografDuzenlenen()?.id === b.id">
               <a class="pl-foto-liste__baglanti" [href]="b.adres" target="_blank" rel="noopener noreferrer" [title]="b.adres">
-                <i class="ri-image-line" aria-hidden="true"></i>
+                <i [class]="cekiSekmesi ? 'ri-file-list-3-line' : 'ri-image-line'" aria-hidden="true"></i>
                 <span class="pl-foto-liste__metin">
                   <span>{{ fotografBaglantisiEtiketi(b) }}</span>
                   <small>{{ b.adres }}</small>
@@ -688,18 +757,18 @@
           }
         </ul>
       } @else {
-        <p class="pl-foto-bos">Bu projede henüz fotoğraf bağlantısı yok.</p>
+        <p class="pl-foto-bos">Bu projede henüz {{ cekiSekmesi ? 'gerçekleşen çeki' : 'fotoğraf' }} bağlantısı yok.</p>
       }
 
       <div class="pl-foto-form">
         <h6>{{ fotografDuzenlenen() ? 'Bağlantıyı düzenle' : 'Yeni bağlantı' }}</h6>
         @if (fotografSinirda()) {
-          <small class="pl-foto-hata" role="alert"><i class="ri-error-warning-line"></i> Bir projeye en fazla {{ FOTOGRAF_BAGLANTISI_SAYISI_EN_FAZLA }} bağlantı eklenebilir; yenisi için birini silin.</small>
+          <small class="pl-foto-hata" role="alert"><i class="ri-error-warning-line"></i> Bir projeye en fazla {{ FOTOGRAF_BAGLANTISI_SAYISI_EN_FAZLA }} {{ cekiSekmesi ? 'gerçekleşen çeki' : 'fotoğraf' }} bağlantısı eklenebilir; yenisi için birini silin.</small>
         }
         <label class="tz-field">
-          <span>Fotoğrafların bulunduğu sayfanın adresi</span>
+          <span>{{ cekiSekmesi ? 'Gerçekleşen çeki listesinin adresi' : 'Fotoğrafların bulunduğu sayfanın adresi' }}</span>
           <input class="form-control pl-foto-adres" type="url" inputmode="url" autocomplete="off" maxlength="1000"
-                 placeholder="https://foto.ornek.com/projeler/{{ fp.projeNo }}"
+                 [placeholder]="(cekiSekmesi ? 'https://drive.ornek.com/ceki/' : 'https://foto.ornek.com/projeler/') + fp.projeNo"
                  [value]="fotografTaslak()" (input)="fotografTaslak.set($any($event.target).value)"
                  (keydown.enter)="fotografBaglantisiKaydet()"
                  [attr.aria-invalid]="!fotografTaslakGecerli()" />
@@ -711,13 +780,13 @@
               <a [href]="adres" target="_blank" rel="noopener noreferrer">Bağlantıyı dene</a>
             </small>
           } @else {
-            <small>Tarayıcıda fotoğraf klasörünü veya albümünü açıp adres çubuğundaki bağlantıyı yapıştırın.</small>
+            <small>Tarayıcıda {{ cekiSekmesi ? 'çeki listesinin dosyasını veya klasörünü' : 'fotoğraf klasörünü veya albümünü' }} açıp adres çubuğundaki bağlantıyı yapıştırın.</small>
           }
         </label>
         <label class="tz-field">
           <span>Açıklama (isteğe bağlı)</span>
           <input class="form-control pl-foto-aciklama" type="text" autocomplete="off" [attr.maxlength]="FOTOGRAF_ACIKLAMASI_EN_FAZLA"
-                 placeholder="ör. Paketleme, Sevk günü"
+                 [placeholder]="cekiSekmesi ? 'ör. 1. sevkiyat, Son liste' : 'ör. Paketleme, Sevk günü'"
                  [value]="fotografAciklamaTaslak()" (input)="fotografAciklamaTaslak.set($any($event.target).value)"
                  (keydown.enter)="fotografBaglantisiKaydet()" />
           <small>Boş bırakılırsa listede sitenin adı görünür.</small>
@@ -974,11 +1043,72 @@
               <p class="text-muted mb-0">Bu saha projesinde normal projeden gelen eksik aktarımı yok.</p>
             </div>
           } @else {
+            @if (sahaAktarimIslemleri().length > 0) {
+              <section class="saha-aktarim-islemler" [attr.aria-label]="'SAHA_OTOMATIK.TRANSFERS' | translate">
+                <h6>{{ 'SAHA_OTOMATIK.TRANSFERS' | translate }}</h6>
+                @for (islem of sahaAktarimIslemleri(); track islem.sahaAktarimId) {
+                  <div class="saha-aktarim-islem" [class.is-blocked]="!islem.geriAlinabilirMi">
+                    <div class="saha-aktarim-islem__bilgi">
+                      <strong>{{ islem.aciklama }}</strong>
+                      <small>#{{ islem.sahaAktarimId }} · {{ islem.tarih | date: 'dd.MM.yyyy HH:mm' }} · {{ islem.satirSayisi }} satır</small>
+                    </div>
+                    @if (canWriteSahaAktarimGeriAl()) {
+                      <button
+                        type="button"
+                        class="tz-btn tz-btn--sm"
+                        (click)="sahaAktarimIsleminiGeriAl(islem)"
+                        [disabled]="!islem.geriAlinabilirMi || sahaAktarimIslemVar()"
+                        [title]="islem.tasimaMi ? ('SAHA_OTOMATIK.TRANSFER_MOVE_NO_UNDO' | translate) : islem.geriAlinabilirMi ? ('SAHA_OTOMATIK.UNDO_TRANSFER' | translate) : ('SAHA_OTOMATIK.UNDO_DISABLED' | translate)">
+                        @if (sahaAktarimIslemiGeriAlSaving() === islem.sahaAktarimId) {
+                          <span class="spinner-border spinner-border-sm"></span>
+                        } @else {
+                          <i class="ri-arrow-go-back-line tz-ico-warning"></i>
+                        }
+                        {{ 'SAHA_OTOMATIK.UNDO_TRANSFER' | translate }}
+                      </button>
+                    }
+                  </div>
+                }
+              </section>
+            }
+            @if (canUseEksikTamamlama() && sahaTasimaSecilebilirIds().length > 0) {
+              <!-- Toplu taşıma: seçilen ürünler (farklı sandıklardan da) tek işlemde, hepsi ya da hiçbiri taşınır. -->
+              <div class="saha-tasima-secim" [class.is-active]="sahaTasimaSeciliIds().length > 0">
+                <label class="saha-tasima-secim__tumu">
+                  <input type="checkbox" class="form-check-input saha-tasima-tumu"
+                         [checked]="sahaTasimaTumuSecili()"
+                         [disabled]="sahaAktarimIslemVar()"
+                         (change)="sahaTasimaTumunuSec($any($event.target).checked)" />
+                  <span>{{ 'SAHA_TASIMA.SELECT_ALL' | translate }}</span>
+                </label>
+                <span class="saha-tasima-secim__sayac">
+                  <strong>{{ sahaTasimaSeciliIds().length }}</strong> {{ 'SAHA_TASIMA.SELECTED' | translate }}
+                </span>
+                @if (sahaTasimaSeciliIds().length > 0) {
+                  <button type="button" class="btn btn-link btn-sm saha-tasima-temizle" (click)="sahaTasimaTumunuSec(false)">
+                    {{ 'SAHA_TASIMA.CLEAR_SELECTION' | translate }}
+                  </button>
+                }
+                <button type="button" class="tz-btn tz-btn--sm saha-tasima-secilenler"
+                        (click)="sahayaTasiSecilenler()"
+                        [disabled]="sahaTasimaSeciliIds().length === 0 || sahaAktarimIslemVar()">
+                  <i class="ri-arrow-left-right-line tz-ico-info"></i>{{ 'SAHA_TASIMA.MOVE_SELECTED' | translate }}
+                </button>
+              </div>
+            }
             <div class="saha-aktarim-list">
               @for (grup of sahaAktarimGruplari(); track grup.sahaSandikId ?? grup.sahaSandikNo) {
                 <section class="saha-aktarim-group" [class.is-blocked]="!grup.geriAlinabilirMi">
                   <div class="saha-aktarim-group-header">
                     <div class="saha-aktarim-group-identity">
+                      @if (canUseEksikTamamlama()) {
+                        <input type="checkbox" class="form-check-input saha-tasima-grup"
+                               [checked]="sahaTasimaGrupSecili(grup)"
+                               [disabled]="!sahaTasimaGrupSecilebilir(grup) || sahaAktarimIslemVar()"
+                               [attr.aria-label]="('SAHA_TASIMA.SELECT_CRATE' | translate) + ' ' + grup.sahaSandikNo"
+                               [title]="'SAHA_TASIMA.SELECT_CRATE' | translate"
+                               (change)="sahaTasimaGrubuSec(grup, $any($event.target).checked)" />
+                      }
                       <span class="saha-aktarim-group-icon"><i class="ri-inbox-line"></i></span>
                       <div>
                         <strong>Saha Sandığı {{ grup.sahaSandikNo }}</strong>
@@ -998,6 +1128,15 @@
                       }
                     </div>
 
+                    @if (canUseEksikTamamlama() && grup.sahaSandikId !== null) {
+                      <button
+                        type="button"
+                        class="tz-btn tz-btn--sm saha-aktarim-group-action"
+                        (click)="sahayaTasiSandik(grup)"
+                        [disabled]="sahaAktarimIslemVar()">
+                        <i class="ri-arrow-left-right-line tz-ico-info"></i>{{ 'SAHA_TASIMA.MOVE_CRATE' | translate }}
+                      </button>
+                    }
                     <button
                       type="button"
                       class="btn btn-sm btn-warning saha-aktarim-group-action"
@@ -1013,7 +1152,15 @@
 
                   <div class="saha-aktarim-group-items">
                     @for (aktarim of grup.aktarimlar; track aktarim.sahaCekiSatiriId) {
-                      <div class="saha-aktarim-item" [class.is-blocked]="!aktarim.geriAlinabilirMi">
+                      <div class="saha-aktarim-item" [class.is-blocked]="!aktarim.geriAlinabilirMi"
+                           [class.is-secili]="sahaTasimaSeciliMi(aktarim)">
+                        @if (canUseEksikTamamlama()) {
+                          <input type="checkbox" class="form-check-input saha-tasima-satir"
+                                 [checked]="sahaTasimaSeciliMi(aktarim)"
+                                 [disabled]="aktarim.sevkEdildiMi || sahaAktarimIslemVar()"
+                                 [attr.aria-label]="'#' + aktarim.siraNo + ' ' + ('SAHA_TASIMA.MOVE_ROW' | translate)"
+                                 (change)="sahaTasimaSec(aktarim, $any($event.target).checked)" />
+                        }
                         <div class="saha-aktarim-main">
                           <div class="saha-aktarim-title">
                             <span class="source-project">{{ aktarim.kaynakProjeNo }}</span>
@@ -1040,6 +1187,16 @@
                         </div>
 
                         <div class="saha-aktarim-action">
+                          @if (canUseEksikTamamlama()) {
+                            <button
+                              type="button"
+                              class="tz-btn tz-btn--sm"
+                              (click)="sahayaTasiSatir(aktarim)"
+                              [disabled]="aktarim.sevkEdildiMi || sahaAktarimIslemVar()"
+                              [title]="'SAHA_TASIMA.TITLE' | translate">
+                              <i class="ri-arrow-left-right-line tz-ico-info"></i>{{ 'SAHA_TASIMA.MOVE_ROW' | translate }}
+                            </button>
+                          }
                           <button
                             type="button"
                             class="btn btn-sm btn-outline-warning"
@@ -1073,7 +1230,7 @@
 @if (showSevkEtModal()) {
   <div class="modal-backdrop fade show" (click)="closeSevkEtModal()"></div>
   <div class="modal d-block fade show" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content border-0 shadow-lg">
         <div class="modal-header bg-warning text-dark border-0">
           <h5 class="modal-title"><i class="ri-truck-line me-2"></i> Sandıkları Sevk Et</h5>
@@ -1103,22 +1260,45 @@
                    (input)="sevkEtTarihi.set($any($event.target).value)" />
           </div>
 
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Araç Plakası</label>
-            <input type="text"
-                   class="form-control"
-                   maxlength="30"
-                   placeholder="Örn. 34 ABC 123"
-                   [value]="sevkEtAracPlaka()"
-                   (input)="sevkEtAracPlaka.set($any($event.target).value)" />
-            <small class="text-muted">Boş bırakılabilir.</small>
+          <!-- Sefer bilgileri toplu sevkle (tır seferi) aynı alanlar ve kurallar; tekil sevk de bir sefer açar. -->
+          <div class="row g-2 mb-3">
+            <div class="col-sm-4">
+              <label class="form-label fw-semibold">Araç Plakası <span class="text-danger">*</span></label>
+              <input type="text"
+                     class="form-control sevk-et-plaka"
+                     [attr.maxlength]="sevkPlakaEnFazla"
+                     autocomplete="off"
+                     placeholder="34 ABC 123"
+                     [value]="sevkEtAracPlaka()"
+                     (input)="sevkEtAracPlaka.set($any($event.target).value)" />
+              @if (sevkEtPlakaOnizleme() && sevkEtPlakaOnizleme() !== sevkEtAracPlaka().trim()) {
+                <small class="text-muted">Kaydedilecek: <strong>{{ sevkEtPlakaOnizleme() }}</strong></small>
+              }
+            </div>
+            <div class="col-sm-4">
+              <label class="form-label fw-semibold">Şoför</label>
+              <input type="text"
+                     class="form-control sevk-et-sofor"
+                     [attr.maxlength]="sevkSoforEnFazla"
+                     [value]="sevkEtSofor()"
+                     (input)="sevkEtSofor.set($any($event.target).value)" />
+            </div>
+            <div class="col-sm-4">
+              <label class="form-label fw-semibold">Dorse Plakası</label>
+              <input type="text"
+                     class="form-control sevk-et-dorse"
+                     [attr.maxlength]="sevkPlakaEnFazla"
+                     autocomplete="off"
+                     [value]="sevkEtDorsePlaka()"
+                     (input)="sevkEtDorsePlaka.set($any($event.target).value)" />
+            </div>
           </div>
 
           <div class="mb-3">
             <label class="form-label fw-semibold">Açıklama</label>
             <textarea class="form-control"
                       rows="2"
-                      maxlength="500"
+                      [attr.maxlength]="sevkAciklamaEnFazla"
                       placeholder="Opsiyonel sevkiyat açıklaması"
                       [value]="sevkEtAciklama()"
                       (input)="sevkEtAciklama.set($any($event.target).value)"></textarea>
@@ -1222,7 +1402,7 @@
         </div>
         <div class="modal-footer border-0 d-flex gap-2">
           <button class="btn btn-light flex-grow-1" (click)="closeSevkEtModal()">Vazgeç</button>
-          <button class="btn btn-warning flex-grow-1" (click)="sevkEtOnayla()" [disabled]="sevkEtSaving() || sevkEtSandikLoading() || selectedSevkSandikIds().length === 0">
+          <button class="btn btn-warning flex-grow-1" (click)="sevkEtOnayla()" [disabled]="sevkEtSaving() || sevkEtSandikLoading() || selectedSevkSandikIds().length === 0 || !sevkEtPlakaOnizleme()">
             @if (sevkEtSaving()) {
               <span class="spinner-border spinner-border-sm me-2"></span>
             }
@@ -1320,11 +1500,15 @@
               type="button"
               class="kilit-ac-option"
               [class.active]="kilitAcmaTipiId() === kilitAcmaTipleri.SevkiyatKaydiKorunarakAc"
+              [disabled]="!canSevkSonrasiDuzeltme()"
               (click)="kilitAcmaTipiId.set(kilitAcmaTipleri.SevkiyatKaydiKorunarakAc)">
               <span class="option-icon keep"><i class="ri-route-line"></i></span>
               <span>
-                <strong>Sevkiyat kaydı korunsun</strong>
-                <small>Sandıklar işlem için açılır; sevkiyat geçmişi ve gerçekleşen sevk kaydı korunur.</small>
+                <strong>Sevkiyat kaydı korunsun (sevk sonrası düzeltme)</strong>
+                <small>Sevkli sandıklar düzeltmeye açılır: unutulan ürün eklenebilir, ürün taşınabilir/silinebilir, Grid/3K işlemleri geri alınabilir. Sevkiyat kaydı korunur; her sandığın değişiklikleri düzeltme kaydına yazılır.</small>
+                @if (!canSevkSonrasiDuzeltme()) {
+                  <small class="text-danger">Bu seçenek "Sevk Sonrası Düzeltme" yetkisi ister.</small>
+                }
               </span>
             </button>
 
@@ -1372,6 +1556,13 @@
   </div>
 }
 
+@if (sahaTasimaSecimi(); as secim) {
+  <app-sahadan-sahaya-tasima [kaynak]="secim.kaynak" [satirIds]="secim.satirIds" [sandikId]="secim.sandikId" [baslik]="secim.baslik"
+    (closed)="sahaTasimaSecimi.set(null)" (tasindi)="sahaTasindi($event)" />
+}
+@if (otomatikSahaAktarimProje(); as project) {
+  <app-otomatik-saha-aktarim [proje]="project" (closed)="otomatikSahaAktarimProje.set(null)" (aktarildi)="otomatikSahaAktarildi($event)" />
+}
 @if (revizyonGecmisiProje(); as project) {
   <app-ceki-revizyon-gecmisi [projeId]="project.id" [projeNo]="project.projeNo" (closed)="revizyonGecmisiProje.set(null)" />
 }

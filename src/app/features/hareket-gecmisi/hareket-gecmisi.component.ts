@@ -2,7 +2,7 @@ import { Component, HostListener, computed, inject, OnInit, signal } from '@angu
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { HareketGecmisiService } from '../../core/services/hareket-gecmisi.service';
 import { ProjeService } from '../../core/services/proje.service';
@@ -160,12 +160,16 @@ export class HareketGecmisiComponent implements OnInit {
     this.loadHareketler();
   }
 
+  /** Süren liste isteği: yeni istek (sayfa, sayfa başı, arama) eskisini iptal eder; geç dönen eski yanıt yeni listeyi ezmez. */
+  private listeIstegi?: Subscription;
+
   loadHareketler() {
     const pId = this.selectedProjeId();
     if (!pId) return;
 
     this.loading.set(true);
-    this.hareketService.getByProje(
+    this.listeIstegi?.unsubscribe();
+    this.listeIstegi = this.hareketService.getByProje(
       pId,
       this.currentPage(),
       this.pageSize(),

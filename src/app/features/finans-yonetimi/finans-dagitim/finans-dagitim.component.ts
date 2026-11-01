@@ -249,6 +249,13 @@ export class FinansDagitimComponent implements OnInit {
     this.grupSayfasi = sayfa;
     this.grupIstekleri.next();
   }
+  /** İş grubu listesinin sayfa başı kaydı; değişince ilk sayfadan yeniden istenir. */
+  grupBoyutu = 20;
+  grupBoyut(boyut: number): void {
+    this.grupBoyutu = boyut;
+    this.grupSayfasi = 1;
+    this.grupIstekleri.next();
+  }
   onSecimiKaldir(): void {
     this.onSecim.set([]);
     this.gruplariFiltrele();
@@ -369,6 +376,13 @@ export class FinansDagitimComponent implements OnInit {
   }
   poSayfa(page: number): void {
     this.pageNumber = page;
+    this.poIstekleri.next();
+  }
+  /** PO listesinin sayfa başı kaydı; değişince ilk sayfadan yeniden istenir. */
+  poBoyutu = 15;
+  poBoyut(boyut: number): void {
+    this.poBoyutu = boyut;
+    this.pageNumber = 1;
     this.poIstekleri.next();
   }
   poSec(id: number): void {
@@ -546,7 +560,7 @@ export class FinansDagitimComponent implements OnInit {
           return this.service
             .siparisler({
               pageNumber: this.pageNumber,
-              pageSize: 15,
+              pageSize: this.poBoyutu,
               arama: this.poArama.trim() || undefined,
               // Fatura yalnız faturalanacak bakiyesi olan PO'lara girilir; kalem ekleme her aktif PO'ya yapılabilir.
               faturaBekleyen: this.tur() === 'Fatura' ? true : undefined,
@@ -579,7 +593,7 @@ export class FinansDagitimComponent implements OnInit {
           return this.service
             .siparisGruplari({
               pageNumber: this.grupSayfasi,
-              pageSize: 20,
+              pageSize: this.grupBoyutu,
               arama: this.grupArama.trim() || undefined,
               kategoriler: [...this.seciliKategoriler],
               baslangic: this.tumDonemler ? undefined : this.baslangic || undefined,

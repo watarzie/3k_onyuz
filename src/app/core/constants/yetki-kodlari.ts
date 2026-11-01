@@ -34,9 +34,22 @@ export const YETKI = {
     CEKI_VERISI_SIL: 'ceki-verisi-sil',
     UCK_IS_LISTESI: '3k-is-listesi',
     GRID_IS_LISTESI: 'grid-is-listesi',
+    /** Grid Sahası: Grid'e gelmiş ürünler ve mal kabul kayıtları; proje tipinden bağımsız salt görüntüleme (R). */
+    GRID_SAHA_GORUNUMU: 'grid-saha-gorunumu',
+    /** Barkodla ürün arama: bir barkodun bütün projelerdeki satırları ve raporu; proje tipinden bağımsız salt görüntüleme (R). */
+    BARKOD_URUN_ARAMA: 'barkod-urun-arama',
     CEKI_REVIZYON_YUKLE: 'ceki-revizyon-yukle',
     UCK_SANDIK_DURUM_RAPORU: '3k-sandik-durum-raporu',
     LOKASYON_ATAMA: 'sandik-lokasyon-atama',
+    /**
+     * Sevk sonrası düzeltme (W): sevkli sandığı sevkiyat kaydı korunarak düzeltmeye açma. Proje tipinin sandık/proje
+     * izniyle birlikte istenir; düzeltmedeki işlemler mevcut izinlerle yapılır.
+     */
+    SEVK_SONRASI_DUZELTME: 'sevk-sonrasi-duzeltme',
+    /** Sandık açılış/kapanış istatistiği: kaç kez kapanıp geri açıldığı, sebep/kişi/proje kırılımları ve Excel (R). */
+    SANDIK_ACILIS_ISTATISTIGI: 'sandik-acilis-istatistigi',
+    /** Barkod etiketi: seçilen sandık ve ürünlerin Grid etiketleri (PDF veya Godex EZPL); veri değiştirmez (R). */
+    BARKOD_ETIKET: 'barkod-etiket',
   },
   STOK: { KOK: 'stok', SIL: 'stok-sil' },
   SAHA: {

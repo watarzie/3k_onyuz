@@ -13,15 +13,17 @@ import { PdfService } from '../../../core/services/pdf.service';
 import { ProjeTipi, SevkiyatKilitAcmaTipi } from '../../../core/constants/enums';
 import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
+import { IslemlerMenusuComponent } from '../../../shared/components/islemler-menusu/islemler-menusu.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
-import { SandikDto, LookupResponse, ProjeDropdownDto, aktifSahaProjeleri, onayaAlindi } from '../../../shared/models/index';
+import { SandikDto, LookupResponse, ProjeDropdownDto, aktifSahaProjeleri, birNumaraliSandikMi, onayaAlindi, sandikEksikMetni, sandikTarihMetni } from '../../../shared/models/index';
+import { SandikGeriAcComponent } from '../../../shared/components/sandik-geri-ac/sandik-geri-ac.component';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
 import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 
 @Component({
   selector: 'app-uck-sandiklar',
   standalone: true,
-  imports: [RouterLink, NgClass, FormsModule, BreadcrumbComponent, StatCardComponent],
+  imports: [RouterLink, NgClass, FormsModule, BreadcrumbComponent, StatCardComponent, IslemlerMenusuComponent, SandikGeriAcComponent],
   templateUrl: './uck-sandiklar.component.html',
   styleUrl: './uck-sandiklar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -51,6 +53,8 @@ export class UcKSandiklarComponent implements OnInit {
   readonly uckSandikRoutePrefix = `${this.projeTipi.ucKRotasi}/sandik`;
   canWriteSandik = computed(() => this.permissionService.canWrite(this.activeMenuKod));
   canWriteSevk = computed(() => this.permissionService.canWrite(this.activeMenuKod));
+  /** Sevkiyat kaydı korunarak açma (sevk sonrası düzeltme) ayrı, dar bir izin ister. */
+  canSevkSonrasiDuzeltme = computed(() => this.permissionService.canWrite(YETKI.SANDIK.SEVK_SONRASI_DUZELTME));
   canAssignLocation = computed(() => this.permissionService.canWrite(YETKI.SANDIK.LOKASYON_ATAMA));
   canSandiklariSahayaAktar = computed(() =>
     this.projeTipi.tip === ProjeTipi.Normal && this.permissionService.canWrite(YETKI.SAHA.SAHAYA_AKTAR)
@@ -59,6 +63,14 @@ export class UcKSandiklarComponent implements OnInit {
     this.canWriteSandik() || this.canAssignLocation() || this.canSandiklariSahayaAktar()
   );
   canSeeSandikDurumRaporu = computed(() => this.permissionService.hasAccess(this.projeTipi.yetki.ucKSandikDurumRaporu));
+  /** Açılış/kapanış istatistiği kenar menüde yok; bu projeyle süzülmüş olarak "Diğer" menüsünden açılır. */
+  canSeeSandikAcilisIstatistigi = computed(() => this.permissionService.hasAccess(YETKI.SANDIK.SANDIK_ACILIS_ISTATISTIGI));
+  /** Barkod etiketi kenar menüde yok; bu proje seçili olarak "Diğer" menüsünden açılır. */
+  canSeeBarkodEtiket = computed(() => this.permissionService.hasAccess(YETKI.SANDIK.BARKOD_ETIKET));
+  /** Sebep penceresi açık olan (geri alınacak) kapalı sandık. */
+  geriAcilacakSandik = signal<SandikDto | null>(null);
+  readonly sandikTarihMetni = sandikTarihMetni;
+  readonly sandikEksikMetni = sandikEksikMetni;
 
   projeId = signal(0);
   mevcutProje = signal<ProjeDropdownDto | null>(null);
@@ -127,6 +139,9 @@ export class UcKSandiklarComponent implements OnInit {
   kilitAcAciklama = signal('');
   kilitAcSaving = signal(false);
   duzeltmeTamamlaSavingId = signal<number | null>(null);
+  topluDuzeltmeTamamlaSaving = signal(false);
+  /** Sevk sonrası düzeltmeye açık sandıklar; hepsi tek düğmeyle tamamlanır. */
+  duzeltmedekiSandiklar = computed(() => this.sandiklar().filter(s => this.isSandikDuzeltmeyeAcik(s)));
   readonly kilitAcmaTipleri = SevkiyatKilitAcmaTipi;
 
   breadcrumb: { label: string; link?: string }[] = [];
@@ -208,9 +223,12 @@ export class UcKSandiklarComponent implements OnInit {
   }
 
   /** Sadece numarayı göster */
+  /**
+   * Kartta sandık numarası olduğu gibi gösterilir: eskiden yalnız ilk rakam grubu alınıyordu, "2-2" ile "2" ya da "1-SH"
+   * ile "1" aynı görünüp mükerrer sandık izlenimi veriyordu.
+   */
   getDisplayNo(sandikNo: string): string {
-    const match = sandikNo.match(/(\d+)/);
-    return match ? match[1] : sandikNo;
+    return (sandikNo ?? '').trim();
   }
 
   onSearch(event: Event) {
@@ -447,7 +465,9 @@ export class UcKSandiklarComponent implements OnInit {
     }
 
     this.kilitAcSandik.set(sandik);
-    this.kilitAcmaTipiId.set(SevkiyatKilitAcmaTipi.SevkiyatKaydiKorunarakAc);
+    this.kilitAcmaTipiId.set(this.canSevkSonrasiDuzeltme()
+      ? SevkiyatKilitAcmaTipi.SevkiyatKaydiKorunarakAc
+      : SevkiyatKilitAcmaTipi.SevkiyatGeriAlinarakAc);
     this.kilitAcAciklama.set('');
     this.showKilitAcModal.set(true);
   }
@@ -468,6 +488,10 @@ export class UcKSandiklarComponent implements OnInit {
     const aciklama = this.kilitAcAciklama().trim();
     if (!aciklama) {
       this.toast.error('Kilit açma gerekçesi girilmelidir.');
+      return;
+    }
+    if (this.kilitAcmaTipiId() === SevkiyatKilitAcmaTipi.SevkiyatKaydiKorunarakAc && !this.canSevkSonrasiDuzeltme()) {
+      this.toast.error('Sevkiyat kaydı korunarak açma "Sevk Sonrası Düzeltme" yetkisi ister.');
       return;
     }
 
@@ -535,6 +559,40 @@ export class UcKSandiklarComponent implements OnInit {
       },
       error: () => {
         this.duzeltmeTamamlaSavingId.set(null);
+        this.toast.error('Düzeltme tamamlanırken sunucu ile iletişim kurulamadı.');
+      }
+    });
+  }
+
+  /** Projede düzeltmeye açık bütün sandıkların düzeltmesini tek işlemde tamamlar (sunucu tek transaction'da kilitler). */
+  async tumDuzeltmeleriTamamla() {
+    const sandiklar = this.duzeltmedekiSandiklar();
+    if (!this.canWriteSevk() || !sandiklar.length || this.topluDuzeltmeTamamlaSaving()) return;
+
+    const sandikNolari = sandiklar.map(s => duzMetin(s.sandikNo)).join(', ');
+    const onay = await this.confirmService.ask({
+      title: 'Düzeltmeyi Tamamla',
+      message: `Düzeltmeye açık <strong>${sandiklar.length}</strong> sandık (${sandikNolari}) tekrar kilitlenecek. Sevkiyat kaydı korunmaya devam edecek ve yeni sevkiyat oluşturulmayacak; her sandığın değişiklikleri düzeltme kaydına yazılır. Onaylıyor musunuz?`,
+      confirmText: 'Evet, Hepsini Tamamla',
+      cancelText: 'Vazgeç',
+      type: 'success'
+    });
+    if (!onay) return;
+
+    this.topluDuzeltmeTamamlaSaving.set(true);
+    this.sandikService.sevkiyatDuzeltmeTopluTamamla(this.projeId()).subscribe({
+      next: (res) => {
+        this.topluDuzeltmeTamamlaSaving.set(false);
+        if (res.isSuccess) {
+          this.toast.success(`${res.value ?? sandiklar.length} sandığın düzeltmesi tamamlandı ve kilitlendi.`);
+          this.selectedSandikIds.set(new Set());
+          this.refreshSandiklar();
+        } else {
+          this.toast.error(res.error ?? 'Düzeltme tamamlanamadı.');
+        }
+      },
+      error: () => {
+        this.topluDuzeltmeTamamlaSaving.set(false);
         this.toast.error('Düzeltme tamamlanırken sunucu ile iletişim kurulamadı.');
       }
     });
@@ -620,11 +678,18 @@ export class UcKSandiklarComponent implements OnInit {
     return this.sandiklar()
       .filter(s => selected.has(s.id))
       .filter(s => !this.isSandikKilitli(s))
+      .filter(s => !birNumaraliSandikMi(s.sandikNo))
       .filter(s => s.urunSayisi > 0);
   }
 
   seciliSandiklariSahayaAktar() {
     if (!this.canSandiklariSahayaAktar() || this.sahayaAktarSaving()) return;
+
+    const selected = this.selectedSandikIds();
+    if (this.sandiklar().some(s => selected.has(s.id) && birNumaraliSandikMi(s.sandikNo))) {
+      // Sunucu da reddeder; seçimden çıkarıldığı kullanıcıya önceden söylenir.
+      this.toast.warning(this.ts.translate('SAHA_OTOMATIK.CRATE_ONE_RULE'));
+    }
 
     const sandiklar = this.getSahayaAktarilabilirSeciliSandiklar();
     if (sandiklar.length === 0) {
@@ -855,36 +920,28 @@ export class UcKSandiklarComponent implements OnInit {
       return;
     }
 
-    const isKapandi = sandik.durumMetni === 'Kapandı';
-    const actionText = isKapandi ? 'Sandığı tekrar "Hazırlanıyor" durumuna almak' : 'Sandığı kapatmak';
+    // Geri alma sebep ister: onay yerine sebep penceresi açılır.
+    if (sandik.durumMetni === 'Kapandı') {
+      this.geriAcilacakSandik.set(sandik);
+      return;
+    }
 
     const confirm = await this.confirmService.ask({
       title: 'Sandık Durumu',
-      message: `${actionText} istediğinize emin misiniz?`,
+      message: 'Sandığı kapatmak istediğinize emin misiniz?',
       confirmText: 'Evet, Değiştir',
       cancelText: 'İptal',
-      type: isKapandi ? 'warning' : 'info'
+      type: 'info'
     });
 
     if (confirm) {
-      if (isKapandi) {
-        // Sandığı Aç ("Hazırlanıyor" yap)
-        this.projeService.sandikKapat(sandik.id, false).subscribe({
-          next: (res) => {
-            if (res.isSuccess) {
-              this.toast.success('Sandık tekrar hazırlanıyor konumuna alındı.');
-              this.refreshSandiklar();
-            } else {
-              this.toast.error(res.error || 'İşlem başarısız oldu.');
-            }
-          },
-          error: () => this.toast.error('Beklenmeyen bir hata oluştu.')
-        });
-      } else {
-        // Sandığı Kapat ("Kapandı" yap)
-        this.kapatSandikConfirm(sandik.id, false);
-      }
+      this.kapatSandikConfirm(sandik.id, false);
     }
+  }
+
+  sandikGeriAcildi() {
+    this.geriAcilacakSandik.set(null);
+    this.refreshSandiklar();
   }
 
   private kapatSandikConfirm(sandikId: number, forceClose: boolean) {

@@ -14,11 +14,18 @@ export interface SandikDto {
   depoLokasyonMetni: string;
   urunSayisi: number;
   isManuelSandik: boolean;
+  /** Numara "Sandık Özellikleri"nde değiştirilemiyorsa nedeni (çekiden gelen, sevkli, 1 numara, Ambalaj üretimi); null ise değişebilir. */
+  sandikNoKilitNedeni?: string | null;
   silinebilirMi: boolean;
   depodaSayilacakMi: boolean;
   sahayaAktarildiMi?: boolean;
   sahaUzerindenSevkEdildiMi?: boolean;
   sahayaAktarilanMiktar?: number;
+  /** Son kapanma zamanı; yalnız kapalı ve sevkli sandıkta dolu (eski kayıtlarda bilinmeyebilir). */
+  kapanmaTarihi?: string | null;
+  /** Eksiği olan satır sayısı ve toplam eksik adet; sandık detayındaki satır eksiğiyle aynı hesap. */
+  eksikUrunSayisi?: number;
+  eksikAdet?: number;
   en?: number;
   boy?: number;
   yukseklik?: number;
@@ -34,12 +41,16 @@ export interface SandikDetayDto {
   durumMetni: string;
   tipId?: number;
   tipMetni?: string;
+  /** Numara "Sandık Özellikleri"nde değiştirilemiyorsa nedeni; null ise yalnız elle eklenen sandık olarak değişebilir. */
+  sandikNoKilitNedeni?: string | null;
   sevkiyatDuzeltmeAcikMi?: boolean;
   depoLokasyonId: number;
   depoLokasyonMetni: string;
   sahayaAktarildiMi?: boolean;
   sahaUzerindenSevkEdildiMi?: boolean;
   sahayaAktarilanMiktar?: number;
+  /** Son kapanma zamanı; yalnız kapalı ve sevkli sandıkta dolu. */
+  kapanmaTarihi?: string | null;
   en?: number;
   boy?: number;
   yukseklik?: number;
@@ -84,6 +95,33 @@ export interface SandikIcerikDto {
   kaynakProjeNo?: string;
   /** Kalıcı ürün bilgisi (seri no, SKT, lot); 3K işlem açıklamasından bağımsızdır. */
   urunBilgisi?: string | null;
+  /** Ürün aktif olarak sahaya aktarıldıysa takip edildiği saha projeleri; ana projede değiştirilemez. */
+  aktifSahaProjeleri?: SahaProjeBagDto[];
+}
+
+export interface SahaProjeBagDto {
+  projeId: number;
+  projeNo: string;
+}
+
+/** Sevk sonrası düzeltme durumu: açık düzeltme, açılıştan bu yana değişiklikler ve tamamlanmış düzeltmeler. */
+export interface SandikDuzeltmeDurumuDto {
+  sandikId: number;
+  acikMi: boolean;
+  gerekce?: string | null;
+  acanKullanici?: string | null;
+  acilisTarihi?: string | null;
+  degisiklikler: string[];
+  gecmis: SandikDuzeltmeGecmisDto[];
+}
+
+export interface SandikDuzeltmeGecmisDto {
+  gerekce: string;
+  acanKullanici?: string | null;
+  acilisTarihi: string;
+  tamamlayanKullanici?: string | null;
+  tamamlanmaTarihi?: string | null;
+  degisiklikler: string[];
 }
 
 /** Sandık satırının kalıcı ürün bilgisini günceller; boş değer bilgiyi siler. Grid ve 3K aynı ucu kullanır. */
@@ -136,6 +174,8 @@ export interface UrunGuncelleDto {
 
 export interface SandikOzellikGuncelleDto {
   sandikId: number;
+  /** Yeni sandık numarası; yalnız değiştiyse gönderilir (sunucu çekiden gelen/sevkli sandıkta reddeder). */
+  sandikNo?: string;
   sandikIsmi?: string;
   /** Sandık tipi zorunludur (G2). */
   tipId: number;

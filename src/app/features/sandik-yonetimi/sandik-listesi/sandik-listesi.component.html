@@ -35,6 +35,7 @@
               <th>{{ 'LABELS.SANDIK_NO' | translate }}</th>
               <th>{{ 'LABELS.durumMetni' | translate }}</th>
               <th>Ürün Sayısı</th>
+              <th>Kapanma</th>
               <th>{{ 'LABELS.LOKASYON' | translate }}</th>
               <th></th>
             </tr>
@@ -46,7 +47,11 @@
                 <td><app-status-badge [status]="getEtkinDurumMetni(s)" [label]="getEtkinDurumLabel(s)" /></td>
                 <td>
                   <span class="badge bg-secondary-subtle text-secondary">{{ s.urunSayisi }}</span>
+                  @if (sandikEksikMetni(s); as eksik) {
+                    <span class="badge bg-danger-subtle text-danger ms-1 sl-eksik" [title]="eksik"><i class="ri-error-warning-line me-1"></i>{{ eksik }}</span>
+                  }
                 </td>
+                <td class="text-muted small sl-kapanma">{{ sandikTarihMetni(s.kapanmaTarihi) ?? '—' }}</td>
                 <td>{{ s.depoLokasyonMetni }}</td>
                 <td>
                   <div class="d-flex gap-2">

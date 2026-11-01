@@ -1,0 +1,77 @@
+<div class="page-title-area mb-4">
+  <div class="sayfa-baslik">
+    <span class="sayfa-ikon" style="--ton: var(--primaryColor)"><i class="ri-search-line" aria-hidden="true"></i></span>
+    <div>
+      <h2 class="fw-bold mb-1">Arama: "{{ q() }}"</h2>
+      <app-breadcrumb [items]="breadcrumb" />
+    </div>
+  </div>
+</div>
+
+@if (q().length < 2) {
+  <div class="as-durum">Aramak için üst çubuğa en az 2 karakter yazın (Ctrl+K).</div>
+} @else if (yukleniyor()) {
+  <div class="as-durum" role="status"><span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>Aranıyor…</div>
+} @else if (hata()) {
+  <div class="as-durum as-durum--hata" role="alert">{{ hata() }}</div>
+} @else if (sonuc(); as s) {
+  @if (!sonucVar()) {
+    <div class="as-durum">"{{ q() }}" için sonuç yok.</div>
+  }
+  <div class="as-gruplar">
+    @if (s.urunAranabilir && s.urunler.length) {
+      <section class="trezo-card as-grup">
+        <h5><i class="ri-barcode-line" aria-hidden="true"></i>Ürünler (barkod) <span>{{ s.urunler.length }}</span></h5>
+        <ul>
+          @for (u of s.urunler; track u.barkod) {
+            @let rota = urunRotasi(u);
+            <li>
+              <a [routerLink]="rota.commands" [queryParams]="rota.queryParams">
+                <strong>{{ u.barkod }}</strong>
+                @if (u.aciklama) { <small>{{ u.aciklama }}</small> }
+              </a>
+              <span class="as-rozet">{{ u.projeSayisi }} proje</span>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+    @if (s.projeAranabilir && s.projeler.length) {
+      <section class="trezo-card as-grup">
+        <h5><i class="ri-folder-3-line" aria-hidden="true"></i>Projeler <span>{{ s.projeler.length }}</span></h5>
+        <ul>
+          @for (p of s.projeler; track p.id) {
+            <li>
+              @if (projeRotasi(p); as rota) {
+                <a [routerLink]="rota"><strong>{{ p.projeNo }}</strong><small>{{ p.musteri }}</small></a>
+              } @else {
+                <span class="as-pasif" title="Bu projeyi açma izniniz yok"><strong>{{ p.projeNo }}</strong><small>{{ p.musteri }}</small></span>
+              }
+              <span class="as-rozet">{{ tipAdi(p.projeTipiId) }}{{ p.durumMetni ? ' · ' + p.durumMetni : '' }} · {{ p.sandikSayisi }} sandık</span>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+    @if (s.sandikAranabilir && s.sandiklar.length) {
+      <section class="trezo-card as-grup">
+        <h5><i class="ri-archive-line" aria-hidden="true"></i>Sandıklar <span>{{ s.sandiklar.length }}</span></h5>
+        <ul>
+          @for (k of s.sandiklar; track k.id) {
+            <li>
+              @if (sandikRotasi(k); as rota) {
+                <a [routerLink]="rota"><strong>{{ k.projeNo }} · Sandık {{ k.sandikNo }}</strong>@if (k.ad) { <small>{{ k.ad }}</small> }</a>
+              } @else {
+                <span class="as-pasif" title="Bu sandığı açma izniniz yok"><strong>{{ k.projeNo }} · Sandık {{ k.sandikNo }}</strong></span>
+              }
+              <span class="as-rozet">{{ tipAdi(k.projeTipiId) }}{{ k.durumMetni ? ' · ' + k.durumMetni : '' }}</span>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+  @if (s.projeler.length >= LIMIT || s.sandiklar.length >= LIMIT || s.urunler.length >= LIMIT) {
+    <p class="as-not">Her grupta en fazla {{ LIMIT }} sonuç gösterilir; aramayı daraltın.</p>
+  }
+}

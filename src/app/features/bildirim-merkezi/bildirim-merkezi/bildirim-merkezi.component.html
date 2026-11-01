@@ -234,9 +234,10 @@
       <footer class="list-footer">
         <label>
           <span>Sayfa başına</span>
-          <select [value]="sayfaBoyutu()" (change)="onPageSizeChange($event)">
+          <!-- Seçim option üzerinde: select [value] seçenekler @for ile oluşmadan uygulanır ve ilk seçenek görünür. -->
+          <select (change)="onPageSizeChange($event)">
             @for (size of pageSizeOptions; track size) {
-              <option [value]="size">{{ size }}</option>
+              <option [value]="size" [selected]="size === sayfaBoyutu()">{{ size }}</option>
             }
           </select>
         </label>

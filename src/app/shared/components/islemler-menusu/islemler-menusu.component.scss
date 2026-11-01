@@ -48,6 +48,14 @@ app-islemler-menusu .islemler-tetik {
     transform: rotate(180deg);
   }
 
+  // Sayfa başlığındaki "Diğer" menüsü: başlık düğmeleriyle aynı yükseklik.
+  &.buyuk {
+    gap: 7px;
+    min-height: 38px;
+    padding: 0 11px 0 13px;
+    border-radius: 9px;
+  }
+
   // Birincil işlem: sayfanın ana düğmesi gibi dolu görünür.
   &.birincil {
     gap: 7px;

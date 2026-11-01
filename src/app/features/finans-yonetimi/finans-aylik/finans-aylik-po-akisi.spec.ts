@@ -254,6 +254,29 @@ describe('Finans aylık görünüm PO/fatura akışı', () => {
     expect(detaylar[2].querySelector('.crate-toggle')).toBeNull();
   });
 
+  it('yedek/saha satırı ölçüye göre ayrı gelir; proje panelinde Özel İş gibi ölçü ve talep eden yazılır', () => {
+    const yedek = (ids: number[], boy: number, en: number, yukseklik: number) => satir({ isTuru: 5, isGrubu: 'Yedek Sandık',
+      isAdi: 'Yedek Sandık · Ahşap Kapalı', kategori: FinansIsKategorisi.Yedek, isKaydiIds: ids, sandikAdedi: ids.length,
+      boy, en, yukseklik, talepEden: 'Hikmet Gültekin' });
+    const projeOzel = satir({ kaynakTuru: 'OzelIs', ozelIsId: 60, isGrubu: 'Özel İş', isAdi: 'Özel kasa', isTuru: 8,
+      kategori: FinansIsKategorisi.OzelIs, isKaydiIds: [60], boy: 1000, en: 500, yukseklik: 400, talepEden: 'Halit Kaplan' });
+    api.aylikIsler.and.returnValue(of({ isSuccess: true, value: {
+      pageNumber: 1, pageSize: 25, totalCount: 1, totalPages: 1, hasPreviousPage: false, hasNextPage: false,
+      items: [ana, yedek([21, 22], 1800, 800, 800), yedek([23], 2200, 1000, 1100), projeOzel], projeler: [ozet],
+      projeOzelIsleri: [projeOzel], finansOzeti: [], grupToplamlari: [],
+    } }));
+    api.projeSandikKirilimi.and.returnValue(of({ isSuccess: true, value: kirilim() }));
+    const { fixture, c, el } = setup();
+    expect(c.olcuMetni(ana)).toBeNull();
+    c.projePaneliniAc(c.aylikProjeBloklari()[0]);
+    fixture.detectChanges();
+    const metinler = Array.from(el.querySelectorAll('.project-drawer tr.project-detail-row')).map((x) => x.textContent ?? '');
+    expect(metinler.some((x) => x.includes('1.800 × 800 × 800 mm · Talep eden: Hikmet Gültekin'))).toBeTrue();
+    expect(metinler.some((x) => x.includes('2.200 × 1.000 × 1.100 mm · Talep eden: Hikmet Gültekin'))).toBeTrue();
+    expect(metinler.some((x) => x.includes('1.000 × 500 × 400 mm · Talep eden: Halit Kaplan'))).toBeTrue();
+    expect(metinler.find((x) => x.includes('Ana Ambalaj'))).not.toContain('Talep eden');
+  });
+
   it('vade uyarısı kendi izniyle gösterilir; uyarıdan vadesi geçen faturaların listesi açılır (D3)', () => {
     api.vadeUyarilari.and.returnValue(of({ isSuccess: true, value: { vadeUyariGunu: 7, vadesiGecenAdet: 2, yaklasanAdet: 1, kalemler: [] } }));
     const { fixture, c, el } = setup();

@@ -84,6 +84,9 @@
         <div class="work-name detail-name">
           <strong>{{ t(kategoriAnahtari(satir.kategori)) }}</strong>
           <small>{{ satir.isAdi }}</small>
+          @if (olcuMetni(satir) || satir.talepEden) {
+            <small>{{ olcuMetni(satir) }}@if (olcuMetni(satir) && satir.talepEden) { · }@if (satir.talepEden) {<span>{{ t('REQUESTER') }}: {{ satir.talepEden }}</span>}</small>
+          }
           @if (satir.sandikAdedi) {
             <small>{{ satir.sandikAdedi }} sandık@if (satir.ahsapM3) { · {{ t('WOOD_M3') }} {{ satir.ahsapM3 | number: '1.0-3' }} }@if (satir.kontraM3) { · {{ t('PLYWOOD_M3') }} {{ satir.kontraM3 | number: '1.0-3' }} }</small>
           }
@@ -100,6 +103,9 @@
           ><small>{{ satir.projeNo ? satir.isAdi : satir.kaynakTuru }}@if (satir.musteri) { · {{ satir.musteri }} }</small>
           @if (satir.sandikTipi) {
             <small><strong>{{ satir.sandikTipi }}</strong></small>
+          }
+          @if (olcuMetni(satir) || satir.talepEden) {
+            <small>{{ olcuMetni(satir) }}@if (olcuMetni(satir) && satir.talepEden) { · }@if (satir.talepEden) {<span>{{ t('REQUESTER') }}: {{ satir.talepEden }}</span>}</small>
           }
           <small>{{ t(kategoriAnahtari(satir.kategori)) }}</small>
         </div>

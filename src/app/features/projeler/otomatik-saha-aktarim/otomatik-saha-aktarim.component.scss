@@ -1,0 +1,169 @@
+// Otomatik sahaya aktarım önizlemesi — Trezo tz-modal: KPI kartları, hedef seçimi, iki tablo ve atlananlar listesi.
+:host { display: contents; }
+
+.osa-modal .tz-modal__body {
+  display: grid;
+  gap: 4px;
+}
+
+.osa-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  > i { font-size: 17px; }
+  > span { flex: 1 1 auto; }
+  &--danger { background: #fff1ef; color: #b42318; }
+  &--warning { background: #fff7e8; color: #a15c07; }
+}
+
+.osa-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 0;
+  color: var(--bodyColor);
+  font-size: 13px;
+}
+
+.osa-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 8px;
+  transition: opacity .15s ease;
+  &.is-loading { opacity: .55; }
+}
+
+.osa-target {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--borderColor);
+  border-radius: 12px;
+  background: #fafbfc;
+}
+.osa-warn { color: #a15c07 !important; }
+
+.osa-empty {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 28px 0 10px;
+  color: var(--bodyColor);
+  font-size: 13.5px;
+  p { margin: 0; text-align: center; }
+}
+.osa-empty__icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: color-mix(in srgb, #1e9a3a 11%, #fff);
+  color: #1e9a3a;
+  font-size: 22px;
+}
+
+.osa-table-wrap {
+  max-height: 280px;
+  overflow: auto;
+  border: 1px solid var(--borderColor);
+  border-radius: 12px;
+}
+.osa-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--borderColor);
+    background: #f8fafc;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+  }
+  td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    color: var(--blackColor);
+    vertical-align: top;
+    small { display: block; color: #94a3b8; font-size: 11.5px; }
+  }
+  tr:last-child td { border-bottom: 0; }
+  .num { text-align: right; white-space: nowrap; }
+}
+
+.osa-chip {
+  display: inline-flex;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primaryColor) 10%, #fff);
+  color: var(--primaryColor);
+  font-size: 11px;
+  font-weight: 600;
+  &--warning { background: #fff7e8; color: #a15c07; }
+}
+
+.osa-skipped {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  li {
+    display: grid;
+    grid-template-columns: minmax(140px, 220px) minmax(0, 1fr);
+    gap: 12px;
+    padding: 9px 12px;
+    border: 1px solid #f3e3c3;
+    border-radius: 10px;
+    background: #fffbf3;
+    font-size: 12.5px;
+  }
+}
+.osa-skipped__who {
+  display: grid;
+  gap: 2px;
+  span { color: var(--bodyColor); }
+}
+.osa-skipped__why {
+  color: #7a4b06;
+  overflow-wrap: anywhere;
+}
+// Ürün ürün ret gerekçeleri: varsayılan kapalı, kısa nedenin altında açılır.
+.osa-skipped__details {
+  margin-top: 4px;
+  summary {
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primaryColor);
+  }
+  ul {
+    display: grid;
+    gap: 4px;
+    max-height: 220px;
+    overflow-y: auto;
+    margin: 6px 0 0;
+    padding-left: 18px;
+    font-size: 12px;
+    color: var(--bodyColor);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .osa-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .osa-target { grid-template-columns: minmax(0, 1fr); }
+  .osa-skipped li { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+}

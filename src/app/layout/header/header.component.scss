@@ -7,20 +7,6 @@
   z-index: 99;
   &.sticky { box-shadow: 0 2px 8px rgba(0,0,0,.06); }
 }
-.search-box {
-  input {
-    padding-left: 36px;
-    background: #F6F7F9;
-    border: 1px solid var(--borderColor);
-    border-radius: 8px;
-    height: 40px;
-    width: min(280px, 38vw);
-    max-width: 100%;
-    font-size: 13px;
-    &:focus { border-color: var(--primaryColor); box-shadow: none; }
-  }
-  i { left: 12px; color: var(--bodyColor); }
-}
 .sidebar-burger-menu {
   width: 36px;
   height: 36px;

@@ -15,16 +15,29 @@
           Düzeltmeyi Tamamla
         </button>
       }
-      @if (canWriteSandik() && sandik()?.durumMetni !== 'Kapandı' && !isSandikSevkEdildi()) {
-        <button type="button" class="tz-btn" (click)="sandikHazirla()">
-          <i class="ri-lock-line tz-ico-success"></i>Sandığı Kapat
-        </button>
-      }
       @if (canWriteSandik()) {
       <button type="button" class="tz-btn tz-btn--primary" (click)="openUrunEkleModal()" [disabled]="isSandikKilitli()">
         <i class="ri-add-line"></i>{{ isSahaYedek ? 'Malzeme Ekle' : 'Manuel Ürün Ekle' }}
       </button>
       }
+      <!-- Ana işlem (ürün ekleme) ve açık düzeltme açıkta; sandık işlemleri tek menüde (boşsa menü gizlenir). -->
+      <app-islemler-menusu etiket="Diğer" ikon="ri-more-line" [buyuk]="true" class="sd-diger">
+        @if (canWriteSandik() && sandik()?.durumMetni !== 'Kapandı' && !isSandikSevkEdildi()) {
+          <button type="button" class="sd-diger-kapat" (click)="sandikHazirla()">
+            <i class="ri-lock-line tz-ico-success"></i>Sandığı Kapat
+          </button>
+        }
+        @if (canWriteSandik() && sandik()?.durumMetni === 'Kapandı' && !isSandikKilitli()) {
+          <button type="button" class="sd-diger-geri-ac" (click)="geriAcPenceresiAcik.set(true)">
+            <i class="ri-arrow-go-back-line tz-ico-warning"></i>Sandığı Geri Aç
+          </button>
+        }
+        @if (canWriteSandik() && sandik()) {
+          <button type="button" class="sd-diger-ozellik" (click)="openOzellikGuncelleModal()" [disabled]="isSandikKilitli()">
+            <i class="ri-ruler-line tz-ico-primary"></i>Özellikleri Güncelle
+          </button>
+        }
+      </app-islemler-menusu>
     </div>
   </div>
 </div>
@@ -32,6 +45,55 @@
 @if (loading()) {
   <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
 } @else if (sandik()) {
+  <!-- ===== Sevk sonrası düzeltme ===== -->
+  @if (duzeltmeDurumu(); as dz) {
+    @if (dz.acikMi || dz.gecmis.length) {
+      <section class="duzeltme-panel mb-4" [class.is-acik]="dz.acikMi" aria-labelledby="duzeltme-baslik">
+        <div class="duzeltme-panel__head">
+          <span class="duzeltme-panel__icon" aria-hidden="true"><i class="ri-tools-line"></i></span>
+          <div class="duzeltme-panel__title">
+            @if (dz.acikMi) {
+              <strong id="duzeltme-baslik">Sevk sonrası düzeltme açık</strong>
+              <span>{{ dz.gerekce || 'Gerekçe yok' }} · {{ dz.acanKullanici || '—' }} · {{ dz.acilisTarihi | date: 'dd.MM.yyyy HH:mm' }}</span>
+            } @else {
+              <strong id="duzeltme-baslik">Sevk sonrası düzeltme geçmişi</strong>
+            }
+          </div>
+        </div>
+        @if (dz.acikMi) {
+          <div class="duzeltme-panel__body">
+            <span class="duzeltme-panel__label">Açılıştan bu yana değişiklikler</span>
+            <ul class="duzeltme-panel__list">
+              @for (d of dz.degisiklikler; track $index) {
+                <li>{{ d }}</li>
+              }
+            </ul>
+            <small class="text-muted">
+              Unutulan ürünü "Manuel Ürün Ekle" ile, yanlış sandıktakini "Taşı" ile düzeltin; Grid/3K durumunu ilgili modülden
+              geri alabilirsiniz. Sahada takip edilen ürünler yalnız saha projesinden düzeltilir. Bitince "Düzeltmeyi Tamamla".
+            </small>
+          </div>
+        }
+        @if (dz.gecmis.length) {
+          <details class="duzeltme-panel__gecmis">
+            <summary>Tamamlanan düzeltmeler ({{ dz.gecmis.length }})</summary>
+            @for (g of dz.gecmis; track $index) {
+              <div class="duzeltme-gecmis">
+                <strong>{{ g.tamamlanmaTarihi | date: 'dd.MM.yyyy HH:mm' }} · {{ g.tamamlayanKullanici || '—' }}</strong>
+                <span>{{ g.gerekce }}{{ g.acanKullanici ? ' (açan: ' + g.acanKullanici + ')' : '' }}</span>
+                <ul>
+                  @for (d of g.degisiklikler; track $index) {
+                    <li>{{ d }}</li>
+                  }
+                </ul>
+              </div>
+            }
+          </details>
+        }
+      </section>
+    }
+  }
+
   <!-- Sandik Header Card -->
   <section class="crate-hero mb-4">
     <div class="crate-hero__main">
@@ -46,6 +108,10 @@
             <i class="ri-file-list-3-line" aria-hidden="true"></i>{{ sandik()!.icerikler.length }} {{ 'LABELS.URUN' | translate }}
             <span class="crate-hero__dot" aria-hidden="true"></span>
             <i class="ri-map-pin-2-line" aria-hidden="true"></i>{{ sandik()!.depoLokasyonMetni || '—' }}
+            @if (sandikTarihMetni(sandik()!.kapanmaTarihi); as kapanma) {
+              <span class="crate-hero__dot" aria-hidden="true"></span>
+              <i class="ri-lock-2-line" aria-hidden="true"></i><span class="sd-kapanma">Kapandı: {{ kapanma }}</span>
+            }
           </span>
         </div>
       </div>
@@ -70,13 +136,37 @@
       <div class="crate-spec"><span>Yükseklik</span><strong>{{ sandik()!.yukseklik ? sandik()!.yukseklik + ' mm' : '—' }}</strong></div>
       <div class="crate-spec"><span>Net</span><strong>{{ sandik()!.netKg ? sandik()!.netKg + ' kg' : '—' }}</strong></div>
       <div class="crate-spec"><span>Gross</span><strong>{{ sandik()!.grossKg ? sandik()!.grossKg + ' kg' : '—' }}</strong></div>
-      @if (canWriteSandik()) {
-        <button type="button" class="tz-btn tz-btn--sm crate-hero__edit" (click)="openOzellikGuncelleModal()" [disabled]="isSandikKilitli()">
-          <i class="ri-ruler-line tz-ico-primary"></i>Özellikleri Güncelle
-        </button>
-      }
     </div>
   </section>
+
+  <!-- ===== Açılış/kapanış geçmişi (kim, ne zaman, nasıl, hangi sebeple) ===== -->
+  @if (durumGecmisi().length) {
+    <details class="durum-gecmisi mb-4">
+      <summary>
+        <i class="ri-history-line" aria-hidden="true"></i>
+        Açılış/kapanış geçmişi
+        <span class="durum-gecmisi__sayac">
+          {{ durumGecmisi().length }} olay
+        </span>
+      </summary>
+      <ol class="durum-gecmisi__liste">
+        @for (o of durumGecmisi(); track o.id) {
+          <li class="durum-olayi" [class.is-acildi]="o.tur === SandikDurumOlayTuru.Acildi">
+            <span class="durum-olayi__ikon" aria-hidden="true">
+              <i [class]="o.tur === SandikDurumOlayTuru.Acildi ? 'ri-lock-unlock-line' : 'ri-lock-2-line'"></i>
+            </span>
+            <div class="durum-olayi__metin">
+              <strong>{{ o.turMetni }}</strong>
+              <span class="durum-olayi__kaynak">{{ o.kaynakMetni }}</span>
+              @if (o.sebepMetni) { <span class="durum-olayi__sebep">{{ o.sebepMetni }}</span> }
+              <small>{{ sandikTarihMetni(o.tarih) }} · {{ o.kullaniciAdi || 'Sistem' }}</small>
+              @if (o.not) { <p class="durum-olayi__not">{{ o.not }}</p> }
+            </div>
+          </li>
+        }
+      </ol>
+    </details>
+  }
 
     <!-- Özellik Güncelleme Modal -->
     @if (canWriteSandik() && showOzellikModal()) {
@@ -92,6 +182,18 @@
         </div>
         <div class="tz-modal__body">
           <div class="tz-form">
+            <div class="tz-field-grid">
+              <label class="tz-field ozellik-sandik-no">
+                <span>Sandık no @if (sandikNoKilitNedeni()) { <i class="ri-lock-line" aria-hidden="true"></i> }</span>
+                <input type="text" class="form-control" maxlength="100" [ngModel]="ozellikSandikNo()" (ngModelChange)="ozellikSandikNo.set($event)"
+                  [disabled]="!!sandikNoKilitNedeni()" [attr.title]="sandikNoKilitNedeni()" />
+              </label>
+            </div>
+            @if (sandikNoKilitNedeni(); as neden) {
+              <small class="text-muted ozellik-sandik-no-kilit">{{ neden }}</small>
+            } @else {
+              <small class="text-muted">Numara yalnız elle eklenen sandıkta değişir; çeki satırları, taşıma geçmişi ve planlı Ambalaj kaydı birlikte güncellenir.</small>
+            }
             <div class="tz-field-grid">
               <label class="tz-field">
                 <span>Sandık ismi</span>
@@ -184,7 +286,7 @@
             @for (item of sandik()!.icerikler; track item.id) {
               <tr (click)="selectUrun(item)" class="cursor-pointer" [class.bulk-selected]="seciliTasimaIcerikleri().has(item.id)">
                 @if (canWriteSandik()) {
-                  <td class="bulk-select-cell" (click)="$event.stopPropagation()"><input type="checkbox" class="form-check-input" [checked]="seciliTasimaIcerikleri().has(item.id)" [disabled]="isSandikTasimayaKilitli() || getSandikMiktari(item) <= 0" (change)="tasimaSeciminiDegistir(item)" [attr.aria-label]="('BULK_CRATE_MOVE.SELECT_ROW' | translate) + ' #' + item.id" /></td>
+                  <td class="bulk-select-cell" (click)="$event.stopPropagation()"><input type="checkbox" class="form-check-input" [checked]="seciliTasimaIcerikleri().has(item.id)" [disabled]="isSandikTasimayaKilitli() || isSahadaTakipte(item) || getSandikMiktari(item) <= 0" (change)="tasimaSeciminiDegistir(item)" [attr.aria-label]="('BULK_CRATE_MOVE.SELECT_ROW' | translate) + ' #' + item.id" /></td>
                 }
                 <td>
                   <div class="d-flex align-items-center gap-2">
@@ -202,6 +304,12 @@
                       }
                       @if (item.urunBilgisi) {
                         <small class="urun-bilgisi-meta" [title]="item.urunBilgisi"><i class="ri-price-tag-3-line"></i>{{ item.urunBilgisi }}</small>
+                      }
+                      @for (saha of sahaProjeleri(item); track saha.projeId) {
+                        <a class="saha-takip-pill" [routerLink]="['/saha-yonetimi', saha.projeId]" (click)="$event.stopPropagation()"
+                          title="Bu ürün saha projesinde takip ediliyor; düzeltmeyi orada yapın.">
+                          <i class="ri-map-pin-line"></i>Sahada: {{ saha.projeNo }}
+                        </a>
                       }
                       @if (getSandikTransferOzeti(item)) {
                         <small class="sandik-transfer-pill" [title]="getSandikTransferOzeti(item)">
@@ -234,7 +342,7 @@
                       <button type="button" class="tz-btn tz-btn--sm" (click)="selectUrun(item)" title="Konulan miktarı düzenle">
                         <i class="ri-edit-line tz-ico-primary"></i>Düzenle
                       </button>
-                      <button type="button" class="tz-btn tz-btn--sm" (click)="openTasiModal(item)" title="Ürünü başka sandığa taşı" [disabled]="isSandikTasimayaKilitli()">
+                      <button type="button" class="tz-btn tz-btn--sm" (click)="openTasiModal(item)" title="Ürünü başka sandığa taşı" [disabled]="isSandikTasimayaKilitli() || isSahadaTakipte(item)">
                         <i class="ri-arrow-left-right-line tz-ico-info"></i>Taşı
                       </button>
                       @if (item.manuelSilinebilirMi === true) {
@@ -305,7 +413,7 @@
             <input type="number" class="form-control" style="width: 100px;" min="0" [max]="getSandikMiktari(selectedUrun()!)"
               [ngModel]="guncelKonulanAdet()" (ngModelChange)="guncelKonulanAdet.set($event)" />
             <span class="text-muted">/ {{ formatMiktar(getSandikMiktari(selectedUrun()!)) }}</span>
-            <button class="btn btn-save btn-sm" (click)="konulanGuncelle()" [disabled]="guncelleSaving() || isSandikKilitli()">
+            <button class="btn btn-save btn-sm" (click)="konulanGuncelle()" [disabled]="guncelleSaving() || isSandikKilitli() || isSahadaTakipte(selectedUrun())">
               @if (guncelleSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
               Güncelle
             </button>
@@ -313,7 +421,7 @@
 
           <hr />
           <div class="d-flex gap-2">
-            <button type="button" class="tz-btn flex-grow-1" (click)="openTasiModal(selectedUrun()!)" [disabled]="isSandikTasimayaKilitli()">
+            <button type="button" class="tz-btn flex-grow-1" (click)="openTasiModal(selectedUrun()!)" [disabled]="isSandikTasimayaKilitli() || isSahadaTakipte(selectedUrun())">
               <i class="ri-arrow-left-right-line tz-ico-info"></i>Başka Sandığa Taşı
             </button>
           </div>
@@ -539,4 +647,10 @@
       </div>
     </div>
   }
+}
+
+<!-- ===== Sandık Geri Açma (sebep zorunlu) ===== -->
+@if (geriAcPenceresiAcik() && sandik(); as gs) {
+  <app-sandik-geri-ac [sandikId]="gs.id" [sandikNo]="gs.sandikNo" (kapat)="geriAcPenceresiAcik.set(false)"
+    (tamamlandi)="sandikGeriAcildi()" />
 }

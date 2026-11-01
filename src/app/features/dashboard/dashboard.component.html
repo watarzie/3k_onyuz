@@ -22,13 +22,10 @@
     <app-stat-card [value]="toplamSandik()" [label]="'LABELS.TOPLAM_SANDIK_SAYISI' | translate" icon="ri-archive-line" color="success" [loading]="dashboardSummaryLoading()" />
   </div>
   <div class="col-xl col-sm-6">
-    <app-stat-card [value]="eksikUrun()" [label]="'LABELS.EKSIK_URUN_SAYISI' | translate" icon="ri-error-warning-line" color="danger" [loading]="dashboardSummaryLoading()" />
+    <app-stat-card [value]="depodakiSandik()" [label]="'LABELS.DEPODAKI_SANDIK_SAYISI' | translate" icon="ri-store-2-line" color="secondary" [loading]="dashboardSummaryLoading()" />
   </div>
   <div class="col-xl col-sm-6">
     <app-stat-card [value]="sevkEdilen()" [label]="'LABELS.SEVK_EDILEN_PROJE' | translate" icon="ri-truck-line" color="warning" [loading]="dashboardSummaryLoading()" />
-  </div>
-  <div class="col-xl col-sm-6">
-    <app-stat-card [value]="eksikSevkEdilen()" label="Eksik Sevk Edilen Proje" icon="ri-route-line" color="secondary" [loading]="dashboardSummaryLoading()" />
   </div>
 </div>
 

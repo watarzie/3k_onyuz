@@ -30,6 +30,7 @@ import {
       type="button"
       class="islemler-tetik"
       [class.birincil]="birincil()"
+      [class.buyuk]="buyuk()"
       [class.d-none]="bos()"
       [disabled]="disabled()"
       aria-haspopup="menu"
@@ -59,6 +60,11 @@ export class IslemlerMenusuComponent implements AfterViewInit {
   readonly ikon = input('ri-more-2-fill');
   /** Sayfanın birincil işlemi (ör. üretim formu oluştur ve biçim seç) için dolu düğme görünümü. */
   readonly birincil = input(false);
+  /**
+   * Sayfa başlığındaki "Diğer" menüsü: yanındaki başlık düğmeleriyle (tz-btn, toolbar-btn) aynı yükseklikte. Başlıkta
+   * yalnız en sık kullanılan bir-iki işlem açıkta kalır, gerisi bu menüye girer.
+   */
+  readonly buyuk = input(false);
   readonly acik = signal(false);
   readonly konum = signal<{ top: number; left: number } | null>(null);
   /** Projeksiyonla gelen bütün işlemler gizlendiyse tetikleyici de gizlenir. */

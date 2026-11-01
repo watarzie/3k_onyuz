@@ -10,7 +10,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { ConfirmService } from '../../../core/services/confirm.service';
 import { TranslationService } from '../../../core/services/translation.service';
-import { SandikDetayDto, SandikIcerikDto } from '../../../shared/models';
+import { SandikDetayDto, SandikDurumOlayKaynagi, SandikDurumOlayTuru, SandikIcerikDto } from '../../../shared/models';
 
 describe('Sandık detayı kalıcı ürün bilgisi gösterimi', () => {
   let sandikApi: jasmine.SpyObj<SandikService>;
@@ -27,10 +27,12 @@ describe('Sandık detayı kalıcı ürün bilgisi gösterimi', () => {
 
   beforeEach(() => {
     yazabilir = true;
-    sandikApi = jasmine.createSpyObj('SandikService', ['getSandikIcerik', 'getSandiklar', 'icerikBilgisiGuncelle']);
+    sandikApi = jasmine.createSpyObj('SandikService', ['getSandikIcerik', 'getSandiklar', 'icerikBilgisiGuncelle', 'durumGecmisi', 'ozellikGuncelle']);
     sandikApi.getSandikIcerik.and.returnValue(of({ isSuccess: true, value: sandik() }));
+    sandikApi.durumGecmisi.and.returnValue(of({ isSuccess: true, value: [] }));
     sandikApi.getSandiklar.and.returnValue(of({ isSuccess: true, value: [] }));
     sandikApi.icerikBilgisiGuncelle.and.returnValue(of({ isSuccess: true, value: null }));
+    sandikApi.ozellikGuncelle.and.returnValue(of({ isSuccess: true, value: null }));
     TestBed.configureTestingModule({
       imports: [SandikDetayComponent],
       providers: [
@@ -70,6 +72,29 @@ describe('Sandık detayı kalıcı ürün bilgisi gösterimi', () => {
     expect(sandikApi.icerikBilgisiGuncelle).not.toHaveBeenCalled();
   });
 
+  it('kapalı sandıkta kapanma tarihini, açılış/kapanış geçmişini ve "Sandığı Geri Aç"ı gösterir', () => {
+    const kapali = { ...sandik(3), durumMetni: 'Kapandı', kapanmaTarihi: '2026-10-24T14:32:00' };
+    sandikApi.getSandikIcerik.and.returnValue(of({ isSuccess: true, value: kapali }));
+    sandikApi.durumGecmisi.and.returnValue(of({ isSuccess: true, value: [
+      { id: 2, projeId: 10, projeNo: 'PA', musteri: 'M', sandikId: 30, sandikNo: '1', tur: SandikDurumOlayTuru.Acildi, turMetni: 'Geri açıldı',
+        kaynak: SandikDurumOlayKaynagi.Elle, kaynakMetni: 'Elle', yeniDurumMetni: 'Hazırlanıyor', sebepMetni: 'Tadilat', not: 'Kapak değişti',
+        kullaniciAdi: 'Ali', tarih: '2026-10-23T09:05:00' },
+      { id: 1, projeId: 10, projeNo: 'PA', musteri: 'M', sandikId: 30, sandikNo: '1', tur: SandikDurumOlayTuru.Kapandi, turMetni: 'Kapandı',
+        kaynak: SandikDurumOlayKaynagi.Toplu, kaynakMetni: 'Toplu işlem', yeniDurumMetni: 'Kapandı', tarih: '2026-10-22T08:00:00' },
+    ] }));
+    const { el } = render();
+
+    expect(el.querySelector('.sd-kapanma')!.textContent).toContain('24.10.2026 14:32');
+    const olaylar = el.querySelectorAll('.durum-olayi');
+    expect(olaylar.length).toBe(2);
+    expect(olaylar[0].textContent).toContain('Tadilat');
+    expect(olaylar[0].textContent).toContain('Kapak değişti');
+    expect(olaylar[0].textContent).toContain('23.10.2026 09:05 · Ali');
+    expect(olaylar[1].textContent).toContain('Sistem');
+    expect(el.querySelector('.sd-diger-geri-ac')).not.toBeNull();
+    expect(el.querySelector('.sd-diger-kapat')).toBeNull();
+  });
+
   it('ürün bilgisi olmayan satırda panelde boş bilgi kutusu göstermez', () => {
     const bos = sandik();
     bos.icerikler[0].urunBilgisi = null;
@@ -81,5 +106,50 @@ describe('Sandık detayı kalıcı ürün bilgisi gösterimi', () => {
 
     expect(el.querySelector('.urun-bilgisi-meta')).toBeNull();
     expect(el.querySelector('.panel-urun-bilgisi')).toBeNull();
+  });
+
+  describe('Sandık Özellikleri: sandık no', () => {
+    function ozellikPenceresi(kilitNedeni: string | null) {
+      sandikApi.getSandikIcerik.and.returnValue(of({ isSuccess: true, value: { ...sandik(), sandikNo: '12', tipId: 1, sandikNoKilitNedeni: kilitNedeni } }));
+      const r = render();
+      r.c.sandikTipleri.set([{ id: 1, deger: 'Ahşap Kapalı' }]);
+      r.c.openOzellikGuncelleModal();
+      r.fixture.detectChanges();
+      return { ...r, input: r.el.querySelector('.ozellik-sandik-no input') as HTMLInputElement };
+    }
+
+    it('elle eklenen sandıkta numara açıktır ve yalnız değişince gönderilir', async () => {
+      const { fixture, c, input } = ozellikPenceresi(null);
+      await fixture.whenStable();
+      expect(input.disabled).toBeFalse();
+      expect(input.value).toBe('12');
+
+      c.kaydetOzellikler();
+      expect(sandikApi.ozellikGuncelle.calls.mostRecent().args[0].sandikNo).toBeUndefined();
+
+      c.openOzellikGuncelleModal();
+      c.ozellikSandikNo.set(' 15 ');
+      c.kaydetOzellikler();
+      expect(sandikApi.ozellikGuncelle.calls.mostRecent().args[0].sandikNo).toBe('15');
+    });
+
+    it('boş numarayla istek göndermez', () => {
+      const { c } = ozellikPenceresi(null);
+      c.ozellikSandikNo.set('  ');
+      c.kaydetOzellikler();
+      expect(sandikApi.ozellikGuncelle).not.toHaveBeenCalled();
+    });
+
+    it('çekiden gelen sandıkta numara pasiftir, nedeni yazar ve gönderilmez', async () => {
+      const neden = 'Çekiden gelen sandığın numarası çeki satırlarına bağlıdır; yalnız elle eklenen sandığın numarası değiştirilebilir.';
+      const { fixture, c, el, input } = ozellikPenceresi(neden);
+      await fixture.whenStable();
+      expect(input.disabled).toBeTrue();
+      expect(el.querySelector('.ozellik-sandik-no-kilit')!.textContent).toContain(neden);
+
+      c.ozellikSandikNo.set('99');
+      c.kaydetOzellikler();
+      expect(sandikApi.ozellikGuncelle.calls.mostRecent().args[0].sandikNo).toBeUndefined();
+    });
   });
 });

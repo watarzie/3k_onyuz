@@ -1,0 +1,142 @@
+<div class="ba-page">
+  <div class="page-title-area mb-4">
+    <div class="sayfa-baslik">
+      <span class="sayfa-ikon" style="--ton: var(--ba-ton)"><i class="ri-barcode-line" aria-hidden="true"></i></span>
+      <div>
+        <h2 class="fw-bold mb-1">Barkodla Ürün Arama</h2>
+        <app-breadcrumb [items]="breadcrumb" />
+      </div>
+    </div>
+  </div>
+
+  <section class="trezo-card border-0 bg-white ba-card">
+    <!-- Filtre çubuğu (Grid Sahası düzeni): bütün denetimler tek satırda, eşit yükseklikte. -->
+    <form class="ba-filtreler" (submit)="$event.preventDefault(); ara()">
+      <label class="ba-arama-kutusu">
+        <i class="ri-barcode-line" aria-hidden="true"></i>
+        <input type="search" autocomplete="off" [attr.maxlength]="BARKOD_EN_FAZLA"
+               placeholder="Barkod numarası, ör. FC4324045" aria-label="Barkod numarası"
+               [value]="barkodTaslak()" (input)="barkodTaslak.set($any($event.target).value)" />
+      </label>
+      <button type="submit" class="tz-btn tz-btn--primary ba-ara" [disabled]="!aranabilir()">
+        <i [class]="yukleniyor() ? 'ri-loader-4-line tz-spin' : 'ri-search-line'" aria-hidden="true"></i>Ara
+      </button>
+      <label class="ba-arama-kutusu ba-proje-arama">
+        <i class="ri-folder-3-line" aria-hidden="true"></i>
+        <input type="search" autocomplete="off" maxlength="100" placeholder="Proje / müşteri ara" aria-label="Sonuçlarda proje no veya müşteri ara"
+               [value]="projeArama()" (input)="projeAramaDegisti($any($event.target).value)" />
+      </label>
+      <select class="form-select ba-tip-secici" aria-label="Proje tipi" [value]="projeTipiId() ?? ''" (change)="projeTipiDegisti($any($event.target).value)">
+        @for (secenek of projeTipiSecenekleri; track secenek.deger) {
+          <option [value]="secenek.deger ?? ''" [selected]="secenek.deger === projeTipiId()">{{ secenek.etiket }}</option>
+        }
+      </select>
+      <button type="button" class="ba-cip ba-yalniz-eksik" [class.active]="yalnizEksikler()" [attr.aria-pressed]="yalnizEksikler()"
+              (click)="yalnizEksiklerDegisti(!yalnizEksikler())">
+        <i [class]="yalnizEksikler() ? 'ri-checkbox-circle-fill' : 'ri-checkbox-blank-circle-line'" aria-hidden="true"></i>Yalnız eksikler
+      </button>
+      @if (sonuc()) {
+        <div class="ba-rapor" role="group" aria-label="Rapor">
+          <button type="button" class="tz-btn ba-pdf" [disabled]="indiriliyor() !== null" (click)="raporIndir('pdf')">
+            <i [class]="indiriliyor() === 'pdf' ? 'ri-loader-4-line tz-spin' : 'ri-file-pdf-2-line'" aria-hidden="true"></i>PDF
+          </button>
+          <button type="button" class="tz-btn ba-excel" [disabled]="indiriliyor() !== null" (click)="raporIndir('excel')">
+            <i [class]="indiriliyor() === 'excel' ? 'ri-loader-4-line tz-spin' : 'ri-file-excel-2-line'" aria-hidden="true"></i>Excel
+          </button>
+        </div>
+      }
+    </form>
+    <p class="ba-ipucu"><i class="ri-information-line" aria-hidden="true"></i>Barkod tam eşleşir; büyük/küçük harf önemsiz. "-01" gibi ekli barkodlar ayrı üründür.</p>
+
+    @if (hata()) {
+      <div class="ba-durum ba-durum--hata" role="alert"><i class="ri-error-warning-line" aria-hidden="true"></i>{{ hata() }}</div>
+    } @else if (sonuc(); as s) {
+      <div class="ba-baslik">
+        <code>{{ s.barkod }}</code>
+        @if (s.aciklama) { <span class="ba-baslik__aciklama">{{ s.aciklama }}</span> }
+      </div>
+      <div class="ba-kpi">
+        <app-stat-card [value]="s.projeSayisi" label="Projede bulundu" [hint]="s.toplamSatir + ' satır'" icon="ri-folder-3-line" color="primary" />
+        <app-stat-card [value]="s.eksikProjeSayisi" label="Eksik olan proje" [hint]="s.eksikSatir + ' eksik satır'" icon="ri-error-warning-line" color="danger" />
+        <app-stat-card [value]="(s.toplamEksik | number: '1.0-4') ?? '0'" label="Toplam eksik adet" icon="ri-stack-line" color="warning" />
+      </div>
+      @if (s.sinirli) {
+        <div class="ba-durum" role="status"><i class="ri-information-line" aria-hidden="true"></i>Çok sayıda satır var; yalnız ilk satırlar gösteriliyor.</div>
+      }
+      @if (satirlar().length === 0) {
+        <div class="ba-durum" role="status">
+          <i class="ri-inbox-line" aria-hidden="true"></i>
+          @if (s.toplamSatir === 0 && s.projeArama) {
+            Bu barkod "{{ s.projeArama }}" ile eşleşen projelerde yok.
+          } @else if (s.toplamSatir === 0) {
+            Bu barkod hiçbir projede yok.
+          } @else {
+            Süzgece uyan satır yok{{ yalnizEksikler() ? ': bu barkodun eksik satırı yok' : '' }}.
+          }
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="ba-tablo">
+            <thead>
+              <tr>
+                <th>Proje</th>
+                <th>Proje durumu</th>
+                <th>Sandık</th>
+                <th class="text-end">Sıra</th>
+                <th class="ba-th-aciklama">Açıklama</th>
+                <th class="text-end">İstenen</th>
+                <th class="text-end">Grid'e gelen</th>
+                <th class="text-end">3K'ya gelen</th>
+                <th class="text-end">Eksik</th>
+                <th>Grid</th>
+                <th>3K</th>
+                <th>Sevk</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (satir of satirlar(); track $index) {
+                <tr [class.is-eksik]="satir.eksik > 0">
+                  <td>
+                    <div class="ba-proje">
+                      <div class="ba-proje__ust">
+                        @if (gridRotasi(satir); as rota) {
+                          <a [routerLink]="rota" title="Grid ekranına git">{{ satir.projeNo }}</a>
+                        } @else {
+                          <strong>{{ satir.projeNo }}</strong>
+                        }
+                        <span class="ba-tip" [attr.data-tip]="satir.projeTipiId">{{ projeTipiAdi(satir.projeTipiId) }}</span>
+                      </div>
+                      <small>{{ satir.musteri }}</small>
+                    </div>
+                  </td>
+                  <td><app-status-badge [status]="satir.projeDurumu" [label]="satir.projeDurumu" /></td>
+                  <td><span class="ba-sandik">{{ satir.sandikNo }}</span></td>
+                  <td class="text-end ba-sayi">{{ satir.siraNo ?? '—' }}</td>
+                  <td class="ba-aciklama">
+                    <span>{{ satir.aciklama }}</span>
+                    @if (satir.elleEklenen) { <span class="ba-rozet">Elle eklenen</span> }
+                  </td>
+                  <td class="text-end ba-sayi">{{ satir.istenen | number: '1.0-4' }}<small class="ba-birim">{{ satir.birim }}</small></td>
+                  <td class="text-end ba-sayi">{{ satir.gridGelen | number: '1.0-4' }}</td>
+                  <td class="text-end ba-sayi">{{ satir.ucKGelen | number: '1.0-4' }}</td>
+                  <td class="text-end ba-sayi ba-eksik"><strong>{{ satir.eksik | number: '1.0-4' }}</strong></td>
+                  <td><app-status-badge [status]="satir.gridDurumu" [label]="satir.gridDurumu" /></td>
+                  <td><app-status-badge [status]="satir.ucKDurumu" [label]="satir.ucKDurumu" /></td>
+                  <td><app-status-badge [status]="sevkRozeti(satir.sevkDurumu)" [label]="satir.sevkDurumu" /></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <!-- Sunucu sayfalaması: özet kartları bütün sonucundur; rapor da bütün sonucu yazar. -->
+        <app-server-pager [pageNumber]="s.sayfa" [pageSize]="s.sayfaBoyutu" [totalCount]="s.filtreliSatir"
+          [totalPages]="s.toplamSayfa" [hasPreviousPage]="s.sayfa > 1" [hasNextPage]="s.sayfa < s.toplamSayfa"
+          [pageSizeOptions]="SAYFA_BOYUTLARI" (pageChange)="sayfaDegisti($event)" (pageSizeChange)="boyutDegisti($event)" />
+      }
+    } @else if (!yukleniyor()) {
+      <div class="ba-durum" role="status">
+        <i class="ri-barcode-line" aria-hidden="true"></i>Barkodu yazıp arayın; ürünün bütün projelerdeki satırları, eksikler önde listelenir.
+      </div>
+    }
+  </section>
+</div>

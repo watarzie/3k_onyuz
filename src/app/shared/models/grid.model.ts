@@ -1,5 +1,116 @@
 // ===== Grid =====
 import { SahaTamamlamaIzDto } from './saha-iz.model';
+import { PaginatedList } from './common.model';
+
+// ===== Grid Sahası (GET api/grid/saha/urunler, GET api/grid/saha/mal-kabul; arka uç GridSahaDtolari ile birebir) =====
+
+/** Ürün listesi kapsamı: Grid'de bekleyenler (varsayılan) ya da Grid'e gelmiş bütün ürünler. */
+export type GridSahaKapsam = 'bekleyen' | 'tumu';
+export type GridSahaSiralama = 'proje' | 'bekleyen' | 'sandik';
+/** Mal kabul kayıtlarının türü: yalnız mal kabul (varsayılan), yalnız toplu sevk ya da ikisi. */
+export type GridMalKabulTuru = 'mal-kabul' | 'toplu-sevk' | 'hepsi';
+
+export interface GridSahaUrunleriParams {
+  pageNumber?: number;
+  pageSize?: number;
+  kapsam?: GridSahaKapsam;
+  arama?: string;
+  projeTipiId?: number | null;
+  projeId?: number | null;
+  gridDurumuId?: number | null;
+  siralama?: GridSahaSiralama;
+  azalan?: boolean;
+}
+
+export interface GridSahaOzetDto {
+  bekleyenSatir: number;
+  bekleyenAdet: number;
+  projeSayisi: number;
+  eksikGelenSatir: number;
+  bugunMalKabul: number;
+}
+
+export interface GridSahaUrunDto {
+  cekiSatiriId: number;
+  projeId: number;
+  projeNo: string;
+  projeTipiId: number;
+  musteri: string;
+  sandikNo: string;
+  siraNo: number;
+  barkodNo: string;
+  olcuResmiPozNo?: string | null;
+  aciklama: string;
+  birim: string;
+  istenenAdet: number;
+  gridGelenAdet: number;
+  /** Sahadan doğrudan trafoya sevk edilen miktar (Trafo Sevk); Grid'e gelen adede girmez. */
+  trafoSevkAdet: number;
+  ucKGelenMiktar: number;
+  yoldakiMiktar: number;
+  griddeBekleyenMiktar: number;
+  gridDurumuId: number;
+  gridDurumuMetni: string;
+  gridSevkDurumuId: number;
+  gridSevkDurumuMetni: string;
+  sonMalKabulTarihi?: string | null;
+  sonMalKabulPersoneli?: string | null;
+  sahayaAktarildiMi: boolean;
+  gridAciklama?: string | null;
+}
+
+export interface GridSahaUrunleriDto {
+  ozet: GridSahaOzetDto;
+  liste: PaginatedList<GridSahaUrunDto>;
+}
+
+export interface GridMalKabulParams {
+  pageNumber?: number;
+  pageSize?: number;
+  baslangic?: string;
+  bitis?: string;
+  personelId?: number | null;
+  projeId?: number | null;
+  arama?: string;
+  tur?: GridMalKabulTuru;
+}
+
+export interface GridMalKabulPersonelDto {
+  kullaniciId: number;
+  kullaniciAdi: string;
+  islemSayisi: number;
+}
+
+export interface GridMalKabulHareketDto {
+  anahtar: string;
+  tarih: string;
+  kullaniciId: number;
+  kullaniciAdi: string;
+  projeId: number;
+  projeNo: string;
+  projeTipiId?: number | null;
+  islemMetni: string;
+  topluMu: boolean;
+  cekiSatiriId?: number | null;
+  urunMetni: string;
+  sandikNo?: string | null;
+  oncekiDurumMetni?: string | null;
+  gelenAdet?: number | null;
+  /** Trafo Sevk kaydında trafoya giden adet (açıklamadaki "Trafo:" eki); eski kayıtta boş. */
+  trafoAdet?: number | null;
+  /** Kaydın yeni Grid durumu (8, 9, 11, 14); manuel ürün ve toplu sevkte boş. */
+  gridDurumuId?: number | null;
+  guncelGridGelenAdet?: number | null;
+  topluUrunSayisi?: number | null;
+  aciklama?: string | null;
+}
+
+export interface GridMalKabulGecmisiDto {
+  baslangic: string;
+  bitis: string;
+  liste: PaginatedList<GridMalKabulHareketDto>;
+  personelOzeti: GridMalKabulPersonelDto[];
+}
 
 export interface GridUrunDto {
   cekiSatiriId: number;

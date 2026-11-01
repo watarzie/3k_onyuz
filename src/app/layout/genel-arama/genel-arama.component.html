@@ -1,0 +1,45 @@
+<div class="ga">
+  <i class="ri-search-line ga__ikon" aria-hidden="true"></i>
+  <input #girdi type="search" class="form-control ga__girdi" autocomplete="off" maxlength="100"
+         placeholder="Barkod, proje veya sandık ara…" aria-label="Genel arama: barkod, proje no veya sandık no"
+         role="combobox" aria-autocomplete="list" aria-controls="ga-panel" [attr.aria-expanded]="acik()"
+         [value]="metin()" (input)="yazildi($any($event.target).value)" (focus)="odaklandi()" (keydown)="tusBasildi($event)" />
+  <kbd class="ga__kisayol" aria-hidden="true">Ctrl K</kbd>
+
+  @if (acik() && metin().trim()) {
+    <div id="ga-panel" class="ga__panel" role="listbox" aria-label="Arama sonuçları">
+      @if (!yeterli()) {
+        <div class="ga__durum">Aramak için en az 2 karakter yazın.</div>
+      } @else if (yukleniyor() && !sonuc()) {
+        <div class="ga__durum"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span>Aranıyor…</div>
+      } @else if (hata()) {
+        <div class="ga__durum ga__durum--hata">{{ hata() }}</div>
+      } @else if (!sonucVar()) {
+        <div class="ga__durum">"{{ metin().trim() }}" için sonuç yok.</div>
+      } @else {
+        @for (g of gruplar(); track g.grup) {
+          @if (g.ogeler.length) {
+            <div class="ga__grup" role="group" [attr.aria-label]="GRUP_BASLIKLARI[g.grup].baslik">
+              <div class="ga__grup-baslik"><i [class]="GRUP_BASLIKLARI[g.grup].ikon" aria-hidden="true"></i>{{ GRUP_BASLIKLARI[g.grup].baslik }}</div>
+              @for (o of g.ogeler; track o.anahtar) {
+                <button type="button" role="option" class="ga__oge" [class.is-aktif]="aktifMi(o)" [attr.aria-selected]="aktifMi(o)"
+                        [disabled]="!o.rota" [title]="o.rota ? '' : 'Bu kaydı açma izniniz yok'" (click)="sec(o)">
+                  <span class="ga__oge-metin">
+                    <strong>{{ o.baslik }}</strong>
+                    @if (o.alt) { <small>{{ o.alt }}</small> }
+                  </span>
+                  <span class="ga__rozet">{{ o.rozet }}</span>
+                </button>
+              }
+            </div>
+          }
+        }
+      }
+      @if (yeterli()) {
+        <button type="button" class="ga__tumu" (click)="tumSonuclar()">
+          <i class="ri-search-eye-line" aria-hidden="true"></i>Tüm sonuçlar<kbd>Enter</kbd>
+        </button>
+      }
+    </div>
+  }
+</div>

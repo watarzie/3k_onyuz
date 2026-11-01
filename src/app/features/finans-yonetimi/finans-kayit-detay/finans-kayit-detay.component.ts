@@ -136,6 +136,16 @@ export class FinansKayitDetayComponent implements OnInit {
    * Hacim bölümünden girilen işte birim m³ orada düzenlenir); sabit → birim fiyat tek başına net bedeldir; manuel →
    * girilen net bedel. Gizlenen alanın değeri silinmez, olduğu gibi gönderilir.
    */
+  /** Katlanır sandık elle fiyatlanır: m³/sabit yöntem, m³ bileşeni ve hacim yok; gerekçe isteğe bağlı. */
+  elleFiyatlanir(): boolean {
+    return this.kayit()?.elleFiyatlanir === true;
+  }
+  /** Katlanır iş henüz fiyatlanmadı (bedel 0): Bilgiler sekmesinde Fiyatlandırma'ya yönlendirilir; PO açılamaz. */
+  elleFiyatBekliyor(): boolean {
+    const k = this.kayit();
+    return !!k && this.elleFiyatlanir() && !k.iptalEdildi && k.kaynakAktif !== false && k.poNumaralari.length === 0
+      && !((k.netTutar ?? 0) > 0) && this.fiyatDuzenlenebilir();
+  }
   fiyatAlani(alan: 'adet' | 'birimM3' | 'birimFiyat' | 'manuel'): boolean {
     const yontem = this.fiyat.fiyatlandirmaBirimi;
     switch (alan) {
@@ -183,7 +193,7 @@ export class FinansKayitDetayComponent implements OnInit {
   hacimDuzenlenebilir(): boolean {
     const k = this.kayit();
     return !!k && !k.iptalEdildi && k.kaynakAktif !== false && k.poNumaralari.length === 0
-      && finansHacimElleGirilir(k.sandikMalzemesi, k.hacimManuel)
+      && finansHacimElleGirilir(k.sandikMalzemesi, k.hacimManuel, k.elleFiyatlanir)
       && finansIsDuzenlenebilir(this.permissions);
   }
   /** Fiyatlandırma sekmesi: tam fiyatlandırma formu veya yalnız hacim girişi. */
@@ -340,10 +350,13 @@ export class FinansKayitDetayComponent implements OnInit {
         this.finansTarihi = k.finansTarihi?.slice(0, 10) ?? '';
         this.hacim = { ahsapM3: k.ahsapM3 ?? 0, kontraM3: k.kontraM3 ?? 0, aciklama: '' };
         if (this.fiyatDuzenlenebilir()) {
+          // Katlanır sandık yalnız adet × birim fiyat veya net toplamla fiyatlanır; m³ gönderilmez.
+          const katlanir = k.elleFiyatlanir === true;
+          const yontem = k.fiyatlandirmaBirimi ?? 1;
           this.fiyat = {
-            fiyatlandirmaBirimi: k.fiyatlandirmaBirimi ?? 1,
+            fiyatlandirmaBirimi: katlanir && yontem !== 4 ? 1 : yontem,
             adet: k.adet,
-            birimM3: k.birimM3,
+            birimM3: katlanir ? 0 : k.birimM3,
             birimFiyat: k.birimFiyat ?? 0,
             paraBirimi: k.paraBirimi ?? 'EUR',
             kdvOrani: k.kdvOrani ?? 0,
@@ -504,8 +517,14 @@ export class FinansKayitDetayComponent implements OnInit {
       );
       return;
     }
-    if (!this.fiyat.aciklama.trim()) {
+    // Katlanır sandığın fiyatı her zaman elle girildiği için gerekçe isteğe bağlıdır (sunucuyla aynı).
+    if (!this.elleFiyatlanir() && !this.fiyat.aciklama.trim()) {
       this.hata.set('Fiyatlandırma gerekçesi zorunludur.');
+      return;
+    }
+    if (this.elleFiyatlanir() && (![1, 4].includes(this.fiyat.fiyatlandirmaBirimi)
+      || this.fiyat.bilesenler?.some((b) => b.yontem === 2))) {
+      this.hata.set(this.t('FOLDING_PRICE_METHOD'));
       return;
     }
     // F11: malzeme yalnız m³ satırında anlamlıdır; diğer yöntemlere geçen satırın malzemesi gönderilmez.
@@ -515,7 +534,7 @@ export class FinansKayitDetayComponent implements OnInit {
   bilesenEkle(): void {
     this.fiyat.bilesenler = [
       ...(this.fiyat.bilesenler ?? []),
-      { ad: '', yontem: 2, miktar: 1, birimFiyat: 0 },
+      { ad: '', yontem: this.elleFiyatlanir() ? 1 : 2, miktar: 1, birimFiyat: 0 },
     ];
   }
   bilesenSil(index: number): void {
@@ -539,10 +558,16 @@ export class FinansKayitDetayComponent implements OnInit {
     }
     return ozet;
   }
+  /** Değişiklik geçmişinin sayfa başı kaydı (sunucuda sayfalı). */
+  gecmisBoyutu = 25;
+  gecmisBoyut(boyut: number): void {
+    this.gecmisBoyutu = boyut;
+    this.gecmisSayfa(1);
+  }
   gecmisSayfa(page: number): void {
     const h = this.hedef();
     this.service
-      .denetim(h.tur, h.id, page)
+      .denetim(h.tur, h.id, page, this.gecmisBoyutu)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((r) => {
         if (r.isSuccess) this.denetim.set(r.value ?? null);

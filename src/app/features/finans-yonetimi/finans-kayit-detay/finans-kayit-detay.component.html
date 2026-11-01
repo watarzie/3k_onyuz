@@ -305,6 +305,17 @@
               </div>
             </section>
           }
+          @if (elleFiyatBekliyor()) {
+            <!-- Katlanır sandık elle fiyatlanır; fiyat girilene kadar bedel 0'dır ve PO açılamaz. -->
+            <section class="hacim-ozet is-bos elle-fiyat-bekliyor" aria-label="Fiyat">
+              <div class="hacim-ozet__durum">
+                <span class="hacim-ozet__uyari"><i class="ri-error-warning-line" aria-hidden="true"></i>{{ t('FOLDING_PRICE_PENDING') }}</span>
+                <button type="button" class="btn btn-sm btn-primary elle-fiyat-gir" (click)="tab('fiyat')">
+                  <i class="ri-price-tag-3-line" aria-hidden="true"></i>{{ t('FOLDING_PRICE_ENTER') }}
+                </button>
+              </div>
+            </section>
+          }
           <div class="v2-card v2-record-summary">
             <dl class="v2-dialog-definition">
               <dt>Üretim tarihi</dt>
@@ -433,16 +444,22 @@
             </div>
             <p class="v2-note v2-dialog-info elle-fiyat-uyari">{{ t('MANUAL_PRICING_WARNING') }}</p>
           }
-          <p class="v2-note v2-dialog-info">
-            Bu değerler finans kaydına aittir; üretim ölçüsünü/m³ hesabını değiştirmez. Bağlı
-            belgelerin snapshot'ı korunur.
-          </p>
+          @if (elleFiyatlanir()) {
+            <p class="v2-note v2-dialog-info elle-fiyat-katlanir"><i class="ri-information-line" aria-hidden="true"></i>{{ t('FOLDING_PRICE_HELP') }}</p>
+          } @else {
+            <p class="v2-note v2-dialog-info">
+              Bu değerler finans kaydına aittir; üretim ölçüsünü/m³ hesabını değiştirmez. Bağlı
+              belgelerin snapshot'ı korunur.
+            </p>
+          }
           <div class="v2-fields">
             <label
-              >Yöntem<select [(ngModel)]="fiyat.fiyatlandirmaBirimi">
+              >Yöntem<select [(ngModel)]="fiyat.fiyatlandirmaBirimi" class="fiyat-yontemi">
                 <option [ngValue]="1">Adet</option>
-                <option [ngValue]="2">m³</option>
-                <option [ngValue]="3">Sabit net bedel</option>
+                @if (!elleFiyatlanir()) {
+                  <option [ngValue]="2">m³</option>
+                  <option [ngValue]="3">Sabit net bedel</option>
+                }
                 <option [ngValue]="4">Manuel net toplam</option>
               </select></label
             ><label
@@ -498,7 +515,9 @@
               ><label
                 >Yöntem<select [(ngModel)]="b.yontem">
                   <option [ngValue]="1">Adet</option>
-                  <option [ngValue]="2">m³</option>
+                  @if (!elleFiyatlanir()) {
+                    <option [ngValue]="2">m³</option>
+                  }
                   <option [ngValue]="3">Sabit</option>
                 </select></label
               ><label
@@ -509,13 +528,13 @@
                   min="0"
                   step="0.01"
                   [(ngModel)]="b.birimFiyat" /></label
-              ><label
+              >@if (!elleFiyatlanir()) {<label
                 >{{ t('PRICE_LINE_MATERIAL') }}<select [(ngModel)]="b.malzeme" [disabled]="b.yontem !== 2">
                   <option [ngValue]="null">{{ t('PRICE_LINE_MATERIAL_CRATE') }}</option>
                   <option [ngValue]="malzeme.Ahsap">{{ t('MATERIAL_WOOD') }}</option>
                   <option [ngValue]="malzeme.Kontra">{{ t('PLYWOOD_FOLDING') }}</option>
                 </select></label
-              ><label
+              >}<label
                 >{{ t('PRICE_LINE_TOTAL') }}<output>{{ bilesenTutari(b) | number: '1.2-2' }} {{ fiyat.paraBirimi }}</output></label
               ><button class="btn btn-light v2-dialog-remove" (click)="bilesenSil($index)">
                 <i class="ri-delete-bin-line" aria-hidden="true"></i>Bileşeni kaldır
@@ -526,15 +545,17 @@
             @let ozet = bilesenOzeti();
             <div class="v2-toolbar v2-dialog-context">
               <span class="v2-tag">{{ t('PRICE_LINES_TOTAL') }}: {{ ozet.tutar | number: '1.2-2' }} {{ fiyat.paraBirimi }}</span>
-              <span class="v2-tag">{{ t('MATERIAL_WOOD') }}: {{ ozet.ahsapM3 | number: '1.0-6' }} m³</span>
-              <span class="v2-tag">{{ t('PLYWOOD_FOLDING') }}: {{ ozet.kontraM3 | number: '1.0-6' }} m³</span>
+              @if (!elleFiyatlanir()) {
+                <span class="v2-tag">{{ t('MATERIAL_WOOD') }}: {{ ozet.ahsapM3 | number: '1.0-6' }} m³</span>
+                <span class="v2-tag">{{ t('PLYWOOD_FOLDING') }}: {{ ozet.kontraM3 | number: '1.0-6' }} m³</span>
+              }
               @if (ozet.malzemesizM3) {
                 <span class="v2-tag">{{ t('PRICE_LINE_MATERIAL_CRATE') }}: {{ ozet.malzemesizM3 | number: '1.0-6' }} m³</span>
               }
             </div>
           }
           <label class="v2-dialog-reason"
-            >Değişiklik gerekçesi *<textarea
+            >{{ elleFiyatlanir() ? t('PRICE_REASON_OPTIONAL') : 'Değişiklik gerekçesi *' }}<textarea
               [(ngModel)]="fiyat.aciklama"
               maxlength="2000"
             ></textarea>
@@ -582,6 +603,7 @@
             [hasPreviousPage]="p.hasPreviousPage"
             [hasNextPage]="p.hasNextPage"
             (pageChange)="gecmisSayfa($event)"
+            (pageSizeChange)="gecmisBoyut($event)"
           />
         }
       }

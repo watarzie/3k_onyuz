@@ -214,9 +214,9 @@
                     <label><span>Sandık Yapısı *</span><select [(ngModel)]="ozelForm.sandikTipi" name="bagimsizSandikTipi">@for (tip of ozelYapiSecenekleri(); track tip) { <option [ngValue]="tip">{{ tip }}</option> }</select></label>
                     <label><span>Adet *</span><input type="number" min="1" [(ngModel)]="ozelForm.adet" name="bagimsizAdet" /></label>
                     <div class="special-crate-dimensions span-2">
-                      <label *appCanAccess="[izin.OlcuGoruntule]"><span>Boy (mm) *</span><input type="number" min="1" [(ngModel)]="ozelForm.boy" name="bagimsizBoy" /></label>
-                      <label *appCanAccess="[izin.OlcuGoruntule]"><span>En (mm) *</span><input type="number" min="1" [(ngModel)]="ozelForm.en" name="bagimsizEn" /></label>
-                      <label *appCanAccess="[izin.OlcuGoruntule]"><span>Yükseklik (mm) *</span><input type="number" min="1" [(ngModel)]="ozelForm.yukseklik" name="bagimsizYukseklik" /></label>
+                      <label *appCanAccess="[izin.OlcuGoruntule]"><span>{{ ozelForm.tur === 3 ? 'Boy' : 'Dış Boy' }} (mm) *</span><input type="number" min="1" [(ngModel)]="ozelForm.boy" name="bagimsizBoy" /></label>
+                      <label *appCanAccess="[izin.OlcuGoruntule]"><span>{{ ozelForm.tur === 3 ? 'En' : 'Dış En' }} (mm) *</span><input type="number" min="1" [(ngModel)]="ozelForm.en" name="bagimsizEn" /></label>
+                      <label *appCanAccess="[izin.OlcuGoruntule]"><span>{{ ozelForm.tur === 3 ? 'Yükseklik' : 'Dış Yükseklik' }} (mm) *</span><input type="number" min="1" [(ngModel)]="ozelForm.yukseklik" name="bagimsizYukseklik" /></label>
                     </div>
                     <div class="requester-field span-2">
                       <span class="field-label">Talep Eden *</span>

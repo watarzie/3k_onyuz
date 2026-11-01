@@ -307,6 +307,20 @@ export enum FinansOdemeFiltresi {
   Odendi = 4,
 }
 
+// ===== Finans: işler raporunun kapsamı (backend FinansIsRaporuKapsami) =====
+export enum FinansIsRaporuKapsami {
+  Birlesik = 0,
+  SiparisiAcilan = 1,
+  SiparisiAcilmayan = 2,
+}
+
+// ===== Finans: gider raporunun gruplaması (backend FinansGiderRaporuGruplamasi) =====
+export enum FinansGiderRaporuGruplamasi {
+  Duz = 0,
+  Kategori = 1,
+  Proje = 2,
+}
+
 // ===== Finans: fiyat satırının malzemesi (backend FinansSandikMalzemesi; boşsa sandığın malzemesi) =====
 export enum FinansSandikMalzemesi {
   Ahsap = 1,
