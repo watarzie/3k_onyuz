@@ -341,6 +341,8 @@ export const API = {
     PLAN: (id: number) => `${BASE}/yukleme-planlari/${id}`,
     KAYNAKTAN_GUNCELLE: (id: number) => `${BASE}/yukleme-planlari/${id}/kaynaktan-guncelle`,
     HESAPLA: (id: number) => `${BASE}/yukleme-planlari/${id}/hesapla`,
+    RAPOR_ARAC_TALEBI: (id: number) => `${BASE}/yukleme-planlari/${id}/rapor/arac-talebi`,
+    RAPOR_YUKLEME_PLANI: (id: number) => `${BASE}/yukleme-planlari/${id}/rapor/yukleme-plani`,
   },
   /** Ekipman kitaplığı (ekipman-kitapligi R/W; doğrulama ekipman-dogrulama W). */
   EKIPMAN_KITAPLIGI: {

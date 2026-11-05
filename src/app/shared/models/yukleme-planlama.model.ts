@@ -253,6 +253,8 @@ export interface PlanAraci {
   aileAdi: string;
   tipAdi: string;
   aileDisi: boolean;
+  /** Aile dışı araç zorunlu özel yük için mi eklendi (kullanıcının mevcut araç listesinden seçtiği aile dışı araç değil). */
+  zorunluOzelEkipman: boolean;
   aileDisiGerekce: string | null;
   projeNolari: string[];
   lokasyonlar: string[];

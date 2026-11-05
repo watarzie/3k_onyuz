@@ -13,6 +13,15 @@
       <span class="yp-rozet" [attr.data-ton]="KONTROL_SONUCU[y.sonuc].ton"><i [class]="KONTROL_SONUCU[y.sonuc].ikon"></i>{{ KONTROL_SONUCU[y.sonuc].metin }}</span>
     }
     <span class="yp-bosluk"></span>
+    @if (yerlesim()) {
+      <!-- Raporlar son kaydedilen revizyonun yerleşimiyle üretilir; iki rapor aynı araç numaralarını kullanır. -->
+      <button type="button" class="tz-btn" [disabled]="indiriliyor() !== null" (click)="raporIndir('talep')" title="Araç talep ve planlama raporu (PDF)">
+        <i [class]="indiriliyor() === 'talep' ? 'ri-loader-4-line tz-spin' : 'ri-file-pdf-2-line'" aria-hidden="true"></i>Araç talebi
+      </button>
+      <button type="button" class="tz-btn" [disabled]="indiriliyor() !== null" (click)="raporIndir('yukleme')" title="Araç bazlı yükleme planı (PDF)">
+        <i [class]="indiriliyor() === 'yukleme' ? 'ri-loader-4-line tz-spin' : 'ri-file-pdf-2-line'" aria-hidden="true"></i>Yükleme planı
+      </button>
+    }
     @if (yazabilir()) {
       <button type="button" class="tz-btn tz-btn--primary" [disabled]="kaydedilmemis() || hesaplaniyor()" (click)="hesapIstegi()"
               [title]="kaydedilmemis() ? 'Önce değişiklikleri kaydedin' : ''">

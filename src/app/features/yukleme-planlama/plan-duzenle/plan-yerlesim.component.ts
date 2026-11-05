@@ -1,4 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { HttpResponse } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { ToastService } from '../../../core/services/toast.service';
+import { YuklemePlanlamaService } from '../../../core/services/yukleme-planlama.service';
+import { dosyaAdiBasliktan, dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import {
   EkipmanTeknikVerisi,
@@ -28,6 +33,8 @@ const PROJE_RENKLERI = ['#0e7490', '#7c3aed', '#ea580c', '#16a34a', '#2563eb', '
   styleUrls: ['../ortak/yukleme.scss', './plan-yerlesim.component.scss'],
 })
 export class PlanYerlesimComponent {
+  private readonly api = inject(YuklemePlanlamaService);
+  private readonly toast = inject(ToastService);
   readonly plan = input.required<YuklemePlaniDetayi>();
   readonly yazabilir = input(false);
   /** Kaydedilmemiş değişiklik varsa hesap yapılamaz (sunucu son kaydı hesaplar). */
@@ -47,6 +54,7 @@ export class PlanYerlesimComponent {
   readonly seciliAracNo = signal<number | null>(null);
   readonly seciliYuk = signal<string | null>(null);
   readonly tercih = signal<YuklemeLokasyonTercihi>(YuklemeLokasyonTercihi.Karisik);
+  readonly indiriliyor = signal<'talep' | 'yukleme' | null>(null);
 
   readonly araclar = computed(() => this.yerlesim()?.araclar ?? []);
   readonly seciliArac = computed<PlanAraci | null>(() => this.araclar().find((a) => a.aracNo === this.seciliAracNo()) ?? this.araclar()[0] ?? null);
@@ -60,12 +68,12 @@ export class PlanYerlesimComponent {
     }
   });
 
-  /** Araç tipi özeti (araç talebi): ekipman başına adet; aile dışı zorunlu ekipman ayrı satır. */
+  /** Araç tipi özeti (araç talebi): ekipman başına adet; zorunlu özel ekipman ayrı satır. */
   readonly tipOzeti = computed(() => {
     const gruplar = new Map<string, { kod: string; ad: string; adet: number; aileDisi: boolean }>();
     for (const a of this.araclar()) {
-      const anahtar = `${a.ekipmanKodu}|${a.aileDisi}`;
-      const g = gruplar.get(anahtar) ?? { kod: a.ekipmanKodu, ad: a.ekipmanAdi, adet: 0, aileDisi: a.aileDisi };
+      const anahtar = `${a.ekipmanKodu}|${a.zorunluOzelEkipman}`;
+      const g = gruplar.get(anahtar) ?? { kod: a.ekipmanKodu, ad: a.ekipmanAdi, adet: 0, aileDisi: a.zorunluOzelEkipman };
       g.adet++;
       gruplar.set(anahtar, g);
     }
@@ -83,7 +91,6 @@ export class PlanYerlesimComponent {
     const v = this.teknikVeri();
     if (!a) return [];
     const uygunsuz = a.sonuc === YerlesimKontrolSonucu.Uygunsuz;
-    const tasanlar = a.konumlar.filter((k) => this.tasiyor(k, v));
     return a.konumlar.map((k) => ({
       anahtar: k.yukAnahtari,
       kod: k.kod,
@@ -94,8 +101,8 @@ export class PlanYerlesimComponent {
       enMm: k.enMm,
       yukseklikMm: k.yukseklikMm,
       renk: this.projeRenkleri().get(k.projeNo ?? '') ?? '#64748b',
-      // Uygunsuz araçta taşan yükler (yoksa bütün yükler) kırmızı gösterilir.
-      sorunlu: uygunsuz && (tasanlar.length === 0 || tasanlar.includes(k)),
+      // Uygunsuz araçta kasa dışına taşan yük kırmızıdır; araç düzeyindeki uygunsuzluk araç kartında ve kontrollerde yazılır.
+      sorunlu: uygunsuz && this.tasiyor(k, v),
     }));
   });
 
@@ -126,6 +133,25 @@ export class PlanYerlesimComponent {
 
   tercihleHesapla(): void {
     this.hesapla.emit(this.tercih());
+  }
+
+  /** PDF raporları son kaydedilen revizyonun yerleşimiyle üretilir (isterler 28–29). */
+  raporIndir(tur: 'talep' | 'yukleme'): void {
+    const p = this.plan();
+    if (this.indiriliyor()) return;
+    const istek: Observable<HttpResponse<Blob>> = tur === 'talep' ? this.api.aracTalepRaporu(p.id) : this.api.yuklemePlaniRaporu(p.id);
+    const varsayilan = `${p.planNo}_R${p.revizyonNo}_${tur === 'talep' ? 'AracTalebi' : 'YuklemePlani'}.pdf`;
+    this.indiriliyor.set(tur);
+    istek.subscribe({
+      next: (yanit) => {
+        this.indiriliyor.set(null);
+        dosyayiKaydet(yanit.body!, dosyaAdiBasliktan(yanit.headers.get('Content-Disposition'), varsayilan));
+      },
+      error: async (hata) => {
+        this.indiriliyor.set(null);
+        this.toast.error(await this.api.downloadErrorMessage(hata, 'Rapor indirilemedi.'));
+      },
+    });
   }
 
   kapasiteYuzde(a: PlanAraci): number | null {

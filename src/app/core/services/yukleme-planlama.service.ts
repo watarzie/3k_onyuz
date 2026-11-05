@@ -64,6 +64,16 @@ export class YuklemePlanlamaService extends BaseApiService {
     return this.post<YuklemePlaniDetayi>(API.YUKLEME_PLANLARI.HESAPLA(id), { beklenenRevizyonNo, lokasyonTercihi });
   }
 
+  /** Araç talep ve planlama raporu (PDF); son kaydedilen revizyonun yerleşimiyle. */
+  aracTalepRaporu(id: number): Observable<HttpResponse<Blob>> {
+    return this.downloadFileResponse(API.YUKLEME_PLANLARI.RAPOR_ARAC_TALEBI(id));
+  }
+
+  /** Araç bazlı yükleme planı raporu (PDF); aynı plan, revizyon ve araç numaralarıyla. */
+  yuklemePlaniRaporu(id: number): Observable<HttpResponse<Blob>> {
+    return this.downloadFileResponse(API.YUKLEME_PLANLARI.RAPOR_YUKLEME_PLANI(id));
+  }
+
   // ----- Ekipman kitaplığı -----
 
   ekipmanAileleri(): Observable<ApiResult<EkipmanAilesiModeli[]>> {

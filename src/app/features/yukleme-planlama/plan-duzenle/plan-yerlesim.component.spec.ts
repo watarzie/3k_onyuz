@@ -1,4 +1,6 @@
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import {
   PlanAraci,
   PlanYukKonumu,
@@ -21,6 +23,7 @@ function konum(anahtar: string, projeNo: string, yMm = 100, enMm = 1000): PlanYu
 function arac(no: number, kod: string, konumlar: PlanYukKonumu[], sonuc = YerlesimKontrolSonucu.TeyitEdilmedi, aileDisi = false): PlanAraci {
   return {
     aracNo: no, konfigurasyonId: no, revizyonNo: 1, ekipmanKodu: kod, ekipmanAdi: kod, aileAdi: 'Konteyner', tipAdi: 'Tip', aileDisi,
+    zorunluOzelEkipman: aileDisi,
     aileDisiGerekce: aileDisi ? 'Zorunlu özel ekipman' : null, projeNolari: ['P1'], lokasyonlar: ['3K'], konumlar, toplamKg: 1000,
     kapasiteKg: 2000, tabanDolulukYuzde: 10, agirlikMerkeziXMm: 500, yukluYukseklikMm: 2591, yukluGenislikMm: 2438, yukluUzunlukMm: 12192,
     solTasmaMm: 0, sagTasmaMm: 0, onTasmaMm: 0, arkaTasmaMm: 0, kontroller: [], sonuc,
@@ -47,7 +50,7 @@ function plan(araclar: PlanAraci[], farkliLokasyon = 1): YuklemePlaniDetayi {
 
 describe('PlanYerlesimComponent', () => {
   function kur(p: YuklemePlaniDetayi) {
-    TestBed.configureTestingModule({ imports: [PlanYerlesimComponent] });
+    TestBed.configureTestingModule({ imports: [PlanYerlesimComponent], providers: [provideHttpClient(), provideHttpClientTesting()] });
     const fixture = TestBed.createComponent(PlanYerlesimComponent);
     fixture.componentRef.setInput('plan', p);
     return fixture.componentInstance;
