@@ -184,10 +184,12 @@ export function sayaclariHesapla(satirlar: readonly PlanYukSatiri[], sevkEdilmis
   return {
     toplam: satirlar.length,
     secilen: satirlar.filter((s) => s.dahil).length,
-    hesaplanabilir: satirlar.filter((s) => s.durum === PlanYukDurumu.Bekliyor).length,
+    hesaplanabilir: satirlar.filter((s) => [PlanYukDurumu.Bekliyor, PlanYukDurumu.Yerlesti, PlanYukDurumu.Yerlesemedi].includes(s.durum)).length,
     veriEksik: satirlar.filter((s) => s.durum === PlanYukDurumu.EksikVeri).length,
     haricTutulan: satirlar.filter((s) => s.durum === PlanYukDurumu.HaricTutuldu).length,
     sevkEdilmisSandik,
+    yerlesen: satirlar.filter((s) => s.durum === PlanYukDurumu.Yerlesti).length,
+    yerlesemeyen: satirlar.filter((s) => s.durum === PlanYukDurumu.Yerlesemedi).length,
   };
 }
 

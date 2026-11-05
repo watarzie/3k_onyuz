@@ -12,7 +12,9 @@ import { PermissionService } from '../../../core/services/permission.service';
 import { YuklemePlanlamaService } from '../../../core/services/yukleme-planlama.service';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
 import {
+  EkipmanKonfigurasyonOzeti,
   PaginatedList,
+  PlanMevcutArac,
   PlanProjeAdayi,
   PlanProjeBilgisi,
   PlanYukDurumu,
@@ -21,6 +23,7 @@ import {
   PlanYukSatiri,
   YukTuru,
   YuklemeCalismaBicimi,
+  YuklemeLokasyonTercihi,
   YuklemePlanAyarlari,
   YuklemePlaniDetayi,
   YuklemePlaniTanimlari,
@@ -48,6 +51,7 @@ import {
   yukIstekleri,
 } from '../ortak/plan-yuk-listesi';
 import { CALISMA_BICIMI, KAYNAK_FARKI, PROJE_KARISIMI, YUK_DURUMU } from '../ortak/yukleme-etiketleri';
+import { PlanYerlesimComponent } from './plan-yerlesim.component';
 
 type DurumSuzgeci = 'hepsi' | PlanYukDurumu;
 type UstYukTuru = 'koru' | 'bos' | 'brut' | 'deger';
@@ -76,7 +80,7 @@ interface ManuelForm {
   selector: 'app-plan-duzenle',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, DecimalPipe, FormsModule, BreadcrumbComponent, ServerPagerComponent],
+  imports: [DatePipe, DecimalPipe, FormsModule, BreadcrumbComponent, ServerPagerComponent, PlanYerlesimComponent],
   templateUrl: './plan-duzenle.component.html',
   styleUrls: ['../ortak/yukleme.scss', './plan-duzenle.component.scss'],
 })
@@ -120,7 +124,11 @@ export class PlanDuzenleComponent implements OnInit {
   readonly aciklama = signal('');
   readonly ayarlar = signal<YuklemePlanAyarlari>({
     yerlesimBosluguMm: 30, yukseklikPayiMm: null, genislikPayiMm: null, uzunlukPayiMm: null, agirlikPayiKg: null, yuklemeHareketiPayiMm: null,
+    mevcutAraclar: [],
   });
+  readonly hesaplaniyor = signal(false);
+  /** Mevcut araçlara yerleştirmede seçilebilecek konfigürasyonlar (aktif, en fazla 100). */
+  readonly konfigurasyonlar = signal<EkipmanKonfigurasyonOzeti[]>([]);
   readonly projeler = signal<PlanProjeBilgisi[]>([]);
   readonly satirlar = signal<PlanYukSatiri[]>([]);
   readonly secili = signal<Set<string>>(new Set());
@@ -223,7 +231,8 @@ export class PlanDuzenleComponent implements OnInit {
     this.projeKarisimi.set(p.projeKarisimi);
     this.yuklemeTarihi.set(p.yuklemeTarihi ? p.yuklemeTarihi.substring(0, 10) : '');
     this.aciklama.set(p.aciklama ?? '');
-    this.ayarlar.set({ ...p.ayarlar });
+    this.ayarlar.set({ ...p.ayarlar, mevcutAraclar: [...(p.ayarlar.mevcutAraclar ?? [])] });
+    if (p.calismaBicimi === YuklemeCalismaBicimi.MevcutAraclaraYerlestirme) this.konfigurasyonlariYukle();
     this.projeler.set([...p.projeler]);
     this.satirlar.set(p.yukler.map((y) => ({ ...y })));
     this.secili.set(new Set());
@@ -233,6 +242,61 @@ export class PlanDuzenleComponent implements OnInit {
   degistir<T>(sinyal: { set(v: T): void }, deger: T): void {
     sinyal.set(deger);
     this.degisti.set(true);
+  }
+
+  calismaBicimiDegistir(bicim: YuklemeCalismaBicimi): void {
+    this.degistir(this.calismaBicimi, bicim);
+    if (bicim === YuklemeCalismaBicimi.MevcutAraclaraYerlestirme) {
+      this.ayarlarAcik.set(true);
+      this.konfigurasyonlariYukle();
+    }
+  }
+
+  private konfigurasyonlariYukle(): void {
+    if (this.konfigurasyonlar().length) return;
+    this.api.konfigurasyonlar({ boyut: 100 }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((r) => {
+      if (r.isSuccess && r.value) this.konfigurasyonlar.set(r.value.items);
+    });
+  }
+
+  mevcutAracEkle(): void {
+    const kullanilan = new Set(this.ayarlar().mevcutAraclar.map((m) => m.konfigurasyonId));
+    const ilk = this.konfigurasyonlar().find((k) => !kullanilan.has(k.id));
+    if (!ilk) return this.toast.error('Eklenecek başka ekipman konfigürasyonu yok.');
+    this.mevcutAraclariAyarla([...this.ayarlar().mevcutAraclar, { konfigurasyonId: ilk.id, adet: 1 }]);
+  }
+
+  mevcutAracDegistir(i: number, alan: keyof PlanMevcutArac, deger: number | null): void {
+    const liste = this.ayarlar().mevcutAraclar.map((m, j) => (j === i ? { ...m, [alan]: deger ?? 1 } : m));
+    this.mevcutAraclariAyarla(liste);
+  }
+
+  mevcutAracSil(i: number): void {
+    this.mevcutAraclariAyarla(this.ayarlar().mevcutAraclar.filter((_, j) => j !== i));
+  }
+
+  private mevcutAraclariAyarla(liste: PlanMevcutArac[]): void {
+    this.ayarlar.update((a) => ({ ...a, mevcutAraclar: liste }));
+    this.degisti.set(true);
+  }
+
+  /** Otomatik yerleşim: son kaydedilen revizyonla; sonuç yeni revizyon olarak gelir. */
+  hesapla(tercih: YuklemeLokasyonTercihi): void {
+    const p = this.plan();
+    if (!p || this.hesaplaniyor() || this.degisti()) return;
+    this.hesaplaniyor.set(true);
+    this.api.hesapla(p.id, p.revizyonNo, tercih).subscribe((r) => {
+      this.hesaplaniyor.set(false);
+      if (r.isSuccess && r.value) {
+        this.planiYerlestir(r.value);
+        const y = r.value.yerlesim;
+        this.toast.success(y
+          ? `Yerleşim hesaplandı: ${y.araclar.length} araç, ${r.value.sayaclar.yerlesemeyen} yerleşemeyen yük.`
+          : 'Yerleşim hesaplandı.');
+      } else {
+        this.toast.error(r.error ?? 'Yerleşim hesaplanamadı.');
+      }
+    });
   }
 
   ayarDegistir(alan: keyof YuklemePlanAyarlari, deger: number | null): void {
@@ -481,6 +545,9 @@ export class PlanDuzenleComponent implements OnInit {
     if (!this.ad().trim()) return this.toast.error('Plan adı giriniz.');
     if (!this.tasimaAilesiId()) return this.toast.error('Taşıma ailesi seçiniz.');
     if (!this.projeIdleri().length) return this.toast.error('Plana en az bir proje ekleyiniz.');
+    const mevcut = this.ayarlar().mevcutAraclar;
+    if (new Set(mevcut.map((m) => m.konfigurasyonId)).size !== mevcut.length) return this.toast.error('Aynı ekipman mevcut araç listesinde bir kez olmalıdır.');
+    if (mevcut.some((m) => !Number.isInteger(m.adet) || m.adet < 1 || m.adet > 50)) return this.toast.error('Araç adedi 1 ile 50 arasında olmalıdır.');
     this.revizyonAciklamasi.set('');
     this.kaydetAcik.set(true);
   }

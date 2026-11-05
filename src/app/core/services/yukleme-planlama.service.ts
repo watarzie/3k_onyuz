@@ -14,6 +14,7 @@ import {
   MevzuatKuralSetiOzeti,
   PaginatedList,
   PlanProjeAdayi,
+  YuklemeLokasyonTercihi,
   YuklemePlaniDetayi,
   YuklemePlaniKaydetIstegi,
   YuklemePlaniOlusturIstegi,
@@ -56,6 +57,11 @@ export class YuklemePlanlamaService extends BaseApiService {
 
   kaynaktanGuncelle(id: number, beklenenRevizyonNo: number): Observable<ApiResult<YuklemePlaniDetayi>> {
     return this.post<YuklemePlaniDetayi>(API.YUKLEME_PLANLARI.KAYNAKTAN_GUNCELLE(id), { beklenenRevizyonNo });
+  }
+
+  /** Otomatik yerleşim: sonuç yeni revizyon olarak yazılır; arada başka biri kaydettiyse 409. */
+  hesapla(id: number, beklenenRevizyonNo: number, lokasyonTercihi: YuklemeLokasyonTercihi): Observable<ApiResult<YuklemePlaniDetayi>> {
+    return this.post<YuklemePlaniDetayi>(API.YUKLEME_PLANLARI.HESAPLA(id), { beklenenRevizyonNo, lokasyonTercihi });
   }
 
   // ----- Ekipman kitaplığı -----

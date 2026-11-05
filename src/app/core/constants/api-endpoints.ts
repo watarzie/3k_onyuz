@@ -340,6 +340,7 @@ export const API = {
     PROJE_ADAYLARI: `${BASE}/yukleme-planlari/proje-adaylari`,
     PLAN: (id: number) => `${BASE}/yukleme-planlari/${id}`,
     KAYNAKTAN_GUNCELLE: (id: number) => `${BASE}/yukleme-planlari/${id}/kaynaktan-guncelle`,
+    HESAPLA: (id: number) => `${BASE}/yukleme-planlari/${id}/hesapla`,
   },
   /** Ekipman kitaplığı (ekipman-kitapligi R/W; doğrulama ekipman-dogrulama W). */
   EKIPMAN_KITAPLIGI: {

@@ -81,7 +81,7 @@ describe('plan yük listesi kuralları', () => {
     const sonuc = topluUygula(satirlar, new Set(['s:1']), { ...BOS_TOPLU_DUZENLEME, dahil: 'pasif' });
 
     expect(sonuc[0].durum).toBe(PlanYukDurumu.HaricTutuldu);
-    expect(sayaclariHesapla(sonuc, 4)).toEqual({ toplam: 3, secilen: 2, hesaplanabilir: 1, veriEksik: 1, haricTutulan: 1, sevkEdilmisSandik: 4 });
+    expect(sayaclariHesapla(sonuc, 4)).toEqual({ toplam: 3, secilen: 2, hesaplanabilir: 1, veriEksik: 1, haricTutulan: 1, sevkEdilmisSandik: 4, yerlesen: 0, yerlesemeyen: 0 });
   });
 
   it('üst yükte brüt seçimi varsayılana döndürür, sabit değer elle değişti olur', () => {

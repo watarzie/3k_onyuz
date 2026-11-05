@@ -181,6 +181,20 @@
   }
 }
 
+.yp-mevcut {
+  margin-top: 12px;
+
+  &__satir {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+
+    .form-select { flex: 1 1 auto; max-width: 520px; }
+    .form-control { width: 90px; }
+  }
+}
+
 @media (max-width: 575.98px) {
   .yp-baslik-formu__genis { grid-column: auto; }
 }

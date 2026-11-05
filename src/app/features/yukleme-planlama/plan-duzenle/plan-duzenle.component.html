@@ -71,7 +71,7 @@
       </label>
       <label class="tz-field">
         <span>Çalışma biçimi</span>
-        <select class="form-select" [disabled]="!yazabilir()" [ngModel]="calismaBicimi()" (ngModelChange)="degistir(calismaBicimi, +$event)">
+        <select class="form-select" [disabled]="!yazabilir()" [ngModel]="calismaBicimi()" (ngModelChange)="calismaBicimiDegistir(+$event)">
           <option [ngValue]="Bicim.IhtiyacaGoreArac">{{ CALISMA_BICIMI[Bicim.IhtiyacaGoreArac] }}</option>
           <option [ngValue]="Bicim.MevcutAraclaraYerlestirme">{{ CALISMA_BICIMI[Bicim.MevcutAraclaraYerlestirme] }}</option>
         </select>
@@ -158,8 +158,31 @@
           <div class="tz-input-unit"><input type="number" class="form-control" min="0" max="1000" [disabled]="!yazabilir()"
             [ngModel]="ayarlar().yuklemeHareketiPayiMm" (ngModelChange)="ayarDegistir('yuklemeHareketiPayiMm', sayi($event))" /><span>mm</span></div>
         </label>
-        <small class="yp-ipucu yp-ayarlar__not">Boş pay "tanımlanmadı" demektir; yerleşim hesabı (sonraki faz) yalnız tanımlı payları uygular.</small>
+        <small class="yp-ipucu yp-ayarlar__not">Boş pay "tanımlanmadı" demektir: hesap o payı uygulamaz ve ilgili kontrol "Teyit edilmedi" çıkar.</small>
       </div>
+      @if (calismaBicimi() === Bicim.MevcutAraclaraYerlestirme) {
+        <div class="yp-mevcut">
+          <div class="tz-section"><i class="ri-truck-line" aria-hidden="true"></i>Mevcut araçlar</div>
+          @for (m of ayarlar().mevcutAraclar; track $index; let i = $index) {
+            <div class="yp-mevcut__satir">
+              <select class="form-select" [disabled]="!yazabilir()" [attr.aria-label]="'Araç ' + (i + 1) + ' ekipmanı'"
+                      [ngModel]="m.konfigurasyonId" (ngModelChange)="mevcutAracDegistir(i, 'konfigurasyonId', +$event)">
+                @for (k of konfigurasyonlar(); track k.id) { <option [ngValue]="k.id">{{ k.kod }} · {{ k.ad }} ({{ k.tipAdi }})</option> }
+              </select>
+              <input type="number" class="form-control" min="1" max="50" [disabled]="!yazabilir()" [attr.aria-label]="'Araç ' + (i + 1) + ' adedi'"
+                     [ngModel]="m.adet" (ngModelChange)="mevcutAracDegistir(i, 'adet', sayi($event))" />
+              @if (yazabilir()) {
+                <button type="button" class="tz-btn tz-btn--sm tz-btn--icon tz-btn--danger-hover" aria-label="Aracı kaldır" (click)="mevcutAracSil(i)"><i class="ri-delete-bin-6-line"></i></button>
+              }
+            </div>
+          } @empty {
+            <p class="yp-ipucu mb-2">Araç seçilmedi. Mevcut araçlara yerleştirmede en az bir araç gerekir.</p>
+          }
+          @if (yazabilir()) {
+            <button type="button" class="tz-btn tz-btn--sm" (click)="mevcutAracEkle()"><i class="ri-add-line" aria-hidden="true"></i>Araç ekle</button>
+          }
+        </div>
+      }
     }
   </section>
 
@@ -256,7 +279,8 @@
                        [value]="s.ustYukSiniriKg ?? ''" (change)="ustYukDegistir(s, sayi($any($event.target).value))" />
               </td>
               <td>
-                <span class="yp-rozet" [attr.data-ton]="YUK_DURUMU[s.durum].ton" [title]="s.veriSorunlari.join(' ')">{{ YUK_DURUMU[s.durum].metin }}</span>
+                <span class="yp-rozet" [attr.data-ton]="YUK_DURUMU[s.durum].ton" [title]="s.yerlesimNotu ?? s.veriSorunlari.join(' ')">{{ YUK_DURUMU[s.durum].metin }}@if (s.aracNo) { · Araç {{ s.aracNo }} }</span>
+                @if (s.yerlesimNotu) { <small class="yp-sorun d-block">{{ s.yerlesimNotu }}</small> }
                 @for (v of s.veriSorunlari; track v) { <small class="yp-sorun d-block">{{ v }}</small> }
               </td>
               @if (yazabilir()) {
@@ -284,6 +308,9 @@
       Renkli kenarlı hücre elle değiştirilmiş izindir; kaynaktan güncellemede korunur. Yan yatırma ve ters çevirme her zaman yasaktır.
     </p>
   </section>
+
+  <app-plan-yerlesim class="d-block mt-4" [plan]="p" [yazabilir]="yazabilir()" [kaydedilmemis]="degisti()"
+                     [hesaplaniyor]="hesaplaniyor()" (hesapla)="hesapla($event)" />
 } @else if (yukleniyor()) {
   <div class="yp-yukleniyor"><span class="spinner-border spinner-border-sm"></span> Yükleniyor…</div>
 }

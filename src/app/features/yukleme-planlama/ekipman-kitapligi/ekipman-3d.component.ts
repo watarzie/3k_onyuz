@@ -6,6 +6,7 @@ import {
   OnDestroy,
   effect,
   input,
+  output,
   signal,
   viewChild,
 } from '@angular/core';
@@ -14,6 +15,20 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { AciklikTarafi, EkipmanTeknikVerisi } from '../../../shared/models/yukleme-planlama.model';
 
 type Gorunum = 'perspektif' | 'ust' | 'yan' | 'arka';
+
+/** Araçtaki yük kutusu (ekipman koordinatları, mm). Renk proje rengidir; sorunlu yük kırmızı çizilir. */
+export interface Yuk3d {
+  anahtar: string;
+  kod: string;
+  xMm: number;
+  yMm: number;
+  zMm: number;
+  boyMm: number;
+  enMm: number;
+  yukseklikMm: number;
+  renk: string;
+  sorunlu: boolean;
+}
 
 const RENK = {
   yuzey: 0x64748b,
@@ -44,6 +59,10 @@ const RENK = {
         @for (g of gorunumler; track g.kod) {
           <button type="button" class="e3d__dugme" [class.active]="gorunum() === g.kod" (click)="gorunumSec(g.kod)">{{ g.ad }}</button>
         }
+        @if (yukler().length) {
+          <button type="button" class="e3d__dugme" [class.active]="govdeGizli()" [attr.aria-pressed]="govdeGizli()"
+                  title="Gövde, hacim ve açıklık çizimlerini gizle" (click)="govdeGizli.set(!govdeGizli())">Gövdeyi gizle</button>
+        }
       </div>
       <div #kap class="e3d__tuval" [attr.aria-label]="'Ekipmanın 3B önizlemesi'"></div>
       @if (hata()) {
@@ -57,13 +76,14 @@ const RENK = {
         <span><i style="background:#f59e0b"></i>Sökülebilir engel</span>
         <span><i style="background:#1f2937"></i>Dingil</span>
         <span><i style="background:#eab308"></i>King pin</span>
+        @if (yukler().length) { <span><i style="background:#dc2626;outline:2px solid #7f1d1d"></i>Uygunsuz yük</span> }
       </div>
     </div>
   `,
   styles: [`
     :host { display: block; }
     .e3d { position: relative; }
-    .e3d__tuval { width: 100%; height: 380px; border-radius: 12px; overflow: hidden; background: linear-gradient(#f8fafc, #e2e8f0); }
+    .e3d__tuval { width: 100%; height: var(--e3d-yukseklik, 380px); border-radius: 12px; overflow: hidden; background: linear-gradient(#f8fafc, #e2e8f0); }
     .e3d__arac { position: absolute; top: 10px; left: 10px; z-index: 2; display: flex; gap: 4px; padding: 4px; border-radius: 10px; background: rgba(255,255,255,.9); box-shadow: 0 1px 4px rgba(15,23,42,.12); }
     .e3d__dugme { padding: 4px 10px; border: 0; border-radius: 7px; background: transparent; color: #475569; font-size: 12px; font-weight: 600; }
     .e3d__dugme.active { background: #0e7490; color: #fff; }
@@ -75,6 +95,13 @@ const RENK = {
 export class Ekipman3dComponent implements AfterViewInit, OnDestroy {
   /** Teknik veri (çözümlenmiş JSON). */
   readonly veri = input<EkipmanTeknikVerisi | null>(null);
+  /** Araca yerleşmiş yükler (yerleşim görünümü); boşsa yalnız ekipman çizilir. */
+  readonly yukler = input<Yuk3d[]>([]);
+  /** Seçili yükün anahtarı (vurgulanır). */
+  readonly secili = input<string | null>(null);
+  /** Yüke tıklanınca anahtarı; boşluğa tıklanınca null. */
+  readonly yukSecildi = output<string | null>();
+  readonly govdeGizli = signal(false);
 
   readonly kap = viewChild.required<ElementRef<HTMLDivElement>>('kap');
   readonly gorunum = signal<Gorunum>('perspektif');
@@ -95,10 +122,16 @@ export class Ekipman3dComponent implements AfterViewInit, OnDestroy {
   private merkez = new THREE.Vector3();
   private boyut = 10;
   private hazir = false;
+  private kameraAyarli = false;
+  private yukKutulari: THREE.Mesh[] = [];
+  private basmaNoktasi: { x: number; y: number } | null = null;
 
   constructor() {
     effect(() => {
       const v = this.veri();
+      this.yukler();
+      this.secili();
+      this.govdeGizli();
       if (this.hazir) this.ciz(v);
     });
   }
@@ -123,6 +156,9 @@ export class Ekipman3dComponent implements AfterViewInit, OnDestroy {
     this.kontrol = new OrbitControls(this.kamera, this.renderer.domElement);
     this.kontrol.enableDamping = false;
     this.kontrol.addEventListener('change', () => this.render());
+    // Tıklama ile seçim: sürükleme (döndürme) seçim sayılmaz.
+    this.renderer.domElement.addEventListener('pointerdown', (e) => (this.basmaNoktasi = { x: e.clientX, y: e.clientY }));
+    this.renderer.domElement.addEventListener('pointerup', (e) => this.tikla(e));
 
     this.gozlemci = new ResizeObserver(() => this.boyutla());
     this.gozlemci.observe(kap);
@@ -142,6 +178,19 @@ export class Ekipman3dComponent implements AfterViewInit, OnDestroy {
   gorunumSec(g: Gorunum): void {
     this.gorunum.set(g);
     this.kameraKonumla();
+  }
+
+  private tikla(e: PointerEvent): void {
+    const bas = this.basmaNoktasi;
+    this.basmaNoktasi = null;
+    if (!bas || !this.renderer || !this.yukler().length) return;
+    if (Math.hypot(e.clientX - bas.x, e.clientY - bas.y) > 5) return;
+    const kutu = this.renderer.domElement.getBoundingClientRect();
+    const fare = new THREE.Vector2(((e.clientX - kutu.left) / kutu.width) * 2 - 1, -((e.clientY - kutu.top) / kutu.height) * 2 + 1);
+    const isin = new THREE.Raycaster();
+    isin.setFromCamera(fare, this.kamera);
+    const vurus = isin.intersectObjects(this.yukKutulari, false)[0];
+    this.yukSecildi.emit((vurus?.object.userData['anahtar'] as string | undefined) ?? null);
   }
 
   private boyutla(): void {
@@ -172,6 +221,7 @@ export class Ekipman3dComponent implements AfterViewInit, OnDestroy {
       if (sprite.isSprite) (sprite.material.map as THREE.Texture | null)?.dispose();
     });
     this.model.clear();
+    this.yukKutulari = [];
   }
 
   private ciz(v: EkipmanTeknikVerisi | null): void {
@@ -190,7 +240,8 @@ export class Ekipman3dComponent implements AfterViewInit, OnDestroy {
     zemin.position.set(uzunluk / 2000, 0, ortaY / 1000);
     this.model.add(zemin);
 
-    if (v.disOlcu) {
+    const govde = !this.govdeGizli();
+    if (v.disOlcu && govde) {
       this.model.add(this.cizgiKutu(0, 0, 0, v.disOlcu.uzunlukMm, v.disOlcu.genislikMm, v.disOlcu.yukseklikMm, RENK.dis));
     }
 
@@ -198,14 +249,15 @@ export class Ekipman3dComponent implements AfterViewInit, OnDestroy {
       const yBas = ortaY - y.genislikMm / 2;
       const kalinlik = Math.min(80, Math.max(20, y.yerdenYukseklikMm));
       this.model.add(this.kutu(y.baslangicXMm, yBas, y.yerdenYukseklikMm - kalinlik, y.uzunlukMm, y.genislikMm, kalinlik, RENK.yuzey, 1));
-      if (y.kullanilabilirYukseklikMm) {
+      if (y.kullanilabilirYukseklikMm && govde) {
         this.model.add(this.kutu(y.baslangicXMm, yBas, y.yerdenYukseklikMm, y.uzunlukMm, y.genislikMm, y.kullanilabilirYukseklikMm, RENK.hacim, 0.08));
         this.model.add(this.cizgiKutu(y.baslangicXMm, yBas, y.yerdenYukseklikMm, y.uzunlukMm, y.genislikMm, y.kullanilabilirYukseklikMm, RENK.hacim));
       }
     }
 
     const tabanZ = yuzeyler.length ? Math.min(...yuzeyler.map((y) => y.yerdenYukseklikMm)) : 0;
-    for (const a of v.acikliklar ?? []) this.aciklikCiz(a.taraf, a, uzunluk, genislik, tabanZ, yuzeyler);
+    if (govde) for (const a of v.acikliklar ?? []) this.aciklikCiz(a.taraf, a, uzunluk, genislik, tabanZ, yuzeyler);
+    this.yukleriCiz();
 
     for (const e of v.engeller ?? []) {
       this.model.add(this.kutu(e.xMm, e.yMm, e.zMm, e.uzunlukMm, e.genislikMm, e.yukseklikMm, e.sokulebilir ? RENK.sokulebilir : RENK.engel, e.sokulebilir ? 0.55 : 0.9));
@@ -239,10 +291,43 @@ export class Ekipman3dComponent implements AfterViewInit, OnDestroy {
     this.model.add(this.yazi('ÖN', -0.6, yaziY, ortaY / 1000));
     this.model.add(this.yazi('ARKA', uzunluk / 1000 + 0.8, yaziY, ortaY / 1000));
 
-    const yukseklik = v.disOlcu?.yukseklikMm ?? tabanZ + 3000;
+    const yukseklik = Math.max(v.disOlcu?.yukseklikMm ?? tabanZ + 3000, ...this.yukler().map((k) => k.zMm + k.yukseklikMm));
     this.merkez.set(uzunluk / 2000, yukseklik / 2000, ortaY / 1000);
     this.boyut = Math.max(uzunluk, genislik, yukseklik, 3000) / 1000;
-    this.kameraKonumla();
+    // Kamera yalnız ilk çizimde ve ekipman değişince konumlanır; seçim değişince kullanıcının açısı korunur.
+    const anahtar = `${uzunluk}:${genislik}:${yukseklik}`;
+    if (!this.kameraAyarli || this.sonKameraAnahtari !== anahtar) {
+      this.sonKameraAnahtari = anahtar;
+      this.kameraAyarli = true;
+      this.kameraKonumla();
+    } else {
+      this.render();
+    }
+  }
+
+  private sonKameraAnahtari = '';
+
+  /** Yükler: proje renginde kutu ve kenar çizgisi; uygunsuz yük kırmızı, seçili yük koyu kenarlı ve parlak. */
+  private yukleriCiz(): void {
+    const secili = this.secili();
+    for (const y of this.yukler()) {
+      const renk = new THREE.Color(y.sorunlu ? '#dc2626' : y.renk);
+      const seciliMi = y.anahtar === secili;
+      const malzeme = new THREE.MeshStandardMaterial({
+        color: renk,
+        roughness: 0.75,
+        transparent: !!secili && !seciliMi,
+        opacity: secili && !seciliMi ? 0.55 : 1,
+        emissive: seciliMi ? renk.clone().multiplyScalar(0.35) : new THREE.Color(0x000000),
+      });
+      const kutu = new THREE.Mesh(new THREE.BoxGeometry(y.boyMm / 1000, y.yukseklikMm / 1000, y.enMm / 1000), malzeme);
+      kutu.position.set((y.xMm + y.boyMm / 2) / 1000, (y.zMm + y.yukseklikMm / 2) / 1000, (y.yMm + y.enMm / 2) / 1000);
+      kutu.userData['anahtar'] = y.anahtar;
+      this.model.add(kutu);
+      this.yukKutulari.push(kutu);
+      const kenar = this.cizgiKutu(y.xMm, y.yMm, y.zMm, y.boyMm, y.enMm, y.yukseklikMm, seciliMi ? 0x0f172a : y.sorunlu ? 0x7f1d1d : 0x334155);
+      this.model.add(kenar);
+    }
   }
 
   private aciklikCiz(

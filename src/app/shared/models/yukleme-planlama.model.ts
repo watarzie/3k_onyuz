@@ -36,6 +36,40 @@ export enum PlanYukDurumu {
   HaricTutuldu = 1,
   EksikVeri = 2,
   Bekliyor = 3,
+  /** Son hesapta bir araca yerleşti. */
+  Yerlesti = 4,
+  /** Son hesapta yerleşemedi; neden satırda. */
+  Yerlesemedi = 5,
+}
+
+/** Kontrol sonucu: veri yoksa uygunluk üretilmez ("Teyit edilmedi"). */
+export enum YerlesimKontrolSonucu {
+  Uygun = 1,
+  Uygunsuz = 2,
+  TeyitEdilmedi = 3,
+}
+
+export enum YerlesimKontrolTuru {
+  Agirlik = 1,
+  KapidanGecis = 2,
+  IcYukseklik = 3,
+  YasalYukseklik = 4,
+  YasalGenislik = 5,
+  Tasma = 6,
+  Dingil = 7,
+  BaglantiYuku = 8,
+  Destek = 9,
+  EkipmanVerisi = 10,
+  GuvenlikPayi = 11,
+  Mevzuat = 12,
+}
+
+/** Yükün (ya da istif grubunun) araca giriş yönü (bayrak). */
+export enum YerlesimGirisYonu {
+  Yok = 0,
+  Arkadan = 1,
+  Yandan = 2,
+  Ustten = 4,
 }
 
 export enum PlanKaynakFarkTuru {
@@ -68,6 +102,11 @@ export interface YuklemePlaniTanimlari {
   lokasyonlar: SecimOgesi[];
 }
 
+export interface PlanMevcutArac {
+  konfigurasyonId: number;
+  adet: number;
+}
+
 export interface YuklemePlanAyarlari {
   yerlesimBosluguMm: number;
   yukseklikPayiMm: number | null;
@@ -75,6 +114,8 @@ export interface YuklemePlanAyarlari {
   uzunlukPayiMm: number | null;
   agirlikPayiKg: number | null;
   yuklemeHareketiPayiMm: number | null;
+  /** Mevcut araçlara yerleştirmede kullanıcının verdiği araçlar. */
+  mevcutAraclar: PlanMevcutArac[];
 }
 
 export interface YuklemePlaniOzeti {
@@ -127,6 +168,10 @@ export interface PlanYukSatiri {
   ozelTasimaNotu: string | null;
   durum: PlanYukDurumu;
   veriSorunlari: string[];
+  /** Son hesapta yerleştiği araç. */
+  aracNo?: number | null;
+  /** Son hesapta yerleşemediyse nedeni. */
+  yerlesimNotu?: string | null;
 }
 
 export interface PlanYukSayaclari {
@@ -136,6 +181,8 @@ export interface PlanYukSayaclari {
   veriEksik: number;
   haricTutulan: number;
   sevkEdilmisSandik: number;
+  yerlesen: number;
+  yerlesemeyen: number;
 }
 
 export interface PlanKaynakFarki {
@@ -166,6 +213,89 @@ export interface YuklemePlaniDetayi {
   yukler: PlanYukSatiri[];
   sayaclar: PlanYukSayaclari;
   kaynakFarklari: PlanKaynakFarki[];
+  /** Bu revizyonun otomatik yerleşimi; kaydetme yeni revizyonu yerleşimsiz açar (yeniden hesap gerekir). */
+  yerlesim: PlanYerlesimi | null;
+  /** Planlamaya dahil yüklerin farklı lokasyon sayısı; 1'den fazlaysa lokasyon tercihi sorulur. */
+  farkliLokasyonSayisi: number;
+}
+
+export interface PlanYukKonumu {
+  yukAnahtari: string;
+  kod: string;
+  projeNo: string | null;
+  brutKg: number;
+  xMm: number;
+  yMm: number;
+  zMm: number;
+  boyMm: number;
+  enMm: number;
+  yukseklikMm: number;
+  donduruldu: boolean;
+  yuzeyKodu: string;
+  istifNo: number;
+  kat: number;
+  yuklemeSirasi: number;
+  yuklemeYontemi: YerlesimGirisYonu;
+}
+
+export interface PlanAracKontrolu {
+  tur: YerlesimKontrolTuru;
+  sonuc: YerlesimKontrolSonucu;
+  mesaj: string;
+}
+
+export interface PlanAraci {
+  aracNo: number;
+  konfigurasyonId: number;
+  revizyonNo: number;
+  ekipmanKodu: string;
+  ekipmanAdi: string;
+  aileAdi: string;
+  tipAdi: string;
+  aileDisi: boolean;
+  aileDisiGerekce: string | null;
+  projeNolari: string[];
+  lokasyonlar: string[];
+  konumlar: PlanYukKonumu[];
+  toplamKg: number;
+  kapasiteKg: number | null;
+  tabanDolulukYuzde: number;
+  agirlikMerkeziXMm: number | null;
+  yukluYukseklikMm: number;
+  yukluGenislikMm: number;
+  yukluUzunlukMm: number;
+  solTasmaMm: number;
+  sagTasmaMm: number;
+  onTasmaMm: number;
+  arkaTasmaMm: number;
+  kontroller: PlanAracKontrolu[];
+  sonuc: YerlesimKontrolSonucu;
+  /** Hesapta kullanılan ekipman revizyonunun teknik verisi (3B görünüm). */
+  teknikVeriJson: string;
+}
+
+export interface PlanYerlesemeyenYuk {
+  yukAnahtari: string;
+  kod: string;
+  neden: string;
+}
+
+export interface PlanEkEkipmanIhtiyaci {
+  konfigurasyonId: number;
+  ekipmanKodu: string;
+  ekipmanAdi: string;
+  adet: number;
+}
+
+export interface PlanYerlesimi {
+  hesapTarihi: string;
+  sonuc: YerlesimKontrolSonucu;
+  lokasyonaGoreAyri: boolean;
+  projeBazindaAyri: boolean;
+  araclar: PlanAraci[];
+  yerlesemeyenler: PlanYerlesemeyenYuk[];
+  ekIhtiyaclar: PlanEkEkipmanIhtiyaci[];
+  uyarilar: string[];
 }
 
 export interface PlanProjeAdayi {

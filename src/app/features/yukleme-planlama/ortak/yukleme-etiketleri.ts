@@ -10,7 +10,11 @@ import {
   MevzuatKuralSetiDurumu,
   PlanKaynakFarkTuru,
   PlanYukDurumu,
+  YerlesimGirisYonu,
+  YerlesimKontrolSonucu,
+  YerlesimKontrolTuru,
   YuklemeCalismaBicimi,
+  YuklemeLokasyonTercihi,
   YuklemeProjeKarisimi,
   YuklemeYontemi,
 } from '../../../shared/models/yukleme-planlama.model';
@@ -31,7 +35,43 @@ export const YUK_DURUMU: Record<PlanYukDurumu, { metin: string; ton: string }> =
   [PlanYukDurumu.Bekliyor]: { metin: 'Yerleşim bekliyor', ton: 'info' },
   [PlanYukDurumu.EksikVeri]: { metin: 'Veri eksik', ton: 'warning' },
   [PlanYukDurumu.HaricTutuldu]: { metin: 'Hariç tutuldu', ton: 'muted' },
+  [PlanYukDurumu.Yerlesti]: { metin: 'Yerleşti', ton: 'success' },
+  [PlanYukDurumu.Yerlesemedi]: { metin: 'Yerleşemedi', ton: 'danger' },
 };
+
+export const KONTROL_SONUCU: Record<YerlesimKontrolSonucu, { metin: string; ton: string; ikon: string }> = {
+  [YerlesimKontrolSonucu.Uygun]: { metin: 'Uygun', ton: 'success', ikon: 'ri-checkbox-circle-line' },
+  [YerlesimKontrolSonucu.Uygunsuz]: { metin: 'Uygunsuz', ton: 'danger', ikon: 'ri-close-circle-line' },
+  [YerlesimKontrolSonucu.TeyitEdilmedi]: { metin: 'Teyit edilmedi', ton: 'warning', ikon: 'ri-question-line' },
+};
+
+export const KONTROL_TURU: Record<YerlesimKontrolTuru, string> = {
+  [YerlesimKontrolTuru.Agirlik]: 'Ağırlık / kapasite',
+  [YerlesimKontrolTuru.KapidanGecis]: 'Kapıdan geçiş',
+  [YerlesimKontrolTuru.IcYukseklik]: 'İç yükseklik',
+  [YerlesimKontrolTuru.YasalYukseklik]: 'Yasal yükseklik',
+  [YerlesimKontrolTuru.YasalGenislik]: 'Yasal genişlik',
+  [YerlesimKontrolTuru.Tasma]: 'Kasa dışına taşma',
+  [YerlesimKontrolTuru.Dingil]: 'Dingil yükü',
+  [YerlesimKontrolTuru.BaglantiYuku]: 'Bağlantı (king-pin) yükü',
+  [YerlesimKontrolTuru.Destek]: 'Destek',
+  [YerlesimKontrolTuru.EkipmanVerisi]: 'Ekipman verisi',
+  [YerlesimKontrolTuru.GuvenlikPayi]: 'Güvenlik payı',
+  [YerlesimKontrolTuru.Mevzuat]: 'Mevzuat',
+};
+
+export const LOKASYON_TERCIHI: Record<YuklemeLokasyonTercihi, string> = {
+  [YuklemeLokasyonTercihi.HenuzSecilmedi]: 'Henüz seçilmedi (ayrım yok)',
+  [YuklemeLokasyonTercihi.LokasyonaGoreAyri]: 'Lokasyonlara göre ayrı planla',
+  [YuklemeLokasyonTercihi.Karisik]: 'Lokasyonları karıştır',
+};
+
+export function girisYonuMetni(yon: YerlesimGirisYonu): string {
+  if (yon & YerlesimGirisYonu.Ustten) return 'Üstten';
+  if (yon & YerlesimGirisYonu.Arkadan) return 'Arkadan';
+  if (yon & YerlesimGirisYonu.Yandan) return 'Yandan';
+  return '—';
+}
 
 export const KAYNAK_FARKI: Record<PlanKaynakFarkTuru, string> = {
   [PlanKaynakFarkTuru.YeniSandik]: 'Yeni sandık',
