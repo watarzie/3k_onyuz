@@ -21,6 +21,7 @@ import {
   PlanYukIzni,
   PlanYukKaynagi,
   PlanYukSatiri,
+  YerlesimKontrolSonucu,
   YukTuru,
   YuklemeCalismaBicimi,
   YuklemeLokasyonTercihi,
@@ -297,6 +298,14 @@ export class PlanDuzenleComponent implements OnInit {
         this.toast.error(r.error ?? 'Yerleşim hesaplanamadı.');
       }
     });
+  }
+
+  /** Elle düzenlenen yerleşim yeni revizyon olarak kaydedildi. */
+  elleKaydedildi(p: YuklemePlaniDetayi): void {
+    this.planiYerlestir(p);
+    this.toast.success(p.yerlesim?.sonuc === YerlesimKontrolSonucu.Uygunsuz
+      ? `Elle yerleşim revizyon ${p.revizyonNo} olarak kaydedildi; uygunsuzluk var, raporlar taslak basılır.`
+      : `Elle yerleşim revizyon ${p.revizyonNo} olarak kaydedildi.`);
   }
 
   ayarDegistir(alan: keyof YuklemePlanAyarlari, deger: number | null): void {

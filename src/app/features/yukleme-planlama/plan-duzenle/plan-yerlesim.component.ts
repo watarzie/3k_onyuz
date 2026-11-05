@@ -14,6 +14,7 @@ import {
   YuklemePlaniDetayi,
 } from '../../../shared/models/index';
 import { Ekipman3dComponent, Yuk3d } from '../ekipman-kitapligi/ekipman-3d.component';
+import { PlanElleYerlesimComponent } from './plan-elle-yerlesim.component';
 import { KONTROL_SONUCU, KONTROL_TURU, LOKASYON_TERCIHI, girisYonuMetni, mm } from '../ortak/yukleme-etiketleri';
 
 /** Projeleri ayıran renkler; kimlik yalnız renge bağlı değildir (kod ve proje no ayrıca yazılır). */
@@ -28,7 +29,7 @@ const PROJE_RENKLERI = ['#0e7490', '#7c3aed', '#ea580c', '#16a34a', '#2563eb', '
   selector: 'app-plan-yerlesim',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, DecimalPipe, Ekipman3dComponent],
+  imports: [DatePipe, DecimalPipe, Ekipman3dComponent, PlanElleYerlesimComponent],
   templateUrl: './plan-yerlesim.component.html',
   styleUrls: ['../ortak/yukleme.scss', './plan-yerlesim.component.scss'],
 })
@@ -41,6 +42,10 @@ export class PlanYerlesimComponent {
   readonly kaydedilmemis = input(false);
   readonly hesaplaniyor = input(false);
   readonly hesapla = output<YuklemeLokasyonTercihi>();
+  /** Elle düzenleme kaydedildi: yeni revizyon (isterler 20–21). */
+  readonly elleKaydedildi = output<YuklemePlaniDetayi>();
+  /** Elle düzenleme açık mı; açıkken otomatik sonuç yerine düzenleyici gösterilir. */
+  readonly duzenleme = signal(false);
 
   readonly KONTROL_SONUCU = KONTROL_SONUCU;
   readonly KONTROL_TURU = KONTROL_TURU;
@@ -91,6 +96,7 @@ export class PlanYerlesimComponent {
     const v = this.teknikVeri();
     if (!a) return [];
     const uygunsuz = a.sonuc === YerlesimKontrolSonucu.Uygunsuz;
+    const sorunlu = new Set(a.yukSorunlari.filter((s) => s.sonuc === YerlesimKontrolSonucu.Uygunsuz).map((s) => s.yukAnahtari));
     return a.konumlar.map((k) => ({
       anahtar: k.yukAnahtari,
       kod: k.kod,
@@ -101,8 +107,9 @@ export class PlanYerlesimComponent {
       enMm: k.enMm,
       yukseklikMm: k.yukseklikMm,
       renk: this.projeRenkleri().get(k.projeNo ?? '') ?? '#64748b',
-      // Uygunsuz araçta kasa dışına taşan yük kırmızıdır; araç düzeyindeki uygunsuzluk araç kartında ve kontrollerde yazılır.
-      sorunlu: uygunsuz && this.tasiyor(k, v),
+      // Uygunsuz araçta kasa dışına taşan yük ve elle yerleşimde uygunsuz sonucu olan yük kırmızıdır; araç düzeyindeki
+      // uygunsuzluk araç kartında ve kontrollerde yazılır.
+      sorunlu: (uygunsuz && this.tasiyor(k, v)) || sorunlu.has(k.yukAnahtari),
     }));
   });
 
@@ -114,11 +121,24 @@ export class PlanYerlesimComponent {
 
   readonly lokasyonSorusu = computed(() => !!this.yerlesim() && this.plan().farkliLokasyonSayisi > 1);
 
+  /** Seçili aracın yük sorunları kod ile (elle yerleşim). */
+  readonly yukSorunlari = computed(() => {
+    const a = this.seciliArac();
+    return (a?.yukSorunlari ?? []).map((s) => ({ ...s, kod: a!.konumlar.find((k) => k.yukAnahtari === s.yukAnahtari)?.kod ?? s.yukAnahtari }));
+  });
+
   constructor() {
     effect(() => {
       const t = this.plan().lokasyonTercihi;
       this.tercih.set(t === YuklemeLokasyonTercihi.HenuzSecilmedi ? YuklemeLokasyonTercihi.Karisik : t);
     });
+  }
+
+  elleKaydet(p: YuklemePlaniDetayi): void {
+    this.duzenleme.set(false);
+    this.seciliAracNo.set(null);
+    this.seciliYuk.set(null);
+    this.elleKaydedildi.emit(p);
   }
 
   aracSec(a: PlanAraci): void {

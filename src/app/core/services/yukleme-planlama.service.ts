@@ -6,6 +6,7 @@ import { API } from '../constants/api-endpoints';
 import {
   ApiResult,
   EkipmanAilesiModeli,
+  ElleAracIstegi,
   EkipmanIceAktarimSonucu,
   EkipmanKonfigurasyonDetayi,
   EkipmanKonfigurasyonOzeti,
@@ -14,6 +15,7 @@ import {
   MevzuatKuralSetiOzeti,
   PaginatedList,
   PlanProjeAdayi,
+  PlanYerlesimi,
   YuklemeLokasyonTercihi,
   YuklemePlaniDetayi,
   YuklemePlaniKaydetIstegi,
@@ -62,6 +64,16 @@ export class YuklemePlanlamaService extends BaseApiService {
   /** Otomatik yerleşim: sonuç yeni revizyon olarak yazılır; arada başka biri kaydettiyse 409. */
   hesapla(id: number, beklenenRevizyonNo: number, lokasyonTercihi: YuklemeLokasyonTercihi): Observable<ApiResult<YuklemePlaniDetayi>> {
     return this.post<YuklemePlaniDetayi>(API.YUKLEME_PLANLARI.HESAPLA(id), { beklenenRevizyonNo, lokasyonTercihi });
+  }
+
+  /** Elle yerleşimi kaydetmeden denetler (sürükle-bırak sonrası anlık kontrol). */
+  elleDenetle(id: number, araclar: ElleAracIstegi[]): Observable<ApiResult<PlanYerlesimi>> {
+    return this.post<PlanYerlesimi>(API.YUKLEME_PLANLARI.YERLESIM_DENETLE(id), { araclar });
+  }
+
+  /** Elle düzenlenen yerleşimi yeni revizyon olarak kaydeder; arada başka biri kaydettiyse 409. */
+  elleKaydet(id: number, beklenenRevizyonNo: number, araclar: ElleAracIstegi[]): Observable<ApiResult<YuklemePlaniDetayi>> {
+    return this.put<YuklemePlaniDetayi>(API.YUKLEME_PLANLARI.YERLESIM(id), { beklenenRevizyonNo, araclar });
   }
 
   /** Araç talep ve planlama raporu (PDF); son kaydedilen revizyonun yerleşimiyle. */

@@ -62,6 +62,8 @@ export enum YerlesimKontrolTuru {
   EkipmanVerisi = 10,
   GuvenlikPayi = 11,
   Mevzuat = 12,
+  Organizasyon = 13,
+  ElleYerlesim = 14,
 }
 
 /** Yükün (ya da istif grubunun) araca giriş yönü (bayrak). */
@@ -272,8 +274,31 @@ export interface PlanAraci {
   arkaTasmaMm: number;
   kontroller: PlanAracKontrolu[];
   sonuc: YerlesimKontrolSonucu;
+  /** Elle yerleşimde yük düzeyindeki sonuçlar (çakışma, destek, kasa sınırı…); otomatik yerleşimde boş. */
+  yukSorunlari: PlanYukSorunu[];
   /** Hesapta kullanılan ekipman revizyonunun teknik verisi (3B görünüm). */
   teknikVeriJson: string;
+}
+
+export interface PlanYukSorunu {
+  yukAnahtari: string;
+  sonuc: YerlesimKontrolSonucu;
+  mesaj: string;
+}
+
+/** Elle yerleşimde yükün konumu (ekipman koordinatları, mm); ölçü ve ağırlık sunucuda plandan alınır. */
+export interface ElleKonumIstegi {
+  yukAnahtari: string;
+  xMm: number;
+  yMm: number;
+  zMm: number;
+  donduruldu: boolean;
+}
+
+/** Elle yerleşimde bir araç; boş olabilir ("aynı tipten araç ekle"). */
+export interface ElleAracIstegi {
+  konfigurasyonId: number;
+  konumlar: ElleKonumIstegi[];
 }
 
 export interface PlanYerlesemeyenYuk {
@@ -292,6 +317,8 @@ export interface PlanEkEkipmanIhtiyaci {
 export interface PlanYerlesimi {
   hesapTarihi: string;
   sonuc: YerlesimKontrolSonucu;
+  /** Yerleşim kullanıcı tarafından elle düzenlendi (otomatik öneri değil). */
+  elleDuzenlendi: boolean;
   lokasyonaGoreAyri: boolean;
   projeBazindaAyri: boolean;
   araclar: PlanAraci[];

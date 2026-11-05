@@ -1,7 +1,7 @@
 <section class="trezo-card border-0 bg-white yp-kart mb-4">
   <div class="py-baslik">
     <div>
-      <h5 class="mb-1"><i class="ri-truck-line" aria-hidden="true"></i> Otomatik yerleşim</h5>
+      <h5 class="mb-1"><i class="ri-truck-line" aria-hidden="true"></i> {{ yerlesim()?.elleDuzenlendi ? 'Yerleşim (elle düzenlendi)' : 'Otomatik yerleşim' }}</h5>
       @if (yerlesim(); as y) {
         <small class="yp-ipucu">Revizyon {{ plan().revizyonNo }} · {{ y.hesapTarihi | date: 'dd.MM.yyyy HH:mm' }}
           @if (y.lokasyonaGoreAyri) { · lokasyonlara göre ayrı } @if (y.projeBazindaAyri) { · proje bazında ayrı }</small>
@@ -22,7 +22,14 @@
         <i [class]="indiriliyor() === 'yukleme' ? 'ri-loader-4-line tz-spin' : 'ri-file-pdf-2-line'" aria-hidden="true"></i>Yükleme planı
       </button>
     }
-    @if (yazabilir()) {
+    @if (yazabilir() && yerlesim() && !duzenleme()) {
+      <!-- İsterler 20–21: önerilen yerleşim elle düzenlenir; kaydetme yeni revizyon açar. -->
+      <button type="button" class="tz-btn" [disabled]="kaydedilmemis() || hesaplaniyor()" (click)="duzenleme.set(true)"
+              [title]="kaydedilmemis() ? 'Önce değişiklikleri kaydedin' : 'Yükleri sürükleyerek yerleşimi elle düzenleyin'">
+        <i class="ri-drag-move-2-line" aria-hidden="true"></i>Elle düzenle
+      </button>
+    }
+    @if (yazabilir() && !duzenleme()) {
       <button type="button" class="tz-btn tz-btn--primary" [disabled]="kaydedilmemis() || hesaplaniyor()" (click)="hesapIstegi()"
               [title]="kaydedilmemis() ? 'Önce değişiklikleri kaydedin' : ''">
         <i [class]="hesaplaniyor() ? 'ri-loader-4-line tz-spin' : 'ri-play-circle-line'" aria-hidden="true"></i>{{ yerlesim() ? 'Yeniden hesapla' : 'Hesapla' }}
@@ -31,6 +38,14 @@
   </div>
   @if (kaydedilmemis()) {
     <div class="yp-uyari"><i class="ri-information-line" aria-hidden="true"></i><span>Kaydedilmemiş değişiklik var: yerleşim son kaydedilen revizyonla hesaplanır. Önce kaydedin.</span></div>
+  }
+
+  @if (duzenleme()) {
+    <app-plan-elle-yerlesim [plan]="plan()" (kaydedildi)="elleKaydet($event)" (vazgec)="duzenleme.set(false)" />
+  } @else {
+  @if (yerlesim()?.elleDuzenlendi) {
+    <div class="yp-uyari"><i class="ri-hand-coin-line" aria-hidden="true"></i>
+      <span>Yerleşim elle düzenlendi: konumlar kullanıcıya aittir, kontroller bu konumlarla yapıldı. Yeniden hesaplamak elle düzenlemeyi otomatik öneriyle değiştirir.</span></div>
   }
 
   @if (lokasyonSorusu() && yazabilir()) {
@@ -121,6 +136,19 @@
               <span>Lokasyon: {{ a.lokasyonlar.join(', ') }}</span>
             </div>
 
+            @if (yukSorunlari().length) {
+              <div class="tz-section"><i class="ri-error-warning-line" aria-hidden="true"></i>Yük sorunları</div>
+              <ul class="py-kontroller">
+                @for (s of yukSorunlari(); track $index) {
+                  <li class="yp-tiklanir" [attr.data-ton]="KONTROL_SONUCU[s.sonuc].ton" (click)="seciliYuk.set(s.yukAnahtari)">
+                    <span class="yp-rozet" [attr.data-ton]="KONTROL_SONUCU[s.sonuc].ton"><i [class]="KONTROL_SONUCU[s.sonuc].ikon"></i>{{ KONTROL_SONUCU[s.sonuc].metin }}</span>
+                    <strong>{{ s.kod }}</strong>
+                    <span>{{ s.mesaj }}</span>
+                  </li>
+                }
+              </ul>
+            }
+
             <div class="tz-section"><i class="ri-shield-check-line" aria-hidden="true"></i>Kontroller</div>
             <ul class="py-kontroller">
               @for (k of a.kontroller; track $index) {
@@ -179,5 +207,6 @@
         }
       </div>
     }
+  }
   }
 </section>

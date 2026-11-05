@@ -310,7 +310,7 @@
   </section>
 
   <app-plan-yerlesim class="d-block mt-4" [plan]="p" [yazabilir]="yazabilir()" [kaydedilmemis]="degisti()"
-                     [hesaplaniyor]="hesaplaniyor()" (hesapla)="hesapla($event)" />
+                     [hesaplaniyor]="hesaplaniyor()" (hesapla)="hesapla($event)" (elleKaydedildi)="elleKaydedildi($event)" />
 } @else if (yukleniyor()) {
   <div class="yp-yukleniyor"><span class="spinner-border spinner-border-sm"></span> Yükleniyor…</div>
 }

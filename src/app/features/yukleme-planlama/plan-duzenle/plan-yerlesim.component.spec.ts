@@ -26,7 +26,7 @@ function arac(no: number, kod: string, konumlar: PlanYukKonumu[], sonuc = Yerles
     zorunluOzelEkipman: aileDisi,
     aileDisiGerekce: aileDisi ? 'Zorunlu özel ekipman' : null, projeNolari: ['P1'], lokasyonlar: ['3K'], konumlar, toplamKg: 1000,
     kapasiteKg: 2000, tabanDolulukYuzde: 10, agirlikMerkeziXMm: 500, yukluYukseklikMm: 2591, yukluGenislikMm: 2438, yukluUzunlukMm: 12192,
-    solTasmaMm: 0, sagTasmaMm: 0, onTasmaMm: 0, arkaTasmaMm: 0, kontroller: [], sonuc,
+    solTasmaMm: 0, sagTasmaMm: 0, onTasmaMm: 0, arkaTasmaMm: 0, kontroller: [], sonuc, yukSorunlari: [],
     teknikVeriJson: '{"disOlcu":{"uzunlukMm":12192,"genislikMm":2438,"yukseklikMm":2591}}',
   };
 }
@@ -43,7 +43,7 @@ function plan(araclar: PlanAraci[], farkliLokasyon = 1): YuklemePlaniDetayi {
     ],
     yukler: [], sayaclar: { toplam: 0, secilen: 0, hesaplanabilir: 0, veriEksik: 0, haricTutulan: 0, sevkEdilmisSandik: 0, yerlesen: 0, yerlesemeyen: 0 },
     kaynakFarklari: [], farkliLokasyonSayisi: farkliLokasyon,
-    yerlesim: { hesapTarihi: '2026-11-05T10:00:00', sonuc: YerlesimKontrolSonucu.TeyitEdilmedi, lokasyonaGoreAyri: false, projeBazindaAyri: false,
+    yerlesim: { hesapTarihi: '2026-11-05T10:00:00', sonuc: YerlesimKontrolSonucu.TeyitEdilmedi, elleDuzenlendi: false, lokasyonaGoreAyri: false, projeBazindaAyri: false,
       araclar, yerlesemeyenler: [], ekIhtiyaclar: [], uyarilar: [] },
   };
 }
@@ -66,6 +66,17 @@ describe('PlanYerlesimComponent', () => {
     const [a, b] = c.yukler3d();
     expect(a.renk).not.toEqual(b.renk);
     expect([a.sorunlu, b.sorunlu]).toEqual([false, true]);
+  });
+
+  it('elle yerleşimde uygunsuz yük sonucu olan yük kırmızıdır ve kodla listelenir', () => {
+    const a = arac(1, 'K40', [konum('s:1', 'P1'), konum('s:2', 'P1', 1200)]);
+    a.yukSorunlari = [
+      { yukAnahtari: 's:2', sonuc: YerlesimKontrolSonucu.Uygunsuz, mesaj: 'Çakışma: s:1' },
+      { yukAnahtari: 's:1', sonuc: YerlesimKontrolSonucu.TeyitEdilmedi, mesaj: 'Kasa sınırı teyit edilmedi' },
+    ];
+    const c = kur(plan([a]));
+    expect(c.yukler3d().map((y) => y.sorunlu)).toEqual([false, true]);
+    expect(c.yukSorunlari().map((s) => s.kod)).toEqual(['s:2', 's:1']);
   });
 
   it('ilk hesap lokasyon ayrımı yapmaz; farklı lokasyonda tercih sorulur ve seçilen tercihle hesaplanır', () => {
