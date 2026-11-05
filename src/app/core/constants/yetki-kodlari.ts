@@ -81,6 +81,14 @@ export const YETKI = {
     PLANLANAN_SEVK_TARIHI: 'yedek-planlanan-sevk-tarihi',
   },
   ONAY: { MERKEZI: 'islem-onay-merkezi', KURALLARI_YONET: 'onay-kurallari-yonet' },
+  /** Yükleme planlama (sunucu: YetkiKodlari.YuklemePlanlama). Doğrulama, kitaplığın altındaki ayrı işlem iznidir. */
+  YUKLEME_PLANLAMA: {
+    MODUL: 'yukleme-planlama',
+    PLANLAR: 'yukleme-planlari',
+    EKIPMAN_KITAPLIGI: 'ekipman-kitapligi',
+    EKIPMAN_DOGRULAMA: 'ekipman-dogrulama',
+    MEVZUAT_KURALLARI: 'mevzuat-kurallari',
+  },
 } as const;
 
 /** Sistem yöneticisi rolü kimliğiyle tanınır (backend SistemRolleri.AdminId). */

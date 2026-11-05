@@ -1,0 +1,165 @@
+// Yükleme planlama ekranlarının ortak görünümü: kart, araç çubuğu, tablo, rozet ve sayaçlar.
+:host {
+  --yp-ton: #0e7490;
+  display: block;
+}
+
+.yp-kart {
+  padding: 20px;
+  border-radius: 14px;
+}
+
+.yp-arac-cubugu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+
+  .yp-arama {
+    flex: 1 1 260px;
+    max-width: 420px;
+  }
+
+  .yp-bosluk { flex: 1 1 auto; }
+}
+
+.yp-tablo-sarmal {
+  overflow-x: auto;
+  border: 1px solid var(--borderColor);
+  border-radius: 12px;
+}
+
+.yp-tablo {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th,
+  td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--borderColor);
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #f8fafc;
+    color: var(--bodyColor);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #f8fbff; }
+  tbody tr.yp-satir--secili td { background: color-mix(in srgb, var(--yp-ton) 7%, #fff); }
+  tbody tr.yp-satir--haric td { color: #94a3b8; }
+  tbody tr.yp-tiklanir { cursor: pointer; }
+
+  .yp-sayi { text-align: right; font-variant-numeric: tabular-nums; }
+  .yp-orta { text-align: center; }
+  .yp-sec { width: 36px; text-align: center; }
+  .yp-sarmala { white-space: normal; min-width: 160px; }
+}
+
+.yp-bos {
+  padding: 36px 16px;
+  color: var(--bodyColor);
+  text-align: center;
+
+  i {
+    display: block;
+    margin-bottom: 8px;
+    color: #94a3b8;
+    font-size: 30px;
+  }
+}
+
+.yp-rozet {
+  --r-ton: #64748b;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--r-ton) 12%, #fff);
+  color: color-mix(in srgb, var(--r-ton) 85%, #000);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &[data-ton='info'] { --r-ton: #0e8fb5; }
+  &[data-ton='success'] { --r-ton: #1e8a3a; }
+  &[data-ton='warning'] { --r-ton: #d97706; }
+  &[data-ton='danger'] { --r-ton: #dc2626; }
+  &[data-ton='muted'] { --r-ton: #94a3b8; }
+  &[data-ton='primary'] { --r-ton: var(--yp-ton); }
+}
+
+.yp-sayaclar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.yp-sayac {
+  --s-ton: var(--yp-ton);
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--s-ton) 20%, var(--borderColor));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--s-ton) 5%, #fff);
+
+  small {
+    display: block;
+    color: var(--bodyColor);
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+
+  strong {
+    color: var(--blackColor);
+    font-size: 20px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &[data-ton='success'] { --s-ton: #1e8a3a; }
+  &[data-ton='warning'] { --s-ton: #d97706; }
+  &[data-ton='muted'] { --s-ton: #94a3b8; }
+}
+
+.yp-ipucu {
+  color: var(--bodyColor);
+  font-size: 12px;
+}
+
+.yp-uyari {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 12.5px;
+  line-height: 1.5;
+
+  i { font-size: 16px; }
+}
+
+.yp-yukleniyor {
+  padding: 40px 0;
+  color: var(--bodyColor);
+  text-align: center;
+}
+
+@media (max-width: 575.98px) {
+  .yp-kart { padding: 14px; }
+}

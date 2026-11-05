@@ -43,7 +43,15 @@ describe('Sandık detayı kalıcı ürün bilgisi gösterimi', () => {
         },
         { provide: SandikService, useValue: sandikApi },
         { provide: ProjeService, useValue: {} },
-        { provide: LookupService, useValue: {} },
+        {
+          provide: LookupService,
+          useValue: {
+            getLookups: () => of({
+              LookupSandikTipi: [{ id: 1, deger: 'Ahşap Kapalı' }],
+              LookupYukTuru: [{ id: 1, deger: 'Sandık' }, { id: 2, deger: 'Trafo' }],
+            }),
+          },
+        },
         { provide: AuthService, useValue: { currentUser: () => ({ id: 7 }) } },
         { provide: ConfirmService, useValue: jasmine.createSpyObj('ConfirmService', ['ask']) },
         { provide: PermissionService, useValue: { loaded: () => true, hasAccess: () => true, canWrite: () => yazabilir } },
@@ -150,6 +158,18 @@ describe('Sandık detayı kalıcı ürün bilgisi gösterimi', () => {
       c.ozellikSandikNo.set('99');
       c.kaydetOzellikler();
       expect(sandikApi.ozellikGuncelle.calls.mostRecent().args[0].sandikNo).toBeUndefined();
+    });
+
+    it('yük türü mevcut değerle dolar ve seçilen tür gönderilir', () => {
+      sandikApi.getSandikIcerik.and.returnValue(of({ isSuccess: true, value: { ...sandik(), sandikNo: '12', tipId: 1, yukTuruId: 1 } }));
+      const { c } = render();
+      c.openOzellikGuncelleModal();
+      expect(c.ozellikYukTuruId()).toBe(1);
+      expect(c.yukTurleri().length).toBe(2);
+
+      c.ozellikYukTuruId.set(2);
+      c.kaydetOzellikler();
+      expect(sandikApi.ozellikGuncelle.calls.mostRecent().args[0].yukTuruId).toBe(2);
     });
   });
 });

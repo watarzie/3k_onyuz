@@ -9,6 +9,9 @@ export interface SandikDto {
   /** Sandık tipi (SandikTipi); Ambalaj senkronunda sandık cinsini belirler. */
   tipId?: number;
   tipMetni?: string;
+  /** Yük türü (Sandık / Trafo / Diğer özel yük); yükleme planında varsayılan izinleri belirler. */
+  yukTuruId?: number;
+  yukTuruMetni?: string;
   sevkiyatDuzeltmeAcikMi?: boolean;
   depoLokasyonId: number;
   depoLokasyonMetni: string;
@@ -41,6 +44,8 @@ export interface SandikDetayDto {
   durumMetni: string;
   tipId?: number;
   tipMetni?: string;
+  yukTuruId?: number;
+  yukTuruMetni?: string;
   /** Numara "Sandık Özellikleri"nde değiştirilemiyorsa nedeni; null ise yalnız elle eklenen sandık olarak değişebilir. */
   sandikNoKilitNedeni?: string | null;
   sevkiyatDuzeltmeAcikMi?: boolean;
@@ -179,6 +184,8 @@ export interface SandikOzellikGuncelleDto {
   sandikIsmi?: string;
   /** Sandık tipi zorunludur (G2). */
   tipId: number;
+  /** Yük türü; gönderilmezse değişmez. */
+  yukTuruId?: number;
   en?: number;
   boy?: number;
   yukseklik?: number;

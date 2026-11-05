@@ -141,6 +141,35 @@ export const routes: Routes = [
         data: { menuKod: YETKI.SANDIK.BARKOD_ETIKET },
       },
       {
+        // Yükleme planlama: planlar, ekipman kitaplığı ve mevzuat kuralları (kenar menüde "Yükleme Planlama" grubu).
+        path: 'yukleme-planlari',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/yukleme-planlama/plan-listesi/plan-listesi.component').then(m => m.PlanListesiComponent),
+        data: { menuKod: YETKI.YUKLEME_PLANLAMA.PLANLAR },
+      },
+      {
+        path: 'yukleme-planlari/:id',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/yukleme-planlama/plan-duzenle/plan-duzenle.component').then(m => m.PlanDuzenleComponent),
+        data: { menuKod: YETKI.YUKLEME_PLANLAMA.PLANLAR },
+      },
+      {
+        path: 'ekipman-kitapligi',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/yukleme-planlama/ekipman-kitapligi/ekipman-kitapligi.component').then(m => m.EkipmanKitapligiComponent),
+        data: { menuKod: YETKI.YUKLEME_PLANLAMA.EKIPMAN_KITAPLIGI },
+      },
+      {
+        path: 'mevzuat-kurallari',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/yukleme-planlama/mevzuat-kurallari/mevzuat-kurallari.component').then(m => m.MevzuatKurallariComponent),
+        data: { menuKod: YETKI.YUKLEME_PLANLAMA.MEVZUAT_KURALLARI },
+      },
+      {
         // Sandık açılış/kapanış istatistiği: kenar menüde yok; Projeler ve 3K sandık listesindeki "Diğer" menüsünden açılır.
         path: 'sandik-acilis-istatistigi',
         canActivate: [menuGuard],

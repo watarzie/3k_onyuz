@@ -1,0 +1,17 @@
+.yp-yeni {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: 24px;
+
+  .tz-segmented { flex-wrap: wrap; }
+}
+
+.yp-yeni__projeler {
+  min-width: 0;
+
+  .yp-tablo-sarmal { max-height: 360px; }
+}
+
+@media (max-width: 991.98px) {
+  .yp-yeni { grid-template-columns: minmax(0, 1fr); }
+}

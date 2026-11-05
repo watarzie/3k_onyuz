@@ -1,0 +1,331 @@
+<div class="page-title-area mb-4">
+  <div class="sayfa-baslik">
+    <span class="sayfa-ikon" style="--ton: #0e7490"><i class="ri-ruler-2-line" aria-hidden="true"></i></span>
+    <div>
+      <h2 class="fw-bold mb-1">Ekipman Kitaplığı</h2>
+      <app-breadcrumb [items]="breadcrumb" />
+    </div>
+  </div>
+</div>
+
+<section class="trezo-card border-0 bg-white yp-kart">
+  <div class="yp-arac-cubugu">
+    <input type="search" class="form-control yp-arama" placeholder="Kod, ad, üretici veya model ara" aria-label="Ekipman ara"
+           [ngModel]="arama()" (ngModelChange)="aramaDegisti($event)" />
+    <select class="form-select ek-suzgec" aria-label="Aile" [ngModel]="aileId()" (ngModelChange)="aileDegisti($event)">
+      <option [ngValue]="null">Bütün aileler</option>
+      @for (a of aileler(); track a.id) { <option [ngValue]="a.id">{{ a.ad }}</option> }
+    </select>
+    <select class="form-select ek-suzgec" aria-label="Tip" [ngModel]="tipId()" (ngModelChange)="tipId.set($event); suzgecDegisti()">
+      <option [ngValue]="null">Bütün tipler</option>
+      @for (t of tipler(); track t.id) { <option [ngValue]="t.id">{{ t.ad }}</option> }
+    </select>
+    <select class="form-select ek-suzgec" aria-label="Doğrulama" [ngModel]="dogrulamaDurumu()" (ngModelChange)="dogrulamaDurumu.set($event); suzgecDegisti()">
+      <option [ngValue]="null">Doğrulanmış / doğrulanmamış</option>
+      <option [ngValue]="Dogrulama.Dogrulandi">{{ DOGRULAMA[Dogrulama.Dogrulandi] }}</option>
+      <option [ngValue]="Dogrulama.Dogrulanmadi">{{ DOGRULAMA[Dogrulama.Dogrulanmadi] }}</option>
+    </select>
+    <label class="form-check ek-pasif">
+      <input type="checkbox" class="form-check-input" [ngModel]="pasifleriGoster()" (ngModelChange)="pasifleriGoster.set($event); suzgecDegisti()" />
+      <span class="form-check-label">Pasifler</span>
+    </label>
+    <span class="yp-bosluk"></span>
+    <button type="button" class="tz-btn" [disabled]="indiriliyor() !== null" (click)="sablonIndir()">
+      <i [class]="indiriliyor() === 'sablon' ? 'ri-loader-4-line tz-spin' : 'ri-file-excel-2-line'" aria-hidden="true"></i>Şablon
+    </button>
+    <button type="button" class="tz-btn" [disabled]="indiriliyor() !== null" (click)="disaAktar()">
+      <i [class]="indiriliyor() === 'disa' ? 'ri-loader-4-line tz-spin' : 'ri-download-2-line'" aria-hidden="true"></i>Dışa aktar
+    </button>
+    @if (yazabilir()) {
+      <button type="button" class="tz-btn tz-btn--primary" (click)="iceAktarAc()">
+        <i class="ri-upload-2-line" aria-hidden="true"></i>Excel'den içe aktar
+      </button>
+    }
+  </div>
+
+  @if (liste(); as l) {
+    @if (l.items.length) {
+      <div class="yp-tablo-sarmal">
+        <table class="yp-tablo">
+          <thead>
+            <tr>
+              <th>Kod</th>
+              <th>Ad</th>
+              <th>Aile / tip</th>
+              <th>Üretici · model</th>
+              <th class="yp-sayi">Dış U×G×Y mm</th>
+              <th class="yp-sayi">Kapasite kg</th>
+              <th>Kaynak</th>
+              <th class="yp-sayi">Rev.</th>
+              <th>Doğrulama</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (k of l.items; track k.id) {
+              <tr class="yp-tiklanir" tabindex="0" [class.yp-satir--haric]="!k.aktif" (click)="ac(k)" (keydown.enter)="ac(k)">
+                <td><strong>{{ k.kod }}</strong> @if (!k.aktif) { <span class="yp-rozet" data-ton="muted">Pasif</span> }</td>
+                <td class="yp-sarmala">{{ k.ad }}</td>
+                <td class="yp-sarmala">{{ k.aileAdi }} <small class="yp-ipucu d-block">{{ k.tipAdi }} · {{ KATEGORI[k.kategori] }}</small></td>
+                <td>{{ k.uretici }} · {{ k.modelAdi }}</td>
+                <td class="yp-sayi">{{ mm(k.disUzunlukMm) }} × {{ mm(k.disGenislikMm) }} × {{ mm(k.disYukseklikMm) }}</td>
+                <td class="yp-sayi">{{ mm(k.teknikKapasiteKg) }}</td>
+                <td>{{ KAYNAK[k.kaynakTuru] }} @if (k.kaynakTarihi) { <small class="yp-ipucu d-block">{{ k.kaynakTarihi | date: 'dd.MM.yyyy' }}</small> }</td>
+                <td class="yp-sayi">{{ k.revizyonNo }}</td>
+                <td>
+                  <span class="yp-rozet" [attr.data-ton]="k.dogrulamaDurumu === Dogrulama.Dogrulandi ? 'success' : 'warning'">
+                    {{ DOGRULAMA[k.dogrulamaDurumu] }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-server-pager [pageNumber]="l.pageNumber" [pageSize]="l.pageSize" [totalCount]="l.totalCount"
+        [totalPages]="l.totalPages" [hasPreviousPage]="l.hasPreviousPage" [hasNextPage]="l.hasNextPage"
+        [pageSizeOptions]="SAYFA_BOYUTLARI" (pageChange)="sayfaDegisti($event)" (pageSizeChange)="boyutDegisti($event)" />
+    } @else {
+      <div class="yp-bos">
+        <i class="ri-ruler-2-line" aria-hidden="true"></i>
+        Süzgece uyan konfigürasyon yok. @if (yazabilir()) { Şablonu indirip doldurduktan sonra "Excel'den içe aktar" ile ekleyin. }
+      </div>
+    }
+  } @else if (yukleniyor()) {
+    <div class="yp-yukleniyor"><span class="spinner-border spinner-border-sm"></span> Yükleniyor…</div>
+  }
+</section>
+
+<!-- Ayrıntı: son revizyonun teknik verisi, 3B önizleme, uyarılar ve revizyon geçmişi. -->
+@if (detay() || detayYukleniyor()) {
+  <div class="tz-modal-backdrop" (click)="kapat()"></div>
+  <div class="tz-modal tz-modal--xl" role="dialog" aria-modal="true" aria-labelledby="ekipman-baslik">
+    <div class="tz-modal__header">
+      <span class="tz-modal__icon" aria-hidden="true"><i class="ri-truck-line"></i></span>
+      <div class="tz-modal__title">
+        @if (detay(); as d) {
+          <h5 id="ekipman-baslik">{{ d.kod }} · {{ d.ad }}</h5>
+          <p>{{ d.aileAdi }} · {{ d.tipAdi }} ({{ KATEGORI[d.kategori] }}) · {{ d.uretici }} {{ d.modelAdi }}</p>
+        } @else {
+          <h5 id="ekipman-baslik">Yükleniyor…</h5>
+        }
+      </div>
+      <button type="button" class="tz-modal__close" (click)="kapat()" aria-label="Kapat"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="tz-modal__body">
+      @if (detay(); as d) {
+        <div class="ek-ozet">
+          <span class="yp-rozet" [attr.data-ton]="d.revizyon.dogrulamaDurumu === Dogrulama.Dogrulandi ? 'success' : 'warning'">
+            Revizyon {{ d.revizyon.revizyonNo }} · {{ DOGRULAMA[d.revizyon.dogrulamaDurumu] }}
+            @if (d.revizyon.dogrulayan) { ({{ d.revizyon.dogrulayan }}, {{ d.revizyon.dogrulamaTarihi | date: 'dd.MM.yyyy' }}) }
+          </span>
+          <span class="yp-rozet">Yükleme: {{ yontemMetni(d.yuklemeYontemleri) }}</span>
+          <span class="yp-rozet" [attr.data-ton]="d.sandikTasimayaUygun ? 'info' : 'muted'">{{ d.sandikTasimayaUygun ? 'Sandık taşımaya uygun' : 'Sandık taşımaya uygun değil' }}</span>
+          <span class="yp-rozet">Kaynak: {{ KAYNAK[d.revizyon.kaynakTuru] }}
+            @if (d.revizyon.kaynakTarihi) { · {{ d.revizyon.kaynakTarihi | date: 'dd.MM.yyyy' }} }</span>
+          @if (!d.aktif) { <span class="yp-rozet" data-ton="muted">Pasif</span> }
+          <span class="yp-bosluk"></span>
+          @if (dogrulayabilir() && d.revizyon.dogrulamaDurumu !== Dogrulama.Dogrulandi) {
+            <button type="button" class="tz-btn tz-btn--primary" [disabled]="dogrulaniyor()" (click)="dogrula()">
+              <i [class]="dogrulaniyor() ? 'ri-loader-4-line tz-spin' : 'ri-shield-check-line'" aria-hidden="true"></i>Revizyonu doğrula
+            </button>
+          }
+        </div>
+        @if (d.revizyon.kaynakAciklama) { <p class="yp-ipucu">{{ d.revizyon.kaynakAciklama }}</p> }
+
+        @if (d.veriUyarilari.length) {
+          <div class="yp-uyari">
+            <i class="ri-error-warning-line" aria-hidden="true"></i>
+            <div>
+              <strong>Eksik veya teyit edilmemiş veri</strong>
+              <ul class="mb-0 ps-3">@for (u of d.veriUyarilari; track u) { <li>{{ u }}</li> }</ul>
+            </div>
+          </div>
+        }
+
+        <div class="ek-ayrinti">
+          <div class="ek-ayrinti__3d">
+            <app-ekipman-3d [veri]="teknikVeri()" />
+          </div>
+          <div class="ek-ayrinti__veri">
+            @if (teknikVeri(); as v) {
+              <dl class="ek-ozellikler">
+                <dt>Dış ölçü (U×G×Y)</dt>
+                <dd>@if (v.disOlcu) { {{ mm(v.disOlcu.uzunlukMm) }} × {{ mm(v.disOlcu.genislikMm) }} × {{ mm(v.disOlcu.yukseklikMm) }} mm } @else { — }</dd>
+                <dt>Dara</dt><dd>{{ mm(v.daraKg) }} kg</dd>
+                <dt>Teknik kapasite</dt><dd>{{ mm(v.teknikKapasiteKg) }} kg</dd>
+                <dt>Azami brüt</dt><dd>{{ mm(v.azamiBrutKg) }} kg</dd>
+                @if (v.uzamaEnFazlaMm) { <dt>Uzama</dt><dd>{{ mm(v.uzamaEnFazlaMm) }} mm</dd> }
+                @if (v.kingPin) { <dt>King pin</dt><dd>X {{ mm(v.kingPin.xMm) }} mm · {{ mm(v.kingPin.azamiBaglantiYukuKg) }} kg</dd> }
+              </dl>
+            } @else {
+              <p class="yp-ipucu">Teknik veri okunamadı.</p>
+            }
+          </div>
+        </div>
+
+        @if (teknikVeri(); as v) {
+          <div class="tz-section"><i class="ri-layout-bottom-line" aria-hidden="true"></i>Yükleme yüzeyleri</div>
+          <div class="yp-tablo-sarmal">
+            <table class="yp-tablo">
+              <thead><tr><th>Kod</th><th>Ad</th><th class="yp-sayi">Başlangıç X</th><th class="yp-sayi">Uzunluk</th><th class="yp-sayi">Genişlik</th>
+                <th class="yp-sayi">Yerden yük.</th><th class="yp-sayi">Kul. yükseklik</th><th class="yp-sayi">Taban kg/m²</th><th class="yp-sayi">Noktasal kg</th></tr></thead>
+              <tbody>
+                @for (y of v.yuzeyler ?? []; track y.kod) {
+                  <tr><td>{{ y.kod }}</td><td>{{ y.ad ?? '—' }}</td><td class="yp-sayi">{{ mm(y.baslangicXMm) }}</td><td class="yp-sayi">{{ mm(y.uzunlukMm) }}</td>
+                    <td class="yp-sayi">{{ mm(y.genislikMm) }}</td><td class="yp-sayi">{{ mm(y.yerdenYukseklikMm) }}</td><td class="yp-sayi">{{ mm(y.kullanilabilirYukseklikMm) }}</td>
+                    <td class="yp-sayi">{{ mm(y.tabanYukuKgM2) }}</td><td class="yp-sayi">{{ mm(y.noktasalYukKg) }}</td></tr>
+                } @empty { <tr><td colspan="9" class="yp-orta yp-ipucu">Tanımlı yüzey yok.</td></tr> }
+              </tbody>
+            </table>
+          </div>
+
+          <div class="ek-tablolar">
+            <div>
+              <div class="tz-section"><i class="ri-door-open-line" aria-hidden="true"></i>Açıklıklar</div>
+              <div class="yp-tablo-sarmal">
+                <table class="yp-tablo">
+                  <thead><tr><th>Taraf</th><th class="yp-sayi">X</th><th class="yp-sayi">Uzunluk</th><th class="yp-sayi">Genişlik</th><th class="yp-sayi">Yükseklik</th></tr></thead>
+                  <tbody>
+                    @for (a of v.acikliklar ?? []; track $index) {
+                      <tr><td>{{ TARAF[a.taraf] }}</td><td class="yp-sayi">{{ mm(a.baslangicXMm) }}</td><td class="yp-sayi">{{ mm(a.uzunlukMm) }}</td>
+                        <td class="yp-sayi">{{ mm(a.genislikMm) }}</td><td class="yp-sayi">{{ mm(a.yukseklikMm) }}</td></tr>
+                    } @empty { <tr><td colspan="5" class="yp-orta yp-ipucu">Tanımlı açıklık yok.</td></tr> }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div>
+              <div class="tz-section"><i class="ri-steering-2-line" aria-hidden="true"></i>Dingiller</div>
+              <div class="yp-tablo-sarmal">
+                <table class="yp-tablo">
+                  <thead><tr><th class="yp-sayi">X</th><th>Tür</th><th class="yp-sayi">Grup</th><th class="yp-sayi">Kapasite kg</th></tr></thead>
+                  <tbody>
+                    @for (g of v.dingiller ?? []; track $index) {
+                      <tr><td class="yp-sayi">{{ mm(g.xMm) }}</td><td>{{ DINGIL[g.tur] }}</td><td class="yp-sayi">{{ g.grupNo }}</td><td class="yp-sayi">{{ mm(g.kapasiteKg) }}</td></tr>
+                    } @empty { <tr><td colspan="4" class="yp-orta yp-ipucu">Tanımlı dingil yok.</td></tr> }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          @if ((v.engeller ?? []).length) {
+            <div class="tz-section"><i class="ri-error-warning-line" aria-hidden="true"></i>Engeller</div>
+            <div class="yp-tablo-sarmal">
+              <table class="yp-tablo">
+                <thead><tr><th>Tür</th><th class="yp-sayi">X</th><th class="yp-sayi">Y</th><th class="yp-sayi">Z</th><th class="yp-sayi">U×G×Y</th><th>Sökülebilir</th><th>Açıklama</th></tr></thead>
+                <tbody>
+                  @for (e of v.engeller ?? []; track $index) {
+                    <tr><td>{{ ENGEL[e.tur] }}</td><td class="yp-sayi">{{ mm(e.xMm) }}</td><td class="yp-sayi">{{ mm(e.yMm) }}</td><td class="yp-sayi">{{ mm(e.zMm) }}</td>
+                      <td class="yp-sayi">{{ mm(e.uzunlukMm) }} × {{ mm(e.genislikMm) }} × {{ mm(e.yukseklikMm) }}</td>
+                      <td>{{ e.sokulebilir ? 'Evet' : 'Hayır' }}</td><td class="yp-sarmala">{{ e.aciklama ?? '—' }}</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+
+        <div class="tz-section"><i class="ri-history-line" aria-hidden="true"></i>Revizyonlar</div>
+        <div class="yp-tablo-sarmal">
+          <table class="yp-tablo">
+            <thead><tr><th class="yp-sayi">Rev.</th><th>Tarih</th><th>Oluşturan</th><th>Kaynak</th><th>Açıklama</th><th>Doğrulama</th></tr></thead>
+            <tbody>
+              @for (r of d.revizyonlar; track r.revizyonNo) {
+                <tr>
+                  <td class="yp-sayi">{{ r.revizyonNo }}</td>
+                  <td>{{ r.tarih | date: 'dd.MM.yyyy HH:mm' }}</td>
+                  <td>{{ r.olusturan ?? '—' }}</td>
+                  <td>{{ KAYNAK[r.kaynakTuru] }}</td>
+                  <td class="yp-sarmala">{{ r.aciklama ?? '—' }}</td>
+                  <td>
+                    <span class="yp-rozet" [attr.data-ton]="r.dogrulamaDurumu === Dogrulama.Dogrulandi ? 'success' : 'warning'">{{ DOGRULAMA[r.dogrulamaDurumu] }}</span>
+                    @if (r.dogrulayan) { <small class="yp-ipucu d-block">{{ r.dogrulayan }} · {{ r.dogrulamaTarihi | date: 'dd.MM.yyyy' }}</small> }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="yp-yukleniyor"><span class="spinner-border spinner-border-sm"></span></div>
+      }
+    </div>
+  </div>
+}
+
+<!-- Excel içe aktarım: dosya önce incelenir (yazılmaz); sorun yoksa uygulanır. Tek sorun varsa hiçbir şey yazılmaz. -->
+@if (iceAktarAcik()) {
+  <div class="tz-modal-backdrop" (click)="iceAktarAcik.set(false)"></div>
+  <div class="tz-modal tz-modal--xl" role="dialog" aria-modal="true" aria-labelledby="ice-aktar-baslik">
+    <div class="tz-modal__header">
+      <span class="tz-modal__icon" aria-hidden="true"><i class="ri-upload-2-line"></i></span>
+      <div class="tz-modal__title">
+        <h5 id="ice-aktar-baslik">Excel'den içe aktar</h5>
+        <p>Teknik verisi değişen konfigürasyon yeni, doğrulanmamış revizyon olur; değişmeyen atlanır.</p>
+      </div>
+      <button type="button" class="tz-modal__close" (click)="iceAktarAcik.set(false)" aria-label="Kapat"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="tz-modal__body">
+      <label class="ek-dosya">
+        <input type="file" accept=".xlsx" (change)="dosyaSecildi($event)" [disabled]="isleniyor()" />
+        <i [class]="isleniyor() ? 'ri-loader-4-line tz-spin' : 'ri-file-excel-2-line'" aria-hidden="true"></i>
+        <span>{{ dosya()?.name ?? 'Doldurulmuş şablonu (.xlsx) seçin' }}</span>
+        <small>En fazla 10 MB · ilk satır başlık, ikinci satır açıklama, veri üçüncü satırdan başlar</small>
+      </label>
+
+      @if (sorunlar().length) {
+        <div class="yp-uyari mt-3">
+          <i class="ri-close-circle-line" aria-hidden="true"></i>
+          <div>
+            <strong>{{ sorunlar().length }} sorun bulundu; dosya düzeltilmeden uygulanamaz.</strong>
+          </div>
+        </div>
+        <div class="yp-tablo-sarmal ek-sorunlar">
+          <table class="yp-tablo">
+            <thead><tr><th>Sayfa</th><th class="yp-sayi">Satır</th><th>Konfigürasyon</th><th>Sorun</th></tr></thead>
+            <tbody>
+              @for (s of sorunlar(); track $index) {
+                <tr><td>{{ s.sayfa }}</td><td class="yp-sayi">{{ s.satir ?? '—' }}</td><td>{{ s.konfigurasyonKodu ?? '—' }}</td><td class="yp-sarmala">{{ s.mesaj }}</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      @if (onizleme(); as o) {
+        <div class="yp-sayaclar mt-3">
+          <div class="yp-sayac" data-ton="success"><small>Yeni</small><strong>{{ o.yeniSayisi }}</strong></div>
+          <div class="yp-sayac"><small>Yeni revizyon</small><strong>{{ o.yeniRevizyonSayisi }}</strong></div>
+          <div class="yp-sayac" data-ton="muted"><small>Değişmedi</small><strong>{{ o.degismeyenSayisi }}</strong></div>
+        </div>
+        @if (o.konfigurasyonlar.length) {
+          <div class="yp-tablo-sarmal ek-sorunlar">
+            <table class="yp-tablo">
+              <thead><tr><th>Kod</th><th>Ad</th><th>Tip</th><th>İşlem</th><th class="yp-sayi">Rev.</th><th>Veri uyarıları</th></tr></thead>
+              <tbody>
+                @for (k of o.konfigurasyonlar; track k.kod) {
+                  <tr>
+                    <td><strong>{{ k.kod }}</strong></td>
+                    <td class="yp-sarmala">{{ k.ad }}
+                      @if (k.oncekiAd) { <small class="yp-ipucu d-block">Ad güncellenecek (önceki: {{ k.oncekiAd }})</small> }</td>
+                    <td>{{ k.tipKodu }}</td>
+                    <td><span class="yp-rozet" [attr.data-ton]="k.islem === Islem.Yeni ? 'success' : k.islem === Islem.YeniRevizyon ? 'info' : 'muted'">{{ ISLEM[k.islem] }}</span></td>
+                    <td class="yp-sayi">{{ k.revizyonNo }}</td>
+                    <td class="yp-sarmala">@for (u of k.veriUyarilari; track u) { <small class="d-block yp-ipucu">{{ u }}</small> } @empty { — }</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+    </div>
+    <div class="tz-modal__footer">
+      <button type="button" class="tz-btn" (click)="iceAktarAcik.set(false)">Kapat</button>
+      <button type="button" class="tz-btn tz-btn--primary" [disabled]="!uygulanabilir()" (click)="uygula()">
+        @if (isleniyor() && onizleme()) { <span class="spinner-border spinner-border-sm"></span> Uygulanıyor… } @else { <i class="ri-check-double-line"></i> Uygula }
+      </button>
+    </div>
+  </div>
+}

@@ -1,0 +1,87 @@
+<div class="page-title-area mb-4">
+  <div class="sayfa-baslik">
+    <span class="sayfa-ikon" style="--ton: #0e7490"><i class="ri-scales-3-line" aria-hidden="true"></i></span>
+    <div>
+      <h2 class="fw-bold mb-1">Mevzuat Kuralları</h2>
+      <app-breadcrumb [items]="breadcrumb" />
+    </div>
+  </div>
+</div>
+
+@if (yukleniyor()) {
+  <div class="yp-yukleniyor"><span class="spinner-border spinner-border-sm"></span> Yükleniyor…</div>
+} @else if (!setler().length) {
+  <section class="trezo-card border-0 bg-white yp-kart"><div class="yp-bos"><i class="ri-scales-3-line"></i>Tanımlı kural seti yok.</div></section>
+} @else {
+  <div class="mk-duzen">
+    <nav class="trezo-card border-0 bg-white yp-kart mk-setler" aria-label="Kural setleri">
+      @for (s of setler(); track s.id) {
+        <button type="button" class="mk-set" [class.active]="seciliId() === s.id" (click)="sec(s.id)">
+          <strong>{{ s.ad }}</strong>
+          <small>{{ s.yetkiAlani }} · sürüm {{ s.surumNo }} · {{ s.kuralSayisi }} kural</small>
+          <span class="yp-rozet" [attr.data-ton]="s.durum === Durum.Onayli ? 'success' : s.durum === Durum.Taslak ? 'warning' : 'muted'">{{ DURUM[s.durum] }}</span>
+        </button>
+      }
+    </nav>
+
+    <section class="trezo-card border-0 bg-white yp-kart mk-detay">
+      @if (detay(); as d) {
+        <div class="mk-baslik">
+          <div>
+            <h5 class="mb-1">{{ d.ozet.ad }}</h5>
+            <small class="yp-ipucu">{{ d.ozet.yetkiAlani }} · sürüm {{ d.ozet.surumNo }} · geçerlilik
+              {{ d.ozet.gecerlilikBaslangici | date: 'dd.MM.yyyy' }} – {{ d.ozet.gecerlilikBitisi ? (d.ozet.gecerlilikBitisi | date: 'dd.MM.yyyy') : 'süresiz' }}</small>
+          </div>
+          <span class="yp-rozet" [attr.data-ton]="d.ozet.durum === Durum.Onayli ? 'success' : 'warning'">{{ DURUM[d.ozet.durum] }}</span>
+        </div>
+        @if (d.ozet.durum !== Durum.Onayli) {
+          <div class="yp-uyari">
+            <i class="ri-error-warning-line" aria-hidden="true"></i>
+            <span>Bu set onaylı değil: görüntülenir ama yük ve araç kontrolünde kullanılmaz. Değerler işletme tarafından teyit edilip onaylanmalıdır.</span>
+          </div>
+        }
+        @if (d.aciklama) { <p class="yp-ipucu">{{ d.aciklama }}</p> }
+
+        <div class="yp-tablo-sarmal">
+          <table class="yp-tablo">
+            <thead><tr><th>Kod</th><th>Tip</th><th>Parametreler</th><th>Kaynak · madde</th><th>Açıklama</th></tr></thead>
+            <tbody>
+              @for (k of d.kurallar; track k.id) {
+                <tr>
+                  <td><strong>{{ k.kod }}</strong></td>
+                  <td>{{ KURAL_TIPI[k.tip] ?? k.tip }}</td>
+                  <td class="yp-sarmala">
+                    @for (p of parametreler(k.parametrelerJson); track p.ad) { <small class="d-block"><span class="yp-ipucu">{{ p.ad }}:</span> {{ p.deger }}</small> }
+                  </td>
+                  <td class="yp-sarmala">
+                    @if (kaynak(k.kaynakId); as kay) {
+                      {{ kay.ad }} @if (k.madde) { · {{ k.madde }} }
+                      @if (taslakKaynakMi(k.kaynakId)) { <span class="yp-rozet d-inline-flex" data-ton="warning">Taslak kaynak</span> }
+                    } @else { — }
+                  </td>
+                  <td class="yp-sarmala">{{ k.aciklama }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="tz-section"><i class="ri-book-open-line" aria-hidden="true"></i>Kaynaklar</div>
+        <ul class="mk-kaynaklar">
+          @for (kay of d.kaynaklar; track kay.id) {
+            <li>
+              <strong>{{ kay.ad }}</strong>
+              <span class="yp-rozet" [attr.data-ton]="kay.tur === 3 ? 'warning' : 'info'">{{ KAYNAK_TURU[kay.tur] }}</span>
+              @if (kay.resmiGazeteTarihi) { <small class="yp-ipucu">RG {{ kay.resmiGazeteTarihi | date: 'dd.MM.yyyy' }} @if (kay.resmiGazeteSayisi) { / {{ kay.resmiGazeteSayisi }} }</small> }
+              @if (kay.url) { <a [href]="kay.url" target="_blank" rel="noopener noreferrer" class="mk-baglanti">Kaynağa git <i class="ri-external-link-line"></i></a> }
+              @if (kay.erisimTarihi) { <small class="yp-ipucu">erişim {{ kay.erisimTarihi | date: 'dd.MM.yyyy' }}</small> }
+              @if (kay.aciklama) { <small class="yp-ipucu d-block">{{ kay.aciklama }}</small> }
+            </li>
+          }
+        </ul>
+      } @else {
+        <div class="yp-yukleniyor"><span class="spinner-border spinner-border-sm"></span></div>
+      }
+    </section>
+  </div>
+}

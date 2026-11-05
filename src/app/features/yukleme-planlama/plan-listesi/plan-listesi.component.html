@@ -1,0 +1,184 @@
+<div class="page-title-area mb-4">
+  <div class="sayfa-baslik">
+    <span class="sayfa-ikon" style="--ton: #0e7490"><i class="ri-ship-2-line" aria-hidden="true"></i></span>
+    <div>
+      <h2 class="fw-bold mb-1">Yükleme Planları</h2>
+      <app-breadcrumb [items]="breadcrumb" />
+    </div>
+  </div>
+</div>
+
+<section class="trezo-card border-0 bg-white yp-kart">
+  <div class="yp-arac-cubugu">
+    <input type="search" class="form-control yp-arama" placeholder="Plan no, ad veya proje no ara"
+           aria-label="Plan ara" [ngModel]="arama()" (ngModelChange)="aramaDegisti($event)" />
+    <span class="yp-bosluk"></span>
+    @if (yazabilir()) {
+      <button type="button" class="tz-btn tz-btn--primary" (click)="yeniPlan()">
+        <i class="ri-add-line" aria-hidden="true"></i>Yeni plan
+      </button>
+    }
+  </div>
+
+  @if (liste(); as l) {
+    @if (l.items.length) {
+      <div class="yp-tablo-sarmal">
+        <table class="yp-tablo">
+          <thead>
+            <tr>
+              <th>Plan no</th>
+              <th>Ad</th>
+              <th>Çalışma biçimi</th>
+              <th>Taşıma ailesi</th>
+              <th>Projeler</th>
+              <th class="yp-sayi">Yük</th>
+              <th class="yp-sayi">Dahil</th>
+              <th class="yp-sayi">Rev.</th>
+              <th>Son kayıt</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of l.items; track p.id) {
+              <tr class="yp-tiklanir" tabindex="0" (click)="ac(p)" (keydown.enter)="ac(p)">
+                <td><strong>{{ p.planNo }}</strong></td>
+                <td class="yp-sarmala">{{ p.ad }}</td>
+                <td>{{ CALISMA_BICIMI[p.calismaBicimi] }}</td>
+                <td>{{ p.tasimaAilesiAdi }}</td>
+                <td class="yp-sarmala">{{ p.projeler || '—' }}</td>
+                <td class="yp-sayi">{{ p.yukSayisi }}</td>
+                <td class="yp-sayi">{{ p.dahilYukSayisi }}</td>
+                <td class="yp-sayi">{{ p.revizyonNo }}</td>
+                <td>{{ p.sonKayitTarihi | date: 'dd.MM.yyyy HH:mm' }} @if (p.sonKaydeden) { <small class="yp-ipucu">· {{ p.sonKaydeden }}</small> }</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-server-pager [pageNumber]="l.pageNumber" [pageSize]="l.pageSize" [totalCount]="l.totalCount"
+        [totalPages]="l.totalPages" [hasPreviousPage]="l.hasPreviousPage" [hasNextPage]="l.hasNextPage"
+        [pageSizeOptions]="SAYFA_BOYUTLARI" (pageChange)="sayfaDegisti($event)" (pageSizeChange)="boyutDegisti($event)" />
+    } @else {
+      <div class="yp-bos">
+        <i class="ri-ship-2-line" aria-hidden="true"></i>
+        {{ arama() ? 'Aramaya uyan plan yok.' : 'Henüz yükleme planı yok.' }}
+      </div>
+    }
+  } @else if (yukleniyor()) {
+    <div class="yp-yukleniyor"><span class="spinner-border spinner-border-sm"></span> Yükleniyor…</div>
+  }
+</section>
+
+@if (yeniAcik()) {
+  <div class="tz-modal-backdrop" (click)="kapat()"></div>
+  <div class="tz-modal tz-modal--xl" role="dialog" aria-modal="true" aria-labelledby="yeni-plan-baslik">
+    <div class="tz-modal__header">
+      <span class="tz-modal__icon" aria-hidden="true"><i class="ri-ship-2-line"></i></span>
+      <div class="tz-modal__title">
+        <h5 id="yeni-plan-baslik">Yeni yükleme planı</h5>
+        <p>Seçilen projelerin sevk edilmemiş bütün sandıkları plana seçili gelir.</p>
+      </div>
+      <button type="button" class="tz-modal__close" (click)="kapat()" aria-label="Kapat"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="tz-modal__body">
+      <div class="yp-yeni">
+        <div class="tz-form">
+          <label class="tz-field">
+            <span>Plan adı <b>*</b></span>
+            <input type="text" class="form-control" maxlength="200" [ngModel]="ad()" (ngModelChange)="ad.set($event)" />
+          </label>
+          <div class="tz-field">
+            <span>Çalışma biçimi</span>
+            <div class="tz-segmented" role="radiogroup" aria-label="Çalışma biçimi">
+              <button type="button" role="radio" [class.active]="calismaBicimi() === Bicim.IhtiyacaGoreArac"
+                      [attr.aria-checked]="calismaBicimi() === Bicim.IhtiyacaGoreArac" (click)="calismaBicimi.set(Bicim.IhtiyacaGoreArac)">
+                {{ CALISMA_BICIMI[Bicim.IhtiyacaGoreArac] }}
+              </button>
+              <button type="button" role="radio" [class.active]="calismaBicimi() === Bicim.MevcutAraclaraYerlestirme"
+                      [attr.aria-checked]="calismaBicimi() === Bicim.MevcutAraclaraYerlestirme" (click)="calismaBicimi.set(Bicim.MevcutAraclaraYerlestirme)">
+                {{ CALISMA_BICIMI[Bicim.MevcutAraclaraYerlestirme] }}
+              </button>
+            </div>
+          </div>
+          <div class="tz-field-grid">
+            <label class="tz-field">
+              <span>Taşıma ailesi <b>*</b></span>
+              <select class="form-select" [ngModel]="tasimaAilesiId()" (ngModelChange)="tasimaAilesiId.set($event ? +$event : null)">
+                @for (a of tanimlar()?.tasimaAileleri ?? []; track a.id) {
+                  <option [ngValue]="a.id">{{ a.ad }}</option>
+                }
+              </select>
+            </label>
+            <label class="tz-field">
+              <span>Yükleme tarihi</span>
+              <input type="date" class="form-control" [ngModel]="yuklemeTarihi()" (ngModelChange)="yuklemeTarihi.set($event)" />
+            </label>
+          </div>
+          <label class="tz-field">
+            <span>Proje karışımı</span>
+            <select class="form-select" [ngModel]="projeKarisimi()" (ngModelChange)="projeKarisimi.set(+$event)">
+              <option [ngValue]="Karisim.Karisik">{{ PROJE_KARISIMI[Karisim.Karisik] }}</option>
+              <option [ngValue]="Karisim.ProjeBazindaAyri">{{ PROJE_KARISIMI[Karisim.ProjeBazindaAyri] }}</option>
+            </select>
+          </label>
+          <label class="tz-field">
+            <span>Açıklama</span>
+            <textarea class="form-control" rows="2" maxlength="1000" [ngModel]="aciklama()" (ngModelChange)="aciklama.set($event)"></textarea>
+          </label>
+        </div>
+
+        <div class="yp-yeni__projeler">
+          <div class="tz-section"><i class="ri-folder-2-line" aria-hidden="true"></i>Projeler <b>*</b></div>
+          <input type="search" class="form-control mb-2" placeholder="Proje no veya müşteri ara" aria-label="Proje ara"
+                 [ngModel]="adayArama()" (ngModelChange)="adayAramaDegisti($event)" />
+          @if (adaylar(); as a) {
+            <div class="yp-tablo-sarmal">
+              <table class="yp-tablo">
+                <thead>
+                  <tr>
+                    <th class="yp-sec"></th>
+                    <th>Proje</th>
+                    <th>Tip</th>
+                    <th class="yp-sayi">Gelecek</th>
+                    <th class="yp-sayi">Sevkli</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (p of a.items; track p.projeId) {
+                    <tr class="yp-tiklanir" [class.yp-satir--secili]="projeSeciliMi(p.projeId)" (click)="projeDegistir(p)">
+                      <td class="yp-sec">
+                        <input type="checkbox" class="form-check-input" [checked]="projeSeciliMi(p.projeId)"
+                               [attr.aria-label]="p.projeNo + ' seç'" (click)="$event.stopPropagation(); projeDegistir(p)" />
+                      </td>
+                      <td class="yp-sarmala"><strong>{{ p.projeNo }}</strong> <small class="yp-ipucu">{{ p.musteri }}</small></td>
+                      <td>{{ p.projeTipiAdi }}</td>
+                      <td class="yp-sayi">{{ p.planaGelecekSandikSayisi }}</td>
+                      <td class="yp-sayi">{{ p.sevkEdilmisSandikSayisi }}</td>
+                    </tr>
+                  } @empty {
+                    <tr><td colspan="5" class="yp-orta yp-ipucu">Uyan proje yok.</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <app-server-pager [pageNumber]="a.pageNumber" [pageSize]="a.pageSize" [totalCount]="a.totalCount"
+              [totalPages]="a.totalPages" [hasPreviousPage]="a.hasPreviousPage" [hasNextPage]="a.hasNextPage"
+              [pageSizeOptions]="[10]" (pageChange)="adaySayfaDegisti($event)" />
+          } @else if (adayYukleniyor()) {
+            <div class="yp-yukleniyor"><span class="spinner-border spinner-border-sm"></span></div>
+          }
+          <div class="tz-note">
+            <i class="ri-information-line" aria-hidden="true"></i>
+            <span>{{ seciliProjeler().size }} proje seçili · plana {{ gelecekSandik() }} sandık gelecek
+              @if (sevkliSandik()) { · {{ sevkliSandik() }} sevk edilmiş sandık gelmeyecek }</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tz-modal__footer">
+      <button type="button" class="tz-btn" (click)="kapat()">Vazgeç</button>
+      <button type="button" class="tz-btn tz-btn--primary" [disabled]="!olusturulabilir()" (click)="olustur()">
+        @if (olusturuluyor()) { <span class="spinner-border spinner-border-sm"></span> Oluşturuluyor… } @else { <i class="ri-check-line"></i> Planı oluştur }
+      </button>
+    </div>
+  </div>
+}

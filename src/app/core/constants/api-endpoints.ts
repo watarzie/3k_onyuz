@@ -333,4 +333,28 @@ export const API = {
   MENU: {
     KULLANICI_MENU: `${BASE}/menu/kullanici-menu`,
   },
+  /** Yükleme planları (yukleme-planlari R/W). */
+  YUKLEME_PLANLARI: {
+    LISTE: `${BASE}/yukleme-planlari`,
+    TANIMLAR: `${BASE}/yukleme-planlari/tanimlar`,
+    PROJE_ADAYLARI: `${BASE}/yukleme-planlari/proje-adaylari`,
+    PLAN: (id: number) => `${BASE}/yukleme-planlari/${id}`,
+    KAYNAKTAN_GUNCELLE: (id: number) => `${BASE}/yukleme-planlari/${id}/kaynaktan-guncelle`,
+  },
+  /** Ekipman kitaplığı (ekipman-kitapligi R/W; doğrulama ekipman-dogrulama W). */
+  EKIPMAN_KITAPLIGI: {
+    AILELER: `${BASE}/ekipman-kitapligi/aileler`,
+    KONFIGURASYONLAR: `${BASE}/ekipman-kitapligi/konfigurasyonlar`,
+    KONFIGURASYON: (id: number) => `${BASE}/ekipman-kitapligi/konfigurasyonlar/${id}`,
+    DOGRULA: (id: number) => `${BASE}/ekipman-kitapligi/konfigurasyonlar/${id}/dogrula`,
+    SABLON: `${BASE}/ekipman-kitapligi/sablon`,
+    DISA_AKTAR: `${BASE}/ekipman-kitapligi/disa-aktar`,
+    ICE_AKTAR_ONIZLE: `${BASE}/ekipman-kitapligi/ice-aktar/onizle`,
+    ICE_AKTAR: `${BASE}/ekipman-kitapligi/ice-aktar`,
+  },
+  /** Mevzuat kural setleri (mevzuat-kurallari R, salt okunur). */
+  MEVZUAT_KURALLARI: {
+    KURAL_SETLERI: `${BASE}/mevzuat-kurallari/kural-setleri`,
+    KURAL_SETI: (id: number) => `${BASE}/mevzuat-kurallari/kural-setleri/${id}`,
+  },
 } as const;
