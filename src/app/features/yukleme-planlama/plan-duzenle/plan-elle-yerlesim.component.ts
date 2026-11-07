@@ -4,13 +4,15 @@ import { DecimalPipe } from '@angular/common';
 import { Subject, debounceTime, switchMap, map } from 'rxjs';
 import { ToastService } from '../../../core/services/toast.service';
 import { YuklemePlanlamaService } from '../../../core/services/yukleme-planlama.service';
-import { PlanAraci, PlanYerlesimi, YerlesimKontrolSonucu, YuklemePlaniDetayi } from '../../../shared/models/index';
+import { ElleEkipmanSecenegi, PlanAraci, PlanYerlesimi, YerlesimKontrolSonucu, YuklemePlaniDetayi } from '../../../shared/models/index';
 import { Ekipman3dComponent, Yuk3d } from '../ekipman-kitapligi/ekipman-3d.component';
 import { KONTROL_SONUCU, KONTROL_TURU, mm } from '../ortak/yukleme-etiketleri';
 import {
   ElleArac,
   ElleTaslak,
   ElleYuk,
+  aracEkle,
+  araciBosalt,
   aracaTasi,
   aracaYerlestir,
   ayniTiptenEkle,
@@ -59,9 +61,11 @@ interface CizimKutu {
 
 /**
  * Elle yerleşim düzenleyicisi (isterler 20–22): araç başına üstten 2B çizimde sürükle-bırak (istif bütün taşınır,
- * kenara/eksene yapışır, bırakılan yük altındakine oturur), 90° döndürme, başka araca taşıma, bekleyenler listesi ve
- * "aynı tipten araç ekle". Her değişiklikten sonra sunucu kaydetmeden denetler; sorunlu yük kırmızıdır. Kaydetme yeni
- * revizyon açar; sorunlu yerleşim de kaydedilir ve raporları taslak basılır.
+ * kenara/eksene yapışır, bırakılan yük altındakine oturur), 90° döndürme, başka araca taşıma, bekleyenler listesi,
+ * istenen tipte ya da aynı tipten araç ekleme, aracı boşaltma ve "kalanı otomatik diz" (araçlardaki yükler yerinde
+ * kalır, bekleyenler sunucuda boş yerlere ve gerekirse yeni araçlara yerleşir). Yerleşim yoksa araçsız başlar (sıfırdan
+ * elle dizim). Her değişiklikten sonra sunucu kaydetmeden denetler; sorunlu yük kırmızıdır. Kaydetme yeni revizyon
+ * açar; sorunlu yerleşim de kaydedilir ve raporları taslak basılır.
  */
 @Component({
   selector: 'app-plan-elle-yerlesim',
@@ -91,12 +95,22 @@ export class PlanElleYerlesimComponent implements OnInit {
   readonly surukleme = signal<Surukleme | null>(null);
   readonly degisti = signal(false);
   readonly kaydediliyor = signal(false);
+  readonly tamamlaniyor = signal(false);
+  /** Eklenebilecek ekipmanlar (aile içi önce). */
+  readonly ekipmanlar = signal<ElleEkipmanSecenegi[]>([]);
   /** Taslağın sürümü; sunucu denetimi hangi sürüme aitse ona bağlanır (eski yanıt yeni çizimi boyamaz). */
   private readonly surum = signal(0);
   /** Son denetim; <c>sonuc</c> null ise o sürüm denetlenemedi (hata bildirildi). */
   readonly denetim = signal<{ surum: number; sonuc: PlanYerlesimi | null } | null>(null);
-  readonly denetleniyor = computed(() => this.denetim()?.surum !== this.surum());
-  readonly denetlenemedi = computed(() => !this.denetleniyor() && this.denetim()?.sonuc == null);
+  /** Yerleşimsiz (sıfırdan) açılışta ilk değişikliğe kadar denetim beklenmez. */
+  readonly denetleniyor = computed(() => {
+    const d = this.denetim();
+    return d ? d.surum !== this.surum() : this.surum() > 0;
+  });
+  readonly denetlenemedi = computed(() => {
+    const d = this.denetim();
+    return !this.denetleniyor() && d != null && d.sonuc == null;
+  });
   private readonly denetimIstegi = new Subject<number>();
 
   readonly bosluk = computed(() => this.plan().ayarlar.yerlesimBosluguMm ?? 0);
@@ -221,6 +235,10 @@ export class PlanElleYerlesimComponent implements OnInit {
     this.taslak.set(taslakKur(p));
     // Başlangıçta kaydedilmiş yerleşimin kendi sonucu gösterilir; ilk değişiklikte sunucu yeniden denetler.
     if (p.yerlesim) this.denetim.set({ surum: 0, sonuc: p.yerlesim });
+    this.api.elleEkipmanlari(p.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((r) => {
+      if (r.isSuccess && r.value) this.ekipmanlar.set(r.value);
+      else this.toast.error(r.error ?? 'Eklenebilecek araçlar alınamadı.');
+    });
     this.denetimIstegi
       .pipe(
         debounceTime(350),
@@ -379,6 +397,57 @@ export class PlanElleYerlesimComponent implements OnInit {
     this.uygula(ayniTiptenEkle(this.taslak(), a.kimlik));
     const yeni = this.araclar().find((x) => !once.has(x.kimlik));
     if (yeni) this.aracSec(yeni);
+  }
+
+  /** Seçilen ekipmandan boş araç ekler ve onu seçer. */
+  aracEkle(konfigurasyonId: string): void {
+    const e = this.ekipmanlar().find((x) => x.konfigurasyonId === Number(konfigurasyonId));
+    if (!e) return;
+    const once = new Set(this.araclar().map((x) => x.kimlik));
+    this.uygula(aracEkle(this.taslak(), e));
+    const yeni = this.araclar().find((x) => !once.has(x.kimlik));
+    if (yeni) this.aracSec(yeni);
+  }
+
+  /** Seçili aracın bütün yüklerini bekleyenlere gönderir. */
+  araciBosalt(): void {
+    const a = this.seciliArac();
+    if (!a || a.yukler.length === 0) return;
+    this.uygula(araciBosalt(this.taslak(), a.kimlik));
+    this.seciliYuk.set(null);
+  }
+
+  /**
+   * Kalanı otomatik diz: araçlardaki yükler yerinde kalır; bekleyenler sunucuda boş yerlere ve gerekirse yeni araçlara
+   * yerleşir. Sonuç denetlenmiş gelir (ayrı denetim gerekmez); bu arada taslak değiştiyse sonuç uygulanmaz.
+   */
+  kalaniDiz(): void {
+    const p = this.plan();
+    if (this.tamamlaniyor() || this.bekleyenler().length === 0) return;
+    const baslangic = this.surum();
+    const once = this.bekleyenler().length;
+    this.tamamlaniyor.set(true);
+    this.api.elleTamamla(p.id, istek(this.taslak())).subscribe((r) => {
+      this.tamamlaniyor.set(false);
+      if (this.surum() !== baslangic) {
+        this.toast.warning('Bu arada yerleşim değiştiği için otomatik dizim uygulanmadı; tekrar deneyin.');
+        return;
+      }
+      if (!r.isSuccess || !r.value) {
+        this.toast.error(r.error ?? 'Kalan yükler yerleştirilemedi.');
+        return;
+      }
+      const yeni = taslakKur(p, r.value);
+      this.taslak.set(yeni);
+      this.degisti.set(true);
+      this.surum.update((s) => s + 1);
+      this.denetim.set({ surum: this.surum(), sonuc: r.value });
+      this.seciliKimlik.set(null);
+      this.seciliYuk.set(null);
+      const kalan = yeni.bekleyenler.length;
+      if (kalan === 0) this.toast.success(`${once} yük yerleştirildi.`);
+      else this.toast.warning(`${once - kalan} yük yerleştirildi; ${kalan} yük hiçbir araca sığmadı, bekleyenlerde.`);
+    });
   }
 
   bosAraciKaldir(): void {

@@ -64,6 +64,8 @@ export enum YerlesimKontrolTuru {
   Mevzuat = 12,
   Organizasyon = 13,
   ElleYerlesim = 14,
+  /** Yükün ağırlık merkezinin araç ortasından boyuna ve enine sapması. */
+  AgirlikDagilimi = 15,
 }
 
 /** Yükün (ya da istif grubunun) araca giriş yönü (bayrak). */
@@ -115,6 +117,8 @@ export interface YuklemePlanAyarlari {
   genislikPayiMm: number | null;
   uzunlukPayiMm: number | null;
   agirlikPayiKg: number | null;
+  /** Ağırlık merkezinin araç ortasından izin verilen en fazla sapması (araç boyu/genişliğinin yüzdesi, 1–50); boşsa teyit edilmedi. */
+  agirlikMerkeziSapmaYuzde?: number | null;
   yuklemeHareketiPayiMm: number | null;
   /** Mevcut araçlara yerleştirmede kullanıcının verdiği araçlar. */
   mevcutAraclar: PlanMevcutArac[];
@@ -244,6 +248,19 @@ export interface PlanAracKontrolu {
   tur: YerlesimKontrolTuru;
   sonuc: YerlesimKontrolSonucu;
   mesaj: string;
+}
+
+/** Elle yerleşimde eklenebilecek ekipman (araç ekleme seçicisi). */
+export interface ElleEkipmanSecenegi {
+  konfigurasyonId: number;
+  kod: string;
+  ad: string;
+  tipAdi: string;
+  aileAdi: string;
+  aileDisi: boolean;
+  ozelYukEkipmani: boolean;
+  dogrulandi: boolean;
+  teknikVeriJson: string;
 }
 
 export interface PlanAraci {

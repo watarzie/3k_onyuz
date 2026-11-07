@@ -124,7 +124,7 @@ export class PlanDuzenleComponent implements OnInit {
   readonly yuklemeTarihi = signal('');
   readonly aciklama = signal('');
   readonly ayarlar = signal<YuklemePlanAyarlari>({
-    yerlesimBosluguMm: 30, yukseklikPayiMm: null, genislikPayiMm: null, uzunlukPayiMm: null, agirlikPayiKg: null, yuklemeHareketiPayiMm: null,
+    yerlesimBosluguMm: 30, yukseklikPayiMm: null, genislikPayiMm: null, uzunlukPayiMm: null, agirlikPayiKg: null, yuklemeHareketiPayiMm: null, agirlikMerkeziSapmaYuzde: null,
     mevcutAraclar: [],
   });
   readonly hesaplaniyor = signal(false);

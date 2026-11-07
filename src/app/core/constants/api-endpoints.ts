@@ -343,6 +343,8 @@ export const API = {
     HESAPLA: (id: number) => `${BASE}/yukleme-planlari/${id}/hesapla`,
     YERLESIM: (id: number) => `${BASE}/yukleme-planlari/${id}/yerlesim`,
     YERLESIM_DENETLE: (id: number) => `${BASE}/yukleme-planlari/${id}/yerlesim/denetle`,
+    YERLESIM_TAMAMLA: (id: number) => `${BASE}/yukleme-planlari/${id}/yerlesim/tamamla`,
+    YERLESIM_EKIPMANLAR: (id: number) => `${BASE}/yukleme-planlari/${id}/yerlesim/ekipmanlar`,
     RAPOR_ARAC_TALEBI: (id: number) => `${BASE}/yukleme-planlari/${id}/rapor/arac-talebi`,
     RAPOR_YUKLEME_PLANI: (id: number) => `${BASE}/yukleme-planlari/${id}/rapor/yukleme-plani`,
   },

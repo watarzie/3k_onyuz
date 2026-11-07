@@ -60,6 +60,7 @@ export const KONTROL_TURU: Record<YerlesimKontrolTuru, string> = {
   [YerlesimKontrolTuru.Mevzuat]: 'Mevzuat',
   [YerlesimKontrolTuru.Organizasyon]: 'Proje / lokasyon tercihi',
   [YerlesimKontrolTuru.ElleYerlesim]: 'Elle yerleşim',
+  [YerlesimKontrolTuru.AgirlikDagilimi]: 'Ağırlık dağılımı',
 };
 
 export const LOKASYON_TERCIHI: Record<YuklemeLokasyonTercihi, string> = {

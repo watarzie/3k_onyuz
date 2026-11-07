@@ -2,7 +2,8 @@
   <div>
     <strong><i class="ri-drag-move-2-line" aria-hidden="true"></i> Elle yerleşim düzenleme</strong>
     <small class="yp-ipucu d-block">Yükü sürükleyin (üstündekiler birlikte taşınır; bırakılan yük altındakinin üstüne oturur). Oklar 10 mm, Shift+ok 100 mm kaydırır;
-      R döndürür, Delete bekleyenlere gönderir. Kontroller her değişiklikte sunucuda yapılır; sorunlu yerleşim de kaydedilebilir ama raporu taslak basılır.</small>
+      R döndürür, Delete bekleyenlere gönderir. İstediğiniz tipte araç ekleyip yükleri koyabilir, "Kalanı otomatik diz" ile geri kalanını sisteme yerleştirtebilirsiniz.
+      Kontroller her değişiklikte sunucuda yapılır; sorunlu yerleşim de kaydedilebilir ama raporu taslak basılır.</small>
   </div>
   <span class="yp-bosluk"></span>
   @if (denetleniyor()) {
@@ -33,19 +34,37 @@
         }
       </button>
     }
+    @if (araclar().length === 0) {
+      <p class="yp-ipucu mb-2">Henüz araç yok. Aşağıdan araç ekleyin ya da "Kalanı otomatik diz" ile sisteme yerleştirtin.</p>
+    }
     <div class="pe-arac-islem">
+      <select class="form-select form-select-sm pe-arac-ekle" aria-label="Araç ekle" [disabled]="ekipmanlar().length === 0"
+              (change)="aracEkle($any($event.target).value); $any($event.target).value = ''">
+        <option value="">Araç ekle…</option>
+        @for (e of ekipmanlar(); track e.konfigurasyonId) {
+          <option [value]="e.konfigurasyonId">{{ e.kod }} · {{ e.tipAdi }}@if (e.aileDisi) { (aile dışı) }@if (!e.dogrulandi) { · doğrulanmadı }</option>
+        }
+      </select>
       <button type="button" class="tz-btn" [disabled]="!seciliArac()" (click)="ayniTiptenEkle()" title="Seçili araçla aynı ekipmandan boş araç ekler">
-        <i class="ri-add-line" aria-hidden="true"></i>Aynı tipten araç ekle
+        <i class="ri-add-line" aria-hidden="true"></i>Aynı tipten
       </button>
       @if (seciliArac(); as a) {
         @if (a.yukler.length === 0) {
           <button type="button" class="tz-btn" (click)="bosAraciKaldir()"><i class="ri-delete-bin-6-line" aria-hidden="true"></i>Boş aracı kaldır</button>
+        } @else {
+          <button type="button" class="tz-btn" (click)="araciBosalt()" title="Aracın bütün yüklerini bekleyenlere gönderir">
+            <i class="ri-inbox-unarchive-line" aria-hidden="true"></i>Aracı boşalt
+          </button>
         }
       }
     </div>
 
     <div class="tz-section"><i class="ri-inbox-line" aria-hidden="true"></i>Bekleyenler ({{ bekleyenler().length }})</div>
     @if (bekleyenler().length) {
+      <button type="button" class="tz-btn tz-btn--primary w-100 mb-2" [disabled]="tamamlaniyor() || kaydediliyor()" (click)="kalaniDiz()"
+              title="Araçlardaki yükler yerinde kalır; bekleyenler boş yerlere, gerekirse yeni araçlara yerleşir">
+        <i [class]="tamamlaniyor() ? 'ri-loader-4-line tz-spin' : 'ri-magic-line'" aria-hidden="true"></i>Kalanı otomatik diz
+      </button>
       <p class="yp-ipucu mb-1">Araca konmayan yük yerleşemeyen sayılır ve plan uygunsuz olur.</p>
       <ul class="pe-bekleyenler">
         @for (y of bekleyenler(); track y.anahtar) {

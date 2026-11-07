@@ -3,6 +3,8 @@ import {
   ElleArac,
   ElleTaslak,
   ElleYuk,
+  aracEkle,
+  araciBosalt,
   aracaTasi,
   aracaYerlestir,
   ayniTiptenEkle,
@@ -12,6 +14,7 @@ import {
   dondur,
   istek,
   istif,
+  taslakKur,
   tasi,
   yapistir,
   yerelSorunlar,
@@ -102,6 +105,24 @@ describe('elle-yerlesim', () => {
   it('yerel kontrol kasa dışını ve hacim kesişmesini işaretler; üst üste oturma kesişme değildir', () => {
     const a = arac(1, [yuk('dis', 11500, 0), yuk('k1', 3000, 0), yuk('k2', 3500, 500), yuk('alt', 6000, 0), yuk('ust', 6000, 0, 1000)]);
     expect([...yerelSorunlar(a)].sort()).toEqual(['dis', 'k1', 'k2']);
+  });
+
+  it('istenen tipte boş araç eklenir; araç boşaltılınca yükleri bekleyenlere döner', () => {
+    const e = { konfigurasyonId: 77, kod: 'TNT', ad: 'Tenteli', tipAdi: 'Tenteli', aileAdi: 'Tenteli', aileDisi: true, ozelYukEkipmani: false, dogrulandi: false, teknikVeriJson: JSON.stringify(VERI) };
+    const t = aracEkle(taslak(arac(1, [yuk('a', 0, 0), yuk('b', 2000, 0)])), e);
+    expect(t.araclar.map((a) => [a.kimlik, a.konfigurasyonId, a.yukler.length])).toEqual([[1, 40, 2], [2, 77, 0]]);
+    expect(t.araclar[1].veri?.disOlcu?.uzunlukMm).toBe(12000);
+    const b = araciBosalt(t, 1);
+    expect(b.araclar[0].yukler).toEqual([]);
+    expect(b.bekleyenler.map((y) => [y.anahtar, y.xMm, y.zMm])).toEqual([['a', 0, 0], ['b', 0, 0]]);
+    expect(araciBosalt(b, 2)).toBe(b);
+  });
+
+  it('yerleşim yoksa taslak araçsız başlar, hesaplanabilir yükler bekler', () => {
+    const satir = { kaynak: 1, sandikId: 5, manuelGrupNo: null, birimNo: 1, birimSayisi: 1, kod: 'P1-5', projeNo: 'P1', dahil: true, boyMm: 1000, enMm: 800, yukseklikMm: 700, brutKg: 300 };
+    const t = taslakKur({ yerlesim: null, yukler: [satir, { ...satir, sandikId: 6, kod: 'P1-6', boyMm: null }] } as never);
+    expect(t.araclar).toEqual([]);
+    expect(t.bekleyenler.map((y) => y.kod)).toEqual(['P1-5']);
   });
 
   it('boş yer önden arkaya, yüzey içinde aranır; yüzey ortalanır', () => {

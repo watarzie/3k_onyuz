@@ -158,6 +158,11 @@
           <div class="tz-input-unit"><input type="number" class="form-control" min="0" max="1000" [disabled]="!yazabilir()"
             [ngModel]="ayarlar().yuklemeHareketiPayiMm" (ngModelChange)="ayarDegistir('yuklemeHareketiPayiMm', sayi($event))" /><span>mm</span></div>
         </label>
+        <label class="tz-field" title="Yükün ağırlık merkezi araç ortasından bu oranın (araç boyu ve genişliğinin yüzdesi) fazla saparsa uygunsuz">
+          <span>Ağırlık merkezi sapma sınırı</span>
+          <div class="tz-input-unit"><input type="number" class="form-control" min="1" max="50" [disabled]="!yazabilir()"
+            [ngModel]="ayarlar().agirlikMerkeziSapmaYuzde" (ngModelChange)="ayarDegistir('agirlikMerkeziSapmaYuzde', sayi($event))" /><span>%</span></div>
+        </label>
         <small class="yp-ipucu yp-ayarlar__not">Boş pay "tanımlanmadı" demektir: hesap o payı uygulamaz ve ilgili kontrol "Teyit edilmedi" çıkar.</small>
       </div>
       @if (calismaBicimi() === Bicim.MevcutAraclaraYerlestirme) {

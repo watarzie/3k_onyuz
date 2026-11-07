@@ -7,6 +7,7 @@ import {
   ApiResult,
   EkipmanAilesiModeli,
   ElleAracIstegi,
+  ElleEkipmanSecenegi,
   EkipmanIceAktarimSonucu,
   EkipmanKonfigurasyonDetayi,
   EkipmanKonfigurasyonOzeti,
@@ -69,6 +70,16 @@ export class YuklemePlanlamaService extends BaseApiService {
   /** Elle yerleşimi kaydetmeden denetler (sürükle-bırak sonrası anlık kontrol). */
   elleDenetle(id: number, araclar: ElleAracIstegi[]): Observable<ApiResult<PlanYerlesimi>> {
     return this.post<PlanYerlesimi>(API.YUKLEME_PLANLARI.YERLESIM_DENETLE(id), { araclar });
+  }
+
+  /** "Kalanı otomatik diz": araçlardaki yükler yerinde kalır, kalanlar yerleştirilir; sonuç denetlenmiştir, kaydedilmez. */
+  elleTamamla(id: number, araclar: ElleAracIstegi[]): Observable<ApiResult<PlanYerlesimi>> {
+    return this.post<PlanYerlesimi>(API.YUKLEME_PLANLARI.YERLESIM_TAMAMLA(id), { araclar });
+  }
+
+  /** Elle yerleşimde eklenebilecek ekipmanlar (araç ekleme seçicisi). */
+  elleEkipmanlari(id: number): Observable<ApiResult<ElleEkipmanSecenegi[]>> {
+    return this.get<ElleEkipmanSecenegi[]>(API.YUKLEME_PLANLARI.YERLESIM_EKIPMANLAR(id));
   }
 
   /** Elle düzenlenen yerleşimi yeni revizyon olarak kaydeder; arada başka biri kaydettiyse 409. */

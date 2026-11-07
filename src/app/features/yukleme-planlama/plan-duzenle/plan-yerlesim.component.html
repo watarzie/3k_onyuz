@@ -22,11 +22,11 @@
         <i [class]="indiriliyor() === 'yukleme' ? 'ri-loader-4-line tz-spin' : 'ri-file-pdf-2-line'" aria-hidden="true"></i>Yükleme planı
       </button>
     }
-    @if (yazabilir() && yerlesim() && !duzenleme()) {
-      <!-- İsterler 20–21: önerilen yerleşim elle düzenlenir; kaydetme yeni revizyon açar. -->
+    @if (yazabilir() && !duzenleme()) {
+      <!-- İsterler 20–21: önerilen yerleşim elle düzenlenir; yerleşim yoksa sıfırdan elle dizilir. Kaydetme yeni revizyon açar. -->
       <button type="button" class="tz-btn" [disabled]="kaydedilmemis() || hesaplaniyor()" (click)="duzenleme.set(true)"
-              [title]="kaydedilmemis() ? 'Önce değişiklikleri kaydedin' : 'Yükleri sürükleyerek yerleşimi elle düzenleyin'">
-        <i class="ri-drag-move-2-line" aria-hidden="true"></i>Elle düzenle
+              [title]="kaydedilmemis() ? 'Önce değişiklikleri kaydedin' : yerlesim() ? 'Yükleri sürükleyerek yerleşimi elle düzenleyin' : 'Araçları seçip yükleri kendiniz dizin'">
+        <i class="ri-drag-move-2-line" aria-hidden="true"></i>{{ yerlesim() ? 'Elle düzenle' : 'Elle diz' }}
       </button>
     }
     @if (yazabilir() && !duzenleme()) {

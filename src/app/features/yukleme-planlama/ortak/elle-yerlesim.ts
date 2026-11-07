@@ -1,4 +1,4 @@
-import { EkipmanTeknikVerisi, ElleAracIstegi, PlanAraci, YuklemePlaniDetayi } from '../../../shared/models/index';
+import { EkipmanTeknikVerisi, ElleAracIstegi, ElleEkipmanSecenegi, PlanAraci, PlanYerlesimi, YuklemePlaniDetayi } from '../../../shared/models/index';
 import { satirAnahtari } from './plan-yuk-listesi';
 
 /**
@@ -92,9 +92,12 @@ export function yuzeyler(v: EkipmanTeknikVerisi | null): ElleYuzey[] {
   }));
 }
 
-/** Son hesaplanan (ya da elle kaydedilen) yerleşimden düzenleme taslağı; araca konmamış hesaplanabilir yükler bekler. */
-export function taslakKur(plan: YuklemePlaniDetayi): ElleTaslak {
-  const araclar = (plan.yerlesim?.araclar ?? []).map((a, i) => aracTaslagi(a, i + 1));
+/**
+ * Yerleşimden düzenleme taslağı (varsayılan: son hesaplanan ya da elle kaydedilen; "kalanı otomatik diz" sonucu da
+ * verilebilir). Yerleşim yoksa araç yoktur ve bütün hesaplanabilir yükler bekler (sıfırdan elle dizim).
+ */
+export function taslakKur(plan: YuklemePlaniDetayi, yerlesim: PlanYerlesimi | null = plan.yerlesim): ElleTaslak {
+  const araclar = (yerlesim?.araclar ?? []).map((a, i) => aracTaslagi(a, i + 1));
   const yerlesen = new Set(araclar.flatMap((a) => a.yukler.map((y) => y.anahtar)));
   const bekleyenler: ElleYuk[] = [];
   for (const s of plan.yukler) {
@@ -331,6 +334,33 @@ export function ayniTiptenEkle(t: ElleTaslak, kimlik: number): ElleTaslak {
   if (!ornek) return t;
   const yeni = Math.max(0, ...t.araclar.map((a) => a.kimlik)) + 1;
   return { ...t, araclar: [...t.araclar, { ...ornek, kimlik: yeni, yukler: [] }] };
+}
+
+/** Seçilen ekipmandan boş araç ekler (aile içi ya da izinli herhangi bir tip). */
+export function aracEkle(t: ElleTaslak, e: ElleEkipmanSecenegi): ElleTaslak {
+  const kimlik = Math.max(0, ...t.araclar.map((a) => a.kimlik)) + 1;
+  const arac: ElleArac = {
+    kimlik,
+    konfigurasyonId: e.konfigurasyonId,
+    ekipmanKodu: e.kod,
+    ekipmanAdi: e.ad,
+    tipAdi: e.tipAdi,
+    teknikVeriJson: e.teknikVeriJson,
+    veri: teknikVeri(e.teknikVeriJson),
+    yukler: [],
+  };
+  return { ...t, araclar: [...t.araclar, arac] };
+}
+
+/** Aracın bütün yüklerini bekleyenlere gönderir (araç boş kalır); "kalanı otomatik diz" onları yeniden yerleştirebilir. */
+export function araciBosalt(t: ElleTaslak, kimlik: number): ElleTaslak {
+  const arac = t.araclar.find((a) => a.kimlik === kimlik);
+  if (!arac || arac.yukler.length === 0) return t;
+  const geri = arac.yukler.map((y) => ({ ...y, xMm: 0, yMm: 0, zMm: 0, donduruldu: false }));
+  return {
+    araclar: t.araclar.map((a) => (a.kimlik === kimlik ? { ...a, yukler: [] } : a)),
+    bekleyenler: [...t.bekleyenler, ...geri],
+  };
 }
 
 /** Yalnız boş araç kaldırılır (yükler kaybolmasın). */
