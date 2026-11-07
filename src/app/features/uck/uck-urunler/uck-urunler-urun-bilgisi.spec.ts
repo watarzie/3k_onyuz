@@ -161,4 +161,19 @@ describe('3K karşılama panelinde ürün bilgisi (seri no, SKT, lot)', () => {
     paneliAc(urun());
     expect(component.urunBilgisiKilitNedeni()).toBe('');
   });
+
+  it('satır penceresi 3K açıklamasını düzenler; kaydedilen açıklama aynı ürünün sandık parçalarına yansır', () => {
+    component.urunler.set([
+      urun({ ucKAciklama: 'eski' }),
+      urun({ sandikIcerikId: 405, sandikNo: '5', ucKAciklama: 'eski' }),
+      urun({ cekiSatiriId: 68, sandikIcerikId: 402, ucKAciklama: 'başka ürün' }),
+    ]);
+    component.urunBilgisiSatiri.set(component.urunler()[0]);
+
+    component.urunAciklamasiKaydedildi('3k deneme');
+
+    expect(component.urunler().map(x => x.ucKAciklama)).toEqual(['3k deneme', '3k deneme', 'başka ürün']);
+    expect(component.filtered().map(x => x.ucKAciklama)).toContain('3k deneme');
+  });
+
 });

@@ -91,4 +91,14 @@ describe('Grid ürün listesinde ürün bilgisi (seri no, SKT, lot)', () => {
     expect(component.urunBilgisiSatiri()).toBeNull();
     expect(component.urunler().map(u => u.urunBilgisi)).toEqual(['SN: 3K-55']);
   });
+
+  it('pencere Grid açıklamasını düzenler; kaydedilen açıklama ürünün bütün sandık parçalarına yansır', () => {
+    component.urunler.update(list => [...list, urun({ cekiSatiriId: 68, sandikIcerikId: 403, gridAciklama: 'başka ürün' })]);
+    component.urunBilgisiSatiri.set(component.urunler()[0]);
+
+    component.urunAciklamasiKaydedildi('sonradan grid notu');
+
+    expect(component.urunler().map(x => x.gridAciklama)).toEqual(['sonradan grid notu', 'sonradan grid notu', 'başka ürün']);
+  });
+
 });

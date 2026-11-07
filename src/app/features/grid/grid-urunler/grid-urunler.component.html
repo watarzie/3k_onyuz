@@ -391,7 +391,7 @@
                   <button type="button" class="btn btn-sm btn-action btn-urun-bilgisi"
                     (click)="urunBilgisiAc(u); $event.stopPropagation()"
                     [disabled]="!satirUrunBilgisiKaydedilebilir(u)"
-                    [title]="satirUrunBilgisiKilitNedeni(u) || ts.translate('LABELS.URUN_BILGISI_DUZENLE')">
+                    [title]="satirUrunBilgisiKilitNedeni(u) || ts.translate('LABELS.URUN_BILGISI_ACIKLAMA_DUZENLE')">
                     <i class="ri-price-tag-3-line"></i>
                   </button>
                 }
@@ -700,9 +700,10 @@
 </div>
 }
 
-<!-- ===== Ürün Bilgisi (seri no, SKT, lot): 3K ekranındakiyle aynı pencere ===== -->
+<!-- ===== Ürün bilgisi (seri no, SKT, lot) ve Grid açıklaması: 3K ekranındakiyle aynı pencere ===== -->
 @if (urunBilgisiSatiri(); as satir) {
-<app-urun-bilgisi-duzenle [satir]="satir" [projeId]="projeId()" [yazabilir]="canGridWrite"
+<app-urun-bilgisi-duzenle [satir]="satir" [projeId]="projeId()" [yazabilir]="canGridWrite" [aciklamaAlani]="urunAciklamaAlani"
+  (aciklamaKaydedildi)="urunAciklamasiKaydedildi($event)"
   (kaydedildi)="urunBilgisiKaydedildi($event)" (kapat)="urunBilgisiKapat()" (cakisti)="urunBilgisiCakisti()" />
 }
 

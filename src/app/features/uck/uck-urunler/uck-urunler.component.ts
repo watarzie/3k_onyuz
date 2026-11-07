@@ -22,7 +22,7 @@ import {
   URUN_BILGISI_EN_FAZLA, UrunBilgisiDuzenleComponent, urunBilgisiIstegi, urunBilgisiKaydedilebilir, urunBilgisiKilitNedeni,
 } from '../../../shared/components/urun-bilgisi-duzenle/urun-bilgisi-duzenle.component';
 import { UcKUrunDto, UcKDurumGuncelleDto, TopluTamGeldiDto, UcKTopluSecimDto, ProjeDropdownDto, ProjedenKarsilamaKaynakDto, StokKaydiDto, CekiSatiriAnaVeriGuncelleDto, SahaTamamlamaIzDto, onayaAlindi } from '../../../shared/models/index';
-import { UcKDurum, GridSevkDurum, GridDurum, ProjeTipi, StokDurum } from '../../../core/constants/enums';
+import { UcKDurum, GridSevkDurum, GridDurum, ProjeTipi, StokDurum, UrunAciklamaAlani } from '../../../core/constants/enums';
 import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
 import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
@@ -94,6 +94,8 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   readonly urunBilgisiEnFazla = URUN_BILGISI_EN_FAZLA;
   /** Satırdaki ürün bilgisi düğmesinin penceresi; 3K paneli açılamayan satırlarda da kullanılır (Grid ile aynı). */
   urunBilgisiSatiri = signal<UcKUrunDto | null>(null);
+  /** Satırdaki ürün bilgisi penceresi 3K ekranında 3K açıklamasını da düzenler (işlem sonrası not). */
+  readonly urunAciklamaAlani = UrunAciklamaAlani.UcK;
 
   canEditCekiVerisi = computed(() => this.permissions.canWrite(YETKI.SANDIK.CEKI_VERISI_DUZENLE));
   canDeleteCekiVerisi = computed(() => this.permissions.canWrite(YETKI.SANDIK.CEKI_VERISI_SIL));
@@ -729,6 +731,16 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   urunBilgisiCakisti() {
     this.urunBilgisiSatiri.set(null);
     this.loadUrunler(false);
+  }
+
+  /** Açıklama çeki satırındadır: ürünün bütün sandık parçalarında aynı açıklama görünür. */
+  urunAciklamasiKaydedildi(aciklama: string | null) {
+    const cekiSatiriId = this.urunBilgisiSatiri()?.cekiSatiriId;
+    if (!cekiSatiriId) return;
+    const guncelle = (x: UcKUrunDto): UcKUrunDto =>
+      x.cekiSatiriId === cekiSatiriId ? { ...x, ucKAciklama: aciklama ?? undefined } : x;
+    this.urunler.update(list => list.map(guncelle));
+    this.applyFilter();
   }
 
   onTipChange(tip: string) {

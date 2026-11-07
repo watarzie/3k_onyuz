@@ -1,3 +1,5 @@
+import { UrunAciklamaAlani } from '../../core/constants/enums';
+
 // ===== Sandik =====
 
 export interface SandikDto {
@@ -132,6 +134,11 @@ export interface SandikIcerikBilgisiGuncelleDto {
   urunBilgisi: string | null;
   /** Düzenlemeye başlanırken ekranda görülen değer; başkası arada değiştirdiyse sunucu 409 döner. */
   oncekiUrunBilgisi: string | null;
+  /** Verilirse ekranın açıklaması da düzenlenir (Grid → Grid açıklaması, 3K → 3K açıklaması). */
+  aciklamaAlani?: UrunAciklamaAlani;
+  aciklama?: string | null;
+  /** Açıklamanın ekranda görülen eski değeri; başkası arada değiştirdiyse sunucu 409 döner. */
+  oncekiAciklama?: string | null;
 }
 
 export interface SandikEkleDto {

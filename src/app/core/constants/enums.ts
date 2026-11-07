@@ -160,6 +160,12 @@ export enum SevkiyatKilitAcmaTipi {
   SevkiyatGeriAlinarakAc = 2,
 }
 
+/** Sunucudaki `UrunAciklamaAlani`: ürün bilgisi penceresinin düzenlediği açıklama (Grid ekranı → Grid, 3K → 3K). */
+export enum UrunAciklamaAlani {
+  Grid = 1,
+  UcK = 2,
+}
+
 // ===== Birim =====
 export enum Birim {
   Adet = 1,

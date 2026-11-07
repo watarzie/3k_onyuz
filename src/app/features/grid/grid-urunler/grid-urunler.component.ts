@@ -19,7 +19,7 @@ import {
   UrunBilgisiDuzenleComponent, urunBilgisiKaydedilebilir, urunBilgisiKilitNedeni,
 } from '../../../shared/components/urun-bilgisi-duzenle/urun-bilgisi-duzenle.component';
 import { GridUrunDto, GridDurumGuncelleDto, ProjeDropdownDto, CekiSatiriAnaVeriGuncelleDto, SahaTamamlamaIzDto } from '../../../shared/models/index';
-import { GridDurum, GridSevkDurum, ProjeTipi, SurecDurum, UcKDurum } from '../../../core/constants/enums';
+import { GridDurum, GridSevkDurum, ProjeTipi, SurecDurum, UcKDurum, UrunAciklamaAlani } from '../../../core/constants/enums';
 import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { PermissionService } from '../../../core/services/permission.service';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
@@ -104,6 +104,8 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   panelUyari = signal('');
   /** Ürün bilgisi penceresi açık olan sandık satırı; Grid durum panelinden bağımsızdır. */
   urunBilgisiSatiri = signal<GridUrunDto | null>(null);
+  /** Satırdaki ürün bilgisi penceresi Grid ekranında Grid açıklamasını da düzenler. */
+  readonly urunAciklamaAlani = UrunAciklamaAlani.Grid;
 
   canEditCekiVerisi = computed(() => this.permissions.canWrite(YETKI.SANDIK.CEKI_VERISI_DUZENLE));
   canDeleteCekiVerisi = computed(() => this.permissions.canWrite(YETKI.SANDIK.CEKI_VERISI_SIL));
@@ -723,6 +725,13 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     if (!satir?.sandikIcerikId) return;
     this.urunler.update(list => list.map(x => x.sandikIcerikId === satir.sandikIcerikId ? { ...x, urunBilgisi } : x));
     this.applyFilter();
+  }
+
+  /** Açıklama çeki satırındadır: ürünün bütün sandık parçalarında aynı açıklama görünür. */
+  urunAciklamasiKaydedildi(aciklama: string | null) {
+    const cekiSatiriId = this.urunBilgisiSatiri()?.cekiSatiriId;
+    if (!cekiSatiriId) return;
+    this.urunler.update(list => list.map(x => x.cekiSatiriId === cekiSatiriId ? { ...x, gridAciklama: aciklama ?? undefined } : x));
   }
 
   /** Bilgi arada başka biri tarafından (Grid veya 3K) değiştirildi: güncel değer görünsün diye liste tazelenir. */
