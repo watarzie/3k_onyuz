@@ -1,0 +1,53 @@
+<div class="oy" role="group" aria-label="Yükleme sırası oynatıcısı" tabindex="0" (keydown)="tus($event)">
+  <div class="oy__kontrol">
+    <div class="oy__dugmeler">
+      <!-- Uçlarda düğme "disabled" yapılmaz: odak üstündeyken devre dışı kalan düğme klavye olaylarını yutar. -->
+      <button type="button" class="tz-btn tz-btn--icon" [attr.aria-disabled]="adim() <= 1" (click)="elleGit(1)" title="Başa dön" aria-label="Başa dön">
+        <i class="ri-skip-back-line" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="tz-btn tz-btn--icon" [attr.aria-disabled]="adim() <= 1" (click)="elleGit(adim() - 1)" title="Önceki adım" aria-label="Önceki adım">
+        <i class="ri-arrow-left-s-line" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="tz-btn oy__oynat" [disabled]="toplam() < 2" (click)="oynatDuraklat()">
+        <i class="tz-ico-primary" [class]="oynuyor() ? 'ri-pause-line' : 'ri-play-line'" aria-hidden="true"></i>{{ oynuyor() ? 'Duraklat' : 'Oynat' }}
+      </button>
+      <button type="button" class="tz-btn tz-btn--icon" [attr.aria-disabled]="adim() >= toplam()" (click)="elleGit(adim() + 1)" title="Sonraki adım" aria-label="Sonraki adım">
+        <i class="ri-arrow-right-s-line" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="tz-btn tz-btn--icon" [attr.aria-disabled]="adim() >= toplam()" (click)="elleGit(toplam())" title="Son adım" aria-label="Son adım">
+        <i class="ri-skip-forward-line" aria-hidden="true"></i>
+      </button>
+    </div>
+    <input type="range" class="form-range oy__cubuk" min="1" [max]="toplam()" step="1" [value]="adim()" [disabled]="toplam() < 2"
+           aria-label="Yükleme adımı" (input)="elleGit(+$any($event.target).value)" />
+    <strong class="oy__sayac">Adım {{ adim() }} / {{ toplam() }}</strong>
+    <div class="tz-segmented oy__hiz" role="radiogroup" aria-label="Oynatma hızı">
+      @for (h of HIZLAR; track h) {
+        <button type="button" role="radio" [class.active]="hiz() === h" [attr.aria-checked]="hiz() === h" (click)="hizSec(h)">{{ h }}×</button>
+      }
+    </div>
+  </div>
+
+  @if (gecerli(); as a) {
+    <!-- Oynatma sürerken ekran okuyucu her adımı okumasın; durunca geçerli adım duyurulur. -->
+    <div class="oy__adim" [attr.aria-live]="oynuyor() ? 'off' : 'polite'">
+      @if (a.yukler.length > 1) {
+        <span class="yp-rozet" data-ton="info"><i class="ri-stack-line" aria-hidden="true"></i>İstif grubu: {{ a.yukler.length }} kat birlikte yüklenir</span>
+      }
+      <ul class="oy__yukler">
+        @for (y of a.yukler; track y.konum.yukAnahtari) {
+          <li>
+            <span class="oy__no" title="Yük listesindeki ve rapordaki numara">{{ y.no }}</span>
+            <strong>{{ y.konum.kod }}</strong>
+            <span class="yp-ipucu">{{ y.konum.projeNo ?? 'Projesiz' }}</span>
+            <span>{{ y.konum.kat }}. kat</span>
+            <span>{{ girisYonu(y.konum.yuklemeYontemi) }} yükleme</span>
+            <span>{{ y.konum.boyMm }} × {{ y.konum.enMm }} × {{ y.konum.yukseklikMm }} mm @if (y.konum.donduruldu) { (90° döndürüldü) }</span>
+            <span>{{ y.konum.brutKg | number: '1.0-0' }} kg</span>
+            <span>Konum X {{ mm(y.konum.xMm) }} · Y {{ mm(y.konum.yMm) }} · Z {{ mm(y.konum.zMm) }} mm</span>
+          </li>
+        }
+      </ul>
+    </div>
+  }
+</div>

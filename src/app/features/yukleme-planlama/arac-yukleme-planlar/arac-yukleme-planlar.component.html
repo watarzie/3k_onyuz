@@ -1,0 +1,66 @@
+<div class="page-title-area mb-4">
+  <div class="sayfa-baslik">
+    <span class="sayfa-ikon" style="--ton: #0e7490"><i class="ri-barcode-box-line" aria-hidden="true"></i></span>
+    <div>
+      <h2 class="fw-bold mb-1">Araç Yükleme</h2>
+      <app-breadcrumb [items]="breadcrumb" />
+    </div>
+  </div>
+</div>
+
+<section class="trezo-card border-0 bg-white yp-kart">
+  <div class="yp-arac-cubugu">
+    <input type="search" class="form-control yp-arama" placeholder="Plan no veya ad ara" aria-label="Plan ara"
+           [ngModel]="arama()" (ngModelChange)="aramaDegisti($event)" />
+    <small class="yp-ipucu">Yerleşimi hesaplanmış ya da yüklemesi süren planlar listelenir.</small>
+  </div>
+
+  @if (liste(); as l) {
+    @if (l.items.length) {
+      <div class="yp-tablo-sarmal">
+        <table class="yp-tablo">
+          <thead>
+            <tr>
+              <th>Plan no</th>
+              <th>Ad</th>
+              <th>Yükleme tarihi</th>
+              <th class="yp-sayi">Rev.</th>
+              <th>Yükleme</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of l.items; track p.id) {
+              <tr class="yp-tiklanir" tabindex="0" (click)="ac(p)" (keydown.enter)="ac(p)">
+                <td><strong>{{ p.planNo }}</strong></td>
+                <td class="yp-sarmala">{{ p.ad }}</td>
+                <td>{{ p.yuklemeTarihi ? (p.yuklemeTarihi | date: 'dd.MM.yyyy') : '—' }}</td>
+                <td class="yp-sayi">{{ p.revizyonNo }}</td>
+                <td>
+                  @if (p.acikOturum; as o) {
+                    <div class="ay-ilerleme">
+                      <span class="yp-rozet" data-ton="info">Sürüyor · Rev {{ o.revizyonNo }}</span>
+                      <div class="ay-ilerleme__cubuk" [attr.data-tam]="o.yuklenenYuk >= o.toplamYuk"><span [style.width.%]="yuzde(o.yuklenenYuk, o.toplamYuk)"></span></div>
+                      <strong>{{ o.yuklenenYuk }} / {{ o.toplamYuk }}</strong>
+                    </div>
+                  } @else {
+                    <span class="yp-rozet" data-ton="muted">Süren yükleme yok</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-server-pager [pageNumber]="l.pageNumber" [pageSize]="l.pageSize" [totalCount]="l.totalCount"
+        [totalPages]="l.totalPages" [hasPreviousPage]="l.hasPreviousPage" [hasNextPage]="l.hasNextPage"
+        [pageSizeOptions]="SAYFA_BOYUTLARI" (pageChange)="sayfaDegisti($event)" (pageSizeChange)="boyutDegisti($event)" />
+    } @else {
+      <div class="yp-bos">
+        <i class="ri-barcode-box-line" aria-hidden="true"></i>
+        {{ arama() ? 'Aramaya uyan plan yok.' : 'Yüklenecek plan yok. Yükleme planında yerleşim hesaplanınca burada görünür.' }}
+      </div>
+    }
+  } @else if (yukleniyor()) {
+    <div class="yp-yukleniyor"><span class="spinner-border spinner-border-sm"></span> Yükleniyor…</div>
+  }
+</section>

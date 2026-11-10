@@ -1,3 +1,4 @@
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
@@ -11,7 +12,19 @@ import {
   YuklemePlaniDetayi,
   YuklemeProjeKarisimi,
 } from '../../../shared/models/yukleme-planlama.model';
+import { Ekipman3dComponent, Yuk3d } from '../ekipman-kitapligi/ekipman-3d.component';
 import { PlanYerlesimComponent } from './plan-yerlesim.component';
+
+/** 3B sahnenin (WebGL) yerine geçen sahte bileşen: şablonun verdiği girdileri okumak için. */
+@Component({ selector: 'app-ekipman-3d', standalone: true, changeDetection: ChangeDetectionStrategy.OnPush, template: '' })
+class Sahte3dComponent {
+  readonly veri = input<unknown>(null);
+  readonly yukler = input<Yuk3d[]>([]);
+  readonly secili = input<string | null>(null);
+  readonly gorunenler = input<ReadonlySet<string> | null>(null);
+  readonly vurgulular = input<ReadonlySet<string> | null>(null);
+  readonly yukSecildi = output<string | null>();
+}
 
 function konum(anahtar: string, projeNo: string, yMm = 100, enMm = 1000): PlanYukKonumu {
   return {
@@ -42,7 +55,7 @@ function plan(araclar: PlanAraci[], farkliLokasyon = 1): YuklemePlaniDetayi {
       { projeId: 2, projeNo: 'P2', musteri: null, projeTipiId: 1, sevkEdilmisSandikSayisi: 0 },
     ],
     yukler: [], sayaclar: { toplam: 0, secilen: 0, hesaplanabilir: 0, veriEksik: 0, haricTutulan: 0, sevkEdilmisSandik: 0, yerlesen: 0, yerlesemeyen: 0 },
-    kaynakFarklari: [], farkliLokasyonSayisi: farkliLokasyon,
+    kaynakFarklari: [], farkliLokasyonSayisi: farkliLokasyon, surenYukleme: null,
     yerlesim: { hesapTarihi: '2026-11-05T10:00:00', sonuc: YerlesimKontrolSonucu.TeyitEdilmedi, elleDuzenlendi: false, lokasyonaGoreAyri: false, projeBazindaAyri: false,
       araclar, yerlesemeyenler: [], ekIhtiyaclar: [], uyarilar: [] },
   };
@@ -87,5 +100,92 @@ describe('PlanYerlesimComponent', () => {
     c.tercih.set(YuklemeLokasyonTercihi.LokasyonaGoreAyri);
     c.tercihleHesapla();
     expect(istekler).toEqual([YuklemeLokasyonTercihi.LokasyonaGoreAyri]);
+  });
+
+  it('adım adım görünüm: kapalıyken bütün yükler, açıkken o adıma kadar yüklenenler çizilir; araç değişince başa döner', () => {
+    const k = (anahtar: string, sira: number, kat = 1) => ({ ...konum(anahtar, 'P1'), istifNo: sira, yuklemeSirasi: sira, kat });
+    const c = kur(plan([arac(1, 'K40', [k('s:3', 2), k('s:1', 1), k('s:2', 1, 2)]), arac(2, 'K40', [k('s:9', 1)])]));
+    expect(c.adimGorunumu()).toBeNull();
+    expect(c.siraSatirlari().map((s) => [s.no, s.adimNo, s.konum.yukAnahtari])).toEqual([[1, 1, 's:1'], [2, 1, 's:2'], [3, 2, 's:3']]);
+
+    c.oynatmaDegistir();
+    expect([...c.adimGorunumu()!.gorunenler]).toEqual(['s:1', 's:2']);
+    expect([...c.adimGorunumu()!.vurgulular]).toEqual(['s:1', 's:2']);
+    c.adimaGit(2);
+    expect([...c.adimGorunumu()!.gorunenler]).toEqual(['s:1', 's:2', 's:3']);
+    expect([...c.adimGorunumu()!.vurgulular]).toEqual(['s:3']);
+    // Tablodan satır seçmek o yükün adımına götürür.
+    c.satirSec(c.siraSatirlari()[0]);
+    expect([c.gecerliAdim(), c.seciliYuk()]).toEqual([1, 's:1']);
+
+    c.adimaGit(2);
+    c.aracSec(c.araclar()[1]);
+    expect(c.gecerliAdim()).toBe(1);
+    c.oynatmaDegistir();
+    expect(c.adimGorunumu()).toBeNull();
+  });
+
+  it('görünmeyen yük seçili kalmaz; yeni revizyon gelince adım adım görünüm kapanır ve başa döner', () => {
+    const k = (anahtar: string, sira: number) => ({ ...konum(anahtar, 'P1'), istifNo: sira, yuklemeSirasi: sira });
+    const yeniPlan = () => plan([arac(1, 'K40', [k('s:1', 1), k('s:2', 2), k('s:3', 3)])]);
+    const p = yeniPlan();
+    TestBed.configureTestingModule({ imports: [PlanYerlesimComponent], providers: [provideHttpClient(), provideHttpClientTesting()] });
+    const fixture = TestBed.createComponent(PlanYerlesimComponent);
+    fixture.componentRef.setInput('plan', p);
+    const c = fixture.componentInstance;
+
+    c.seciliYuk.set('s:3');
+    c.oynatmaDegistir();
+    expect(c.seciliYuk()).toBeNull();
+    c.adimaGit(3);
+    c.yukSec('s:2');
+    expect([c.gecerliAdim(), c.seciliYuk()]).toEqual([2, 's:2']);
+    c.adimaGit(1);
+    expect(c.seciliYuk()).toBeNull();
+
+    c.adimaGit(3);
+    // Sunucudan gelen yeni revizyon yeni nesnelerdir.
+    fixture.componentRef.setInput('plan', { ...yeniPlan(), revizyonNo: p.revizyonNo + 1 });
+    expect([c.oynatma(), c.gecerliAdim(), c.adimGorunumu()]).toEqual([false, 1, null]);
+  });
+
+  it('şablon: 3B sahneye adımın görünen ve vurgulu yüklerini verir, sıra tablosunda adımı işaretler', () => {
+    const k = (anahtar: string, sira: number) => ({ ...konum(anahtar, 'P1'), istifNo: sira, yuklemeSirasi: sira });
+    TestBed.configureTestingModule({ imports: [PlanYerlesimComponent], providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.overrideComponent(PlanYerlesimComponent, { remove: { imports: [Ekipman3dComponent] }, add: { imports: [Sahte3dComponent] } });
+    const fixture = TestBed.createComponent(PlanYerlesimComponent);
+    fixture.componentRef.setInput('plan', plan([arac(1, 'K40', [k('s:1', 1), k('s:2', 2), k('s:3', 3)])]));
+    fixture.detectChanges();
+    const kok = fixture.nativeElement as HTMLElement;
+    const sahne = () => fixture.debugElement.query((d) => d.componentInstance instanceof Sahte3dComponent).componentInstance as Sahte3dComponent;
+    const siniflar = () => [...kok.querySelectorAll('.py-sira tbody tr')].map((tr) =>
+      tr.classList.contains('py-sira--adim') ? 'adim' : tr.classList.contains('py-sira--bekleyen') ? 'bekleyen' : '');
+
+    // Kapalıyken: oynatıcı yok, bütün yükler çizilir.
+    expect([sahne().gorunenler(), kok.querySelector('app-plan-yukleme-oynatici')]).toEqual([null, null]);
+    expect(siniflar()).toEqual(['', '', '']);
+
+    kok.querySelector<HTMLButtonElement>('.py-oynatma button')!.click();
+    fixture.detectChanges();
+    expect([...sahne().gorunenler()!]).toEqual(['s:1']);
+    expect(siniflar()).toEqual(['adim', 'bekleyen', 'bekleyen']);
+
+    kok.querySelector<HTMLButtonElement>('button[aria-label="Sonraki adım"]')!.click();
+    fixture.detectChanges();
+    expect([[...sahne().gorunenler()!], [...sahne().vurgulular()!]]).toEqual([['s:1', 's:2'], ['s:2']]);
+    expect(siniflar()).toEqual(['', 'adim', 'bekleyen']);
+    expect(kok.textContent).toContain('Adım 2 / 3');
+  });
+
+  it('sıra uyarısı: yandan yüklemede taraf planlanmaz, uygunsuz elle yerleşimde sıra güvenilmez', () => {
+    const yandan = { ...konum('s:1', 'P1'), yuklemeYontemi: YerlesimGirisYonu.Yandan };
+    const uygunsuz = arac(3, 'K40', [konum('s:7', 'P1')]);
+    uygunsuz.yukSorunlari = [{ yukAnahtari: 's:7', sonuc: YerlesimKontrolSonucu.Uygunsuz, mesaj: 'Desteksiz' }];
+    const c = kur(plan([arac(1, 'K40', [konum('s:5', 'P1')]), arac(2, 'TNT', [yandan]), uygunsuz]));
+    expect(c.siraUyarisi()).toBeNull();
+    c.aracSec(c.araclar()[1]);
+    expect(c.siraUyarisi()).toContain('Yandan yüklemede');
+    c.aracSec(c.araclar()[2]);
+    expect(c.siraUyarisi()).toContain('uygunsuz yük');
   });
 });

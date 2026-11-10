@@ -177,3 +177,24 @@
   .py-arac { min-width: 240px; }
   .py-kontroller li { grid-template-columns: minmax(0, 1fr); gap: 2px; }
 }
+
+// Adım adım yükleme görünümü: aç/kapat satırı ve sıra tablosunda geçerli / henüz yüklenmemiş adımlar.
+.py-oynatma {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-bottom: 8px;
+}
+
+.py-sira {
+  tbody tr.py-sira--adim td {
+    background: color-mix(in srgb, var(--yp-ton) 12%, #fff);
+    font-weight: 600;
+  }
+
+  // Adımdaki istif satırlarından hangisinin seçili olduğu görünsün (adım zemini seçili zeminini örter).
+  tbody tr.py-sira--adim.yp-satir--secili td:first-child { box-shadow: inset 3px 0 0 var(--yp-ton); }
+
+  tbody tr.py-sira--bekleyen td { color: #94a3b8; }
+}

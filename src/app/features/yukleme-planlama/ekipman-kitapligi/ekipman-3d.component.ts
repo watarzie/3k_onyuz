@@ -77,6 +77,7 @@ const RENK = {
         <span><i style="background:#1f2937"></i>Dingil</span>
         <span><i style="background:#eab308"></i>King pin</span>
         @if (yukler().length) { <span><i style="background:#dc2626;outline:2px solid #7f1d1d"></i>Uygunsuz yük</span> }
+        @if (vurgulular()) { <span><i style="background:#fff;outline:2px solid #0f172a"></i>Bu adımda yüklenen</span> }
       </div>
     </div>
   `,
@@ -99,6 +100,10 @@ export class Ekipman3dComponent implements AfterViewInit, OnDestroy {
   readonly yukler = input<Yuk3d[]>([]);
   /** Seçili yükün anahtarı (vurgulanır). */
   readonly secili = input<string | null>(null);
+  /** Adım adım yükleme görünümü: yalnız bu anahtarlardaki yükler çizilir; null ise hepsi. */
+  readonly gorunenler = input<ReadonlySet<string> | null>(null);
+  /** O adımda yüklenen yükler (parlak ve koyu kenarlı çizilir). */
+  readonly vurgulular = input<ReadonlySet<string> | null>(null);
   /** Yüke tıklanınca anahtarı; boşluğa tıklanınca null. */
   readonly yukSecildi = output<string | null>();
   readonly govdeGizli = signal(false);
@@ -131,6 +136,8 @@ export class Ekipman3dComponent implements AfterViewInit, OnDestroy {
       const v = this.veri();
       this.yukler();
       this.secili();
+      this.gorunenler();
+      this.vurgulular();
       this.govdeGizli();
       if (this.hazir) this.ciz(v);
     });
@@ -307,25 +314,36 @@ export class Ekipman3dComponent implements AfterViewInit, OnDestroy {
 
   private sonKameraAnahtari = '';
 
-  /** Yükler: proje renginde kutu ve kenar çizgisi; uygunsuz yük kırmızı, seçili yük koyu kenarlı ve parlak. */
+  /**
+   * Yükler: proje renginde kutu ve kenar çizgisi; uygunsuz yük kırmızı, seçili yük koyu kenarlı ve parlak. Adım adım
+   * görünümde henüz yüklenmemiş yük çizilmez (tıklanamaz), o adımın yükleri parlak ve koyu kenarlıdır.
+   */
   private yukleriCiz(): void {
-    const secili = this.secili();
+    const gorunenler = this.gorunenler();
+    const vurgulular = this.vurgulular();
+    // Adım adım görünümde henüz yüklenmemiş (çizilmeyen) seçili yük seçim sayılmaz; yoksa bütün kutular soluk kalır.
+    const istenen = this.secili();
+    const secili = gorunenler && istenen && !gorunenler.has(istenen) ? null : istenen;
     for (const y of this.yukler()) {
+      if (gorunenler && !gorunenler.has(y.anahtar)) continue;
       const renk = new THREE.Color(y.sorunlu ? '#dc2626' : y.renk);
+      const vurgulu = vurgulular?.has(y.anahtar) ?? false;
       const seciliMi = y.anahtar === secili;
+      // Seçim varken öbür yükler soluklaşır; o adımda yüklenen yük parlak kalır.
+      const soluk = !!secili && !seciliMi && !vurgulu;
       const malzeme = new THREE.MeshStandardMaterial({
         color: renk,
         roughness: 0.75,
-        transparent: !!secili && !seciliMi,
-        opacity: secili && !seciliMi ? 0.55 : 1,
-        emissive: seciliMi ? renk.clone().multiplyScalar(0.35) : new THREE.Color(0x000000),
+        transparent: soluk,
+        opacity: soluk ? 0.55 : 1,
+        emissive: seciliMi || vurgulu ? renk.clone().multiplyScalar(vurgulu ? 0.5 : 0.35) : new THREE.Color(0x000000),
       });
       const kutu = new THREE.Mesh(new THREE.BoxGeometry(y.boyMm / 1000, y.yukseklikMm / 1000, y.enMm / 1000), malzeme);
       kutu.position.set((y.xMm + y.boyMm / 2) / 1000, (y.zMm + y.yukseklikMm / 2) / 1000, (y.yMm + y.enMm / 2) / 1000);
       kutu.userData['anahtar'] = y.anahtar;
       this.model.add(kutu);
       this.yukKutulari.push(kutu);
-      const kenar = this.cizgiKutu(y.xMm, y.yMm, y.zMm, y.boyMm, y.enMm, y.yukseklikMm, seciliMi ? 0x0f172a : y.sorunlu ? 0x7f1d1d : 0x334155);
+      const kenar = this.cizgiKutu(y.xMm, y.yMm, y.zMm, y.boyMm, y.enMm, y.yukseklikMm, seciliMi || vurgulu ? 0x0f172a : y.sorunlu ? 0x7f1d1d : 0x334155);
       this.model.add(kenar);
     }
   }

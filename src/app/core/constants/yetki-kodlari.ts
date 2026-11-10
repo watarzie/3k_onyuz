@@ -88,6 +88,8 @@ export const YETKI = {
     EKIPMAN_KITAPLIGI: 'ekipman-kitapligi',
     EKIPMAN_DOGRULAMA: 'ekipman-dogrulama',
     MEVZUAT_KURALLARI: 'mevzuat-kurallari',
+    /** Araç yükleme (saha): R oturumu ve ilerlemeyi görür; W oturum başlatır/kapatır, yükü işaretler, işareti geri alır. */
+    ARAC_YUKLEME: 'arac-yukleme',
   },
 } as const;
 

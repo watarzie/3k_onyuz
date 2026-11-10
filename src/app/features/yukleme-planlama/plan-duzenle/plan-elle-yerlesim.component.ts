@@ -6,7 +6,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { YuklemePlanlamaService } from '../../../core/services/yukleme-planlama.service';
 import { ElleEkipmanSecenegi, PlanAraci, PlanYerlesimi, YerlesimKontrolSonucu, YuklemePlaniDetayi } from '../../../shared/models/index';
 import { Ekipman3dComponent, Yuk3d } from '../ekipman-kitapligi/ekipman-3d.component';
-import { KONTROL_SONUCU, KONTROL_TURU, mm } from '../ortak/yukleme-etiketleri';
+import { PROJE_RENKLERI, KONTROL_SONUCU, KONTROL_TURU, mm } from '../ortak/yukleme-etiketleri';
 import {
   ElleArac,
   ElleTaslak,
@@ -30,8 +30,6 @@ import {
   yerelSorunlar,
   yuzeyler,
 } from '../ortak/elle-yerlesim';
-
-const PROJE_RENKLERI = ['#0e7490', '#7c3aed', '#ea580c', '#16a34a', '#2563eb', '#be185d', '#a16207', '#0f766e', '#4f46e5', '#65a30d'];
 
 interface Surukleme {
   kimlik: number;

@@ -1,0 +1,97 @@
+<div class="page-title-area mb-4">
+  <div class="sayfa-baslik">
+    <span class="sayfa-ikon" style="--ton: #0e7490"><i class="ri-barcode-box-line" aria-hidden="true"></i></span>
+    <div>
+      <h2 class="fw-bold mb-1">{{ durum()?.planNo ?? 'Araç Yükleme' }} @if (durum(); as d) { <small class="ao-ad">{{ d.planAdi }}</small> }</h2>
+      <app-breadcrumb [items]="breadcrumb()" />
+    </div>
+  </div>
+</div>
+
+@if (durum(); as d) {
+  <section class="trezo-card border-0 bg-white yp-kart mb-4">
+    <div class="ay-ust">
+      @if (d.oturum; as o) {
+        <span class="yp-rozet" [attr.data-ton]="OTURUM_DURUMU[o.durum].ton">{{ OTURUM_DURUMU[o.durum].metin }}</span>
+        <div class="ay-ilerleme ao-ilerleme">
+          <div class="ay-ilerleme__cubuk" [attr.data-tam]="o.yuklenenYuk >= o.toplamYuk"><span [style.width.%]="yuzde(o.yuklenenYuk, o.toplamYuk)"></span></div>
+          <strong>{{ o.yuklenenYuk }} / {{ o.toplamYuk }} yük</strong>
+        </div>
+      } @else {
+        <span class="yp-rozet" data-ton="muted">Yükleme başlatılmadı</span>
+      }
+      <span class="yp-bosluk"></span>
+      @if (yazabilir()) {
+        @if (d.baslatilabilir) {
+          <button type="button" class="tz-btn tz-btn--primary" [disabled]="islemde()" (click)="baslat()">
+            <i class="ri-play-circle-line" aria-hidden="true"></i>Yüklemeyi başlat
+          </button>
+        }
+        @if (oturumAcik()) {
+          <button type="button" class="tz-btn tz-btn--danger-hover" [disabled]="islemde()" (click)="iptal()">
+            <i class="ri-close-circle-line tz-ico-danger" aria-hidden="true"></i>İptal et
+          </button>
+          <button type="button" class="tz-btn tz-btn--primary" [disabled]="islemde()" (click)="tamamla()">
+            <i class="ri-checkbox-circle-line" aria-hidden="true"></i>Yüklemeyi tamamla
+          </button>
+        }
+      }
+    </div>
+
+    @if (d.oturum; as o) {
+      <div class="ay-bilgi">
+        <span>Revizyon <strong>{{ o.revizyonNo }}</strong> yerleşimi</span>
+        <span>Başlatan: <strong>{{ o.baslatan ?? '—' }}</strong> · {{ o.baslamaTarihi | date: 'dd.MM.yyyy HH:mm' }}</span>
+        @if (o.kapanisTarihi) {
+          <span>Kapatan: <strong>{{ o.kapatan ?? '—' }}</strong> · {{ o.kapanisTarihi | date: 'dd.MM.yyyy HH:mm' }}</span>
+        }
+        @if (o.kapanisGerekcesi) { <span>Gerekçe: <strong>{{ o.kapanisGerekcesi }}</strong></span> }
+      </div>
+      @if (o.planDegisti && oturumAcik()) {
+        <div class="yp-uyari mt-3 mb-0"><i class="ri-error-warning-line" aria-hidden="true"></i>
+          <span>Plan yükleme başladıktan sonra değişti (güncel revizyon {{ d.sonRevizyonNo }}). Yükleme Revizyon {{ o.revizyonNo }} yerleşimiyle sürüyor;
+            yeni yerleşime geçmek için bu oturum kapatılıp yenisi başlatılmalıdır.</span></div>
+      }
+    } @else if (!d.yerlesimVar) {
+      <div class="yp-uyari mb-0"><i class="ri-information-line" aria-hidden="true"></i>
+        <span>Planın son revizyonunda (Revizyon {{ d.sonRevizyonNo }}) yerleşim yok. Önce yükleme planı ekranında yerleşimi hesaplayın.</span></div>
+    } @else if (!yazabilir()) {
+      <p class="yp-ipucu mb-0">Yüklemeyi başlatmak için araç yükleme işlem yetkisi gerekir.</p>
+    }
+    @if (d.oturum && !oturumAcik() && !d.yerlesimVar) {
+      <p class="yp-ipucu mt-2 mb-0">Yeni oturum için planın son revizyonunda yerleşim hesaplanmalıdır.</p>
+    }
+  </section>
+
+  <section class="trezo-card border-0 bg-white yp-kart">
+    <div class="tz-section mt-0"><i class="ri-truck-line" aria-hidden="true"></i>Araçlar ({{ d.araclar.length }})</div>
+    @if (d.araclar.length) {
+      @if (!d.oturum) { <p class="yp-ipucu">Araçlar, yükleme başlatılınca açılır.</p> }
+      <div class="ao-araclar">
+        @for (a of d.araclar; track a.aracNo) {
+          <button type="button" class="ao-arac" [disabled]="!d.oturum" [attr.data-tam]="!!d.oturum && a.yuklenenYuk >= a.toplamYuk" (click)="aracAc(a)">
+            <span class="ao-arac__no">{{ a.aracNo }}</span>
+            <span class="ao-arac__bilgi">
+              <strong>{{ a.ekipmanKodu }}</strong> <small>{{ a.tipAdi }}</small>
+              <small class="d-block">{{ a.projeNolari.join(', ') }} · {{ a.toplamKg | number: '1.0-0' }} kg</small>
+            </span>
+            <span class="yp-rozet" [attr.data-ton]="KONTROL_SONUCU[a.sonuc].ton" [title]="'Yerleşim: ' + KONTROL_SONUCU[a.sonuc].metin">
+              <i [class]="KONTROL_SONUCU[a.sonuc].ikon" aria-hidden="true"></i>
+              <span class="visually-hidden">Yerleşim: {{ KONTROL_SONUCU[a.sonuc].metin }}</span></span>
+            <span class="ay-ilerleme ao-arac__ilerleme">
+              <span class="ay-ilerleme__cubuk" [attr.data-tam]="a.yuklenenYuk >= a.toplamYuk"><span [style.width.%]="yuzde(a.yuklenenYuk, a.toplamYuk)"></span></span>
+              <strong>{{ a.yuklenenYuk }} / {{ a.toplamYuk }}</strong>
+            </span>
+          </button>
+        }
+      </div>
+    } @else {
+      <div class="yp-bos"><i class="ri-truck-line" aria-hidden="true"></i>Yerleşimde araç yok.</div>
+    }
+  </section>
+} @else if (yukleniyor()) {
+  <div class="yp-yukleniyor"><span class="spinner-border spinner-border-sm"></span> Yükleniyor…</div>
+} @else {
+  <div class="yp-bos"><i class="ri-error-warning-line" aria-hidden="true"></i>Plan bulunamadı ya da yükleme durumu alınamadı.
+    <div class="mt-3"><button type="button" class="tz-btn" (click)="yukle()"><i class="ri-refresh-line" aria-hidden="true"></i>Yeniden dene</button></div></div>
+}

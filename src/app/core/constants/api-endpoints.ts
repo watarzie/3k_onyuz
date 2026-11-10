@@ -348,6 +348,18 @@ export const API = {
     RAPOR_ARAC_TALEBI: (id: number) => `${BASE}/yukleme-planlari/${id}/rapor/arac-talebi`,
     RAPOR_YUKLEME_PLANI: (id: number) => `${BASE}/yukleme-planlari/${id}/rapor/yukleme-plani`,
   },
+  /** Araç yükleme, saha (arac-yukleme: R izleme, W oturum ve işaretleme). */
+  ARAC_YUKLEME: {
+    PLANLAR: `${BASE}/arac-yukleme/planlar`,
+    PLAN: (planId: number) => `${BASE}/arac-yukleme/planlar/${planId}`,
+    OTURUM_BASLAT: (planId: number) => `${BASE}/arac-yukleme/planlar/${planId}/oturum`,
+    ARAC: (oturumId: number, aracNo: number) => `${BASE}/arac-yukleme/oturumlar/${oturumId}/araclar/${aracNo}`,
+    COZUMLE: (oturumId: number) => `${BASE}/arac-yukleme/oturumlar/${oturumId}/cozumle`,
+    YUKLEMELER: (oturumId: number) => `${BASE}/arac-yukleme/oturumlar/${oturumId}/yuklemeler`,
+    GERI_AL: (oturumId: number, isaretId: number) => `${BASE}/arac-yukleme/oturumlar/${oturumId}/yuklemeler/${isaretId}/geri-al`,
+    TAMAMLA: (oturumId: number) => `${BASE}/arac-yukleme/oturumlar/${oturumId}/tamamla`,
+    IPTAL: (oturumId: number) => `${BASE}/arac-yukleme/oturumlar/${oturumId}/iptal`,
+  },
   /** Ekipman kitaplığı (ekipman-kitapligi R/W; doğrulama ekipman-dogrulama W). */
   EKIPMAN_KITAPLIGI: {
     AILELER: `${BASE}/ekipman-kitapligi/aileler`,

@@ -115,8 +115,25 @@
             @if (a.aileDisiGerekce) {
               <div class="yp-uyari"><i class="ri-shield-star-line" aria-hidden="true"></i><span>{{ a.aileDisiGerekce }}</span></div>
             }
+            @if (adimlar().length) {
+              <div class="py-oynatma">
+                <button type="button" class="tz-btn tz-btn--sm" [attr.aria-pressed]="oynatma()" (click)="oynatmaDegistir()">
+                  <i [class]="oynatma() ? 'ri-stop-circle-line' : 'ri-play-list-2-line'" aria-hidden="true"></i>{{ oynatma() ? 'Adım adım görünümü kapat' : 'Yükleme sırasını adım adım göster' }}
+                </button>
+                @if (oynatma()) {
+                  <small class="yp-ipucu">O adıma kadar yüklenenler görünür; o adımda yüklenen parlak çizilir.</small>
+                }
+              </div>
+            }
             <app-ekipman-3d [veri]="teknikVeri()" [yukler]="yukler3d()" [secili]="seciliYuk()" (yukSecildi)="seciliYuk.set($event)"
+                            [gorunenler]="adimGorunumu()?.gorunenler ?? null" [vurgulular]="adimGorunumu()?.vurgulular ?? null"
                             style="--e3d-yukseklik: 440px" />
+            @if (oynatma() && adimlar().length) {
+              <app-plan-yukleme-oynatici [adimlar]="adimlar()" [adim]="gecerliAdim()" (adimDegisti)="adimaGit($event)" />
+              @if (siraUyarisi(); as uyari) {
+                <div class="yp-uyari mt-2"><i class="ri-error-warning-line" aria-hidden="true"></i><span>{{ uyari }}</span></div>
+              }
+            }
             @if (seciliKonum(); as k) {
               <div class="py-secili">
                 <strong>{{ k.kod }}</strong> <span class="yp-ipucu">{{ k.projeNo ?? 'Projesiz' }}</span>
@@ -140,7 +157,7 @@
               <div class="tz-section"><i class="ri-error-warning-line" aria-hidden="true"></i>Yük sorunları</div>
               <ul class="py-kontroller">
                 @for (s of yukSorunlari(); track $index) {
-                  <li class="yp-tiklanir" [attr.data-ton]="KONTROL_SONUCU[s.sonuc].ton" (click)="seciliYuk.set(s.yukAnahtari)">
+                  <li class="yp-tiklanir" [attr.data-ton]="KONTROL_SONUCU[s.sonuc].ton" (click)="yukSec(s.yukAnahtari)">
                     <span class="yp-rozet" [attr.data-ton]="KONTROL_SONUCU[s.sonuc].ton"><i [class]="KONTROL_SONUCU[s.sonuc].ikon"></i>{{ KONTROL_SONUCU[s.sonuc].metin }}</span>
                     <strong>{{ s.kod }}</strong>
                     <span>{{ s.mesaj }}</span>
@@ -161,25 +178,28 @@
             </ul>
 
             <div class="tz-section"><i class="ri-list-ordered" aria-hidden="true"></i>Yükleme sırası</div>
-            <div class="yp-tablo-sarmal py-sira">
+            <div class="yp-tablo-sarmal py-sira" #siraKap>
               <table class="yp-tablo">
-                <thead><tr><th class="yp-sayi">Sıra</th><th>Kod</th><th>Proje</th><th class="yp-sayi">Kat</th><th>Yöntem</th><th class="yp-sayi">X / Y / Z mm</th><th class="yp-sayi">kg</th></tr></thead>
+                <thead><tr><th class="yp-sayi">No</th><th class="yp-sayi">Sıra</th><th>Kod</th><th>Proje</th><th class="yp-sayi">Kat</th><th>Yöntem</th><th class="yp-sayi">X / Y / Z mm</th><th class="yp-sayi">kg</th></tr></thead>
                 <tbody>
-                  @for (k of siraliKonumlar(); track k.yukAnahtari) {
-                    <tr class="yp-tiklanir" [class.yp-satir--secili]="seciliYuk() === k.yukAnahtari" (click)="seciliYuk.set(k.yukAnahtari)">
-                      <td class="yp-sayi">{{ k.yuklemeSirasi }}</td>
-                      <td><span class="py-renk" [style.background]="projeRenkleri().get(k.projeNo ?? '') ?? '#64748b'"></span>{{ k.kod }}</td>
-                      <td>{{ k.projeNo ?? '—' }}</td>
-                      <td class="yp-sayi">{{ k.kat }}@if (k.kat > 1) { <small class="yp-ipucu"> (istif {{ k.istifNo }})</small> }</td>
-                      <td>{{ girisYonu(k.yuklemeYontemi) }}</td>
-                      <td class="yp-sayi">{{ k.xMm }} / {{ k.yMm }} / {{ k.zMm }}</td>
-                      <td class="yp-sayi">{{ k.brutKg | number: '1.0-0' }}</td>
+                  @for (s of siraSatirlari(); track s.konum.yukAnahtari) {
+                    <tr class="yp-tiklanir" [class.yp-satir--secili]="seciliYuk() === s.konum.yukAnahtari"
+                        [class.py-sira--adim]="oynatma() && s.adimNo === gecerliAdim()" [class.py-sira--bekleyen]="oynatma() && s.adimNo > gecerliAdim()"
+                        (click)="satirSec(s)">
+                      <td class="yp-sayi"><strong>{{ s.no }}</strong></td>
+                      <td class="yp-sayi">{{ s.konum.yuklemeSirasi }}</td>
+                      <td><span class="py-renk" [style.background]="projeRenkleri().get(s.konum.projeNo ?? '') ?? '#64748b'"></span>{{ s.konum.kod }}</td>
+                      <td>{{ s.konum.projeNo ?? '—' }}</td>
+                      <td class="yp-sayi">{{ s.konum.kat }}@if (s.konum.kat > 1) { <small class="yp-ipucu"> (istif {{ s.konum.istifNo }})</small> }</td>
+                      <td>{{ girisYonu(s.konum.yuklemeYontemi) }}</td>
+                      <td class="yp-sayi">{{ s.konum.xMm }} / {{ s.konum.yMm }} / {{ s.konum.zMm }}</td>
+                      <td class="yp-sayi">{{ s.konum.brutKg | number: '1.0-0' }}</td>
                     </tr>
                   }
                 </tbody>
               </table>
             </div>
-            <p class="yp-ipucu mt-2 mb-0">Aynı sıra numaralı katlar dışarıda hazırlanan istif grubudur ve birlikte yüklenir.</p>
+            <p class="yp-ipucu mt-2 mb-0">No: rapordaki yük numarası. Aynı sıra numaralı katlar dışarıda hazırlanan istif grubudur ve birlikte yüklenir.</p>
           </div>
         }
       </div>

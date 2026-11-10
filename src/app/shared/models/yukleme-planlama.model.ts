@@ -1,3 +1,5 @@
+import type { AracYuklemeOturumu } from './arac-yukleme.model';
+
 // ===== Yükleme planlama: plan, yük listesi, ekipman kitaplığı ve mevzuat kuralları =====
 // Sunucu sözleşmesi: 3K.Core/Models/YuklemePlaniModelleri.cs, EkipmanKitapligiModelleri.cs, MevzuatModelleri.cs.
 // Enum'lar sayı olarak taşınır; değerler sunucudaki enum'larla aynıdır.
@@ -223,6 +225,8 @@ export interface YuklemePlaniDetayi {
   yerlesim: PlanYerlesimi | null;
   /** Planlamaya dahil yüklerin farklı lokasyon sayısı; 1'den fazlaysa lokasyon tercihi sorulur. */
   farkliLokasyonSayisi: number;
+  /** Sahada süren yükleme oturumu (yoksa null); oturum başladığı revizyonla sürer, plan revize edilse de değişmez. */
+  surenYukleme: AracYuklemeOturumu | null;
 }
 
 export interface PlanYukKonumu {

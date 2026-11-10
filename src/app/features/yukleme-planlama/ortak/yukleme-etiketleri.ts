@@ -18,6 +18,7 @@ import {
   YuklemeProjeKarisimi,
   YuklemeYontemi,
 } from '../../../shared/models/yukleme-planlama.model';
+import { YuklemeOturumDurumu } from '../../../shared/models/arac-yukleme.model';
 
 // Ekranda enum adı yazılmaz; görünen metinler burada tek yerde tutulur (sunucudaki aynası EkipmanKategoriKurali.Ad).
 
@@ -191,3 +192,18 @@ export const ENGEL_TURU: Record<EngelTuru, string> = {
 export function mm(deger: number | null | undefined): string {
   return deger == null ? '—' : deger.toLocaleString('tr-TR');
 }
+
+/** Yükleme oturumu durumu: metin ve rozet tonu. */
+export const OTURUM_DURUMU: Record<YuklemeOturumDurumu, { metin: string; ton: string }> = {
+  [YuklemeOturumDurumu.Acik]: { metin: 'Yükleme sürüyor', ton: 'info' },
+  [YuklemeOturumDurumu.Tamamlandi]: { metin: 'Tamamlandı', ton: 'success' },
+  [YuklemeOturumDurumu.IptalEdildi]: { metin: 'İptal edildi', ton: 'muted' },
+};
+
+/** Yükleme ilerlemesi yüzdesi (0–100); yük yoksa 0. */
+export function yuklemeYuzdesi(yuklenen: number, toplam: number): number {
+  return toplam > 0 ? Math.min(100, Math.round((yuklenen * 100) / toplam)) : 0;
+}
+
+/** Projeleri ayıran renkler; kimlik yalnız renge bağlı değildir (kod ve proje no ayrıca yazılır). */
+export const PROJE_RENKLERI = ['#0e7490', '#7c3aed', '#ea580c', '#16a34a', '#2563eb', '#be185d', '#a16207', '#0f766e', '#4f46e5', '#65a30d'];

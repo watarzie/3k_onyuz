@@ -1,4 +1,17 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  afterRenderEffect,
+  computed,
+  effect,
+  inject,
+  input,
+  linkedSignal,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ToastService } from '../../../core/services/toast.service';
@@ -9,27 +22,35 @@ import {
   EkipmanTeknikVerisi,
   PlanAraci,
   PlanYukKonumu,
+  YerlesimGirisYonu,
   YerlesimKontrolSonucu,
   YuklemeLokasyonTercihi,
   YuklemePlaniDetayi,
 } from '../../../shared/models/index';
 import { Ekipman3dComponent, Yuk3d } from '../ekipman-kitapligi/ekipman-3d.component';
 import { PlanElleYerlesimComponent } from './plan-elle-yerlesim.component';
-import { KONTROL_SONUCU, KONTROL_TURU, LOKASYON_TERCIHI, girisYonuMetni, mm } from '../ortak/yukleme-etiketleri';
+import { PlanYuklemeOynaticiComponent } from '../plan-yukleme-oynatici/plan-yukleme-oynatici.component';
+import { PROJE_RENKLERI, KONTROL_SONUCU, KONTROL_TURU, LOKASYON_TERCIHI, girisYonuMetni, mm } from '../ortak/yukleme-etiketleri';
+import { adimGorunumu, adimSinirla, yuklemeAdimlari } from '../ortak/yukleme-adimlari';
 
-/** Projeleri ayıran renkler; kimlik yalnız renge bağlı değildir (kod ve proje no ayrıca yazılır). */
-const PROJE_RENKLERI = ['#0e7490', '#7c3aed', '#ea580c', '#16a34a', '#2563eb', '#be185d', '#a16207', '#0f766e', '#4f46e5', '#65a30d'];
+/** Yükleme sırası tablosunun satırı: numara ("No"), ait olduğu adım ve konum. */
+interface SiraSatiri {
+  no: number;
+  adimNo: number;
+  konum: PlanYukKonumu;
+}
 
 /**
  * Otomatik yerleşim sonucu (isterler 16–19, 22, 25): araç ve tip özeti, uyarılar, yerleşemeyenler, ek ekipman ihtiyacı,
  * seçili aracın kontrolleri, yük listesi ve 3B görünümü. Lokasyonu farklı yükler varsa ilk hesaptan sonra lokasyon
- * tercihi sorulur. Hesap yalnız kaydedilmiş revizyonla yapılır.
+ * tercihi sorulur. Hesap yalnız kaydedilmiş revizyonla yapılır. Seçili aracın yükleme sırası 3B'de adım adım
+ * oynatılabilir (yalnız görünüm; veri değiştirmez).
  */
 @Component({
   selector: 'app-plan-yerlesim',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, DecimalPipe, Ekipman3dComponent, PlanElleYerlesimComponent],
+  imports: [DatePipe, DecimalPipe, Ekipman3dComponent, PlanElleYerlesimComponent, PlanYuklemeOynaticiComponent],
   templateUrl: './plan-yerlesim.component.html',
   styleUrls: ['../ortak/yukleme.scss', './plan-yerlesim.component.scss'],
 })
@@ -116,8 +137,39 @@ export class PlanYerlesimComponent {
   readonly seciliKonum = computed<PlanYukKonumu | null>(() =>
     this.seciliArac()?.konumlar.find((k) => k.yukAnahtari === this.seciliYuk()) ?? null);
 
-  readonly siraliKonumlar = computed(() =>
-    [...(this.seciliArac()?.konumlar ?? [])].sort((a, b) => a.yuklemeSirasi - b.yuklemeSirasi || a.kat - b.kat));
+  /** Seçili aracın yükleme adımları (istif grubu tek adım). */
+  readonly adimlar = computed(() => yuklemeAdimlari(this.seciliArac()?.konumlar ?? []));
+  readonly siraSatirlari = computed<SiraSatiri[]>(() =>
+    this.adimlar().flatMap((a) => a.yukler.map((y) => ({ no: y.no, adimNo: a.adimNo, konum: y.konum }))));
+
+  /**
+   * Adım adım görünüm açık mı; açıkken 3B'de yalnız o adıma kadar yüklenenler çizilir. Yeni revizyon gelince (hesap,
+   * kayıt, elle düzenleme) kapanır: yeni yerleşim yarım yüklü görünmesin.
+   */
+  readonly oynatma = linkedSignal({ source: () => this.plan().revizyonNo, computation: () => false });
+  /** İstenen adım; adımlar değişince (başka araç, yeni yerleşim) başa döner. */
+  private readonly istenenAdim = linkedSignal({ source: this.adimlar, computation: () => 1 });
+  readonly gecerliAdim = computed(() => adimSinirla(this.istenenAdim(), this.adimlar().length));
+  /** Sıra tablosunun kaydırılan kabı (geçerli adım görünür tutulur). */
+  private readonly siraKap = viewChild<ElementRef<HTMLElement>>('siraKap');
+  readonly adimGorunumu = computed(() =>
+    this.oynatma() && this.adimlar().length ? adimGorunumu(this.adimlar(), this.gecerliAdim()) : null);
+
+  /**
+   * Sıranın fiziksel olarak güvenilir olmadığı durumlar: sıra önden arkaya, sonra soldan sağa verilir; yandan yüklemede
+   * taraf planlanmaz, uygunsuz elle yerleşimde üstteki yük alttakinden önce gelebilir.
+   */
+  readonly siraUyarisi = computed<string | null>(() => {
+    const a = this.seciliArac();
+    if (!a) return null;
+    if (a.yukSorunlari.some((s) => s.sonuc === YerlesimKontrolSonucu.Uygunsuz)) {
+      return 'Elle yerleşimde uygunsuz yük var; gösterilen sıra fiziksel olarak uygulanamayabilir. Önce yük sorunlarını giderin.';
+    }
+    if (a.konumlar.some((k) => k.yuklemeYontemi === YerlesimGirisYonu.Yandan)) {
+      return 'Yandan yüklemede sıra önden arkaya, soldan sağa verilir; aracın hangi yanından yükleneceği planlanmaz.';
+    }
+    return null;
+  });
 
   readonly lokasyonSorusu = computed(() => !!this.yerlesim() && this.plan().farkliLokasyonSayisi > 1);
 
@@ -132,6 +184,16 @@ export class PlanYerlesimComponent {
       const t = this.plan().lokasyonTercihi;
       this.tercih.set(t === YuklemeLokasyonTercihi.HenuzSecilmedi ? YuklemeLokasyonTercihi.Karisik : t);
     });
+    // Adım ilerledikçe sıra tablosu kendi içinde kayarak geçerli adımı görünür tutar; sayfa kaydırılmaz (kullanıcı
+    // 3B görünümü izliyor olabilir).
+    afterRenderEffect(() => {
+      this.gecerliAdim();
+      const kap = this.siraKap()?.nativeElement;
+      const satir = this.oynatma() ? kap?.querySelector<HTMLElement>('tr.py-sira--adim') : null;
+      if (!kap || !satir) return;
+      const ust = satir.getBoundingClientRect().top - kap.getBoundingClientRect().top;
+      if (ust < 40 || ust + satir.offsetHeight > kap.clientHeight) kap.scrollTop += ust - kap.clientHeight / 3;
+    });
   }
 
   elleKaydet(p: YuklemePlaniDetayi): void {
@@ -144,6 +206,38 @@ export class PlanYerlesimComponent {
   aracSec(a: PlanAraci): void {
     this.seciliAracNo.set(a.aracNo);
     this.seciliYuk.set(null);
+  }
+
+  /** Adım adım görünümü açar (ilk adımdan) ya da kapatır. */
+  oynatmaDegistir(): void {
+    this.istenenAdim.set(1);
+    this.oynatma.update((o) => !o);
+    this.gorunmeyenSecimiBirak();
+  }
+
+  adimaGit(adimNo: number): void {
+    this.istenenAdim.set(adimNo);
+    this.gorunmeyenSecimiBirak();
+  }
+
+  /** Sıra tablosunda satır: yükü seçer; adım adım görünümde o yükün adımına gider (oynatma durur). */
+  satirSec(s: SiraSatiri): void {
+    this.seciliYuk.set(s.konum.yukAnahtari);
+    if (this.oynatma()) this.istenenAdim.set(s.adimNo);
+  }
+
+  /** Yükü anahtarıyla seçer (yük sorunları listesi); adım adım görünümde yükün yüklendiği adıma gider. */
+  yukSec(anahtar: string): void {
+    const satir = this.siraSatirlari().find((s) => s.konum.yukAnahtari === anahtar);
+    if (satir) this.satirSec(satir);
+    else this.seciliYuk.set(anahtar);
+  }
+
+  /** Adım adım görünümde henüz yüklenmemiş (çizilmeyen) yük seçili kalmaz. */
+  private gorunmeyenSecimiBirak(): void {
+    const gorunum = this.adimGorunumu();
+    const secili = this.seciliYuk();
+    if (gorunum && secili && !gorunum.gorunenler.has(secili)) this.seciliYuk.set(null);
   }
 
   /** İlk hesap lokasyon ayrımı yapılmadan; sonraki hesaplar seçilen tercihle. */

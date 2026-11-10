@@ -156,6 +156,28 @@ export const routes: Routes = [
         data: { menuKod: YETKI.YUKLEME_PLANLAMA.PLANLAR },
       },
       {
+        // Araç yükleme (saha): yüklenecek planlar, planın yükleme oturumu ve araç başına barkodla işaretleme.
+        path: 'arac-yukleme',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/yukleme-planlama/arac-yukleme-planlar/arac-yukleme-planlar.component').then(m => m.AracYuklemePlanlarComponent),
+        data: { menuKod: YETKI.YUKLEME_PLANLAMA.ARAC_YUKLEME },
+      },
+      {
+        path: 'arac-yukleme/oturum/:oturumId/arac/:aracNo',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/yukleme-planlama/arac-yukleme-arac/arac-yukleme-arac.component').then(m => m.AracYuklemeAracComponent),
+        data: { menuKod: YETKI.YUKLEME_PLANLAMA.ARAC_YUKLEME },
+      },
+      {
+        path: 'arac-yukleme/:planId',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/yukleme-planlama/arac-yukleme-oturum/arac-yukleme-oturum.component').then(m => m.AracYuklemeOturumComponent),
+        data: { menuKod: YETKI.YUKLEME_PLANLAMA.ARAC_YUKLEME },
+      },
+      {
         path: 'ekipman-kitapligi',
         canActivate: [menuGuard],
         loadComponent: () =>
