@@ -113,6 +113,16 @@
               </button>
             </div>
           </label>
+          <label class="tz-field">
+            <span>{{ t('GRID_SAHA.LAST_RECEIPT_FROM') }}</span>
+            <input type="date" class="form-control gs-mal-kabul-baslangic" [value]="malKabulBaslangic()" [max]="malKabulBitis() || null"
+              [title]="t('GRID_SAHA.LAST_RECEIPT_RANGE_HINT')" (change)="malKabulTarihiDegisti('malKabulBaslangic', $any($event.target).value)" />
+          </label>
+          <label class="tz-field">
+            <span>{{ t('GRID_SAHA.LAST_RECEIPT_TO') }}</span>
+            <input type="date" class="form-control gs-mal-kabul-bitis" [value]="malKabulBitis()" [min]="malKabulBaslangic() || null"
+              [title]="t('GRID_SAHA.LAST_RECEIPT_RANGE_HINT')" (change)="malKabulTarihiDegisti('malKabulBitis', $any($event.target).value)" />
+          </label>
           @if (filtreVar()) {
             <button type="button" class="tz-btn gs-temizle" (click)="filtreleriTemizle()">
               <i class="ri-filter-off-line" aria-hidden="true"></i>{{ t('GRID_SAHA.CLEAR_FILTERS') }}

@@ -6,7 +6,8 @@ import { PaginatedList } from './common.model';
 
 /** Ürün listesi kapsamı: Grid'de bekleyenler (varsayılan) ya da Grid'e gelmiş bütün ürünler. */
 export type GridSahaKapsam = 'bekleyen' | 'tumu';
-export type GridSahaSiralama = 'proje' | 'bekleyen' | 'sandik';
+/** Ürün listesinin sıralama alanı; 'son-mal-kabul' en son mal kabul tarihine göre (tarihi olmayan satırlar sonda). */
+export type GridSahaSiralama = 'proje' | 'bekleyen' | 'sandik' | 'son-mal-kabul';
 /** Mal kabul kayıtlarının türü: yalnız mal kabul (varsayılan), yalnız toplu sevk ya da ikisi. */
 export type GridMalKabulTuru = 'mal-kabul' | 'toplu-sevk' | 'hepsi';
 
@@ -20,6 +21,9 @@ export interface GridSahaUrunleriParams {
   gridDurumuId?: number | null;
   siralama?: GridSahaSiralama;
   azalan?: boolean;
+  /** Son mal kabul tarihi süzgeci (yyyy-MM-dd, iki uç dahil); verilince mal kabul kaydı olmayan satır düşer. */
+  malKabulBaslangic?: string;
+  malKabulBitis?: string;
 }
 
 export interface GridSahaOzetDto {

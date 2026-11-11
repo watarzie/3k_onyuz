@@ -37,6 +37,21 @@ describe('GridService — Grid Sahası uçları', () => {
     istek.flush({});
   });
 
+  it('ürünler son mal kabul sıralamasını ve tarih süzgecini gönderir; boş tarih yazılmaz', () => {
+    service.getSahaUrunleri({ siralama: 'son-mal-kabul', azalan: true, malKabulBaslangic: '2026-10-01', malKabulBitis: '2026-10-15' }).subscribe();
+    const istek = http.expectOne(r => r.url === API.GRID.SAHA_URUNLER);
+    expect(istek.request.params.keys().sort()).toEqual(['azalan', 'malKabulBaslangic', 'malKabulBitis', 'pageNumber', 'pageSize', 'siralama']);
+    expect(istek.request.params.get('siralama')).toBe('son-mal-kabul');
+    expect(istek.request.params.get('malKabulBaslangic')).toBe('2026-10-01');
+    expect(istek.request.params.get('malKabulBitis')).toBe('2026-10-15');
+    istek.flush({});
+
+    service.getSahaUrunleri({ malKabulBaslangic: '', malKabulBitis: '2026-10-15' }).subscribe();
+    const ikinci = http.expectOne(r => r.url === API.GRID.SAHA_URUNLER);
+    expect(ikinci.request.params.keys().sort()).toEqual(['malKabulBitis', 'pageNumber', 'pageSize']);
+    ikinci.flush({});
+  });
+
   it('mal kabul kayıtları tarih, personel, arama ve tür süzgecini gönderir; varsayılan tür yazılmaz', () => {
     service.getMalKabulKayitlari({ baslangic: '2026-10-01', bitis: '2026-10-15', personelId: 70, arama: ' kapak ', tur: 'hepsi' }).subscribe();
     const istek = http.expectOne(r => r.url === API.GRID.SAHA_MAL_KABUL);

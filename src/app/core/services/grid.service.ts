@@ -76,6 +76,8 @@ export class GridService {
     query = sayiEkle(query, 'gridDurumuId', params.gridDurumuId);
     query = metinEkle(query, 'siralama', params.siralama);
     if (params.azalan) query = query.set('azalan', 'true');
+    query = metinEkle(query, 'malKabulBaslangic', params.malKabulBaslangic);
+    query = metinEkle(query, 'malKabulBitis', params.malKabulBitis);
     return this.api.get<GridSahaUrunleriDto>(API.GRID.SAHA_URUNLER, { params: query });
   }
 
