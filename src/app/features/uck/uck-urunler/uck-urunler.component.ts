@@ -174,6 +174,9 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
 
   // Stok Dropdown State
   stoklar = signal<StokKaydiDto[]>([]);
+  stokListesiYukleniyor = signal(false);
+  private stokListesiYuklendi = false;
+  stokListesiGorebilir = computed(() => this.permissions.hasAccess(YETKI.STOK.KOK));
   isStokDropdownOpen = signal(false);
   stokSearchTerm = signal('');
   panelStokKaydiId = signal<number | null>(null);
@@ -288,7 +291,11 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     // Stok cross-tab update dinleyicisi
     this.sub.add(
       this.stokService.stokListesiGuncellendi$.subscribe(() => {
-        this.loadStokDropdownList();
+        // Liste eskidi; yalnız stok seçimi açıksa hemen tazele, değilse bir sonraki seçimde yüklenir.
+        this.stokListesiYuklendi = false;
+        if (this.showPanel() && this.panelTip() === 'Stoktan Karşılandı') {
+          this.loadStokDropdownList();
+        }
       })
     );
 
@@ -312,9 +319,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Stok dropdown'u için stokları çek
-    this.loadStokDropdownList();
-
+    // Stok listesi sayfa açılışında değil, "Stoktan Karşılandı" seçilince yüklenir.
     this.loadUrunler(true, initialFocusCekiSatiriId);
   }
 
@@ -323,15 +328,32 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     this.kaynakUrunIstegi?.unsubscribe();
   }
 
+  /** Panelde "Stoktan Karşılandı" seçiliyken liste henüz yüklenmediyse yükler. */
+  stokListesiniGerekirseYukle() {
+    if (this.stokListesiYuklendi || this.stokListesiYukleniyor()) return;
+    this.loadStokDropdownList();
+  }
+
   loadStokDropdownList() {
+    // Stok listesi sunucuda stok:R ister; yetkisiz kullanıcıda istek atılmaz (gereksiz 403 log'u üretmesin).
+    if (!this.stokListesiGorebilir()) {
+      this.stoklar.set([]);
+      return;
+    }
     // 3K Dropdown'u için büyük bir sayfa boyutu ile aktif stokları çek
     // Yalnız aktif stoklar sunucuda filtrelenir; 500 kayıt sınırı tükenmiş kayıtlarla dolmaz (U-132/U-133).
-    this.stokService.getStokListesi(undefined, 1, 500, StokDurum.Aktif).subscribe((res: any) => {
-      if (res.isSuccess && res.value) {
-        // value is PaginatedList due to recent changes
-        const m = res.value.items || res.value;
-        this.stoklar.set(m.filter((s: StokKaydiDto) => s.miktar > 0 && s.durumId === StokDurum.Aktif));
-      }
+    this.stokListesiYukleniyor.set(true);
+    this.stokService.getStokListesi(undefined, 1, 500, StokDurum.Aktif).subscribe({
+      next: (res: any) => {
+        this.stokListesiYukleniyor.set(false);
+        if (res.isSuccess && res.value) {
+          // value is PaginatedList due to recent changes
+          const m = res.value.items || res.value;
+          this.stoklar.set(m.filter((s: StokKaydiDto) => s.miktar > 0 && s.durumId === StokDurum.Aktif));
+          this.stokListesiYuklendi = true;
+        }
+      },
+      error: () => this.stokListesiYukleniyor.set(false),
     });
   }
 
@@ -600,6 +622,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
     this.panelUrun.set(urun);
     const mevcutTip = urun.ucKKarsilamaTipiMetni === 'Bekliyor' ? '' : urun.ucKKarsilamaTipiMetni;
     this.panelTip.set(mevcutTip);
+    if (mevcutTip === 'Stoktan Karşılandı') this.stokListesiniGerekirseYukle();
     // Bu panel yeni bir hareket üretir; toplam gelen miktar yeni hareketin adedi
     // değildir. Önceden işlenmiş satır tekrar açıldığında aynı hareketin ikinci kez
     // yazılmasını önlemek için yalnız güvenli işlem varsayımlarını hazırla.
@@ -746,6 +769,7 @@ export class UcKUrunlerComponent implements OnInit, OnDestroy {
   onTipChange(tip: string) {
     const u = this.panelUrun()!;
     this.panelTip.set(tip);
+    if (tip === 'Stoktan Karşılandı') this.stokListesiniGerekirseYukle();
 
     switch (tip) {
       case 'Sevk Adeti Tam Geldi':

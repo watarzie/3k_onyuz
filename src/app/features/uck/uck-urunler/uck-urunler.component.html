@@ -771,7 +771,11 @@
               [ngModel]="stokSearchTerm()" (ngModelChange)="stokSearchTerm.set($event)"
               (click)="$event.stopPropagation()">
           </li>
-          @if (filteredStoklar().length === 0) {
+          @if (!stokListesiGorebilir()) {
+          <li><span class="dropdown-item text-muted disabled">Stok listesini görme yetkiniz yok.</span></li>
+          } @else if (stokListesiYukleniyor()) {
+          <li><span class="dropdown-item text-muted disabled">Stoklar yükleniyor...</span></li>
+          } @else if (filteredStoklar().length === 0) {
           <li><span class="dropdown-item text-muted disabled">Uygun stok bulunamadı.</span></li>
           }
           @for (stok of filteredStoklar(); track stok.id) {
