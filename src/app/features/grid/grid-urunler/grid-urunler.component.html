@@ -238,16 +238,30 @@
               }
             </td>
             <td><span class="badge-sandik">{{ u.sandikNo }}</span></td>
-            <!-- Kalite -->
+            <!-- Kalite: yazma izni olan ve seçilebilir satırda hücreden seçilir; diğerleri salt rozettir. -->
             <td>
+              @if (kaliteSatirdanDegistirilebilir(u)) {
+              <app-grid-durum-secici [secenekler]="kaliteSecenekleri" baslik="Kalite Durumu"
+                [metin]="u.kaliteDurumMetni" [renk]="getKaliteDurumColor(u.kaliteDurumMetni)"
+                [seciliId]="u.kaliteDurumId" [kaydediliyor]="kaliteKaydedilenSatir() === u.cekiSatiriId"
+                (secildi)="satirKaliteAta(u, $event)" />
+              } @else {
               <span class="durum-badge" [style.background]="getKaliteDurumColor(u.kaliteDurumMetni) + '15'"
                 [style.color]="getKaliteDurumColor(u.kaliteDurumMetni)"
                 [style.border-color]="getKaliteDurumColor(u.kaliteDurumMetni) + '30'">
                 {{ u.kaliteDurumMetni ?? '-' }}
               </span>
+              }
             </td>
-            <!-- Süreç -->
+            <!-- Süreç: yazma izni olan, seçilebilir ve tamamlanmamış satırda hücreden seçilir; diğerleri salt rozettir. -->
             <td>
+              @if (surecSatirdanDegistirilebilir(u)) {
+              <app-grid-durum-secici [secenekler]="surecSecenekleri" baslik="Süreç Durumu"
+                [metin]="getEffectiveSurecDurum(u)" [renk]="getSurecDurumColor(getEffectiveSurecDurum(u))"
+                [seciliId]="u.surecDurumId"
+                [kaydediliyor]="surecKaydedilenSatir() === u.cekiSatiriId"
+                (secildi)="satirSurecAta(u, $event)" />
+              } @else {
               <span class="durum-badge" [style.background]="getSurecDurumColor(getEffectiveSurecDurum(u)) + '15'"
                 [style.color]="getSurecDurumColor(getEffectiveSurecDurum(u))"
                 [style.border-color]="getSurecDurumColor(getEffectiveSurecDurum(u)) + '30'"
@@ -255,6 +269,7 @@
                 @if (isSurecTamamlandi(u)) { <i class="ri-lock-2-line me-1"></i> }
                 {{ getEffectiveSurecDurum(u) ?? '-' }}
               </span>
+              }
             </td>
             <td>
               <span class="durum-badge" [style.background]="getDurumColor(u.gridDurumuMetni) + '15'"
@@ -870,8 +885,9 @@
         <label class="form-label fw-semibold">Kalite Durumu</label>
         <select class="form-select" [ngModel]="kaliteDurumSecim()" (ngModelChange)="kaliteDurumSecim.set(+$event)">
           <option [value]="0" disabled>Seçiniz...</option>
-          <option [value]="1">Onaylandı</option>
-          <option [value]="2">Tadilatta</option>
+          @for (k of kaliteSecenekleri; track k.id) {
+          <option [value]="k.id">{{ k.etiket }}</option>
+          }
         </select>
       </div>
       <div class="modal-footer d-flex gap-2">
@@ -901,12 +917,9 @@
         <label class="form-label fw-semibold">Süreç Durumu</label>
         <select class="form-select" [ngModel]="surecDurumSecim()" (ngModelChange)="surecDurumSecim.set(+$event)">
           <option [value]="0" disabled>Seçiniz...</option>
-          <option [value]="1">Ambar</option>
-          <option [value]="2">İmalat</option>
-          <option [value]="3">Tedarik</option>
-          <option [value]="4">Tedarik 3K Teslim</option>
-          <option [value]="5">Siparişte</option>
-          <option [value]="6">Tamamlandı</option>
+          @for (s of surecSecenekleri; track s.id) {
+          <option [value]="s.id">{{ s.etiket }}</option>
+          }
         </select>
       </div>
       <div class="modal-footer d-flex gap-2">
@@ -946,12 +959,12 @@
         </div>
         <div class="talep-source-box">
           <label class="form-label mb-1">Talep Kaynağı</label>
-          <select class="form-select" [ngModel]="talepKaynakSecim()" (ngModelChange)="talepKaynakSecim.set(+$event)">
+          <select class="form-select" [ngModel]="talepKaynakSecim()" (ngModelChange)="setTalepKaynak(+$event)">
             <option [value]="1">Ambar</option>
             <option [value]="2">Üretim</option>
             <option [value]="3">Tedarikçi</option>
           </select>
-          <small>PDF ve süreç durumu seçilen kaynağa göre oluşturulur.</small>
+          <small>Bütün satırların süreci kaynağa göre seçilir; gerekirse Süreç sütunundan satır satır değiştirin.</small>
         </div>
         <div class="table-responsive" style="max-height: 400px">
           <table class="table table-hover align-middle mb-0">
@@ -961,6 +974,7 @@
                 <th>Barkod</th>
                 <th>Ürün Açıklaması</th>
                 <th style="width:140px" class="text-center">İstenen Miktar</th>
+                <th style="width:170px">Süreç</th>
                 <th style="width:50px"></th>
               </tr>
             </thead>
@@ -977,6 +991,14 @@
                       min="0.01" step="any" />
                     <small class="text-muted">{{ item.birim }}</small>
                   </div>
+                </td>
+                <td>
+                  <select class="form-select form-select-sm talep-surec-select" [ngModel]="item.surecDurumId"
+                    (ngModelChange)="updateTalepSurec($index, +$event)" aria-label="Süreç">
+                    @for (s of talepSurecSecenekleri; track s.id) {
+                    <option [value]="s.id">{{ s.etiket }}</option>
+                    }
+                  </select>
                 </td>
                 <td class="text-center">
                   <button class="btn btn-sm btn-outline-danger border-0" (click)="removeTalepItem($index)" title="Kaldır">

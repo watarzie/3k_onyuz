@@ -1,0 +1,141 @@
+:host {
+  display: inline-block;
+  position: relative;
+}
+
+// Tetikleyici Grid tablosundaki durum rozetiyle (.durum-badge) aynı ölçüdedir; renk satırın değerinden gelir.
+.durum-tetik {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 5px 3px 10px;
+  border: 1px solid;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  line-height: 1.5;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, filter 0.15s ease;
+
+  &:hover:not(:disabled),
+  &[aria-expanded='true'] {
+    box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 14%, transparent);
+  }
+  &:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--primaryColor, #0e7a4e) 45%, transparent);
+    outline-offset: 1px;
+  }
+  &:disabled {
+    cursor: progress;
+    opacity: 0.75;
+  }
+
+  // Atanmamış süreç: kesikli kenarlı gri düğme; seçim yapılınca rozet olur.
+  &--bos {
+    gap: 3px;
+    padding: 3px 10px 3px 7px;
+    border-style: dashed;
+    border-color: var(--borderColor, #dbe2ea);
+    background: var(--whiteColor, #fff);
+    color: var(--bodyColor, #64748b);
+
+    &:hover:not(:disabled),
+    &[aria-expanded='true'] {
+      border-color: color-mix(in srgb, var(--primaryColor, #0e7a4e) 45%, transparent);
+      color: var(--primaryColor, #0e7a4e);
+      box-shadow: none;
+    }
+  }
+
+  i {
+    font-size: 14px;
+    line-height: 1;
+  }
+}
+
+.durum-ok {
+  opacity: 0.75;
+  transition: transform 0.15s ease;
+
+  &.acik {
+    transform: rotate(180deg);
+  }
+}
+
+.durum-spinner {
+  width: 11px;
+  height: 11px;
+  border-width: 1.5px;
+  margin: 0 2px;
+}
+
+// Panel İşlemler menüsüyle (app-islemler-menusu) aynı görünümdedir.
+.durum-panel {
+  display: none;
+  position: fixed;
+  z-index: 2060;
+  width: 210px;
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid var(--borderColor, #dbe2ea);
+  border-radius: 8px;
+  background: var(--whiteColor, #fff);
+  box-shadow: 0 12px 28px rgb(15 23 42 / 16%);
+  cursor: default;
+
+  &.acik {
+    display: flex;
+  }
+
+  &__baslik {
+    padding: 4px 10px 6px;
+    color: var(--bodyColor, #64748b);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+
+  &__oge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 34px;
+    margin: 0;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--blackColor, #1f2937);
+    font-size: 12.5px;
+    font-weight: 500;
+    text-align: left;
+
+    &:hover {
+      background: color-mix(in srgb, var(--primaryColor, #0e7a4e) 9%, transparent);
+      color: var(--primaryColor, #0e7a4e);
+    }
+    &.secili {
+      font-weight: 600;
+    }
+  }
+
+  &__nokta {
+    flex: 0 0 auto;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  &__isaret {
+    color: var(--primaryColor, #0e7a4e);
+    font-size: 15px;
+    line-height: 1;
+  }
+}
