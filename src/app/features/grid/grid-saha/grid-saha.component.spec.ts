@@ -106,6 +106,12 @@ describe('Grid Sahası görünümü', () => {
     expect(satirlar[0].textContent).toContain('Sevk Edildi');
     expect(satirlar[1].textContent).toContain('Kayıt yok');
     expect(el.querySelector('.readonly-badge')).not.toBeNull();
+    // Sıralama listesinde son mal kabul seçeneği ve son mal kabul tarih süzgeci vardır.
+    const secenekler = Array.from(el.querySelectorAll<HTMLOptionElement>('.gs-siralama-alani option')).map(o => o.value);
+    expect(secenekler).toEqual(['proje', 'bekleyen', 'sandik', 'son-mal-kabul']);
+    expect(el.querySelector('.gs-siralama-alani option[value="son-mal-kabul"]')?.textContent?.trim()).toBe('Son mal kabul');
+    expect(el.querySelector('input.gs-mal-kabul-baslangic')).not.toBeNull();
+    expect(el.querySelector('input.gs-mal-kabul-bitis')).not.toBeNull();
   });
 
   it('"Grid\'e git" bağlantısı yalnız proje tipinin Grid izni varsa çıkar; izinsiz tipte proje numarası düz metin kalır', () => {
@@ -154,12 +160,28 @@ describe('Grid Sahası görünümü', () => {
     c.azalanDegistir();
     expect(son()).toEqual(jasmine.objectContaining({ siralama: 'bekleyen', azalan: true }));
     c.siralamaDegisti('bilinmeyen');
-    expect(son().siralama).toBe('proje');
+    expect(son()).toEqual(jasmine.objectContaining({ siralama: 'proje', azalan: false }));
+    // Son mal kabul: mal kabul kayıtları gibi en yeni önce başlar, yön düğmesiyle tersine döner.
+    c.siralamaDegisti('son-mal-kabul');
+    expect(son()).toEqual(jasmine.objectContaining({ siralama: 'son-mal-kabul', azalan: true, pageNumber: 1 }));
+    c.azalanDegistir();
+    expect(son()).toEqual(jasmine.objectContaining({ siralama: 'son-mal-kabul', azalan: false }));
+    c.siralamaDegisti('sandik');
+    expect(son()).toEqual(jasmine.objectContaining({ siralama: 'sandik', azalan: false }));
+
+    c.sayfaDegisti(2);
+    c.malKabulTarihiDegisti('malKabulBaslangic', '2026-10-01');
+    expect(son()).toEqual(jasmine.objectContaining({ malKabulBaslangic: '2026-10-01', malKabulBitis: undefined, pageNumber: 1 }));
+    c.malKabulTarihiDegisti('malKabulBitis', '2026-10-15');
+    expect(son()).toEqual(jasmine.objectContaining({ malKabulBaslangic: '2026-10-01', malKabulBitis: '2026-10-15' }));
+    expect(c.filtreVar()).toBeTrue();
 
     c.filtreleriTemizle();
     expect(c.filtreVar()).toBeFalse();
     // Kapsam süzgeç değildir: temizleme "Tümü" seçimini korur.
-    expect(son()).toEqual(jasmine.objectContaining({ arama: undefined, projeTipiId: null, gridDurumuId: null, kapsam: 'tumu', pageNumber: 1 }));
+    expect(son()).toEqual(jasmine.objectContaining({
+      arama: undefined, projeTipiId: null, gridDurumuId: null, malKabulBaslangic: undefined, malKabulBitis: undefined, kapsam: 'tumu', pageNumber: 1,
+    }));
 
     c.sayfaBoyutuDegisti(50);
     expect(son()).toEqual(jasmine.objectContaining({ pageSize: 50, pageNumber: 1 }));

@@ -23,6 +23,7 @@
   }
   &__input { resize: vertical; font-size: 13px; }
   &__kilit { overflow-wrap: anywhere; }
+  &__aciklama { margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--borderColor); }
 
   .btn-outline { background: transparent; color: var(--bodyColor); border: 1px solid var(--borderColor); border-radius: 8px; }
   .btn-save {

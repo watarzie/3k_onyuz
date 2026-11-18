@@ -327,7 +327,7 @@
                 <button type="button" class="btn btn-sm btn-action btn-urun-bilgisi"
                   (click)="urunBilgisiAc(u); $event.stopPropagation()"
                   [disabled]="!satirUrunBilgisiKaydedilebilir(u)"
-                  [title]="satirUrunBilgisiKilitNedeni(u) || ts.translate('LABELS.URUN_BILGISI_DUZENLE')">
+                  [title]="satirUrunBilgisiKilitNedeni(u) || ts.translate('LABELS.URUN_BILGISI_ACIKLAMA_DUZENLE')">
                   <i class="ri-price-tag-3-line"></i>
                 </button>
                 @if (u.isManuelEklenen && !isSahaManuelIcerik(u)) {
@@ -771,7 +771,11 @@
               [ngModel]="stokSearchTerm()" (ngModelChange)="stokSearchTerm.set($event)"
               (click)="$event.stopPropagation()">
           </li>
-          @if (filteredStoklar().length === 0) {
+          @if (!stokListesiGorebilir()) {
+          <li><span class="dropdown-item text-muted disabled">Stok listesini görme yetkiniz yok.</span></li>
+          } @else if (stokListesiYukleniyor()) {
+          <li><span class="dropdown-item text-muted disabled">Stoklar yükleniyor...</span></li>
+          } @else if (filteredStoklar().length === 0) {
           <li><span class="dropdown-item text-muted disabled">Uygun stok bulunamadı.</span></li>
           }
           @for (stok of filteredStoklar(); track stok.id) {
@@ -842,9 +846,10 @@
 </div>
 }
 
-<!-- ===== Ürün Bilgisi (seri no, SKT, lot): Grid ekranındakiyle aynı pencere ===== -->
+<!-- ===== Ürün bilgisi (seri no, SKT, lot) ve 3K açıklaması: Grid ekranındakiyle aynı pencere ===== -->
 @if (urunBilgisiSatiri(); as satir) {
-<app-urun-bilgisi-duzenle [satir]="satir" [projeId]="projeId()" [yazabilir]="canUcKWrite"
+<app-urun-bilgisi-duzenle [satir]="satir" [projeId]="projeId()" [yazabilir]="canUcKWrite" [aciklamaAlani]="urunAciklamaAlani"
+  (aciklamaKaydedildi)="urunAciklamasiKaydedildi($event)"
   (kaydedildi)="urunBilgisiKaydedildi($event)" (kapat)="urunBilgisiKapat()" (cakisti)="urunBilgisiCakisti()" />
 }
 

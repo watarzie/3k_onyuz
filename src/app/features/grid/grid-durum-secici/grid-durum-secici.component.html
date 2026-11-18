@@ -1,0 +1,36 @@
+@if (metin()) {
+<button #tetik type="button" class="durum-tetik" [disabled]="kaydediliyor()"
+  [style.background]="renk() + '15'" [style.color]="renk()" [style.border-color]="renk() + '30'"
+  aria-haspopup="menu" [attr.aria-expanded]="acik()" [title]="baslik() + ' güncelle'"
+  (click)="degistir($event)">
+  <span>{{ metin() }}</span>
+  @if (kaydediliyor()) {
+  <span class="spinner-border durum-spinner" aria-hidden="true"></span>
+  } @else {
+  <i class="ri-arrow-down-s-line durum-ok" [class.acik]="acik()" aria-hidden="true"></i>
+  }
+</button>
+} @else {
+<button #tetik type="button" class="durum-tetik durum-tetik--bos" [disabled]="kaydediliyor()"
+  aria-haspopup="menu" [attr.aria-expanded]="acik()" [title]="baslik() + ' ata'"
+  (click)="degistir($event)">
+  @if (kaydediliyor()) {
+  <span class="spinner-border durum-spinner" aria-hidden="true"></span>
+  } @else {
+  <i class="ri-add-line" aria-hidden="true"></i>
+  }
+  <span>Seç</span>
+</button>
+}
+<div class="durum-panel" role="menu" [class.acik]="acik()" [style.top.px]="konum()?.top"
+  [style.left.px]="konum()?.left" (click)="$event.stopPropagation()">
+  <div class="durum-panel__baslik">{{ baslik() }}</div>
+  @for (s of secenekler(); track s.id) {
+  <button type="button" role="menuitemradio" class="durum-panel__oge" [class.secili]="s.id === seciliId()"
+    [attr.aria-checked]="s.id === seciliId()" (click)="sec(s, $event)">
+    <span class="durum-panel__nokta" [style.background]="s.renk"></span>
+    <span class="flex-grow-1">{{ s.etiket }}</span>
+    @if (s.id === seciliId()) { <i class="ri-check-line durum-panel__isaret" aria-hidden="true"></i> }
+  </button>
+  }
+</div>

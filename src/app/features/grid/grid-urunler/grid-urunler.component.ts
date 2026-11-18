@@ -2,7 +2,7 @@ import { Component, inject, signal, computed, OnInit, OnDestroy, ChangeDetection
 import { ActivatedRoute } from '@angular/router';
 import { DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { Subscription, concat, toArray } from 'rxjs';
 import { TranslationService } from '../../../core/services/translation.service';
 import { GridService } from '../../../core/services/grid.service';
 import { SandikService } from '../../../core/services/sandik.service';
@@ -19,13 +19,18 @@ import {
   UrunBilgisiDuzenleComponent, urunBilgisiKaydedilebilir, urunBilgisiKilitNedeni,
 } from '../../../shared/components/urun-bilgisi-duzenle/urun-bilgisi-duzenle.component';
 import { GridUrunDto, GridDurumGuncelleDto, ProjeDropdownDto, CekiSatiriAnaVeriGuncelleDto, SahaTamamlamaIzDto } from '../../../shared/models/index';
-import { GridDurum, GridSevkDurum, ProjeTipi, SurecDurum, UcKDurum } from '../../../core/constants/enums';
+import { GridDurum, GridSevkDurum, ProjeTipi, SurecDurum, UcKDurum, UrunAciklamaAlani } from '../../../core/constants/enums';
 import { projeTipiBaglami, rotaProjeTipi } from '../../../core/constants/proje-tipi';
 import { PermissionService } from '../../../core/services/permission.service';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
 import { pdfMakeYukle } from '../../../core/services/pdfmake-yukleyici';
 import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 import { TzSecenek, TzSeciciComponent } from '../../../shared/components/tz-secici/tz-secici.component';
+import { GridDurumSeciciComponent } from '../grid-durum-secici/grid-durum-secici.component';
+import {
+  KALITE_SECENEKLERI, SUREC_SECENEKLERI, TALEP_SUREC_SECENEKLERI, kaliteDurumRengi, kaliteEtiketi, surecDurumRengi,
+  surecEtiketi, talepSurecGruplari,
+} from '../ortak/grid-durumlari';
 
 
 interface AmbarTalepItem {
@@ -34,6 +39,8 @@ interface AmbarTalepItem {
   aciklama: string;
   istenenMiktar: number;
   birim: string;
+  /** Talep formunda bu satıra verilecek süreç; PDF'e yazılır ve form indirilince satıra atanır. */
+  surecDurumId: number;
 }
 
 // ===== Durum tanımları =====
@@ -58,7 +65,7 @@ const SEVK_DURUMLARI: DurumSecenegi[] = [
 @Component({
   selector: 'app-grid-urunler',
   standalone: true,
-  imports: [NgClass, DatePipe, FormsModule, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent, TzSeciciComponent, UrunBilgisiDuzenleComponent],
+  imports: [NgClass, DatePipe, FormsModule, BreadcrumbComponent, StatCardComponent, CanWriteDirective, ReadOnlyBannerComponent, TzSeciciComponent, UrunBilgisiDuzenleComponent, GridDurumSeciciComponent],
   templateUrl: './grid-urunler.component.html',
   styleUrl: './grid-urunler.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -104,6 +111,8 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   panelUyari = signal('');
   /** Ürün bilgisi penceresi açık olan sandık satırı; Grid durum panelinden bağımsızdır. */
   urunBilgisiSatiri = signal<GridUrunDto | null>(null);
+  /** Satırdaki ürün bilgisi penceresi Grid ekranında Grid açıklamasını da düzenler. */
+  readonly urunAciklamaAlani = UrunAciklamaAlani.Grid;
 
   canEditCekiVerisi = computed(() => this.permissions.canWrite(YETKI.SANDIK.CEKI_VERISI_DUZENLE));
   canDeleteCekiVerisi = computed(() => this.permissions.canWrite(YETKI.SANDIK.CEKI_VERISI_SIL));
@@ -157,6 +166,13 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   showSurecModal = signal(false);
   surecDurumSecim = signal(0);
   surecSaving = signal(false);
+  readonly surecSecenekleri = SUREC_SECENEKLERI;
+  readonly kaliteSecenekleri = KALITE_SECENEKLERI;
+  /** Satır içi kalite ataması süren çeki satırı; aynı anda tek satır kaydedilir. */
+  kaliteKaydedilenSatir = signal<number | null>(null);
+  readonly talepSurecSecenekleri = TALEP_SUREC_SECENEKLERI;
+  /** Satır içi süreç ataması süren çeki satırı; aynı anda tek satır kaydedilir. */
+  surecKaydedilenSatir = signal<number | null>(null);
 
   // Toplu İşlemler Dropdown Menü
   showTopluIslemlerMenu = signal(false);
@@ -723,6 +739,13 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     if (!satir?.sandikIcerikId) return;
     this.urunler.update(list => list.map(x => x.sandikIcerikId === satir.sandikIcerikId ? { ...x, urunBilgisi } : x));
     this.applyFilter();
+  }
+
+  /** Açıklama çeki satırındadır: ürünün bütün sandık parçalarında aynı açıklama görünür. */
+  urunAciklamasiKaydedildi(aciklama: string | null) {
+    const cekiSatiriId = this.urunBilgisiSatiri()?.cekiSatiriId;
+    if (!cekiSatiriId) return;
+    this.urunler.update(list => list.map(x => x.cekiSatiriId === cekiSatiriId ? { ...x, gridAciklama: aciklama ?? undefined } : x));
   }
 
   /** Bilgi arada başka biri tarafından (Grid veya 3K) değiştirildi: güncel değer görünsün diye liste tazelenir. */
@@ -1411,21 +1434,12 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
 
   /** Kalite durumu rengi */
   getKaliteDurumColor(value?: string): string {
-    if (!value) return '#94a3b8';
-    return value === 'Onaylandı' ? '#25B003' : '#E65100';
+    return kaliteDurumRengi(value);
   }
 
   /** Süreç durumu rengi */
   getSurecDurumColor(value?: string): string {
-    const renkler: Record<string, string> = {
-      'Ambar': '#607D8B',
-      'İmalat': '#3584FC',
-      'Tedarik': '#9C27B0',
-      'Tedarik 3K Teslim': '#1B7D3A',
-      'Siparişte': '#D97706',
-      'Tamamlandı': '#25B003',
-    };
-    return value ? (renkler[value] || '#94a3b8') : '#94a3b8';
+    return surecDurumRengi(value);
   }
 
   /**
@@ -1493,6 +1507,44 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
   }
   closeKaliteModal() { this.showKaliteModal.set(false); }
 
+  /**
+   * Satır içi kalite seçimi, toplu kalite atamasının satır koşullarıyla açılır: kalite yazma izni ve satırın
+   * seçilebilir olması (saha manuel içeriği, sahaya aktarılmış veya sevk edilmiş sandıktaki satır değil).
+   * Sunucu aynı kuralları ayrıca denetler.
+   */
+  kaliteSatirdanDegistirilebilir(u: GridUrunDto): boolean {
+    return this.canKalite && u.cekiSatiriId > 0 && !this.isCheckboxDisabled(u);
+  }
+
+  /** Satırdan seçilen kaliteyi toplu atamayla aynı uca (`kalite-durum`) tek çeki satırı için gönderir. */
+  satirKaliteAta(u: GridUrunDto, kaliteDurumId: number): void {
+    if (!this.kaliteSatirdanDegistirilebilir(u) || this.kaliteKaydedilenSatir() !== null) return;
+    if (u.kaliteDurumId === kaliteDurumId) return;
+
+    const kaliteAdi = kaliteEtiketi(kaliteDurumId);
+    this.kaliteKaydedilenSatir.set(u.cekiSatiriId);
+    this.gridService.kaliteDurumGuncelle({
+      projeId: this.projeId(),
+      cekiSatiriIdler: [u.cekiSatiriId],
+      kaliteDurumId,
+    }).subscribe({
+      next: (res) => {
+        this.kaliteKaydedilenSatir.set(null);
+        if (res.isSuccess) {
+          this.toast.success(`Kalite durumu "${kaliteAdi}" olarak güncellendi.`);
+          this.gridService.notifyGridUpdated();
+          this.loadUrunler(false);
+        } else {
+          this.toast.error(res.error ?? 'Kalite güncelleme başarısız.');
+        }
+      },
+      error: () => {
+        this.kaliteKaydedilenSatir.set(null);
+        this.toast.error('Sunucu hatası oluştu.');
+      },
+    });
+  }
+
   confirmKalite() {
     if (this.hasSevkKilitliSecim()) return;
 
@@ -1531,6 +1583,55 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
     this.showSurecModal.set(true);
   }
   closeSurecModal() { this.showSurecModal.set(false); }
+
+  /**
+   * Satır içi süreç seçimi, toplu atamanın satır koşullarıyla açılır: süreç yazma izni, satırın seçilebilir
+   * olması (saha manuel içeriği, sahaya aktarılmış veya sevk edilmiş sandıktaki satır değil) ve tamamlanmamış
+   * süreç. Sunucu aynı kuralları ayrıca denetler.
+   */
+  surecSatirdanDegistirilebilir(u: GridUrunDto): boolean {
+    return this.canSurec && u.cekiSatiriId > 0 && !this.isCheckboxDisabled(u) && !this.isSurecTamamlandi(u);
+  }
+
+  /** Satırdan seçilen süreci toplu atamayla aynı uca (`surec-durum`) tek çeki satırı için gönderir. */
+  async satirSurecAta(u: GridUrunDto, surecDurumId: number): Promise<void> {
+    if (!this.surecSatirdanDegistirilebilir(u) || this.surecKaydedilenSatir() !== null) return;
+    if (u.surecDurumId === surecDurumId) return;
+
+    if (surecDurumId === SurecDurum.Tamamlandi) {
+      const onay = await this.confirmService.ask({
+        title: 'Süreci Tamamla',
+        message: `<strong>${duzMetin(u.aciklama)}</strong> ürününün süreci <strong>Tamamlandı</strong> olarak işaretlenecek.<br><br><small class="text-muted">Tamamlanan süreç kilitlenir ve sonradan güncellenemez.</small>`,
+        confirmText: 'Tamamlandı Yap',
+        cancelText: 'Vazgeç',
+        type: 'warning',
+      });
+      if (!onay) return;
+    }
+
+    const surecAdi = surecEtiketi(surecDurumId);
+    this.surecKaydedilenSatir.set(u.cekiSatiriId);
+    this.gridService.surecDurumGuncelle({
+      projeId: this.projeId(),
+      cekiSatiriIdler: [u.cekiSatiriId],
+      surecDurumId,
+    }).subscribe({
+      next: (res) => {
+        this.surecKaydedilenSatir.set(null);
+        if (res.isSuccess) {
+          this.toast.success(`Süreç durumu "${surecAdi}" olarak güncellendi.`);
+          this.gridService.notifyGridUpdated();
+          this.loadUrunler(false);
+        } else {
+          this.toast.error(res.error ?? 'Süreç güncelleme başarısız.');
+        }
+      },
+      error: () => {
+        this.surecKaydedilenSatir.set(null);
+        this.toast.error('Sunucu hatası oluştu.');
+      },
+    });
+  }
 
   confirmSurec() {
     if (this.hasSevkKilitliSecim()) return;
@@ -1578,10 +1679,36 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       aciklama: u.aciklama,
       istenenMiktar: u.istenenAdet,
       birim: u.birim,
+      surecDurumId: 1,
     }));
     this.ambarTalepItems.set(items);
     this.talepKaynakSecim.set(1);
     this.showAmbarTalepModal.set(true);
+  }
+
+  /** Talep kaynağı bütün satırların sürecini kaynağın karşılığına çeker; satırlar sonra tek tek değiştirilebilir. */
+  setTalepKaynak(value: number) {
+    this.talepKaynakSecim.set(value);
+    this.ambarTalepItems.update(items => items.map(item => ({ ...item, surecDurumId: value })));
+  }
+
+  /**
+   * Satırın talep sürecini değiştirir. Süreç çeki satırına atanır; aynı çeki satırının başka sandıktaki
+   * satırları da aynı süreci alır, aksi hâlde aynı ürüne iki farklı süreç gönderilirdi.
+   */
+  updateTalepSurec(index: number, value: number) {
+    const cekiSatiriId = this.ambarTalepItems()[index]?.cekiSatiriId;
+    if (cekiSatiriId == null) return;
+    this.ambarTalepItems.update(items =>
+      items.map(item => (item.cekiSatiriId === cekiSatiriId ? { ...item, surecDurumId: value } : item)));
+  }
+
+  /** PDF'teki "Talep Kaynağı": bütün satırlar kaynağın sürecindeyse kaynak adı, değilse satır bazındadır. */
+  getTalepKaynakMetni(items: AmbarTalepItem[]): string {
+    const kaynak = this.talepKaynakSecim();
+    return items.every(item => item.surecDurumId === kaynak)
+      ? this.getTalepKaynakLabel(kaynak)
+      : 'Satır bazında (Süreç sütunu)';
   }
 
   closeAmbarTalepModal() {
@@ -1610,7 +1737,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       const now = new Date();
       const dateStr = now.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
       const timeStr = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-      const talepKaynak = this.getTalepKaynakLabel(this.talepKaynakSecim());
+      const talepKaynak = this.getTalepKaynakMetni(items);
       const projeText = this.projeBaslik();
 
       const tableBody: any[][] = items.map((item, i) => [
@@ -1618,6 +1745,7 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
         { text: item.barkodNo, alignment: 'center', bold: true },
         { text: item.aciklama },
         { text: `${item.istenenMiktar} ${item.birim}`, alignment: 'center' },
+        { text: surecEtiketi(item.surecDurumId), alignment: 'center' },
       ]);
 
       const docDefinition: any = {
@@ -1686,13 +1814,14 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
           {
             table: {
               headerRows: 1,
-              widths: [25, 80, '*', 70],
+              widths: [25, 80, '*', 70, 75],
               body: [
                 [
                   { text: '#', style: 'tableHeader', alignment: 'center' },
                   { text: 'BARKOD', style: 'tableHeader', alignment: 'center' },
                   { text: '\u00dcR\u00dcN A\u00c7IKLAMASI', style: 'tableHeader' },
                   { text: '\u0130STENEN M\u0130KTAR', style: 'tableHeader', alignment: 'center' },
+                  { text: 'S\u00dcRE\u00c7', style: 'tableHeader', alignment: 'center' },
                 ],
                 ...tableBody,
               ],
@@ -1747,24 +1876,36 @@ export class GridUrunlerComponent implements OnInit, OnDestroy {
       await pdfMake.createPdf(docDefinition).download(`${fileName}.pdf`);
       this.toast.success('Talep Formu PDF olarak indirildi.');
 
-      // Seçili ürünlerin süreç durumunu talep kaynağına göre güncelle
-      const cekiIdler = Array.from(new Set(items.map(i => i.cekiSatiriId)));
-      this.gridService.surecDurumGuncelle({
+      // Seçili ürünlerin süreci satırda seçilen sürece göre atanır: her süreç için toplu atamayla aynı uca
+      // (surec-durum) bir istek gider; istekler sırayla çalışır.
+      const gruplar = talepSurecGruplari(items);
+      const tekSurecAdi = gruplar.length === 1
+        ? (gruplar[0].surecDurumId === this.talepKaynakSecim()
+          ? this.getTalepKaynakLabel(gruplar[0].surecDurumId)
+          : surecEtiketi(gruplar[0].surecDurumId))
+        : null;
+      concat(...gruplar.map(grup => this.gridService.surecDurumGuncelle({
         projeId: this.projeId(),
-        cekiSatiriIdler: cekiIdler,
-        surecDurumId: this.talepKaynakSecim(),
-      }).subscribe({
-        next: (res) => {
-          if (res.isSuccess) {
-            this.toast.success(`Seçili ürünlerin süreç durumu "${talepKaynak}" olarak güncellendi.`);
+        cekiSatiriIdler: grup.cekiSatiriIdler,
+        surecDurumId: grup.surecDurumId,
+      }))).pipe(toArray()).subscribe({
+        next: (sonuclar) => {
+          const hata = sonuclar.find(res => !res.isSuccess);
+          if (hata) {
+            this.toast.error(hata.error ?? 'Süreç durumu güncellenemedi.');
+          } else {
+            this.toast.success(tekSurecAdi
+              ? `Seçili ürünlerin süreç durumu "${tekSurecAdi}" olarak güncellendi.`
+              : 'Seçili ürünlerin süreç durumları satır bazında güncellendi.');
+          }
+          // Bir grup başarısız olsa da diğerleri uygulanmış olabilir; liste sunucudan yenilenir.
+          if (sonuclar.some(res => res.isSuccess)) {
             this.gridService.notifyGridUpdated();
             this.selectedRowKeys.set(new Set());
             this.loadUrunler(false);
-          } else {
-            this.toast.error(res.error ?? 'S\u00fcre\u00e7 durumu g\u00fcncellenemedi.');
           }
         },
-        error: () => this.toast.error('S\u00fcre\u00e7 durumu g\u00fcncellenirken hata olu\u015ftu.'),
+        error: () => this.toast.error('Süreç durumu güncellenirken hata oluştu.'),
       });
 
       this.closeAmbarTalepModal();

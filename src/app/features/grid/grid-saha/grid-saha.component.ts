@@ -77,6 +77,7 @@ export class GridSahaComponent implements OnInit {
     { deger: 'proje', etiket: 'GRID_SAHA.SORT_PROJECT' },
     { deger: 'bekleyen', etiket: 'GRID_SAHA.SORT_WAITING' },
     { deger: 'sandik', etiket: 'GRID_SAHA.SORT_CRATE' },
+    { deger: 'son-mal-kabul', etiket: 'GRID_SAHA.SORT_LAST_RECEIPT' },
   ];
   readonly turSecenekleri: ReadonlyArray<{ deger: GridMalKabulTuru; etiket: string }> = [
     { deger: 'mal-kabul', etiket: 'GRID_SAHA.KIND_RECEIPT' },
@@ -97,6 +98,8 @@ export class GridSahaComponent implements OnInit {
   readonly gridDurumuId = signal<number | null>(null);
   readonly siralama = signal<GridSahaSiralama>('proje');
   readonly azalan = signal(false);
+  readonly malKabulBaslangic = signal('');
+  readonly malKabulBitis = signal('');
   readonly sayfa = signal(1);
   readonly sayfaBoyutu = signal(25);
 
@@ -115,7 +118,8 @@ export class GridSahaComponent implements OnInit {
 
   readonly satirlar = computed(() => this.urunler()?.liste.items ?? []);
   readonly ozet = computed(() => this.urunler()?.ozet ?? null);
-  readonly filtreVar = computed(() => !!(this.arama().trim() || this.projeTipiId() || this.gridDurumuId()));
+  readonly filtreVar = computed(() =>
+    !!(this.arama().trim() || this.projeTipiId() || this.gridDurumuId() || this.malKabulBaslangic() || this.malKabulBitis()));
   readonly mkFiltreVar = computed(() =>
     !!(this.mkBaslangic() || this.mkBitis() || this.mkPersonelId() || this.mkArama().trim() || this.mkTur() !== 'mal-kabul'));
   readonly gunGruplari = computed<GridMalKabulGunu[]>(() => {
@@ -183,6 +187,8 @@ export class GridSahaComponent implements OnInit {
       gridDurumuId: this.gridDurumuId(),
       siralama: this.siralama(),
       azalan: this.azalan(),
+      malKabulBaslangic: this.malKabulBaslangic() || undefined,
+      malKabulBitis: this.malKabulBitis() || undefined,
     };
   }
 
@@ -218,8 +224,11 @@ export class GridSahaComponent implements OnInit {
     this.yenile();
   }
 
+  /** Son mal kabul seçilince mal kabul kayıtları sekmesi gibi en yeni önce gelir; diğer alanlar artan başlar. */
   siralamaDegisti(deger: string): void {
-    this.siralama.set(this.siralamaSecenekleri.find(s => s.deger === deger)?.deger ?? 'proje');
+    const siralama = this.siralamaSecenekleri.find(s => s.deger === deger)?.deger ?? 'proje';
+    this.siralama.set(siralama);
+    this.azalan.set(siralama === 'son-mal-kabul');
     this.yenile();
   }
 
@@ -228,10 +237,17 @@ export class GridSahaComponent implements OnInit {
     this.yenile();
   }
 
+  malKabulTarihiDegisti(alan: 'malKabulBaslangic' | 'malKabulBitis', deger: string): void {
+    (alan === 'malKabulBaslangic' ? this.malKabulBaslangic : this.malKabulBitis).set(deger);
+    this.yenile();
+  }
+
   filtreleriTemizle(): void {
     this.arama.set('');
     this.projeTipiId.set(null);
     this.gridDurumuId.set(null);
+    this.malKabulBaslangic.set('');
+    this.malKabulBitis.set('');
     this.yenile();
   }
 
