@@ -125,8 +125,11 @@ export class PlanDuzenleComponent implements OnInit {
   readonly aciklama = signal('');
   readonly ayarlar = signal<YuklemePlanAyarlari>({
     yerlesimBosluguMm: 30, yukseklikPayiMm: null, genislikPayiMm: null, uzunlukPayiMm: null, agirlikPayiKg: null, yuklemeHareketiPayiMm: null, agirlikMerkeziSapmaYuzde: null,
-    mevcutAraclar: [],
+    mevcutAraclar: [], tipIdleri: [],
   });
+  /** Seçili taşıma ailesinin tipleri (iki kademeli seçim: önce aile, sonra tip). */
+  readonly aileTipleri = computed(() => (this.tanimlar()?.tasimaTipleri ?? []).filter((t) => t.aileId === this.tasimaAilesiId()));
+  readonly seciliTipler = computed(() => new Set(this.ayarlar().tipIdleri));
   readonly hesaplaniyor = signal(false);
   /** Mevcut araçlara yerleştirmede seçilebilecek konfigürasyonlar (aktif, en fazla 100). */
   readonly konfigurasyonlar = signal<EkipmanKonfigurasyonOzeti[]>([]);
@@ -232,7 +235,7 @@ export class PlanDuzenleComponent implements OnInit {
     this.projeKarisimi.set(p.projeKarisimi);
     this.yuklemeTarihi.set(p.yuklemeTarihi ? p.yuklemeTarihi.substring(0, 10) : '');
     this.aciklama.set(p.aciklama ?? '');
-    this.ayarlar.set({ ...p.ayarlar, mevcutAraclar: [...(p.ayarlar.mevcutAraclar ?? [])] });
+    this.ayarlar.set({ ...p.ayarlar, mevcutAraclar: [...(p.ayarlar.mevcutAraclar ?? [])], tipIdleri: [...(p.ayarlar.tipIdleri ?? [])] });
     if (p.calismaBicimi === YuklemeCalismaBicimi.MevcutAraclaraYerlestirme) this.konfigurasyonlariYukle();
     this.projeler.set([...p.projeler]);
     this.satirlar.set(p.yukler.map((y) => ({ ...y })));
@@ -242,6 +245,22 @@ export class PlanDuzenleComponent implements OnInit {
 
   degistir<T>(sinyal: { set(v: T): void }, deger: T): void {
     sinyal.set(deger);
+    this.degisti.set(true);
+  }
+
+  /** Aile değişince önceki ailenin tip seçimi geçersizdir (sunucu da reddeder). */
+  aileDegistir(aileId: number): void {
+    if (aileId === this.tasimaAilesiId()) return;
+    this.tasimaAilesiId.set(aileId);
+    this.ayarlar.update((a) => ({ ...a, tipIdleri: [] }));
+    this.degisti.set(true);
+  }
+
+  tipDegistir(tipId: number): void {
+    this.ayarlar.update((a) => ({
+      ...a,
+      tipIdleri: a.tipIdleri.includes(tipId) ? a.tipIdleri.filter((id) => id !== tipId) : [...a.tipIdleri, tipId],
+    }));
     this.degisti.set(true);
   }
 

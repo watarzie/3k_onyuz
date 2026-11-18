@@ -102,8 +102,21 @@ export interface SecimOgesi {
   ad: string;
 }
 
+/**
+ * Taşıma ailesinin tipi (ör. Konteyner → 40' High Cube). `otomatikSecilir`: tip seçilmeyen planda da kullanılır;
+ * değilse (Reefer, Pallet Wide, frigo) yalnız açıkça seçilince.
+ */
+export interface TasimaTipi {
+  id: number;
+  aileId: number;
+  ad: string;
+  otomatikSecilir: boolean;
+}
+
 export interface YuklemePlaniTanimlari {
   tasimaAileleri: SecimOgesi[];
+  /** Ailelerin sandık taşımaya uygun aktif tipleri; ailede sadelik sırasıyla (otomatik seçilmeyenler sonda). */
+  tasimaTipleri: TasimaTipi[];
   yukTurleri: SecimOgesi[];
   lokasyonlar: SecimOgesi[];
 }
@@ -124,6 +137,11 @@ export interface YuklemePlanAyarlari {
   yuklemeHareketiPayiMm: number | null;
   /** Mevcut araçlara yerleştirmede kullanıcının verdiği araçlar. */
   mevcutAraclar: PlanMevcutArac[];
+  /**
+   * Taşıma ailesinde seçilen tipler (`TasimaTipi.id`). Boşsa her yük ailede kendisini alan en sade tipe gider; seçilirse
+   * normal yükler yalnız seçilen tiplere, sığmayanlar gerekçesiyle ailenin diğer tiplerine ya da lowbed'e gider.
+   */
+  tipIdleri: number[];
 }
 
 export interface YuklemePlaniOzeti {

@@ -63,6 +63,40 @@
   }
 }
 
+// Aile tipi seçimi (iki kademeli araç seçimi): seçili tip dolu, diğerleri çerçeveli.
+.yp-tipler {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-top: 16px;
+
+  &__ipucu { flex-basis: 100%; }
+}
+
+.yp-tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid var(--borderColor);
+  border-radius: 999px;
+  background: var(--whiteColor);
+  color: var(--blackColor);
+  font-size: 12.5px;
+
+  small { color: var(--bodyColor); }
+
+  &:not(:disabled):hover { border-color: var(--yp-ton, #0e7490); }
+
+  &--secili {
+    border-color: var(--yp-ton, #0e7490);
+    background: color-mix(in srgb, var(--yp-ton, #0e7490) 12%, #fff);
+    font-weight: 600;
+  }
+}
+
 .yp-cip {
   display: inline-flex;
   align-items: center;

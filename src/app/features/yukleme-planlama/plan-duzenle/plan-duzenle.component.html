@@ -85,7 +85,7 @@
       </label>
       <label class="tz-field">
         <span>Taşıma ailesi</span>
-        <select class="form-select" [disabled]="!yazabilir()" [ngModel]="tasimaAilesiId()" (ngModelChange)="degistir(tasimaAilesiId, +$event)">
+        <select class="form-select" [disabled]="!yazabilir()" [ngModel]="tasimaAilesiId()" (ngModelChange)="aileDegistir(+$event)">
           @for (a of tanimlar()?.tasimaAileleri ?? []; track a.id) { <option [ngValue]="a.id">{{ a.ad }}</option> }
           @if (!tanimlar()) { <option [ngValue]="p.tasimaAilesiId">{{ p.tasimaAilesiAdi }}</option> }
         </select>
@@ -106,6 +106,26 @@
         <input type="text" class="form-control" maxlength="1000" [disabled]="!yazabilir()" [ngModel]="aciklama()" (ngModelChange)="degistir(aciklama, $event)" />
       </label>
     </div>
+
+    @if (aileTipleri().length) {
+      <div class="yp-tipler" role="group" aria-labelledby="yp-tipler-etiket">
+        <span class="yp-projeler__etiket" id="yp-tipler-etiket">Araç tipi</span>
+        @for (t of aileTipleri(); track t.id) {
+          <button type="button" class="yp-tip" [class.yp-tip--secili]="seciliTipler().has(t.id)" [attr.aria-pressed]="seciliTipler().has(t.id)"
+                  [disabled]="!yazabilir()" (click)="tipDegistir(t.id)">
+            @if (seciliTipler().has(t.id)) { <i class="ri-check-line" aria-hidden="true"></i> }
+            {{ t.ad }}@if (!t.otomatikSecilir) { <small> · yalnız seçilince</small> }
+          </button>
+        }
+        <small class="yp-ipucu yp-tipler__ipucu">
+          @if (ayarlar().tipIdleri.length) {
+            Normal yükler yalnız seçilen tiplere gider; sığmayan yük için ailenin diğer tipi ya da lowbed gerekçesiyle eklenir.
+          } @else {
+            Tip seçilmezse her yük kendisine uygun en sade tipe gider (özel tip yalnız gereken yük için gelir).
+          }
+        </small>
+      </div>
+    }
 
     <div class="yp-projeler">
       <span class="yp-projeler__etiket">Projeler</span>
