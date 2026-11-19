@@ -6,8 +6,6 @@ import {
   EkipmanIceAktarimIslemi,
   EkipmanKaynakTuru,
   EkipmanKategorisi,
-  MevzuatKaynakTuru,
-  MevzuatKuralSetiDurumu,
   PlanKaynakFarkTuru,
   PlanYukDurumu,
   YerlesimGirisYonu,
@@ -119,40 +117,6 @@ export const ICE_AKTARIM_ISLEMI: Record<EkipmanIceAktarimIslemi, string> = {
   [EkipmanIceAktarimIslemi.Yeni]: 'Yeni',
   [EkipmanIceAktarimIslemi.YeniRevizyon]: 'Yeni revizyon',
   [EkipmanIceAktarimIslemi.Degismedi]: 'Değişmedi',
-};
-
-export const MEVZUAT_KAYNAK_TURU: Record<MevzuatKaynakTuru, string> = {
-  [MevzuatKaynakTuru.Kanun]: 'Kanun',
-  [MevzuatKaynakTuru.Yonetmelik]: 'Yönetmelik',
-  [MevzuatKaynakTuru.YonetmelikTaslagi]: 'Yönetmelik taslağı',
-  [MevzuatKaynakTuru.Genelge]: 'Genelge',
-  [MevzuatKaynakTuru.Standart]: 'Standart',
-  [MevzuatKaynakTuru.IcKural]: 'İç kural',
-};
-
-export const KURAL_SETI_DURUMU: Record<MevzuatKuralSetiDurumu, string> = {
-  [MevzuatKuralSetiDurumu.Taslak]: 'Taslak',
-  [MevzuatKuralSetiDurumu.Onayli]: 'Onaylı',
-  [MevzuatKuralSetiDurumu.Kaldirildi]: 'Kaldırıldı',
-};
-
-/** Mevzuat kural tipleri (sunucu: MevzuatKuralTipi). */
-export const MEVZUAT_KURAL_TIPI: Partial<Record<number, string>> = {
-  1: 'Azami genişlik',
-  2: 'Azami yükseklik',
-  3: 'Azami uzunluk',
-  4: 'Taşma sınırı',
-  5: 'Tek dingil sınırı',
-  6: 'Dingil grubu sınırı',
-  7: 'Katar toplam ağırlığı',
-  8: 'Ölçüm toleransı',
-  9: 'Özel yük izin kategorisi',
-  10: 'Destek aracı',
-  11: 'Zabıta desteği',
-  12: 'Özel yük yeterlilik belgesi',
-  13: 'Gece yasağı',
-  14: 'Otoyol kısıtı',
-  15: 'İşaretleme',
 };
 
 export const ACIKLIK_TARAFI: Record<AciklikTarafi, string> = { arka: 'Arka', on: 'Ön', sol: 'Sol', sag: 'Sağ', ust: 'Üst' };

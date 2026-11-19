@@ -155,6 +155,8 @@
                   <strong>{{ KONTROL_TURU[k.tur] }}</strong>
                   <span>{{ k.mesaj }}</span>
                 </li>
+              } @empty {
+                <li class="yp-ipucu">Gösterilecek kontrol yok.</li>
               }
             </ul>
 

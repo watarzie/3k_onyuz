@@ -12,8 +12,6 @@ import {
   EkipmanKonfigurasyonDetayi,
   EkipmanKonfigurasyonOzeti,
   EkipmanListeSuzgeci,
-  MevzuatKuralSetiDetayi,
-  MevzuatKuralSetiOzeti,
   PaginatedList,
   PlanProjeAdayi,
   PlanYerlesimi,
@@ -23,7 +21,7 @@ import {
   YuklemePlaniTanimlari,
 } from '../../shared/models/index';
 
-/** Yükleme planları, ekipman kitaplığı ve mevzuat kurallarının API istemcisi. */
+/** Yükleme planları ve ekipman kitaplığının API istemcisi. */
 @Injectable({ providedIn: 'root' })
 export class YuklemePlanlamaService extends BaseApiService {
   // ----- Planlar -----
@@ -125,16 +123,6 @@ export class YuklemePlanlamaService extends BaseApiService {
   /** Dosyayı uygular; tek sorun varsa hiçbir şey yazılmaz ve sorunlar hata olarak döner. */
   iceAktar(dosya: File): Observable<ApiResult<EkipmanIceAktarimSonucu>> {
     return this.postFormData<EkipmanIceAktarimSonucu>(API.EKIPMAN_KITAPLIGI.ICE_AKTAR, dosyaFormu(dosya));
-  }
-
-  // ----- Mevzuat -----
-
-  kuralSetleri(): Observable<ApiResult<MevzuatKuralSetiOzeti[]>> {
-    return this.get<MevzuatKuralSetiOzeti[]>(API.MEVZUAT_KURALLARI.KURAL_SETLERI);
-  }
-
-  kuralSeti(id: number): Observable<ApiResult<MevzuatKuralSetiDetayi>> {
-    return this.get<MevzuatKuralSetiDetayi>(API.MEVZUAT_KURALLARI.KURAL_SETI(id));
   }
 }
 

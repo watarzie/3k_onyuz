@@ -371,9 +371,4 @@ export const API = {
     ICE_AKTAR_ONIZLE: `${BASE}/ekipman-kitapligi/ice-aktar/onizle`,
     ICE_AKTAR: `${BASE}/ekipman-kitapligi/ice-aktar`,
   },
-  /** Mevzuat kural setleri (mevzuat-kurallari R, salt okunur). */
-  MEVZUAT_KURALLARI: {
-    KURAL_SETLERI: `${BASE}/mevzuat-kurallari/kural-setleri`,
-    KURAL_SETI: (id: number) => `${BASE}/mevzuat-kurallari/kural-setleri/${id}`,
-  },
 } as const;

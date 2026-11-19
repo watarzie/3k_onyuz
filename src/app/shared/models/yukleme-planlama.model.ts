@@ -1,7 +1,7 @@
 import type { AracYuklemeOturumu } from './arac-yukleme.model';
 
-// ===== Yükleme planlama: plan, yük listesi, ekipman kitaplığı ve mevzuat kuralları =====
-// Sunucu sözleşmesi: 3K.Core/Models/YuklemePlaniModelleri.cs, EkipmanKitapligiModelleri.cs, MevzuatModelleri.cs.
+// ===== Yükleme planlama: plan, yük listesi ve ekipman kitaplığı =====
+// Sunucu sözleşmesi: 3K.Core/Models/YuklemePlaniModelleri.cs, EkipmanKitapligiModelleri.cs.
 // Enum'lar sayı olarak taşınır; değerler sunucudaki enum'larla aynıdır.
 
 export enum YuklemeCalismaBicimi {
@@ -55,6 +55,7 @@ export enum YerlesimKontrolTuru {
   Agirlik = 1,
   KapidanGecis = 2,
   IcYukseklik = 3,
+  /** 4, 5 ve 12 artık üretilmez (mevzuat kuralları kaldırıldı); değerler eski kayıtlar için ayrılmıştır. */
   YasalYukseklik = 4,
   YasalGenislik = 5,
   Tasma = 6,
@@ -623,62 +624,4 @@ export interface EkipmanTeknikVerisi {
   engeller?: TeknikEngel[];
   dingiller?: TeknikDingil[];
   baglamaNoktalari?: TeknikBaglamaNoktasi[];
-}
-
-// ===== Mevzuat =====
-
-export enum MevzuatKaynakTuru {
-  Kanun = 1,
-  Yonetmelik = 2,
-  YonetmelikTaslagi = 3,
-  Genelge = 4,
-  Standart = 5,
-  IcKural = 6,
-}
-
-export enum MevzuatKuralSetiDurumu {
-  Taslak = 1,
-  Onayli = 2,
-  Kaldirildi = 3,
-}
-
-export interface MevzuatKuralSetiOzeti {
-  id: number;
-  yetkiAlani: string;
-  ad: string;
-  surumNo: number;
-  gecerlilikBaslangici: string;
-  gecerlilikBitisi: string | null;
-  durum: MevzuatKuralSetiDurumu;
-  onayTarihi: string | null;
-  kuralSayisi: number;
-}
-
-export interface MevzuatKuraliModeli {
-  id: number;
-  kod: string;
-  tip: number;
-  parametrelerJson: string;
-  kaynakId: number | null;
-  madde: string | null;
-  aciklama: string;
-  sira: number;
-}
-
-export interface MevzuatKaynagiModeli {
-  id: number;
-  ad: string;
-  tur: MevzuatKaynakTuru;
-  resmiGazeteTarihi: string | null;
-  resmiGazeteSayisi: string | null;
-  url: string | null;
-  erisimTarihi: string | null;
-  aciklama: string | null;
-}
-
-export interface MevzuatKuralSetiDetayi {
-  ozet: MevzuatKuralSetiOzeti;
-  aciklama: string | null;
-  kurallar: MevzuatKuraliModeli[];
-  kaynaklar: MevzuatKaynagiModeli[];
 }

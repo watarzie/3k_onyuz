@@ -141,7 +141,7 @@ export const routes: Routes = [
         data: { menuKod: YETKI.SANDIK.BARKOD_ETIKET },
       },
       {
-        // Yükleme planlama: planlar, ekipman kitaplığı ve mevzuat kuralları (kenar menüde "Yükleme Planlama" grubu).
+        // Yükleme planlama: planlar, ekipman kitaplığı ve araç yükleme (kenar menüde "Yükleme Planlama" grubu).
         path: 'yukleme-planlari',
         canActivate: [menuGuard],
         loadComponent: () =>
@@ -183,13 +183,6 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/yukleme-planlama/ekipman-kitapligi/ekipman-kitapligi.component').then(m => m.EkipmanKitapligiComponent),
         data: { menuKod: YETKI.YUKLEME_PLANLAMA.EKIPMAN_KITAPLIGI },
-      },
-      {
-        path: 'mevzuat-kurallari',
-        canActivate: [menuGuard],
-        loadComponent: () =>
-          import('./features/yukleme-planlama/mevzuat-kurallari/mevzuat-kurallari.component').then(m => m.MevzuatKurallariComponent),
-        data: { menuKod: YETKI.YUKLEME_PLANLAMA.MEVZUAT_KURALLARI },
       },
       {
         // Sandık açılış/kapanış istatistiği: kenar menüde yok; Projeler ve 3K sandık listesindeki "Diğer" menüsünden açılır.
