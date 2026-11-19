@@ -9,21 +9,6 @@
   .yp-bosluk { flex: 1 1 auto; }
 }
 
-.py-lokasyon {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 12px 14px;
-  border: 1px solid #bae6fd;
-  border-radius: 12px;
-  background: #f0f9ff;
-
-  > div:first-child { flex: 1 1 260px; }
-  .tz-segmented { flex-wrap: wrap; }
-}
-
 .py-tipler {
   display: flex;
   flex-wrap: wrap;

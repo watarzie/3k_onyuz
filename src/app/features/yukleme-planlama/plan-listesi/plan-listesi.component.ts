@@ -3,7 +3,7 @@ import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subject, debounceTime } from 'rxjs';
+import { Subject, debounceTime, switchMap, tap } from 'rxjs';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { ServerPagerComponent } from '../../../shared/components/server-pager/server-pager.component';
 import { ToastService } from '../../../core/services/toast.service';
@@ -13,22 +13,22 @@ import { YETKI } from '../../../core/constants/yetki-kodlari';
 import {
   PaginatedList,
   PlanProjeAdayi,
-  YuklemeCalismaBicimi,
+  YuklemePlanAyarlari,
   YuklemePlaniOzeti,
   YuklemePlaniTanimlari,
-  YuklemeProjeKarisimi,
 } from '../../../shared/models/index';
-import { CALISMA_BICIMI, PROJE_KARISIMI } from '../ortak/yukleme-etiketleri';
+import { PlanSecimleriComponent, YENI_PLAN_AYARLARI } from '../ortak/plan-secimleri.component';
 
 /**
- * Yükleme planları listesi (sunucuda sayfalı) ve yeni plan penceresi. Yeni planda seçilen projelerin sevk edilmemiş
- * bütün sandıkları seçili gelir; yük listesi plan ekranında düzenlenir.
+ * Yükleme planları listesi (sunucuda sayfalı) ve yeni plan penceresi. Yeni plan tek adımdır (saha geri bildirimi
+ * 19.11.2026 madde 5): proje, taşıma ailesi/tip ve paylar seçilip "Hesapla" denir; plan kaydı arka planda açılır, ekran
+ * araç sayısı, 3B ve PDF ile açılır. Seçilen projelerin bütün sandıkları (sevk edilmişler dahil) gelir.
  */
 @Component({
   selector: 'app-plan-listesi',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, BreadcrumbComponent, ServerPagerComponent],
+  imports: [DatePipe, FormsModule, BreadcrumbComponent, ServerPagerComponent, PlanSecimleriComponent],
   templateUrl: './plan-listesi.component.html',
   styleUrls: ['../ortak/yukleme.scss', './plan-listesi.component.scss'],
 })
@@ -36,17 +36,13 @@ export class PlanListesiComponent implements OnInit {
   private readonly api = inject(YuklemePlanlamaService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
-  private readonly izin = inject(PermissionService);
+  private readonly permissions = inject(PermissionService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly breadcrumb = [{ label: 'Ana Kontrol Paneli', link: '/dashboard' }, { label: 'Yükleme Planları' }];
   readonly SAYFA_BOYUTLARI = [25, 50, 100];
-  readonly CALISMA_BICIMI = CALISMA_BICIMI;
-  readonly PROJE_KARISIMI = PROJE_KARISIMI;
-  readonly Bicim = YuklemeCalismaBicimi;
-  readonly Karisim = YuklemeProjeKarisimi;
 
-  readonly yazabilir = computed(() => this.izin.canWrite(YETKI.YUKLEME_PLANLAMA.PLANLAR));
+  readonly yazabilir = computed(() => this.permissions.canWrite(YETKI.YUKLEME_PLANLAMA.PLANLAR));
 
   readonly arama = signal('');
   readonly sayfa = signal(1);
@@ -58,26 +54,21 @@ export class PlanListesiComponent implements OnInit {
   // ----- Yeni plan penceresi -----
   readonly yeniAcik = signal(false);
   readonly tanimlar = signal<YuklemePlaniTanimlari | null>(null);
-  readonly ad = signal('');
-  readonly calismaBicimi = signal<YuklemeCalismaBicimi>(YuklemeCalismaBicimi.IhtiyacaGoreArac);
   readonly tasimaAilesiId = signal<number | null>(null);
-  readonly projeKarisimi = signal<YuklemeProjeKarisimi>(YuklemeProjeKarisimi.Karisik);
-  readonly yuklemeTarihi = signal('');
-  readonly aciklama = signal('');
+  readonly ayarlar = signal<YuklemePlanAyarlari>(YENI_PLAN_AYARLARI);
   readonly seciliProjeler = signal<Map<number, PlanProjeAdayi>>(new Map());
   readonly adayArama = signal('');
   readonly adaySayfa = signal(1);
   readonly adaylar = signal<PaginatedList<PlanProjeAdayi> | null>(null);
   readonly adayYukleniyor = signal(false);
-  readonly olusturuluyor = signal(false);
+  readonly hesaplaniyor = signal(false);
   private readonly adayAramaAkisi = new Subject<void>();
+  /** Aday istekleri tek akıştan geçer: eski yanıt yeni aramanın ya da sayfanın sonucunu ezmez. */
+  private readonly adayIstekleri = new Subject<void>();
 
   readonly gelecekSandik = computed(() =>
     [...this.seciliProjeler().values()].reduce((t, p) => t + p.planaGelecekSandikSayisi, 0));
-  readonly sevkliSandik = computed(() =>
-    [...this.seciliProjeler().values()].reduce((t, p) => t + p.sevkEdilmisSandikSayisi, 0));
-  readonly olusturulabilir = computed(() =>
-    !!this.ad().trim() && !!this.tasimaAilesiId() && this.seciliProjeler().size > 0 && !this.olusturuluyor());
+  readonly hesaplanabilir = computed(() => !!this.tasimaAilesiId() && this.seciliProjeler().size > 0 && !this.hesaplaniyor());
 
   ngOnInit(): void {
     this.aramaAkisi.pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef)).subscribe(() => {
@@ -88,6 +79,17 @@ export class PlanListesiComponent implements OnInit {
       this.adaySayfa.set(1);
       this.adaylariYukle();
     });
+    this.adayIstekleri
+      .pipe(
+        tap(() => this.adayYukleniyor.set(true)),
+        switchMap(() => this.api.projeAdaylari(this.adayArama(), this.adaySayfa(), 10)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((r) => {
+        this.adayYukleniyor.set(false);
+        if (r.isSuccess && r.value) this.adaylar.set(r.value);
+        else this.toast.error(r.error ?? 'Projeler yüklenemedi.');
+      });
     this.yukle();
   }
 
@@ -124,11 +126,7 @@ export class PlanListesiComponent implements OnInit {
 
   yeniPlan(): void {
     if (!this.yazabilir()) return;
-    this.ad.set('');
-    this.calismaBicimi.set(YuklemeCalismaBicimi.IhtiyacaGoreArac);
-    this.projeKarisimi.set(YuklemeProjeKarisimi.Karisik);
-    this.yuklemeTarihi.set('');
-    this.aciklama.set('');
+    this.ayarlar.set(YENI_PLAN_AYARLARI);
     this.seciliProjeler.set(new Map());
     this.adayArama.set('');
     this.adaySayfa.set(1);
@@ -151,14 +149,7 @@ export class PlanListesiComponent implements OnInit {
   }
 
   adaylariYukle(): void {
-    this.adayYukleniyor.set(true);
-    this.api.projeAdaylari(this.adayArama(), this.adaySayfa(), 10)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((r) => {
-        this.adayYukleniyor.set(false);
-        if (r.isSuccess && r.value) this.adaylar.set(r.value);
-        else this.toast.error(r.error ?? 'Projeler yüklenemedi.');
-      });
+    this.adayIstekleri.next();
   }
 
   adayAramaDegisti(metin: string): void {
@@ -182,25 +173,24 @@ export class PlanListesiComponent implements OnInit {
     this.seciliProjeler.set(yeni);
   }
 
-  olustur(): void {
-    if (!this.olusturulabilir()) return;
-    this.olusturuluyor.set(true);
-    this.api.olustur({
-      ad: this.ad().trim(),
-      calismaBicimi: this.calismaBicimi(),
-      tasimaAilesiId: this.tasimaAilesiId()!,
-      projeKarisimi: this.projeKarisimi(),
-      yuklemeTarihi: this.yuklemeTarihi() || null,
-      aciklama: this.aciklama().trim() || null,
+  /** Tek adımda planı açar ve yerleşimi hesaplar; plan ekranı sonuçla açılır. */
+  hesapla(): void {
+    if (!this.hesaplanabilir()) return;
+    this.hesaplaniyor.set(true);
+    this.api.planHesapla({
+      planId: null,
+      beklenenRevizyonNo: null,
       projeIdleri: [...this.seciliProjeler().keys()],
+      tasimaAilesiId: this.tasimaAilesiId()!,
+      ayarlar: this.ayarlar(),
     }).subscribe((r) => {
-      this.olusturuluyor.set(false);
+      this.hesaplaniyor.set(false);
       if (r.isSuccess && r.value) {
-        this.toast.success(`${r.value.planNo} oluşturuldu.`);
+        this.toast.success(`${r.value.planNo}: ${r.value.yerlesim?.araclar.length ?? 0} araç hesaplandı.`);
         this.yeniAcik.set(false);
         this.router.navigate(['/yukleme-planlari', r.value.id]);
       } else {
-        this.toast.error(r.error ?? 'Plan oluşturulamadı.');
+        this.toast.error(r.error ?? 'Plan hesaplanamadı.');
       }
     });
   }

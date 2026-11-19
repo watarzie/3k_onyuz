@@ -6,7 +6,7 @@
         <small class="yp-ipucu">Revizyon {{ plan().revizyonNo }} · {{ y.hesapTarihi | date: 'dd.MM.yyyy HH:mm' }}
           @if (y.lokasyonaGoreAyri) { · lokasyonlara göre ayrı } @if (y.projeBazindaAyri) { · proje bazında ayrı }</small>
       } @else {
-        <small class="yp-ipucu">Bu revizyon için yerleşim hesaplanmadı. Kayıttan sonra yeniden hesaplamak gerekir.</small>
+        <small class="yp-ipucu">Bu revizyon için yerleşim hesaplanmadı. "Hesapla" planı seçimlerle kurar ve araçları hesaplar.</small>
       }
     </div>
     @if (yerlesim(); as y) {
@@ -14,7 +14,7 @@
     }
     <span class="yp-bosluk"></span>
     @if (yerlesim()) {
-      <!-- Raporlar son kaydedilen revizyonun yerleşimiyle üretilir; iki rapor aynı araç numaralarını kullanır. -->
+      <!-- Raporlar son hesaplanan revizyonun yerleşimiyle üretilir; iki rapor aynı araç numaralarını kullanır. -->
       <button type="button" class="tz-btn" [disabled]="indiriliyor() !== null" (click)="raporIndir('talep')" title="Araç talep ve planlama raporu (PDF)">
         <i [class]="indiriliyor() === 'talep' ? 'ri-loader-4-line tz-spin' : 'ri-file-pdf-2-line'" aria-hidden="true"></i>Araç talebi
       </button>
@@ -24,47 +24,28 @@
     }
     @if (yazabilir() && !duzenleme()) {
       <!-- İsterler 20–21: önerilen yerleşim elle düzenlenir; yerleşim yoksa sıfırdan elle dizilir. Kaydetme yeni revizyon açar. -->
-      <button type="button" class="tz-btn" [disabled]="kaydedilmemis() || hesaplaniyor()" (click)="duzenleme.set(true)"
-              [title]="kaydedilmemis() ? 'Önce değişiklikleri kaydedin' : yerlesim() ? 'Yükleri sürükleyerek yerleşimi elle düzenleyin' : 'Araçları seçip yükleri kendiniz dizin'">
+      <button type="button" class="tz-btn" [disabled]="kaydedilmemis() || hesaplaniyor()" (click)="duzenlemeAc(true)"
+              [title]="kaydedilmemis() ? 'Önce seçimleri Hesapla ile uygulayın' : yerlesim() ? 'Yükleri sürükleyerek yerleşimi elle düzenleyin' : 'Araçları seçip yükleri kendiniz dizin'">
         <i class="ri-drag-move-2-line" aria-hidden="true"></i>{{ yerlesim() ? 'Elle düzenle' : 'Elle diz' }}
       </button>
     }
     @if (yazabilir() && !duzenleme()) {
-      <button type="button" class="tz-btn tz-btn--primary" [disabled]="kaydedilmemis() || hesaplaniyor()" (click)="hesapIstegi()"
-              [title]="kaydedilmemis() ? 'Önce değişiklikleri kaydedin' : ''">
+      <button type="button" class="tz-btn tz-btn--primary" [disabled]="hesaplaniyor()" (click)="hesapIstegi()"
+              title="Plan seçilen projelerin güncel sandıklarıyla yeniden kurulur ve araçlar hesaplanır">
         <i [class]="hesaplaniyor() ? 'ri-loader-4-line tz-spin' : 'ri-play-circle-line'" aria-hidden="true"></i>{{ yerlesim() ? 'Yeniden hesapla' : 'Hesapla' }}
       </button>
     }
   </div>
   @if (kaydedilmemis()) {
-    <div class="yp-uyari"><i class="ri-information-line" aria-hidden="true"></i><span>Kaydedilmemiş değişiklik var: yerleşim son kaydedilen revizyonla hesaplanır. Önce kaydedin.</span></div>
+    <div class="yp-uyari"><i class="ri-information-line" aria-hidden="true"></i><span>Seçimler değişti: aşağıdaki sonuç önceki hesaba aittir. Yeni sonuç için "Hesapla"ya basın.</span></div>
   }
 
   @if (duzenleme()) {
-    <app-plan-elle-yerlesim [plan]="plan()" (kaydedildi)="elleKaydet($event)" (vazgec)="duzenleme.set(false)" />
+    <app-plan-elle-yerlesim [plan]="plan()" (kaydedildi)="elleKaydet($event)" (vazgec)="duzenlemeAc(false)" />
   } @else {
   @if (yerlesim()?.elleDuzenlendi) {
     <div class="yp-uyari"><i class="ri-hand-coin-line" aria-hidden="true"></i>
       <span>Yerleşim elle düzenlendi: konumlar kullanıcıya aittir, kontroller bu konumlarla yapıldı. Yeniden hesaplamak elle düzenlemeyi otomatik öneriyle değiştirir.</span></div>
-  }
-
-  @if (lokasyonSorusu() && yazabilir()) {
-    <!-- İsterler 25: önce lokasyon ayrımı yapılmadan toplam plan, sonra lokasyon tercihi. -->
-    <div class="py-lokasyon">
-      <div>
-        <strong>Yükler {{ plan().farkliLokasyonSayisi }} farklı lokasyonda.</strong>
-        <small class="yp-ipucu d-block">Lokasyon tercihini seçip son planı oluşturun. Proje ayrımı ayrıca korunur; ziyaret sırası planlanmaz.</small>
-      </div>
-      <div class="tz-segmented" role="radiogroup" aria-label="Lokasyon tercihi">
-        <button type="button" role="radio" [class.active]="tercih() === Tercih.Karisik" [attr.aria-checked]="tercih() === Tercih.Karisik"
-                (click)="tercih.set(Tercih.Karisik)">{{ LOKASYON_TERCIHI[Tercih.Karisik] }}</button>
-        <button type="button" role="radio" [class.active]="tercih() === Tercih.LokasyonaGoreAyri" [attr.aria-checked]="tercih() === Tercih.LokasyonaGoreAyri"
-                (click)="tercih.set(Tercih.LokasyonaGoreAyri)">{{ LOKASYON_TERCIHI[Tercih.LokasyonaGoreAyri] }}</button>
-      </div>
-      <button type="button" class="tz-btn" [disabled]="kaydedilmemis() || hesaplaniyor()" (click)="tercihleHesapla()">
-        <i class="ri-refresh-line" aria-hidden="true"></i>Bu tercihle hesapla
-      </button>
-    </div>
   }
 
   @if (yerlesim(); as y) {

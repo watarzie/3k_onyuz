@@ -51,10 +51,10 @@ function plan(araclar: PlanAraci[], farkliLokasyon = 1): YuklemePlaniDetayi {
     revizyonNo: 2, revizyonTarihi: '2026-11-05T10:00:00', kaydeden: null, revizyonAciklamasi: null,
     ayarlar: { yerlesimBosluguMm: 30, yukseklikPayiMm: null, genislikPayiMm: null, uzunlukPayiMm: null, agirlikPayiKg: null, yuklemeHareketiPayiMm: null, mevcutAraclar: [], tipIdleri: [] },
     projeler: [
-      { projeId: 1, projeNo: 'P1', musteri: null, projeTipiId: 1, sevkEdilmisSandikSayisi: 0 },
-      { projeId: 2, projeNo: 'P2', musteri: null, projeTipiId: 1, sevkEdilmisSandikSayisi: 0 },
+      { projeId: 1, projeNo: 'P1', musteri: null, projeTipiId: 1 },
+      { projeId: 2, projeNo: 'P2', musteri: null, projeTipiId: 1 },
     ],
-    yukler: [], sayaclar: { toplam: 0, secilen: 0, hesaplanabilir: 0, veriEksik: 0, haricTutulan: 0, sevkEdilmisSandik: 0, yerlesen: 0, yerlesemeyen: 0 },
+    yukler: [], sayaclar: { toplam: 0, secilen: 0, hesaplanabilir: 0, veriEksik: 0, haricTutulan: 0, yerlesen: 0, yerlesemeyen: 0 },
     kaynakFarklari: [], farkliLokasyonSayisi: farkliLokasyon, surenYukleme: null,
     yerlesim: { hesapTarihi: '2026-11-05T10:00:00', sonuc: YerlesimKontrolSonucu.TeyitEdilmedi, elleDuzenlendi: false, lokasyonaGoreAyri: false, projeBazindaAyri: false,
       araclar, yerlesemeyenler: [], ekIhtiyaclar: [], uyarilar: [] },
@@ -92,14 +92,25 @@ describe('PlanYerlesimComponent', () => {
     expect(c.yukSorunlari().map((s) => s.kod)).toEqual(['s:2', 's:1']);
   });
 
-  it('ilk hesap lokasyon ayrımı yapmaz; farklı lokasyonda tercih sorulur ve seçilen tercihle hesaplanır', () => {
-    const c = kur(plan([arac(1, 'K40', [konum('s:1', 'P1')])], 2));
-    const istekler: YuklemeLokasyonTercihi[] = [];
-    c.hesapla.subscribe((t) => istekler.push(t));
-    expect(c.lokasyonSorusu()).toBeTrue();
-    c.tercih.set(YuklemeLokasyonTercihi.LokasyonaGoreAyri);
-    c.tercihleHesapla();
-    expect(istekler).toEqual([YuklemeLokasyonTercihi.LokasyonaGoreAyri]);
+  it('Hesapla seçimler değişse de çalışır (üst ekran seçimlerle hesaplar); lokasyon tercihi sorulmaz', () => {
+    TestBed.configureTestingModule({ imports: [PlanYerlesimComponent], providers: [provideHttpClient(), provideHttpClientTesting()] });
+    const fixture = TestBed.createComponent(PlanYerlesimComponent);
+    fixture.componentRef.setInput('plan', plan([arac(1, 'K40', [konum('s:1', 'P1')])], 2));
+    fixture.componentRef.setInput('yazabilir', true);
+    fixture.componentRef.setInput('kaydedilmemis', true);
+    fixture.detectChanges();
+    let istek = 0;
+    fixture.componentInstance.hesapla.subscribe(() => istek++);
+    const kok = fixture.nativeElement as HTMLElement;
+    const dugmeler = [...kok.querySelectorAll<HTMLButtonElement>('.py-baslik button')];
+    const hesapla = dugmeler.find((b) => b.textContent?.includes('hesapla'))!;
+    expect(hesapla.disabled).toBeFalse();
+    hesapla.click();
+    expect(istek).toBe(1);
+    // Elle düzenleme son hesaplanan revizyonu düzenler: seçimler değişmişken kapalıdır.
+    expect(dugmeler.find((b) => b.textContent?.includes('Elle'))!.disabled).toBeTrue();
+    expect(kok.textContent).toContain('Seçimler değişti');
+    expect(kok.textContent).not.toContain('Bu tercihle hesapla');
   });
 
   it('adım adım görünüm: kapalıyken bütün yükler, açıkken o adıma kadar yüklenenler çizilir; araç değişince başa döner', () => {

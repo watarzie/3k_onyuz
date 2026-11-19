@@ -17,10 +17,8 @@ import {
   PaginatedList,
   PlanProjeAdayi,
   PlanYerlesimi,
-  YuklemeLokasyonTercihi,
   YuklemePlaniDetayi,
-  YuklemePlaniKaydetIstegi,
-  YuklemePlaniOlusturIstegi,
+  YuklemePlaniHesaplaIstegi,
   YuklemePlaniOzeti,
   YuklemePlaniTanimlari,
 } from '../../shared/models/index';
@@ -50,21 +48,12 @@ export class YuklemePlanlamaService extends BaseApiService {
     return this.get<YuklemePlaniDetayi>(API.YUKLEME_PLANLARI.PLAN(id));
   }
 
-  olustur(istek: YuklemePlaniOlusturIstegi): Observable<ApiResult<YuklemePlaniDetayi>> {
-    return this.post<YuklemePlaniDetayi>(API.YUKLEME_PLANLARI.LISTE, istek);
-  }
-
-  kaydet(id: number, istek: YuklemePlaniKaydetIstegi): Observable<ApiResult<YuklemePlaniDetayi>> {
-    return this.put<YuklemePlaniDetayi>(API.YUKLEME_PLANLARI.PLAN(id), istek);
-  }
-
-  kaynaktanGuncelle(id: number, beklenenRevizyonNo: number): Observable<ApiResult<YuklemePlaniDetayi>> {
-    return this.post<YuklemePlaniDetayi>(API.YUKLEME_PLANLARI.KAYNAKTAN_GUNCELLE(id), { beklenenRevizyonNo });
-  }
-
-  /** Otomatik yerleşim: sonuç yeni revizyon olarak yazılır; arada başka biri kaydettiyse 409. */
-  hesapla(id: number, beklenenRevizyonNo: number, lokasyonTercihi: YuklemeLokasyonTercihi): Observable<ApiResult<YuklemePlaniDetayi>> {
-    return this.post<YuklemePlaniDetayi>(API.YUKLEME_PLANLARI.HESAPLA(id), { beklenenRevizyonNo, lokasyonTercihi });
+  /**
+   * Tek adımlı plan hesabı: plan (yoksa yenisi) seçilen projelerin güncel sandıklarıyla kurulur ve yerleşim aynı
+   * revizyonda hesaplanır. Kaydetme adımı yoktur.
+   */
+  planHesapla(istek: YuklemePlaniHesaplaIstegi): Observable<ApiResult<YuklemePlaniDetayi>> {
+    return this.post<YuklemePlaniDetayi>(API.YUKLEME_PLANLARI.YERLESIM_HESAPLA, istek);
   }
 
   /** Elle yerleşimi kaydetmeden denetler (sürükle-bırak sonrası anlık kontrol). */

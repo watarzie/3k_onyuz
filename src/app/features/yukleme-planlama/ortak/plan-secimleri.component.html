@@ -1,0 +1,45 @@
+<div class="ps-aile">
+  <label class="tz-field">
+    <span>Taşıma ailesi <b>*</b></span>
+    <select class="form-select" [disabled]="kilitli()" [ngModel]="aileId()" (ngModelChange)="aileSec(+$event)">
+      @for (a of tanimlar()?.tasimaAileleri ?? []; track a.id) { <option [ngValue]="a.id">{{ a.ad }}</option> }
+    </select>
+  </label>
+</div>
+
+@if (aileTipleri().length) {
+  <div class="ps-tipler" role="group" [attr.aria-labelledby]="kimlik + '-tipler'">
+    <span class="ps-etiket" [id]="kimlik + '-tipler'">Araç tipi</span>
+    @for (t of aileTipleri(); track t.id) {
+      <button type="button" class="ps-tip" [class.ps-tip--secili]="seciliTipler().has(t.id)" [attr.aria-pressed]="seciliTipler().has(t.id)"
+              [disabled]="kilitli()" (click)="tipDegistir(t.id)">
+        @if (seciliTipler().has(t.id)) { <i class="ri-check-line" aria-hidden="true"></i> }
+        {{ t.ad }}@if (!t.otomatikSecilir) { <small> · yalnız seçilince</small> }
+      </button>
+    }
+    <small class="yp-ipucu ps-tipler__ipucu">
+      @if (ayarlar().tipIdleri.length) {
+        Normal yükler yalnız seçilen tiplere gider; sığmayan yük için ailenin diğer tipi ya da lowbed gerekçesiyle eklenir.
+      } @else {
+        Tip seçilmezse her yük kendisine uygun en sade tipe gider (özel tip yalnız gereken yük için gelir).
+      }
+    </small>
+  </div>
+}
+
+<button type="button" class="ps-acilir" [attr.aria-expanded]="paylarAcik()" [attr.aria-controls]="kimlik + '-paylar'" (click)="paylarAcik.set(!paylarAcik())">
+  <i [class]="paylarAcik() ? 'ri-arrow-down-s-line' : 'ri-arrow-right-s-line'" aria-hidden="true"></i>Güvenlik payları
+  @if (!paylarAcik()) { <small class="yp-ipucu">· {{ tanimliPay() ? tanimliPay() + ' pay tanımlı' : 'tanımlanmadı' }}</small> }
+</button>
+@if (paylarAcik()) {
+  <div class="ps-paylar" [id]="kimlik + '-paylar'">
+    @for (p of PAYLAR; track p.alan) {
+      <label class="tz-field">
+        <span>{{ p.ad }}</span>
+        <div class="tz-input-unit"><input type="number" class="form-control" min="0" step="1" [max]="p.enFazla" [disabled]="kilitli()"
+          [ngModel]="ayarlar()[p.alan]" (ngModelChange)="payDegistir(p.alan, $event)" /><em>{{ p.birim }}</em></div>
+      </label>
+    }
+    <small class="yp-ipucu ps-paylar__not">Boş pay "tanımlanmadı" demektir: hesap o payı uygulamaz ve ilgili kontrol "Teyit edilmedi" çıkar.</small>
+  </div>
+}

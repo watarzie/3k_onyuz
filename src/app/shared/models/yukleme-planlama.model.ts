@@ -25,7 +25,7 @@ export enum PlanYukKaynagi {
   Manuel = 2,
 }
 
-/** Kullanıcının elle değiştirdiği izinler (bayrak); kaynaktan güncellemede bu izinler korunur. */
+/** Eski akışta elle değiştirilmiş izinler (bayrak; yalnız gösterim, 19.11.2026'dan beri ekranda düzenlenmez). */
 export enum PlanYukIzni {
   Yok = 0,
   Dondurme = 1,
@@ -81,7 +81,7 @@ export enum YerlesimGirisYonu {
 export enum PlanKaynakFarkTuru {
   YeniSandik = 1,
   SandikSilindi = 2,
-  SandikSevkEdildi = 3,
+  // 3 kullanılmıyor: sevk edilmiş sandık da plana gelir (19.11.2026).
   OlcuDegisti = 4,
   AgirlikDegisti = 5,
   LokasyonDegisti = 6,
@@ -163,7 +163,6 @@ export interface PlanProjeBilgisi {
   projeNo: string;
   musteri: string | null;
   projeTipiId: number | null;
-  sevkEdilmisSandikSayisi: number;
 }
 
 export interface PlanYukSatiri {
@@ -206,7 +205,6 @@ export interface PlanYukSayaclari {
   hesaplanabilir: number;
   veriEksik: number;
   haricTutulan: number;
-  sevkEdilmisSandik: number;
   yerlesen: number;
   yerlesemeyen: number;
 }
@@ -239,9 +237,9 @@ export interface YuklemePlaniDetayi {
   yukler: PlanYukSatiri[];
   sayaclar: PlanYukSayaclari;
   kaynakFarklari: PlanKaynakFarki[];
-  /** Bu revizyonun otomatik yerleşimi; kaydetme yeni revizyonu yerleşimsiz açar (yeniden hesap gerekir). */
+  /** Bu revizyonun yerleşimi ("Hesapla" ve elle düzenleme yerleşimli revizyon yazar). */
   yerlesim: PlanYerlesimi | null;
-  /** Planlamaya dahil yüklerin farklı lokasyon sayısı; 1'den fazlaysa lokasyon tercihi sorulur. */
+  /** Planlamaya dahil yüklerin farklı lokasyon sayısı (bilgi; lokasyon tercihi 19.11.2026'dan beri sorulmaz). */
   farkliLokasyonSayisi: number;
   /** Sahada süren yükleme oturumu (yoksa null); oturum başladığı revizyonla sürer, plan revize edilse de değişmez. */
   surenYukleme: AracYuklemeOturumu | null;
@@ -372,66 +370,20 @@ export interface PlanProjeAdayi {
   musteri: string;
   projeTipiId: number;
   projeTipiAdi: string;
+  /** Projenin bütün sandıkları (sevk edilmişler dahil). */
   planaGelecekSandikSayisi: number;
-  sevkEdilmisSandikSayisi: number;
 }
 
-export interface YuklemePlaniOlusturIstegi {
-  ad: string;
-  calismaBicimi: YuklemeCalismaBicimi;
-  tasimaAilesiId: number;
-  projeKarisimi: YuklemeProjeKarisimi;
-  yuklemeTarihi: string | null;
-  aciklama: string | null;
+/**
+ * Tek adımlı plan hesabı: projeler, taşıma ailesi/tipleri ve paylarla plan (planId boşsa yenisi) kaynaktan kurulur ve
+ * yerleşim hesaplanır. Var olan planda arada başka biri hesapladıysa 409.
+ */
+export interface YuklemePlaniHesaplaIstegi {
+  planId: number | null;
+  beklenenRevizyonNo: number | null;
   projeIdleri: number[];
-}
-
-/** Bir yük biriminin kullanıcı seçimleri (sandık yükü ve elle eklenen yükün birimi aynı biçimdedir). */
-export interface PlanYukSecimi {
-  dahil: boolean;
-  dondurulebilirMi: boolean;
-  usteKonabilirMi: boolean;
-  altaKalabilirMi: boolean;
-  ustYukSiniriKg: number | null;
-  elleDegisenIzinler: PlanYukIzni;
-}
-
-export interface PlanSandikYukuIstegi extends PlanYukSecimi {
-  sandikId: number;
-}
-
-export interface PlanManuelYukBirimiIstegi extends PlanYukSecimi {
-  birimNo: number;
-}
-
-export interface PlanManuelYukIstegi {
-  kod: string;
-  aciklama: string | null;
-  yukTuruId: number;
-  boyMm: number | null;
-  enMm: number | null;
-  yukseklikMm: number | null;
-  brutKg: number | null;
-  adet: number;
-  projeId: number | null;
-  lokasyonId: number | null;
-  ozelTasimaNotu: string | null;
-  birimler: PlanManuelYukBirimiIstegi[];
-}
-
-export interface YuklemePlaniKaydetIstegi {
-  beklenenRevizyonNo: number;
-  ad: string;
-  calismaBicimi: YuklemeCalismaBicimi;
   tasimaAilesiId: number;
-  projeKarisimi: YuklemeProjeKarisimi;
-  yuklemeTarihi: string | null;
-  aciklama: string | null;
-  revizyonAciklamasi: string | null;
   ayarlar: YuklemePlanAyarlari;
-  projeIdleri: number[];
-  sandikYukleri: PlanSandikYukuIstegi[];
-  manuelYukler: PlanManuelYukIstegi[];
 }
 
 // ===== Ekipman kitaplığı =====

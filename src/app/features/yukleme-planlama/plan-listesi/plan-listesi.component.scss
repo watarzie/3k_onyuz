@@ -1,9 +1,7 @@
 .yp-yeni {
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
   gap: 24px;
-
-  .tz-segmented { flex-wrap: wrap; }
 }
 
 .yp-yeni__projeler {

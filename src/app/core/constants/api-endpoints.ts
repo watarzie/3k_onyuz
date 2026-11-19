@@ -339,8 +339,8 @@ export const API = {
     TANIMLAR: `${BASE}/yukleme-planlari/tanimlar`,
     PROJE_ADAYLARI: `${BASE}/yukleme-planlari/proje-adaylari`,
     PLAN: (id: number) => `${BASE}/yukleme-planlari/${id}`,
-    KAYNAKTAN_GUNCELLE: (id: number) => `${BASE}/yukleme-planlari/${id}/kaynaktan-guncelle`,
-    HESAPLA: (id: number) => `${BASE}/yukleme-planlari/${id}/hesapla`,
+    /** Tek adımlı plan hesabı (plan yoksa açılır). */
+    YERLESIM_HESAPLA: `${BASE}/yukleme-planlari/yerlesim-hesapla`,
     YERLESIM: (id: number) => `${BASE}/yukleme-planlari/${id}/yerlesim`,
     YERLESIM_DENETLE: (id: number) => `${BASE}/yukleme-planlari/${id}/yerlesim/denetle`,
     YERLESIM_TAMAMLA: (id: number) => `${BASE}/yukleme-planlari/${id}/yerlesim/tamamla`,

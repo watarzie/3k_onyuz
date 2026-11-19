@@ -13,24 +13,11 @@ import {
   YerlesimGirisYonu,
   YerlesimKontrolSonucu,
   YerlesimKontrolTuru,
-  YuklemeCalismaBicimi,
-  YuklemeLokasyonTercihi,
-  YuklemeProjeKarisimi,
   YuklemeYontemi,
 } from '../../../shared/models/yukleme-planlama.model';
 import { YuklemeOturumDurumu } from '../../../shared/models/arac-yukleme.model';
 
 // Ekranda enum adı yazılmaz; görünen metinler burada tek yerde tutulur (sunucudaki aynası EkipmanKategoriKurali.Ad).
-
-export const CALISMA_BICIMI: Record<YuklemeCalismaBicimi, string> = {
-  [YuklemeCalismaBicimi.IhtiyacaGoreArac]: 'İhtiyaca göre araç',
-  [YuklemeCalismaBicimi.MevcutAraclaraYerlestirme]: 'Mevcut araçlara yerleştirme',
-};
-
-export const PROJE_KARISIMI: Record<YuklemeProjeKarisimi, string> = {
-  [YuklemeProjeKarisimi.Karisik]: 'Projeler karışık yüklenebilir',
-  [YuklemeProjeKarisimi.ProjeBazindaAyri]: 'Her proje ayrı araçta',
-};
 
 export const YUK_DURUMU: Record<PlanYukDurumu, { metin: string; ton: string }> = {
   [PlanYukDurumu.Bekliyor]: { metin: 'Yerleşim bekliyor', ton: 'info' },
@@ -64,12 +51,6 @@ export const KONTROL_TURU: Record<YerlesimKontrolTuru, string> = {
   [YerlesimKontrolTuru.AgirlikDagilimi]: 'Ağırlık dağılımı',
 };
 
-export const LOKASYON_TERCIHI: Record<YuklemeLokasyonTercihi, string> = {
-  [YuklemeLokasyonTercihi.HenuzSecilmedi]: 'Henüz seçilmedi (ayrım yok)',
-  [YuklemeLokasyonTercihi.LokasyonaGoreAyri]: 'Lokasyonlara göre ayrı planla',
-  [YuklemeLokasyonTercihi.Karisik]: 'Lokasyonları karıştır',
-};
-
 export function girisYonuMetni(yon: YerlesimGirisYonu): string {
   if (yon & YerlesimGirisYonu.Ustten) return 'Üstten';
   if (yon & YerlesimGirisYonu.Arkadan) return 'Arkadan';
@@ -80,7 +61,6 @@ export function girisYonuMetni(yon: YerlesimGirisYonu): string {
 export const KAYNAK_FARKI: Record<PlanKaynakFarkTuru, string> = {
   [PlanKaynakFarkTuru.YeniSandik]: 'Yeni sandık',
   [PlanKaynakFarkTuru.SandikSilindi]: 'Sandık silindi',
-  [PlanKaynakFarkTuru.SandikSevkEdildi]: 'Sandık sevk edildi',
   [PlanKaynakFarkTuru.OlcuDegisti]: 'Ölçü değişti',
   [PlanKaynakFarkTuru.AgirlikDegisti]: 'Ağırlık değişti',
   [PlanKaynakFarkTuru.LokasyonDegisti]: 'Lokasyon değişti',

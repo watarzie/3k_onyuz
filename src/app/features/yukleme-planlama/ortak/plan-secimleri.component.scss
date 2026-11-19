@@ -1,0 +1,65 @@
+// Plan girdileri: aile seçimi, tip çipleri (seçili dolu, diğerleri çerçeveli) ve açılır güvenlik payları.
+:host { display: block; }
+
+.ps-aile .tz-field { max-width: 360px; }
+
+.ps-tipler {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-top: 14px;
+
+  &__ipucu { flex-basis: 100%; }
+}
+
+.ps-etiket {
+  color: var(--bodyColor);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.ps-tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid var(--borderColor);
+  border-radius: 999px;
+  background: var(--whiteColor);
+  color: var(--blackColor);
+  font-size: 12.5px;
+
+  small { color: var(--bodyColor); }
+
+  &:not(:disabled):hover { border-color: var(--yp-ton); }
+
+  &--secili {
+    border-color: var(--yp-ton);
+    background: color-mix(in srgb, var(--yp-ton) 12%, var(--whiteColor));
+    font-weight: 600;
+  }
+}
+
+.ps-acilir {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--yp-ton);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ps-paylar {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px 14px;
+  margin-top: 10px;
+
+  &__not { grid-column: 1 / -1; }
+}

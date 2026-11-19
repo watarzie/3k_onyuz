@@ -4,7 +4,6 @@ import {
   ElementRef,
   afterRenderEffect,
   computed,
-  effect,
   inject,
   input,
   linkedSignal,
@@ -24,13 +23,12 @@ import {
   PlanYukKonumu,
   YerlesimGirisYonu,
   YerlesimKontrolSonucu,
-  YuklemeLokasyonTercihi,
   YuklemePlaniDetayi,
 } from '../../../shared/models/index';
 import { Ekipman3dComponent, Yuk3d } from '../ekipman-kitapligi/ekipman-3d.component';
 import { PlanElleYerlesimComponent } from './plan-elle-yerlesim.component';
 import { PlanYuklemeOynaticiComponent } from '../plan-yukleme-oynatici/plan-yukleme-oynatici.component';
-import { PROJE_RENKLERI, KONTROL_SONUCU, KONTROL_TURU, LOKASYON_TERCIHI, girisYonuMetni, mm } from '../ortak/yukleme-etiketleri';
+import { PROJE_RENKLERI, KONTROL_SONUCU, KONTROL_TURU, girisYonuMetni, mm } from '../ortak/yukleme-etiketleri';
 import { adimGorunumu, adimSinirla, yuklemeAdimlari } from '../ortak/yukleme-adimlari';
 
 /** Yükleme sırası tablosunun satırı: numara ("No"), ait olduğu adım ve konum. */
@@ -42,9 +40,8 @@ interface SiraSatiri {
 
 /**
  * Otomatik yerleşim sonucu (isterler 16–19, 22, 25): araç ve tip özeti, uyarılar, yerleşemeyenler, ek ekipman ihtiyacı,
- * seçili aracın kontrolleri, yük listesi ve 3B görünümü. Lokasyonu farklı yükler varsa ilk hesaptan sonra lokasyon
- * tercihi sorulur. Hesap yalnız kaydedilmiş revizyonla yapılır. Seçili aracın yükleme sırası 3B'de adım adım
- * oynatılabilir (yalnız görünüm; veri değiştirmez).
+ * seçili aracın kontrolleri, yük listesi ve 3B görünümü. "Hesapla" üst ekrana bildirilir (seçimlerle tek adımlı hesap).
+ * Seçili aracın yükleme sırası 3B'de adım adım oynatılabilir (yalnız görünüm; veri değiştirmez).
  */
 @Component({
   selector: 'app-plan-yerlesim',
@@ -59,19 +56,20 @@ export class PlanYerlesimComponent {
   private readonly toast = inject(ToastService);
   readonly plan = input.required<YuklemePlaniDetayi>();
   readonly yazabilir = input(false);
-  /** Kaydedilmemiş değişiklik varsa hesap yapılamaz (sunucu son kaydı hesaplar). */
+  /** Seçimler son hesaptan farklı: elle düzenleme kapalıdır (son hesaplanan revizyonu düzenler), Hesapla seçimleri uygular. */
   readonly kaydedilmemis = input(false);
   readonly hesaplaniyor = input(false);
-  readonly hesapla = output<YuklemeLokasyonTercihi>();
+  /** Tek adımlı hesap isteği: üst ekran seçimlerle planı yeniden kurar ve hesaplar. */
+  readonly hesapla = output<void>();
   /** Elle düzenleme kaydedildi: yeni revizyon (isterler 20–21). */
   readonly elleKaydedildi = output<YuklemePlaniDetayi>();
   /** Elle düzenleme açık mı; açıkken otomatik sonuç yerine düzenleyici gösterilir. */
   readonly duzenleme = signal(false);
+  /** Elle düzenleme açıldı/kapandı: üst ekran bu sırada seçimleri kilitler. */
+  readonly duzenlemeDegisti = output<boolean>();
 
   readonly KONTROL_SONUCU = KONTROL_SONUCU;
   readonly KONTROL_TURU = KONTROL_TURU;
-  readonly LOKASYON_TERCIHI = LOKASYON_TERCIHI;
-  readonly Tercih = YuklemeLokasyonTercihi;
   readonly Sonuc = YerlesimKontrolSonucu;
   readonly girisYonu = girisYonuMetni;
   readonly mm = mm;
@@ -79,7 +77,6 @@ export class PlanYerlesimComponent {
   readonly yerlesim = computed(() => this.plan().yerlesim);
   readonly seciliAracNo = signal<number | null>(null);
   readonly seciliYuk = signal<string | null>(null);
-  readonly tercih = signal<YuklemeLokasyonTercihi>(YuklemeLokasyonTercihi.Karisik);
   readonly indiriliyor = signal<'talep' | 'yukleme' | null>(null);
 
   readonly araclar = computed(() => this.yerlesim()?.araclar ?? []);
@@ -171,8 +168,6 @@ export class PlanYerlesimComponent {
     return null;
   });
 
-  readonly lokasyonSorusu = computed(() => !!this.yerlesim() && this.plan().farkliLokasyonSayisi > 1);
-
   /** Seçili aracın yük sorunları kod ile (elle yerleşim). */
   readonly yukSorunlari = computed(() => {
     const a = this.seciliArac();
@@ -180,10 +175,6 @@ export class PlanYerlesimComponent {
   });
 
   constructor() {
-    effect(() => {
-      const t = this.plan().lokasyonTercihi;
-      this.tercih.set(t === YuklemeLokasyonTercihi.HenuzSecilmedi ? YuklemeLokasyonTercihi.Karisik : t);
-    });
     // Adım ilerledikçe sıra tablosu kendi içinde kayarak geçerli adımı görünür tutar; sayfa kaydırılmaz (kullanıcı
     // 3B görünümü izliyor olabilir).
     afterRenderEffect(() => {
@@ -196,8 +187,13 @@ export class PlanYerlesimComponent {
     });
   }
 
+  duzenlemeAc(acik: boolean): void {
+    this.duzenleme.set(acik);
+    this.duzenlemeDegisti.emit(acik);
+  }
+
   elleKaydet(p: YuklemePlaniDetayi): void {
-    this.duzenleme.set(false);
+    this.duzenlemeAc(false);
     this.seciliAracNo.set(null);
     this.seciliYuk.set(null);
     this.elleKaydedildi.emit(p);
@@ -240,13 +236,8 @@ export class PlanYerlesimComponent {
     if (gorunum && secili && !gorunum.gorunenler.has(secili)) this.seciliYuk.set(null);
   }
 
-  /** İlk hesap lokasyon ayrımı yapılmadan; sonraki hesaplar seçilen tercihle. */
   hesapIstegi(): void {
-    this.hesapla.emit(this.yerlesim() && this.lokasyonSorusu() ? this.tercih() : this.plan().lokasyonTercihi);
-  }
-
-  tercihleHesapla(): void {
-    this.hesapla.emit(this.tercih());
+    this.hesapla.emit();
   }
 
   /** PDF raporları son kaydedilen revizyonun yerleşimiyle üretilir (isterler 28–29). */
