@@ -16,11 +16,10 @@ const TANIMLAR: YuklemePlaniTanimlari = {
 };
 
 const AYARLAR: YuklemePlanAyarlari = {
-  yerlesimBosluguMm: 30, yukseklikPayiMm: null, genislikPayiMm: null, uzunlukPayiMm: null, agirlikPayiKg: null,
-  yuklemeHareketiPayiMm: null, agirlikMerkeziSapmaYuzde: null, mevcutAraclar: [], tipIdleri: [],
+  yerlesimBosluguMm: null, agirlikMerkeziSapmaYuzde: null, mevcutAraclar: [], tipIdleri: [],
 };
 
-describe('PlanSecimleriComponent (aile, tip ve paylar)', () => {
+describe('PlanSecimleriComponent (aile, tip ve yükler arası boşluk)', () => {
   let fixture: ComponentFixture<PlanSecimleriComponent>;
   let ayarlar: YuklemePlanAyarlari[];
   let aileler: number[];
@@ -66,22 +65,22 @@ describe('PlanSecimleriComponent (aile, tip ve paylar)', () => {
     expect(aileler).toEqual([2]);
   });
 
-  it('paylar açılır; girilen değer sayı, boşaltılan değer tanımsız (null) olur', () => {
-    const c = kur(1, { yukseklikPayiMm: 40 });
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('1 pay tanımlı');
-    c.payDegistir('genislikPayiMm', '25');
-    c.payDegistir('yukseklikPayiMm', '');
-    c.payDegistir('agirlikPayiKg', '12.6');
-    expect([ayarlar[0].genislikPayiMm, ayarlar[1].yukseklikPayiMm, ayarlar[2].agirlikPayiKg]).toEqual([25, null, 13]);
-    c.paylarAcik.set(true);
-    fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.ps-paylar input').length).toBe(5);
+  it('yalnız isteğe bağlı boşluk alanı vardır; girilen değer yuvarlanır, boşaltılan alan varsayılana (null) döner', () => {
+    const c = kur(1, { yerlesimBosluguMm: 40 });
+    const kok = fixture.nativeElement as HTMLElement;
+    const girdiler = kok.querySelectorAll<HTMLInputElement>('input');
+    expect(girdiler.length).toBe(1);
+    expect(girdiler[0].placeholder).toBe('30');
+    expect(kok.textContent).not.toContain('payı');
+    expect(kok.textContent).toContain('boş bırakılırsa 30 mm');
+    c.boslukDegistir('25');
+    c.boslukDegistir('');
+    c.boslukDegistir('12.6');
+    expect(ayarlar.map((a) => a.yerlesimBosluguMm)).toEqual([25, null, 13]);
   });
 
-  it('kilitliyken aile, tip ve paylar değiştirilemez', async () => {
-    const c = kur(1, {}, true);
-    c.paylarAcik.set(true);
-    fixture.detectChanges();
+  it('kilitliyken aile, tip ve boşluk değiştirilemez', async () => {
+    kur(1, {}, true);
     // ngModel devre dışı bırakmayı bir sonraki turda uygular.
     await fixture.whenStable();
     fixture.detectChanges();

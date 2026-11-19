@@ -27,19 +27,11 @@
   </div>
 }
 
-<button type="button" class="ps-acilir" [attr.aria-expanded]="paylarAcik()" [attr.aria-controls]="kimlik + '-paylar'" (click)="paylarAcik.set(!paylarAcik())">
-  <i [class]="paylarAcik() ? 'ri-arrow-down-s-line' : 'ri-arrow-right-s-line'" aria-hidden="true"></i>Güvenlik payları
-  @if (!paylarAcik()) { <small class="yp-ipucu">· {{ tanimliPay() ? tanimliPay() + ' pay tanımlı' : 'tanımlanmadı' }}</small> }
-</button>
-@if (paylarAcik()) {
-  <div class="ps-paylar" [id]="kimlik + '-paylar'">
-    @for (p of PAYLAR; track p.alan) {
-      <label class="tz-field">
-        <span>{{ p.ad }}</span>
-        <div class="tz-input-unit"><input type="number" class="form-control" min="0" step="1" [max]="p.enFazla" [disabled]="kilitli()"
-          [ngModel]="ayarlar()[p.alan]" (ngModelChange)="payDegistir(p.alan, $event)" /><em>{{ p.birim }}</em></div>
-      </label>
-    }
-    <small class="yp-ipucu ps-paylar__not">Boş pay "tanımlanmadı" demektir: hesap o payı uygulamaz ve ilgili kontrol "Teyit edilmedi" çıkar.</small>
-  </div>
-}
+<div class="ps-bosluk">
+  <label class="tz-field">
+    <span>Yükler arası boşluk</span>
+    <div class="tz-input-unit"><input type="number" class="form-control" min="0" step="1" [max]="BOSLUK_EN_FAZLA_MM" [disabled]="kilitli()"
+      [placeholder]="VARSAYILAN_BOSLUK_MM" [ngModel]="ayarlar().yerlesimBosluguMm" (ngModelChange)="boslukDegistir($event)" /><em>mm</em></div>
+  </label>
+  <small class="yp-ipucu">İsteğe bağlı; boş bırakılırsa {{ VARSAYILAN_BOSLUK_MM }} mm uygulanır.</small>
+</div>

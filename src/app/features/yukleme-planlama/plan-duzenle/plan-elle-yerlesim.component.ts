@@ -30,6 +30,7 @@ import {
   yerelSorunlar,
   yuzeyler,
 } from '../ortak/elle-yerlesim';
+import { VARSAYILAN_BOSLUK_MM } from '../ortak/plan-secimleri.component';
 
 interface Surukleme {
   kimlik: number;
@@ -111,7 +112,8 @@ export class PlanElleYerlesimComponent implements OnInit {
   });
   private readonly denetimIstegi = new Subject<number>();
 
-  readonly bosluk = computed(() => this.plan().ayarlar.yerlesimBosluguMm ?? 0);
+  /** Hesapta uygulanan yükler arası boşluk (girilmemişse sunucu varsayılanı). */
+  readonly bosluk = computed(() => this.plan().ayarlar.yerlesimBosluguMm ?? VARSAYILAN_BOSLUK_MM);
   readonly araclar = computed(() => this.taslak().araclar);
   readonly bekleyenler = computed(() => this.taslak().bekleyenler);
   readonly seciliArac = computed<ElleArac | null>(() =>

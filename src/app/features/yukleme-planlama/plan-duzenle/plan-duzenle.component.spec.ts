@@ -58,7 +58,7 @@ function plan(revizyonNo = 2, tipIdleri: number[] = [3]): YuklemePlaniDetayi {
     id: 1, planNo: 'YP-2026-000001', ad: 'PA900-01', calismaBicimi: YuklemeCalismaBicimi.IhtiyacaGoreArac, tasimaAilesiId: 1, tasimaAilesiAdi: 'Konteyner',
     projeKarisimi: YuklemeProjeKarisimi.Karisik, lokasyonTercihi: YuklemeLokasyonTercihi.Karisik, yuklemeTarihi: null, aciklama: null,
     revizyonNo, revizyonTarihi: '2026-11-19T10:00:00', kaydeden: null, revizyonAciklamasi: 'Hesaplandı.',
-    ayarlar: { yerlesimBosluguMm: 30, yukseklikPayiMm: null, genislikPayiMm: null, uzunlukPayiMm: null, agirlikPayiKg: null, yuklemeHareketiPayiMm: null, mevcutAraclar: [], tipIdleri },
+    ayarlar: { yerlesimBosluguMm: null, mevcutAraclar: [], tipIdleri },
     projeler: [{ projeId: 7, projeNo: 'PA900-01', musteri: 'M', projeTipiId: 1 }, { projeId: 8, projeNo: 'PA900-02', musteri: 'M', projeTipiId: 1 }],
     yukler: [satir('1', PlanYukDurumu.Yerlesti), satir('2', PlanYukDurumu.EksikVeri)],
     sayaclar: { toplam: 2, secilen: 2, hesaplanabilir: 1, veriEksik: 1, haricTutulan: 0, yerlesen: 1, yerlesemeyen: 0 },
@@ -112,7 +112,7 @@ describe('PlanDuzenleComponent (tek adımlı hesap)', () => {
 
   it('Hesapla seçimlerle tek istek atar; sonuç yeni revizyon olarak yerleşir', async () => {
     const c = kur(plan());
-    c.ayarlarDegistir({ ...c.ayarlar(), yukseklikPayiMm: 50, tipIdleri: [2] });
+    c.ayarlarDegistir({ ...c.ayarlar(), yerlesimBosluguMm: 50, tipIdleri: [2] });
     expect(c.degisti()).toBeTrue();
     api.planHesapla.and.returnValue(of(tamam(plan(3, [2]))));
     await c.hesapla();
@@ -120,7 +120,7 @@ describe('PlanDuzenleComponent (tek adımlı hesap)', () => {
       planId: 1, beklenenRevizyonNo: 2, projeIdleri: [7, 8], tasimaAilesiId: 1,
     }));
     const ayar = api.planHesapla.calls.mostRecent().args[0].ayarlar;
-    expect([ayar.yukseklikPayiMm, ayar.tipIdleri]).toEqual([50, [2]]);
+    expect([ayar.yerlesimBosluguMm, ayar.tipIdleri]).toEqual([50, [2]]);
     expect([c.plan()?.revizyonNo, c.degisti()]).toEqual([3, false]);
     expect(toast.success).toHaveBeenCalled();
   });

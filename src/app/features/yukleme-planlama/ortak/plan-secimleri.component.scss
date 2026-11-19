@@ -1,4 +1,4 @@
-// Plan girdileri: aile seçimi, tip çipleri (seçili dolu, diğerleri çerçeveli) ve açılır güvenlik payları.
+// Plan girdileri: aile seçimi, tip çipleri (seçili dolu, diğerleri çerçeveli) ve yükler arası boşluk.
 :host { display: block; }
 
 .ps-aile .tz-field { max-width: 360px; }
@@ -42,24 +42,13 @@
   }
 }
 
-.ps-acilir {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+.ps-bosluk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 4px 14px;
   margin-top: 14px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--yp-ton);
-  font-size: 13px;
-  font-weight: 600;
-}
 
-.ps-paylar {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  gap: 10px 14px;
-  margin-top: 10px;
-
-  &__not { grid-column: 1 / -1; }
+  .tz-field { width: 190px; margin: 0; }
+  .yp-ipucu { padding-bottom: 8px; }
 }

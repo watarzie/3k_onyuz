@@ -12,8 +12,7 @@ describe('YuklemePlanlamaService tek adımlı hesap sözleşmesi', () => {
     const http = TestBed.inject(HttpTestingController);
     const istek: YuklemePlaniHesaplaIstegi = {
       planId: null, beklenenRevizyonNo: null, projeIdleri: [7], tasimaAilesiId: 1,
-      ayarlar: { yerlesimBosluguMm: 30, yukseklikPayiMm: 50, genislikPayiMm: null, uzunlukPayiMm: null, agirlikPayiKg: null,
-        yuklemeHareketiPayiMm: null, agirlikMerkeziSapmaYuzde: null, mevcutAraclar: [], tipIdleri: [3] },
+      ayarlar: { yerlesimBosluguMm: 50, agirlikMerkeziSapmaYuzde: null, mevcutAraclar: [], tipIdleri: [3] },
     };
     service.planHesapla(istek).subscribe();
     const cagri = http.expectOne(API.YUKLEME_PLANLARI.YERLESIM_HESAPLA);

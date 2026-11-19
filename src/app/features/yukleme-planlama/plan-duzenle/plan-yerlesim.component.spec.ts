@@ -49,7 +49,7 @@ function plan(araclar: PlanAraci[], farkliLokasyon = 1): YuklemePlaniDetayi {
     id: 1, planNo: 'YP-2026-000001', ad: 'P', calismaBicimi: YuklemeCalismaBicimi.IhtiyacaGoreArac, tasimaAilesiId: 1, tasimaAilesiAdi: 'Konteyner',
     projeKarisimi: YuklemeProjeKarisimi.Karisik, lokasyonTercihi: YuklemeLokasyonTercihi.HenuzSecilmedi, yuklemeTarihi: null, aciklama: null,
     revizyonNo: 2, revizyonTarihi: '2026-11-05T10:00:00', kaydeden: null, revizyonAciklamasi: null,
-    ayarlar: { yerlesimBosluguMm: 30, yukseklikPayiMm: null, genislikPayiMm: null, uzunlukPayiMm: null, agirlikPayiKg: null, yuklemeHareketiPayiMm: null, mevcutAraclar: [], tipIdleri: [] },
+    ayarlar: { yerlesimBosluguMm: null, mevcutAraclar: [], tipIdleri: [] },
     projeler: [
       { projeId: 1, projeNo: 'P1', musteri: null, projeTipiId: 1 },
       { projeId: 2, projeNo: 'P2', musteri: null, projeTipiId: 1 },

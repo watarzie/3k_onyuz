@@ -127,15 +127,12 @@ export interface PlanMevcutArac {
   adet: number;
 }
 
+/** Plan ayarları. Güvenlik payları kaldırıldı (saha isteği, 20.11.2026); kontroller paysız yapılır. */
 export interface YuklemePlanAyarlari {
-  yerlesimBosluguMm: number;
-  yukseklikPayiMm: number | null;
-  genislikPayiMm: number | null;
-  uzunlukPayiMm: number | null;
-  agirlikPayiKg: number | null;
-  /** Ağırlık merkezinin araç ortasından izin verilen en fazla sapması (araç boyu/genişliğinin yüzdesi, 1–50); boşsa teyit edilmedi. */
+  /** Yükler arası boşluk (mm, isteğe bağlı); boşsa sunucu varsayılanı (`VARSAYILAN_BOSLUK_MM`). */
+  yerlesimBosluguMm: number | null;
+  /** Ağırlık merkezinin araç ortasından izin verilen en fazla sapması (araç boyu/genişliğinin yüzdesi, 1–50); ekranda yok. */
   agirlikMerkeziSapmaYuzde?: number | null;
-  yuklemeHareketiPayiMm: number | null;
   /** Mevcut araçlara yerleştirmede kullanıcının verdiği araçlar. */
   mevcutAraclar: PlanMevcutArac[];
   /**

@@ -42,13 +42,14 @@ describe('PlanListesiComponent yeni plan (tek adımlı hesap)', () => {
     return fixture;
   }
 
-  it('pencerede yalnız projeler, aile/tip ve paylar vardır; plan adı ve kaydetme yoktur', () => {
+  it('pencerede yalnız projeler, aile/tip ve yükler arası boşluk vardır; plan adı, paylar ve kaydetme yoktur', () => {
     const fixture = kur();
     fixture.componentInstance.yeniPlan();
     fixture.detectChanges();
     const metin = (fixture.nativeElement as HTMLElement).querySelector('.tz-modal')!.textContent ?? '';
     expect(metin).toContain('Taşıma ailesi');
-    expect(metin).toContain('Güvenlik payları');
+    expect(metin).toContain('Yükler arası boşluk');
+    expect(metin).not.toContain('Güvenlik payları');
     expect(metin).not.toContain('Plan adı');
     expect(metin).not.toContain('Çalışma biçimi');
     expect(metin).not.toContain('Sevkli');
