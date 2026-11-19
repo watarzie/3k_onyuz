@@ -28,7 +28,7 @@ import {
 import { Ekipman3dComponent, Yuk3d } from '../ekipman-kitapligi/ekipman-3d.component';
 import { PlanElleYerlesimComponent } from './plan-elle-yerlesim.component';
 import { PlanYuklemeOynaticiComponent } from '../plan-yukleme-oynatici/plan-yukleme-oynatici.component';
-import { PROJE_RENKLERI, KONTROL_SONUCU, KONTROL_TURU, girisYonuMetni, mm } from '../ortak/yukleme-etiketleri';
+import { PROJE_RENKLERI, KONTROL_SONUCU, KONTROL_TURU, girisYonuMetni, mm, sandikEtiketi } from '../ortak/yukleme-etiketleri';
 import { adimGorunumu, adimSinirla, yuklemeAdimlari } from '../ortak/yukleme-adimlari';
 
 /** Yükleme sırası tablosunun satırı: numara ("No"), ait olduğu adım ve konum. */
@@ -115,9 +115,11 @@ export class PlanYerlesimComponent {
     if (!a) return [];
     const uygunsuz = a.sonuc === YerlesimKontrolSonucu.Uygunsuz;
     const sorunlu = new Set(a.yukSorunlari.filter((s) => s.sonuc === YerlesimKontrolSonucu.Uygunsuz).map((s) => s.yukAnahtari));
+    const tekProje = this.plan().projeler.length <= 1;
     return a.konumlar.map((k) => ({
       anahtar: k.yukAnahtari,
       kod: k.kod,
+      etiket: sandikEtiketi(k.kod, k.projeNo, tekProje),
       xMm: k.xMm,
       yMm: k.yMm,
       zMm: k.zMm,

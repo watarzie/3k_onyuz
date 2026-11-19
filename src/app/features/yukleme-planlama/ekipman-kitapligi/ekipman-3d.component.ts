@@ -16,10 +16,14 @@ import { AciklikTarafi, EkipmanTeknikVerisi } from '../../../shared/models/yukle
 
 type Gorunum = 'perspektif' | 'ust' | 'yan' | 'arka';
 
-/** Araçtaki yük kutusu (ekipman koordinatları, mm). Renk proje rengidir; sorunlu yük kırmızı çizilir. */
+/**
+ * Araçtaki yük kutusu (ekipman koordinatları, mm). Renk proje rengidir; sorunlu yük kırmızı çizilir. Etiket verilirse
+ * (sandık numarası, madde 8) kutunun üst ve yan yüzlerine yazılır.
+ */
 export interface Yuk3d {
   anahtar: string;
   kod: string;
+  etiket?: string;
   xMm: number;
   yMm: number;
   zMm: number;
@@ -178,6 +182,11 @@ export class Ekipman3dComponent implements AfterViewInit, OnDestroy {
     this.gozlemci?.disconnect();
     this.kontrol?.dispose();
     this.temizle();
+    for (const e of this.etiketDokulari.values()) e.doku.dispose();
+    for (const m of this.etiketMalzemeleri.values()) m.dispose();
+    this.etiketDokulari.clear();
+    this.etiketMalzemeleri.clear();
+    this.etiketDuzlemi.dispose();
     this.renderer?.dispose();
     this.renderer?.domElement.remove();
   }
@@ -214,11 +223,27 @@ export class Ekipman3dComponent implements AfterViewInit, OnDestroy {
   }
 
   private render(): void {
+    this.ustEtiketleriCevir();
     this.renderer?.render(this.sahne, this.kamera);
+  }
+
+  /**
+   * Üst yüz etiketleri kameraya göre döner: yazının üst kenarı bakış yönünde uzağa bakar, böylece 3B açıda da üstten
+   * bakışta da düz okunur (yan yüzler sabittir, her biri kendi tarafından düz okunur).
+   */
+  private ustEtiketleriCevir(): void {
+    if (!this.ustEtiketler.length) return;
+    const hedef = this.kontrol?.target ?? this.merkez;
+    const fx = hedef.x - this.kamera.position.x;
+    const fz = hedef.z - this.kamera.position.z;
+    const aci = Math.hypot(fx, fz) < 1e-9 ? 0 : Math.atan2(-fx, -fz);
+    for (const m of this.ustEtiketler) m.rotation.set(-Math.PI / 2, aci, 0, 'YXZ');
   }
 
   private temizle(): void {
     this.model.traverse((n) => {
+      // Etiket düzlemi, dokusu ve malzemesi önbellektedir; yeniden çizimde bırakılmaz (ngOnDestroy bırakır).
+      if (n.userData['etiket']) return;
       const m = n as THREE.Mesh;
       m.geometry?.dispose();
       const mat = m.material as THREE.Material | THREE.Material[] | undefined;
@@ -229,6 +254,7 @@ export class Ekipman3dComponent implements AfterViewInit, OnDestroy {
     });
     this.model.clear();
     this.yukKutulari = [];
+    this.ustEtiketler = [];
   }
 
   private ciz(v: EkipmanTeknikVerisi | null): void {
@@ -345,7 +371,87 @@ export class Ekipman3dComponent implements AfterViewInit, OnDestroy {
       this.yukKutulari.push(kutu);
       const kenar = this.cizgiKutu(y.xMm, y.yMm, y.zMm, y.boyMm, y.enMm, y.yukseklikMm, seciliMi || vurgulu ? 0x0f172a : y.sorunlu ? 0x7f1d1d : 0x334155);
       this.model.add(kenar);
+      if (y.etiket) this.etiketCiz(y, y.etiket, soluk ? 0.5 : 1);
     }
+  }
+
+  /** Etiket metnine göre doku (tuval en/boy oranıyla); seçim ve adım değişince yeniden üretilmez. */
+  private readonly etiketDokulari = new Map<string, { doku: THREE.CanvasTexture; oran: number }>();
+  /** Metin ve opaklığa göre etiket malzemesi (soluk kutunun etiketi de soluktur). */
+  private readonly etiketMalzemeleri = new Map<string, THREE.MeshBasicMaterial>();
+  /** Bütün etiket yüzlerinin paylaştığı birim düzlem; boyut ölçekle verilir. */
+  private readonly etiketDuzlemi = new THREE.PlaneGeometry(1, 1);
+  /** Kameraya göre döndürülen üst yüz etiketleri (her çizimde yeniden toplanır). */
+  private ustEtiketler: THREE.Mesh[] = [];
+
+  private etiketDokusu(metin: string): { doku: THREE.CanvasTexture; oran: number } | null {
+    const onceki = this.etiketDokulari.get(metin);
+    if (onceki) return onceki;
+    const tuval = document.createElement('canvas');
+    const c = tuval.getContext('2d');
+    if (!c) return null;
+    const yazi = 'bold 56px system-ui, sans-serif';
+    c.font = yazi;
+    tuval.width = Math.ceil(c.measureText(metin).width) + 24;
+    tuval.height = 76;
+    // Tuval boyu değişince bağlam sıfırlanır; yazı ayarları yeniden verilir.
+    c.font = yazi;
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.lineJoin = 'round';
+    c.lineWidth = 8;
+    c.strokeStyle = 'rgba(15, 23, 42, .85)';
+    c.strokeText(metin, tuval.width / 2, 40);
+    c.fillStyle = '#fff';
+    c.fillText(metin, tuval.width / 2, 40);
+    const doku = new THREE.CanvasTexture(tuval);
+    doku.colorSpace = THREE.SRGBColorSpace;
+    doku.anisotropy = 4;
+    const kayit = { doku, oran: tuval.width / tuval.height };
+    this.etiketDokulari.set(metin, kayit);
+    return kayit;
+  }
+
+  /**
+   * Sandık numarasını kutunun üst yüzüne ve dört yan yüzüne yazar (her bakış açısından okunur; alttaki katın üst yüzü
+   * üstteki kutuyla örtülür). Doku, malzeme ve düzlem önbellektedir. Yazı yüze sığacak kadar küçülür, büyük kutuda
+   * 40 cm'yi geçmez; üst yüz yazısı kameraya göre döndüğü için kısa kenara göre boyutlanır. Yazı yüzleri tıklama
+   * hedefi değildir (seçim kutunun kendisiyle yapılır).
+   */
+  private etiketCiz(y: Yuk3d, metin: string, opaklik: number): void {
+    const kayit = this.etiketDokusu(metin);
+    if (!kayit) return;
+    const { doku, oran } = kayit;
+    const anahtar = `${metin}|${opaklik}`;
+    let malzeme = this.etiketMalzemeleri.get(anahtar);
+    if (!malzeme) {
+      malzeme = new THREE.MeshBasicMaterial({
+        map: doku, transparent: true, opacity: opaklik, depthWrite: false,
+        polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+      });
+      this.etiketMalzemeleri.set(anahtar, malzeme);
+    }
+    const [u, h, d] = [y.boyMm / 1000, y.yukseklikMm / 1000, y.enMm / 1000];
+    const [cx, cy, cz] = [(y.xMm + y.boyMm / 2) / 1000, (y.zMm + y.yukseklikMm / 2) / 1000, (y.yMm + y.enMm / 2) / 1000];
+    const pay = 0.004;
+    const yuz = (genislik: number, yukseklik: number, x: number, yy: number, z: number, don: (m: THREE.Mesh) => void): void => {
+      const boy = Math.min((genislik * 0.88) / oran, yukseklik * 0.5, 0.4);
+      if (boy <= 0) return;
+      const m = new THREE.Mesh(this.etiketDuzlemi, malzeme);
+      m.scale.set(boy * oran, boy, 1);
+      m.position.set(x, yy, z);
+      m.userData['etiket'] = true;
+      don(m);
+      m.renderOrder = 1;
+      this.model.add(m);
+    };
+    // Üst yüz: yönü render öncesi kameraya göre verilir (ustEtiketleriCevir).
+    const kisa = Math.min(u, d);
+    yuz(kisa, kisa, cx, cy + h / 2 + pay, cz, (m) => this.ustEtiketler.push(m));
+    yuz(u, h, cx, cy, cz - d / 2 - pay, (m) => (m.rotation.y = Math.PI));
+    yuz(u, h, cx, cy, cz + d / 2 + pay, () => undefined);
+    yuz(d, h, cx + u / 2 + pay, cy, cz, (m) => (m.rotation.y = Math.PI / 2));
+    yuz(d, h, cx - u / 2 - pay, cy, cz, (m) => (m.rotation.y = -Math.PI / 2));
   }
 
   private aciklikCiz(

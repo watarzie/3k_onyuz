@@ -185,5 +185,17 @@ export function yuklemeYuzdesi(yuklenen: number, toplam: number): number {
   return toplam > 0 ? Math.min(100, Math.round((yuklenen * 100) / toplam)) : 0;
 }
 
+/**
+ * 3B görünümde yükün üstüne yazılan ad (saha geri bildirimi 19.11.2026 madde 8): tek projeli planda yalnız sandık (koli)
+ * numarası, çok projeli planda tam kod (ör. PA600-23-01). Kodu proje numarasıyla başlamayan yük (elle eklenen) tam
+ * koduyla yazılır. Sunucudaki karşılığı `YuklemePlaniKurali.SandikEtiketi` (PDF çizimleri).
+ */
+export function sandikEtiketi(kod: string, projeNo: string | null | undefined, tekProje: boolean): string {
+  const proje = projeNo?.trim();
+  if (!tekProje || !proje) return kod;
+  const onek = `${proje}-`;
+  return kod.length > onek.length && kod.startsWith(onek) ? kod.slice(onek.length) : kod;
+}
+
 /** Projeleri ayıran renkler; kimlik yalnız renge bağlı değildir (kod ve proje no ayrıca yazılır). */
 export const PROJE_RENKLERI = ['#0e7490', '#7c3aed', '#ea580c', '#16a34a', '#2563eb', '#be185d', '#a16207', '#0f766e', '#4f46e5', '#65a30d'];

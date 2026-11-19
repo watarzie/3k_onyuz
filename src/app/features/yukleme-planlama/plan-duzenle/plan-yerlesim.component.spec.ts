@@ -81,6 +81,17 @@ describe('PlanYerlesimComponent', () => {
     expect([a.sorunlu, b.sorunlu]).toEqual([false, true]);
   });
 
+  it('3B kutu etiketi: çok projede tam kod, tek projede yalnız sandık no (madde 8)', () => {
+    const cok = kur(plan([arac(1, 'K40', [{ ...konum('s:1', 'P1'), kod: 'P1-12' }, { ...konum('s:2', 'P2'), kod: 'P2-3' }])]));
+    expect(cok.yukler3d().map((y) => y.etiket)).toEqual(['P1-12', 'P2-3']);
+
+    TestBed.resetTestingModule();
+    const p = plan([arac(1, 'K40', [{ ...konum('s:1', 'P1'), kod: 'P1-12' }, { ...konum('s:2', 'P1'), kod: 'TRAFO' }])]);
+    p.projeler = [p.projeler[0]];
+    const tek = kur(p);
+    expect(tek.yukler3d().map((y) => y.etiket)).toEqual(['12', 'TRAFO']);
+  });
+
   it('elle yerleşimde uygunsuz yük sonucu olan yük kırmızıdır ve kodla listelenir', () => {
     const a = arac(1, 'K40', [konum('s:1', 'P1'), konum('s:2', 'P1', 1200)]);
     a.yukSorunlari = [

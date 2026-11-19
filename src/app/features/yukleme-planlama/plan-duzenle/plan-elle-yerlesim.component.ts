@@ -6,7 +6,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { YuklemePlanlamaService } from '../../../core/services/yukleme-planlama.service';
 import { ElleEkipmanSecenegi, PlanAraci, PlanYerlesimi, YerlesimKontrolSonucu, YuklemePlaniDetayi } from '../../../shared/models/index';
 import { Ekipman3dComponent, Yuk3d } from '../ekipman-kitapligi/ekipman-3d.component';
-import { PROJE_RENKLERI, KONTROL_SONUCU, KONTROL_TURU, mm } from '../ortak/yukleme-etiketleri';
+import { PROJE_RENKLERI, KONTROL_SONUCU, KONTROL_TURU, mm, sandikEtiketi } from '../ortak/yukleme-etiketleri';
 import {
   ElleArac,
   ElleTaslak,
@@ -214,10 +214,11 @@ export class PlanElleYerlesimComponent implements OnInit {
   readonly yukler3d = computed<Yuk3d[]>(() => {
     const a = this.seciliArac();
     const sorunlu = this.sorunlular();
+    const tekProje = this.plan().projeler.length <= 1;
     return (a?.yukler ?? []).map((y) => {
       const o = olcu(y);
       return {
-        anahtar: y.anahtar, kod: y.kod, xMm: y.xMm, yMm: y.yMm, zMm: y.zMm, boyMm: o.boy, enMm: o.en, yukseklikMm: y.yukseklikMm,
+        anahtar: y.anahtar, kod: y.kod, etiket: sandikEtiketi(y.kod, y.projeNo, tekProje), xMm: y.xMm, yMm: y.yMm, zMm: y.zMm, boyMm: o.boy, enMm: o.en, yukseklikMm: y.yukseklikMm,
         renk: this.projeRenkleri().get(y.projeNo ?? '') ?? '#64748b', sorunlu: sorunlu.has(y.anahtar),
       };
     });
