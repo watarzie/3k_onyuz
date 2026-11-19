@@ -136,7 +136,7 @@ export interface YuklemePlanAyarlari {
   /** Mevcut araçlara yerleştirmede kullanıcının verdiği araçlar. */
   mevcutAraclar: PlanMevcutArac[];
   /**
-   * Taşıma ailesinde seçilen tipler (`TasimaTipi.id`). Boşsa her yük ailede kendisini alan en sade tipe gider; seçilirse
+   * Taşıma ailesinde seçilen tipler (`TasimaTipi.id`). Boşsa her yük ailede kendisini alan en sade tipe gider (araç sayısı düşüyorsa üst tipe); seçilirse
    * normal yükler yalnız seçilen tiplere, sığmayanlar gerekçesiyle ailenin diğer tiplerine ya da lowbed'e gider.
    */
   tipIdleri: number[];
