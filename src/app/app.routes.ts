@@ -141,14 +141,16 @@ export const routes: Routes = [
         data: { menuKod: YETKI.SANDIK.BARKOD_ETIKET },
       },
       {
-        // Yükleme planlama: planlar, ekipman kitaplığı ve araç yükleme (kenar menüde "Yükleme Planlama" grubu).
+        // Yükleme planlama: yükleme simülasyonu, ekipman kitaplığı ve araç yükleme (kenar menüde "Yükleme Planlama" grubu).
+        // Simülasyon tek sayfadır ve boş başlar; liste yoktur.
         path: 'yukleme-planlari',
         canActivate: [menuGuard],
         loadComponent: () =>
-          import('./features/yukleme-planlama/plan-listesi/plan-listesi.component').then(m => m.PlanListesiComponent),
+          import('./features/yukleme-planlama/plan-duzenle/plan-duzenle.component').then(m => m.PlanDuzenleComponent),
         data: { menuKod: YETKI.YUKLEME_PLANLAMA.PLANLAR },
       },
       {
+        // Aynı sayfa, sunucudaki kayıtla açılır (eski bağlantılar).
         path: 'yukleme-planlari/:id',
         canActivate: [menuGuard],
         loadComponent: () =>

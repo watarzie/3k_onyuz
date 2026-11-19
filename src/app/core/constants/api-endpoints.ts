@@ -333,13 +333,14 @@ export const API = {
   MENU: {
     KULLANICI_MENU: `${BASE}/menu/kullanici-menu`,
   },
-  /** Yükleme planları (yukleme-planlari R/W). */
+  /** Yükleme simülasyonu (yukleme-planlari R/W). */
   YUKLEME_PLANLARI: {
-    LISTE: `${BASE}/yukleme-planlari`,
     TANIMLAR: `${BASE}/yukleme-planlari/tanimlar`,
     PROJE_ADAYLARI: `${BASE}/yukleme-planlari/proje-adaylari`,
+    /** Seçilen projelerin yük listesi (hesaptan önce, kayıt açmaz). */
+    YUK_ONIZLEME: `${BASE}/yukleme-planlari/yuk-onizleme`,
     PLAN: (id: number) => `${BASE}/yukleme-planlari/${id}`,
-    /** Tek adımlı plan hesabı (plan yoksa açılır). */
+    /** Tek adımlı hesap (kayıt yoksa açılır). */
     YERLESIM_HESAPLA: `${BASE}/yukleme-planlari/yerlesim-hesapla`,
     YERLESIM: (id: number) => `${BASE}/yukleme-planlari/${id}/yerlesim`,
     YERLESIM_DENETLE: (id: number) => `${BASE}/yukleme-planlari/${id}/yerlesim/denetle`,

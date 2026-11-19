@@ -7,7 +7,7 @@ export const VARSAYILAN_BOSLUK_MM = 30;
 /** Yükler arası boşluğun üst sınırı (YuklemePlaniKurali.YerlesimBosluguEnFazlaMm). */
 export const BOSLUK_EN_FAZLA_MM = 500;
 
-/** Yeni planın başlangıç ayarları: boşluk girilmemiş (varsayılan uygulanır), tip seçimi yok. */
+/** Başlangıç ayarları: boşluk girilmemiş (varsayılan uygulanır), tip seçimi yok. */
 export const YENI_PLAN_AYARLARI: YuklemePlanAyarlari = {
   yerlesimBosluguMm: null, agirlikMerkeziSapmaYuzde: null, mevcutAraclar: [], tipIdleri: [],
 };
@@ -16,9 +16,9 @@ export const YENI_PLAN_AYARLARI: YuklemePlanAyarlari = {
 let ornekNo = 0;
 
 /**
- * Plan girdileri (yeni plan penceresi ve plan ekranı ortak): iki kademeli araç seçimi (önce taşıma ailesi, sonra
- * isteğe bağlı tip) ve isteğe bağlı yükler arası boşluk. Durumu tutmaz; değişiklikleri çıkışla bildirir. Aile değişince
- * tip seçimi sıfırlanır (önceki ailenin tipi geçersizdir).
+ * Simülasyonun araç girdileri: iki kademeli araç seçimi (önce taşıma ailesi, sonra isteğe bağlı tip) ve isteğe bağlı
+ * yükler arası boşluk. Durumu tutmaz; değişiklikleri çıkışla bildirir. Aile değişince tip seçimi sıfırlanır (önceki
+ * ailenin tipi geçersizdir).
  */
 @Component({
   selector: 'app-plan-secimleri',

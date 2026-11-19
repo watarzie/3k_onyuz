@@ -465,7 +465,7 @@ export class PlanElleYerlesimComponent implements OnInit {
     this.api.elleKaydet(p.id, p.revizyonNo, istek(this.taslak())).subscribe((r) => {
       this.kaydediliyor.set(false);
       if (r.isSuccess && r.value) this.kaydedildi.emit(r.value);
-      else this.toast.error(r.error ?? 'Elle yerleşim kaydedilemedi.');
+      else this.toast.error(r.error ?? 'Elle yerleşim uygulanamadı.');
     });
   }
 }

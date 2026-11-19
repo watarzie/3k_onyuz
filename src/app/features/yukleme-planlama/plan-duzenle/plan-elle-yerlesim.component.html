@@ -3,7 +3,7 @@
     <strong><i class="ri-drag-move-2-line" aria-hidden="true"></i> Elle yerleşim düzenleme</strong>
     <small class="yp-ipucu d-block">Yükü sürükleyin (üstündekiler birlikte taşınır; bırakılan yük altındakinin üstüne oturur). Oklar 10 mm, Shift+ok 100 mm kaydırır;
       R döndürür, Delete bekleyenlere gönderir. İstediğiniz tipte araç ekleyip yükleri koyabilir, "Kalanı otomatik diz" ile geri kalanını sisteme yerleştirtebilirsiniz.
-      Kontroller her değişiklikte sunucuda yapılır; sorunlu yerleşim de kaydedilebilir ama raporu taslak basılır.</small>
+      Kontroller her değişiklikte sunucuda yapılır; sorunlu yerleşim de uygulanabilir ama raporu taslak basılır.</small>
   </div>
   <span class="yp-bosluk"></span>
   @if (denetleniyor()) {
@@ -15,7 +15,7 @@
   }
   <button type="button" class="tz-btn" [disabled]="kaydediliyor()" (click)="vazgec.emit()"><i class="ri-close-line" aria-hidden="true"></i>Vazgeç</button>
   <button type="button" class="tz-btn tz-btn--primary" [disabled]="kaydediliyor() || !degisti()" (click)="kaydet()">
-    <i [class]="kaydediliyor() ? 'ri-loader-4-line tz-spin' : 'ri-save-3-line'" aria-hidden="true"></i>Elle düzenlemeyi kaydet
+    <i [class]="kaydediliyor() ? 'ri-loader-4-line tz-spin' : 'ri-save-3-line'" aria-hidden="true"></i>Elle düzenlemeyi uygula
   </button>
 </div>
 
@@ -65,7 +65,7 @@
               title="Araçlardaki yükler yerinde kalır; bekleyenler boş yerlere, gerekirse yeni araçlara yerleşir">
         <i [class]="tamamlaniyor() ? 'ri-loader-4-line tz-spin' : 'ri-magic-line'" aria-hidden="true"></i>Kalanı otomatik diz
       </button>
-      <p class="yp-ipucu mb-1">Araca konmayan yük yerleşemeyen sayılır ve plan uygunsuz olur.</p>
+      <p class="yp-ipucu mb-1">Araca konmayan yük yerleşemeyen sayılır ve sonuç uygunsuz olur.</p>
       <ul class="pe-bekleyenler">
         @for (y of bekleyenler(); track y.anahtar) {
           <li>
@@ -170,7 +170,7 @@
       } @else if (denetleniyor()) {
         <p class="yp-ipucu mt-3">Kontroller güncelleniyor…</p>
       } @else if (denetlenemedi()) {
-        <p class="yp-ipucu mt-3">Kontroller alınamadı; bir sonraki değişiklikte yeniden denenir. Kaydetme sunucuda yeniden denetler.</p>
+        <p class="yp-ipucu mt-3">Kontroller alınamadı; bir sonraki değişiklikte yeniden denenir. Uygularken sunucu yeniden denetler.</p>
       }
     </div>
   }

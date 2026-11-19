@@ -25,7 +25,7 @@ export enum PlanYukKaynagi {
   Manuel = 2,
 }
 
-/** Eski akışta elle değiştirilmiş izinler (bayrak; yalnız gösterim, 19.11.2026'dan beri ekranda düzenlenmez). */
+/** Kullanıcının elle değiştirdiği izinler (bayrak): hesapta korunur, öbür izinler varsayılandan yeniden kurulur. */
 export enum PlanYukIzni {
   Yok = 0,
   Dondurme = 1,
@@ -142,20 +142,6 @@ export interface YuklemePlanAyarlari {
   tipIdleri: number[];
 }
 
-export interface YuklemePlaniOzeti {
-  id: number;
-  planNo: string;
-  ad: string;
-  calismaBicimi: YuklemeCalismaBicimi;
-  tasimaAilesiAdi: string;
-  projeler: string;
-  yukSayisi: number;
-  dahilYukSayisi: number;
-  revizyonNo: number;
-  sonKayitTarihi: string;
-  sonKaydeden: string | null;
-}
-
 export interface PlanProjeBilgisi {
   projeId: number | null;
   projeNo: string;
@@ -237,7 +223,7 @@ export interface YuklemePlaniDetayi {
   kaynakFarklari: PlanKaynakFarki[];
   /** Bu revizyonun yerleşimi ("Hesapla" ve elle düzenleme yerleşimli revizyon yazar). */
   yerlesim: PlanYerlesimi | null;
-  /** Planlamaya dahil yüklerin farklı lokasyon sayısı (bilgi; lokasyon tercihi 19.11.2026'dan beri sorulmaz). */
+  /** Planlamaya dahil yüklerin farklı lokasyon sayısı (yükleme yeri seçiminin ipucu). */
   farkliLokasyonSayisi: number;
   /** Sahada süren yükleme oturumu (yoksa null); oturum başladığı revizyonla sürer, plan revize edilse de değişmez. */
   surenYukleme: AracYuklemeOturumu | null;
@@ -372,16 +358,39 @@ export interface PlanProjeAdayi {
   planaGelecekSandikSayisi: number;
 }
 
+/** Sandık yükünün kullanıcı seçimleri (sunucudaki `PlanSandikYukuKaydi`); ölçü, ağırlık ve lokasyon istemciden alınmaz. */
+export interface PlanSandikYukuKaydi {
+  sandikId: number;
+  dahil: boolean;
+  dondurulebilirMi: boolean;
+  usteKonabilirMi: boolean;
+  altaKalabilirMi: boolean;
+  ustYukSiniriKg: number | null;
+  elleDegisenIzinler: PlanYukIzni;
+}
+
+/** Seçilen projelerin güncel sandıkları varsayılan seçimlerle (hesaptan önceki yük listesi); kayıt açmaz. */
+export interface PlanYukOnizlemesi {
+  yukler: PlanYukSatiri[];
+  farkliLokasyonSayisi: number;
+}
+
 /**
- * Tek adımlı plan hesabı: projeler, taşıma ailesi/tipleri ve paylarla plan (planId boşsa yenisi) kaynaktan kurulur ve
- * yerleşim hesaplanır. Var olan planda arada başka biri hesapladıysa 409.
+ * Tek adımlı hesap: projeler, taşıma ailesi/tipleri, yükleme yeri ve sandık seçimleriyle kayıt kaynaktan kurulur ve
+ * yerleşim hesaplanır. `planId` ve `beklenenRevizyonNo`, ekrandaki son sonucun proje kümesi seçimle aynıysa o sonucun
+ * değerleridir (arada başka biri hesapladıysa 409); değilse ikisi de boştur ve sunucu aynı proje kümesinin kaydını
+ * kendisi bulur ya da yenisini açar.
  */
 export interface YuklemePlaniHesaplaIstegi {
   planId: number | null;
   beklenenRevizyonNo: number | null;
   projeIdleri: number[];
   tasimaAilesiId: number;
+  /** `LokasyonaGoreAyri` (2) ya da `Karisik` (3, tek yerden yükleme). */
+  lokasyonTercihi: YuklemeLokasyonTercihi;
   ayarlar: YuklemePlanAyarlari;
+  /** Listedeki bütün sandık satırlarının seçimleri. */
+  sandikYukleri: PlanSandikYukuKaydi[];
 }
 
 // ===== Ekipman kitaplığı =====

@@ -40,7 +40,7 @@ interface SiraSatiri {
 
 /**
  * Otomatik yerleşim sonucu (isterler 16–19, 22, 25): araç ve tip özeti, uyarılar, yerleşemeyenler, ek ekipman ihtiyacı,
- * seçili aracın kontrolleri, yük listesi ve 3B görünümü. "Hesapla" üst ekrana bildirilir (seçimlerle tek adımlı hesap).
+ * seçili aracın kontrolleri, yük listesi ve 3B görünümü. "Hesapla" üst ekrandadır (seçimlerle tek adımlı hesap).
  * Seçili aracın yükleme sırası 3B'de adım adım oynatılabilir (yalnız görünüm; veri değiştirmez).
  */
 @Component({
@@ -58,9 +58,8 @@ export class PlanYerlesimComponent {
   readonly yazabilir = input(false);
   /** Seçimler son hesaptan farklı: elle düzenleme kapalıdır (son hesaplanan revizyonu düzenler), Hesapla seçimleri uygular. */
   readonly kaydedilmemis = input(false);
+  /** Üst ekranda hesap sürüyor: elle düzenleme açılamaz. */
   readonly hesaplaniyor = input(false);
-  /** Tek adımlı hesap isteği: üst ekran seçimlerle planı yeniden kurar ve hesaplar. */
-  readonly hesapla = output<void>();
   /** Elle düzenleme kaydedildi: yeni revizyon (isterler 20–21). */
   readonly elleKaydedildi = output<YuklemePlaniDetayi>();
   /** Elle düzenleme açık mı; açıkken otomatik sonuç yerine düzenleyici gösterilir. */
@@ -70,7 +69,6 @@ export class PlanYerlesimComponent {
 
   readonly KONTROL_SONUCU = KONTROL_SONUCU;
   readonly KONTROL_TURU = KONTROL_TURU;
-  readonly Sonuc = YerlesimKontrolSonucu;
   readonly girisYonu = girisYonuMetni;
   readonly mm = mm;
 
@@ -236,10 +234,6 @@ export class PlanYerlesimComponent {
     const gorunum = this.adimGorunumu();
     const secili = this.seciliYuk();
     if (gorunum && secili && !gorunum.gorunenler.has(secili)) this.seciliYuk.set(null);
-  }
-
-  hesapIstegi(): void {
-    this.hesapla.emit();
   }
 
   /** PDF raporları son kaydedilen revizyonun yerleşimiyle üretilir (isterler 28–29). */

@@ -103,25 +103,22 @@ describe('PlanYerlesimComponent', () => {
     expect(c.yukSorunlari().map((s) => s.kod)).toEqual(['s:2', 's:1']);
   });
 
-  it('Hesapla seçimler değişse de çalışır (üst ekran seçimlerle hesaplar); lokasyon tercihi sorulmaz', () => {
+  it('kartta Hesapla düğmesi yoktur (üst ekrandadır); seçimler değişmişken elle düzenleme kapalıdır ve sonuç eski diye uyarılır', () => {
     TestBed.configureTestingModule({ imports: [PlanYerlesimComponent], providers: [provideHttpClient(), provideHttpClientTesting()] });
     const fixture = TestBed.createComponent(PlanYerlesimComponent);
     fixture.componentRef.setInput('plan', plan([arac(1, 'K40', [konum('s:1', 'P1')])], 2));
     fixture.componentRef.setInput('yazabilir', true);
     fixture.componentRef.setInput('kaydedilmemis', true);
     fixture.detectChanges();
-    let istek = 0;
-    fixture.componentInstance.hesapla.subscribe(() => istek++);
     const kok = fixture.nativeElement as HTMLElement;
     const dugmeler = [...kok.querySelectorAll<HTMLButtonElement>('.py-baslik button')];
-    const hesapla = dugmeler.find((b) => b.textContent?.includes('hesapla'))!;
-    expect(hesapla.disabled).toBeFalse();
-    hesapla.click();
-    expect(istek).toBe(1);
-    // Elle düzenleme son hesaplanan revizyonu düzenler: seçimler değişmişken kapalıdır.
+    expect(dugmeler.some((b) => b.textContent?.toLocaleLowerCase('tr-TR').includes('hesapla'))).toBeFalse();
+    // Elle düzenleme son hesaplanan sonucu düzenler: seçimler değişmişken kapalıdır.
     expect(dugmeler.find((b) => b.textContent?.includes('Elle'))!.disabled).toBeTrue();
     expect(kok.textContent).toContain('Seçimler değişti');
-    expect(kok.textContent).not.toContain('Bu tercihle hesapla');
+    // Kayıt numarası küçük bilgi olarak kalır; "Revizyon" yazılmaz.
+    expect(kok.querySelector('.py-baslik small')?.textContent).toContain('YP-2026-000001');
+    expect(kok.textContent).not.toContain('Revizyon');
   });
 
   it('adım adım görünüm: kapalıyken bütün yükler, açıkken o adıma kadar yüklenenler çizilir; araç değişince başa döner', () => {

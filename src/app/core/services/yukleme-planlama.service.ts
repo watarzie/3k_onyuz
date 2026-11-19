@@ -15,16 +15,16 @@ import {
   PaginatedList,
   PlanProjeAdayi,
   PlanYerlesimi,
+  PlanYukOnizlemesi,
   YuklemePlaniDetayi,
   YuklemePlaniHesaplaIstegi,
-  YuklemePlaniOzeti,
   YuklemePlaniTanimlari,
 } from '../../shared/models/index';
 
-/** Yükleme planları ve ekipman kitaplığının API istemcisi. */
+/** Yükleme simülasyonu ve ekipman kitaplığının API istemcisi. */
 @Injectable({ providedIn: 'root' })
 export class YuklemePlanlamaService extends BaseApiService {
-  // ----- Planlar -----
+  // ----- Yükleme simülasyonu -----
 
   tanimlar(): Observable<ApiResult<YuklemePlaniTanimlari>> {
     return this.get<YuklemePlaniTanimlari>(API.YUKLEME_PLANLARI.TANIMLAR);
@@ -36,10 +36,9 @@ export class YuklemePlanlamaService extends BaseApiService {
     });
   }
 
-  planlar(arama: string, sayfa: number, boyut: number): Observable<ApiResult<PaginatedList<YuklemePlaniOzeti>>> {
-    return this.get<PaginatedList<YuklemePlaniOzeti>>(API.YUKLEME_PLANLARI.LISTE, {
-      params: sayfaParametreleri(arama, sayfa, boyut),
-    });
+  /** Seçilen projelerin güncel sandıkları varsayılan seçimlerle; hesaptan önceki yük listesidir, kayıt açmaz. */
+  yukOnizleme(projeIdleri: number[]): Observable<ApiResult<PlanYukOnizlemesi>> {
+    return this.post<PlanYukOnizlemesi>(API.YUKLEME_PLANLARI.YUK_ONIZLEME, { projeIdleri });
   }
 
   plan(id: number): Observable<ApiResult<YuklemePlaniDetayi>> {
@@ -47,8 +46,8 @@ export class YuklemePlanlamaService extends BaseApiService {
   }
 
   /**
-   * Tek adımlı plan hesabı: plan (yoksa yenisi) seçilen projelerin güncel sandıklarıyla kurulur ve yerleşim aynı
-   * revizyonda hesaplanır. Kaydetme adımı yoktur.
+   * Tek adımlı hesap: kayıt (yoksa yenisi) seçilen projelerin güncel sandıkları, yükleme yeri ve sandık seçimleriyle
+   * kurulur ve yerleşim aynı adımda hesaplanır. Ayrı bir kaydetme adımı yoktur.
    */
   planHesapla(istek: YuklemePlaniHesaplaIstegi): Observable<ApiResult<YuklemePlaniDetayi>> {
     return this.post<YuklemePlaniDetayi>(API.YUKLEME_PLANLARI.YERLESIM_HESAPLA, istek);

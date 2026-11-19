@@ -3,10 +3,10 @@
     <div>
       <h5 class="mb-1"><i class="ri-truck-line" aria-hidden="true"></i> {{ yerlesim()?.elleDuzenlendi ? 'Yerleşim (elle düzenlendi)' : 'Otomatik yerleşim' }}</h5>
       @if (yerlesim(); as y) {
-        <small class="yp-ipucu">Revizyon {{ plan().revizyonNo }} · {{ y.hesapTarihi | date: 'dd.MM.yyyy HH:mm' }}
+        <small class="yp-ipucu">{{ plan().planNo }} · {{ y.hesapTarihi | date: 'dd.MM.yyyy HH:mm' }}
           @if (y.lokasyonaGoreAyri) { · lokasyonlara göre ayrı } @if (y.projeBazindaAyri) { · proje bazında ayrı }</small>
       } @else {
-        <small class="yp-ipucu">Bu revizyon için yerleşim hesaplanmadı. "Hesapla" planı seçimlerle kurar ve araçları hesaplar.</small>
+        <small class="yp-ipucu">{{ plan().planNo }} · Yerleşim henüz hesaplanmadı. "Hesapla" araçları seçimlerle hesaplar.</small>
       }
     </div>
     @if (yerlesim(); as y) {
@@ -23,16 +23,10 @@
       </button>
     }
     @if (yazabilir() && !duzenleme()) {
-      <!-- İsterler 20–21: önerilen yerleşim elle düzenlenir; yerleşim yoksa sıfırdan elle dizilir. Kaydetme yeni revizyon açar. -->
+      <!-- İsterler 20–21: önerilen yerleşim elle düzenlenir; yerleşim yoksa sıfırdan elle dizilir. "Hesapla" üst ekrandadır. -->
       <button type="button" class="tz-btn" [disabled]="kaydedilmemis() || hesaplaniyor()" (click)="duzenlemeAc(true)"
               [title]="kaydedilmemis() ? 'Önce seçimleri Hesapla ile uygulayın' : yerlesim() ? 'Yükleri sürükleyerek yerleşimi elle düzenleyin' : 'Araçları seçip yükleri kendiniz dizin'">
         <i class="ri-drag-move-2-line" aria-hidden="true"></i>{{ yerlesim() ? 'Elle düzenle' : 'Elle diz' }}
-      </button>
-    }
-    @if (yazabilir() && !duzenleme()) {
-      <button type="button" class="tz-btn tz-btn--primary" [disabled]="hesaplaniyor()" (click)="hesapIstegi()"
-              title="Plan seçilen projelerin güncel sandıklarıyla yeniden kurulur ve araçlar hesaplanır">
-        <i [class]="hesaplaniyor() ? 'ri-loader-4-line tz-spin' : 'ri-play-circle-line'" aria-hidden="true"></i>{{ yerlesim() ? 'Yeniden hesapla' : 'Hesapla' }}
       </button>
     }
   </div>
@@ -203,7 +197,7 @@
     }
 
     @if (y.ekIhtiyaclar.length) {
-      <div class="tz-section"><i class="ri-add-circle-line" aria-hidden="true"></i>Önerilen ek ekipman (plana eklenmedi)</div>
+      <div class="tz-section"><i class="ri-add-circle-line" aria-hidden="true"></i>Önerilen ek ekipman (yerleşime eklenmedi)</div>
       <div class="py-tipler">
         @for (e of y.ekIhtiyaclar; track e.konfigurasyonId) {
           <span class="py-tip"><strong>{{ e.adet }} ×</strong> {{ e.ekipmanKodu }} <small>{{ e.ekipmanAdi }}</small></span>
