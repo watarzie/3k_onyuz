@@ -3,6 +3,7 @@ import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 import { Observable, Subject, debounceTime } from 'rxjs';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { ServerPagerComponent } from '../../../shared/components/server-pager/server-pager.component';
@@ -33,6 +34,7 @@ import {
   mm,
   yuklemeYontemiMetni,
 } from '../ortak/yukleme-etiketleri';
+import { EKIPMAN_KILAVUZU_YOLU } from '../ortak/ekipman-kilavuzu-bolumleri';
 import { Ekipman3dComponent } from './ekipman-3d.component';
 import { EkipmanDuzenleComponent } from './ekipman-duzenle.component';
 
@@ -48,7 +50,9 @@ const DOSYA_ENFAZLA_BAYT = 10 * 1024 * 1024;
   selector: 'app-ekipman-kitapligi',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, BreadcrumbComponent, ServerPagerComponent, Ekipman3dComponent, EkipmanDuzenleComponent],
+  imports: [
+    DatePipe, FormsModule, RouterLink, BreadcrumbComponent, ServerPagerComponent, Ekipman3dComponent, EkipmanDuzenleComponent,
+  ],
   templateUrl: './ekipman-kitapligi.component.html',
   styleUrls: ['../ortak/yukleme.scss', './ekipman-kitapligi.component.scss'],
 })
@@ -59,6 +63,7 @@ export class EkipmanKitapligiComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly breadcrumb = [{ label: 'Ana Kontrol Paneli', link: '/dashboard' }, { label: 'Ekipman Kitaplığı' }];
+  readonly KILAVUZ_YOLU = EKIPMAN_KILAVUZU_YOLU;
   readonly SAYFA_BOYUTLARI = [25, 50, 100];
   readonly KATEGORI = EKIPMAN_KATEGORISI;
   readonly KAYNAK = EKIPMAN_KAYNAK_TURU;

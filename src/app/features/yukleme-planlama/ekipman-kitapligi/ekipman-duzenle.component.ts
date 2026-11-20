@@ -14,6 +14,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 import { ConfirmService } from '../../../core/services/confirm.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { YuklemePlanlamaService } from '../../../core/services/yukleme-planlama.service';
@@ -43,6 +44,8 @@ import {
   sorunMetinleri,
   teknikVeriDuzenlemeEngeli,
 } from '../ortak/ekipman-formu';
+import { EKIPMAN_KILAVUZU_YOLU, KILAVUZ_BOLUMU } from '../ortak/ekipman-kilavuzu-bolumleri';
+import { KilavuzYardimiComponent } from '../ortak/kilavuz-yardimi.component';
 import { ACIKLIK_TARAFI, DINGIL_TURU, EKIPMAN_KAYNAK_TURU, ENGEL_TURU } from '../ortak/yukleme-etiketleri';
 import { Ekipman3dComponent } from './ekipman-3d.component';
 
@@ -59,7 +62,7 @@ import { Ekipman3dComponent } from './ekipman-3d.component';
   selector: 'app-ekipman-duzenle',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, Ekipman3dComponent],
+  imports: [FormsModule, RouterLink, Ekipman3dComponent, KilavuzYardimiComponent],
   templateUrl: './ekipman-duzenle.component.html',
   styleUrls: ['../ortak/yukleme.scss', './ekipman-duzenle.component.scss'],
 })
@@ -78,6 +81,9 @@ export class EkipmanDuzenleComponent implements OnInit, AfterViewInit {
   readonly kapandi = output<void>();
 
   readonly SINIR = EKIPMAN_ALAN_SINIRI;
+  /** Kılavuz bağlantıları: formun üstündeki genel bağlantı ve bölüm başlıklarındaki yardım simgeleri. */
+  readonly KILAVUZ_YOLU = EKIPMAN_KILAVUZU_YOLU;
+  readonly BOLUM = KILAVUZ_BOLUMU;
   readonly KAYNAK_TURLERI = secenekler<EkipmanKaynakTuru>(EKIPMAN_KAYNAK_TURU, Number);
   readonly TARAFLAR = secenekler<AciklikTarafi>(ACIKLIK_TARAFI);
   readonly ENGEL_TURLERI = secenekler<EngelTuru>(ENGEL_TURU);

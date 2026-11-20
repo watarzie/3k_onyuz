@@ -1,10 +1,16 @@
 <div class="page-title-area mb-4">
-  <div class="sayfa-baslik">
-    <span class="sayfa-ikon" style="--ton: #0e7490"><i class="ri-ruler-2-line" aria-hidden="true"></i></span>
-    <div>
-      <h2 class="fw-bold mb-1">Ekipman Kitaplığı</h2>
-      <app-breadcrumb [items]="breadcrumb" />
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div class="sayfa-baslik">
+      <span class="sayfa-ikon" style="--ton: #0e7490"><i class="ri-ruler-2-line" aria-hidden="true"></i></span>
+      <div>
+        <h2 class="fw-bold mb-1">Ekipman Kitaplığı</h2>
+        <app-breadcrumb [items]="breadcrumb" />
+      </div>
     </div>
+    <!-- Kılavuz yalnız okunur; sayfayı görebilen (R) herkese açıktır. -->
+    <a class="tz-btn" data-kilavuz [routerLink]="KILAVUZ_YOLU" title="Alanların ne anlama geldiğini şemalarla anlatır">
+      <i class="ri-book-open-line tz-ico-primary" aria-hidden="true"></i>Kılavuz
+    </a>
   </div>
 </div>
 

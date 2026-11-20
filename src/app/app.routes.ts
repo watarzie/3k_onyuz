@@ -187,6 +187,15 @@ export const routes: Routes = [
         data: { menuKod: YETKI.YUKLEME_PLANLAMA.EKIPMAN_KITAPLIGI },
       },
       {
+        // Ekipman Kitaplığı Kılavuzu: kenar menüde yok; kitaplıktaki "Kılavuz" düğmesinden ve düzenleme formundaki
+        // yardım bağlantılarından açılır. Kitaplığı görebilen (R) herkes okur.
+        path: 'ekipman-kitapligi/kilavuz',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/yukleme-planlama/ekipman-kitapligi/ekipman-kilavuzu.component').then(m => m.EkipmanKilavuzuComponent),
+        data: { menuKod: YETKI.YUKLEME_PLANLAMA.EKIPMAN_KITAPLIGI },
+      },
+      {
         // Sandık açılış/kapanış istatistiği: kenar menüde yok; Projeler ve 3K sandık listesindeki "Diğer" menüsünden açılır.
         path: 'sandik-acilis-istatistigi',
         canActivate: [menuGuard],

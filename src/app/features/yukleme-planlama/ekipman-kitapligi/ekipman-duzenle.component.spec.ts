@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { ConfirmService } from '../../../core/services/confirm.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -16,6 +17,7 @@ import {
   EkipmanTeknikVerisi,
   YuklemeYontemi,
 } from '../../../shared/models/index';
+import { KILAVUZ_BOLUMLERI } from '../ortak/ekipman-kilavuzu-bolumleri';
 import { Ekipman3dComponent } from './ekipman-3d.component';
 import { EkipmanDuzenleComponent } from './ekipman-duzenle.component';
 
@@ -73,6 +75,7 @@ describe('EkipmanDuzenleComponent', () => {
     TestBed.configureTestingModule({
       imports: [EkipmanDuzenleComponent],
       providers: [
+        provideRouter([]),
         { provide: YuklemePlanlamaService, useValue: api },
         { provide: ToastService, useValue: toast },
         { provide: ConfirmService, useValue: confirm },
@@ -129,6 +132,46 @@ describe('EkipmanDuzenleComponent', () => {
     expect(kok().textContent).toContain('yeni, doğrulanmamış revizyon oluşturur');
     expect(kok().textContent).toContain('Önceden hesaplanmış');
     expect(c.degisti()).toBeFalse();
+  });
+
+  it('kılavuz bağlantıları yeni sekmede açılır: üstte genel bağlantı, her bölüm başlığında ilgili bölümün çapası', async () => {
+    const c = await kur(null);
+    const ust = kok().querySelector<HTMLAnchorElement>('a[data-kilavuz]')!;
+    expect(ust.textContent).toContain('Alanlar ne demek? Kılavuzu aç');
+    expect([ust.getAttribute('href'), ust.target, ust.rel]).toEqual(['/ekipman-kitapligi/kilavuz', '_blank', 'noopener']);
+
+    const yardimlar = [...kok().querySelectorAll<HTMLElement>('.tz-section')]
+      .map((baslik) => [baslik.firstChild!.nextSibling!.textContent!.trim(), baslik.querySelector<HTMLAnchorElement>('app-kilavuz-yardimi a')] as const);
+    expect(yardimlar.map(([ad, a]) => [ad, a?.getAttribute('href')?.replace('/ekipman-kitapligi/kilavuz', ''), a?.target])).toEqual([
+      ['Genel', '#genel', '_blank'],
+      ['Kaynak', '#kaynak', '_blank'],
+      ['3B önizleme', undefined, undefined],
+      ['Ölçü ve ağırlık', '#olcu-agirlik', '_blank'],
+      ['King pin', '#king-pin', '_blank'],
+      ['Yükleme yüzeyleri', '#yuzeyler', '_blank'],
+      ['Açıklıklar', '#acikliklar', '_blank'],
+      ['Engeller', '#engeller', '_blank'],
+      ['Dingiller', '#dingiller', '_blank'],
+      ['Bağlama noktaları', '#baglama-noktalari', '_blank'],
+    ]);
+    // Her çapa kılavuzda gerçekten var olan bir bölümdür.
+    const bolumler = new Set(KILAVUZ_BOLUMLERI.map((b) => b.id));
+    const capalar = yardimlar.flatMap(([, a]) => (a ? [a.getAttribute('href')!.split('#')[1]] : []));
+    expect(capalar.every((capa) => bolumler.has(capa))).toBeTrue();
+
+    // Bağlantıya tıklamak formu değiştirmez ve kapatmaz (yeni sekmeyi tarayıcı açar; sınamada gezinme engellenir).
+    c.alan({ ad: 'Yarım girilmiş ad' });
+    ust.addEventListener('click', (olay) => olay.preventDefault());
+    ust.click();
+    await ciz();
+    expect([c.form().ad, kapanma, confirm.ask.calls.count()]).toEqual(['Yarım girilmiş ad', 0, 0]);
+  });
+
+  it('salt okunur açılan formda da kılavuz bağlantıları kullanılabilir', async () => {
+    const c = await kur(detay(3, '{bozuk'));
+    expect(c.saltOkunur()).toBeTrue();
+    expect(kok().querySelector('a[data-kilavuz]')).not.toBeNull();
+    expect(kok().querySelectorAll('fieldset:disabled app-kilavuz-yardimi a[target="_blank"]').length).toBe(9);
   });
 
   it('satır eklenir ve silinir; önizleme yalnız tamamlanan satırı çizer', async () => {

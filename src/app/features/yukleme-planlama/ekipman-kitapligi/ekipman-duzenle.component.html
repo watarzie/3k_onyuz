@@ -40,6 +40,12 @@
       </div>
     }
 
+    <!-- Kılavuz yeni sekmede açılır: form kapanmaz, girilen değerler kaybolmaz. -->
+    <a class="ed-kilavuz" data-kilavuz [routerLink]="KILAVUZ_YOLU" target="_blank" rel="noopener">
+      <i class="ri-book-open-line" aria-hidden="true"></i>Alanlar ne demek? Kılavuzu aç
+      <i class="ri-external-link-line" aria-hidden="true"></i><span class="visually-hidden">(yeni sekmede açılır)</span>
+    </a>
+
     <div class="tz-note ed-bilgi">
       <i class="ri-information-line" aria-hidden="true"></i>
       <span>Teknik veri ya da kaynak değişince kayıt yeni, doğrulanmamış revizyon oluşturur ve yeniden doğrulama gerekir
@@ -48,7 +54,7 @@
 
     <div class="ed-ust">
       <fieldset [disabled]="saltOkunur()">
-        <div class="tz-section ed-ilk-bolum"><i class="ri-truck-line" aria-hidden="true"></i>Genel</div>
+        <div class="tz-section ed-ilk-bolum"><i class="ri-truck-line" aria-hidden="true"></i>Genel<app-kilavuz-yardimi [bolum]="BOLUM.genel" /></div>
         <div class="tz-form">
           <div class="tz-field-grid tz-field-grid--3">
             <label class="tz-field">
@@ -103,7 +109,7 @@
           </div>
         </div>
 
-        <div class="tz-section"><i class="ri-file-text-line" aria-hidden="true"></i>Kaynak</div>
+        <div class="tz-section"><i class="ri-file-text-line" aria-hidden="true"></i>Kaynak<app-kilavuz-yardimi [bolum]="BOLUM.kaynak" /></div>
         <div class="tz-form">
           <div class="tz-field-grid">
             <label class="tz-field">
@@ -138,7 +144,7 @@
     </div>
 
     <fieldset [disabled]="saltOkunur()">
-    <div class="tz-section"><i class="ri-ruler-line" aria-hidden="true"></i>Ölçü ve ağırlık <small>tamsayı · boş alan "bilinmiyor"</small></div>
+    <div class="tz-section"><i class="ri-ruler-line" aria-hidden="true"></i>Ölçü ve ağırlık<app-kilavuz-yardimi [bolum]="BOLUM.olcuAgirlik" /><small>tamsayı · boş alan "bilinmiyor"</small></div>
     <div class="tz-form">
       <div class="ed-izgara">
         <label class="tz-field">
@@ -172,7 +178,7 @@
       </div>
     </div>
 
-    <div class="tz-section"><i class="ri-links-line" aria-hidden="true"></i>King pin <small>ikisi de boşsa king pin yok</small></div>
+    <div class="tz-section"><i class="ri-links-line" aria-hidden="true"></i>King pin<app-kilavuz-yardimi [bolum]="BOLUM.kingPin" /><small>ikisi de boşsa king pin yok</small></div>
     <div class="ed-izgara">
       <label class="tz-field">
         <span>X (ön uçtan)</span>
@@ -185,7 +191,7 @@
     </div>
 
     <div class="ed-bolum">
-      <div class="tz-section"><i class="ri-layout-bottom-line" aria-hidden="true"></i>Yükleme yüzeyleri <small>mm · kg</small></div>
+      <div class="tz-section"><i class="ri-layout-bottom-line" aria-hidden="true"></i>Yükleme yüzeyleri<app-kilavuz-yardimi [bolum]="BOLUM.yuzeyler" /><small>mm · kg</small></div>
       <button type="button" class="tz-btn tz-btn--sm" data-ekle="yuzeyler" (click)="satirEkle('yuzeyler')"><i class="ri-add-line tz-ico-primary" aria-hidden="true"></i>Yüzey ekle</button>
     </div>
     <div class="yp-tablo-sarmal">
@@ -212,7 +218,7 @@
     </div>
 
     <div class="ed-bolum">
-      <div class="tz-section"><i class="ri-door-open-line" aria-hidden="true"></i>Açıklıklar <small>mm</small></div>
+      <div class="tz-section"><i class="ri-door-open-line" aria-hidden="true"></i>Açıklıklar<app-kilavuz-yardimi [bolum]="BOLUM.acikliklar" /><small>mm</small></div>
       <button type="button" class="tz-btn tz-btn--sm" data-ekle="acikliklar" (click)="satirEkle('acikliklar')"><i class="ri-add-line tz-ico-primary" aria-hidden="true"></i>Açıklık ekle</button>
     </div>
     <div class="yp-tablo-sarmal">
@@ -240,7 +246,7 @@
     <p class="yp-ipucu mt-2 mb-0">Arka ve ön açıklıkta genişlik ile yükseklik; sol ve sağda başlangıç X, uzunluk ve yükseklik; üstte başlangıç X, uzunluk ve genişlik girilir.</p>
 
     <div class="ed-bolum">
-      <div class="tz-section"><i class="ri-error-warning-line" aria-hidden="true"></i>Engeller <small>mm · Y soldan, Z yerden</small></div>
+      <div class="tz-section"><i class="ri-error-warning-line" aria-hidden="true"></i>Engeller<app-kilavuz-yardimi [bolum]="BOLUM.engeller" /><small>mm · Y soldan, Z yerden</small></div>
       <button type="button" class="tz-btn tz-btn--sm" data-ekle="engeller" (click)="satirEkle('engeller')"><i class="ri-add-line tz-ico-primary" aria-hidden="true"></i>Engel ekle</button>
     </div>
     <div class="yp-tablo-sarmal">
@@ -274,7 +280,7 @@
     <div class="ed-ikili">
       <div>
         <div class="ed-bolum">
-          <div class="tz-section"><i class="ri-steering-2-line" aria-hidden="true"></i>Dingiller <small>mm · kg</small></div>
+          <div class="tz-section"><i class="ri-steering-2-line" aria-hidden="true"></i>Dingiller<app-kilavuz-yardimi [bolum]="BOLUM.dingiller" /><small>mm · kg</small></div>
           <button type="button" class="tz-btn tz-btn--sm" data-ekle="dingiller" (click)="satirEkle('dingiller')"><i class="ri-add-line tz-ico-primary" aria-hidden="true"></i>Dingil ekle</button>
         </div>
         <div class="yp-tablo-sarmal">
@@ -301,7 +307,7 @@
       </div>
       <div>
         <div class="ed-bolum">
-          <div class="tz-section"><i class="ri-anchor-line" aria-hidden="true"></i>Bağlama noktaları <small>mm · daN</small></div>
+          <div class="tz-section"><i class="ri-anchor-line" aria-hidden="true"></i>Bağlama noktaları<app-kilavuz-yardimi [bolum]="BOLUM.baglamaNoktalari" /><small>mm · daN</small></div>
           <button type="button" class="tz-btn tz-btn--sm" data-ekle="baglamaNoktalari" (click)="satirEkle('baglamaNoktalari')"><i class="ri-add-line tz-ico-primary" aria-hidden="true"></i>Nokta ekle</button>
         </div>
         <div class="yp-tablo-sarmal">

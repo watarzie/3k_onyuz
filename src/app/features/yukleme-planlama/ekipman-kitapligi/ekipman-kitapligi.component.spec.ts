@@ -105,6 +105,14 @@ describe('EkipmanKitapligiComponent ekrandan ekleme ve düzenleme', () => {
     expect(kok().textContent).toContain('Revizyonu doğrula');
   });
 
+  it('"Kılavuz" düğmesi yalnız görüntüleme izniyle (yazma izni yokken) de görünür ve kılavuz sayfasına gider', () => {
+    kur([]);
+    const kilavuz = kok().querySelector<HTMLAnchorElement>('.page-title-area a[data-kilavuz]')!;
+    expect(kilavuz.textContent).toContain('Kılavuz');
+    expect(kilavuz.getAttribute('href')).toBe('/ekipman-kitapligi/kilavuz');
+    expect(kok().querySelector('[data-yeni-ekipman]')).toBeNull();
+  });
+
   it('ekipman-kitapligi W varken düğmeler görünür; doğrulama izni olmadan doğrulama düğmesi yine görünmez', () => {
     const c = kur([YETKI.YUKLEME_PLANLAMA.EKIPMAN_KITAPLIGI]);
     expect(kok().querySelector('[data-yeni-ekipman]')).not.toBeNull();
