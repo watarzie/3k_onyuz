@@ -37,6 +37,9 @@
       <i [class]="indiriliyor() === 'disa' ? 'ri-loader-4-line tz-spin' : 'ri-download-2-line'" aria-hidden="true"></i>Dışa aktar
     </button>
     @if (yazabilir()) {
+      <button type="button" class="tz-btn" data-yeni-ekipman (click)="yeniEkipman()">
+        <i class="ri-add-line tz-ico-primary" aria-hidden="true"></i>Yeni ekipman
+      </button>
       <button type="button" class="tz-btn tz-btn--primary" (click)="iceAktarAc()">
         <i class="ri-upload-2-line" aria-hidden="true"></i>Excel'den içe aktar
       </button>
@@ -87,7 +90,7 @@
     } @else {
       <div class="yp-bos">
         <i class="ri-ruler-2-line" aria-hidden="true"></i>
-        Süzgece uyan konfigürasyon yok. @if (yazabilir()) { Şablonu indirip doldurduktan sonra "Excel'den içe aktar" ile ekleyin. }
+        Süzgece uyan konfigürasyon yok. @if (yazabilir()) { "Yeni ekipman" ile ekrandan ya da şablonu indirip doldurduktan sonra "Excel'den içe aktar" ile ekleyin. }
       </div>
     }
   } @else if (yukleniyor()) {
@@ -95,8 +98,11 @@
   }
 </section>
 
-<!-- Ayrıntı: son revizyonun teknik verisi, 3B önizleme, uyarılar ve revizyon geçmişi. -->
-@if (detay() || detayYukleniyor()) {
+<!-- Ekrandan ekleme / düzenleme: form açıkken ayrıntı penceresi çizilmez; kapanınca (ya da kayıttan sonra) geri gelir. -->
+@if (duzenleme(); as dz) {
+  <app-ekipman-duzenle [detay]="dz.detay" [aileler]="aileler()" (kaydedildi)="kaydedildi($event)" (kapandi)="duzenlemeKapandi()" />
+} @else if (detay() || detayYukleniyor()) {
+  <!-- Ayrıntı: son revizyonun teknik verisi, 3B önizleme, uyarılar ve revizyon geçmişi. -->
   <div class="tz-modal-backdrop" (click)="kapat()"></div>
   <div class="tz-modal tz-modal--xl" role="dialog" aria-modal="true" aria-labelledby="ekipman-baslik">
     <div class="tz-modal__header">
@@ -124,6 +130,11 @@
             @if (d.revizyon.kaynakTarihi) { · {{ d.revizyon.kaynakTarihi | date: 'dd.MM.yyyy' }} }</span>
           @if (!d.aktif) { <span class="yp-rozet" data-ton="muted">Pasif</span> }
           <span class="yp-bosluk"></span>
+          @if (yazabilir()) {
+            <button type="button" class="tz-btn" data-duzenle (click)="duzenle()">
+              <i class="ri-edit-line tz-ico-primary" aria-hidden="true"></i>Düzenle
+            </button>
+          }
           @if (dogrulayabilir() && d.revizyon.dogrulamaDurumu !== Dogrulama.Dogrulandi) {
             <button type="button" class="tz-btn tz-btn--primary" [disabled]="dogrulaniyor()" (click)="dogrula()">
               <i [class]="dogrulaniyor() ? 'ri-loader-4-line tz-spin' : 'ri-shield-check-line'" aria-hidden="true"></i>Revizyonu doğrula

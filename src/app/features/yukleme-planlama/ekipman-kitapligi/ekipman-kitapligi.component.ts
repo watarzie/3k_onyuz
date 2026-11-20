@@ -34,19 +34,21 @@ import {
   yuklemeYontemiMetni,
 } from '../ortak/yukleme-etiketleri';
 import { Ekipman3dComponent } from './ekipman-3d.component';
+import { EkipmanDuzenleComponent } from './ekipman-duzenle.component';
 
 /** Excel dosyasının en büyük boyutu (sunucu: EkipmanKitapligiKurali.DosyaEnFazlaBayt). */
 const DOSYA_ENFAZLA_BAYT = 10 * 1024 * 1024;
 
 /**
- * Ekipman kitaplığı: aile → tip → model → konfigürasyon. Teknik veri Excel ile toplu girilir (önce önizleme, sonra
- * uygula); değişen her konfigürasyon yeni, doğrulanmamış revizyon olur. Doğrulama ayrı izindir (ekipman-dogrulama).
+ * Ekipman kitaplığı: aile → tip → model → konfigürasyon. Teknik veri Excel ile toplu (önce önizleme, sonra uygula)
+ * ya da ekrandan tek tek girilir; değişen her konfigürasyon yeni, doğrulanmamış revizyon olur. Doğrulama ayrı
+ * izindir (ekipman-dogrulama).
  */
 @Component({
   selector: 'app-ekipman-kitapligi',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, BreadcrumbComponent, ServerPagerComponent, Ekipman3dComponent],
+  imports: [DatePipe, FormsModule, BreadcrumbComponent, ServerPagerComponent, Ekipman3dComponent, EkipmanDuzenleComponent],
   templateUrl: './ekipman-kitapligi.component.html',
   styleUrls: ['../ortak/yukleme.scss', './ekipman-kitapligi.component.scss'],
 })
@@ -104,6 +106,10 @@ export class EkipmanKitapligiComponent implements OnInit {
     }
   });
 
+  // ----- Ekrandan ekleme / düzenleme (ekipman-kitapligi W) -----
+  /** Açık düzenleme formu: `detay` null ise yeni ekipman. */
+  readonly duzenleme = signal<{ detay: EkipmanKonfigurasyonDetayi | null } | null>(null);
+
   // ----- İçe aktarım -----
   readonly iceAktarAcik = signal(false);
   readonly dosya = signal<File | null>(null);
@@ -123,6 +129,7 @@ export class EkipmanKitapligiComponent implements OnInit {
     });
     this.api.ekipmanAileleri().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((r) => {
       if (r.isSuccess && r.value) this.aileler.set(r.value);
+      else this.toast.error(r.error ?? 'Ekipman aileleri yüklenemedi.');
     });
     this.yukle();
   }
@@ -201,6 +208,40 @@ export class EkipmanKitapligiComponent implements OnInit {
         this.toast.error(r.error ?? 'Doğrulanamadı.');
       }
     });
+  }
+
+  // ----- Ekrandan ekleme / düzenleme -----
+
+  yeniEkipman(): void {
+    this.duzenleme.set({ detay: null });
+  }
+
+  duzenle(): void {
+    const d = this.detay();
+    if (d) this.duzenleme.set({ detay: d });
+  }
+
+  /**
+   * Form kaydetmeden kapandı. Düzenlemede ayrıntı sunucudan yeniden çekilir: kayıt arada değiştiyse (409) "Düzenle"
+   * güncel revizyonla açılır, eski revizyonla açılıp yeniden çakışmaz.
+   */
+  duzenlemeKapandi(): void {
+    const id = this.duzenleme()?.detay?.id;
+    this.duzenleme.set(null);
+    if (id == null) return;
+    this.api.konfigurasyon(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((r) => {
+      // Yanıt gelene kadar ayrıntı kapatılmış ya da başka kayıt açılmış olabilir.
+      if (this.detay()?.id !== id) return;
+      if (r.isSuccess && r.value) this.detay.set(r.value);
+      else this.toast.error(r.error ?? 'Konfigürasyon yüklenemedi.');
+    });
+  }
+
+  /** Kayıt uygulandı: ayrıntı sunucunun döndürdüğü güncel kayıtla açılır, liste yenilenir. */
+  kaydedildi(detay: EkipmanKonfigurasyonDetayi): void {
+    this.detay.set(detay);
+    this.duzenleme.set(null);
+    this.yukle();
   }
 
   // ----- Dosyalar -----

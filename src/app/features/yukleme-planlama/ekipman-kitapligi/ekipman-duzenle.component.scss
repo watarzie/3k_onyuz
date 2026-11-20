@@ -1,0 +1,122 @@
+// Düzenleme penceresi satır tabloları için ayrıntı penceresinden geniştir.
+.ed-pencere {
+  width: min(1240px, calc(100vw - 32px));
+}
+
+.ed-hata {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--dangerColor) 25%, var(--borderColor));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--dangerColor) 6%, var(--whiteColor));
+  color: color-mix(in srgb, var(--dangerColor) 80%, var(--blackColor));
+  font-size: 12.5px;
+  line-height: 1.5;
+
+  i { font-size: 16px; }
+
+  ul {
+    margin: 4px 0 0;
+    padding-left: 18px;
+  }
+}
+
+.ed-bilgi {
+  margin-top: 0;
+  margin-bottom: 4px;
+}
+
+.ed-ust {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 24px;
+}
+
+.ed-ilk-bolum { margin-top: 14px; }
+
+.ed-onizleme {
+  --e3d-yukseklik: 320px;
+  position: sticky;
+  top: 0;
+  align-self: start;
+}
+
+.ed-genis { grid-column: span 2; }
+
+.ed-izgara {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+// Değiştirilemeyen alan ve salt okunur açılan form (fieldset kapalı) gri zeminle ayrılır.
+input[readonly],
+fieldset:disabled .form-control,
+fieldset:disabled .form-select {
+  background-color: var(--bs-tertiary-bg);
+  color: var(--bodyColor);
+}
+
+// Bölüm başlığı ile "satır ekle" düğmesi aynı satırda.
+.ed-bolum {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0 14px;
+
+  .tz-section {
+    flex: 1 1 auto;
+    margin: 0;
+  }
+}
+
+.ed-ikili {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 20px;
+}
+
+.ed-tablo {
+  th b { color: var(--dangerColor); }
+
+  th,
+  td { padding: 6px 8px; }
+
+  // Satırda giriş alanı var; üzerine gelince zemin değişmesin.
+  tbody tr:hover td { background: transparent; }
+
+  .ed-sayi {
+    min-width: 88px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ed-kod { min-width: 96px; }
+  .ed-metin { min-width: 150px; }
+  .ed-secim { min-width: 128px; }
+
+  .ed-islem {
+    width: 44px;
+    text-align: center;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .ed-ust,
+  .ed-ikili { grid-template-columns: minmax(0, 1fr); }
+
+  .ed-onizleme {
+    --e3d-yukseklik: 260px;
+    position: static;
+  }
+
+  .ed-izgara { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 575.98px) {
+  .ed-genis { grid-column: auto; }
+  .ed-izgara { grid-template-columns: minmax(0, 1fr); }
+}

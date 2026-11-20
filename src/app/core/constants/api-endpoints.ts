@@ -366,6 +366,10 @@ export const API = {
     AILELER: `${BASE}/ekipman-kitapligi/aileler`,
     KONFIGURASYONLAR: `${BASE}/ekipman-kitapligi/konfigurasyonlar`,
     KONFIGURASYON: (id: number) => `${BASE}/ekipman-kitapligi/konfigurasyonlar/${id}`,
+    /** POST: ekrandan yeni konfigürasyon (ekipman-kitapligi W). */
+    KONFIGURASYON_EKLE: `${BASE}/ekipman-kitapligi/konfigurasyonlar`,
+    /** PUT: konfigürasyonu ekrandan günceller (ekipman-kitapligi W). */
+    KONFIGURASYON_GUNCELLE: (id: number) => `${BASE}/ekipman-kitapligi/konfigurasyonlar/${id}`,
     DOGRULA: (id: number) => `${BASE}/ekipman-kitapligi/konfigurasyonlar/${id}/dogrula`,
     SABLON: `${BASE}/ekipman-kitapligi/sablon`,
     DISA_AKTAR: `${BASE}/ekipman-kitapligi/disa-aktar`,

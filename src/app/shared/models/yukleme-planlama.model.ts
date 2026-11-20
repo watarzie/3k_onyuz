@@ -502,6 +502,8 @@ export interface EkipmanKonfigurasyonDetayi {
   ad: string;
   aktif: boolean;
   aileAdi: string;
+  /** Tipin kimliği (`EkipmanTipiModeli.id`); düzenleme formunda aile → tip seçimini doldurur. */
+  tipId: number;
   tipKodu: string;
   tipAdi: string;
   kategori: EkipmanKategorisi;
@@ -509,11 +511,35 @@ export interface EkipmanKonfigurasyonDetayi {
   sandikTasimayaUygun: boolean;
   uretici: string;
   modelAdi: string;
+  /** Son revizyon; kaynak alanları (tür, açıklama, tarih) ve açıklama düzenleme formunu doldurur. */
   revizyon: EkipmanRevizyonBilgisi;
   /** Teknik veri JSON'u (`EkipmanTeknikVerisi`, camelCase, enum'lar metin). */
   teknikVeriJson: string;
   veriUyarilari: string[];
   revizyonlar: EkipmanRevizyonBilgisi[];
+}
+
+/**
+ * Ekrandan ekleme ve güncelleme gövdesi (sunucudaki `EkipmanKonfigurasyonKaydi`). `teknikVeriJson`, ayrıntı
+ * yanıtındaki `teknikVeriJson` ile aynı şemadadır (`EkipmanTeknikVerisi`); bilinmeyen değer yazılmaz.
+ */
+export interface EkipmanKonfigurasyonKaydi {
+  kod: string;
+  ad: string;
+  tipId: number;
+  uretici: string;
+  modelAdi: string;
+  kaynakTuru: EkipmanKaynakTuru;
+  kaynakAciklama: string | null;
+  /** ISO tarih (`yyyy-MM-dd`). */
+  kaynakTarihi: string | null;
+  aciklama: string | null;
+  teknikVeriJson: string;
+}
+
+/** Güncelleme gövdesi: ekrandaki kaydın son revizyon numarasıyla; arada başka biri kaydettiyse 409. */
+export interface EkipmanKonfigurasyonGuncellemesi extends EkipmanKonfigurasyonKaydi {
+  beklenenRevizyonNo: number;
 }
 
 export interface EkipmanIceAktarimSatiri {
@@ -555,6 +581,9 @@ export interface EkipmanListeSuzgeci {
 
 // Teknik veri (3K.YuklemeMotoru/Ekipman/EkipmanTeknikVerisi.cs). Koordinatlar: X ön uçtan arkaya, Y sol kenardan
 // sağa, Z yerden yukarı; birimler mm ve kg. Boş alan "bilinmiyor" demektir.
+
+/** Teknik verinin güncel şema sürümü (sunucu: `EkipmanTeknikVerisi.GuncelSemaSurumu`); yeni kayıt bu sürümle yazılır. */
+export const EKIPMAN_TEKNIK_VERI_SEMA_SURUMU = 1;
 
 export interface TeknikOlcu {
   uzunlukMm: number;

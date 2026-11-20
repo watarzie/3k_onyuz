@@ -10,6 +10,8 @@ import {
   ElleEkipmanSecenegi,
   EkipmanIceAktarimSonucu,
   EkipmanKonfigurasyonDetayi,
+  EkipmanKonfigurasyonGuncellemesi,
+  EkipmanKonfigurasyonKaydi,
   EkipmanKonfigurasyonOzeti,
   EkipmanListeSuzgeci,
   PaginatedList,
@@ -100,6 +102,16 @@ export class YuklemePlanlamaService extends BaseApiService {
 
   konfigurasyon(id: number): Observable<ApiResult<EkipmanKonfigurasyonDetayi>> {
     return this.get<EkipmanKonfigurasyonDetayi>(API.EKIPMAN_KITAPLIGI.KONFIGURASYON(id));
+  }
+
+  /** Ekrandan yeni konfigürasyon; ilk revizyon doğrulanmamış yazılır. Aynı kod varsa 409. */
+  ekipmanEkle(kayit: EkipmanKonfigurasyonKaydi): Observable<ApiResult<EkipmanKonfigurasyonDetayi>> {
+    return this.post<EkipmanKonfigurasyonDetayi>(API.EKIPMAN_KITAPLIGI.KONFIGURASYON_EKLE, kayit);
+  }
+
+  /** Konfigürasyonu ekrandan günceller; değişiklik yeni, doğrulanmamış revizyon olur. Kayıt arada değiştiyse 409. */
+  ekipmanGuncelle(id: number, kayit: EkipmanKonfigurasyonGuncellemesi): Observable<ApiResult<EkipmanKonfigurasyonDetayi>> {
+    return this.put<EkipmanKonfigurasyonDetayi>(API.EKIPMAN_KITAPLIGI.KONFIGURASYON_GUNCELLE(id), kayit);
   }
 
   dogrula(id: number, revizyonNo: number): Observable<ApiResult<EkipmanKonfigurasyonDetayi>> {
