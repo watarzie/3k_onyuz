@@ -87,6 +87,9 @@ export class SandikDetayComponent implements OnInit {
   /** Sandık tipi güncellemede zorunludur (G2); mevcut tip önceden doldurulur. */
   ozellikTipId = signal<number | null>(null);
   sandikTipleri = signal<{ id: number; deger: string }[]>([]);
+  /** Yük türü (Sandık / Trafo / Diğer özel yük); yükleme planında varsayılan izinleri belirler. */
+  ozellikYukTuruId = signal<number | null>(null);
+  yukTurleri = signal<{ id: number; deger: string }[]>([]);
   ozellikEn = signal<number | null>(null);
   ozellikBoy = signal<number | null>(null);
   ozellikYukseklik = signal<number | null>(null);
@@ -588,10 +591,14 @@ export class SandikDetayComponent implements OnInit {
     this.ozellikSandikIsmi.set(s.ad ?? '');
     this.ozellikSandikNo.set(s.sandikNo);
     this.ozellikTipId.set(s.tipId ?? null);
-    if (!this.sandikTipleri().length) {
-      this.lookupService.getLookups(['LookupSandikTipi'])
+    this.ozellikYukTuruId.set(s.yukTuruId ?? null);
+    if (!this.sandikTipleri().length || !this.yukTurleri().length) {
+      this.lookupService.getLookups(['LookupSandikTipi', 'LookupYukTuru'])
         .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe(data => this.sandikTipleri.set(data['LookupSandikTipi'] ?? []));
+        .subscribe(data => {
+          this.sandikTipleri.set(data['LookupSandikTipi'] ?? []);
+          this.yukTurleri.set(data['LookupYukTuru'] ?? []);
+        });
     }
     this.ozellikEn.set(s.en ?? null);
     this.ozellikBoy.set(s.boy ?? null);
@@ -633,6 +640,7 @@ export class SandikDetayComponent implements OnInit {
       sandikNo: numaraDegisiyor ? yeniNo : undefined,
       sandikIsmi: this.ozellikSandikIsmi().trim() || undefined,
       tipId,
+      yukTuruId: this.ozellikYukTuruId() ?? undefined,
       en: this.ozellikEn() ?? undefined,
       boy: this.ozellikBoy() ?? undefined,
       yukseklik: this.ozellikYukseklik() ?? undefined,

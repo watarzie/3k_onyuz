@@ -24,4 +24,5 @@ export * from './barkod-arama.model';
 export * from './barkod-etiket.model';
 export * from './genel-arama.model';
 export * from './sandik-durum.model';
-
+export * from './yukleme-planlama.model';
+export * from './arac-yukleme.model';

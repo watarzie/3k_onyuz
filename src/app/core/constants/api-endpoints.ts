@@ -333,4 +333,47 @@ export const API = {
   MENU: {
     KULLANICI_MENU: `${BASE}/menu/kullanici-menu`,
   },
+  /** Yükleme simülasyonu (yukleme-planlari R/W). */
+  YUKLEME_PLANLARI: {
+    TANIMLAR: `${BASE}/yukleme-planlari/tanimlar`,
+    PROJE_ADAYLARI: `${BASE}/yukleme-planlari/proje-adaylari`,
+    /** Seçilen projelerin yük listesi (hesaptan önce, kayıt açmaz). */
+    YUK_ONIZLEME: `${BASE}/yukleme-planlari/yuk-onizleme`,
+    PLAN: (id: number) => `${BASE}/yukleme-planlari/${id}`,
+    /** Tek adımlı hesap (kayıt yoksa açılır). */
+    YERLESIM_HESAPLA: `${BASE}/yukleme-planlari/yerlesim-hesapla`,
+    YERLESIM: (id: number) => `${BASE}/yukleme-planlari/${id}/yerlesim`,
+    YERLESIM_DENETLE: (id: number) => `${BASE}/yukleme-planlari/${id}/yerlesim/denetle`,
+    YERLESIM_TAMAMLA: (id: number) => `${BASE}/yukleme-planlari/${id}/yerlesim/tamamla`,
+    YERLESIM_EKIPMANLAR: (id: number) => `${BASE}/yukleme-planlari/${id}/yerlesim/ekipmanlar`,
+    RAPOR_ARAC_TALEBI: (id: number) => `${BASE}/yukleme-planlari/${id}/rapor/arac-talebi`,
+    RAPOR_YUKLEME_PLANI: (id: number) => `${BASE}/yukleme-planlari/${id}/rapor/yukleme-plani`,
+  },
+  /** Araç yükleme, saha (arac-yukleme: R izleme, W oturum ve işaretleme). */
+  ARAC_YUKLEME: {
+    PLANLAR: `${BASE}/arac-yukleme/planlar`,
+    PLAN: (planId: number) => `${BASE}/arac-yukleme/planlar/${planId}`,
+    OTURUM_BASLAT: (planId: number) => `${BASE}/arac-yukleme/planlar/${planId}/oturum`,
+    ARAC: (oturumId: number, aracNo: number) => `${BASE}/arac-yukleme/oturumlar/${oturumId}/araclar/${aracNo}`,
+    COZUMLE: (oturumId: number) => `${BASE}/arac-yukleme/oturumlar/${oturumId}/cozumle`,
+    YUKLEMELER: (oturumId: number) => `${BASE}/arac-yukleme/oturumlar/${oturumId}/yuklemeler`,
+    GERI_AL: (oturumId: number, isaretId: number) => `${BASE}/arac-yukleme/oturumlar/${oturumId}/yuklemeler/${isaretId}/geri-al`,
+    TAMAMLA: (oturumId: number) => `${BASE}/arac-yukleme/oturumlar/${oturumId}/tamamla`,
+    IPTAL: (oturumId: number) => `${BASE}/arac-yukleme/oturumlar/${oturumId}/iptal`,
+  },
+  /** Ekipman kitaplığı (ekipman-kitapligi R/W; doğrulama ekipman-dogrulama W). */
+  EKIPMAN_KITAPLIGI: {
+    AILELER: `${BASE}/ekipman-kitapligi/aileler`,
+    KONFIGURASYONLAR: `${BASE}/ekipman-kitapligi/konfigurasyonlar`,
+    KONFIGURASYON: (id: number) => `${BASE}/ekipman-kitapligi/konfigurasyonlar/${id}`,
+    /** POST: ekrandan yeni konfigürasyon (ekipman-kitapligi W). */
+    KONFIGURASYON_EKLE: `${BASE}/ekipman-kitapligi/konfigurasyonlar`,
+    /** PUT: konfigürasyonu ekrandan günceller (ekipman-kitapligi W). */
+    KONFIGURASYON_GUNCELLE: (id: number) => `${BASE}/ekipman-kitapligi/konfigurasyonlar/${id}`,
+    DOGRULA: (id: number) => `${BASE}/ekipman-kitapligi/konfigurasyonlar/${id}/dogrula`,
+    SABLON: `${BASE}/ekipman-kitapligi/sablon`,
+    DISA_AKTAR: `${BASE}/ekipman-kitapligi/disa-aktar`,
+    ICE_AKTAR_ONIZLE: `${BASE}/ekipman-kitapligi/ice-aktar/onizle`,
+    ICE_AKTAR: `${BASE}/ekipman-kitapligi/ice-aktar`,
+  },
 } as const;

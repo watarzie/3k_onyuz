@@ -141,6 +141,61 @@ export const routes: Routes = [
         data: { menuKod: YETKI.SANDIK.BARKOD_ETIKET },
       },
       {
+        // Yükleme planlama: yükleme simülasyonu, ekipman kitaplığı ve araç yükleme (kenar menüde "Yükleme Planlama" grubu).
+        // Simülasyon tek sayfadır ve boş başlar; liste yoktur.
+        path: 'yukleme-planlari',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/yukleme-planlama/plan-duzenle/plan-duzenle.component').then(m => m.PlanDuzenleComponent),
+        data: { menuKod: YETKI.YUKLEME_PLANLAMA.PLANLAR },
+      },
+      {
+        // Aynı sayfa, sunucudaki kayıtla açılır (eski bağlantılar).
+        path: 'yukleme-planlari/:id',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/yukleme-planlama/plan-duzenle/plan-duzenle.component').then(m => m.PlanDuzenleComponent),
+        data: { menuKod: YETKI.YUKLEME_PLANLAMA.PLANLAR },
+      },
+      {
+        // Araç yükleme (saha): yüklenecek planlar, planın yükleme oturumu ve araç başına barkodla işaretleme.
+        path: 'arac-yukleme',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/yukleme-planlama/arac-yukleme-planlar/arac-yukleme-planlar.component').then(m => m.AracYuklemePlanlarComponent),
+        data: { menuKod: YETKI.YUKLEME_PLANLAMA.ARAC_YUKLEME },
+      },
+      {
+        path: 'arac-yukleme/oturum/:oturumId/arac/:aracNo',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/yukleme-planlama/arac-yukleme-arac/arac-yukleme-arac.component').then(m => m.AracYuklemeAracComponent),
+        data: { menuKod: YETKI.YUKLEME_PLANLAMA.ARAC_YUKLEME },
+      },
+      {
+        path: 'arac-yukleme/:planId',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/yukleme-planlama/arac-yukleme-oturum/arac-yukleme-oturum.component').then(m => m.AracYuklemeOturumComponent),
+        data: { menuKod: YETKI.YUKLEME_PLANLAMA.ARAC_YUKLEME },
+      },
+      {
+        path: 'ekipman-kitapligi',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/yukleme-planlama/ekipman-kitapligi/ekipman-kitapligi.component').then(m => m.EkipmanKitapligiComponent),
+        data: { menuKod: YETKI.YUKLEME_PLANLAMA.EKIPMAN_KITAPLIGI },
+      },
+      {
+        // Ekipman Kitaplığı Kılavuzu: kenar menüde yok; kitaplıktaki "Kılavuz" düğmesinden ve düzenleme formundaki
+        // yardım bağlantılarından açılır. Kitaplığı görebilen (R) herkes okur.
+        path: 'ekipman-kitapligi/kilavuz',
+        canActivate: [menuGuard],
+        loadComponent: () =>
+          import('./features/yukleme-planlama/ekipman-kitapligi/ekipman-kilavuzu.component').then(m => m.EkipmanKilavuzuComponent),
+        data: { menuKod: YETKI.YUKLEME_PLANLAMA.EKIPMAN_KITAPLIGI },
+      },
+      {
         // Sandık açılış/kapanış istatistiği: kenar menüde yok; Projeler ve 3K sandık listesindeki "Diğer" menüsünden açılır.
         path: 'sandik-acilis-istatistigi',
         canActivate: [menuGuard],

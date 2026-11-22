@@ -208,6 +208,14 @@
                   }
                 </select>
               </label>
+              <label class="tz-field">
+                <span>Yük türü</span>
+                <select class="form-select" [ngModel]="ozellikYukTuruId()" (ngModelChange)="ozellikYukTuruId.set($event ? +$event : null)">
+                  @for (t of yukTurleri(); track t.id) {
+                    <option [ngValue]="t.id">{{ t.deger }}</option>
+                  }
+                </select>
+              </label>
             </div>
             <small class="text-muted">Tip, Ambalaj üretim kaydındaki sandık cinsine aktarılır.</small>
           </div>

@@ -1,0 +1,185 @@
+<div class="pe-ust">
+  <div>
+    <strong><i class="ri-drag-move-2-line" aria-hidden="true"></i> Elle yerleşim düzenleme</strong>
+    <small class="yp-ipucu d-block">Yükü sürükleyin (üstündekiler birlikte taşınır; bırakılan yük altındakinin üstüne oturur). Oklar 10 mm, Shift+ok 100 mm kaydırır;
+      R döndürür, Delete bekleyenlere gönderir. İstediğiniz tipte araç ekleyip yükleri koyabilir, "Kalanı otomatik diz" ile geri kalanını sisteme yerleştirtebilirsiniz.
+      Kontroller her değişiklikte sunucuda yapılır; sorunlu yerleşim de uygulanabilir ama raporu taslak basılır.</small>
+  </div>
+  <span class="yp-bosluk"></span>
+  @if (denetleniyor()) {
+    <span class="yp-rozet" data-ton="muted"><i class="ri-loader-4-line tz-spin" aria-hidden="true"></i>Denetleniyor</span>
+  } @else if (denetlenemedi()) {
+    <span class="yp-rozet" data-ton="danger"><i class="ri-error-warning-line" aria-hidden="true"></i>Denetlenemedi</span>
+  } @else if (genelSonuc() !== null) {
+    <span class="yp-rozet" [attr.data-ton]="KONTROL_SONUCU[genelSonuc()!].ton"><i [class]="KONTROL_SONUCU[genelSonuc()!].ikon"></i>{{ KONTROL_SONUCU[genelSonuc()!].metin }}</span>
+  }
+  <button type="button" class="tz-btn" [disabled]="kaydediliyor()" (click)="vazgec.emit()"><i class="ri-close-line" aria-hidden="true"></i>Vazgeç</button>
+  <button type="button" class="tz-btn tz-btn--primary" [disabled]="kaydediliyor() || !degisti()" (click)="kaydet()">
+    <i [class]="kaydediliyor() ? 'ri-loader-4-line tz-spin' : 'ri-save-3-line'" aria-hidden="true"></i>Elle düzenlemeyi uygula
+  </button>
+</div>
+
+<div class="py-duzen">
+  <div class="py-araclar" role="listbox" aria-label="Araçlar">
+    @for (a of araclar(); track a.kimlik) {
+      <button type="button" role="option" class="py-arac" [class.active]="seciliArac()?.kimlik === a.kimlik"
+              [attr.aria-selected]="seciliArac()?.kimlik === a.kimlik" (click)="aracSec(a)">
+        <span class="py-arac__no">{{ aracNo(a) }}</span>
+        <span class="py-arac__bilgi">
+          <strong>{{ a.ekipmanKodu }}</strong> <small>{{ a.tipAdi }}</small>
+          <small class="d-block">{{ a.yukler.length }} yük @if (aracSonucu(a); as s) { · {{ s.toplamKg | number: '1.0-0' }} kg · taban %{{ s.tabanDolulukYuzde }} }</small>
+        </span>
+        @if (aracSonucu(a); as s) {
+          <span class="yp-rozet" [attr.data-ton]="KONTROL_SONUCU[s.sonuc].ton" [title]="KONTROL_SONUCU[s.sonuc].metin"><i [class]="KONTROL_SONUCU[s.sonuc].ikon"></i></span>
+        }
+      </button>
+    }
+    @if (araclar().length === 0) {
+      <p class="yp-ipucu mb-2">Henüz araç yok. Aşağıdan araç ekleyin ya da "Kalanı otomatik diz" ile sisteme yerleştirtin.</p>
+    }
+    <div class="pe-arac-islem">
+      <select class="form-select form-select-sm pe-arac-ekle" aria-label="Araç ekle" [disabled]="ekipmanlar().length === 0"
+              (change)="aracEkle($any($event.target).value); $any($event.target).value = ''">
+        <option value="">Araç ekle…</option>
+        @for (e of ekipmanlar(); track e.konfigurasyonId) {
+          <option [value]="e.konfigurasyonId">{{ e.kod }} · {{ e.tipAdi }}@if (e.aileDisi) { (aile dışı) }@if (!e.dogrulandi) { · doğrulanmadı }</option>
+        }
+      </select>
+      <button type="button" class="tz-btn" [disabled]="!seciliArac()" (click)="ayniTiptenEkle()" title="Seçili araçla aynı ekipmandan boş araç ekler">
+        <i class="ri-add-line" aria-hidden="true"></i>Aynı tipten
+      </button>
+      @if (seciliArac(); as a) {
+        @if (a.yukler.length === 0) {
+          <button type="button" class="tz-btn" (click)="bosAraciKaldir()"><i class="ri-delete-bin-6-line" aria-hidden="true"></i>Boş aracı kaldır</button>
+        } @else {
+          <button type="button" class="tz-btn" (click)="araciBosalt()" title="Aracın bütün yüklerini bekleyenlere gönderir">
+            <i class="ri-inbox-unarchive-line" aria-hidden="true"></i>Aracı boşalt
+          </button>
+        }
+      }
+    </div>
+
+    <div class="tz-section"><i class="ri-inbox-line" aria-hidden="true"></i>Bekleyenler ({{ bekleyenler().length }})</div>
+    @if (bekleyenler().length) {
+      <button type="button" class="tz-btn tz-btn--primary w-100 mb-2" [disabled]="tamamlaniyor() || kaydediliyor()" (click)="kalaniDiz()"
+              title="Araçlardaki yükler yerinde kalır; bekleyenler boş yerlere, gerekirse yeni araçlara yerleşir">
+        <i [class]="tamamlaniyor() ? 'ri-loader-4-line tz-spin' : 'ri-magic-line'" aria-hidden="true"></i>Kalanı otomatik diz
+      </button>
+      <p class="yp-ipucu mb-1">Araca konmayan yük yerleşemeyen sayılır ve sonuç uygunsuz olur.</p>
+      <ul class="pe-bekleyenler">
+        @for (y of bekleyenler(); track y.anahtar) {
+          <li>
+            <span class="py-renk" [style.background]="renk(y)"></span>
+            <span class="pe-bekleyen__ad"><strong>{{ y.kod }}</strong>
+              <small class="d-block">{{ y.boyMm }} × {{ y.enMm }} × {{ y.yukseklikMm }} mm · {{ y.brutKg | number: '1.0-0' }} kg</small></span>
+            <button type="button" class="tz-btn tz-btn--sm" [disabled]="!seciliArac()" (click)="aracaYerlestir(y)"
+                    [title]="seciliArac() ? 'Araç ' + aracNo(seciliArac()!) + ' tabanındaki ilk boş yere koyar' : ''">
+              <i class="ri-truck-line" aria-hidden="true"></i>Araca yerleştir</button>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="yp-ipucu mb-0">Bütün hesaplanabilir yükler araçlarda.</p>
+    }
+  </div>
+
+  @if (seciliArac(); as a) {
+    <div class="py-detay">
+      <div class="pe-cizim-baslik">
+        <strong>Araç {{ aracNo(a) }} · {{ a.ekipmanKodu }}</strong> <span class="yp-ipucu">{{ a.ekipmanAdi }} · üstten görünüm</span>
+      </div>
+      @if (g() > 0) {
+        <svg class="pe-cizim" [attr.viewBox]="viewBox().x + ' ' + viewBox().y + ' ' + viewBox().w + ' ' + viewBox().h"
+             tabindex="0" role="application" aria-label="Üstten yerleşim çizimi" (keydown)="tus($event)"
+             (pointermove)="suruklemeDevam($event)" (pointerup)="suruklemeBitir()" (pointercancel)="suruklemeBitir()">
+          <rect [attr.x]="0" [attr.y]="0" [attr.width]="u()" [attr.height]="g()" class="pe-dis" />
+          @for (s of yuzeyCizimi(); track s.kod) {
+            <rect [attr.x]="s.xBas" [attr.y]="s.svgY" [attr.width]="s.uzunluk" [attr.height]="s.genislik" class="pe-yuzey" />
+          }
+          @for (e of engelCizimi(); track $index) {
+            <rect [attr.x]="e.x" [attr.y]="e.y" [attr.width]="e.boy" [attr.height]="e.en" class="pe-engel" [class.pe-engel--sokulebilir]="e.sokulebilir" />
+          }
+          <line [attr.x1]="0" [attr.x2]="u()" [attr.y1]="g() / 2" [attr.y2]="g() / 2" class="pe-eksen" />
+          @if (arkaAcik()) {
+            <line [attr.x1]="u()" [attr.x2]="u()" [attr.y1]="0" [attr.y2]="g()" class="pe-aciklik" />
+          }
+          @for (k of kutular(); track k.yuk.anahtar) {
+            <g class="pe-kutu" [class.pe-kutu--secili]="seciliYuk() === k.yuk.anahtar" [class.pe-kutu--sorunlu]="k.sorunlu"
+               (pointerdown)="suruklemeBasla($event, k)">
+              <rect [attr.x]="k.x" [attr.y]="k.y" [attr.width]="k.boy" [attr.height]="k.en" [attr.fill]="k.sorunlu ? '#dc2626' : k.renk" />
+              <text [attr.x]="k.x + k.boy / 2" [attr.y]="k.y + k.en / 2" [attr.font-size]="viewBox().yazi">{{ k.no }}@if (k.ust) {↑}</text>
+            </g>
+          }
+          <text [attr.x]="-g() * 0.12" [attr.y]="g() / 2" class="pe-yon" [attr.font-size]="viewBox().yazi * 1.3">ÖN</text>
+          <text [attr.x]="u() + g() * 0.13" [attr.y]="g() / 2" class="pe-yon" [attr.font-size]="viewBox().yazi * 1.3">ARKA</text>
+          <text [attr.x]="u() / 2" [attr.y]="-g() * 0.08" class="pe-yon pe-yon--ince" [attr.font-size]="viewBox().yazi">SAĞ</text>
+          <text [attr.x]="u() / 2" [attr.y]="g() * 1.09" class="pe-yon pe-yon--ince" [attr.font-size]="viewBox().yazi">SOL</text>
+        </svg>
+      } @else {
+        <div class="yp-uyari"><i class="ri-error-warning-line" aria-hidden="true"></i><span>Ekipmanın ölçü verisi yok; çizim yapılamıyor.</span></div>
+      }
+
+      @if (seciliYukNesnesi(); as y) {
+        <div class="py-secili pe-secili">
+          <strong>{{ y.kod }}</strong> <span class="yp-ipucu">{{ y.projeNo ?? 'Projesiz' }}</span>
+          <span>{{ y.boyMm }} × {{ y.enMm }} × {{ y.yukseklikMm }} mm @if (y.donduruldu) { (90° döndürüldü) }</span>
+          <span>X {{ mm(y.xMm) }} · Y {{ mm(y.yMm) }} · Z {{ mm(y.zMm) }} mm</span>
+          <span class="yp-bosluk"></span>
+          <button type="button" class="tz-btn tz-btn--sm" (click)="dondur()"><i class="ri-clockwise-line" aria-hidden="true"></i>Döndür</button>
+          <button type="button" class="tz-btn tz-btn--sm" (click)="bekleyeneGonder()"><i class="ri-inbox-archive-line" aria-hidden="true"></i>Bekleyenlere</button>
+          @if (araclar().length > 1) {
+            <select class="form-select form-select-sm pe-hedef" aria-label="Başka araca taşı" (change)="aracaTasi($any($event.target).value); $any($event.target).value = ''">
+              <option value="">Araca taşı…</option>
+              @for (h of araclar(); track h.kimlik) {
+                @if (h.kimlik !== a.kimlik) { <option [value]="h.kimlik">Araç {{ aracNo(h) }} · {{ h.ekipmanKodu }}</option> }
+              }
+            </select>
+          }
+          @for (s of seciliYukSorunlari(); track $index) {
+            <span class="pe-sorun" [attr.data-ton]="KONTROL_SONUCU[s.sonuc].ton"><i [class]="KONTROL_SONUCU[s.sonuc].ikon"></i>{{ s.mesaj }}</span>
+          }
+        </div>
+      }
+
+      <app-ekipman-3d class="d-block mt-3" [veri]="a.veri" [yukler]="yukler3d()" [secili]="seciliYuk()" (yukSecildi)="seciliYuk.set($event)"
+                      style="--e3d-yukseklik: 320px" />
+
+      @if (seciliSonuc(); as s) {
+        @if (s.yukSorunlari.length) {
+          <div class="tz-section"><i class="ri-error-warning-line" aria-hidden="true"></i>Yük sorunları</div>
+          <ul class="py-kontroller">
+            @for (y of s.yukSorunlari; track $index) {
+              <li class="yp-tiklanir" (click)="seciliYuk.set(y.yukAnahtari)">
+                <span class="yp-rozet" [attr.data-ton]="KONTROL_SONUCU[y.sonuc].ton"><i [class]="KONTROL_SONUCU[y.sonuc].ikon"></i>{{ KONTROL_SONUCU[y.sonuc].metin }}</span>
+                <strong>{{ yukKodu(a, y.yukAnahtari) }}</strong>
+                <span>{{ y.mesaj }}</span>
+              </li>
+            }
+          </ul>
+        }
+        <div class="tz-section"><i class="ri-shield-check-line" aria-hidden="true"></i>Kontroller</div>
+        <ul class="py-kontroller">
+          @for (k of s.kontroller; track $index) {
+            <li>
+              <span class="yp-rozet" [attr.data-ton]="KONTROL_SONUCU[k.sonuc].ton"><i [class]="KONTROL_SONUCU[k.sonuc].ikon"></i>{{ KONTROL_SONUCU[k.sonuc].metin }}</span>
+              <strong>{{ KONTROL_TURU[k.tur] }}</strong>
+              <span>{{ k.mesaj }}</span>
+            </li>
+          }
+        </ul>
+      } @else if (denetleniyor()) {
+        <p class="yp-ipucu mt-3">Kontroller güncelleniyor…</p>
+      } @else if (denetlenemedi()) {
+        <p class="yp-ipucu mt-3">Kontroller alınamadı; bir sonraki değişiklikte yeniden denenir. Uygularken sunucu yeniden denetler.</p>
+      }
+    </div>
+  }
+</div>
+
+@if (denetim()?.sonuc; as s) {
+  @if (!denetleniyor() && s.uyarilar.length) {
+    <ul class="py-uyarilar">
+      @for (u of s.uyarilar; track u) { <li><i class="ri-error-warning-line" aria-hidden="true"></i>{{ u }}</li> }
+    </ul>
+  }
+}

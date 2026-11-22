@@ -696,6 +696,34 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   .sayfa-ikon { animation: none; }
 }
 
+// ===== Yazdırılabilir sayfa (kitapçık) =====
+// Kökünde .tz-yazdir-sayfa bulunan ekran yazdırılırken uygulama çerçevesi (kenar menü, üst çubuk, bildirim ve onay
+// katmanları) gizlenir, içerik kâğıdın tamamını kullanır. Öteki ekranların yazdırma görünümü değişmez.
+// Örnek: yukleme-planlama/ekipman-kitapligi/ekipman-kilavuzu.
+@media print {
+  body:has(.tz-yazdir-sayfa) {
+    background: var(--whiteColor);
+
+    app-sidebar,
+    app-header,
+    app-toast,
+    app-confirm-modal,
+    .icerige-gec { display: none !important; }
+
+    .main-content {
+      min-height: 0 !important;
+      margin-left: 0 !important;
+      background: var(--whiteColor) !important;
+      overflow: visible !important;
+    }
+
+    .content-wrapper {
+      padding: 0 !important;
+      overflow: visible !important;
+    }
+  }
+}
+
 @supports selector(:has(*)) {
   .row:has(> .col > app-stat-card) > .col {
     flex: 1 1 180px;

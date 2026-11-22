@@ -1,0 +1,575 @@
+// Ekipman Kitaplığı Kılavuzu: okunur belge düzeni, satır içi SVG şemalar ve kitapçık (yazdırma) stilleri.
+// Renkler tema token'larından türetilir; şemalarda anlam yalnız renkle verilmez (her çizgi etiketlidir).
+:host {
+  --kl-x: var(--orangeColor);
+  --kl-y: var(--secondaryColor);
+  --kl-z: var(--purpleColor);
+  --kl-cizgi: var(--blackColor);
+}
+
+// Belge sütunu: uzun satır okumayı zorlaştırır; içerik ortalanır.
+.kl {
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.sayfa-ikon { --ton: var(--yp-ton); }
+
+.kl-islemler {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.kl-giris {
+  margin: 0 0 16px;
+  color: var(--bodyColor);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+// ===== İçindekiler =====
+.kl-icindekiler {
+  margin-bottom: 16px;
+  scroll-margin-top: 12px;
+
+  &:focus { outline: none; }
+
+  ol {
+    margin: 0;
+    padding-left: 22px;
+    columns: 3 220px;
+    column-gap: 28px;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+
+  li {
+    padding: 3px 0;
+    break-inside: avoid;
+    color: var(--bodyColor);
+  }
+
+  a {
+    color: var(--blackColor);
+    font-weight: 500;
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible { color: var(--primaryColor); text-decoration: underline; }
+  }
+}
+
+.kl-icindekiler__baslik {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: var(--blackColor);
+  font-size: 15px;
+  font-weight: 700;
+
+  i { color: var(--primaryColor); font-size: 18px; }
+}
+
+// ===== Bölüm =====
+.kl-bolum {
+  margin-bottom: 16px;
+  color: var(--blackColor);
+  font-size: 14px;
+  line-height: 1.65;
+  scroll-margin-top: 12px;
+
+  &:focus { outline: none; }
+
+  p { margin: 0 0 12px; }
+  p:last-child { margin-bottom: 0; }
+
+  a {
+    color: var(--primaryColor);
+    font-weight: 600;
+  }
+}
+
+.kl-bolum__baslik {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--borderColor);
+  color: var(--blackColor);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+
+  small {
+    color: var(--bodyColor);
+    font-size: 12.5px;
+    font-weight: 500;
+  }
+}
+
+.kl-bolum__no {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--primaryColor) 12%, var(--whiteColor));
+  color: var(--primaryColor);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.kl-alt-baslik {
+  margin: 18px 0 8px;
+  color: var(--blackColor);
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.kl-liste {
+  margin: 0 0 12px;
+  padding-left: 20px;
+
+  li { margin-bottom: 6px; }
+  li:last-child { margin-bottom: 0; }
+  li::marker { color: var(--primaryColor); }
+}
+
+.kl-yildiz { color: var(--dangerColor); }
+
+// Alan sözlüğü: solda formdaki alan adı, sağda anlamı.
+.kl-alanlar {
+  margin: 0 0 12px;
+  border: 1px solid var(--borderColor);
+  border-radius: 12px;
+
+  > div {
+    display: grid;
+    grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);
+    gap: 4px 18px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--borderColor);
+  }
+
+  > div:last-child { border-bottom: none; }
+
+  dt {
+    color: var(--blackColor);
+    font-weight: 700;
+  }
+
+  dd {
+    margin: 0;
+    color: var(--blackColor);
+  }
+}
+
+// "Şu an hesapta kullanılmaz" notu: alanın yalnız kayıt için tutulduğunu ayırır.
+.kl-kayit {
+  display: inline-block;
+  margin-top: 2px;
+  color: var(--bodyColor);
+  font-size: 12.5px;
+  font-style: italic;
+}
+
+.kl-dikkat,
+.kl-kural {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--warningColor) 45%, var(--borderColor));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--warningColor) 10%, var(--whiteColor));
+  color: var(--blackColor);
+  font-size: 13.5px;
+  line-height: 1.55;
+
+  i {
+    flex: 0 0 auto;
+    color: var(--orangeColor);
+    font-size: 17px;
+    line-height: 1.3;
+  }
+}
+
+.kl-dikkat { margin-top: 8px; }
+
+.kl-kural { margin: 0 0 12px; }
+
+.kl-gonderme {
+  color: var(--bodyColor);
+  font-size: 13px;
+}
+
+// ===== Tablolar =====
+.kl-tablo-sarmal {
+  margin-bottom: 12px;
+  overflow-x: auto;
+  border: 1px solid var(--borderColor);
+  border-radius: 12px;
+}
+
+.kl-tablo {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+
+  th,
+  td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--borderColor);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  thead th {
+    background: color-mix(in srgb, var(--bodyColor) 7%, var(--whiteColor));
+    color: var(--bodyColor);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  tbody th {
+    color: var(--blackColor);
+    font-weight: 700;
+  }
+
+  // Birleşik bölüm hücresi (rowspan) sağındaki satırlardan ince çizgiyle ayrılır.
+  tbody th[rowspan] { border-right: 1px solid var(--borderColor); }
+
+  tbody tr:last-child > * { border-bottom: none; }
+
+  .kl-sayi { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .kl-bos { color: var(--bodyColor); font-style: italic; }
+
+  // Boş bırakılması planı sessizce bozan alanlar.
+  .kl-kritik > * { background: color-mix(in srgb, var(--warningColor) 9%, var(--whiteColor)); }
+}
+
+// ===== Kontrol listesi: kâğıtta işaretlenebilen kutular =====
+.kl-kontrol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    position: relative;
+    padding: 7px 0 7px 32px;
+    border-bottom: 1px dashed var(--borderColor);
+  }
+
+  li:last-child { border-bottom: none; }
+
+  li::before {
+    content: '';
+    position: absolute;
+    top: 9px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--bodyColor);
+    border-radius: 4px;
+    background: var(--whiteColor);
+  }
+}
+
+// ===== Şemalar =====
+.kl-sema {
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid var(--borderColor);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bodyColor) 3%, var(--whiteColor));
+  scroll-margin-top: 12px;
+
+  &:focus { outline: none; }
+  &:last-child { margin-bottom: 0; }
+
+  figcaption {
+    margin-top: 10px;
+    color: var(--bodyColor);
+    font-size: 13px;
+    line-height: 1.55;
+
+    strong { color: var(--blackColor); }
+  }
+
+  svg {
+    display: block;
+    width: 100%;
+    min-width: 600px;
+    max-width: 860px;
+    height: auto;
+    margin: 0 auto;
+    font-family: var(--fontFamily);
+  }
+}
+
+// Dar ekranda şema küçülüp okunmaz olmasın: kendi içinde yatay kayar.
+.kl-sema__cizim { overflow-x: auto; }
+
+.kl-sema-izgara {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+
+  .kl-sema { margin: 0; }
+}
+
+.kl-sema--kucuk svg {
+  min-width: 0;
+  max-width: 360px;
+}
+
+// Çizim öğeleri (SVG kullanıcı birimi; viewBox ile ölçeklenir).
+svg {
+  text {
+    fill: var(--blackColor);
+    font-size: 12px;
+  }
+
+  .s-govde {
+    fill: color-mix(in srgb, var(--bodyColor) 14%, var(--whiteColor));
+    stroke: var(--kl-cizgi);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+  }
+
+  .s-bosluk {
+    fill: var(--whiteColor);
+    stroke: color-mix(in srgb, var(--bodyColor) 55%, var(--whiteColor));
+    stroke-width: 1;
+  }
+
+  // Yükleme yüzeyi: yandan bakışta kalın çizgi, üstten bakışta dolu alan.
+  .s-yuzey {
+    fill: none;
+    stroke: var(--primaryColor);
+    stroke-width: 5;
+  }
+
+  .s-yuzey-alan {
+    fill: color-mix(in srgb, var(--primaryColor) 14%, var(--whiteColor));
+    stroke: var(--primaryColor);
+    stroke-width: 1.5;
+  }
+
+  .s-yuzey-yazi {
+    fill: var(--primaryColor);
+    font-weight: 700;
+  }
+
+  .s-aciklik {
+    fill: color-mix(in srgb, var(--secondaryColor) 12%, var(--whiteColor));
+    stroke: var(--secondaryColor);
+    stroke-width: 1.5;
+    stroke-dasharray: 6 4;
+  }
+
+  .s-aciklik-yazi {
+    fill: var(--secondaryColor);
+    font-weight: 700;
+  }
+
+  .s-engel {
+    fill: color-mix(in srgb, var(--dangerColor) 16%, var(--whiteColor));
+    stroke: var(--dangerColor);
+    stroke-width: 1.5;
+  }
+
+  .s-engel-yazi {
+    fill: color-mix(in srgb, var(--dangerColor) 75%, var(--blackColor));
+    font-weight: 700;
+  }
+
+  .s-hacim {
+    fill: none;
+    stroke: var(--bodyColor);
+    stroke-width: 1;
+    stroke-dasharray: 5 4;
+  }
+
+  .s-yer {
+    fill: none;
+    stroke: var(--bodyColor);
+    stroke-width: 2;
+  }
+
+  .s-teker,
+  .s-pim {
+    fill: color-mix(in srgb, var(--blackColor) 78%, var(--whiteColor));
+    stroke: var(--kl-cizgi);
+    stroke-width: 1;
+  }
+
+  // Ölçü oku: çizgi ve iki ucundaki ok başı tek yolda (işaretçi/`url(#...)` başvurusu yok).
+  .s-olcu {
+    fill: var(--kl-cizgi);
+    stroke: var(--kl-cizgi);
+    stroke-width: 1.2;
+    stroke-linejoin: round;
+  }
+
+  .s-ince {
+    fill: var(--bodyColor);
+    stroke: var(--bodyColor);
+    stroke-width: 1.2;
+  }
+
+  .s-uzanti {
+    fill: none;
+    stroke: var(--bodyColor);
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+  }
+
+  .s-eksen {
+    stroke-width: 3.5;
+    stroke-linejoin: round;
+
+    &--x { fill: var(--kl-x); stroke: var(--kl-x); }
+    &--y { fill: var(--kl-y); stroke: var(--kl-y); }
+    &--z { fill: var(--kl-z); stroke: var(--kl-z); }
+  }
+
+  .s-x,
+  .s-y,
+  .s-z {
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .s-x { fill: var(--kl-x); }
+  .s-y { fill: var(--kl-y); }
+  .s-z { fill: var(--kl-z); }
+
+  .s-nokta { fill: var(--kl-cizgi); }
+
+  .s-yon {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: .06em;
+  }
+
+  .s-kalin { font-weight: 600; }
+  .s-soluk { fill: var(--bodyColor); font-size: 11.5px; }
+  .s-kucuk { font-size: 11px; font-variant-numeric: tabular-nums; }
+
+  .s-panel {
+    fill: var(--bodyColor);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+}
+
+// ===== "İçindekiler" düğmesi: uzun sayfada her yerden başa dönüş =====
+.kl-basa-don {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 50;
+  box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--blackColor) 45%, transparent);
+}
+
+@media (max-width: 767.98px) {
+  .kl-islemler {
+    width: 100%;
+
+    .tz-btn { flex: 1 1 auto; }
+  }
+
+  .kl-alanlar > div { grid-template-columns: minmax(0, 1fr); }
+
+  .kl-bolum__baslik { font-size: 16.5px; }
+
+  .kl-basa-don {
+    right: 12px;
+    bottom: 12px;
+  }
+}
+
+// ===== Kitapçık (yazdırma / PDF) =====
+// Uygulama çerçevesini (kenar menü, üst çubuk) `src/styles.scss` içindeki `.tz-yazdir-sayfa` kuralı gizler; burada
+// yalnız kılavuzun kendi öğeleri düzenlenir.
+@page {
+  margin: 14mm 12mm;
+}
+
+@media print {
+  .kl { max-width: none; }
+
+  .kl-yazdirma-gizle,
+  app-breadcrumb,
+  .sayfa-ikon { display: none !important; }
+
+  .page-title-area {
+    margin-bottom: 4mm !important;
+    padding-bottom: 3mm;
+    border-bottom: 2px solid var(--blackColor);
+  }
+
+  .kl-giris { color: var(--blackColor); }
+
+  // Kart görünümü kâğıtta düz metne döner; bölüm sayfa ortasında bölünmemeye çalışır.
+  .kl-bolum {
+    margin: 0 0 6mm;
+    padding: 0;
+    border-radius: 0;
+    break-inside: avoid;
+  }
+
+  // Şemalı bölüm bir sayfaya sığmaz: bölünmesine izin verilir (yoksa önceki sayfa yarı boş kalır); şemanın,
+  // tablonun ve alan satırının kendisi yine bölünmez.
+  .kl-bolum:has(.kl-sema) { break-inside: auto; }
+
+  // Kâğıt genişliği dar ekran kırılımına düşer; alan sözlüğü yine iki sütun basılır.
+  .kl-alanlar > div { grid-template-columns: minmax(120px, 170px) minmax(0, 1fr); }
+
+  .kl-bolum__baslik,
+  .kl-alt-baslik { break-after: avoid; }
+
+  .kl-sema,
+  .kl-sema-izgara,
+  .kl-tablo-sarmal,
+  .kl-alanlar > div,
+  .kl-dikkat,
+  .kl-kural,
+  .kl-liste li,
+  .kl-kontrol li,
+  .kl-tablo tr { break-inside: avoid; }
+
+  .kl-sema__cizim,
+  .kl-tablo-sarmal { overflow: visible; }
+
+  .kl-sema svg { min-width: 0; }
+
+  // Şema dolguları ve uyarı zeminleri "arka plan grafikleri" kapalıyken de basılsın.
+  .kl-sema,
+  .kl-dikkat,
+  .kl-kural,
+  .kl-bolum__no,
+  .kl-tablo {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .kl-bolum a {
+    color: inherit;
+    font-weight: inherit;
+    text-decoration: none;
+  }
+}

@@ -1101,6 +1101,11 @@
     "SEVK_SONRASI_DUZELTME": "Sevk Sonrası Düzeltme",
     "SANDIK_ACILIS_ISTATISTIGI": "Sandık Açılış/Kapanış İstatistiği",
     "BARKOD_ETIKET": "Barkod Etiketi",
+    "YUKLEME_PLANLAMA": "Yükleme Planlama",
+    "YUKLEME_PLANLARI": "Yükleme Simülasyonu",
+    "EKIPMAN_KITAPLIGI": "Ekipman Kitaplığı",
+    "EKIPMAN_DOGRULAMA": "Ekipman Doğrulama",
+    "ARAC_YUKLEME": "Araç Yükleme",
     "ISLEM_ONAY": "İşlem Onay Merkezi",
     "ONAY_UCK_PROJEDEN_KARSILANDI": "Onay: Projeden Karşılama",
     "ONAY_UCK_STOKTAN_KARSILANDI": "Onay: Stoktan Karşılama",
@@ -1475,6 +1480,7 @@
     "MENUYU_KAPAT": "Menüyü kapat",
     "ALT_MENU_AC_KAPAT": "{grup} alt menüsünü aç/kapat",
     "GRUP_OPERASYON": "Operasyon",
+    "GRUP_LOJISTIK": "Lojistik",
     "GRUP_YONETIM": "Yönetim"
   },
   "LAYOUT": {

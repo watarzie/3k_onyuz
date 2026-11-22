@@ -22,7 +22,7 @@ export interface MenuItem {
 
 /** Kenar menünün başlıklı bölümü; başlık yalnız bölümde görünür öğe varsa çizilir. */
 export interface MenuBolumu {
-  kod: 'operasyon' | 'yonetim';
+  kod: 'operasyon' | 'lojistik' | 'yonetim';
   baslik: string;
   ogeler: MenuItem[];
 }
@@ -35,18 +35,29 @@ const YONETIM_KODLARI: ReadonlySet<string> = new Set<string>([
   YETKI.ONAY.MERKEZI,
 ]);
 
+/**
+ * Lojistik başlığındaki kök menü kodları (yükleme simülasyonu, ekipman kitaplığı, araç yükleme). Sunucu sırasında
+ * nerede olurlarsa olsunlar bu başlığa alınır; başlık Operasyon ile Yönetim arasında çizilir.
+ */
+const LOJISTIK_KODLARI: ReadonlySet<string> = new Set<string>([
+  YETKI.YUKLEME_PLANLAMA.MODUL,
+]);
+
 /** SCSS'teki masaüstü kırılımıyla aynı: masaüstünde "toggled" menüyü kapatmaz, daraltır. */
 const MASAUSTU_SORGUSU = '(min-width: 1200px)';
 
 /**
- * Sunucu sırasını bozmadan menüyü iki bölüme ayırır: ilk görünen yönetim öğesinden önceki her şey
- * Operasyon, o öğeden itibaren Yönetim. Sıra sunucudan geldiği için yeniden sıralama yapılmaz.
+ * Sunucu sırasını bozmadan menüyü üç bölüme ayırır: lojistik kodları (nerede olurlarsa olsunlar) Lojistik'e alınır;
+ * kalanlarda ilk görünen yönetim öğesinden önceki her şey Operasyon, o öğeden itibaren Yönetim. Bölüm içindeki sıra
+ * sunucudan geldiği gibi kalır.
  */
-export function menuBolumleri(ogeler: readonly MenuItem[]): { operasyon: MenuItem[]; yonetim: MenuItem[] } {
-  const sinir = ogeler.findIndex(oge => YONETIM_KODLARI.has(oge.kod));
+export function menuBolumleri(ogeler: readonly MenuItem[]): { operasyon: MenuItem[]; lojistik: MenuItem[]; yonetim: MenuItem[] } {
+  const lojistik = ogeler.filter(oge => LOJISTIK_KODLARI.has(oge.kod));
+  const kalan = ogeler.filter(oge => !LOJISTIK_KODLARI.has(oge.kod));
+  const sinir = kalan.findIndex(oge => YONETIM_KODLARI.has(oge.kod));
   return sinir < 0
-    ? { operasyon: [...ogeler], yonetim: [] }
-    : { operasyon: ogeler.slice(0, sinir), yonetim: ogeler.slice(sinir) };
+    ? { operasyon: kalan, lojistik, yonetim: [] }
+    : { operasyon: kalan.slice(0, sinir), lojistik, yonetim: kalan.slice(sinir) };
 }
 
 /** Rotayı karşılaştırılabilir yola çevirir: baştaki '/' zorunlu, sorgu ve sondaki '/' atılır. */
@@ -193,12 +204,13 @@ export class SidebarComponent {
     };
   });
 
-  /** Operasyon ve Yönetim başlıkları; boş bölümün başlığı çizilmez. */
+  /** Operasyon, Lojistik ve Yönetim başlıkları; boş bölümün başlığı çizilmez. */
   readonly bolumler = computed<MenuBolumu[]>(() => {
     this.ts.currentLang();
-    const { operasyon, yonetim } = menuBolumleri(this.menu());
+    const { operasyon, lojistik, yonetim } = menuBolumleri(this.menu());
     const bolumler: MenuBolumu[] = [
       { kod: 'operasyon', baslik: this.ts.translate('SIDEBAR.GRUP_OPERASYON'), ogeler: operasyon },
+      { kod: 'lojistik', baslik: this.ts.translate('SIDEBAR.GRUP_LOJISTIK'), ogeler: lojistik },
       { kod: 'yonetim', baslik: this.ts.translate('SIDEBAR.GRUP_YONETIM'), ogeler: yonetim },
     ];
     return bolumler.filter(bolum => bolum.ogeler.length > 0);

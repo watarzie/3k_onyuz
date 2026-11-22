@@ -1100,6 +1100,11 @@
     "SEVK_SONRASI_DUZELTME": "Post-Shipment Correction",
     "SANDIK_ACILIS_ISTATISTIGI": "Crate Open/Close Statistics",
     "BARKOD_ETIKET": "Barcode Labels",
+    "YUKLEME_PLANLAMA": "Load Planning",
+    "YUKLEME_PLANLARI": "Load Simulation",
+    "EKIPMAN_KITAPLIGI": "Equipment Library",
+    "EKIPMAN_DOGRULAMA": "Equipment Verification",
+    "ARAC_YUKLEME": "Vehicle Loading",
     "ISLEM_ONAY": "Approval Center",
     "ONAY_UCK_PROJEDEN_KARSILANDI": "Approval: Match from Project",
     "ONAY_UCK_STOKTAN_KARSILANDI": "Approval: Match from Stock",
@@ -1475,6 +1480,7 @@
     "MENUYU_KAPAT": "Close menu",
     "ALT_MENU_AC_KAPAT": "Toggle {grup} submenu",
     "GRUP_OPERASYON": "Operations",
+    "GRUP_LOJISTIK": "Logistics",
     "GRUP_YONETIM": "Administration"
   },
   "LAYOUT": {

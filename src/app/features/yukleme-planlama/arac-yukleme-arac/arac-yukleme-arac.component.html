@@ -1,0 +1,141 @@
+<div class="page-title-area mb-3">
+  <div class="sayfa-baslik">
+    <span class="sayfa-ikon" style="--ton: #0e7490"><i class="ri-truck-line" aria-hidden="true"></i></span>
+    <div>
+      <h2 class="fw-bold mb-1">Araç {{ aracNo }} @if (arac(); as a) { <small class="aa-ekipman">{{ a.arac.ekipmanKodu }} · {{ a.arac.tipAdi }}</small> }</h2>
+      <app-breadcrumb [items]="breadcrumb()" />
+    </div>
+  </div>
+</div>
+
+@if (arac(); as a) {
+  <section class="trezo-card border-0 bg-white yp-kart mb-3">
+    <div class="ay-ust">
+      <span class="yp-rozet" [attr.data-ton]="OTURUM_DURUMU[a.oturum.durum].ton">{{ OTURUM_DURUMU[a.oturum.durum].metin }}</span>
+      <div class="ay-ilerleme aa-ilerleme">
+        <div class="ay-ilerleme__cubuk" [attr.data-tam]="yuklenenYuk() >= toplamYuk()"><span [style.width.%]="yuzde(yuklenenYuk(), toplamYuk())"></span></div>
+        <strong>{{ yuklenenYuk() }} / {{ toplamYuk() }} yük</strong>
+      </div>
+      <span class="yp-bosluk"></span>
+      <button type="button" class="tz-btn" (click)="araclaraDon()"><i class="ri-arrow-left-line" aria-hidden="true"></i>Araçlar</button>
+    </div>
+
+    @if (a.oturum.planDegisti && oturumAcik()) {
+      <div class="yp-uyari"><i class="ri-error-warning-line" aria-hidden="true"></i>
+        <span>Plan yükleme başladıktan sonra değişti. Yükleme Revizyon {{ a.oturum.revizyonNo }} yerleşimiyle sürüyor.</span></div>
+    }
+
+    @if (yazabilir()) {
+      <form class="aa-okut" (submit)="$event.preventDefault(); okut()">
+        <label class="aa-okut__etiket" for="aa-barkod"><i class="ri-barcode-line" aria-hidden="true"></i>Sandık barkodu</label>
+        <input #girdi id="aa-barkod" name="barkod" type="text" class="form-control aa-okut__girdi" inputmode="numeric" autocomplete="off"
+               autocapitalize="off" spellcheck="false" maxlength="64" placeholder="Barkodu okutun"
+               [ngModel]="barkod()" (ngModelChange)="barkod.set($event)" (keydown.enter)="$event.preventDefault(); okut()" />
+        <!-- İşlem sürerken de gönderilebilir: okutma sıraya girer (düğme kapalı olsaydı okuyucunun Enter'ı yutulurdu). -->
+        <button type="submit" class="tz-btn tz-btn--primary aa-okut__dugme" [disabled]="!barkod().trim()">
+          <i [class]="islemde() ? 'ri-loader-4-line tz-spin' : 'ri-check-line'" aria-hidden="true"></i>İşaretle
+        </button>
+        @if (bekleyenOkutma() > 0) {
+          <span class="yp-rozet" data-ton="info">Sırada {{ bekleyenOkutma() }} okutma</span>
+        }
+      </form>
+    } @else if (oturumAcik()) {
+      <p class="yp-ipucu mb-0">Yük işaretlemek için araç yükleme işlem yetkisi gerekir; ilerlemeyi izleyebilirsiniz.</p>
+    } @else {
+      <p class="yp-ipucu mb-0">Oturum kapalı; kayıt salt okunurdur.</p>
+    }
+
+    <!-- Son okutmaların sonucu (en yenisi üstte): art arda okutmada reddedilen yük, sonraki başarılı okutmayla kaybolmaz. -->
+    <div class="aa-bildirimler" role="log" aria-live="polite" aria-label="Son okutmalar">
+      @for (b of bildirimler(); track b.id; let ilk = $first) {
+        <div class="aa-bildirim" [class.aa-bildirim--eski]="!ilk" [attr.data-ton]="b.ton">
+          <i [class]="b.ton === 'success' ? 'ri-checkbox-circle-line' : b.ton === 'info' ? 'ri-information-line' : 'ri-error-warning-line'" aria-hidden="true"></i>
+          <span>{{ b.metin }}</span>
+          <small class="aa-bildirim__saat">{{ b.saat | date: 'HH:mm:ss' }}</small>
+        </div>
+      }
+    </div>
+  </section>
+
+  <div class="aa-duzen">
+    <div class="aa-sol">
+      <section class="trezo-card border-0 bg-white yp-kart mb-3 aa-siradaki" [attr.data-tam]="!siradaki()">
+        @if (siradaki(); as s) {
+          <div class="aa-siradaki__baslik">
+            <strong>Sıradaki</strong> <span class="yp-ipucu">Adım {{ s.adimNo }} / {{ adimlar().length }}</span>
+            @if (s.yukler.length > 1) {
+              <span class="yp-rozet" data-ton="info"><i class="ri-stack-line" aria-hidden="true"></i>İstif grubu: {{ s.yukler.length }} kat birlikte yüklenir</span>
+            }
+          </div>
+          @for (y of s.yukler; track y.konum.yukAnahtari) {
+            <div class="aa-yuk" [class.aa-yuk--yuklendi]="isaretler().has(y.konum.yukAnahtari)">
+              <span class="aa-no" title="Yük listesindeki ve rapordaki numara">{{ y.no }}</span>
+              <div class="aa-yuk__govde">
+                <div><strong class="aa-yuk__kod">{{ y.konum.kod }}</strong> <span class="yp-ipucu">{{ y.konum.projeNo ?? 'Projesiz' }}</span>
+                  @if (isaretler().has(y.konum.yukAnahtari)) { <span class="yp-rozet" data-ton="success">Yüklendi</span> }</div>
+                <div class="aa-yuk__detay">{{ y.konum.kat }}. kat · {{ girisYonu(y.konum.yuklemeYontemi) }} yükleme ·
+                  {{ y.konum.boyMm }} × {{ y.konum.enMm }} × {{ y.konum.yukseklikMm }} mm @if (y.konum.donduruldu) { (90° döndürülür) } ·
+                  {{ y.konum.brutKg | number: '1.0-0' }} kg</div>
+                <div class="aa-yuk__detay">Konum: önden {{ mm(y.konum.xMm) }} mm · soldan {{ mm(y.konum.yMm) }} mm · yerden {{ mm(y.konum.zMm) }} mm</div>
+              </div>
+            </div>
+          }
+        } @else {
+          <div class="aa-tamam"><i class="ri-checkbox-circle-line" aria-hidden="true"></i>
+            <div><strong>Bu aracın bütün yükleri yüklendi.</strong>
+              <small class="d-block yp-ipucu">Diğer araçlara geçmek için "Araçlar"a dönün.</small></div></div>
+        }
+      </section>
+
+      <section class="trezo-card border-0 bg-white yp-kart mb-3">
+        <app-ekipman-3d [veri]="teknikVeri()" [yukler]="yukler3d()" [gorunenler]="gorunenler()" [vurgulular]="vurgulular()"
+                        style="--e3d-yukseklik: 320px" />
+      </section>
+    </div>
+
+    <section class="trezo-card border-0 bg-white yp-kart aa-liste">
+      <div class="tz-section mt-0"><i class="ri-list-ordered" aria-hidden="true"></i>Yükleme adımları</div>
+      <div class="yp-tablo-sarmal">
+        <table class="yp-tablo">
+          <thead><tr><th class="yp-sayi">No</th><th>Yük</th><th>Durum</th>@if (yazabilir()) { <th><span class="visually-hidden">İşlem</span></th> }</tr></thead>
+          <tbody>
+            @for (s of satirlar(); track s.konum.yukAnahtari) {
+              <tr [class.aa-satir--siradaki]="!s.isaret && s.adimNo === a.siradakiAdimNo" [class.aa-satir--yuklendi]="!!s.isaret">
+                <td class="yp-sayi"><strong>{{ s.no }}</strong></td>
+                <td class="yp-sarmala"><strong>{{ s.konum.kod }}</strong>
+                  <small class="yp-ipucu d-block">Adım {{ s.adimNo }}@if (s.konum.kat > 1) { · {{ s.konum.kat }}. kat } · {{ s.konum.projeNo ?? 'Projesiz' }}</small></td>
+                <td class="yp-sarmala">
+                  @if (s.isaret; as i) {
+                    <span class="yp-rozet" data-ton="success">Yüklendi</span>
+                    @if (i.siraDisi) { <span class="yp-rozet" data-ton="warning">Sıra dışı</span> }
+                    @if (i.kaynak === Kaynak.Elle) { <span class="yp-rozet" data-ton="muted">Elle</span> }
+                    <small class="yp-ipucu d-block">{{ i.yukleyen ?? '—' }} · {{ i.yuklemeTarihi | date: 'dd.MM HH:mm' }}</small>
+                  } @else {
+                    <span class="yp-rozet" data-ton="muted">Bekliyor</span>
+                  }
+                </td>
+                @if (yazabilir()) {
+                  <td class="aa-islem">
+                    @if (s.isaret) {
+                      <button type="button" class="tz-btn tz-btn--sm tz-btn--danger-hover" [disabled]="islemde()" (click)="geriAl(s)">
+                        <i class="ri-arrow-go-back-line" aria-hidden="true"></i>Geri al</button>
+                    } @else {
+                      <button type="button" class="tz-btn tz-btn--sm" [disabled]="islemde()" (click)="elleIsaretle(s)"
+                              title="Barkodu olmayan ya da okunamayan yük için">
+                        <i class="ri-check-double-line" aria-hidden="true"></i>Elle işaretle</button>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+} @else if (yukleniyor()) {
+  <div class="yp-yukleniyor"><span class="spinner-border spinner-border-sm"></span> Yükleniyor…</div>
+} @else {
+  <div class="yp-bos"><i class="ri-error-warning-line" aria-hidden="true"></i>Yükleme oturumu ya da araç bulunamadı.
+    <div class="mt-3"><button type="button" class="tz-btn" (click)="yukle()"><i class="ri-refresh-line" aria-hidden="true"></i>Yeniden dene</button></div></div>
+}

@@ -1,0 +1,340 @@
+<div class="tz-modal-backdrop" (click)="kapat()"></div>
+<div #pencere class="tz-modal tz-modal--xl ed-pencere" role="dialog" aria-modal="true" aria-labelledby="ekipman-duzenle-baslik"
+     tabindex="-1" (keydown.escape)="kapat()">
+  <div class="tz-modal__header">
+    <span class="tz-modal__icon" aria-hidden="true"><i [class]="yeni() ? 'ri-add-line' : 'ri-edit-line'"></i></span>
+    <div class="tz-modal__title">
+      @if (detay(); as d) {
+        <h5 id="ekipman-duzenle-baslik">{{ d.kod }} · Düzenle</h5>
+        <p>Revizyon {{ d.revizyon.revizyonNo }} üzerinden düzenleniyor. Boş bırakılan değer "bilinmiyor" sayılır.</p>
+      } @else {
+        <h5 id="ekipman-duzenle-baslik">Yeni ekipman</h5>
+        <p>Excel şablonundaki bütün alanlar buradan girilir. Boş bırakılan değer "bilinmiyor" sayılır.</p>
+      }
+    </div>
+    <button type="button" class="tz-modal__close" (click)="kapat()" aria-label="Kapat"><i class="ri-close-line"></i></button>
+  </div>
+
+  <div #govde class="tz-modal__body">
+    @let f = form();
+
+    @if (engel(); as neden) {
+      <div class="yp-uyari ed-engel" role="alert">
+        <i class="ri-lock-line" aria-hidden="true"></i>
+        <div>
+          <strong>Bu ekipmanın teknik verisi ekrandan düzenlenemiyor; Excel ile güncelleyin.</strong>
+          <span class="d-block">{{ neden }}</span>
+        </div>
+      </div>
+    }
+
+    @if (hata(); as h) {
+      <div class="ed-hata" role="alert">
+        <i class="ri-close-circle-line" aria-hidden="true"></i>
+        <div>
+          <strong>{{ h }}</strong>
+          @if (sorunlar().length) {
+            <ul>@for (s of sorunlar(); track $index) { <li>{{ s }}</li> }</ul>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Kılavuz yeni sekmede açılır: form kapanmaz, girilen değerler kaybolmaz. -->
+    <a class="ed-kilavuz" data-kilavuz [routerLink]="KILAVUZ_YOLU" target="_blank" rel="noopener">
+      <i class="ri-book-open-line" aria-hidden="true"></i>Alanlar ne demek? Kılavuzu aç
+      <i class="ri-external-link-line" aria-hidden="true"></i><span class="visually-hidden">(yeni sekmede açılır)</span>
+    </a>
+
+    <div class="tz-note ed-bilgi">
+      <i class="ri-information-line" aria-hidden="true"></i>
+      <span>Teknik veri ya da kaynak değişince kayıt yeni, doğrulanmamış revizyon oluşturur ve yeniden doğrulama gerekir
+        (yalnız ad değişirse revizyon açılmaz). Önceden hesaplanmış simülasyonlar eski revizyonla kalır.</span>
+    </div>
+
+    <div class="ed-ust">
+      <fieldset [disabled]="saltOkunur()">
+        <div class="tz-section ed-ilk-bolum"><i class="ri-truck-line" aria-hidden="true"></i>Genel<app-kilavuz-yardimi [bolum]="BOLUM.genel" /></div>
+        <div class="tz-form">
+          <div class="tz-field-grid tz-field-grid--3">
+            <label class="tz-field">
+              <span>Kod <b>*</b></span>
+              <input type="text" class="form-control" [maxlength]="SINIR.kod" [readOnly]="!yeni()"
+                     [ngModel]="f.kod" (ngModelChange)="alan({ kod: $event })" />
+              <small>{{ yeni() ? 'Benzersiz kod; büyük harfe çevrilir.' : 'Kod, tip, üretici ve model değiştirilemez.' }}</small>
+            </label>
+            <label class="tz-field ed-genis">
+              <span>Ad <b>*</b></span>
+              <input type="text" class="form-control" [maxlength]="SINIR.ad" [ngModel]="f.ad" (ngModelChange)="alan({ ad: $event })" />
+            </label>
+          </div>
+          <div class="tz-field-grid">
+            @if (detay(); as d) {
+              <label class="tz-field">
+                <span>Aile</span>
+                <input type="text" class="form-control" readonly [value]="d.aileAdi" />
+              </label>
+              <label class="tz-field">
+                <span>Tip</span>
+                <input type="text" class="form-control" readonly [value]="d.tipAdi" />
+              </label>
+            } @else {
+              <label class="tz-field">
+                <span>Aile <b>*</b></span>
+                <select class="form-select" [ngModel]="f.aileId" (ngModelChange)="aileSec($event)">
+                  <option [ngValue]="null">Aile seçin</option>
+                  @for (a of aileler(); track a.id) { <option [ngValue]="a.id">{{ a.ad }}</option> }
+                </select>
+              </label>
+              <label class="tz-field">
+                <span>Tip <b>*</b></span>
+                <select class="form-select" [disabled]="f.aileId === null" [ngModel]="f.tipId" (ngModelChange)="alan({ tipId: $event })">
+                  <option [ngValue]="null">{{ f.aileId === null ? 'Önce aile seçin' : 'Tip seçin' }}</option>
+                  @for (t of tipler(); track t.id) { <option [ngValue]="t.id">{{ t.ad }}@if (!t.aktif) { (pasif) }</option> }
+                </select>
+              </label>
+            }
+          </div>
+          <div class="tz-field-grid">
+            <label class="tz-field">
+              <span>Üretici <b>*</b></span>
+              <input type="text" class="form-control" [maxlength]="SINIR.uretici" [readOnly]="!yeni()"
+                     [ngModel]="f.uretici" (ngModelChange)="alan({ uretici: $event })" />
+            </label>
+            <label class="tz-field">
+              <span>Model <b>*</b></span>
+              <input type="text" class="form-control" [maxlength]="SINIR.model" [readOnly]="!yeni()"
+                     [ngModel]="f.modelAdi" (ngModelChange)="alan({ modelAdi: $event })" />
+            </label>
+          </div>
+        </div>
+
+        <div class="tz-section"><i class="ri-file-text-line" aria-hidden="true"></i>Kaynak<app-kilavuz-yardimi [bolum]="BOLUM.kaynak" /></div>
+        <div class="tz-form">
+          <div class="tz-field-grid">
+            <label class="tz-field">
+              <span>Kaynak türü <b>*</b></span>
+              <select class="form-select" [ngModel]="f.kaynakTuru" (ngModelChange)="alan({ kaynakTuru: $event })">
+                <option [ngValue]="null">Kaynak türü seçin</option>
+                @for (k of KAYNAK_TURLERI; track k.deger) { <option [ngValue]="k.deger">{{ k.ad }}</option> }
+              </select>
+            </label>
+            <label class="tz-field">
+              <span>Kaynak tarihi</span>
+              <input type="date" class="form-control" [ngModel]="f.kaynakTarihi" (ngModelChange)="alan({ kaynakTarihi: $event })" />
+            </label>
+          </div>
+          <label class="tz-field">
+            <span>Kaynak açıklaması</span>
+            <input type="text" class="form-control" placeholder="Belge adı, no, sayfa" [maxlength]="SINIR.kaynakAciklama"
+                   [ngModel]="f.kaynakAciklama" (ngModelChange)="alan({ kaynakAciklama: $event })" />
+          </label>
+          <label class="tz-field">
+            <span>Açıklama</span>
+            <textarea class="form-control" rows="2" [maxlength]="SINIR.aciklama" [ngModel]="f.aciklama" (ngModelChange)="alan({ aciklama: $event })"></textarea>
+          </label>
+        </div>
+      </fieldset>
+
+      <div class="ed-onizleme">
+        <div class="tz-section ed-ilk-bolum"><i class="ri-box-3-line" aria-hidden="true"></i>3B önizleme</div>
+        <app-ekipman-3d [veri]="onizleme()" />
+        <p class="yp-ipucu mt-2 mb-0">Girilen değerlerle güncellenir; zorunlu alanı eksik satır çizilmez.</p>
+      </div>
+    </div>
+
+    <fieldset [disabled]="saltOkunur()">
+    <div class="tz-section"><i class="ri-ruler-line" aria-hidden="true"></i>Ölçü ve ağırlık<app-kilavuz-yardimi [bolum]="BOLUM.olcuAgirlik" /><small>tamsayı · boş alan "bilinmiyor"</small></div>
+    <div class="tz-form">
+      <div class="ed-izgara">
+        <label class="tz-field">
+          <span>Dış uzunluk</span>
+          <span class="tz-input-unit"><input type="number" step="1" inputmode="numeric" class="form-control" [ngModel]="f.disUzunlukMm" (ngModelChange)="alan({ disUzunlukMm: $event })" /><em>mm</em></span>
+        </label>
+        <label class="tz-field">
+          <span>Dış genişlik</span>
+          <span class="tz-input-unit"><input type="number" step="1" inputmode="numeric" class="form-control" [ngModel]="f.disGenislikMm" (ngModelChange)="alan({ disGenislikMm: $event })" /><em>mm</em></span>
+        </label>
+        <label class="tz-field">
+          <span>Dış yükseklik</span>
+          <span class="tz-input-unit"><input type="number" step="1" inputmode="numeric" class="form-control" [ngModel]="f.disYukseklikMm" (ngModelChange)="alan({ disYukseklikMm: $event })" /><em>mm</em></span>
+        </label>
+        <label class="tz-field">
+          <span>Uzama en fazla</span>
+          <span class="tz-input-unit"><input type="number" step="1" inputmode="numeric" class="form-control" [ngModel]="f.uzamaEnFazlaMm" (ngModelChange)="alan({ uzamaEnFazlaMm: $event })" /><em>mm</em></span>
+        </label>
+        <label class="tz-field">
+          <span>Dara</span>
+          <span class="tz-input-unit"><input type="number" step="1" inputmode="numeric" class="form-control" [ngModel]="f.daraKg" (ngModelChange)="alan({ daraKg: $event })" /><em>kg</em></span>
+        </label>
+        <label class="tz-field">
+          <span>Teknik kapasite</span>
+          <span class="tz-input-unit"><input type="number" step="1" inputmode="numeric" class="form-control" [ngModel]="f.teknikKapasiteKg" (ngModelChange)="alan({ teknikKapasiteKg: $event })" /><em>kg</em></span>
+        </label>
+        <label class="tz-field">
+          <span>Azami brüt</span>
+          <span class="tz-input-unit"><input type="number" step="1" inputmode="numeric" class="form-control" [ngModel]="f.azamiBrutKg" (ngModelChange)="alan({ azamiBrutKg: $event })" /><em>kg</em></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="tz-section"><i class="ri-links-line" aria-hidden="true"></i>King pin<app-kilavuz-yardimi [bolum]="BOLUM.kingPin" /><small>ikisi de boşsa king pin yok</small></div>
+    <div class="ed-izgara">
+      <label class="tz-field">
+        <span>X (ön uçtan)</span>
+        <span class="tz-input-unit"><input type="number" step="1" inputmode="numeric" class="form-control" [ngModel]="f.kingPinXMm" (ngModelChange)="alan({ kingPinXMm: $event })" /><em>mm</em></span>
+      </label>
+      <label class="tz-field">
+        <span>Azami bağlantı yükü</span>
+        <span class="tz-input-unit"><input type="number" step="1" inputmode="numeric" class="form-control" [ngModel]="f.azamiBaglantiYukuKg" (ngModelChange)="alan({ azamiBaglantiYukuKg: $event })" /><em>kg</em></span>
+      </label>
+    </div>
+
+    <div class="ed-bolum">
+      <div class="tz-section"><i class="ri-layout-bottom-line" aria-hidden="true"></i>Yükleme yüzeyleri<app-kilavuz-yardimi [bolum]="BOLUM.yuzeyler" /><small>mm · kg</small></div>
+      <button type="button" class="tz-btn tz-btn--sm" data-ekle="yuzeyler" (click)="satirEkle('yuzeyler')"><i class="ri-add-line tz-ico-primary" aria-hidden="true"></i>Yüzey ekle</button>
+    </div>
+    <div class="yp-tablo-sarmal">
+      <table class="yp-tablo ed-tablo" data-liste="yuzeyler">
+        <thead><tr><th>Kod <b>*</b></th><th>Ad</th><th>Başlangıç X <b>*</b></th><th>Uzunluk <b>*</b></th><th>Genişlik <b>*</b></th><th>Yerden yük. <b>*</b></th>
+          <th>Kul. (iç) yükseklik</th><th>Taban kg/m²</th><th>Noktasal kg</th><th class="ed-islem"><span class="visually-hidden">İşlem</span></th></tr></thead>
+        <tbody>
+          @for (y of f.yuzeyler; track y.satirId; let i = $index) {
+            <tr>
+              <td><input type="text" class="form-control form-control-sm ed-kod" aria-label="Kod" placeholder="ANA" [maxlength]="SINIR.kod" [ngModel]="y.kod" (ngModelChange)="satir('yuzeyler', y.satirId, { kod: $event })" /></td>
+              <td><input type="text" class="form-control form-control-sm ed-metin" aria-label="Ad" [maxlength]="SINIR.ad" [ngModel]="y.ad" (ngModelChange)="satir('yuzeyler', y.satirId, { ad: $event })" /></td>
+              <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="Başlangıç X (mm)" [ngModel]="y.baslangicXMm" (ngModelChange)="satir('yuzeyler', y.satirId, { baslangicXMm: $event })" /></td>
+              <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="Uzunluk (mm)" [ngModel]="y.uzunlukMm" (ngModelChange)="satir('yuzeyler', y.satirId, { uzunlukMm: $event })" /></td>
+              <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="Genişlik (mm)" [ngModel]="y.genislikMm" (ngModelChange)="satir('yuzeyler', y.satirId, { genislikMm: $event })" /></td>
+              <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="Yerden yükseklik (mm)" [ngModel]="y.yerdenYukseklikMm" (ngModelChange)="satir('yuzeyler', y.satirId, { yerdenYukseklikMm: $event })" /></td>
+              <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="Kullanılabilir (iç) yükseklik (mm)" [ngModel]="y.kullanilabilirYukseklikMm" (ngModelChange)="satir('yuzeyler', y.satirId, { kullanilabilirYukseklikMm: $event })" /></td>
+              <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="Taban yükü (kg/m²)" [ngModel]="y.tabanYukuKgM2" (ngModelChange)="satir('yuzeyler', y.satirId, { tabanYukuKgM2: $event })" /></td>
+              <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="Noktasal yük (kg)" [ngModel]="y.noktasalYukKg" (ngModelChange)="satir('yuzeyler', y.satirId, { noktasalYukKg: $event })" /></td>
+              <td class="ed-islem"><button type="button" class="tz-btn tz-btn--icon tz-btn--danger-hover" [attr.aria-label]="'Yükleme yüzeyi ' + (i + 1) + ' sil'" title="Sil" (click)="satirSil('yuzeyler', y.satirId)"><i class="ri-delete-bin-line" aria-hidden="true"></i></button></td>
+            </tr>
+          } @empty { <tr><td colspan="10" class="yp-orta yp-ipucu">Tanımlı yüzey yok; en az bir yükleme yüzeyi gerekir.</td></tr> }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="ed-bolum">
+      <div class="tz-section"><i class="ri-door-open-line" aria-hidden="true"></i>Açıklıklar<app-kilavuz-yardimi [bolum]="BOLUM.acikliklar" /><small>mm</small></div>
+      <button type="button" class="tz-btn tz-btn--sm" data-ekle="acikliklar" (click)="satirEkle('acikliklar')"><i class="ri-add-line tz-ico-primary" aria-hidden="true"></i>Açıklık ekle</button>
+    </div>
+    <div class="yp-tablo-sarmal">
+      <table class="yp-tablo ed-tablo" data-liste="acikliklar">
+        <thead><tr><th>Taraf <b>*</b></th><th>Başlangıç X</th><th>Uzunluk</th><th>Genişlik</th><th>Yükseklik</th><th class="ed-islem"><span class="visually-hidden">İşlem</span></th></tr></thead>
+        <tbody>
+          @for (a of f.acikliklar; track a.satirId; let i = $index) {
+            <tr>
+              <td>
+                <select class="form-select form-select-sm ed-secim" aria-label="Taraf" [ngModel]="a.taraf" (ngModelChange)="satir('acikliklar', a.satirId, { taraf: $event })">
+                  <option [ngValue]="null">Seçin</option>
+                  @for (t of TARAFLAR; track t.deger) { <option [ngValue]="t.deger">{{ t.ad }}</option> }
+                </select>
+              </td>
+              <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="Başlangıç X (mm)" [ngModel]="a.baslangicXMm" (ngModelChange)="satir('acikliklar', a.satirId, { baslangicXMm: $event })" /></td>
+              <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="Uzunluk (mm)" [ngModel]="a.uzunlukMm" (ngModelChange)="satir('acikliklar', a.satirId, { uzunlukMm: $event })" /></td>
+              <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="Genişlik (mm)" [ngModel]="a.genislikMm" (ngModelChange)="satir('acikliklar', a.satirId, { genislikMm: $event })" /></td>
+              <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="Yükseklik (mm)" [ngModel]="a.yukseklikMm" (ngModelChange)="satir('acikliklar', a.satirId, { yukseklikMm: $event })" /></td>
+              <td class="ed-islem"><button type="button" class="tz-btn tz-btn--icon tz-btn--danger-hover" [attr.aria-label]="'Açıklık ' + (i + 1) + ' sil'" title="Sil" (click)="satirSil('acikliklar', a.satirId)"><i class="ri-delete-bin-line" aria-hidden="true"></i></button></td>
+            </tr>
+          } @empty { <tr><td colspan="6" class="yp-orta yp-ipucu">Tanımlı açıklık yok.</td></tr> }
+        </tbody>
+      </table>
+    </div>
+    <p class="yp-ipucu mt-2 mb-0">Arka ve ön açıklıkta genişlik ile yükseklik; sol ve sağda başlangıç X, uzunluk ve yükseklik; üstte başlangıç X, uzunluk ve genişlik girilir.</p>
+
+    <div class="ed-bolum">
+      <div class="tz-section"><i class="ri-error-warning-line" aria-hidden="true"></i>Engeller<app-kilavuz-yardimi [bolum]="BOLUM.engeller" /><small>mm · Y soldan, Z yerden</small></div>
+      <button type="button" class="tz-btn tz-btn--sm" data-ekle="engeller" (click)="satirEkle('engeller')"><i class="ri-add-line tz-ico-primary" aria-hidden="true"></i>Engel ekle</button>
+    </div>
+    <div class="yp-tablo-sarmal">
+      <table class="yp-tablo ed-tablo" data-liste="engeller">
+        <thead><tr><th>Tür <b>*</b></th><th>X <b>*</b></th><th>Y <b>*</b></th><th>Z <b>*</b></th><th>Uzunluk <b>*</b></th><th>Genişlik <b>*</b></th><th>Yükseklik <b>*</b></th>
+          <th>Sökülebilir</th><th>Açıklama</th><th class="ed-islem"><span class="visually-hidden">İşlem</span></th></tr></thead>
+        <tbody>
+          @for (e of f.engeller; track e.satirId; let i = $index) {
+            <tr>
+              <td>
+                <select class="form-select form-select-sm ed-secim" aria-label="Tür" [ngModel]="e.tur" (ngModelChange)="satir('engeller', e.satirId, { tur: $event })">
+                  <option [ngValue]="null">Seçin</option>
+                  @for (t of ENGEL_TURLERI; track t.deger) { <option [ngValue]="t.deger">{{ t.ad }}</option> }
+                </select>
+              </td>
+              <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="X (mm)" [ngModel]="e.xMm" (ngModelChange)="satir('engeller', e.satirId, { xMm: $event })" /></td>
+              <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="Y (mm)" [ngModel]="e.yMm" (ngModelChange)="satir('engeller', e.satirId, { yMm: $event })" /></td>
+              <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="Z (mm)" [ngModel]="e.zMm" (ngModelChange)="satir('engeller', e.satirId, { zMm: $event })" /></td>
+              <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="Uzunluk (mm)" [ngModel]="e.uzunlukMm" (ngModelChange)="satir('engeller', e.satirId, { uzunlukMm: $event })" /></td>
+              <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="Genişlik (mm)" [ngModel]="e.genislikMm" (ngModelChange)="satir('engeller', e.satirId, { genislikMm: $event })" /></td>
+              <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="Yükseklik (mm)" [ngModel]="e.yukseklikMm" (ngModelChange)="satir('engeller', e.satirId, { yukseklikMm: $event })" /></td>
+              <td class="yp-orta"><input type="checkbox" class="form-check-input" aria-label="Sökülebilir" [ngModel]="e.sokulebilir" (ngModelChange)="satir('engeller', e.satirId, { sokulebilir: $event })" /></td>
+              <td><input type="text" class="form-control form-control-sm ed-metin" aria-label="Açıklama" [maxlength]="SINIR.aciklama" [ngModel]="e.aciklama" (ngModelChange)="satir('engeller', e.satirId, { aciklama: $event })" /></td>
+              <td class="ed-islem"><button type="button" class="tz-btn tz-btn--icon tz-btn--danger-hover" [attr.aria-label]="'Engel ' + (i + 1) + ' sil'" title="Sil" (click)="satirSil('engeller', e.satirId)"><i class="ri-delete-bin-line" aria-hidden="true"></i></button></td>
+            </tr>
+          } @empty { <tr><td colspan="10" class="yp-orta yp-ipucu">Tanımlı engel yok.</td></tr> }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="ed-ikili">
+      <div>
+        <div class="ed-bolum">
+          <div class="tz-section"><i class="ri-steering-2-line" aria-hidden="true"></i>Dingiller<app-kilavuz-yardimi [bolum]="BOLUM.dingiller" /><small>mm · kg</small></div>
+          <button type="button" class="tz-btn tz-btn--sm" data-ekle="dingiller" (click)="satirEkle('dingiller')"><i class="ri-add-line tz-ico-primary" aria-hidden="true"></i>Dingil ekle</button>
+        </div>
+        <div class="yp-tablo-sarmal">
+          <table class="yp-tablo ed-tablo" data-liste="dingiller">
+            <thead><tr><th>X <b>*</b></th><th>Tür <b>*</b></th><th>Grup no <b>*</b></th><th>Kapasite kg</th><th class="ed-islem"><span class="visually-hidden">İşlem</span></th></tr></thead>
+            <tbody>
+              @for (d of f.dingiller; track d.satirId; let i = $index) {
+                <tr>
+                  <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="X (mm)" [ngModel]="d.xMm" (ngModelChange)="satir('dingiller', d.satirId, { xMm: $event })" /></td>
+                  <td>
+                    <select class="form-select form-select-sm ed-secim" aria-label="Tür" [ngModel]="d.tur" (ngModelChange)="satir('dingiller', d.satirId, { tur: $event })">
+                      <option [ngValue]="null">Seçin</option>
+                      @for (t of DINGIL_TURLERI; track t.deger) { <option [ngValue]="t.deger">{{ t.ad }}</option> }
+                    </select>
+                  </td>
+                  <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="Grup no" [ngModel]="d.grupNo" (ngModelChange)="satir('dingiller', d.satirId, { grupNo: $event })" /></td>
+                  <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="Kapasite (kg)" [ngModel]="d.kapasiteKg" (ngModelChange)="satir('dingiller', d.satirId, { kapasiteKg: $event })" /></td>
+                  <td class="ed-islem"><button type="button" class="tz-btn tz-btn--icon tz-btn--danger-hover" [attr.aria-label]="'Dingil ' + (i + 1) + ' sil'" title="Sil" (click)="satirSil('dingiller', d.satirId)"><i class="ri-delete-bin-line" aria-hidden="true"></i></button></td>
+                </tr>
+              } @empty { <tr><td colspan="5" class="yp-orta yp-ipucu">Tanımlı dingil yok.</td></tr> }
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="ed-bolum">
+          <div class="tz-section"><i class="ri-anchor-line" aria-hidden="true"></i>Bağlama noktaları<app-kilavuz-yardimi [bolum]="BOLUM.baglamaNoktalari" /><small>mm · daN</small></div>
+          <button type="button" class="tz-btn tz-btn--sm" data-ekle="baglamaNoktalari" (click)="satirEkle('baglamaNoktalari')"><i class="ri-add-line tz-ico-primary" aria-hidden="true"></i>Nokta ekle</button>
+        </div>
+        <div class="yp-tablo-sarmal">
+          <table class="yp-tablo ed-tablo" data-liste="baglamaNoktalari">
+            <thead><tr><th>X <b>*</b></th><th>Y <b>*</b></th><th>Z <b>*</b></th><th>Kapasite daN</th><th class="ed-islem"><span class="visually-hidden">İşlem</span></th></tr></thead>
+            <tbody>
+              @for (b of f.baglamaNoktalari; track b.satirId; let i = $index) {
+                <tr>
+                  <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="X (mm)" [ngModel]="b.xMm" (ngModelChange)="satir('baglamaNoktalari', b.satirId, { xMm: $event })" /></td>
+                  <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="Y (mm)" [ngModel]="b.yMm" (ngModelChange)="satir('baglamaNoktalari', b.satirId, { yMm: $event })" /></td>
+                  <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="Z (mm)" [ngModel]="b.zMm" (ngModelChange)="satir('baglamaNoktalari', b.satirId, { zMm: $event })" /></td>
+                  <td><input type="number" step="1" inputmode="numeric" class="form-control form-control-sm ed-sayi" aria-label="Kapasite (daN)" [ngModel]="b.kapasiteDaN" (ngModelChange)="satir('baglamaNoktalari', b.satirId, { kapasiteDaN: $event })" /></td>
+                  <td class="ed-islem"><button type="button" class="tz-btn tz-btn--icon tz-btn--danger-hover" [attr.aria-label]="'Bağlama noktası ' + (i + 1) + ' sil'" title="Sil" (click)="satirSil('baglamaNoktalari', b.satirId)"><i class="ri-delete-bin-line" aria-hidden="true"></i></button></td>
+                </tr>
+              } @empty { <tr><td colspan="5" class="yp-orta yp-ipucu">Tanımlı bağlama noktası yok.</td></tr> }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    </fieldset>
+  </div>
+
+  <div class="tz-modal__footer">
+    <button type="button" class="tz-btn" [disabled]="kaydediliyor()" (click)="kapat()">Vazgeç</button>
+    <button type="button" class="tz-btn tz-btn--primary" data-kaydet [disabled]="kaydediliyor() || saltOkunur()" (click)="kaydet()">
+      @if (kaydediliyor()) { <span class="spinner-border spinner-border-sm"></span> Kaydediliyor… } @else { <i class="ri-save-line" aria-hidden="true"></i> Kaydet }
+    </button>
+  </div>
+</div>

@@ -1,0 +1,181 @@
+// Sonuç başlığı ortak bölüm başlığıdır (yp-bolum-baslik); rozet başlıkla aynı satırda durur.
+.py-baslik h3 .yp-rozet { font-size: 11.5px; font-weight: 600; letter-spacing: 0; }
+
+.py-tipler {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.py-tip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--borderColor);
+  border-radius: 10px;
+  background: #f8fafc;
+  font-size: 13px;
+
+  small { color: var(--bodyColor); }
+  em { color: #9a3412; font-size: 11.5px; font-style: normal; font-weight: 600; }
+
+  &--zorunlu {
+    border-color: #fed7aa;
+    background: #fff7ed;
+  }
+}
+
+.py-uyarilar {
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+  font-size: 12.5px;
+
+  li {
+    display: flex;
+    gap: 6px;
+    padding: 4px 0;
+    color: #92400e;
+  }
+}
+
+.py-duzen {
+  display: grid;
+  grid-template-columns: minmax(220px, 290px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 16px;
+}
+
+.py-araclar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 760px;
+  overflow-y: auto;
+}
+
+.py-arac {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--borderColor);
+  border-radius: 12px;
+  background: #fff;
+  text-align: left;
+  transition: border-color .15s ease, background .15s ease;
+
+  &:hover:not(.active) { border-color: color-mix(in srgb, var(--yp-ton) 35%, var(--borderColor)); }
+  &:focus-visible { outline: 2px solid var(--yp-ton); outline-offset: 2px; }
+
+  &.active {
+    border-color: var(--yp-ton);
+    background: color-mix(in srgb, var(--yp-ton) 6%, #fff);
+  }
+
+  &__no {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--yp-ton);
+    color: #fff;
+    font-weight: 700;
+  }
+
+  &__bilgi {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 13px;
+
+    small { color: var(--bodyColor); font-size: 11.5px; }
+  }
+
+  &__proje { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
+.py-detay { min-width: 0; }
+
+.py-secili {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  font-size: 12.5px;
+}
+
+.py-olculer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-top: 12px;
+  font-size: 12.5px;
+}
+
+.py-tasma { color: #b45309; font-weight: 600; }
+
+.py-kontroller {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12.5px;
+
+  li {
+    display: grid;
+    grid-template-columns: 130px 170px minmax(0, 1fr);
+    gap: 10px;
+    align-items: baseline;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--borderColor);
+  }
+}
+
+.py-sira { max-height: 320px; }
+
+.py-renk {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 3px;
+  vertical-align: -1px;
+}
+
+@media (max-width: 991.98px) {
+  .py-duzen { grid-template-columns: minmax(0, 1fr); }
+  .py-araclar { flex-direction: row; overflow-x: auto; max-height: none; }
+  .py-arac { min-width: 240px; }
+  .py-kontroller li { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+}
+
+// Adım adım yükleme görünümü: aç/kapat satırı ve sıra tablosunda geçerli / henüz yüklenmemiş adımlar.
+.py-oynatma {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-bottom: 8px;
+}
+
+.py-sira {
+  tbody tr.py-sira--adim td {
+    background: color-mix(in srgb, var(--yp-ton) 12%, #fff);
+    font-weight: 600;
+  }
+
+  // Adımdaki istif satırlarından hangisinin seçili olduğu görünsün (adım zemini seçili zeminini örter).
+  tbody tr.py-sira--adim.yp-satir--secili td:first-child { box-shadow: inset 3px 0 0 var(--yp-ton); }
+
+  tbody tr.py-sira--bekleyen td { color: #94a3b8; }
+}

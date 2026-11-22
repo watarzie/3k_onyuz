@@ -1,0 +1,540 @@
+<div class="page-title-area mb-4">
+  <div class="sayfa-baslik">
+    <span class="sayfa-ikon" style="--ton: #0e7490"><i class="ri-ship-2-line" aria-hidden="true"></i></span>
+    <div>
+      <h2 class="fw-bold mb-1">Yükleme Simülasyonu</h2>
+      <app-breadcrumb [items]="breadcrumb" />
+    </div>
+  </div>
+</div>
+
+@if (yukleniyor()) {
+  <div class="yp-yukleniyor"><span class="spinner-border spinner-border-sm"></span> Yükleniyor…</div>
+} @else {
+  @if (plan()?.surenYukleme; as y) {
+    <!-- Sahada yükleme sürerken yeni hesap sahaya yansımaz: oturum başladığı yerleşimle sürer. -->
+    <div class="yp-uyari"><i class="ri-barcode-box-line" aria-hidden="true"></i>
+      <span><strong>Sahada yükleme sürüyor</strong> ({{ y.yuklenenYuk }} / {{ y.toplamYuk }} yük yüklendi).
+        Yeniden hesaplamak sahadaki yüklemeyi değiştirmez; yeni yerleşime geçmek için Araç Yükleme ekranında oturum kapatılıp yeniden başlatılmalıdır.</span></div>
+  }
+
+  <!-- 1. Projeler: seçilenler üstte etiket, altında aranabilir ve sunucuda sayfalı proje tablosu. -->
+  <section class="trezo-card border-0 bg-white yp-kart mb-4" aria-labelledby="ys-projeler-baslik">
+    <header class="yp-bolum-baslik">
+      <span class="yp-bolum-baslik__ikon" aria-hidden="true"><i class="ri-folder-2-line"></i></span>
+      <div class="yp-bolum-baslik__metin">
+        <span class="yp-bolum-baslik__adim">Adım 1</span>
+        <h3 id="ys-projeler-baslik">Projeler
+          <span class="yp-rozet" [attr.data-ton]="projeler().length ? 'primary' : 'muted'">{{ projeler().length }} proje seçili</span>
+        </h3>
+        <p>Simülasyona girecek projeleri seçin; projelerin bütün sandıkları (sevk edilmişler dahil) yük listesine gelir.</p>
+      </div>
+    </header>
+
+    @if (projeler().length) {
+      <div class="yp-projeler" role="list" aria-label="Seçili projeler">
+        @for (pr of projeler(); track pr.projeId ?? pr.projeNo) {
+          <span class="yp-cip" role="listitem">
+            <strong>{{ pr.projeNo }}</strong>
+            @if (pr.musteri) { <small>{{ pr.musteri }}</small> }
+            @if (pr.projeId) {
+              <button type="button" class="yp-cip__sil" [disabled]="mesgul()" [attr.aria-label]="pr.projeNo + ' projesini çıkar'" (click)="projeCikar(pr)"><i class="ri-close-line" aria-hidden="true"></i></button>
+            }
+          </span>
+        }
+      </div>
+    }
+
+    <div class="yp-arac-cubugu ys-cubuk">
+      <div class="tz-input-icon yp-arama">
+        <i class="ri-search-line" aria-hidden="true"></i>
+        <input type="search" class="form-control" placeholder="Proje no veya müşteri ara" aria-label="Proje ara"
+               [ngModel]="adayArama()" (ngModelChange)="adayAramaDegisti($event)" />
+      </div>
+    </div>
+    @if (adaylar(); as a) {
+      <div class="yp-tablo-sarmal ys-adaylar">
+        <table class="yp-tablo">
+          <thead>
+            <tr>
+              <th class="yp-sec"><span class="visually-hidden">Seç</span></th>
+              <th>Proje</th>
+              <th>Tip</th>
+              <th class="yp-sayi">Sandık</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of adaySatirlari(); track c.aday.projeId) {
+              <tr class="yp-tiklanir" [class.yp-satir--secili]="c.secili" (click)="projeDegistir(c.aday)">
+                <td class="yp-sec">
+                  <input type="checkbox" class="form-check-input" [checked]="c.secili" [disabled]="mesgul()"
+                         [attr.aria-label]="c.aday.projeNo + ' seç'" (click)="$event.stopPropagation()" (change)="projeDegistir(c.aday)" />
+                </td>
+                <td class="yp-sarmala"><strong>{{ c.aday.projeNo }}</strong> <small class="yp-ipucu ms-1">{{ c.aday.musteri }}</small></td>
+                <td>{{ c.aday.projeTipiAdi }}</td>
+                <td class="yp-sayi">{{ c.aday.planaGelecekSandikSayisi }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="4" class="yp-orta yp-ipucu">Uyan proje yok.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-server-pager [pageNumber]="a.pageNumber" [pageSize]="a.pageSize" [totalCount]="a.totalCount"
+        [totalPages]="a.totalPages" [hasPreviousPage]="a.hasPreviousPage" [hasNextPage]="a.hasNextPage"
+        [pageSizeOptions]="[10]" (pageChange)="adaySayfaDegisti($event)" />
+    } @else if (adayYukleniyor()) {
+      <div class="yp-yukleniyor"><span class="spinner-border spinner-border-sm"></span></div>
+    }
+  </section>
+
+  <!-- 2. Araç ve yükleme: taşıma ailesi/tipi, yükler arası boşluk ve yükleme yeri. -->
+  <section class="trezo-card border-0 bg-white yp-kart mb-4" aria-labelledby="ys-arac-baslik">
+    <header class="yp-bolum-baslik">
+      <span class="yp-bolum-baslik__ikon" aria-hidden="true"><i class="ri-truck-line"></i></span>
+      <div class="yp-bolum-baslik__metin">
+        <span class="yp-bolum-baslik__adim">Adım 2</span>
+        <h3 id="ys-arac-baslik">Araç ve yükleme</h3>
+        <p>Taşıma ailesi ve araç tipi, yükler arası boşluk ve yükleme yeri.</p>
+      </div>
+    </header>
+    <app-plan-secimleri [tanimlar]="tanimlar()" [aileId]="tasimaAilesiId()" [ayarlar]="ayarlar()" [kilitli]="kilitli()"
+                        (aileDegisti)="aileDegistir($event)" (ayarlarDegisti)="ayarlarDegistir($event)" />
+    <div class="ys-yer">
+      <span class="ys-yer__etiket" id="ys-yer-etiket">Yükleme yeri</span>
+      <div class="tz-segmented" role="radiogroup" aria-labelledby="ys-yer-etiket">
+        <button type="button" role="radio" [class.active]="lokasyonTercihi() === Tercih.Karisik"
+                [attr.aria-checked]="lokasyonTercihi() === Tercih.Karisik" [disabled]="kilitli()" (click)="lokasyonSec(Tercih.Karisik)">
+          <i class="ri-map-pin-2-line" aria-hidden="true"></i>Tek yerden yüklenecek
+        </button>
+        <button type="button" role="radio" [class.active]="lokasyonTercihi() === Tercih.LokasyonaGoreAyri"
+                [attr.aria-checked]="lokasyonTercihi() === Tercih.LokasyonaGoreAyri" [disabled]="kilitli()" (click)="lokasyonSec(Tercih.LokasyonaGoreAyri)">
+          <i class="ri-road-map-line" aria-hidden="true"></i>Lokasyona göre ayrı
+        </button>
+      </div>
+      <small class="yp-ipucu">{{ lokasyonIpucu() }}</small>
+    </div>
+  </section>
+
+  <!-- 3. Yükler: seçilen projelerin sandıkları; hangisinin yükleneceği ve izinleri burada düzenlenir. -->
+  <section class="trezo-card border-0 bg-white yp-kart mb-4" aria-labelledby="ys-yukler-baslik">
+    <header class="yp-bolum-baslik">
+      <span class="yp-bolum-baslik__ikon" aria-hidden="true"><i class="ri-stack-line"></i></span>
+      <div class="yp-bolum-baslik__metin">
+        <span class="yp-bolum-baslik__adim">Adım 3</span>
+        <h3 id="ys-yukler-baslik">Yükler
+          @if (listeDurumu() === 'yukleniyor') {
+            <small class="ys-guncelleme" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span>Yük listesi güncelleniyor…</small>
+          }
+        </h3>
+        <p>Hangi yükün hesaba gireceğini ve istif izinlerini burada düzenleyin.</p>
+      </div>
+    </header>
+
+    @switch (listeGorunumu()) {
+      @case ('bos') {
+        <div class="yp-bos-durum">
+          <span class="yp-bos-durum__ikon" aria-hidden="true"><i class="ri-inbox-2-line"></i></span>
+          <h4>Henüz yük yok</h4>
+          <p>Proje seçince sandıklar burada listelenir.@if (yazabilir()) { Sistemde olmayan bir yükü de elle ekleyebilirsiniz.}</p>
+          @if (yazabilir()) {
+            <div class="yp-bos-durum__islemler">
+              <button type="button" class="tz-btn ys-elle-ekle" [disabled]="kilitli()" (click)="elleEkle()">
+                <i class="ri-add-circle-line tz-ico-primary" aria-hidden="true"></i>Elle yük ekle
+              </button>
+            </div>
+          }
+        </div>
+      }
+      @case ('hata') {
+        <div class="yp-bos-durum" data-ton="danger" role="alert">
+          <span class="yp-bos-durum__ikon" aria-hidden="true"><i class="ri-error-warning-line"></i></span>
+          <h4>Yük listesi alınamadı</h4>
+          <p>Seçili projelerin sandıkları getirilemedi; yeniden deneyin.</p>
+          <div class="yp-bos-durum__islemler">
+            <button type="button" class="tz-btn ys-baglanti" (click)="yukleriIste()">
+              <i class="ri-refresh-line tz-ico-primary" aria-hidden="true"></i>Yeniden dene
+            </button>
+          </div>
+        </div>
+      }
+      @default {
+        <div class="yp-sayaclar">
+          <div class="yp-sayac"><small>Toplam yük</small><strong>{{ sayaclar().toplam }}</strong></div>
+          <div class="yp-sayac" data-ton="info"><small>Dahil</small><strong>{{ sayaclar().dahil }}</strong></div>
+          <div class="yp-sayac" data-ton="success"><small>Hesaplanabilir</small><strong>{{ sayaclar().hesaplanabilir }}</strong></div>
+          <div class="yp-sayac" [attr.data-ton]="sayaclar().veriEksik ? 'warning' : 'muted'"><small>Veri eksik (hesaplanmaz)</small><strong>{{ sayaclar().veriEksik }}</strong></div>
+          <div class="yp-sayac" data-ton="muted"><small>Hariç tutulan</small><strong>{{ sayaclar().haricTutulan }}</strong></div>
+          @if (elleYukVar()) {
+            <div class="yp-sayac ys-sayac-elle" data-ton="primary"><small>Elle eklenen</small><strong>{{ elleBirimSayisi() }}</strong></div>
+          }
+        </div>
+
+        <div class="yp-arac-cubugu ys-cubuk">
+          <div class="tz-input-icon yp-arama">
+            <i class="ri-search-line" aria-hidden="true"></i>
+            <input type="search" class="form-control" placeholder="Kod veya açıklama ara" aria-label="Yük ara"
+                   [ngModel]="arama()" (ngModelChange)="arama.set($event)" />
+          </div>
+          <select class="form-select yp-suzgec" aria-label="Duruma göre süz" [ngModel]="durumSuzgeci()" (ngModelChange)="durumSuzgeci.set($event === 'hepsi' ? 'hepsi' : +$event)">
+            <option value="hepsi">Bütün durumlar</option>
+            <option [ngValue]="Durum.Bekliyor">{{ YUK_DURUMU[Durum.Bekliyor].metin }}</option>
+            <option [ngValue]="Durum.Yerlesti">{{ YUK_DURUMU[Durum.Yerlesti].metin }}</option>
+            <option [ngValue]="Durum.Yerlesemedi">{{ YUK_DURUMU[Durum.Yerlesemedi].metin }}</option>
+            <option [ngValue]="Durum.EksikVeri">{{ YUK_DURUMU[Durum.EksikVeri].metin }}</option>
+            <option [ngValue]="Durum.HaricTutuldu">{{ YUK_DURUMU[Durum.HaricTutuldu].metin }}</option>
+          </select>
+          <select class="form-select yp-suzgec" aria-label="Projeye göre süz" [ngModel]="projeSuzgeci()"
+                  (ngModelChange)="projeSuzgeci.set($event === 'hepsi' || $event === 'manuel' ? $event : +$event)">
+            <option value="hepsi">Bütün projeler</option>
+            @for (pr of projeler(); track pr.projeId ?? pr.projeNo) { @if (pr.projeId) { <option [ngValue]="pr.projeId">{{ pr.projeNo }}</option> } }
+            @if (elleYukVar()) { <option value="manuel">Elle eklenenler</option> }
+          </select>
+          <span class="yp-bosluk"></span>
+          @if (yazabilir()) {
+            <div class="tz-btn-group" role="group" aria-label="Seçili yükler için toplu işlemler" [class.has-selection]="secili().size > 0">
+              <span class="tz-btn-group__label">Seçili <span class="tz-btn-group__count">{{ secili().size }}</span></span>
+              @if (secili().size) {
+                <button type="button" class="tz-btn" (click)="secimiTemizle()"><i class="ri-close-line" aria-hidden="true"></i>Temizle</button>
+              }
+              <button type="button" class="tz-btn" [disabled]="!secili().size || kilitli()" (click)="topluAc()">
+                <i class="ri-list-settings-line tz-ico-primary" aria-hidden="true"></i>Toplu izin düzenle
+              </button>
+            </div>
+            <!-- Elle yük ekle eski yerinde: araç çubuğunun altında, solda kendi satırında. -->
+            <div class="ys-cubuk__satir">
+              <button type="button" class="tz-btn ys-elle-ekle" [disabled]="kilitli()" (click)="elleEkle()">
+                <i class="ri-add-circle-line tz-ico-primary" aria-hidden="true"></i>Elle yük ekle
+              </button>
+            </div>
+          }
+        </div>
+
+        <div class="yp-tablo-sarmal yp-yukler" [class.ys-guncelleniyor]="listeDurumu() === 'yukleniyor'">
+          <table class="yp-tablo">
+            <thead>
+              <tr>
+                @if (yazabilir()) {
+                  <th class="yp-sec"><input type="checkbox" class="form-check-input" aria-label="Görünen bütün yükleri seç"
+                    [checked]="hepsiSecili()" [indeterminate]="gorunenSeciliSayisi() > 0 && !hepsiSecili()" (change)="hepsiniSec(!hepsiSecili())" /></th>
+                }
+                <th>Kod</th>
+                <th>Proje</th>
+                <th class="yp-sayi" title="Boy × en × yükseklik">Ölçü (mm)</th>
+                <th class="yp-sayi">Brüt kg</th>
+                <th>Lokasyon</th>
+                <th class="yp-orta" title="Hesaba dahil (yüklenecek)">Dahil</th>
+                <th class="yp-orta" title="Tabanda 90° döndürülebilir">Döndür</th>
+                <th class="yp-orta" title="Üstüne yük konabilir">Üste</th>
+                <th class="yp-orta" title="Başka yükün üstüne konabilir">Alta</th>
+                <th class="yp-sayi" title="Üstüne konabilecek en fazla yük">Üst yük kg</th>
+                <th>Durum</th>
+                @if (yazabilir()) { <th class="ys-islem-hucre"><span class="visually-hidden">İşlem</span></th> }
+              </tr>
+            </thead>
+            <tbody>
+              @for (g of gorunenler(); track g.anahtar) {
+                <tr [class.yp-satir--secili]="g.secili" [class.yp-satir--haric]="!g.satir.dahil" [class.ys-satir--eksik]="g.satir.durum === Durum.EksikVeri"
+                    [class.ys-satir--elle]="g.elle">
+                  @if (yazabilir()) {
+                    <td class="yp-sec">
+                      @if (g.duzenlenebilir) {
+                        <input type="checkbox" class="form-check-input" [checked]="g.secili" [attr.aria-label]="g.satir.kod + ' seç'" (change)="secimDegistir(g)" />
+                      }
+                    </td>
+                  }
+                  <td class="yp-sarmala ys-kod">
+                    <div class="ys-kod__ust">
+                      <strong>{{ g.satir.kod }}</strong>
+                      @if (g.satir.birimSayisi > 1) { <small class="ys-kod__birim"> {{ g.satir.birimNo }}/{{ g.satir.birimSayisi }}</small> }
+                      @if (g.elle) { <span class="yp-rozet ys-rozet-elle" title="Elle eklenen yük (sistemde olmayan)"><i class="ri-hand" aria-hidden="true"></i>Elle</span> }
+                    </div>
+                    @if (g.satir.aciklama) { <small class="yp-ipucu d-block">{{ g.satir.aciklama }}</small> }
+                    @if (g.satir.ozelTasimaNotu) { <small class="yp-not d-block"><i class="ri-alert-line" aria-hidden="true"></i> {{ g.satir.ozelTasimaNotu }}</small> }
+                  </td>
+                  <td>{{ g.satir.projeNo ?? '—' }}</td>
+                  <td class="yp-sayi">{{ g.olcu }}</td>
+                  <td class="yp-sayi">{{ g.satir.brutKg != null ? (g.satir.brutKg | number: '1.0-2') : '—' }}</td>
+                  <td>{{ g.satir.lokasyonAdi ?? '—' }}</td>
+                  <td class="yp-orta"><input type="checkbox" class="form-check-input" [disabled]="kilitli() || !g.duzenlenebilir" [checked]="g.satir.dahil"
+                    [attr.aria-label]="g.satir.kod + ' hesaba dahil'" (change)="dahilDegistir(g)" /></td>
+                  <td class="yp-orta" [class.yp-elle]="g.elleDondurme"><input type="checkbox" class="form-check-input" [disabled]="kilitli() || !g.duzenlenebilir"
+                    [checked]="g.satir.dondurulebilirMi" [attr.aria-label]="g.satir.kod + ' döndürülebilir'" (change)="izinDegistir(g, 'dondurulebilirMi')" /></td>
+                  <td class="yp-orta" [class.yp-elle]="g.elleUsteKonma"><input type="checkbox" class="form-check-input" [disabled]="kilitli() || !g.duzenlenebilir"
+                    [checked]="g.satir.usteKonabilirMi" [attr.aria-label]="g.satir.kod + ' üstüne yük konabilir'" (change)="izinDegistir(g, 'usteKonabilirMi')" /></td>
+                  <td class="yp-orta" [class.yp-elle]="g.elleAltaKalma"><input type="checkbox" class="form-check-input" [disabled]="kilitli() || !g.duzenlenebilir"
+                    [checked]="g.satir.altaKalabilirMi" [attr.aria-label]="g.satir.kod + ' başka yükün üstüne konabilir'" (change)="izinDegistir(g, 'altaKalabilirMi')" /></td>
+                  <td class="yp-sayi" [class.yp-elle]="g.elleUstYuk">
+                    <input #ustYuk type="number" class="form-control form-control-sm yp-ust-yuk" min="0" [disabled]="kilitli() || !g.duzenlenebilir"
+                           [attr.aria-label]="g.satir.kod + ' üst yük sınırı (kg)'" [value]="g.satir.ustYukSiniriKg ?? ''" (change)="ustYukDegistir(g, ustYuk)" />
+                  </td>
+                  <td>
+                    <span class="yp-rozet" [attr.data-ton]="YUK_DURUMU[g.satir.durum].ton">{{ YUK_DURUMU[g.satir.durum].metin }}@if (g.satir.aracNo) { · Araç {{ g.satir.aracNo }} }</span>
+                    @if (g.satir.yerlesimNotu) { <small class="yp-sorun d-block">{{ g.satir.yerlesimNotu }}</small> }
+                    @for (v of g.satir.veriSorunlari; track v) { <small class="yp-sorun d-block">{{ v }}</small> }
+                  </td>
+                  @if (yazabilir()) {
+                    <td class="ys-islem-hucre">
+                      <div class="ys-satir-islem">
+                        @if (g.duzenlenebilir && g.satir.elleDegisenIzinler) {
+                          <button type="button" class="tz-btn tz-btn--sm tz-btn--icon" title="İzinleri varsayılana döndür" [disabled]="kilitli()"
+                                  [attr.aria-label]="g.satir.kod + ' izinlerini varsayılana döndür'" (click)="varsayilanaDondur(g)"><i class="ri-restart-line" aria-hidden="true"></i></button>
+                        }
+                        @if (g.grupBasi) {
+                          <button type="button" class="tz-btn tz-btn--sm tz-btn--icon ys-elle-duzenle" title="Elle yükü düzenle" [disabled]="kilitli()"
+                                  [attr.aria-label]="g.satir.kod + ' elle yükünü düzenle'" (click)="elleDuzenle(g)"><i class="ri-edit-line" aria-hidden="true"></i></button>
+                          <button type="button" class="tz-btn tz-btn--sm tz-btn--icon tz-btn--danger-hover ys-elle-sil" title="Elle yükü kaldır" [disabled]="kilitli()"
+                                  [attr.aria-label]="g.satir.kod + ' elle yükünü kaldır'" (click)="elleSil(g)"><i class="ri-delete-bin-6-line" aria-hidden="true"></i></button>
+                        }
+                      </div>
+                    </td>
+                  }
+                </tr>
+              } @empty {
+                <tr><td [attr.colspan]="sutunSayisi()" class="yp-bos">{{ bosListeMetni() }}</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <ul class="ys-lejant" aria-label="Tablo açıklamaları">
+          <li><span class="ys-lejant__cizgi" aria-hidden="true"></span>Alt çizgili hücre elle değiştirilmiş izindir; hesapta korunur.</li>
+          @if (elleYukVar()) {
+            <li><span class="yp-rozet ys-rozet-elle" aria-hidden="true"><i class="ri-hand"></i>Elle</span>Sistemde olmayan, bu ekranda girilen yük; proje seçimi değişse de listede kalır.</li>
+          }
+          <li><i class="ri-ruler-line" aria-hidden="true"></i>Ölçüsü ya da ağırlığı girilmemiş sandık hesaba girmez; sandık kaydında tamamlanınca listeye güncel gelir.</li>
+          <li><i class="ri-forbid-2-line" aria-hidden="true"></i>Yan yatırma ve ters çevirme her zaman yasaktır.</li>
+        </ul>
+      }
+    }
+  </section>
+
+  <!-- 4. Hesapla: sayfanın tek birincil işlemi (W izni). -->
+  <section class="trezo-card border-0 bg-white yp-kart mb-4 ys-hesap" aria-label="Hesapla">
+    <div class="ys-hesap__durum" role="status">
+      @if (hesapEngeli(); as engel) {
+        <span class="ys-hesap__ikon" data-ton="muted" aria-hidden="true"><i class="ri-information-line"></i></span>
+        <div class="ys-hesap__metin"><strong>Hesaplamaya hazır değil</strong><small>{{ engel }}</small></div>
+      } @else if (plan() && degisti()) {
+        <span class="ys-hesap__ikon" data-ton="warning" aria-hidden="true"><i class="ri-edit-2-line"></i></span>
+        <div class="ys-hesap__metin"><strong>Seçimler son hesaptan farklı</strong><small>Yeni sonuç için yeniden hesaplayın ya da son hesaba dönün.</small></div>
+      } @else if (plan()) {
+        <span class="ys-hesap__ikon" data-ton="success" aria-hidden="true"><i class="ri-check-double-line"></i></span>
+        <div class="ys-hesap__metin"><strong>Sonuç seçimlerle güncel</strong><small>Araçlar, kontroller ve PDF raporları aşağıda.</small></div>
+      } @else {
+        <span class="ys-hesap__ikon" aria-hidden="true"><i class="ri-calculator-line"></i></span>
+        <div class="ys-hesap__metin"><strong>Hesaplamaya hazır</strong>
+          <small>{{ sayaclar().hesaplanabilir }} yük hesaplanacak@if (elleYukVar()) { ({{ elleBirimSayisi() }} elle eklenen dahil)}; sonuç ve PDF raporları aşağıda açılır.</small></div>
+      }
+    </div>
+    <div class="ys-hesap__islem">
+      @if (plan() && degisti()) {
+        <button type="button" class="tz-btn" [disabled]="mesgul()" (click)="sonHesabaDon()">
+          <i class="ri-arrow-go-back-line" aria-hidden="true"></i>Son hesaba dön
+        </button>
+      }
+      <button type="button" class="tz-btn tz-btn--primary ys-hesap__dugme" [disabled]="hesapEngeli() !== null || hesaplaniyor()" (click)="hesapla()">
+        <i [class]="hesaplaniyor() ? 'ri-loader-4-line tz-spin' : 'ri-play-circle-line'" aria-hidden="true"></i>{{ hesaplaniyor() ? 'Hesaplanıyor…' : plan() ? 'Yeniden hesapla' : 'Hesapla' }}
+      </button>
+    </div>
+  </section>
+
+  <!-- 5. Sonuç: araçlar, kontroller, 3B, PDF raporları ve elle yerleşim. -->
+  @if (plan(); as p) {
+    @if (p.kaynakFarklari.length) {
+      <section class="trezo-card border-0 bg-white yp-kart yp-farklar">
+        <div class="yp-farklar__baslik">
+          <i class="ri-refresh-alert-line" aria-hidden="true"></i>
+          <div>
+            <strong>Sandık verisi son hesaptan sonra değişti ({{ p.kaynakFarklari.length }})</strong>
+            <small class="yp-ipucu d-block">"Hesapla" güncel sandık verisiyle yeniden dizer.</small>
+          </div>
+        </div>
+        <div class="yp-tablo-sarmal yp-farklar__liste">
+          <table class="yp-tablo">
+            <thead><tr><th>Değişiklik</th><th>Kod</th><th>Önceki</th><th>Güncel</th></tr></thead>
+            <tbody>
+              @for (f of p.kaynakFarklari; track $index) {
+                <tr>
+                  <td><span class="yp-rozet" data-ton="warning">{{ KAYNAK_FARKI[f.tur] }}</span></td>
+                  <td>{{ f.kod }}</td>
+                  <td class="yp-sarmala">{{ f.onceki ?? '—' }}</td>
+                  <td class="yp-sarmala">{{ f.guncel ?? '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+
+    <app-plan-yerlesim class="d-block" [plan]="p" [yazabilir]="yazabilir()" [kaydedilmemis]="degisti()"
+                       [hesaplaniyor]="hesaplaniyor()" (elleKaydedildi)="elleKaydedildi($event)"
+                       (duzenlemeDegisti)="elleDuzenleme.set($event)" />
+  }
+}
+
+<!-- Toplu izin düzenleme: yalnız seçili yüklere uygulanır; "Koru" seçili yüklerdeki değeri bırakır. -->
+@if (topluAcik()) {
+  <div class="tz-modal-backdrop" (click)="topluAcik.set(false)"></div>
+  <div class="tz-modal tz-modal--lg" role="dialog" aria-modal="true" aria-labelledby="toplu-baslik">
+    <div class="tz-modal__header">
+      <span class="tz-modal__icon" aria-hidden="true"><i class="ri-list-settings-line"></i></span>
+      <div class="tz-modal__title">
+        <h5 id="toplu-baslik">Toplu izin düzenle</h5>
+        <p>{{ secili().size }} seçili yük · "Koru" seçili yüklerdeki değeri değiştirmez</p>
+      </div>
+      <button type="button" class="tz-modal__close" (click)="topluAcik.set(false)" aria-label="Kapat"><i class="ri-close-line" aria-hidden="true"></i></button>
+    </div>
+    <div class="tz-modal__body">
+      <div class="yp-toplu">
+        @for (a of topluAlanlar(); track a.alan) {
+          <div class="yp-toplu__satir">
+            <div>
+              <strong>{{ a.ad }}</strong>
+              <small class="yp-ipucu d-block">{{ a.ortak }}</small>
+            </div>
+            <div class="tz-segmented" role="radiogroup" [attr.aria-label]="a.ad">
+              @for (d of UC_DURUMLAR; track d.deger) {
+                <button type="button" role="radio" [class.active]="a.deger === d.deger" [attr.aria-checked]="a.deger === d.deger"
+                        (click)="topluAlanDegistir(a.alan, d.deger)">{{ d.ad }}</button>
+              }
+            </div>
+          </div>
+        }
+        <div class="yp-toplu__satir">
+          <div>
+            <strong>Üst yük sınırı</strong>
+            <small class="yp-ipucu d-block">Brüt: her yükün kendi brüt ağırlığı (varsayılan)</small>
+          </div>
+          <div class="yp-toplu__ust-yuk">
+            <select class="form-select" aria-label="Üst yük sınırı" [ngModel]="topluUstYukTuru()" (ngModelChange)="topluUstYukTuru.set($event)">
+              <option value="koru">Koru</option>
+              <option value="brut">Kendi brüt ağırlığı</option>
+              <option value="deger">Sabit değer</option>
+              <option value="bos">Boş (bilinmiyor)</option>
+            </select>
+            @if (topluUstYukTuru() === 'deger') {
+              <div class="tz-input-unit"><input type="number" class="form-control" min="0" aria-label="Üst yük sınırı (kg)"
+                [ngModel]="topluUstYukKg()" (ngModelChange)="topluUstYukDegistir($event)" /><em>kg</em></div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tz-modal__footer">
+      <button type="button" class="tz-btn" (click)="topluAcik.set(false)">Vazgeç</button>
+      <button type="button" class="tz-btn tz-btn--primary" (click)="topluUygula()"><i class="ri-check-line" aria-hidden="true"></i> Uygula</button>
+    </div>
+  </div>
+}
+
+<!-- Elle yük: sistemde olmayan yük; ortak bilgiler ve adet, birimler listede ayrı satırdır. Hesap "Hesapla" ile yapılır. -->
+@if (elleAcik()) {
+  @let f = elleForm();
+  @let h = elleGorunenHatalar();
+  <div class="tz-modal-backdrop" (click)="elleKapat()"></div>
+  <div class="tz-modal tz-modal--lg ys-elle-pencere" role="dialog" aria-modal="true" aria-labelledby="elle-baslik">
+    <div class="tz-modal__header">
+      <span class="tz-modal__icon" aria-hidden="true"><i class="ri-add-box-line"></i></span>
+      <div class="tz-modal__title">
+        <h5 id="elle-baslik">{{ f.grupNo === null ? 'Elle yük ekle' : 'Elle yükü düzenle' }}</h5>
+        <p>Sistemde olmayan yük (ek sandık, özel yük…); ölçü ve ağırlıkla hesaba girer.</p>
+      </div>
+      <button type="button" class="tz-modal__close" (click)="elleKapat()" aria-label="Kapat"><i class="ri-close-line" aria-hidden="true"></i></button>
+    </div>
+    <div class="tz-modal__body">
+      <form class="tz-form" novalidate (ngSubmit)="elleKaydet()">
+        <div class="tz-field-grid">
+          <label class="tz-field">
+            <span>Kod / ad <b>*</b></span>
+            <input type="text" class="form-control" name="kod" placeholder="Ör: Ek sandık 1" [attr.maxlength]="ELLE_KOD_ENFAZLA"
+                   [class.is-invalid]="!!h.kod" [attr.aria-invalid]="!!h.kod" [ngModel]="f.kod" (ngModelChange)="elleAlan('kod', $event)" />
+            @if (h.kod) { <small class="ys-hata">{{ h.kod }}</small> }
+          </label>
+          <label class="tz-field">
+            <span>Yük türü</span>
+            <select class="form-select" name="yukTuru" [ngModel]="f.yukTuruId" (ngModelChange)="elleAlan('yukTuruId', $event)">
+              @for (t of tanimlar()?.yukTurleri ?? []; track t.id) { <option [ngValue]="t.id">{{ t.ad }}</option> }
+            </select>
+            <small>{{ elleTurIpucu() }}</small>
+          </label>
+        </div>
+        <label class="tz-field">
+          <span>Açıklama</span>
+          <input type="text" class="form-control" name="aciklama" placeholder="İsteğe bağlı" [attr.maxlength]="ELLE_ACIKLAMA_ENFAZLA"
+                 [class.is-invalid]="!!h.aciklama" [ngModel]="f.aciklama" (ngModelChange)="elleAlan('aciklama', $event)" />
+          @if (h.aciklama) { <small class="ys-hata">{{ h.aciklama }}</small> }
+        </label>
+        <div class="tz-section"><i class="ri-ruler-2-line" aria-hidden="true"></i>Ölçü ve ağırlık</div>
+        <div class="tz-field-grid tz-field-grid--3">
+          <label class="tz-field">
+            <span>Uzunluk (boy) <b>*</b></span>
+            <div class="tz-input-unit"><input type="number" class="form-control" name="boy" min="1" step="1" inputmode="numeric"
+              [class.is-invalid]="!!h.boyMm" [attr.aria-invalid]="!!h.boyMm" [ngModel]="f.boyMm" (ngModelChange)="elleSayi('boyMm', $event)" /><em>mm</em></div>
+            @if (h.boyMm) { <small class="ys-hata">{{ h.boyMm }}</small> }
+          </label>
+          <label class="tz-field">
+            <span>Genişlik (en) <b>*</b></span>
+            <div class="tz-input-unit"><input type="number" class="form-control" name="en" min="1" step="1" inputmode="numeric"
+              [class.is-invalid]="!!h.enMm" [attr.aria-invalid]="!!h.enMm" [ngModel]="f.enMm" (ngModelChange)="elleSayi('enMm', $event)" /><em>mm</em></div>
+            @if (h.enMm) { <small class="ys-hata">{{ h.enMm }}</small> }
+          </label>
+          <label class="tz-field">
+            <span>Yükseklik <b>*</b></span>
+            <div class="tz-input-unit"><input type="number" class="form-control" name="yukseklik" min="1" step="1" inputmode="numeric"
+              [class.is-invalid]="!!h.yukseklikMm" [attr.aria-invalid]="!!h.yukseklikMm" [ngModel]="f.yukseklikMm" (ngModelChange)="elleSayi('yukseklikMm', $event)" /><em>mm</em></div>
+            @if (h.yukseklikMm) { <small class="ys-hata">{{ h.yukseklikMm }}</small> }
+          </label>
+        </div>
+        <div class="tz-field-grid">
+          <label class="tz-field">
+            <span>Ağırlık (brüt) <b>*</b></span>
+            <div class="tz-input-unit"><input type="number" class="form-control" name="brut" min="0" step="any" inputmode="decimal"
+              [class.is-invalid]="!!h.brutKg" [attr.aria-invalid]="!!h.brutKg" [ngModel]="f.brutKg" (ngModelChange)="elleSayi('brutKg', $event)" /><em>kg</em></div>
+            @if (h.brutKg) { <small class="ys-hata">{{ h.brutKg }}</small> }
+            @else { <small>Araç kapasitesi, dingil yükü ve istif (üst yük sınırı) ağırlıkla denetlenir.</small> }
+          </label>
+          <label class="tz-field">
+            <span>Adet <b>*</b></span>
+            <input type="number" class="form-control" name="adet" min="1" step="1" inputmode="numeric"
+                   [class.is-invalid]="!!h.adet" [attr.aria-invalid]="!!h.adet" [ngModel]="f.adet" (ngModelChange)="elleSayi('adet', $event)" />
+            @if (h.adet) { <small class="ys-hata">{{ h.adet }}</small> }
+            @else { <small>Aynı ölçüde birden çok yük; listede her biri ayrı satırdır.</small> }
+          </label>
+        </div>
+        <div class="tz-section"><i class="ri-map-pin-line" aria-hidden="true"></i>Proje ve lokasyon</div>
+        <div class="tz-field-grid">
+          <label class="tz-field">
+            <span>Proje</span>
+            <select class="form-select" name="proje" [ngModel]="f.projeId" (ngModelChange)="elleAlan('projeId', $event)">
+              <option [ngValue]="null">Projesiz</option>
+              @for (pr of elleProjeleri(); track pr.projeId) { <option [ngValue]="pr.projeId">{{ pr.projeNo }}</option> }
+            </select>
+            <small>Yalnız seçili projeler; proje seçimden çıkarsa yük "Projesiz" kalır.</small>
+          </label>
+          <label class="tz-field">
+            <span>Lokasyon</span>
+            <select class="form-select" name="lokasyon" [ngModel]="f.lokasyonId" (ngModelChange)="elleAlan('lokasyonId', $event)">
+              <option [ngValue]="null">Belirtilmedi</option>
+              @for (l of tanimlar()?.lokasyonlar ?? []; track l.id) { <option [ngValue]="l.id">{{ l.ad }}</option> }
+            </select>
+            <small>"Lokasyona göre ayrı" yüklemede yük bu lokasyonun araçlarına dizilir.</small>
+          </label>
+        </div>
+        @if (f.grupNo !== null) {
+          <div class="tz-note mt-0">
+            <i class="ri-information-line" aria-hidden="true"></i>
+            <span>Birimlerde elle değiştirdiğiniz izinler korunur; adet azalırsa sondaki birimler listeden çıkar.</span>
+          </div>
+        }
+        <button type="submit" class="d-none" tabindex="-1" aria-hidden="true"></button>
+      </form>
+    </div>
+    <div class="tz-modal__footer">
+      <button type="button" class="tz-btn" (click)="elleKapat()">Vazgeç</button>
+      <button type="button" class="tz-btn tz-btn--primary ys-elle-kaydet" (click)="elleKaydet()">
+        <i class="ri-check-line" aria-hidden="true"></i> {{ f.grupNo === null ? 'Ekle' : 'Güncelle' }}
+      </button>
+    </div>
+  </div>
+}

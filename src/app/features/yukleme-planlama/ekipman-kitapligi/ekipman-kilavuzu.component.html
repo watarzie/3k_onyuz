@@ -1,0 +1,779 @@
+<div class="kl tz-yazdir-sayfa">
+  <div class="page-title-area mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div class="sayfa-baslik">
+        <span class="sayfa-ikon"><i class="ri-book-open-line" aria-hidden="true"></i></span>
+        <div>
+          <h2 class="fw-bold mb-1">Ekipman Kitaplığı Kılavuzu</h2>
+          <app-breadcrumb [items]="breadcrumb" />
+        </div>
+      </div>
+      <div class="kl-islemler kl-yazdirma-gizle">
+        <a class="tz-btn" routerLink="/ekipman-kitapligi" data-kitapliga-don>
+          <i class="ri-arrow-left-line" aria-hidden="true"></i>Kitaplığa dön
+        </a>
+        <button type="button" class="tz-btn tz-btn--primary" data-yazdir (click)="yazdir()">
+          <i class="ri-printer-line" aria-hidden="true"></i>Yazdır / PDF olarak kaydet
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <p class="kl-giris">
+    Ekipman ekleme ve düzenleme formundaki her alanın ne anlama geldiğini, hiç bilmeyen birine anlatır gibi açıklar.
+    Formdaki bölüm başlıklarının yanındaki soru işaretleri bu sayfanın ilgili bölümünü açar.
+    <span class="kl-yazdirma-gizle">Kitapçık olarak saklamak için "Yazdır / PDF olarak kaydet" düğmesini kullanın.</span>
+  </p>
+
+  <nav class="trezo-card border-0 bg-white yp-kart kl-icindekiler kl-yazdirma-gizle" [id]="ICINDEKILER" tabindex="-1"
+       aria-labelledby="icindekiler-baslik">
+    <h3 class="kl-icindekiler__baslik" id="icindekiler-baslik"><i class="ri-list-ordered" aria-hidden="true"></i>İçindekiler</h3>
+    <ol>
+      @for (b of bolumler; track b.id) {
+        <li><a [routerLink]="[]" [fragment]="b.id" (click)="bolumeGit(b.id)">{{ b.baslik }}</a></li>
+      }
+    </ol>
+  </nav>
+
+  <!-- 1 -->
+  <section class="trezo-card border-0 bg-white yp-kart kl-bolum" [id]="B.amac.id" tabindex="-1" [attr.aria-labelledby]="B.amac.id + '-baslik'">
+    <h3 class="kl-bolum__baslik" [id]="B.amac.id + '-baslik'"><span class="kl-bolum__no">{{ B.amac.no }}</span>{{ B.amac.baslik }}</h3>
+    <p>
+      Ekipman Kitaplığı, yükleme simülasyonunun kullandığı konteyner ve araçların <strong>ölçü defteridir</strong>.
+      Simülasyon sandıkları araçlara yerleştirirken yalnız burada yazan ölçülere bakar: aracın içi ne kadar uzun,
+      kapısı ne kadar geniş, kaç kilo taşır.
+    </p>
+    <p>
+      Buradaki bir ölçü yanlışsa plan da yanlış çıkar: sandık kâğıt üstünde sığar ama gerçekte kapıdan geçmez.
+      Bu yüzden değerler tahminle değil, <strong>föyden</strong> (konteyner/araç teknik belgesi) ya da
+      <strong>ölçerek</strong> girilir.
+    </p>
+  </section>
+
+  <!-- 2 -->
+  <section class="trezo-card border-0 bg-white yp-kart kl-bolum" [id]="B.temelKurallar.id" tabindex="-1" [attr.aria-labelledby]="B.temelKurallar.id + '-baslik'">
+    <h3 class="kl-bolum__baslik" [id]="B.temelKurallar.id + '-baslik'"><span class="kl-bolum__no">{{ B.temelKurallar.no }}</span>{{ B.temelKurallar.baslik }}</h3>
+    <ul class="kl-liste">
+      <li>
+        Uzunluklar <strong>milimetre (mm)</strong>, ağırlıklar <strong>kilogram (kg)</strong> ve <strong>tam sayıdır</strong>.
+        12,19 m → 12192 yazılır. Bağlama noktası kapasitesi dekanewton'dur (daN; kabaca 1 daN ≈ 1 kg kuvvet).
+      </li>
+      <li>
+        <strong>Boş alan "bilinmiyor" demektir.</strong> Bilmediğiniz değeri boş bırakın; 0 yazmayın ve tahmin etmeyin.
+        0 "sıfır" demektir, "bilmiyorum" değil.
+      </li>
+      <li>Kırmızı yıldızlı (<b class="kl-yildiz">*</b>) alanlar zorunludur.</li>
+      <li>
+        Teknik veri ya da kaynak değişince kayıt <strong>yeni bir revizyon</strong> oluşturur ve "doğrulanmamış" olur;
+        yetkili kişinin yeniden doğrulaması gerekir. Yalnız ad değişirse revizyon açılmaz.
+      </li>
+      <li>Önceden hesaplanmış simülasyonlar eski revizyonla kalır; yeni ölçüler bir sonraki hesapta kullanılır.</li>
+      <li>Kod, tip, üretici ve model sonradan değiştirilemez; yanlış girildiyse yeni ekipman açılır.</li>
+    </ul>
+  </section>
+
+  <!-- 3 -->
+  <section class="trezo-card border-0 bg-white yp-kart kl-bolum" [id]="B.yonler.id" tabindex="-1" [attr.aria-labelledby]="B.yonler.id + '-baslik'">
+    <h3 class="kl-bolum__baslik" [id]="B.yonler.id + '-baslik'">
+      <span class="kl-bolum__no">{{ B.yonler.no }}</span>{{ B.yonler.baslik }} <small>bütün konumların dili</small>
+    </h3>
+    <dl class="kl-alanlar">
+      <div><dt>Ön</dt><dd>Aracın çekiciye/sürüş yönüne bakan ucu. Konteynerde kapının karşısındaki kapalı duvar.</dd></div>
+      <div><dt>Arka</dt><dd>Öbür uç. Konteynerde kapıların olduğu taraf.</dd></div>
+      <div><dt>Sol / Sağ</dt><dd>Aracın arkasında durup öne doğru bakarken solunuzda ve sağınızda kalan kenarlar.</dd></div>
+      <div><dt>X</dt><dd>Ön uçtan arkaya doğru uzaklık. X = 0 aracın en ön noktasıdır.</dd></div>
+      <div><dt>Y</dt><dd>Sol kenardan sağa doğru uzaklık. Y = 0 sol dış kenardır.</dd></div>
+      <div><dt>Z</dt><dd>Yerden yukarı doğru yükseklik. Z = 0 yerdir.</dd></div>
+    </dl>
+    <p>Formdaki "Başlangıç X", "X", "Y", "Z" alanlarının hepsi bu üç eksenle ölçülür.</p>
+
+    <figure class="kl-sema" data-sema="yonler">
+      <div class="kl-sema__cizim">
+        <svg viewBox="0 36 720 240" role="img"
+             aria-label="Üstten bakış: dikdörtgen araç; solda ön, sağda arka, üst kenar sağ, alt kenar sol. Ön-sol köşeden X oku arkaya, Y oku sağa uzanır.">
+          <rect class="s-govde" x="150" y="70" width="430" height="140" rx="4" />
+          <text class="s-yon" x="92" y="136" text-anchor="middle">ÖN</text>
+          <text class="s-soluk" x="92" y="153" text-anchor="middle">sürüş yönü</text>
+          <path class="s-ince" d="M122 168 H70 M62 168 l10 -5 v10 z" />
+          <text class="s-yon" x="640" y="136" text-anchor="middle">ARKA</text>
+          <text class="s-soluk" x="640" y="153" text-anchor="middle">konteynerde</text>
+          <text class="s-soluk" x="640" y="168" text-anchor="middle">kapı tarafı</text>
+          <text class="s-yon" x="365" y="58" text-anchor="middle">SAĞ</text>
+          <text class="s-yon" x="430" y="234" text-anchor="middle">SOL</text>
+          <path class="s-eksen s-eksen--x" d="M150 210 H320 M331 210 l-12 -6 v12 z" />
+          <text x="166" y="196"><tspan class="s-x">X</tspan> · önden arkaya</text>
+          <path class="s-eksen s-eksen--y" d="M150 210 V106 M150 95 l-6 12 h12 z" />
+          <text x="166" y="114"><tspan class="s-y">Y</tspan> · soldan sağa</text>
+          <circle class="s-nokta" cx="150" cy="210" r="5" />
+          <text class="s-kalin" x="150" y="248" text-anchor="middle">X = 0, Y = 0</text>
+          <text class="s-soluk" x="150" y="264" text-anchor="middle">en ön nokta, sol dış kenar</text>
+        </svg>
+      </div>
+      <figcaption>
+        <strong>Şema 1 · Yönler ve eksenler (üstten bakış).</strong>
+        Araca yukarıdan bakılıyor; yerleşim uygulamadaki "Üstten" görünümle aynıdır: solda ÖN, sağda ARKA, üst kenar SAĞ,
+        alt kenar SOL. X, ön-sol köşeden arkaya doğru; Y, aynı köşeden sağa doğru ölçülür.
+      </figcaption>
+    </figure>
+
+    <figure class="kl-sema" data-sema="yandan">
+      <div class="kl-sema__cizim">
+        <svg viewBox="0 40 760 272" role="img"
+             aria-label="Yandan bakış: yer çizgisi üstünde araç gövdesi. Z oku yerden yukarı. Yerden yükseklik yerden yükleme yüzeyine, kullanılabilir iç yükseklik yüzeyden tavana, dış yükseklik yerden tepeye ölçülür.">
+          <path class="s-yer" d="M40 280 H726" />
+          <rect class="s-govde" x="190" y="70" width="380" height="165" rx="3" />
+          <rect class="s-bosluk" x="202" y="82" width="356" height="143" />
+          <path class="s-yuzey" d="M202 225 H558" />
+          <rect class="s-govde" x="236" y="235" width="8" height="45" />
+          <circle class="s-teker" cx="480" cy="258" r="22" />
+          <circle class="s-teker" cx="528" cy="258" r="22" />
+          <text class="s-yon" x="202" y="60">ÖN</text>
+          <text class="s-yon" x="558" y="60" text-anchor="end">ARKA</text>
+          <path class="s-eksen s-eksen--z" d="M80 280 V93 M80 82 l-6 12 h12 z" />
+          <text x="86" y="66" text-anchor="middle"><tspan class="s-z">Z</tspan> · yerden yukarı</text>
+          <text class="s-soluk" x="86" y="300" text-anchor="middle">Z = 0 (yer)</text>
+          <path class="s-olcu" d="M300 82 V225 M300 82 l-3.5 7 h7 z M300 225 l-3.5 -7 h7 z" />
+          <text class="s-kalin" x="312" y="146">Kullanılabilir (iç)</text>
+          <text class="s-kalin" x="312" y="162">yükseklik</text>
+          <text class="s-soluk" x="312" y="180">yüzeyden tavana</text>
+          <text class="s-yuzey-yazi" x="450" y="214" text-anchor="middle">yükleme yüzeyi</text>
+          <path class="s-uzanti" d="M558 225 H612 M570 70 H712" />
+          <path class="s-olcu" d="M600 225 V280 M600 225 l-3.5 7 h7 z M600 280 l-3.5 -7 h7 z" />
+          <text class="s-kalin" x="612" y="250">Yerden</text>
+          <text class="s-kalin" x="612" y="266">yükseklik</text>
+          <path class="s-olcu" d="M700 70 V280 M700 70 l-3.5 7 h7 z M700 280 l-3.5 -7 h7 z" />
+          <text class="s-kalin" x="722" y="175" text-anchor="middle" transform="rotate(-90 722 175)">Dış yükseklik</text>
+        </svg>
+      </div>
+      <figcaption>
+        <strong>Şema 2 · Yükseklikler (yandan bakış).</strong>
+        Z yerden yukarı doğru ölçülür. "Yerden yükseklik" yerden yükleme yüzeyine, "Kullanılabilir (iç) yükseklik"
+        yükleme yüzeyinden tavana, "Dış yükseklik" yerden aracın tepesine kadardır.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- 4 -->
+  <section class="trezo-card border-0 bg-white yp-kart kl-bolum" [id]="B.genel.id" tabindex="-1" [attr.aria-labelledby]="B.genel.id + '-baslik'">
+    <h3 class="kl-bolum__baslik" [id]="B.genel.id + '-baslik'"><span class="kl-bolum__no">{{ B.genel.no }}</span>{{ B.genel.baslik }}</h3>
+    <dl class="kl-alanlar">
+      <div>
+        <dt>Kod</dt>
+        <dd>Ekipmanın kısa ve benzersiz adı (ör. K40DV-ISO). Raporlarda ve planlarda bu kod görünür. Sonradan değişmez.</dd>
+      </div>
+      <div><dt>Ad</dt><dd>Okunur ad (ör. "40' standart konteyner"). İstediğiniz zaman düzeltebilirsiniz.</dd></div>
+      <div>
+        <dt>Aile / Tip</dt>
+        <dd>
+          Ekipmanın türü (ör. Konteyner → 40' standart (DV)). Simülasyonda "taşıma ailesi" ve "araç tipi" seçimleri
+          buradan gelir. Tip aynı zamanda yükün nereden yüklendiğini (arkadan, yandan, üstten) ve duvarı olup olmadığını
+          belirler.
+        </dd>
+      </div>
+      <div>
+        <dt>Üretici / Model</dt>
+        <dd>Kimin ürünü olduğu; standart ISO konteyner gibi genel bir ölçüyse "Jenerik ISO" yazılır.</dd>
+      </div>
+    </dl>
+  </section>
+
+  <!-- 5 -->
+  <section class="trezo-card border-0 bg-white yp-kart kl-bolum" [id]="B.kaynak.id" tabindex="-1" [attr.aria-labelledby]="B.kaynak.id + '-baslik'">
+    <h3 class="kl-bolum__baslik" [id]="B.kaynak.id + '-baslik'"><span class="kl-bolum__no">{{ B.kaynak.no }}</span>{{ B.kaynak.baslik }}</h3>
+    <dl class="kl-alanlar">
+      <div>
+        <dt>Kaynak türü</dt>
+        <dd>
+          Ölçülerin nereden alındığı: ISO asgari ölçü, taşıyıcı (nakliyeci/armatör) föyü, üretici föyü, sahada ölçüldü
+          ya da diğer.
+        </dd>
+      </div>
+      <div>
+        <dt>Kaynak açıklaması / tarihi</dt>
+        <dd>Belgenin adı, numarası, sayfası ve tarihi. Ölçüyü sonradan kontrol edecek kişi bu bilgiyle belgeyi bulur.</dd>
+      </div>
+      <div><dt>Açıklama</dt><dd>Serbest not.</dd></div>
+    </dl>
+  </section>
+
+  <!-- 6 -->
+  <section class="trezo-card border-0 bg-white yp-kart kl-bolum" [id]="B.olcuAgirlik.id" tabindex="-1" [attr.aria-labelledby]="B.olcuAgirlik.id + '-baslik'">
+    <h3 class="kl-bolum__baslik" [id]="B.olcuAgirlik.id + '-baslik'"><span class="kl-bolum__no">{{ B.olcuAgirlik.no }}</span>{{ B.olcuAgirlik.baslik }}</h3>
+    <dl class="kl-alanlar">
+      <div>
+        <dt>Dış uzunluk / genişlik / yükseklik</dt>
+        <dd>
+          Aracın dıştan dışa ölçüleri. Yüklü aracın toplam ölçüsü ve yükün kasa dışına taşması bunlara göre hesaplanır.
+          Üçü birlikte girilir.
+        </dd>
+      </div>
+      <div>
+        <dt>Dara</dt>
+        <dd>Aracın boş ağırlığı. Raporda "brüt ağırlık" dara + yük olarak yazılır; dara boşsa brüt yazılmaz.</dd>
+      </div>
+      <div>
+        <dt>Teknik kapasite</dt>
+        <dd>
+          Aracın taşıyabileceği en fazla yük ağırlığı. Simülasyon bir araca bundan fazla yük koymaz.
+          <span class="kl-dikkat" role="note">
+            <i class="ri-alert-line" aria-hidden="true"></i>
+            <span><strong>Dikkat:</strong> boş bırakılırsa ağırlık sınırı bilinmez ve araç ağırlığa bakılmadan doldurulur.</span>
+          </span>
+        </dd>
+      </div>
+      <div>
+        <dt>Azami brüt</dt>
+        <dd>
+          Dara + yük toplamının üst sınırı (föydeki "max gross"). Dara bundan küçük olmalıdır.
+          <span class="kl-kayit">Şu an hesapta kullanılmaz; kayıt ve kontrol içindir.</span>
+        </dd>
+      </div>
+      <div>
+        <dt>Uzama en fazla</dt>
+        <dd>
+          Uzayabilen dorselerde platformun en fazla ne kadar uzadığı. Uzamayan araçta boş bırakılır.
+          <span class="kl-kayit">Şu an hesapta kullanılmaz; kayıt içindir.</span>
+        </dd>
+      </div>
+    </dl>
+  </section>
+
+  <!-- 7 -->
+  <section class="trezo-card border-0 bg-white yp-kart kl-bolum" [id]="B.kingPin.id" tabindex="-1" [attr.aria-labelledby]="B.kingPin.id + '-baslik'">
+    <h3 class="kl-bolum__baslik" [id]="B.kingPin.id + '-baslik'">
+      <span class="kl-bolum__no">{{ B.kingPin.no }}</span>{{ B.kingPin.baslik }} <small>yalnız yarı römork / dorse</small>
+    </h3>
+    <p>King pin, dorsenin çekiciye bağlandığı pimdir. Konteynerde yoktur; iki alan da boş bırakılır.</p>
+    <dl class="kl-alanlar">
+      <div><dt>X (ön uçtan)</dt><dd>King pin'in dorsenin ön ucuna uzaklığı.</dd></div>
+      <div><dt>Azami bağlantı yükü</dt><dd>King pin'e binebilecek en fazla ağırlık.</dd></div>
+    </dl>
+    <p>
+      Simülasyon, yükün ağırlığının ne kadarının king pin'e, ne kadarının dingillere bindiğini bu konumdan hesaplar.
+      King pin ya da dingil girilmemişse bu hesap yapılamaz. King pin'in yeri için
+      <a [routerLink]="[]" [fragment]="SEMA.lowbed" (click)="bolumeGit(SEMA.lowbed)">Şema 4</a>'e bakın.
+    </p>
+  </section>
+
+  <!-- 8 -->
+  <section class="trezo-card border-0 bg-white yp-kart kl-bolum" [id]="B.yuzeyler.id" tabindex="-1" [attr.aria-labelledby]="B.yuzeyler.id + '-baslik'">
+    <h3 class="kl-bolum__baslik" [id]="B.yuzeyler.id + '-baslik'">
+      <span class="kl-bolum__no">{{ B.yuzeyler.no }}</span>{{ B.yuzeyler.baslik }} <small>en önemli bölüm</small>
+    </h3>
+    <p>
+      Yükleme yüzeyi, sandıkların üstüne konduğu zemindir. Her araçta <strong>en az bir yüzey</strong> olmalıdır.
+      Konteynerde tek yüzey vardır (taban). Lowbed gibi araçlarda birden çok olabilir: önde yüksek "boyun", ortada alçak
+      "havuz", arkada "arka güverte"; her biri ayrı satırdır.
+    </p>
+    <dl class="kl-alanlar">
+      <div><dt>Kod</dt><dd>Yüzeyin kısa adı; aynı araçta tekrar etmez (ör. ANA, BOYUN, HAVUZ).</dd></div>
+      <div><dt>Ad</dt><dd>Okunur ad (ör. Taban).</dd></div>
+      <div>
+        <dt>Başlangıç X</dt>
+        <dd>
+          Yüzeyin, aracın ön ucundan kaç mm sonra başladığı. 40' konteynerde 97'dir: ön duvarın kalınlığı kadar içeriden
+          başlar. Lowbed'in havuzu boyundan sonra başladığı için değeri büyüktür (ör. 3.200).
+        </dd>
+      </div>
+      <div>
+        <dt>Uzunluk</dt>
+        <dd>Yüzeyin önden arkaya boyu (ör. 11.998). Başlangıç X + uzunluk, dış uzunluğu geçemez.</dd>
+      </div>
+      <div>
+        <dt>Genişlik</dt>
+        <dd>Yüzeyin soldan sağa eni (ör. 2.330). Yüzey aracın eninde ortalanmış sayılır; dış genişlikten büyük olamaz.</dd>
+      </div>
+      <div>
+        <dt>Yerden yükseklik</dt>
+        <dd>Yükleme zemininin yerden yüksekliği (ör. konteyner yere konduğunda 150; lowbed havuzunda 900 gibi).</dd>
+      </div>
+      <div>
+        <dt>Kullanılabilir (iç) yükseklik</dt>
+        <dd>
+          Zeminden tavana kadar kullanılabilen yükseklik (ör. 2.350). Sandıkların üst üste konması (istif) bu sınıra göre
+          yapılır. Kapalı araçlarda girilmelidir. Tavanı olmayan açık platformda boş bırakılır; o durumda simülasyon
+          yükseklik sınırını bilmediği için üst üste koyma yapmaz.
+        </dd>
+      </div>
+      <div>
+        <dt>Taban yükü (kg/m²)</dt>
+        <dd>
+          Zeminin metrekare başına taşıyabileceği ağırlık. Girilirse, bir sandığın (ve üstündekilerin) ağırlığı taban
+          alanına bölünüp bu sınırla karşılaştırılır; aşılırsa uygunsuz yazılır. Boşsa bu kontrol yapılmaz.
+        </dd>
+      </div>
+      <div>
+        <dt>Noktasal yük (kg)</dt>
+        <dd>
+          Zeminin tek noktada taşıyabileceği ağırlık.
+          <span class="kl-kayit">Şu an hesapta kullanılmaz; kayıt içindir.</span>
+        </dd>
+      </div>
+    </dl>
+    <p class="kl-kural">
+      <i class="ri-ruler-line" aria-hidden="true"></i>
+      <span><strong>Kural:</strong> yüzeyler önden arkaya birbirinin üstüne binemez (bir yüzeyin bittiği yerden önce
+        diğeri başlayamaz).</span>
+    </p>
+
+    <figure class="kl-sema" data-sema="yuzey" [id]="SEMA.konteyner" tabindex="-1">
+      <div class="kl-sema__cizim">
+        <svg viewBox="0 0 760 428" role="img"
+             aria-label="40 fit konteynerin yükleme yüzeyi, yandan ve üstten. Dış uzunluk 12.192 mm; taban ön uçtan 97 mm sonra başlar ve 11.998 mm uzunluğundadır. Dış genişlik 2.438 mm içinde 2.330 mm taban ortalanmıştır; her yanda 54 mm duvar kalır.">
+          <text class="s-panel" x="40" y="18">Yandan bakış</text>
+          <path class="s-uzanti" d="M80 36 V60 M680 36 V60" />
+          <path class="s-olcu" d="M80 44 H680 M80 44 l7 -3.5 v7 z M680 44 l-7 -3.5 v7 z" />
+          <text class="s-kalin" x="380" y="36" text-anchor="middle">Dış uzunluk 12.192 mm</text>
+          <rect class="s-govde" x="80" y="60" width="600" height="120" rx="3" />
+          <rect class="s-bosluk" x="102" y="70" width="556" height="98" />
+          <path class="s-yuzey" d="M102 168 H658" />
+          <text class="s-yon" x="114" y="124">ÖN</text>
+          <text class="s-yon" x="646" y="118" text-anchor="end">ARKA</text>
+          <text class="s-soluk" x="646" y="134" text-anchor="end">kapı</text>
+          <text class="s-yuzey-yazi" x="380" y="158" text-anchor="middle">Taban (ANA)</text>
+          <path class="s-uzanti" d="M80 180 V212 M102 168 V212 M658 168 V212" />
+          <path class="s-olcu" d="M80 204 H102 M80 204 l7 -3.5 v7 z M102 204 l-7 -3.5 v7 z" />
+          <path class="s-olcu" d="M102 204 H658 M102 204 l7 -3.5 v7 z M658 204 l-7 -3.5 v7 z" />
+          <text class="s-kalin" x="62" y="228">Başlangıç X = 97 mm</text>
+          <text class="s-kalin" x="380" y="228" text-anchor="middle">Uzunluk 11.998 mm</text>
+
+          <text class="s-panel" x="40" y="264">Üstten bakış</text>
+          <text class="s-soluk" x="380" y="282" text-anchor="middle">duvar 54 mm</text>
+          <rect class="s-govde" x="80" y="290" width="600" height="110" rx="3" />
+          <rect class="s-yuzey-alan" x="102" y="302" width="556" height="86" />
+          <text class="s-yon" x="114" y="349">ÖN</text>
+          <text class="s-yon" x="646" y="349" text-anchor="end">ARKA</text>
+          <text class="s-soluk" x="380" y="318" text-anchor="middle">SAĞ</text>
+          <text class="s-yuzey-yazi" x="380" y="342" text-anchor="middle">Taban (ANA)</text>
+          <text class="s-soluk" x="380" y="358" text-anchor="middle">11.998 × 2.330 mm</text>
+          <text class="s-soluk" x="380" y="381" text-anchor="middle">SOL</text>
+          <text class="s-soluk" x="380" y="417" text-anchor="middle">duvar 54 mm</text>
+          <path class="s-uzanti" d="M102 302 H48 M102 388 H48 M680 290 H712 M680 400 H712" />
+          <path class="s-olcu" d="M56 302 V388 M56 302 l-3.5 7 h7 z M56 388 l-3.5 -7 h7 z" />
+          <text class="s-kalin" x="40" y="345" text-anchor="middle" transform="rotate(-90 40 345)">Genişlik 2.330</text>
+          <path class="s-olcu" d="M704 290 V400 M704 290 l-3.5 7 h7 z M704 400 l-3.5 -7 h7 z" />
+          <text class="s-kalin" x="726" y="345" text-anchor="middle" transform="rotate(-90 726 345)">Dış genişlik 2.438</text>
+        </svg>
+      </div>
+      <figcaption>
+        <strong>Şema 3 · Tek yüzey: 40' konteyner (yandan ve üstten).</strong>
+        Dış uzunluk 12.192 mm'dir. Taban, ön uçtan 97 mm sonra başlar (Başlangıç X = 97) ve 11.998 mm uzunluğundadır.
+        Üstten bakışta 2.438 mm'lik dış genişliğin içinde 2.330 mm'lik taban ortalanmıştır; her yanda 54 mm duvar kalır.
+        Çizim ölçekli değildir; duvar kalınlıkları görünsün diye büyütülmüştür.
+      </figcaption>
+    </figure>
+
+    <figure class="kl-sema" data-sema="lowbed" [id]="SEMA.lowbed" tabindex="-1">
+      <div class="kl-sema__cizim">
+        <svg viewBox="0 0 760 342" role="img"
+             aria-label="Lowbed örneği, yandan bakış. Önde yüksek BOYUN yüzeyi: başlangıç X 0, uzunluk 3.000, yerden yükseklik 1.600. Ortada alçak HAVUZ yüzeyi: başlangıç X 3.200, uzunluk 9.000, yerden yükseklik 900. King pin X 800; dingiller X 12.600, 13.960 ve 15.320.">
+          <text class="s-yon" x="100" y="26">ÖN</text>
+          <text class="s-yon" x="706" y="26" text-anchor="end">ARKA</text>
+          <path class="s-yer" d="M40 270 H726" />
+          <path class="s-govde" d="M100 160 H212.5 L220 208 H557.5 V190 H706 V212 H566 V222 H214 L205 180 H100 Z" />
+          <rect class="s-pim" x="127" y="180" width="6" height="16" />
+          <circle class="s-teker" cx="572.5" cy="249" r="21" />
+          <circle class="s-teker" cx="623.5" cy="249" r="21" />
+          <circle class="s-teker" cx="674.5" cy="249" r="21" />
+          <path class="s-yuzey" d="M100 160 H212.5 M220 208 H557.5" />
+
+          <path class="s-uzanti" d="M100 52 V160 M220 52 V208 M212.5 122 V160 M557.5 180 V208 M100 160 H68" />
+          <path class="s-olcu" d="M100 60 H220 M100 60 l7 -3.5 v7 z M220 60 l-7 -3.5 v7 z" />
+          <text class="s-kalin" x="226" y="56">HAVUZ başlangıç X = 3.200</text>
+          <text class="s-yuzey-yazi" x="156" y="88" text-anchor="middle">BOYUN</text>
+          <text class="s-soluk" x="156" y="104" text-anchor="middle">başlangıç X = 0</text>
+          <path class="s-olcu" d="M100 128 H212.5 M100 128 l7 -3.5 v7 z M212.5 128 l-7 -3.5 v7 z" />
+          <text class="s-kalin" x="156" y="121" text-anchor="middle">Uzunluk 3.000</text>
+          <text class="s-yuzey-yazi" x="388" y="152" text-anchor="middle">HAVUZ</text>
+          <path class="s-olcu" d="M220 186 H557.5 M220 186 l7 -3.5 v7 z M557.5 186 l-7 -3.5 v7 z" />
+          <text class="s-kalin" x="388" y="179" text-anchor="middle">Uzunluk 9.000</text>
+
+          <path class="s-olcu" d="M76 160 V270 M76 160 l-3.5 7 h7 z M76 270 l-3.5 -7 h7 z" />
+          <text class="s-kalin" x="46" y="215" text-anchor="middle" transform="rotate(-90 46 215)">Yerden yükseklik</text>
+          <text class="s-kalin" x="62" y="215" text-anchor="middle" transform="rotate(-90 62 215)">1.600</text>
+          <path class="s-olcu" d="M330 208 V270 M330 208 l-3.5 7 h7 z M330 270 l-3.5 -7 h7 z" />
+          <text class="s-kalin" x="340" y="250">Yerden yükseklik 900</text>
+
+          <path class="s-uzanti" d="M130 196 V290 M572.5 270 V290 M623.5 270 V290 M674.5 270 V290 M100 270 V290" />
+          <path class="s-olcu" d="M100 296 H716 M726 296 l-10 -4.5 v9 z M100 290 V302 M130 290 V302 M572.5 290 V302 M623.5 290 V302 M674.5 290 V302" />
+          <text x="734" y="300"><tspan class="s-x">X</tspan></text>
+          <text class="s-kucuk" x="100" y="316" text-anchor="middle">0</text>
+          <text class="s-kucuk" x="130" y="316" text-anchor="middle">800</text>
+          <text class="s-soluk" x="130" y="332" text-anchor="middle">king pin</text>
+          <text class="s-kucuk" x="572.5" y="316" text-anchor="middle">12.600</text>
+          <text class="s-kucuk" x="623.5" y="316" text-anchor="middle">13.960</text>
+          <text class="s-kucuk" x="674.5" y="316" text-anchor="middle">15.320</text>
+          <text class="s-soluk" x="623.5" y="332" text-anchor="middle">dingiller (üçü grup 1)</text>
+        </svg>
+      </div>
+      <figcaption>
+        <strong>Şema 4 · Birden çok yüzey: lowbed örneği (yandan bakış).</strong>
+        Önde yüksek BOYUN (başlangıç X 0, uzunluk 3.000, yerden yükseklik 1.600) ve ortada alçak HAVUZ (başlangıç X 3.200,
+        uzunluk 9.000, yerden yükseklik 900) iki ayrı yüzey satırıdır. Alttaki X çizgisi king pin'in (X 800) ve
+        dingillerin (X 12.600, 13.960, 15.320) ön uçtan uzaklığını gösterir. Değerler örnektir; gerçek değerleri föyden
+        girin.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- 9 -->
+  <section class="trezo-card border-0 bg-white yp-kart kl-bolum" [id]="B.acikliklar.id" tabindex="-1" [attr.aria-labelledby]="B.acikliklar.id + '-baslik'">
+    <h3 class="kl-bolum__baslik" [id]="B.acikliklar.id + '-baslik'">
+      <span class="kl-bolum__no">{{ B.acikliklar.no }}</span>{{ B.acikliklar.baslik }} <small>yük nereden girer?</small>
+    </h3>
+    <p>
+      Açıklık, yükün araca sokulduğu boşluktur: kapı, yan açıklık ya da üst açıklık. Ölçüler <strong>"net"tir</strong>:
+      gerçekten geçilebilen boşluk. Simülasyon bir sandığın açıklıktan geçip geçmediğine bakar; geçmiyorsa içeride yer
+      olsa bile o araca koymaz.
+    </p>
+    <dl class="kl-alanlar">
+      <div>
+        <dt>Arka / Ön</dt>
+        <dd>
+          Kapı. <strong>Genişlik</strong> ve <strong>yükseklik</strong> girilir (ör. 40' konteyner arka kapı
+          2.286 × 2.261). Kapı çoğu zaman iç ölçüden dardır; bu yüzden ayrı girilir.
+        </dd>
+      </div>
+      <div>
+        <dt>Sol / Sağ</dt>
+        <dd>
+          Yan açıklık (ör. tenteli dorsede perde açılınca). <strong>Başlangıç X</strong> (açıklığın ön uçtan nerede
+          başladığı), <strong>uzunluk</strong> ve <strong>yükseklik</strong> girilir.
+        </dd>
+      </div>
+      <div>
+        <dt>Üst</dt>
+        <dd>
+          Üstten vinçle yükleme (Open Top, Hardtop). <strong>Başlangıç X</strong>, <strong>uzunluk</strong> ve
+          <strong>genişlik</strong> girilir.
+        </dd>
+      </div>
+    </dl>
+    <p>
+      Arkadan yüklenen bir araçta arka kapı girilmemişse kapıdan geçiş kontrolü yapılamaz. Hangi açıklıkların beklendiği
+      araç tipine bağlıdır (kapalı konteyner: arka; Open Top: arka ve üst; tenteli: sol ve sağ).
+    </p>
+
+    <div class="kl-sema-izgara">
+      <figure class="kl-sema kl-sema--kucuk" data-sema="aciklik-arka">
+        <div class="kl-sema__cizim">
+          <svg viewBox="0 0 300 240" role="img"
+               aria-label="Arka kapı, arkadan bakış: aracın arka yüzünde kapı açıklığı; genişlik soldan sağa, yükseklik aşağıdan yukarı ölçülür.">
+            <path class="s-yer" d="M20 196 H280" />
+            <rect class="s-govde" x="70" y="36" width="160" height="160" rx="3" />
+            <rect class="s-aciklik" x="84" y="56" width="132" height="132" />
+            <text class="s-soluk" x="70" y="26">SOL</text>
+            <text class="s-soluk" x="230" y="26" text-anchor="end">SAĞ</text>
+            <text class="s-aciklik-yazi" x="150" y="118" text-anchor="middle">kapı açıklığı</text>
+            <text class="s-soluk" x="150" y="134" text-anchor="middle">net geçiş</text>
+            <path class="s-uzanti" d="M84 188 V220 M216 188 V220 M84 56 H40 M84 188 H40" />
+            <path class="s-olcu" d="M84 212 H216 M84 212 l7 -3.5 v7 z M216 212 l-7 -3.5 v7 z" />
+            <text class="s-kalin" x="150" y="230" text-anchor="middle">Genişlik</text>
+            <path class="s-olcu" d="M48 56 V188 M48 56 l-3.5 7 h7 z M48 188 l-3.5 -7 h7 z" />
+            <text class="s-kalin" x="34" y="122" text-anchor="middle" transform="rotate(-90 34 122)">Yükseklik</text>
+          </svg>
+        </div>
+        <figcaption>
+          <strong>Şema 5a · Arka kapı (arkadan bakış).</strong>
+          Genişlik × yükseklik: kapıdan gerçekten geçilebilen boşluk.
+        </figcaption>
+      </figure>
+
+      <figure class="kl-sema kl-sema--kucuk" data-sema="aciklik-yan">
+        <div class="kl-sema__cizim">
+          <svg viewBox="0 0 300 240" role="img"
+               aria-label="Yan açıklık, yandan bakış: başlangıç X ön uçtan açıklığın başına, uzunluk önden arkaya, yükseklik aşağıdan yukarı ölçülür.">
+            <path class="s-yer" d="M14 204 H286" />
+            <rect class="s-govde" x="30" y="58" width="240" height="118" rx="3" />
+            <circle class="s-teker" cx="206" cy="189" r="15" />
+            <circle class="s-teker" cx="240" cy="189" r="15" />
+            <rect class="s-aciklik" x="84" y="74" width="150" height="94" />
+            <text class="s-aciklik-yazi" x="180" y="100" text-anchor="middle">yan açıklık</text>
+            <path class="s-uzanti" d="M30 30 V58 M84 30 V74 M234 30 V74" />
+            <path class="s-olcu" d="M30 38 H84 M30 38 l7 -3.5 v7 z M84 38 l-7 -3.5 v7 z" />
+            <path class="s-olcu" d="M84 38 H234 M84 38 l7 -3.5 v7 z M234 38 l-7 -3.5 v7 z" />
+            <text class="s-kalin" x="22" y="26">Başlangıç X</text>
+            <text class="s-kalin" x="159" y="26" text-anchor="middle">Uzunluk</text>
+            <path class="s-olcu" d="M108 74 V168 M108 74 l-3.5 7 h7 z M108 168 l-3.5 -7 h7 z" />
+            <text class="s-kalin" x="118" y="132">Yükseklik</text>
+            <text class="s-yon" x="30" y="226">ÖN</text>
+            <text class="s-yon" x="270" y="226" text-anchor="end">ARKA</text>
+          </svg>
+        </div>
+        <figcaption>
+          <strong>Şema 5b · Yan açıklık (yandan bakış).</strong>
+          Başlangıç X ön uçtan ölçülür; ardından uzunluk ve yükseklik.
+        </figcaption>
+      </figure>
+
+      <figure class="kl-sema kl-sema--kucuk" data-sema="aciklik-ust">
+        <div class="kl-sema__cizim">
+          <svg viewBox="0 0 300 240" role="img"
+               aria-label="Üst açıklık, üstten bakış: başlangıç X ön uçtan açıklığın başına, uzunluk önden arkaya, genişlik soldan sağa ölçülür.">
+            <rect class="s-govde" x="30" y="84" width="240" height="100" rx="3" />
+            <rect class="s-aciklik" x="64" y="100" width="186" height="68" />
+            <text class="s-aciklik-yazi" x="126" y="124" text-anchor="middle">üst açıklık</text>
+            <path class="s-uzanti" d="M30 56 V84 M64 56 V100 M250 56 V100" />
+            <path class="s-olcu" d="M30 64 H64 M30 64 l7 -3.5 v7 z M64 64 l-7 -3.5 v7 z" />
+            <path class="s-olcu" d="M64 64 H250 M64 64 l7 -3.5 v7 z M250 64 l-7 -3.5 v7 z" />
+            <text class="s-kalin" x="22" y="52">Başlangıç X</text>
+            <text class="s-kalin" x="157" y="52" text-anchor="middle">Uzunluk</text>
+            <path class="s-olcu" d="M226 100 V168 M226 100 l-3.5 7 h7 z M226 168 l-3.5 -7 h7 z" />
+            <text class="s-kalin" x="218" y="150" text-anchor="end">Genişlik</text>
+            <text class="s-yon" x="30" y="208">ÖN</text>
+            <text class="s-yon" x="270" y="208" text-anchor="end">ARKA</text>
+          </svg>
+        </div>
+        <figcaption>
+          <strong>Şema 5c · Üst açıklık (üstten bakış).</strong>
+          Başlangıç X ön uçtan ölçülür; ardından uzunluk ve genişlik.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section class="trezo-card border-0 bg-white yp-kart kl-bolum" [id]="B.engeller.id" tabindex="-1" [attr.aria-labelledby]="B.engeller.id + '-baslik'">
+    <h3 class="kl-bolum__baslik" [id]="B.engeller.id + '-baslik'"><span class="kl-bolum__no">{{ B.engeller.no }}</span>{{ B.engeller.baslik }}</h3>
+    <p>
+      Engel, yükleme hacminin içinde yer kaplayan ve sandığın konamayacağı parçadır: dikme, travers, teker havuzu
+      (tekerleğin içeri taşan kutusu), uç duvar, kapak. Her engel <strong>bir kutu</strong> olarak girilir.
+    </p>
+    <dl class="kl-alanlar">
+      <div><dt>Tür</dt><dd>Engelin ne olduğu.</dd></div>
+      <div>
+        <dt>X, Y, Z</dt>
+        <dd>Kutunun öne, sola ve yere en yakın köşesinin konumu (X ön uçtan, Y sol kenardan, Z yerden).</dd>
+      </div>
+      <div>
+        <dt>Uzunluk / genişlik / yükseklik</dt>
+        <dd>Kutunun önden arkaya, soldan sağa ve aşağıdan yukarı ölçüleri.</dd>
+      </div>
+      <div>
+        <dt>Sökülebilir</dt>
+        <dd>
+          Engel yükleme sırasında çıkarılabiliyorsa işaretlenir. Sökülebilir engel simülasyonda yer kaplamaz (yokmuş gibi
+          yerleştirilir), çizimde soluk gösterilir.
+        </dd>
+      </div>
+      <div><dt>Açıklama</dt><dd>Not.</dd></div>
+    </dl>
+    <p>Engeli olmayan araçta bu tablo boş kalır.</p>
+
+    <figure class="kl-sema" data-sema="engel">
+      <div class="kl-sema__cizim">
+        <svg viewBox="0 0 790 310" role="img"
+             aria-label="Engel kutusu, üstten ve yandan. X ön uçtan, Y sol kenardan, Z yerden kutunun öne, sola ve yere en yakın köşesine ölçülür. Uzunluk X yönünde, genişlik Y yönünde, yükseklik Z yönündedir.">
+          <text class="s-panel" x="30" y="18">Üstten bakış</text>
+          <text class="s-yon" x="60" y="42">ÖN</text>
+          <text class="s-yon" x="300" y="42" text-anchor="end">ARKA</text>
+          <rect class="s-govde" x="60" y="50" width="240" height="150" rx="3" />
+          <rect class="s-yuzey-alan" x="72" y="60" width="216" height="130" />
+          <text class="s-soluk" x="180" y="78" text-anchor="middle">SAĞ</text>
+          <text class="s-soluk" x="180" y="182" text-anchor="middle">SOL</text>
+          <rect class="s-engel" x="140" y="100" width="80" height="50" />
+          <text class="s-engel-yazi" x="180" y="129" text-anchor="middle">engel</text>
+          <circle class="s-nokta" cx="140" cy="150" r="4.5" />
+          <path class="s-uzanti" d="M60 200 V236 M140 150 V236 M220 150 V236 M220 100 H326 M220 150 H326 M300 200 H326" />
+          <path class="s-olcu" d="M60 228 H140 M60 228 l7 -3.5 v7 z M140 228 l-7 -3.5 v7 z" />
+          <path class="s-olcu" d="M140 228 H220 M140 228 l7 -3.5 v7 z M220 228 l-7 -3.5 v7 z" />
+          <text class="s-kalin" x="100" y="246" text-anchor="middle"><tspan class="s-x">X</tspan> (ön uçtan)</text>
+          <text class="s-kalin" x="180" y="246" text-anchor="middle">Uzunluk</text>
+          <path class="s-olcu" d="M318 150 V200 M318 150 l-3.5 7 h7 z M318 200 l-3.5 -7 h7 z" />
+          <text class="s-kalin" x="328" y="180"><tspan class="s-y">Y</tspan> (sol kenardan)</text>
+          <path class="s-olcu" d="M318 100 V150 M318 100 l-3.5 7 h7 z M318 150 l-3.5 -7 h7 z" />
+          <text class="s-kalin" x="328" y="129">Genişlik</text>
+          <circle class="s-nokta" cx="65" cy="278" r="4.5" />
+          <text class="s-soluk" x="76" y="282">öne, sola ve yere en yakın köşe (X, Y, Z buraya ölçülür)</text>
+
+          <text class="s-panel" x="440" y="18">Yandan bakış</text>
+          <text class="s-yon" x="460" y="42">ÖN</text>
+          <text class="s-yon" x="760" y="42" text-anchor="end">ARKA</text>
+          <path class="s-yer" d="M440 262 H780" />
+          <rect class="s-govde" x="460" y="200" width="300" height="14" />
+          <circle class="s-teker" cx="692" cy="241" r="21" />
+          <circle class="s-teker" cx="738" cy="241" r="21" />
+          <rect class="s-hacim" x="472" y="70" width="276" height="130" />
+          <text class="s-soluk" x="610" y="88" text-anchor="middle">yükleme hacmi</text>
+          <path class="s-yuzey" d="M472 200 H748" />
+          <rect class="s-engel" x="560" y="140" width="90" height="60" />
+          <text class="s-engel-yazi" x="605" y="174" text-anchor="middle">engel</text>
+          <circle class="s-nokta" cx="560" cy="200" r="4.5" />
+          <path class="s-uzanti" d="M460 214 V288 M560 200 V288 M650 200 V288 M560 200 H528 M650 140 H672" />
+          <path class="s-olcu" d="M536 200 V262 M536 200 l-3.5 7 h7 z M536 262 l-3.5 -7 h7 z" />
+          <text class="s-kalin" x="528" y="238" text-anchor="end"><tspan class="s-z">Z</tspan> (yerden)</text>
+          <path class="s-olcu" d="M664 140 V200 M664 140 l-3.5 7 h7 z M664 200 l-3.5 -7 h7 z" />
+          <text class="s-kalin" x="674" y="174">Yükseklik</text>
+          <path class="s-olcu" d="M460 280 H560 M460 280 l7 -3.5 v7 z M560 280 l-7 -3.5 v7 z" />
+          <path class="s-olcu" d="M560 280 H650 M560 280 l7 -3.5 v7 z M650 280 l-7 -3.5 v7 z" />
+          <text class="s-kalin" x="510" y="298" text-anchor="middle"><tspan class="s-x">X</tspan> (ön uçtan)</text>
+          <text class="s-kalin" x="605" y="298" text-anchor="middle">Uzunluk</text>
+        </svg>
+      </div>
+      <figcaption>
+        <strong>Şema 6 · Engel kutusu (üstten ve yandan).</strong>
+        X, Y ve Z kutunun öne, sola ve yere en yakın köşesini (siyah nokta) verir: X ön uçtan, Y sol kenardan, Z yerden
+        ölçülür. Uzunluk X yönünde (önden arkaya), genişlik Y yönünde (soldan sağa), yükseklik Z yönünde (aşağıdan
+        yukarı) uzanır.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- 11 -->
+  <section class="trezo-card border-0 bg-white yp-kart kl-bolum" [id]="B.dingiller.id" tabindex="-1" [attr.aria-labelledby]="B.dingiller.id + '-baslik'">
+    <h3 class="kl-bolum__baslik" [id]="B.dingiller.id + '-baslik'">
+      <span class="kl-bolum__no">{{ B.dingiller.no }}</span>{{ B.dingiller.baslik }} <small>yalnız karayolu aracı</small>
+    </h3>
+    <p>Konteynerde dingil yoktur; tablo boş kalır.</p>
+    <dl class="kl-alanlar">
+      <div><dt>X</dt><dd>Dingilin ön uçtan uzaklığı.</dd></div>
+      <div>
+        <dt>Tür</dt>
+        <dd>
+          Tahriksiz (serbest dönen), tahrikli (motor gücü alan) ya da pandül (salınımlı, ağır yük dorselerinde).
+        </dd>
+      </div>
+      <div>
+        <dt>Grup no</dt>
+        <dd>
+          Yan yana duran ve yükü paylaşan dingiller aynı grup numarasını alır (ör. üç dingilli tandem için üçü de 1).
+        </dd>
+      </div>
+      <div><dt>Kapasite</dt><dd>Dingilin taşıyabileceği ağırlık.</dd></div>
+    </dl>
+    <p>
+      Simülasyon yükten dingillere binen ağırlığı hesaplar ve kapasiteyi aşarsa uygunsuz yazar. Bu hesap yalnız tek
+      dingil grubu ve king pin girilmişse yapılır. Dingillerin yeri için
+      <a [routerLink]="[]" [fragment]="SEMA.lowbed" (click)="bolumeGit(SEMA.lowbed)">Şema 4</a>'e bakın.
+    </p>
+  </section>
+
+  <!-- 12 -->
+  <section class="trezo-card border-0 bg-white yp-kart kl-bolum" [id]="B.baglamaNoktalari.id" tabindex="-1" [attr.aria-labelledby]="B.baglamaNoktalari.id + '-baslik'">
+    <h3 class="kl-bolum__baslik" [id]="B.baglamaNoktalari.id + '-baslik'"><span class="kl-bolum__no">{{ B.baglamaNoktalari.no }}</span>{{ B.baglamaNoktalari.baslik }}</h3>
+    <p>Yükün sabitlendiği halka ve kancaların yeridir.</p>
+    <dl class="kl-alanlar">
+      <div><dt>X, Y, Z</dt><dd>Noktanın konumu.</dd></div>
+      <div><dt>Kapasite (daN)</dt><dd>Noktanın taşıyabileceği kuvvet.</dd></div>
+    </dl>
+    <p><span class="kl-kayit">Şu an hesapta kullanılmaz; kayıt içindir.</span></p>
+  </section>
+
+  <!-- 13 -->
+  <section class="trezo-card border-0 bg-white yp-kart kl-bolum" [id]="B.ornekKonteyner.id" tabindex="-1" [attr.aria-labelledby]="B.ornekKonteyner.id + '-baslik'">
+    <h3 class="kl-bolum__baslik" [id]="B.ornekKonteyner.id + '-baslik'"><span class="kl-bolum__no">{{ B.ornekKonteyner.no }}</span>{{ B.ornekKonteyner.baslik }}</h3>
+    <div class="kl-tablo-sarmal">
+      <table class="kl-tablo">
+        <caption class="visually-hidden">40' standart konteyner için formda girilecek değerler</caption>
+        <thead><tr><th scope="col">Bölüm</th><th scope="col">Alan</th><th scope="col">Değer</th></tr></thead>
+        <tbody>
+          <tr><th scope="row" rowspan="6">Ölçü ve ağırlık</th><td>Dış uzunluk × genişlik × yükseklik</td><td class="kl-sayi">12.192 × 2.438 × 2.591 mm</td></tr>
+          <tr><td>Dara</td><td class="kl-sayi">3.750 kg</td></tr>
+          <tr><td>Teknik kapasite</td><td class="kl-sayi">26.730 kg</td></tr>
+          <tr><td>Azami brüt</td><td class="kl-sayi">30.480 kg</td></tr>
+          <tr><td>Uzama en fazla</td><td class="kl-bos">boş</td></tr>
+          <tr><td>King pin</td><td class="kl-bos">boş</td></tr>
+          <tr><th scope="row" rowspan="7">Yükleme yüzeyi</th><td>Kod</td><td>ANA</td></tr>
+          <tr><td>Ad</td><td>Taban</td></tr>
+          <tr><td>Başlangıç X</td><td class="kl-sayi">97</td></tr>
+          <tr><td>Uzunluk</td><td class="kl-sayi">11.998</td></tr>
+          <tr><td>Genişlik</td><td class="kl-sayi">2.330</td></tr>
+          <tr><td>Yerden yükseklik</td><td class="kl-sayi">150</td></tr>
+          <tr><td>Kullanılabilir (iç) yükseklik</td><td class="kl-sayi">2.350</td></tr>
+          <tr><th scope="row" rowspan="3">Açıklık</th><td>Taraf</td><td>Arka</td></tr>
+          <tr><td>Genişlik</td><td class="kl-sayi">2.286</td></tr>
+          <tr><td>Yükseklik</td><td class="kl-sayi">2.261</td></tr>
+          <tr><th scope="row">Engel, dingil, bağlama noktası</th><td colspan="2" class="kl-bos">yok</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4 class="kl-alt-baslik">Nasıl okunur?</h4>
+    <ul class="kl-liste">
+      <li>
+        Dış uzunluk 12.192, iç uzunluk 11.998; aradaki 194 mm ön duvar ile kapıdır, taban önden 97 mm içeride başlar.
+      </li>
+      <li>Dış genişlik 2.438, iç genişlik 2.330; her yanda 54 mm duvar kalır.</li>
+      <li>
+        İç yükseklik 2.350 olsa da kapı 2.261 yüksekliğindedir: 2.300 mm'lik bir sandık içeride sığar ama kapıdan geçmez;
+        simülasyon bunu yakalar.
+      </li>
+    </ul>
+    <p class="kl-gonderme">
+      Çizimi için <a [routerLink]="[]" [fragment]="SEMA.konteyner" (click)="bolumeGit(SEMA.konteyner)">Şema 3</a>'e bakın.
+    </p>
+  </section>
+
+  <!-- 14 -->
+  <section class="trezo-card border-0 bg-white yp-kart kl-bolum" [id]="B.ornekLowbed.id" tabindex="-1" [attr.aria-labelledby]="B.ornekLowbed.id + '-baslik'">
+    <h3 class="kl-bolum__baslik" [id]="B.ornekLowbed.id + '-baslik'"><span class="kl-bolum__no">{{ B.ornekLowbed.no }}</span>{{ B.ornekLowbed.baslik }}</h3>
+    <p class="kl-kural" data-ornek-uyarisi>
+      <i class="ri-alert-line" aria-hidden="true"></i>
+      <span><strong>Bu değerler örnektir.</strong> Yalnız alanların nasıl doldurulduğunu gösterir; kendi aracınızın
+        değerlerini gerçek föyden girin.</span>
+    </p>
+    <div class="kl-tablo-sarmal">
+      <table class="kl-tablo">
+        <caption class="visually-hidden">Lowbed için örnek değerler</caption>
+        <thead>
+          <tr><th scope="col">Yüzey</th><th scope="col">Kod</th><th scope="col">Başlangıç X</th><th scope="col">Uzunluk</th>
+            <th scope="col">Genişlik</th><th scope="col">Yerden yükseklik</th><th scope="col">İç yükseklik</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Yüzey 1</th><td>BOYUN</td><td class="kl-sayi">0</td><td class="kl-sayi">3.000</td><td class="kl-sayi">2.550</td><td class="kl-sayi">1.600</td><td class="kl-bos">boş</td></tr>
+          <tr><th scope="row">Yüzey 2</th><td>HAVUZ</td><td class="kl-sayi">3.200</td><td class="kl-sayi">9.000</td><td class="kl-sayi">2.550</td><td class="kl-sayi">900</td><td class="kl-bos">boş</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul class="kl-liste">
+      <li>King pin X 800; dingiller X 12.600, 13.960, 15.320 (üçü grup 1).</li>
+      <li>İç yükseklik boş (açık platform), açıklık yok (yandan/üstten serbest yüklenir).</li>
+    </ul>
+    <p class="kl-gonderme">
+      Çizimi için <a [routerLink]="[]" [fragment]="SEMA.lowbed" (click)="bolumeGit(SEMA.lowbed)">Şema 4</a>'e bakın.
+    </p>
+  </section>
+
+  <!-- 15 -->
+  <section class="trezo-card border-0 bg-white yp-kart kl-bolum" [id]="B.bosBirakilirsa.id" tabindex="-1" [attr.aria-labelledby]="B.bosBirakilirsa.id + '-baslik'">
+    <h3 class="kl-bolum__baslik" [id]="B.bosBirakilirsa.id + '-baslik'"><span class="kl-bolum__no">{{ B.bosBirakilirsa.no }}</span>{{ B.bosBirakilirsa.baslik }}</h3>
+    <div class="kl-tablo-sarmal">
+      <table class="kl-tablo">
+        <caption class="visually-hidden">Boş bırakılan alanın simülasyona etkisi</caption>
+        <thead><tr><th scope="col">Boş bırakılan alan</th><th scope="col">Sonuç</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Dış ölçü</th><td>Yüklü toplam ölçü ve taşma, yüzey ölçülerinden tahmini çıkar.</td></tr>
+          <tr><th scope="row">Dara</th><td>Raporda brüt ağırlık yazılmaz.</td></tr>
+          <tr class="kl-kritik"><th scope="row">Teknik kapasite</th><td>Ağırlık sınırı uygulanmaz (araç ağırlığa bakılmadan doldurulur).</td></tr>
+          <tr class="kl-kritik"><th scope="row">İç yükseklik (kapalı araç)</th><td>Yükseklik kontrolü ve üst üste koyma yapılmaz.</td></tr>
+          <tr class="kl-kritik"><th scope="row">Arka kapı (arkadan yüklenen araç)</th><td>Kapıdan geçiş kontrolü yapılmaz.</td></tr>
+          <tr><th scope="row">Taban yükü</th><td>Zemin basıncı kontrolü yapılmaz.</td></tr>
+          <tr><th scope="row">King pin / dingil</th><td>Dingil ve bağlantı yükü hesaplanmaz.</td></tr>
+          <tr><th scope="row">Azami brüt, uzama, noktasal yük, bağlama noktaları</th><td>Hesap etkilenmez (kayıt alanları).</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="kl-kural">
+      <i class="ri-alert-line" aria-hidden="true"></i>
+      <span><strong>Not:</strong> yapılamayan kontrol simülasyon sonucunda ve raporda gösterilmez; bu yüzden eksik veri
+        "sorun yok" gibi görünebilir. Emin olmadığınız değeri boş bırakın ama kritik olanları (teknik kapasite, iç
+        yükseklik, kapı) mutlaka föyden girin.</span>
+    </p>
+  </section>
+
+  <!-- 16 -->
+  <section class="trezo-card border-0 bg-white yp-kart kl-bolum" [id]="B.kontrolListesi.id" tabindex="-1" [attr.aria-labelledby]="B.kontrolListesi.id + '-baslik'">
+    <h3 class="kl-bolum__baslik" [id]="B.kontrolListesi.id + '-baslik'"><span class="kl-bolum__no">{{ B.kontrolListesi.no }}</span>{{ B.kontrolListesi.baslik }}</h3>
+    <ul class="kl-kontrol">
+      <li>Bütün değerler mm ve kg mı, tam sayı mı?</li>
+      <li>Bilmediğim alanları boş bıraktım mı (0 yazmadım mı)?</li>
+      <li>Başlangıç X + uzunluk dış uzunluğu aşmıyor mu? Yüzey genişliği dış genişliği aşmıyor mu?</li>
+      <li>Kapı ölçüsünü iç ölçüden ayrı girdim mi?</li>
+      <li>Teknik kapasite ve iç yükseklik dolu mu?</li>
+      <li>Kaynak belgesini yazdım mı?</li>
+    </ul>
+  </section>
+
+  <button type="button" class="tz-btn kl-basa-don kl-yazdirma-gizle" data-icindekiler (click)="bolumeGit(ICINDEKILER)">
+    <i class="ri-arrow-up-line tz-ico-primary" aria-hidden="true"></i>İçindekiler
+  </button>
+</div>

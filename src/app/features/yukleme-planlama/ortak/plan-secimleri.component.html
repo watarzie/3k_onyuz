@@ -1,0 +1,37 @@
+<div class="ps-aile">
+  <label class="tz-field">
+    <span>Taşıma ailesi <b>*</b></span>
+    <select class="form-select" [disabled]="kilitli()" [ngModel]="aileId()" (ngModelChange)="aileSec(+$event)">
+      @for (a of tanimlar()?.tasimaAileleri ?? []; track a.id) { <option [ngValue]="a.id">{{ a.ad }}</option> }
+    </select>
+  </label>
+</div>
+
+@if (aileTipleri().length) {
+  <div class="ps-tipler" role="group" [attr.aria-labelledby]="kimlik + '-tipler'">
+    <span class="ps-etiket" [id]="kimlik + '-tipler'">Araç tipi</span>
+    @for (t of aileTipleri(); track t.id) {
+      <button type="button" class="ps-tip" [class.ps-tip--secili]="seciliTipler().has(t.id)" [attr.aria-pressed]="seciliTipler().has(t.id)"
+              [disabled]="kilitli()" (click)="tipDegistir(t.id)">
+        @if (seciliTipler().has(t.id)) { <i class="ri-check-line" aria-hidden="true"></i> }
+        {{ t.ad }}@if (!t.otomatikSecilir) { <small> · yalnız seçilince</small> }
+      </button>
+    }
+    <small class="yp-ipucu ps-tipler__ipucu">
+      @if (ayarlar().tipIdleri.length) {
+        Normal yükler yalnız seçilen tiplere gider; sığmayan yük için ailenin diğer tipi ya da lowbed gerekçesiyle eklenir.
+      } @else {
+        Tip seçilmezse her yük kendisine uygun en sade tipe gider; daha az araç çıkıyorsa üst tip (ör. High Cube) kullanılır.
+      }
+    </small>
+  </div>
+}
+
+<div class="ps-bosluk">
+  <label class="tz-field">
+    <span>Yükler arası boşluk</span>
+    <div class="tz-input-unit"><input type="number" class="form-control" min="0" step="1" [max]="BOSLUK_EN_FAZLA_MM" [disabled]="kilitli()"
+      [placeholder]="VARSAYILAN_BOSLUK_MM" [ngModel]="ayarlar().yerlesimBosluguMm" (ngModelChange)="boslukDegistir($event)" /><em>mm</em></div>
+  </label>
+  <small class="yp-ipucu">İsteğe bağlı; boş bırakılırsa {{ VARSAYILAN_BOSLUK_MM }} mm uygulanır.</small>
+</div>

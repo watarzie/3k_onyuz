@@ -1,0 +1,174 @@
+// Araç yükleme ekranı (tablet): büyük okutma kutusu, sıradaki yük kartı ve adım listesi.
+.aa-ekipman {
+  margin-left: 6px;
+  color: var(--bodyColor);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.aa-ilerleme {
+  flex: 1 1 240px;
+  max-width: 460px;
+}
+
+.aa-okut {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.aa-okut__etiket {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+// Okuyucunun yazdığı barkod uzaktan okunabilsin; dokunma hedefi 48 px.
+.aa-okut__girdi {
+  flex: 1 1 260px;
+  max-width: 420px;
+  min-height: 48px;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.aa-okut__dugme { min-height: 48px; }
+
+.aa-bildirimler:empty { display: none; }
+
+.aa-bildirim {
+  --b-ton: #64748b;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--b-ton) 35%, #fff);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--b-ton) 9%, #fff);
+  color: color-mix(in srgb, var(--b-ton) 80%, #000);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+
+  i { font-size: 20px; line-height: 1; }
+
+  &[data-ton='success'] { --b-ton: #1e8a3a; }
+  &[data-ton='info'] { --b-ton: #0e8fb5; }
+  &[data-ton='warning'] { --b-ton: #d97706; }
+  &[data-ton='danger'] { --b-ton: #dc2626; }
+
+  // Önceki okutmalar: küçük ve soluk, en yenisi öne çıkar.
+  &--eski {
+    margin-top: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0.8;
+
+    i { font-size: 16px; }
+  }
+}
+
+.aa-bildirim__saat {
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+
+.aa-duzen {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.aa-sol { min-width: 0; }
+
+.aa-siradaki {
+  border-left: 4px solid var(--yp-ton) !important;
+
+  &[data-tam='true'] { border-left-color: #1e8a3a !important; }
+}
+
+.aa-siradaki__baslik {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.aa-yuk {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+
+  & + & { border-top: 1px solid var(--borderColor); }
+
+  &--yuklendi { opacity: 0.6; }
+}
+
+.aa-yuk__govde { min-width: 0; }
+
+// Angular şablondaki boşluğu attığı için kod ile proje arası boşluk burada verilir.
+.aa-yuk__kod { margin-right: 8px; font-size: 20px; }
+
+.aa-yuk__detay {
+  margin-top: 2px;
+  color: var(--bodyColor);
+  font-size: 13px;
+}
+
+.aa-no {
+  display: inline-grid;
+  place-items: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--yp-ton);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.aa-tamam {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #166534;
+  font-size: 15px;
+
+  i { font-size: 34px; line-height: 1; }
+}
+
+.aa-liste .yp-tablo-sarmal { max-height: 640px; overflow-y: auto; }
+
+.yp-tablo {
+  // Dar panelde işlem sütunu görünür kalsın: sarmalanan hücreler dar başlayabilir.
+  .yp-sarmala { min-width: 110px; }
+  .yp-rozet + .yp-rozet { margin-left: 4px; }
+  tbody tr.aa-satir--siradaki td { background: color-mix(in srgb, var(--yp-ton) 10%, #fff); }
+  tbody tr.aa-satir--yuklendi td { color: #64748b; }
+  .aa-islem { text-align: right; }
+  // Tablette satır işlemleri parmakla basılabilsin.
+  .aa-islem .tz-btn { min-height: 44px; }
+}
+
+@media (max-width: 1199.98px) {
+  .aa-duzen { grid-template-columns: minmax(0, 1fr); }
+  .aa-okut__girdi { max-width: none; }
+}
