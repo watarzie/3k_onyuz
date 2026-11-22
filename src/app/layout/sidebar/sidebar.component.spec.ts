@@ -152,6 +152,21 @@ describe('SidebarComponent grupları', () => {
     expect(basliklar()).toEqual(['SIDEBAR.GRUP_YONETIM']);
   });
 
+  it('Yükleme Planlama sunucu sırasında en sonda olsa da Operasyon ile Yönetim arasındaki Lojistik başlığına alınır', () => {
+    const { el } = kur([
+      dugum(1, YETKI.DASHBOARD),
+      dugum(2, YETKI.KULLANICILAR),
+      dugum(3, YETKI.ONAY.MERKEZI),
+      dugum(4, YETKI.YUKLEME_PLANLAMA.MODUL),
+    ]);
+    const basliklar = Array.from(el.querySelectorAll('.km-bolum__baslik')).map(baslik => baslik.textContent?.trim());
+    expect(basliklar).toEqual(['SIDEBAR.GRUP_OPERASYON', 'SIDEBAR.GRUP_LOJISTIK', 'SIDEBAR.GRUP_YONETIM']);
+    const etiketler = (i: number) => Array.from(el.querySelectorAll('.km-bolum')[i].querySelectorAll('.km-etiket'))
+      .map(etiket => etiket.textContent?.trim());
+    expect(etiketler(1)).toEqual([YETKI.YUKLEME_PLANLAMA.MODUL]);
+    expect(etiketler(2)).toEqual([YETKI.KULLANICILAR, YETKI.ONAY.MERKEZI]);
+  });
+
   it('aktif rotanın grubu açık başlar; kullanıcı kapatırsa aynı grupta gezinirken kapalı kalır', async () => {
     const { fixture, el } = kur(
       [dugum(9, YETKI.DASHBOARD), projelerGrubu()],

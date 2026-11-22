@@ -1480,6 +1480,7 @@
     "MENUYU_KAPAT": "Close menu",
     "ALT_MENU_AC_KAPAT": "Toggle {grup} submenu",
     "GRUP_OPERASYON": "Operations",
+    "GRUP_LOJISTIK": "Logistics",
     "GRUP_YONETIM": "Administration"
   },
   "LAYOUT": {
