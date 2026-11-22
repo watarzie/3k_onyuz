@@ -1,13 +1,5 @@
-.py-baslik {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-
-  h5 { font-weight: 700; }
-  .yp-bosluk { flex: 1 1 auto; }
-}
+// Sonuç başlığı ortak bölüm başlığıdır (yp-bolum-baslik); rozet başlıkla aynı satırda durur.
+.py-baslik h3 .yp-rozet { font-size: 11.5px; font-weight: 600; letter-spacing: 0; }
 
 .py-tipler {
   display: flex;
@@ -74,10 +66,14 @@
   border-radius: 12px;
   background: #fff;
   text-align: left;
+  transition: border-color .15s ease, background .15s ease;
+
+  &:hover:not(.active) { border-color: color-mix(in srgb, var(--yp-ton) 35%, var(--borderColor)); }
+  &:focus-visible { outline: 2px solid var(--yp-ton); outline-offset: 2px; }
 
   &.active {
-    border-color: #0e7490;
-    background: color-mix(in srgb, #0e7490 6%, #fff);
+    border-color: var(--yp-ton);
+    background: color-mix(in srgb, var(--yp-ton) 6%, #fff);
   }
 
   &__no {
@@ -87,7 +83,7 @@
     width: 30px;
     height: 30px;
     border-radius: 8px;
-    background: #0e7490;
+    background: var(--yp-ton);
     color: #fff;
     font-weight: 700;
   }

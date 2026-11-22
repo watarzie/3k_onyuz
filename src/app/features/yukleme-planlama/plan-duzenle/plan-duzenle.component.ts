@@ -7,7 +7,7 @@ import { EMPTY, Subject, debounceTime, switchMap, tap } from 'rxjs';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { ServerPagerComponent } from '../../../shared/components/server-pager/server-pager.component';
 import { ToastService } from '../../../core/services/toast.service';
-import { ConfirmService } from '../../../core/services/confirm.service';
+import { ConfirmService, duzMetin } from '../../../core/services/confirm.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { YuklemePlanlamaService } from '../../../core/services/yukleme-planlama.service';
 import { YETKI } from '../../../core/constants/yetki-kodlari';
@@ -24,15 +24,28 @@ import {
   YuklemePlanAyarlari,
   YuklemePlaniDetayi,
   YuklemePlaniTanimlari,
+  YukTuru,
 } from '../../../shared/models/index';
 import {
   BOS_TOPLU_DUZENLEME,
+  ELLE_ACIKLAMA_ENFAZLA,
+  ELLE_KOD_ENFAZLA,
+  ElleYukAlani,
+  ElleYukFormu,
   IzinAlani,
   TopluIzinDuzenlemesi,
   UcDurum,
+  bosElleYukFormu,
   dahilDegistir,
   duzenlenebilir,
+  elleSatiriMi,
+  elleYukFormu,
+  elleYukHatalari,
+  elleYukProjeleriniBirak,
+  elleYukuSil,
+  elleYukuYaz,
   izinDegistir,
+  manuelYukler,
   ortakDeger,
   sandikYukleri,
   satirAnahtari,
@@ -60,8 +73,12 @@ interface YukGorunumu {
   /** Boy × en × yükseklik (mm); girilmemiş ölçü tire. */
   olcu: string;
   secili: boolean;
-  /** Seçimleri hesap isteğiyle gönderilebilir (sandık yükü). */
+  /** Seçimleri hesap isteğiyle gönderilebilir (sandık yükü ya da elle eklenen yük). */
   duzenlenebilir: boolean;
+  /** Elle eklenen yükün birimi ("Elle" rozeti). */
+  elle: boolean;
+  /** Elle yük grubunun görünen ilk birimi: grubu düzenleme ve silme düğmeleri bu satırdadır. */
+  grupBasi: boolean;
   elleDondurme: boolean;
   elleUsteKonma: boolean;
   elleAltaKalma: boolean;
@@ -86,7 +103,9 @@ const UST_YUK_MESAJI = 'Üst yük sınırı sıfır veya pozitif olmalıdır.';
  * Yükleme simülasyonu (saha isteği 20.11.2026): tek sayfada projeler seçilir, araç ve yükleme yeri belirlenir, yük
  * listesinde hangi sandığın yükleneceği ve izinleri düzenlenir, "Hesapla" sonucu ve PDF raporları aynı sayfada verir.
  * Liste, ad ve kaydetme adımı yoktur; sunucu sonucu arka planda saklar. Yük listesi proje seçimi değiştikçe sunucudan
- * önizlemeyle gelir; kullanıcının bir sandıkta yaptığı seçim, sandık listede kaldıkça korunur.
+ * önizlemeyle gelir; kullanıcının bir sandıkta yaptığı seçim, sandık listede kaldıkça korunur. Sistemde olmayan yükler
+ * (22.11.2026) "Elle yük ekle" ile listeye girer; proje seçimi değişince kaybolmaz ve her hesapta `manuelYukler` olarak
+ * gönderilir, yanıttaki elle satırlar (grup numarasıyla) listeye geri yazılır.
  */
 @Component({
   selector: 'app-plan-duzenle',
@@ -169,7 +188,15 @@ export class PlanDuzenleComponent implements OnInit {
   private readonly onizlemeIstekleri = new Subject<number[]>();
 
   readonly sayaclar = computed(() => sayaclariHesapla(this.satirlar()));
-  readonly elleYukVar = computed(() => this.satirlar().some((s) => s.kaynak === PlanYukKaynagi.Manuel));
+  /** Listedeki elle eklenen yük birimleri (sayaç ve süzgeç). */
+  readonly elleBirimSayisi = computed(() => this.satirlar().filter(elleSatiriMi).length);
+  readonly elleYukVar = computed(() => this.elleBirimSayisi() > 0);
+  /**
+   * Yük bölümünün görünümü: proje seçilmemiş olsa da elle eklenen yük varsa liste görünür (hesap için yine en az bir
+   * proje gerekir; sunucu kuralı).
+   */
+  readonly listeGorunumu = computed<ListeDurumu>(() =>
+    this.listeDurumu() === 'bos' && this.elleYukVar() ? 'hazir' : this.listeDurumu());
   readonly lokasyonIpucu = computed(() => {
     if (this.satirlar().length && this.farkliLokasyonSayisi() <= 1) {
       return 'Yükler şu an tek lokasyonda; ayrılacak başka lokasyon yok.';
@@ -189,6 +216,7 @@ export class PlanDuzenleComponent implements OnInit {
     const durum = this.durumSuzgeci();
     const proje = this.projeSuzgeci();
     const secili = this.secili();
+    const gorulenGruplar = new Set<number>();
     return this.satirlar()
       .filter((s) =>
         (durum === 'hepsi' || s.durum === durum) &&
@@ -196,12 +224,17 @@ export class PlanDuzenleComponent implements OnInit {
         (!metin || s.kod.toLocaleLowerCase('tr-TR').includes(metin) || (s.aciklama ?? '').toLocaleLowerCase('tr-TR').includes(metin)))
       .map((s) => {
         const anahtar = satirAnahtari(s);
+        const elle = elleSatiriMi(s);
+        const grupBasi = elle && !gorulenGruplar.has(s.manuelGrupNo!);
+        if (grupBasi) gorulenGruplar.add(s.manuelGrupNo!);
         return {
           satir: s,
           anahtar,
           olcu: `${s.boyMm ?? '—'} × ${s.enMm ?? '—'} × ${s.yukseklikMm ?? '—'}`,
           secili: secili.has(anahtar),
           duzenlenebilir: duzenlenebilir(s),
+          elle,
+          grupBasi,
           elleDondurme: (s.elleDegisenIzinler & PlanYukIzni.Dondurme) !== 0,
           elleUsteKonma: (s.elleDegisenIzinler & PlanYukIzni.UsteKonma) !== 0,
           elleAltaKalma: (s.elleDegisenIzinler & PlanYukIzni.AltaKalma) !== 0,
@@ -240,8 +273,35 @@ export class PlanDuzenleComponent implements OnInit {
     if (this.listeDurumu() === 'hata') return 'Yük listesi alınamadı; yeniden deneyin.';
     if (!this.tasimaAilesiId()) return 'Taşıma ailesi seçin.';
     // Sunucudaki "hesaplanacak yük yok" kuralının aynası: dahil ve ölçü/ağırlığı tam en az bir yük gerekir.
-    if (this.sayaclar().hesaplanabilir === 0) return 'Hesaplanacak yük yok: dahil ve ölçüsü, ağırlığı tam en az bir sandık olmalı.';
+    if (this.sayaclar().hesaplanabilir === 0) return 'Hesaplanacak yük yok: dahil ve ölçüsü, ağırlığı tam en az bir yük olmalı.';
     return null;
+  });
+
+  // ----- Elle yük penceresi -----
+  readonly ELLE_KOD_ENFAZLA = ELLE_KOD_ENFAZLA;
+  readonly ELLE_ACIKLAMA_ENFAZLA = ELLE_ACIKLAMA_ENFAZLA;
+  readonly elleAcik = signal(false);
+  readonly elleForm = signal<ElleYukFormu>(bosElleYukFormu());
+  /** "Ekle/Güncelle"ye basıldı: alan hataları bundan sonra gösterilir. */
+  readonly elleDenendi = signal(false);
+  readonly elleHatalar = computed(() => {
+    const f = this.elleForm();
+    const diger = this.satirlar().filter((s) => !(elleSatiriMi(s) && s.manuelGrupNo === f.grupNo)).length;
+    return elleYukHatalari(f, diger);
+  });
+  readonly elleGorunenHatalar = computed(() => (this.elleDenendi() ? this.elleHatalar() : {}));
+  /** Penceredeki proje seçenekleri: yalnız seçili projeler (sunucu başkasını kabul etmez). */
+  readonly elleProjeleri = computed(() => this.projeler().filter((p) => p.projeId != null));
+  /** Yük türünün hesapta ne demek olduğu. */
+  readonly elleTurIpucu = computed(() => {
+    switch (this.elleForm().yukTuruId) {
+      case YukTuru.Sandik:
+        return 'Sandık gibi dizilir: üstüne yük konabilir, başka yükün üstüne konabilir, üst yük sınırı kendi ağırlığıdır.';
+      case YukTuru.Trafo:
+        return 'Trafo her zaman lowbed (özel yük aracı) ile planlanır; döndürme ve istif izinleri kapalı başlar.';
+      default:
+        return 'Özel yükte döndürme ve istif izinleri kapalı başlar; seçilen ailede taşınamazsa aile dışı araca gider.';
+    }
   });
 
   ngOnInit(): void {
@@ -353,10 +413,18 @@ export class PlanDuzenleComponent implements OnInit {
     this.projelerDegisti();
   }
 
-  /** Proje seçimi değişti: yük listesi sunucudan yeniden istenir; seçim boşsa çağrı atılmaz, liste boşalır. */
+  /**
+   * Proje seçimi değişti: yük listesi sunucudan yeniden istenir; seçim boşsa çağrı atılmaz, sandıklar listeden çıkar.
+   * Elle eklenen yükler kalır; projesi seçimden çıkan elle yük "Projesiz" olur ve kullanıcıya söylenir.
+   */
   private projelerDegisti(): void {
     this.degisti.set(true);
     this.projeSuzgeci.set('hepsi');
+    const birakilan = elleYukProjeleriniBirak(this.satirlar(), this.projeIdleri());
+    if (birakilan.grupSayisi) {
+      this.satirlar.set(birakilan.satirlar);
+      this.toast.info(`${birakilan.grupSayisi} elle eklenen yükün projesi seçimden çıktı; yük "Projesiz" olarak listede kaldı.`);
+    }
     this.yukleriIste();
   }
 
@@ -365,9 +433,11 @@ export class PlanDuzenleComponent implements OnInit {
     if (idler.length) {
       this.listeDurumu.set('yukleniyor');
     } else {
-      this.satirlar.set([]);
+      const elleler = this.satirlar().filter(elleSatiriMi);
+      this.satirlar.set(elleler);
       this.farkliLokasyonSayisi.set(0);
-      this.secili.set(new Set());
+      const anahtarlar = new Set(elleler.map(satirAnahtari));
+      this.secili.update((secili) => new Set([...secili].filter((a) => anahtarlar.has(a))));
       this.listeDurumu.set('bos');
     }
     this.onizlemeIstekleri.next(idler);
@@ -476,6 +546,92 @@ export class PlanDuzenleComponent implements OnInit {
     this.toast.success(`${this.secili().size} yük güncellendi; "Hesapla" ile uygulanır.`);
   }
 
+  // ----- Elle yük -----
+
+  /** "Elle yük ekle": boş pencere (yük türü Sandık, adet 1). */
+  elleEkle(): void {
+    if (this.kilitli()) return;
+    this.elleForm.set(bosElleYukFormu());
+    this.elleDenendi.set(false);
+    this.elleAcik.set(true);
+  }
+
+  /** Kalem ikonu: grubun bilgileriyle dolu pencere. */
+  elleDuzenle(g: YukGorunumu): void {
+    if (this.kilitli() || !g.elle) return;
+    const form = elleYukFormu(this.satirlar(), g.satir.manuelGrupNo!);
+    if (!form) return;
+    this.elleForm.set(form);
+    this.elleDenendi.set(false);
+    this.elleAcik.set(true);
+  }
+
+  elleAlan<K extends keyof ElleYukFormu>(alan: K, deger: ElleYukFormu[K]): void {
+    this.elleForm.update((f) => ({ ...f, [alan]: deger }));
+  }
+
+  /** Sayı kutusu: boş `null`, sayı değilse `NaN` (doğrulama "Sayı girin" der). */
+  elleSayi(alan: Extract<ElleYukAlani, 'boyMm' | 'enMm' | 'yukseklikMm' | 'brutKg' | 'adet'>, deger: unknown): void {
+    this.elleAlan(alan, sayi(deger));
+  }
+
+  elleKapat(): void {
+    this.elleAcik.set(false);
+  }
+
+  /** Pencereyi doğrular ve yükü listeye yazar; hesap "Hesapla" ile yapılır. */
+  elleKaydet(): void {
+    if (this.kilitli()) return;
+    this.elleDenendi.set(true);
+    if (Object.keys(this.elleHatalar()).length) return;
+    const f = this.elleForm();
+    const tanim = this.tanimlar();
+    const proje = this.elleProjeleri().find((p) => p.projeId === f.projeId) ?? null;
+    this.satirlar.update((liste) => elleYukuYaz(liste, {
+      kod: f.kod.trim(),
+      aciklama: f.aciklama.trim() || null,
+      yukTuruId: f.yukTuruId,
+      yukTuruAdi: tanim?.yukTurleri.find((t) => t.id === f.yukTuruId)?.ad ?? '',
+      boyMm: f.boyMm!,
+      enMm: f.enMm!,
+      yukseklikMm: f.yukseklikMm!,
+      brutKg: f.brutKg!,
+      adet: f.adet!,
+      projeId: proje?.projeId ?? null,
+      projeNo: proje?.projeNo ?? null,
+      lokasyonId: f.lokasyonId,
+      lokasyonAdi: tanim?.lokasyonlar.find((l) => l.id === f.lokasyonId)?.ad ?? null,
+      ozelTasimaNotu: f.ozelTasimaNotu,
+    }, f.grupNo));
+    // Düzenlemede adet azaldıysa artık olmayan birimlerin seçimi düşer.
+    const anahtarlar = new Set(this.satirlar().map(satirAnahtari));
+    this.secili.update((secili) => new Set([...secili].filter((a) => anahtarlar.has(a))));
+    this.degisti.set(true);
+    this.elleAcik.set(false);
+    this.toast.success(f.grupNo === null
+      ? `Elle yük eklendi (${f.adet} adet); "Hesapla" ile hesaba girer.`
+      : 'Elle yük güncellendi; "Hesapla" ile uygulanır.');
+  }
+
+  /** Çöp ikonu: grubun bütün birimleri onayla listeden çıkar. */
+  async elleSil(g: YukGorunumu): Promise<void> {
+    if (this.kilitli() || !g.elle) return;
+    const grupNo = g.satir.manuelGrupNo!;
+    const adet = this.satirlar().filter((s) => elleSatiriMi(s) && s.manuelGrupNo === grupNo).length;
+    const tamam = await this.onay.ask({
+      title: 'Elle yükü kaldır',
+      message: adet > 1
+        ? `<strong>${duzMetin(g.satir.kod)}</strong> yükünün ${adet} biriminin tamamı listeden kaldırılacak.`
+        : `<strong>${duzMetin(g.satir.kod)}</strong> listeden kaldırılacak.`,
+      confirmText: 'Kaldır',
+      type: 'danger',
+    });
+    if (!tamam || this.kilitli()) return;
+    this.satirlar.update((liste) => elleYukuSil(liste, grupNo));
+    this.secili.update((secili) => new Set([...secili].filter((a) => !a.startsWith(`m:${grupNo}:`))));
+    this.degisti.set(true);
+  }
+
   // ----- Hesap -----
 
   /**
@@ -506,6 +662,8 @@ export class PlanDuzenleComponent implements OnInit {
       lokasyonTercihi: this.lokasyonTercihi(),
       ayarlar: this.ayarlar(),
       sandikYukleri: sandikYukleri(this.satirlar()),
+      // Her hesapta gider (yoksa boş dizi): sunucu listeyi tek kaynak sayar, yanıttaki elle satırlar ekrana yazılır.
+      manuelYukler: manuelYukler(this.satirlar()),
     }).subscribe((r) => {
       this.hesaplaniyor.set(false);
       if (r.isSuccess && r.value) {

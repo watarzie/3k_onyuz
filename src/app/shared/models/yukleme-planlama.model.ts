@@ -369,6 +369,38 @@ export interface PlanSandikYukuKaydi {
   elleDegisenIzinler: PlanYukIzni;
 }
 
+/** Elle eklenen yükün bir biriminin seçimleri (sunucudaki `PlanManuelYukBirimiDto`). */
+export interface PlanManuelYukBirimi {
+  /** 1'den adede kadar, grupta tekil. */
+  birimNo: number;
+  dahil: boolean;
+  dondurulebilirMi: boolean;
+  usteKonabilirMi: boolean;
+  altaKalabilirMi: boolean;
+  ustYukSiniriKg: number | null;
+  elleDegisenIzinler: PlanYukIzni;
+}
+
+/**
+ * Sistemde olmayan, elle girilen yük (sunucudaki `PlanManuelYukDto`): ortak bilgiler, adet ve birim seçimleri. Grup
+ * numarası gönderilmez; sunucu istekteki sırayla 1'den verir.
+ */
+export interface PlanManuelYukKaydi {
+  kod: string;
+  aciklama: string | null;
+  yukTuruId: number;
+  boyMm: number | null;
+  enMm: number | null;
+  yukseklikMm: number | null;
+  brutKg: number | null;
+  adet: number;
+  /** Yalnız seçili projelerden biri ya da boş (projesiz). */
+  projeId: number | null;
+  lokasyonId: number | null;
+  ozelTasimaNotu: string | null;
+  birimler: PlanManuelYukBirimi[];
+}
+
 /** Seçilen projelerin güncel sandıkları varsayılan seçimlerle (hesaptan önceki yük listesi); kayıt açmaz. */
 export interface PlanYukOnizlemesi {
   yukler: PlanYukSatiri[];
@@ -391,6 +423,11 @@ export interface YuklemePlaniHesaplaIstegi {
   ayarlar: YuklemePlanAyarlari;
   /** Listedeki bütün sandık satırlarının seçimleri. */
   sandikYukleri: PlanSandikYukuKaydi[];
+  /**
+   * Ekrandaki bütün elle eklenen yükler; her hesapta gönderilir. Sunucu listeyi tek kaynak sayar: boş dizi önceki elle
+   * yükleri siler (alan hiç gönderilmezse eskiler korunur, bu ekran o yolu kullanmaz).
+   */
+  manuelYukler: PlanManuelYukKaydi[];
 }
 
 // ===== Ekipman kitaplığı =====

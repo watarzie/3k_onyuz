@@ -43,8 +43,8 @@ const TANIMLAR: YuklemePlaniTanimlari = {
     { id: 3, aileId: 1, ad: "40' High Cube", otomatikSecilir: true },
     { id: 17, aileId: 2, ad: 'Açık kasa', otomatikSecilir: true },
   ],
-  yukTurleri: [],
-  lokasyonlar: [],
+  yukTurleri: [{ id: 1, ad: 'Sandık' }, { id: 2, ad: 'Trafo' }, { id: 3, ad: 'Diğer özel yük' }],
+  lokasyonlar: [{ id: 1, ad: '3K' }, { id: 2, ad: 'Seymen' }],
 };
 
 const aday = (projeId: number): PlanProjeAdayi =>
@@ -94,7 +94,7 @@ describe('PlanDuzenleComponent (yükleme simülasyonu)', () => {
     api.projeAdaylari.and.returnValue(of(tamam(ADAYLAR)));
     if (secenek.kayit) api.plan.and.returnValue(of(tamam(secenek.kayit)));
     confirm = jasmine.createSpyObj<ConfirmService>('ConfirmService', ['ask']);
-    toast = jasmine.createSpyObj<ToastService>('ToastService', ['error', 'success']);
+    toast = jasmine.createSpyObj<ToastService>('ToastService', ['error', 'success', 'info']);
     TestBed.configureTestingModule({
       imports: [PlanDuzenleComponent],
       providers: [
@@ -241,6 +241,8 @@ describe('PlanDuzenleComponent (yükleme simülasyonu)', () => {
         { sandikId: 71, dahil: true, dondurulebilirMi: false, usteKonabilirMi: true, altaKalabilirMi: true, ustYukSiniriKg: 500, elleDegisenIzinler: 0 },
         { sandikId: 72, dahil: false, dondurulebilirMi: false, usteKonabilirMi: true, altaKalabilirMi: true, ustYukSiniriKg: 500, elleDegisenIzinler: 0 },
       ],
+      // Elle yük yokken de gider: sunucu boş diziyi "elle yük yok" sayar.
+      manuelYukler: [],
     });
     // Liste sunucunun uyguladığı değerlerle güncellenir; sonuç kartı aynı sayfada açılır.
     expect([c.plan()?.id, c.degisti(), c.lokasyonTercihi()]).toEqual([1, false, YuklemeLokasyonTercihi.LokasyonaGoreAyri]);
@@ -421,4 +423,214 @@ describe('PlanDuzenleComponent (yükleme simülasyonu)', () => {
     expect(confirm.ask.calls.mostRecent().args[0].title).toBe('Yeniden hesapla');
     expect(api.planHesapla).not.toHaveBeenCalled();
   });
+
+  describe('elle yük', () => {
+    const elleDugmesi = () => kok().querySelector<HTMLButtonElement>('.ys-elle-ekle');
+    const pencere = () => kok().querySelector<HTMLElement>('.ys-elle-pencere');
+    const kaydetDugmesi = () => kok().querySelector<HTMLButtonElement>('.ys-elle-kaydet')!;
+    const elleSatirlar = () => [...yukSatirlari()].filter((tr) => tr.classList.contains('ys-satir--elle'));
+    const elleGorunum = (c: PlanDuzenleComponent) => c.gorunenler().find((g) => g.elle && g.grupBasi)!;
+
+    function doldur(c: PlanDuzenleComponent, ek: { adet?: number; projeId?: number | null; yukTuruId?: number } = {}): void {
+      c.elleAlan('kod', 'Ek sandık 1');
+      c.elleAlan('aciklama', 'Yedek parça');
+      c.elleSayi('boyMm', 1200);
+      c.elleSayi('enMm', 800);
+      c.elleSayi('yukseklikMm', 900);
+      c.elleSayi('brutKg', 450);
+      c.elleSayi('adet', ek.adet ?? 2);
+      c.elleAlan('yukTuruId', ek.yukTuruId ?? 1);
+      c.elleAlan('projeId', ek.projeId === undefined ? 7 : ek.projeId);
+      c.elleAlan('lokasyonId', 2);
+    }
+
+    /** Proje 7 seçili, iki sandıklı liste. */
+    function projeliKur(): PlanDuzenleComponent {
+      const c = kur();
+      api.yukOnizleme.and.returnValue(of(tamam(onizleme([satir(71, 7), satir(72, 7)]))));
+      c.projeDegistir(aday(7));
+      fixture.detectChanges();
+      return c;
+    }
+
+    it('pencere zorunlu alanları, tam sayıyı ve sıfırdan büyük değeri doğrular; hatalıyken listeye eklemez', () => {
+      const c = projeliKur();
+      elleDugmesi()!.click();
+      fixture.detectChanges();
+      expect(pencere()?.querySelector('#elle-baslik')?.textContent).toContain('Elle yük ekle');
+      // Yük türü varsayılanı Sandık, adet 1; proje seçenekleri yalnız seçili projeler.
+      expect([c.elleForm().yukTuruId, c.elleForm().adet]).toEqual([1, 1]);
+      expect([...pencere()!.querySelectorAll<HTMLSelectElement>('select')[1].options].map((o) => o.textContent?.trim()))
+        .toEqual(['Projesiz', 'PA900-07']);
+
+      kaydetDugmesi().click();
+      fixture.detectChanges();
+      expect(pencere()).not.toBeNull();
+      expect(pencere()!.querySelectorAll('.ys-hata').length).toBe(5);
+      expect(c.satirlar().length).toBe(2);
+
+      doldur(c);
+      c.elleSayi('boyMm', 1200.5);
+      c.elleSayi('brutKg', 0);
+      kaydetDugmesi().click();
+      fixture.detectChanges();
+      expect(c.elleHatalar()).toEqual({ boyMm: 'Tam sayı (mm) girin.', brutKg: 'Sıfırdan büyük olmalı.' });
+      expect(c.satirlar().length).toBe(2);
+
+      c.elleAlan('yukTuruId', 2);
+      fixture.detectChanges();
+      expect(pencere()!.textContent).toContain('lowbed');
+    });
+
+    it('eklenen yük adet kadar satırla ve "Elle" rozetiyle listelenir; birimler sandık gibi düzenlenir; sayaçlar sayar', () => {
+      const c = projeliKur();
+      c.elleEkle();
+      doldur(c, { adet: 3 });
+      c.elleKaydet();
+      fixture.detectChanges();
+
+      expect([c.elleAcik(), c.degisti()]).toEqual([false, true]);
+      expect(elleSatirlar().length).toBe(3);
+      expect(elleSatirlar().every((tr) => tr.querySelector('.ys-rozet-elle')?.textContent?.includes('Elle'))).toBeTrue();
+      expect(elleSatirlar()[0].textContent).toContain('1/3');
+      expect(elleSatirlar()[0].textContent).toContain('Seymen');
+      // Birimde izinler ve seçim açık (salt okunur değil); düzenle/sil yalnız grubun ilk satırında.
+      expect([...elleSatirlar()[1].querySelectorAll<HTMLInputElement>('input')].every((i) => !i.disabled)).toBeTrue();
+      expect(elleSatirlar().map((tr) => tr.querySelectorAll('.ys-elle-duzenle').length)).toEqual([1, 0, 0]);
+      const [b1] = c.satirlar().filter((s) => s.kaynak === PlanYukKaynagi.Manuel);
+      expect([b1.usteKonabilirMi, b1.altaKalabilirMi, b1.dondurulebilirMi, b1.ustYukSiniriKg]).toEqual([true, true, false, 450]);
+      c.izinDegistir(c.gorunenler().find((g) => g.anahtar === 'm:1:2')!, 'dondurulebilirMi');
+      expect(c.satirlar().find((s) => satirKimligi(s) === 'm:1:2')!.elleDegisenIzinler).toBe(PlanYukIzni.Dondurme);
+
+      expect([c.sayaclar().toplam, c.sayaclar().hesaplanabilir, c.elleBirimSayisi()]).toEqual([5, 5, 3]);
+      expect(kok().querySelector('.ys-hesap')?.textContent).toContain('5 yük hesaplanacak (3 elle eklenen dahil)');
+      expect(kok().querySelector('.ys-sayac-elle')?.textContent).toContain('3');
+    });
+
+    it('grup kalemle dolu pencerede düzenlenir, onaylı silinir; vazgeçilirse kalır', async () => {
+      const c = projeliKur();
+      c.elleEkle();
+      doldur(c);
+      c.elleKaydet();
+      c.izinDegistir(c.gorunenler().find((g) => g.anahtar === 'm:1:2')!, 'altaKalabilirMi');
+      fixture.detectChanges();
+
+      elleSatirlar()[0].querySelector<HTMLButtonElement>('.ys-elle-duzenle')!.click();
+      fixture.detectChanges();
+      expect(pencere()?.querySelector('#elle-baslik')?.textContent).toContain('Elle yükü düzenle');
+      expect(c.elleForm()).toEqual(jasmine.objectContaining({
+        grupNo: 1, kod: 'Ek sandık 1', aciklama: 'Yedek parça', boyMm: 1200, enMm: 800, yukseklikMm: 900, brutKg: 450, adet: 2,
+        yukTuruId: 1, projeId: 7, lokasyonId: 2,
+      }));
+      c.elleSayi('adet', 3);
+      c.elleSayi('brutKg', 600);
+      kaydetDugmesi().click();
+      fixture.detectChanges();
+      const elleler = c.satirlar().filter((s) => s.kaynak === PlanYukKaynagi.Manuel);
+      expect(elleler.map((s) => [s.birimNo, s.birimSayisi, s.brutKg, s.ustYukSiniriKg])).toEqual([[1, 3, 600, 600], [2, 3, 600, 600], [3, 3, 600, 600]]);
+      // Elle değişen izin düzenlemede korunur.
+      expect([elleler[1].altaKalabilirMi, elleler[1].elleDegisenIzinler]).toEqual([false, PlanYukIzni.AltaKalma]);
+
+      confirm.ask.and.resolveTo(false);
+      await c.elleSil(elleGorunum(c));
+      expect(confirm.ask.calls.mostRecent().args[0].message).toContain('3 biriminin tamamı');
+      expect(c.elleBirimSayisi()).toBe(3);
+      confirm.ask.and.resolveTo(true);
+      await c.elleSil(elleGorunum(c));
+      expect([c.elleBirimSayisi(), c.satirlar().length]).toEqual([0, 2]);
+    });
+
+    it('proje seçimi değişip liste yeniden gelince elle yük kalır; projesi çıkarılan yük "Projesiz" olur ve bildirilir', () => {
+      const c = projeliKur();
+      c.elleEkle();
+      doldur(c, { adet: 1 });
+      c.elleKaydet();
+
+      api.yukOnizleme.and.returnValue(of(tamam(onizleme([satir(71, 7), satir(81, 8)]))));
+      c.projeDegistir(aday(8));
+      expect(c.satirlar().map(satirKimligi)).toEqual(['s:71', 's:81', 'm:1:1']);
+      expect(toast.info).not.toHaveBeenCalled();
+
+      api.yukOnizleme.and.returnValue(of(tamam(onizleme([satir(81, 8)]))));
+      c.projeCikar(c.projeler()[0]);
+      expect(c.satirlar().map(satirKimligi)).toEqual(['s:81', 'm:1:1']);
+      expect([c.satirlar()[1].projeId, c.satirlar()[1].projeNo]).toEqual([null, null]);
+      expect(toast.info).toHaveBeenCalledTimes(1);
+
+      // Bütün projeler çıksa da elle yük listede görünür; hesap için proje gerekir.
+      c.projeCikar(c.projeler()[0]);
+      fixture.detectChanges();
+      expect([c.satirlar().map(satirKimligi), elleSatirlar().length]).toEqual([['m:1:1'], 1]);
+      expect(c.hesapEngeli()).toBe('Önce en az bir proje seçin.');
+    });
+
+    it('hesap gövdesinde elle yükler gider; yanıttaki elle satırlar grup numarasıyla listeye geri kurulur', async () => {
+      const c = projeliKur();
+      c.elleEkle();
+      doldur(c, { projeId: null });
+      c.elleKaydet();
+      c.dahilDegistir(c.gorunenler().find((g) => g.anahtar === 'm:1:2')!);
+
+      api.planHesapla.and.returnValue(of(tamam(sonuc({
+        projeler: [{ projeId: 7, projeNo: 'PA900-07', musteri: 'M', projeTipiId: 1 }],
+        yukler: [
+          satir(71, 7), satir(72, 7),
+          satir(0, 7, elleSunucu(1, 1, 2, { durum: PlanYukDurumu.Yerlesti, aracNo: 1 })),
+          satir(0, 7, elleSunucu(1, 2, 2, { dahil: false, durum: PlanYukDurumu.HaricTutuldu })),
+        ],
+      }))));
+      await c.hesapla();
+      expect(sonIstek().manuelYukler).toEqual([{
+        kod: 'Ek sandık 1', aciklama: 'Yedek parça', yukTuruId: 1, boyMm: 1200, enMm: 800, yukseklikMm: 900, brutKg: 450, adet: 2,
+        projeId: null, lokasyonId: 2, ozelTasimaNotu: null,
+        birimler: [
+          { birimNo: 1, dahil: true, dondurulebilirMi: false, usteKonabilirMi: true, altaKalabilirMi: true, ustYukSiniriKg: 450, elleDegisenIzinler: 0 },
+          { birimNo: 2, dahil: false, dondurulebilirMi: false, usteKonabilirMi: true, altaKalabilirMi: true, ustYukSiniriKg: 450, elleDegisenIzinler: 0 },
+        ],
+      }]);
+      expect(sonIstek().sandikYukleri.map((y) => y.sandikId)).toEqual([71, 72]);
+      // Ekrandaki elle satırlar sunucunun döndürdüğüyle değişir.
+      const elleler = c.satirlar().filter((s) => s.kaynak === PlanYukKaynagi.Manuel);
+      expect(elleler.map((s) => [s.manuelGrupNo, s.birimNo, s.durum, s.aracNo])).toEqual([[1, 1, PlanYukDurumu.Yerlesti, 1], [1, 2, PlanYukDurumu.HaricTutuldu, null]]);
+    });
+
+    it('bağlantıyla açılan kayıttaki elle satırlar düzenlenebilir; pencere grubun bilgileriyle açılır', async () => {
+      const c = kur({ kayit: sonuc({
+        yukler: [satir(71, 7), satir(0, 8, elleSunucu(1, 1, 2)), satir(0, 8, elleSunucu(1, 2, 2)), satir(0, 7, elleSunucu(2, 1, 1, { kod: 'TRAFO-1', yukTuruId: 2 }))],
+      }) });
+      fixture.detectChanges();
+      expect(elleSatirlar().length).toBe(3);
+      expect([...elleSatirlar()[0].querySelectorAll<HTMLInputElement>('input')].every((i) => !i.disabled)).toBeTrue();
+      expect(elleSatirlar().map((tr) => tr.querySelectorAll('.ys-elle-duzenle').length)).toEqual([1, 0, 1]);
+
+      c.elleDuzenle(elleGorunum(c));
+      expect(c.elleForm()).toEqual(jasmine.objectContaining({ grupNo: 1, kod: 'M-1', adet: 2, projeId: 8, boyMm: 1000 }));
+      c.elleKapat();
+
+      api.planHesapla.and.returnValue(of(tamam(sonuc())));
+      await c.hesapla();
+      expect(sonIstek().manuelYukler.map((m) => [m.kod, m.adet, m.projeId, m.birimler.length])).toEqual([['M-1', 2, 8, 2], ['TRAFO-1', 1, 7, 1]]);
+    });
+
+    it('yazma izni yokken "Elle yük ekle" ve satırdaki düzenle/sil görünmez', () => {
+      kur({ yazma: false, kayit: sonuc({ yukler: [satir(71, 7), satir(0, 7, elleSunucu(1, 1, 1))] }) });
+      fixture.detectChanges();
+      expect(elleDugmesi()).toBeNull();
+      expect(kok().querySelector('.ys-elle-duzenle, .ys-elle-sil')).toBeNull();
+      expect(kok().textContent).not.toContain('Elle yük ekle');
+      expect(elleSatirlar().length).toBe(1);
+    });
+  });
 });
+
+/** Sunucunun döndürdüğü elle satırın alanları (`kaynak = 2`, grup ve birim). */
+function elleSunucu(grupNo: number, birimNo: number, birimSayisi: number, ek: Partial<PlanYukSatiri> = {}): Partial<PlanYukSatiri> {
+  return {
+    siraNo: 100 + grupNo * 10 + birimNo, kaynak: PlanYukKaynagi.Manuel, sandikId: null, manuelGrupNo: grupNo, birimNo, birimSayisi,
+    kod: 'M-1', lokasyonId: null, lokasyonAdi: null, ...ek,
+  };
+}
+
+function satirKimligi(s: PlanYukSatiri): string {
+  return s.kaynak === PlanYukKaynagi.Sandik ? `s:${s.sandikId}` : `m:${s.manuelGrupNo}:${s.birimNo}`;
+}

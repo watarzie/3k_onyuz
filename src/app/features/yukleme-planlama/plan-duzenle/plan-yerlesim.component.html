@@ -1,35 +1,39 @@
-<section class="trezo-card border-0 bg-white yp-kart mb-4">
-  <div class="py-baslik">
-    <div>
-      <h5 class="mb-1"><i class="ri-truck-line" aria-hidden="true"></i> {{ yerlesim()?.elleDuzenlendi ? 'Yerleşim (elle düzenlendi)' : 'Otomatik yerleşim' }}</h5>
+<section class="trezo-card border-0 bg-white yp-kart mb-4" aria-labelledby="py-baslik-metni">
+  <header class="yp-bolum-baslik py-baslik">
+    <span class="yp-bolum-baslik__ikon" aria-hidden="true"><i class="ri-truck-line"></i></span>
+    <div class="yp-bolum-baslik__metin">
+      <span class="yp-bolum-baslik__adim">Adım 4 · Sonuç</span>
+      <h3 id="py-baslik-metni">{{ yerlesim()?.elleDuzenlendi ? 'Yerleşim (elle düzenlendi)' : 'Otomatik yerleşim' }}
+        @if (yerlesim(); as y) {
+          <span class="yp-rozet" [attr.data-ton]="KONTROL_SONUCU[y.sonuc].ton"><i [class]="KONTROL_SONUCU[y.sonuc].ikon" aria-hidden="true"></i>{{ KONTROL_SONUCU[y.sonuc].metin }}</span>
+        }
+      </h3>
       @if (yerlesim(); as y) {
-        <small class="yp-ipucu">{{ plan().planNo }} · {{ y.hesapTarihi | date: 'dd.MM.yyyy HH:mm' }}
+        <small>{{ plan().planNo }} · {{ y.hesapTarihi | date: 'dd.MM.yyyy HH:mm' }}
           @if (y.lokasyonaGoreAyri) { · lokasyonlara göre ayrı } @if (y.projeBazindaAyri) { · proje bazında ayrı }</small>
       } @else {
-        <small class="yp-ipucu">{{ plan().planNo }} · Yerleşim henüz hesaplanmadı. "Hesapla" araçları seçimlerle hesaplar.</small>
+        <small>{{ plan().planNo }} · Yerleşim henüz hesaplanmadı. "Hesapla" araçları seçimlerle hesaplar.</small>
       }
     </div>
-    @if (yerlesim(); as y) {
-      <span class="yp-rozet" [attr.data-ton]="KONTROL_SONUCU[y.sonuc].ton"><i [class]="KONTROL_SONUCU[y.sonuc].ikon"></i>{{ KONTROL_SONUCU[y.sonuc].metin }}</span>
-    }
-    <span class="yp-bosluk"></span>
-    @if (yerlesim()) {
-      <!-- Raporlar son hesaplanan revizyonun yerleşimiyle üretilir; iki rapor aynı araç numaralarını kullanır. -->
-      <button type="button" class="tz-btn" [disabled]="indiriliyor() !== null" (click)="raporIndir('talep')" title="Araç talep ve planlama raporu (PDF)">
-        <i [class]="indiriliyor() === 'talep' ? 'ri-loader-4-line tz-spin' : 'ri-file-pdf-2-line'" aria-hidden="true"></i>Araç talebi
-      </button>
-      <button type="button" class="tz-btn" [disabled]="indiriliyor() !== null" (click)="raporIndir('yukleme')" title="Araç bazlı yükleme planı (PDF)">
-        <i [class]="indiriliyor() === 'yukleme' ? 'ri-loader-4-line tz-spin' : 'ri-file-pdf-2-line'" aria-hidden="true"></i>Yükleme planı
-      </button>
-    }
-    @if (yazabilir() && !duzenleme()) {
-      <!-- İsterler 20–21: önerilen yerleşim elle düzenlenir; yerleşim yoksa sıfırdan elle dizilir. "Hesapla" üst ekrandadır. -->
-      <button type="button" class="tz-btn" [disabled]="kaydedilmemis() || hesaplaniyor()" (click)="duzenlemeAc(true)"
-              [title]="kaydedilmemis() ? 'Önce seçimleri Hesapla ile uygulayın' : yerlesim() ? 'Yükleri sürükleyerek yerleşimi elle düzenleyin' : 'Araçları seçip yükleri kendiniz dizin'">
-        <i class="ri-drag-move-2-line" aria-hidden="true"></i>{{ yerlesim() ? 'Elle düzenle' : 'Elle diz' }}
-      </button>
-    }
-  </div>
+    <div class="yp-bolum-baslik__islem">
+      @if (yerlesim()) {
+        <!-- Raporlar son hesaplanan revizyonun yerleşimiyle üretilir; iki rapor aynı araç numaralarını kullanır. -->
+        <button type="button" class="tz-btn" [disabled]="indiriliyor() !== null" (click)="raporIndir('talep')" title="Araç talep ve planlama raporu (PDF)">
+          <i [class]="indiriliyor() === 'talep' ? 'ri-loader-4-line tz-spin' : 'ri-file-pdf-2-line'" aria-hidden="true"></i>Araç talebi
+        </button>
+        <button type="button" class="tz-btn" [disabled]="indiriliyor() !== null" (click)="raporIndir('yukleme')" title="Araç bazlı yükleme planı (PDF)">
+          <i [class]="indiriliyor() === 'yukleme' ? 'ri-loader-4-line tz-spin' : 'ri-file-pdf-2-line'" aria-hidden="true"></i>Yükleme planı
+        </button>
+      }
+      @if (yazabilir() && !duzenleme()) {
+        <!-- İsterler 20–21: önerilen yerleşim elle düzenlenir; yerleşim yoksa sıfırdan elle dizilir. "Hesapla" üst ekrandadır. -->
+        <button type="button" class="tz-btn" [disabled]="kaydedilmemis() || hesaplaniyor()" (click)="duzenlemeAc(true)"
+                [title]="kaydedilmemis() ? 'Önce seçimleri Hesapla ile uygulayın' : yerlesim() ? 'Yükleri sürükleyerek yerleşimi elle düzenleyin' : 'Araçları seçip yükleri kendiniz dizin'">
+          <i class="ri-drag-move-2-line" aria-hidden="true"></i>{{ yerlesim() ? 'Elle düzenle' : 'Elle diz' }}
+        </button>
+      }
+    </div>
+  </header>
   @if (kaydedilmemis()) {
     <div class="yp-uyari"><i class="ri-information-line" aria-hidden="true"></i><span>Seçimler değişti: aşağıdaki sonuç önceki hesaba aittir. Yeni sonuç için "Hesapla"ya basın.</span></div>
   }
@@ -44,10 +48,10 @@
 
   @if (yerlesim(); as y) {
     <div class="yp-sayaclar">
-      <div class="yp-sayac"><small>Araç / konteyner</small><strong>{{ y.araclar.length }}</strong></div>
+      <div class="yp-sayac" data-ton="primary"><small>Araç / konteyner</small><strong>{{ y.araclar.length }}</strong></div>
       <div class="yp-sayac" data-ton="success"><small>Yerleşen yük</small><strong>{{ plan().sayaclar.yerlesen }}</strong></div>
       <div class="yp-sayac" [attr.data-ton]="plan().sayaclar.yerlesemeyen ? 'warning' : 'muted'"><small>Yerleşemeyen</small><strong>{{ plan().sayaclar.yerlesemeyen }}</strong></div>
-      <div class="yp-sayac" data-ton="warning"><small>Veri eksik (hesaplanmadı)</small><strong>{{ plan().sayaclar.veriEksik }}</strong></div>
+      <div class="yp-sayac" [attr.data-ton]="plan().sayaclar.veriEksik ? 'warning' : 'muted'"><small>Veri eksik (hesaplanmadı)</small><strong>{{ plan().sayaclar.veriEksik }}</strong></div>
       <div class="yp-sayac" data-ton="muted"><small>Hariç tutulan</small><strong>{{ plan().sayaclar.haricTutulan }}</strong></div>
     </div>
 

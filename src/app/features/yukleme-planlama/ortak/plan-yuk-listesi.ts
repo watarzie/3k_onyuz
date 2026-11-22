@@ -1,4 +1,5 @@
 import {
+  PlanManuelYukKaydi,
   PlanSandikYukuKaydi,
   PlanYukDurumu,
   PlanYukIzni,
@@ -11,8 +12,16 @@ import {
 // YuklemePlaniKurali.Durum (satır durumu). Sunucu hesaplarken aynı kuralları yeniden uygular; burada yalnız ekranın
 // hesaptan önce doğru görünmesi için kullanılır.
 
-/** Üst yük sınırının üst sınırı (YukVeriKurali.EnFazlaAgirlikKg). */
+/** Üst yük sınırının ve elle girilen ağırlığın üst sınırı (YukVeriKurali.EnFazlaAgirlikKg). */
 export const ENFAZLA_AGIRLIK_KG = 1_000_000;
+/** Elle girilen bir kenarın üst sınırı (YukVeriKurali.EnFazlaOlcuMm). */
+export const ENFAZLA_OLCU_MM = 50_000;
+/** Bir hesapta en fazla yük (sandık + elle eklenen birimler; YuklemePlaniKurali.EnFazlaYuk). */
+export const ENFAZLA_YUK = 2000;
+/** Elle eklenen yükün sınırları (YuklemePlaniKurali.ManuelKodEnFazla, ManuelAciklamaEnFazla, ManuelAdetEnFazla). */
+export const ELLE_KOD_ENFAZLA = 100;
+export const ELLE_ACIKLAMA_ENFAZLA = 500;
+export const ELLE_ADET_ENFAZLA = 500;
 
 /** Toplu düzenlemede bir iznin üç durumu: aç, kapat ya da seçili yüklerdeki değeri koru. */
 export type UcDurum = 'koru' | 'aktif' | 'pasif';
@@ -69,9 +78,21 @@ export function satirAnahtari(s: Pick<PlanYukSatiri, 'kaynak' | 'sandikId' | 'ma
   return s.kaynak === PlanYukKaynagi.Sandik ? `s:${s.sandikId}` : `m:${s.manuelGrupNo}:${s.birimNo}`;
 }
 
-/** Seçimleri hesap isteğiyle gönderilebilen satır: sandık yükü (eski kayıtlardaki elle eklenmiş yük düzenlenmez). */
-export function duzenlenebilir(s: Pick<PlanYukSatiri, 'kaynak' | 'sandikId'>): boolean {
+type SatirKimligi = Pick<PlanYukSatiri, 'kaynak' | 'sandikId' | 'manuelGrupNo'>;
+
+/** Sistemdeki sandıktan gelen satır. */
+export function sandikSatiriMi(s: SatirKimligi): boolean {
   return s.kaynak === PlanYukKaynagi.Sandik && s.sandikId != null;
+}
+
+/** Elle eklenen yükün bir birimi (grup numarasıyla). */
+export function elleSatiriMi(s: SatirKimligi): boolean {
+  return s.kaynak === PlanYukKaynagi.Manuel && s.manuelGrupNo != null;
+}
+
+/** Seçimleri hesap isteğiyle gönderilebilen satır: sandık yükü ya da elle eklenen yükün birimi. */
+export function duzenlenebilir(s: SatirKimligi): boolean {
+  return sandikSatiriMi(s) || elleSatiriMi(s);
 }
 
 /**
@@ -143,9 +164,10 @@ export function topluUygula(satirlar: readonly PlanYukSatiri[], secili: Readonly
         y = ustYukDegistir(y, d.ustYuk.kg);
         break;
       case 'brut':
+        // Varsayılana döner (sunucudaki YukIzinKurali.Varsayilan): özel yükte (trafo) sınır boştur, sandıkta brüt.
         y = {
           ...y,
-          ustYukSiniriKg: y.brutKg != null && y.brutKg > 0 ? y.brutKg : null,
+          ustYukSiniriKg: varsayilanIzinler(y.yukTuruId, y.brutKg).ustYukSiniriKg,
           elleDegisenIzinler: y.elleDegisenIzinler & ~PlanYukIzni.UstYukSiniri,
         };
         break;
@@ -185,13 +207,14 @@ export function sayaclariHesapla(satirlar: readonly PlanYukSatiri[]): YukListesi
 /**
  * Proje seçimi değişip liste sunucudan yeniden geldiğinde kullanıcının seçimlerini korur: hâlâ listede olan sandık
  * hesaba dahil olup olmadığını ve elle değiştirdiği izinleri eski satırdan alır; ölçü, ağırlık, lokasyon ve elle
- * değişmemiş izinler yeni satırdandır. Listeye yeni giren sandık sunucunun varsayılan seçimleriyle kalır.
+ * değişmemiş izinler yeni satırdandır. Listeye yeni giren sandık sunucunun varsayılan seçimleriyle kalır. Önizleme
+ * yalnız sandık getirir: elle eklenen yükler eski listeden olduğu gibi sona eklenir (proje seçimi değişince kaybolmaz).
  */
 export function secimleriKoru(yeni: readonly PlanYukSatiri[], eski: readonly PlanYukSatiri[]): PlanYukSatiri[] {
   const eskiler = new Map<number, PlanYukSatiri>();
-  for (const s of eski) if (duzenlenebilir(s)) eskiler.set(s.sandikId!, s);
-  return yeni.map((s) => {
-    const e = duzenlenebilir(s) ? eskiler.get(s.sandikId!) : undefined;
+  for (const s of eski) if (sandikSatiriMi(s)) eskiler.set(s.sandikId!, s);
+  const sandiklar = yeni.filter(sandikSatiriMi).map((s) => {
+    const e = eskiler.get(s.sandikId!);
     if (!e) return s;
     const elle = e.elleDegisenIzinler;
     return dahilDegistir(
@@ -206,11 +229,12 @@ export function secimleriKoru(yeni: readonly PlanYukSatiri[], eski: readonly Pla
       e.dahil,
     );
   });
+  return [...sandiklar, ...eski.filter(elleSatiriMi)];
 }
 
-/** Hesap isteğinin yük kısmı: listedeki bütün sandık satırlarının seçimleri. */
+/** Hesap isteğinin sandık kısmı: listedeki bütün sandık satırlarının seçimleri. */
 export function sandikYukleri(satirlar: readonly PlanYukSatiri[]): PlanSandikYukuKaydi[] {
-  return satirlar.filter(duzenlenebilir).map((s) => ({
+  return satirlar.filter(sandikSatiriMi).map((s) => ({
     sandikId: s.sandikId!,
     dahil: s.dahil,
     dondurulebilirMi: s.dondurulebilirMi,
@@ -219,4 +243,229 @@ export function sandikYukleri(satirlar: readonly PlanYukSatiri[]): PlanSandikYuk
     ustYukSiniriKg: s.ustYukSiniriKg,
     elleDegisenIzinler: s.elleDegisenIzinler,
   }));
+}
+
+// ----- Elle eklenen yük (sistemde olmayan sandık ya da özel yük) -----
+
+/** Elle yük penceresinin alanları; `grupNo` boşsa yeni yük, doluysa o grubun düzenlenmesidir. */
+export interface ElleYukFormu {
+  grupNo: number | null;
+  kod: string;
+  aciklama: string;
+  boyMm: number | null;
+  enMm: number | null;
+  yukseklikMm: number | null;
+  brutKg: number | null;
+  adet: number | null;
+  yukTuruId: number;
+  projeId: number | null;
+  lokasyonId: number | null;
+  /** Pencerede alan yok; eski kayıttan gelen not düzenlemede korunur. */
+  ozelTasimaNotu: string | null;
+}
+
+/** Pencerede doğrulanan alanlar. */
+export type ElleYukAlani = 'kod' | 'aciklama' | 'boyMm' | 'enMm' | 'yukseklikMm' | 'brutKg' | 'adet';
+export type ElleYukHatalari = Partial<Record<ElleYukAlani, string>>;
+
+/** Satırların ortak bilgisi: formdaki değerler ve ekranda gösterilecek adlar. */
+export interface ElleYukBilgisi {
+  kod: string;
+  aciklama: string | null;
+  yukTuruId: number;
+  yukTuruAdi: string;
+  boyMm: number;
+  enMm: number;
+  yukseklikMm: number;
+  brutKg: number;
+  adet: number;
+  projeId: number | null;
+  projeNo: string | null;
+  lokasyonId: number | null;
+  lokasyonAdi: string | null;
+  ozelTasimaNotu: string | null;
+}
+
+export function bosElleYukFormu(): ElleYukFormu {
+  return {
+    grupNo: null, kod: '', aciklama: '', boyMm: null, enMm: null, yukseklikMm: null, brutKg: null, adet: 1,
+    yukTuruId: YukTuru.Sandik, projeId: null, lokasyonId: null, ozelTasimaNotu: null,
+  };
+}
+
+function olcuHatasi(mm: number | null): string | undefined {
+  if (mm === null) return 'Zorunlu.';
+  if (!Number.isFinite(mm)) return 'Sayı girin.';
+  if (!Number.isInteger(mm)) return 'Tam sayı (mm) girin.';
+  if (mm <= 0) return 'Sıfırdan büyük olmalı.';
+  if (mm > ENFAZLA_OLCU_MM) return `En fazla ${ENFAZLA_OLCU_MM.toLocaleString('tr-TR')} mm.`;
+  return undefined;
+}
+
+/**
+ * Elle yük penceresinin doğrulaması (sunucudaki PlanManuelYukDtoValidator'ın aynası; ekranda ölçü ve ağırlık da
+ * zorunludur, çünkü hesap ağırlıksız ve ölçüsüz yükü dizemez). `digerYukSayisi`: bu grup dışında listedeki yük sayısı.
+ */
+export function elleYukHatalari(f: ElleYukFormu, digerYukSayisi: number): ElleYukHatalari {
+  const h: ElleYukHatalari = {};
+  const kod = f.kod.trim();
+  if (!kod) h.kod = 'Kod / ad zorunludur.';
+  else if (kod.length > ELLE_KOD_ENFAZLA) h.kod = `En fazla ${ELLE_KOD_ENFAZLA} karakter.`;
+  if (f.aciklama.trim().length > ELLE_ACIKLAMA_ENFAZLA) h.aciklama = `En fazla ${ELLE_ACIKLAMA_ENFAZLA} karakter.`;
+  const boy = olcuHatasi(f.boyMm);
+  const en = olcuHatasi(f.enMm);
+  const yukseklik = olcuHatasi(f.yukseklikMm);
+  if (boy) h.boyMm = boy;
+  if (en) h.enMm = en;
+  if (yukseklik) h.yukseklikMm = yukseklik;
+  if (f.brutKg === null) h.brutKg = 'Zorunlu.';
+  else if (!Number.isFinite(f.brutKg)) h.brutKg = 'Sayı girin.';
+  else if (f.brutKg <= 0) h.brutKg = 'Sıfırdan büyük olmalı.';
+  else if (f.brutKg > ENFAZLA_AGIRLIK_KG) h.brutKg = `En fazla ${ENFAZLA_AGIRLIK_KG.toLocaleString('tr-TR')} kg.`;
+  if (f.adet === null) h.adet = 'Zorunlu.';
+  else if (!Number.isInteger(f.adet)) h.adet = 'Tam sayı girin.';
+  else if (f.adet < 1) h.adet = 'En az 1.';
+  else if (f.adet > ELLE_ADET_ENFAZLA) h.adet = `En fazla ${ELLE_ADET_ENFAZLA}.`;
+  else if (digerYukSayisi + f.adet > ENFAZLA_YUK) {
+    h.adet = `Listede en fazla ${ENFAZLA_YUK} yük olabilir; bu yük için en fazla ${Math.max(ENFAZLA_YUK - digerYukSayisi, 0)}.`;
+  }
+  return h;
+}
+
+/** Listedeki elle yük grubunu pencereye geri kurar (kalem ikonu); grup yoksa `null`. */
+export function elleYukFormu(satirlar: readonly PlanYukSatiri[], grupNo: number): ElleYukFormu | null {
+  const grup = satirlar.filter((s) => elleSatiriMi(s) && s.manuelGrupNo === grupNo);
+  if (!grup.length) return null;
+  const s = grup[0];
+  return {
+    grupNo, kod: s.kod, aciklama: s.aciklama ?? '', boyMm: s.boyMm, enMm: s.enMm, yukseklikMm: s.yukseklikMm,
+    brutKg: s.brutKg, adet: grup.length, yukTuruId: s.yukTuruId, projeId: s.projeId, lokasyonId: s.lokasyonId,
+    ozelTasimaNotu: s.ozelTasimaNotu,
+  };
+}
+
+/**
+ * Elle yükün birim satırları: adet kadar, birim numarası 1'den. Grup düzenlenirken var olan birimin seçimleri (dahil,
+ * elle değişen izinler) birim numarasına göre korunur; elle değişmeyen izinler yük türü ve ağırlığa göre sandık
+ * varsayılanından kurulur (`varsayilanIzinler`). Önceki hesaptaki araç bilgisi artık geçerli değildir.
+ */
+export function elleYukSatirlari(b: ElleYukBilgisi, grupNo: number, mevcut: readonly PlanYukSatiri[] = []): PlanYukSatiri[] {
+  const varsayilan = varsayilanIzinler(b.yukTuruId, b.brutKg);
+  return Array.from({ length: b.adet }, (_, i) => {
+    const birimNo = i + 1;
+    const eski = mevcut.find((m) => m.birimNo === birimNo);
+    const elle = eski?.elleDegisenIzinler ?? PlanYukIzni.Yok;
+    const dahil = eski?.dahil ?? true;
+    return {
+      siraNo: 0,
+      kaynak: PlanYukKaynagi.Manuel,
+      sandikId: null,
+      manuelGrupNo: grupNo,
+      birimNo,
+      birimSayisi: b.adet,
+      kod: b.kod,
+      aciklama: b.aciklama,
+      projeId: b.projeId,
+      projeNo: b.projeNo,
+      yukTuruId: b.yukTuruId,
+      yukTuruAdi: b.yukTuruAdi,
+      boyMm: b.boyMm,
+      enMm: b.enMm,
+      yukseklikMm: b.yukseklikMm,
+      brutKg: b.brutKg,
+      lokasyonId: b.lokasyonId,
+      lokasyonAdi: b.lokasyonAdi,
+      dahil,
+      dondurulebilirMi: elle & PlanYukIzni.Dondurme ? eski!.dondurulebilirMi : varsayilan.dondurulebilirMi,
+      usteKonabilirMi: elle & PlanYukIzni.UsteKonma ? eski!.usteKonabilirMi : varsayilan.usteKonabilirMi,
+      altaKalabilirMi: elle & PlanYukIzni.AltaKalma ? eski!.altaKalabilirMi : varsayilan.altaKalabilirMi,
+      ustYukSiniriKg: elle & PlanYukIzni.UstYukSiniri ? eski!.ustYukSiniriKg : varsayilan.ustYukSiniriKg,
+      elleDegisenIzinler: elle,
+      ozelTasimaNotu: b.ozelTasimaNotu,
+      durum: dahil ? PlanYukDurumu.Bekliyor : PlanYukDurumu.HaricTutuldu,
+      veriSorunlari: [],
+      aracNo: null,
+      yerlesimNotu: null,
+    };
+  });
+}
+
+/**
+ * Elle yükü listeye yazar: `grupNo` boşsa yeni grup (en büyük grup numarasının bir fazlası) listenin sonuna eklenir,
+ * doluysa o grubun satırları aynı yerde yenileriyle değişir.
+ */
+export function elleYukuYaz(satirlar: readonly PlanYukSatiri[], b: ElleYukBilgisi, grupNo: number | null): PlanYukSatiri[] {
+  const grubunda = (s: PlanYukSatiri) => elleSatiriMi(s) && s.manuelGrupNo === grupNo;
+  if (grupNo === null) {
+    const sonraki = Math.max(0, ...satirlar.filter(elleSatiriMi).map((s) => s.manuelGrupNo!)) + 1;
+    return [...satirlar, ...elleYukSatirlari(b, sonraki)];
+  }
+  const yeni = elleYukSatirlari(b, grupNo, satirlar.filter(grubunda));
+  const ilk = satirlar.findIndex(grubunda);
+  const kalan = satirlar.filter((s) => !grubunda(s));
+  kalan.splice(ilk < 0 ? kalan.length : ilk, 0, ...yeni);
+  return kalan;
+}
+
+export function elleYukuSil(satirlar: readonly PlanYukSatiri[], grupNo: number): PlanYukSatiri[] {
+  return satirlar.filter((s) => !(elleSatiriMi(s) && s.manuelGrupNo === grupNo));
+}
+
+/**
+ * Proje seçimden çıkınca o projeye bağlı elle yükler silinmez, "Projesiz" olur (sunucu seçili olmayan projeyi kabul
+ * etmez). Dönen `grupSayisi` kullanıcıya bilgi vermek içindir.
+ */
+export function elleYukProjeleriniBirak(
+  satirlar: readonly PlanYukSatiri[],
+  projeIdleri: readonly number[],
+): { satirlar: PlanYukSatiri[]; grupSayisi: number } {
+  const secili = new Set(projeIdleri);
+  const gruplar = new Set<number>();
+  const yeni = satirlar.map((s) => {
+    if (!elleSatiriMi(s) || s.projeId == null || secili.has(s.projeId)) return s;
+    gruplar.add(s.manuelGrupNo!);
+    return { ...s, projeId: null, projeNo: null };
+  });
+  return { satirlar: gruplar.size ? yeni : [...satirlar], grupSayisi: gruplar.size };
+}
+
+/**
+ * Hesap isteğinin elle yük kısmı: grup başına ortak bilgi ve birim seçimleri, listedeki sırayla (sunucu grup
+ * numaralarını bu sırayla 1'den verir). Elle yük yoksa boş dizi gider; sunucu boş diziyi "elle yük yok" sayar.
+ */
+export function manuelYukler(satirlar: readonly PlanYukSatiri[]): PlanManuelYukKaydi[] {
+  const gruplar = new Map<number, PlanYukSatiri[]>();
+  for (const s of satirlar) {
+    if (!elleSatiriMi(s)) continue;
+    const grup = gruplar.get(s.manuelGrupNo!) ?? [];
+    grup.push(s);
+    gruplar.set(s.manuelGrupNo!, grup);
+  }
+  return [...gruplar.values()].map((grup) => {
+    const s = grup[0];
+    return {
+      kod: s.kod,
+      aciklama: s.aciklama,
+      yukTuruId: s.yukTuruId,
+      boyMm: s.boyMm,
+      enMm: s.enMm,
+      yukseklikMm: s.yukseklikMm,
+      brutKg: s.brutKg,
+      adet: grup.length,
+      projeId: s.projeId,
+      lokasyonId: s.lokasyonId,
+      ozelTasimaNotu: s.ozelTasimaNotu,
+      birimler: [...grup]
+        .sort((a, b) => a.birimNo - b.birimNo)
+        .map((b, i) => ({
+          birimNo: i + 1,
+          dahil: b.dahil,
+          dondurulebilirMi: b.dondurulebilirMi,
+          usteKonabilirMi: b.usteKonabilirMi,
+          altaKalabilirMi: b.altaKalabilirMi,
+          ustYukSiniriKg: b.ustYukSiniriKg,
+          elleDegisenIzinler: b.elleDegisenIzinler,
+        })),
+    };
+  });
 }

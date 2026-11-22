@@ -1,8 +1,16 @@
 import { PlanYukDurumu, PlanYukIzni, PlanYukKaynagi, PlanYukSatiri, YukTuru } from '../../../shared/models/index';
 import {
   BOS_TOPLU_DUZENLEME,
+  ElleYukBilgisi,
+  bosElleYukFormu,
   dahilDegistir,
+  elleYukFormu,
+  elleYukHatalari,
+  elleYukProjeleriniBirak,
+  elleYukuSil,
+  elleYukuYaz,
   izinDegistir,
+  manuelYukler,
   ortakDeger,
   sandikYukleri,
   satirAnahtari,
@@ -62,7 +70,7 @@ describe('yük listesi kuralları', () => {
     expect([geri.dondurulebilirMi, geri.elleDegisenIzinler]).toEqual([false, PlanYukIzni.Yok]);
   });
 
-  it('toplu düzenleme yalnız seçili sandıkları değiştirir ve koru olan izne dokunmaz', () => {
+  it('toplu düzenleme yalnız seçili yükleri (sandık ve elle eklenen) değiştirir ve koru olan izne dokunmaz', () => {
     const satirlar = [sandik(1), sandik(2, { usteKonabilirMi: false, elleDegisenIzinler: PlanYukIzni.UsteKonma }), sandik(3), elleYuk()];
     const secili = new Set(['s:1', 's:2', 'm:3:2']);
 
@@ -72,8 +80,8 @@ describe('yük listesi kuralları', () => {
     expect(sonuc[1].usteKonabilirMi).toBeFalse();
     expect(sonuc[1].elleDegisenIzinler).toBe(PlanYukIzni.UsteKonma | PlanYukIzni.Dondurme | PlanYukIzni.AltaKalma);
     expect(sonuc[2]).toBe(satirlar[2]);
-    // Elle eklenmiş yükün seçimleri istekle gönderilemez; seçili gelse de değişmez.
-    expect(sonuc[3]).toBe(satirlar[3]);
+    // Elle eklenen yük de sandık gibi düzenlenir (22.11.2026).
+    expect([sonuc[3].dondurulebilirMi, sonuc[3].elleDegisenIzinler]).toEqual([true, PlanYukIzni.Dondurme | PlanYukIzni.AltaKalma]);
   });
 
   it('toplu hariç tutma durumu ve sayaçları günceller', () => {
@@ -124,11 +132,90 @@ describe('yük listesi kuralları', () => {
     expect(sonuc.map((s) => s.sandikId)).toEqual([1, 2, 9]);
   });
 
-  it('hesap isteğine listedeki bütün sandıkların seçimleri girer; elle eklenmiş yük girmez', () => {
+  it('liste yeniden gelince elle eklenen yükler eski listeden aynen sona eklenir', () => {
+    const elle = elleYuk();
+    const sonuc = secimleriKoru([sandik(9)], [sandik(1), elle]);
+    expect(sonuc.map(satirAnahtari)).toEqual(['s:9', 'm:3:2']);
+    expect(sonuc[1]).toBe(elle);
+  });
+
+  it('sandık isteğine yalnız sandık satırları girer', () => {
     const satirlar = [dahilDegistir(sandik(5), false), izinDegistir(sandik(6), 'altaKalabilirMi', false), elleYuk()];
     expect(sandikYukleri(satirlar)).toEqual([
       { sandikId: 5, dahil: false, dondurulebilirMi: false, usteKonabilirMi: true, altaKalabilirMi: true, ustYukSiniriKg: 450, elleDegisenIzinler: 0 },
       { sandikId: 6, dahil: true, dondurulebilirMi: false, usteKonabilirMi: true, altaKalabilirMi: false, ustYukSiniriKg: 450, elleDegisenIzinler: 4 },
     ]);
+  });
+});
+
+describe('elle eklenen yük', () => {
+  const bilgi = (ek: Partial<ElleYukBilgisi> = {}): ElleYukBilgisi => ({
+    kod: 'Ek sandık 1', aciklama: null, yukTuruId: YukTuru.Sandik, yukTuruAdi: 'Sandık', boyMm: 1200, enMm: 800, yukseklikMm: 900,
+    brutKg: 450, adet: 2, projeId: 1, projeNo: 'P1', lokasyonId: null, lokasyonAdi: null, ozelTasimaNotu: null, ...ek,
+  });
+  const tamForm = () => ({ ...bosElleYukFormu(), kod: 'Ek', boyMm: 1000, enMm: 800, yukseklikMm: 600, brutKg: 300 });
+
+  it('pencere doğrulaması: zorunlu alanlar, tam sayı ölçü ve adet, sıfırdan büyük değerler, liste sınırı', () => {
+    expect(Object.keys(elleYukHatalari(bosElleYukFormu(), 0)).sort()).toEqual(['boyMm', 'brutKg', 'enMm', 'kod', 'yukseklikMm']);
+    expect(elleYukHatalari(tamForm(), 0)).toEqual({});
+    expect(elleYukHatalari({ ...tamForm(), kod: '   ' }, 0).kod).toBe('Kod / ad zorunludur.');
+    expect(elleYukHatalari({ ...tamForm(), boyMm: 1000.5 }, 0).boyMm).toBe('Tam sayı (mm) girin.');
+    expect(elleYukHatalari({ ...tamForm(), enMm: 0 }, 0).enMm).toBe('Sıfırdan büyük olmalı.');
+    expect(elleYukHatalari({ ...tamForm(), yukseklikMm: -5 }, 0).yukseklikMm).toBe('Sıfırdan büyük olmalı.');
+    expect(elleYukHatalari({ ...tamForm(), yukseklikMm: 50_001 }, 0).yukseklikMm).toContain('En fazla');
+    expect(elleYukHatalari({ ...tamForm(), brutKg: 0 }, 0).brutKg).toBe('Sıfırdan büyük olmalı.');
+    expect(elleYukHatalari({ ...tamForm(), brutKg: 12.5 }, 0)).toEqual({});
+    expect(elleYukHatalari({ ...tamForm(), brutKg: Number.NaN }, 0).brutKg).toBe('Sayı girin.');
+    expect(elleYukHatalari({ ...tamForm(), adet: null }, 0).adet).toBe('Zorunlu.');
+    expect(elleYukHatalari({ ...tamForm(), adet: 1.5 }, 0).adet).toBe('Tam sayı girin.');
+    expect(elleYukHatalari({ ...tamForm(), adet: 0 }, 0).adet).toBe('En az 1.');
+    expect(elleYukHatalari({ ...tamForm(), adet: 501 }, 0).adet).toBe('En fazla 500.');
+    expect(elleYukHatalari({ ...tamForm(), adet: 3 }, 1998).adet).toContain('en fazla 2');
+  });
+
+  it('adet kadar birim satırı; sandık varsayılan izinleri yük türüne ve ağırlığa göre', () => {
+    const [b1, b2] = elleYukuYaz([sandik(1)], bilgi(), null).slice(1);
+    expect([b1.kaynak, b1.manuelGrupNo, b1.birimNo, b1.birimSayisi, b2.birimNo]).toEqual([PlanYukKaynagi.Manuel, 1, 1, 2, 2]);
+    expect([b1.usteKonabilirMi, b1.altaKalabilirMi, b1.dondurulebilirMi, b1.ustYukSiniriKg]).toEqual([true, true, false, 450]);
+    expect([b1.dahil, b1.durum, b1.veriSorunlari]).toEqual([true, PlanYukDurumu.Bekliyor, []]);
+    const trafo = elleYukuYaz([], bilgi({ yukTuruId: YukTuru.Trafo, adet: 1 }), null)[0];
+    expect([trafo.usteKonabilirMi, trafo.altaKalabilirMi, trafo.ustYukSiniriKg]).toEqual([false, false, null]);
+  });
+
+  it('yeni grup en büyük grup numarasının bir fazlasıdır; düzenleme grubu yerinde değiştirir, elle değişen izni korur', () => {
+    let liste = elleYukuYaz(elleYukuYaz([sandik(1)], bilgi(), null), bilgi({ kod: 'B', adet: 1 }), null);
+    expect(liste.map(satirAnahtari)).toEqual(['s:1', 'm:1:1', 'm:1:2', 'm:2:1']);
+    liste = liste.map((s) => (satirAnahtari(s) === 'm:1:2' ? izinDegistir(dahilDegistir(s, false), 'dondurulebilirMi', true) : s));
+
+    liste = elleYukuYaz(liste, bilgi({ kod: 'A2', brutKg: 600, adet: 3 }), 1);
+    expect(liste.map(satirAnahtari)).toEqual(['s:1', 'm:1:1', 'm:1:2', 'm:1:3', 'm:2:1']);
+    const b2 = liste[2];
+    expect([b2.kod, b2.dahil, b2.dondurulebilirMi, b2.elleDegisenIzinler, b2.ustYukSiniriKg, b2.birimSayisi])
+      .toEqual(['A2', false, true, PlanYukIzni.Dondurme, 600, 3]);
+    expect(elleYukFormu(liste, 1)).toEqual(jasmine.objectContaining({ grupNo: 1, kod: 'A2', adet: 3, brutKg: 600 }));
+    expect(elleYukFormu(liste, 9)).toBeNull();
+
+    expect(elleYukuSil(liste, 1).map(satirAnahtari)).toEqual(['s:1', 'm:2:1']);
+  });
+
+  it('projesi seçimden çıkan elle yük silinmez, projesiz kalır', () => {
+    const liste = elleYukuYaz(elleYukuYaz([], bilgi(), null), bilgi({ kod: 'B', adet: 1, projeId: 2, projeNo: 'P2' }), null);
+    const sonuc = elleYukProjeleriniBirak(liste, [2]);
+    expect(sonuc.grupSayisi).toBe(1);
+    expect(sonuc.satirlar.map((s) => [s.kod, s.projeId, s.projeNo])).toEqual([['Ek sandık 1', null, null], ['Ek sandık 1', null, null], ['B', 2, 'P2']]);
+    expect(elleYukProjeleriniBirak(liste, [1, 2]).grupSayisi).toBe(0);
+  });
+
+  it('hesap isteğinin elle yük kısmı: grup başına ortak bilgi ve birim seçimleri; elle yük yoksa boş dizi', () => {
+    expect(manuelYukler([sandik(1)])).toEqual([]);
+    const liste = elleYukuYaz([sandik(1)], bilgi(), null).map((s) => (s.birimNo === 2 ? dahilDegistir(s, false) : s));
+    expect(manuelYukler(liste)).toEqual([{
+      kod: 'Ek sandık 1', aciklama: null, yukTuruId: YukTuru.Sandik, boyMm: 1200, enMm: 800, yukseklikMm: 900, brutKg: 450, adet: 2,
+      projeId: 1, lokasyonId: null, ozelTasimaNotu: null,
+      birimler: [
+        { birimNo: 1, dahil: true, dondurulebilirMi: false, usteKonabilirMi: true, altaKalabilirMi: true, ustYukSiniriKg: 450, elleDegisenIzinler: 0 },
+        { birimNo: 2, dahil: false, dondurulebilirMi: false, usteKonabilirMi: true, altaKalabilirMi: true, ustYukSiniriKg: 450, elleDegisenIzinler: 0 },
+      ],
+    }]);
   });
 });

@@ -19,21 +19,25 @@
   &__liste { max-height: 220px; }
 }
 
+// Seçili projeler: başlığın altında, aramanın üstünde yumuşak marka zeminli etiketler.
 .yp-projeler {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  margin-bottom: 14px;
 }
 
 .yp-cip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 6px 4px 10px;
-  border: 1px solid var(--borderColor);
+  min-height: 30px;
+  padding: 3px 4px 3px 12px;
+  border: 1px solid var(--brandColorLine);
   border-radius: 999px;
-  background: #f8fafc;
+  background: var(--brandColorSoft);
+  color: var(--blackColor);
   font-size: 12.5px;
 
   small { color: var(--bodyColor); }
@@ -41,17 +45,57 @@
   &__sil {
     display: grid;
     place-items: center;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     padding: 0;
     border: 0;
     border-radius: 50%;
     background: transparent;
     color: var(--bodyColor);
+    transition: background .15s ease, color .15s ease;
 
-    &:hover:not(:disabled) { background: #fee2e2; color: #dc2626; }
+    &:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--dangerColor) 12%, var(--whiteColor));
+      color: var(--dangerColor);
+    }
+
+    &:focus-visible { outline: 2px solid var(--primaryColor); outline-offset: 1px; }
     &:disabled { opacity: .5; cursor: not-allowed; }
   }
+}
+
+// Araç çubukları (proje araması, yük süzgeçleri ve işlemleri): bütün denetimler aynı yükseklikte ve yazı boyunda.
+// Yerleşim eskisiyle aynıdır: arama ve süzgeçler solda, toplu işlem grubu sağda, "Elle yük ekle" altta solda.
+.ys-cubuk {
+  gap: 10px;
+
+  .form-control,
+  .form-select {
+    min-height: 40px;
+    border-color: var(--borderColor);
+    border-radius: 10px;
+    color: var(--blackColor);
+    font-size: 13px;
+  }
+
+  .tz-input-icon .form-control {
+    background-color: var(--brandSurface);
+
+    &:focus { background-color: var(--whiteColor); }
+  }
+
+  .tz-btn-group { min-height: 40px; }
+
+  // "Elle yük ekle": araç çubuğunun altında, solda kendi satırında.
+  &__satir {
+    display: flex;
+    flex-basis: 100%;
+  }
+}
+
+.yp-suzgec {
+  width: auto;
+  min-width: 150px;
 }
 
 // Proje tablosu: sayfa başına 10 satır; dar ekranda kendi içinde kayar.
@@ -62,7 +106,8 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
+  gap: 8px;
+  min-width: 0;
   margin-top: 16px;
 
   &__etiket {
@@ -75,13 +120,26 @@
     flex-wrap: wrap;
     max-width: 100%;
 
-    button:disabled { opacity: .6; cursor: not-allowed; }
+    button {
+      min-height: 34px;
+
+      &:focus-visible { outline: 2px solid var(--primaryColor); outline-offset: 1px; }
+      &:disabled { opacity: .6; cursor: not-allowed; }
+    }
   }
+
+  .yp-ipucu { line-height: 1.5; }
 }
 
-.yp-suzgec {
-  width: auto;
-  min-width: 160px;
+// Yük listesi yenilenirken başlığın yanındaki bilgi.
+.ys-guncelleme {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--bodyColor);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
 }
 
 .yp-yukler {
@@ -91,39 +149,128 @@
   // On üç sütun 1280 genişlikte yatay kaydırmasız sığsın diye hücreler ortak tablodan sıkıdır.
   .yp-tablo {
     th,
-    td { padding: 8px 5px; }
+    td { padding: 10px 5px; }
+
+    // Dar sütun başlıkları (ör. "Üst yük kg") iki satıra inebilir; sütun genişliğini içerik belirler.
+    th {
+      letter-spacing: .02em;
+      white-space: normal;
+    }
 
     th:first-child,
-    td:first-child { padding-left: 10px; }
+    td:first-child { padding-left: 12px; }
 
-    .yp-sarmala { min-width: 104px; }
+    th:last-child,
+    td:last-child { padding-right: 10px; }
+
+    .yp-sarmala { min-width: 112px; }
   }
 
   .yp-ust-yuk {
-    width: 80px;
+    width: 64px;
+    min-height: 30px;
     margin-left: auto;
-    padding-inline: 6px;
+    padding: 3px 8px;
+    border-radius: 8px;
+    font-size: 12.5px;
     text-align: right;
   }
 
   // Elle değiştirilmiş izin: hesapta korunur.
   td.yp-elle { box-shadow: inset 0 -3px 0 var(--yp-ton); }
 
+  // Elle eklenen yük: hafif ana renk zemini ve sol kenarda ana renk şeridi (verisi eksikse eksik şeridi öne geçer).
+  tr.ys-satir--elle td { background: color-mix(in srgb, var(--primaryColor) 3%, var(--whiteColor)); }
+  tr.ys-satir--elle:hover td { background: color-mix(in srgb, var(--primaryColor) 6%, var(--whiteColor)); }
+  tr.ys-satir--elle.yp-satir--secili td { background: color-mix(in srgb, var(--primaryColor) 9%, var(--whiteColor)); }
+  tr.ys-satir--elle td:first-child { box-shadow: inset 3px 0 0 var(--primaryColor); }
+
   // Verisi eksik satır hesaplanmaz: durum sütunu kaydırılmış olsa da sol kenardan bellidir.
   tr.ys-satir--eksik td:first-child { box-shadow: inset 3px 0 0 var(--warningColor); }
 }
 
+// Kod hücresi: kod, birim sırası ve "Elle" rozeti aynı satırda; açıklama ve not altında.
+.ys-kod__ust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+
+  strong { color: var(--blackColor); font-weight: 600; }
+}
+
+.ys-kod__birim {
+  color: var(--bodyColor);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+// Satır işlemleri hücre içinde bir kapta dizilir (td tablo hücresi kalır).
+.yp-tablo .ys-islem-hucre {
+  width: 1%;
+  text-align: right;
+}
+
+.ys-satir-islem {
+  display: inline-flex;
+  gap: 4px;
+  justify-content: flex-end;
+
+  .tz-btn--icon { width: 28px; min-height: 28px; }
+}
+
+// "Elle" rozeti: sandık satırlarından ayrışsın diye ana renkte.
+.yp-rozet.ys-rozet-elle {
+  --r-ton: var(--primaryColor);
+  gap: 3px;
+  padding: 1px 7px;
+  font-size: 11px;
+
+  i { font-size: 12px; }
+}
+
+// Tablonun altındaki açıklamalar: kısa, simgeli maddeler.
+.ys-lejant {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  margin: 14px 0 0;
+  padding: 0;
+  color: var(--bodyColor);
+  font-size: 12px;
+  line-height: 1.5;
+  list-style: none;
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  i {
+    color: color-mix(in srgb, var(--bodyColor) 70%, var(--whiteColor));
+    font-size: 14px;
+  }
+
+  &__cizgi {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 10px;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--bodyColor) 8%, var(--whiteColor));
+    box-shadow: inset 0 -3px 0 var(--yp-ton);
+  }
+}
+
+// Elle yük penceresindeki alan hatası; birimli kutuda Bootstrap'in hata simgesi birim etiketinin üstüne binmesin.
+.ys-elle-pencere {
+  .tz-form > .tz-section { margin: 6px 0 -2px; }
+  .tz-field small.ys-hata { color: var(--dangerColor); font-weight: 600; }
+  .tz-input-unit .form-control.is-invalid { padding-right: 40px; background-image: none; }
+}
+
 // Proje seçimi değişti, yeni liste bekleniyor: eldeki satırlar soluk görünür.
 .ys-guncelleniyor { opacity: .55; }
-
-.ys-baglanti {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--primaryColor);
-  font-weight: 600;
-  text-decoration: underline;
-}
 
 .yp-sorun {
   color: #b45309;
@@ -135,22 +282,71 @@
   font-size: 11.5px;
 }
 
-// Hesapla çubuğu: solda seçimlerin durumu, sağda sayfanın tek birincil düğmesi.
+// Hesapla çubuğu: solda durum simgesi, başlık ve tek cümle; sağda sayfanın tek birincil düğmesi.
 .ys-hesap {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 12px;
+  gap: 14px 20px;
+  padding-block: 18px;
 
   &__durum {
     display: flex;
-    flex: 1 1 260px;
-    flex-wrap: wrap;
+    flex: 1 1 320px;
     align-items: center;
-    gap: 8px;
+    gap: 14px;
+    min-width: 0;
   }
 
-  &__dugme { min-width: 168px; }
+  &__ikon {
+    --h-ton: var(--primaryColor);
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--h-ton) 10%, var(--whiteColor));
+    color: var(--h-ton);
+    font-size: 20px;
+
+    &[data-ton='success'] { --h-ton: #1e8a3a; }
+    &[data-ton='warning'] { --h-ton: #d97706; }
+    &[data-ton='muted'] { --h-ton: var(--bodyColor); }
+  }
+
+  &__metin {
+    min-width: 0;
+
+    strong {
+      display: block;
+      color: var(--blackColor);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    small {
+      display: block;
+      margin-top: 2px;
+      color: var(--bodyColor);
+      font-size: 12.5px;
+      line-height: 1.45;
+    }
+  }
+
+  &__islem {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+  }
+
+  &__dugme {
+    min-width: 172px;
+    min-height: 44px;
+    font-size: 13.5px;
+  }
 }
 
 .yp-toplu {
@@ -164,21 +360,56 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    padding-bottom: 12px;
+    padding-bottom: 14px;
     border-bottom: 1px solid var(--borderColor);
 
-    &:last-child { border-bottom: 0; }
+    &:last-child { padding-bottom: 0; border-bottom: 0; }
+
+    strong { color: var(--blackColor); font-size: 13px; font-weight: 600; }
   }
 
   &__ust-yuk {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
 
-    .form-select { width: auto; }
+    .form-select,
+    .form-control {
+      min-height: 40px;
+      border-color: var(--borderColor);
+      border-radius: 10px;
+      color: var(--blackColor);
+      font-size: 13px;
+    }
+
+    .form-select { width: 200px; }
     .tz-input-unit { width: 140px; }
   }
+
+  .tz-segmented button:focus-visible { outline: 2px solid var(--primaryColor); outline-offset: 1px; }
 }
 
 @media (max-width: 575.98px) {
-  .ys-hesap__dugme { flex: 1 1 100%; }
+  // Dar ekranda eskisi gibi her denetim kendi satırında, aynı sırayla.
+  .ys-cubuk {
+    .yp-arama { flex-basis: 100%; max-width: none; }
+    .yp-suzgec { flex: 1 1 100%; min-width: 0; }
+    .yp-bosluk { display: none; }
+  }
+
+  .ys-yer {
+    align-self: stretch;
+
+    .tz-segmented {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      width: 100%;
+    }
+  }
+
+  .ys-hesap {
+    &__durum { flex-basis: 100%; align-items: flex-start; }
+    &__islem { width: 100%; margin-left: 0; }
+    &__dugme { flex: 1 1 100%; }
+  }
 }

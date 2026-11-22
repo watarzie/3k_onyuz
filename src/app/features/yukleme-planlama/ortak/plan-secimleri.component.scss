@@ -7,14 +7,16 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 8px;
-  margin-top: 14px;
+  gap: 8px;
+  margin-top: 16px;
 
-  &__ipucu { flex-basis: 100%; }
+  &__ipucu { flex-basis: 100%; line-height: 1.5; }
 }
 
+// Alan etiketi: tz-field etiketleriyle aynı ağırlıkta.
 .ps-etiket {
-  color: var(--bodyColor);
+  flex-basis: 100%;
+  color: var(--blackColor);
   font-size: 12.5px;
   font-weight: 600;
 }
@@ -22,22 +24,28 @@
 .ps-tip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  min-height: 32px;
-  padding: 4px 12px;
+  gap: 5px;
+  min-height: 34px;
+  padding: 4px 14px;
   border: 1px solid var(--borderColor);
   border-radius: 999px;
   background: var(--whiteColor);
   color: var(--blackColor);
   font-size: 12.5px;
+  font-weight: 500;
+  transition: border-color .15s ease, background .15s ease, color .15s ease;
 
-  small { color: var(--bodyColor); }
+  i { font-size: 15px; }
+  small { color: var(--bodyColor); font-weight: 400; }
 
-  &:not(:disabled):hover { border-color: var(--yp-ton); }
+  &:not(:disabled):hover { border-color: color-mix(in srgb, var(--primaryColor) 40%, var(--borderColor)); }
+  &:focus-visible { outline: 2px solid var(--primaryColor); outline-offset: 1px; }
+  &:disabled { opacity: .6; cursor: not-allowed; }
 
   &--secili {
-    border-color: var(--yp-ton);
-    background: color-mix(in srgb, var(--yp-ton) 12%, var(--whiteColor));
+    border-color: var(--brandColorLine);
+    background: var(--brandColorSoft);
+    color: var(--primaryColor);
     font-weight: 600;
   }
 }
@@ -47,8 +55,8 @@
   flex-wrap: wrap;
   align-items: flex-end;
   gap: 4px 14px;
-  margin-top: 14px;
+  margin-top: 16px;
 
   .tz-field { width: 190px; margin: 0; }
-  .yp-ipucu { padding-bottom: 8px; }
+  .yp-ipucu { padding-bottom: 11px; }
 }

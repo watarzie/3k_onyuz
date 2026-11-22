@@ -32,6 +32,14 @@ describe('YuklemePlanlamaService yükleme simülasyonu sözleşmesi', () => {
         sandikId: 71, dahil: false, dondurulebilirMi: true, usteKonabilirMi: true, altaKalabilirMi: false, ustYukSiniriKg: null,
         elleDegisenIzinler: PlanYukIzni.Dondurme | PlanYukIzni.UstYukSiniri,
       }],
+      manuelYukler: [{
+        kod: 'Ek sandık 1', aciklama: null, yukTuruId: 1, boyMm: 1200, enMm: 800, yukseklikMm: 900, brutKg: 450, adet: 1,
+        projeId: 7, lokasyonId: null, ozelTasimaNotu: null,
+        birimler: [{
+          birimNo: 1, dahil: true, dondurulebilirMi: false, usteKonabilirMi: true, altaKalabilirMi: true, ustYukSiniriKg: 450,
+          elleDegisenIzinler: PlanYukIzni.Yok,
+        }],
+      }],
     };
     service.planHesapla(istek).subscribe();
     const cagri = http.expectOne(API.YUKLEME_PLANLARI.YERLESIM_HESAPLA);
@@ -39,6 +47,7 @@ describe('YuklemePlanlamaService yükleme simülasyonu sözleşmesi', () => {
     expect(cagri.request.url).toContain('/yukleme-planlari/yerlesim-hesapla');
     expect(cagri.request.body).toEqual(istek);
     expect([cagri.request.body.lokasyonTercihi, cagri.request.body.sandikYukleri[0].elleDegisenIzinler]).toEqual([2, 9]);
+    expect(cagri.request.body.manuelYukler[0].birimler[0].birimNo).toBe(1);
     cagri.flush({});
   });
 
