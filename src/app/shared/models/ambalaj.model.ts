@@ -170,6 +170,10 @@ export interface AmbalajIcSandikSablonDto {
   boy: number | null;
   en: number | null;
   yukseklik: number | null;
+  /** Pasif tip yeni kayda/seçime atanamaz; liste pasifleri de döndürür. */
+  aktif: boolean;
+  /** Tipe bağlı kayıt sayısı; yalnız 0 iken silinebilir. */
+  kullanimSayisi: number;
 }
 
 export interface AmbalajIcSandikSablonKaydetRequest {
@@ -314,4 +318,10 @@ export type AmbalajKuyruk = 'normal' | 'tamamlanan' | 'ozel' | 'saha' | 'yedek' 
 export type OzelSandikTur = 2 | 3 | 4 | 5;
 export type AmbalajGrup = 1 | 2 | 3;
 export type UretimDurumId = 1 | 2 | 3;
-export type SandikTipi = 'Ahşap Kapalı' | 'Kafes Sandık' | 'Kontrplak Sandık' | 'Katlanır Sandık';
+/** 'İç Sandık Katlanır' yalnız iç sandıkta geçerlidir; sunucu diğer türlerde reddeder. */
+export type SandikTipi =
+  | 'Ahşap Kapalı'
+  | 'Kafes Sandık'
+  | 'Kontrplak Sandık'
+  | 'Katlanır Sandık'
+  | 'İç Sandık Katlanır';

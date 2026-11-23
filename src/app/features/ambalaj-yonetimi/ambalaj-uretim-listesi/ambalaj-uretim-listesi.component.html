@@ -56,7 +56,7 @@
               <p>Kaynak projeler ve dış sandıklar yalnızca bağlantı seçimi için kullanılır.</p>
             </div>
             <div class="list-actions">
-              <button type="button" class="tz-btn" (click)="sablonFormOpen.set(!sablonFormOpen())"><i class="ri-bookmark-line tz-ico-primary"></i>İç sandık tipi</button>
+              <button type="button" class="tz-btn" aria-controls="ic-sandik-tipleri-paneli" [attr.aria-expanded]="icSandikTipleriPanelAcik()" (click)="icSandikTipleriPaneliniAcKapat()"><i class="ri-bookmark-line tz-ico-primary"></i>İç sandık tipi</button>
               <button *appCanWrite="izin.KayitEkle" type="button" class="tz-btn tz-btn--primary" (click)="bagimsizFormuAc()"><i class="ri-add-line"></i>Sandık ekle</button>
             </div>
           </div>
@@ -83,16 +83,80 @@
             <button *appCanAccess="[izin.PdfIndir]" type="button" [disabled]="ozelRaporDownloading() !== null" [attr.aria-busy]="ozelRaporDownloading() === 3" (click)="ozelRaporIndir(3)"><i [class]="ozelRaporDownloading() === 3 ? 'ri-loader-4-line spin' : 'ri-file-pdf-2-line'"></i><span><strong>İç sandık PDF</strong><small>{{ ozelRaporAdedi(3) }} sandık <span *appCanAccess="[izin.M3Goruntule]">· {{ ozelRaporHacmi(3) === null ? '—' : (ozelRaporHacmi(3) | number:'1.3-3') + ' m³' }}</span></small></span></button>
           </div>
 
-          @if (sablonFormOpen()) {
-            <form class="crate-form template-form" (ngSubmit)="sablonKaydet()">
-              <div class="form-title"><strong>Yeni iç sandık tipi</strong><button type="button" (click)="sablonFormOpen.set(false)"><i class="ri-close-line"></i></button></div>
-              <label><span>Tip adı *</span><input [(ngModel)]="sablonForm.ad" name="bagimsizSablonAd" /></label>
-              <label><span>Sandık tipi *</span><select [(ngModel)]="sablonForm.sandikTipi" name="bagimsizSablonTip">@for (tip of sandikTipleri; track tip) { <option [ngValue]="tip">{{ tip }}</option> }</select></label>
-              <label *appCanAccess="[izin.OlcuGoruntule]"><span>Boy (mm) *</span><input type="number" min="1" [(ngModel)]="sablonForm.boy" name="bagimsizSablonBoy" /></label>
-              <label *appCanAccess="[izin.OlcuGoruntule]"><span>En (mm) *</span><input type="number" min="1" [(ngModel)]="sablonForm.en" name="bagimsizSablonEn" /></label>
-              <label *appCanAccess="[izin.OlcuGoruntule]"><span>Yükseklik (mm) *</span><input type="number" min="1" [(ngModel)]="sablonForm.yukseklik" name="bagimsizSablonYukseklik" /></label>
-              <div class="form-actions"><button type="button" (click)="sablonFormOpen.set(false)">Vazgeç</button><button class="primary-action" type="submit" [disabled]="sablonSaving()"><i class="ri-save-3-line"></i> Kaydet</button></div>
-            </form>
+          @if (icSandikTipleriPanelAcik()) {
+            <!-- Kayıtlı iç sandık tipleri: liste + ekle/düzenle formu. Yazma düğmeleri çağrılan ucun izniyle gizlenir. -->
+            <section id="ic-sandik-tipleri-paneli" class="ic-tip-panel" aria-labelledby="ic-tip-panel-baslik">
+              <div class="section-heading">
+                <div>
+                  <h3 id="ic-tip-panel-baslik">{{ t('IC_TYPES_TITLE') }}</h3>
+                  <p>{{ t('IC_TYPES_HELP') }}</p>
+                </div>
+                <div class="list-actions">
+                  <!-- Yeni tip ölçü ister; ölçüyü göremeyen kullanıcı yeni tip ekleyemez. -->
+                  @if (permissions.hasAccess(izin.OlcuGoruntule)) {
+                    <button *appCanWrite="izin.KayitDuzenle" type="button" class="tz-btn ic-tip-new" (click)="yeniSablonFormuAc()"><i class="ri-add-line tz-ico-primary"></i>{{ t('IC_TYPE_NEW') }}</button>
+                  }
+                  <button type="button" class="tz-btn tz-btn--icon" [title]="t('IC_TYPES_CLOSE')" [attr.aria-label]="t('IC_TYPES_CLOSE')" (click)="icSandikTipleriPaneliniAcKapat()"><i class="ri-close-line"></i></button>
+                </div>
+              </div>
+              <div class="crate-table-wrap">
+                <table class="crate-table ic-tip-table table table-hover align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th>{{ t('IC_TYPE_NAME') }}</th>
+                      <th>{{ t('IC_TYPE_CRATE_TYPE') }}</th>
+                      <th *appCanAccess="[izin.OlcuGoruntule]">{{ t('IC_TYPE_DIMENSIONS') }}</th>
+                      <th>{{ t('IC_TYPE_USAGE') }}</th>
+                      <th>{{ t('IC_TYPE_STATUS') }}</th>
+                      <th class="actions-column">{{ t('IC_TYPE_ACTIONS') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (sablon of icSandikSablonlari(); track sablon.id) {
+                      <tr [class.is-passive]="!sablon.aktif" [attr.data-sablon-id]="sablon.id">
+                        <td><strong>{{ sablon.ad }}</strong></td>
+                        <td>{{ sablon.sandikTipi }}</td>
+                        <td *appCanAccess="[izin.OlcuGoruntule]">{{ sablon.boy ?? '—' }} × {{ sablon.en ?? '—' }} × {{ sablon.yukseklik ?? '—' }}</td>
+                        <td>{{ sablon.kullanimSayisi }}</td>
+                        <td><app-status-badge [status]="sablon.aktif ? 'Aktif' : 'Pasif'" [label]="sablon.aktif ? t('IC_TYPE_ACTIVE') : t('IC_TYPE_PASSIVE')" /></td>
+                        <td class="actions-cell">
+                          <div class="actions">
+                            <button *appCanWrite="izin.KayitDuzenle" type="button" class="tz-btn tz-btn--sm ic-tip-edit" (click)="sablonuDuzenle(sablon)"><i class="ri-edit-line tz-ico-primary"></i>{{ t('IC_TYPE_EDIT') }}</button>
+                            <button *appCanWrite="izin.KayitDuzenle" type="button" class="tz-btn tz-btn--sm ic-tip-status" [disabled]="sablonDurumuKaydediliyor() !== null" [attr.aria-busy]="sablonDurumuKaydediliyor() === sablon.id" (click)="sablonDurumuDegistir(sablon)">
+                              @if (sablon.aktif) { <i class="ri-pause-circle-line tz-ico-warning"></i>{{ t('IC_TYPE_DEACTIVATE') }} } @else { <i class="ri-play-circle-line tz-ico-success"></i>{{ t('IC_TYPE_ACTIVATE') }} }
+                            </button>
+                            <ng-container *appCanWrite="izin.KayitSil">
+                              @if (sablon.kullanimSayisi === 0) {
+                                <button type="button" class="tz-btn tz-btn--icon tz-btn--danger-hover ic-tip-delete" [title]="t('IC_TYPE_DELETE')" [attr.aria-label]="t('IC_TYPE_DELETE')" (click)="sablonSil(sablon)"><i class="ri-delete-bin-line"></i></button>
+                              } @else {
+                                <span class="ic-tip-delete-locked" [title]="t('IC_TYPE_IN_USE_HINT')"><button type="button" class="tz-btn tz-btn--icon ic-tip-delete" disabled [attr.aria-label]="t('IC_TYPE_IN_USE_HINT')"><i class="ri-delete-bin-line"></i></button></span>
+                              }
+                            </ng-container>
+                          </div>
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr><td [attr.colspan]="permissions.hasAccess(izin.OlcuGoruntule) ? 6 : 5" class="empty-state">{{ t('IC_TYPES_EMPTY') }}</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+
+              @if (sablonFormOpen()) {
+                <form class="crate-form template-form" (ngSubmit)="sablonKaydet()">
+                  <div class="form-title"><strong>{{ duzenlenenSablonId() !== null ? t('IC_TYPE_EDIT_TITLE') : t('IC_TYPE_NEW') }}</strong><button type="button" [attr.aria-label]="t('IC_TYPES_CLOSE')" (click)="sablonFormunuKapat()"><i class="ri-close-line"></i></button></div>
+                  @if (duzenlenenSablonId() !== null) {
+                    <small class="span-2 locked-field-hint ic-tip-edit-note"><i class="ri-information-line"></i> {{ t('IC_TYPE_EDIT_NOTE') }}</small>
+                  }
+                  <label><span>{{ t('IC_TYPE_NAME') }} *</span><input [(ngModel)]="sablonForm.ad" name="bagimsizSablonAd" /></label>
+                  <label><span>{{ t('IC_TYPE_CRATE_TYPE') }} *</span><select [(ngModel)]="sablonForm.sandikTipi" name="bagimsizSablonTip">@for (tip of sablonFormuSandikTipleri(); track tip) { <option [ngValue]="tip">{{ tip }}</option> }</select></label>
+                  <label *appCanAccess="[izin.OlcuGoruntule]"><span>{{ t('IC_TYPE_LENGTH') }} *</span><input type="number" min="1" [(ngModel)]="sablonForm.boy" name="bagimsizSablonBoy" /></label>
+                  <label *appCanAccess="[izin.OlcuGoruntule]"><span>{{ t('IC_TYPE_WIDTH') }} *</span><input type="number" min="1" [(ngModel)]="sablonForm.en" name="bagimsizSablonEn" /></label>
+                  <label *appCanAccess="[izin.OlcuGoruntule]"><span>{{ t('IC_TYPE_HEIGHT') }} *</span><input type="number" min="1" [(ngModel)]="sablonForm.yukseklik" name="bagimsizSablonYukseklik" /></label>
+                  <div class="form-actions"><button type="button" (click)="sablonFormunuKapat()">{{ t('IC_TYPE_CANCEL') }}</button><button class="primary-action" type="submit" [disabled]="sablonSaving()"><i class="ri-save-3-line"></i> {{ t('IC_TYPE_SAVE') }}</button></div>
+                </form>
+              }
+            </section>
           }
 
           @if (bagimsizFormOpen()) {
@@ -190,7 +254,7 @@
                   </div>
                   @if (ozelForm.ustKaynakSandikId) {
                     <div class="source-choice-grid">
-                      <label><span>Kayıtlı İç Sandık Tipi</span><select [ngModel]="secilenOzelSablonId" (ngModelChange)="ozelSablonuUygula($any($event))" name="bagimsizSablon" [disabled]="ozelBaglantiKilitli() || ozelManuelDetayGirisi()"><option [ngValue]="undefined">Şablon seçin</option>@for (sablon of icSandikSablonlari(); track sablon.id) { <option [ngValue]="sablon.id">{{ sablon.ad }} · {{ sablon.sandikTipi }}</option> }</select></label>
+                      <label><span>Kayıtlı İç Sandık Tipi</span><select [ngModel]="secilenOzelSablonId" (ngModelChange)="ozelSablonuUygula($any($event))" name="bagimsizSablon" [disabled]="ozelBaglantiKilitli() || ozelManuelDetayGirisi()"><option [ngValue]="undefined">Şablon seçin</option>@for (sablon of ozelSablonSecenekleri(); track sablon.id) { <option [ngValue]="sablon.id">{{ sablon.ad }} · {{ sablon.sandikTipi }}{{ sablon.aktif ? '' : ' ' + t('IC_TYPE_PASSIVE_SUFFIX') }}</option> }</select></label>
                       <div class="manual-checkbox-field" [class.disabled]="ozelBaglantiKilitli()">
                         <div class="form-check manual-checkbox">
                           <input id="ozelIcManuelGiris" class="form-check-input" type="checkbox" [ngModel]="ozelManuelDetayGirisi()" (ngModelChange)="ozelManuelDetayGirisiDegisti($event)" name="ozelIcManuelGiris" [disabled]="ozelBaglantiKilitli()" />
@@ -513,33 +577,38 @@
             </div>
             <div class="add-actions">
               @if (planGrup() === 3 && yasam.secimYetkili()) {<button type="button" [disabled]="yasam.islemde()" (click)="yasam.hepsiniSec(true)">{{ t('SELECT_ALL') }}</button><button type="button" [disabled]="yasam.islemde()" (click)="yasam.hepsiniSec(false)">{{ t('CLEAR_SELECTION') }}</button>}
-              @if (planGrup() === 3) { <button type="button" class="secondary-add" (click)="sablonFormOpen.set(!sablonFormOpen())"><i class="ri-bookmark-line"></i> Tip kaydet</button> }
+              @if (planGrup() === 3 && permissions.hasAccess(izin.OlcuGoruntule)) { <button *appCanWrite="izin.KayitDuzenle" type="button" class="secondary-add" (click)="yeniSablonFormunuAcKapat()"><i class="ri-bookmark-line"></i> Tip kaydet</button> }
               @if (planGrup() !== 1 || manuelSandikEklenebilir()) { <button *appCanWrite="izin.KayitEkle" type="button" (click)="kalemFormuAc(aktifManuelTur())"><i class="ri-add-line"></i> {{ planGrup() === 3 ? 'İç sandık' : 'Sandık ekle' }}</button> }
             </div>
           </div>
 
           @if (planGrup() === 3) {
             <div class="template-library">
-              @for (sablon of icSandikSablonlari(); track sablon.id) {
+              @for (sablon of aktifIcSandikSablonlari(); track sablon.id) {
                 <div class="template-item">
                   <button *appCanWrite="izin.KayitEkle" type="button" class="template-use" (click)="kalemFormuAc(3); sablonuUygula(sablon.id)">
                     <strong>{{ sablon.ad }}</strong><span>{{ sablon.sandikTipi }}</span><small *appCanAccess="[izin.OlcuGoruntule]">{{ sablon.boy }} × {{ sablon.en }} × {{ sablon.yukseklik }} mm</small>
                   </button>
-                  <button *appCanWrite="izin.KayitSil" type="button" class="template-delete" title="Şablonu sil" (click)="sablonSil(sablon)"><i class="ri-delete-bin-line"></i></button>
+                  @if (sablon.kullanimSayisi === 0) {
+                    <button *appCanWrite="izin.KayitSil" type="button" class="template-delete" [title]="t('IC_TYPE_DELETE')" [attr.aria-label]="t('IC_TYPE_DELETE')" (click)="sablonSil(sablon)"><i class="ri-delete-bin-line"></i></button>
+                  }
                 </div>
-              } @empty { <div class="manual-empty">Henüz kayıtlı iç sandık tipi yok.</div> }
+              } @empty { <div class="manual-empty">{{ t('IC_TYPES_EMPTY') }}</div> }
             </div>
           }
 
           @if (sablonFormOpen() && planGrup() === 3) {
             <form class="crate-form template-form" (ngSubmit)="sablonKaydet()">
-              <div class="form-title"><strong>Yeni iç sandık tipi</strong><button type="button" (click)="sablonFormOpen.set(false)"><i class="ri-close-line"></i></button></div>
-              <label><span>Tip adı *</span><input [(ngModel)]="sablonForm.ad" name="sablonAd" placeholder="Örn. Akım trafosu iç sandığı" /></label>
-              <label><span>Sandık tipi *</span><select [(ngModel)]="sablonForm.sandikTipi" name="sablonSandikTipi">@for (tip of sandikTipleri; track tip) { <option [ngValue]="tip">{{ tip }}</option> }</select></label>
-              <label *appCanAccess="[izin.OlcuGoruntule]"><span>Boy (mm) *</span><input type="number" min="1" [(ngModel)]="sablonForm.boy" name="sablonBoy" /></label>
-              <label *appCanAccess="[izin.OlcuGoruntule]"><span>En (mm) *</span><input type="number" min="1" [(ngModel)]="sablonForm.en" name="sablonEn" /></label>
-              <label *appCanAccess="[izin.OlcuGoruntule]"><span>Yükseklik (mm) *</span><input type="number" min="1" [(ngModel)]="sablonForm.yukseklik" name="sablonYukseklik" /></label>
-              <div class="form-actions"><button type="button" (click)="sablonFormOpen.set(false)">Vazgeç</button><button class="primary-action" type="submit" [disabled]="sablonSaving()"><i class="ri-save-3-line"></i> Kaydet</button></div>
+              <div class="form-title"><strong>{{ duzenlenenSablonId() !== null ? t('IC_TYPE_EDIT_TITLE') : t('IC_TYPE_NEW') }}</strong><button type="button" (click)="sablonFormunuKapat()"><i class="ri-close-line"></i></button></div>
+              @if (duzenlenenSablonId() !== null) {
+                <small class="span-2 locked-field-hint ic-tip-edit-note"><i class="ri-information-line"></i> {{ t('IC_TYPE_EDIT_NOTE') }}</small>
+              }
+              <label><span>{{ t('IC_TYPE_NAME') }} *</span><input [(ngModel)]="sablonForm.ad" name="sablonAd" [placeholder]="t('IC_TYPE_NAME_PLACEHOLDER')" /></label>
+              <label><span>{{ t('IC_TYPE_CRATE_TYPE') }} *</span><select [(ngModel)]="sablonForm.sandikTipi" name="sablonSandikTipi">@for (tip of sablonFormuSandikTipleri(); track tip) { <option [ngValue]="tip">{{ tip }}</option> }</select></label>
+              <label *appCanAccess="[izin.OlcuGoruntule]"><span>{{ t('IC_TYPE_LENGTH') }} *</span><input type="number" min="1" [(ngModel)]="sablonForm.boy" name="sablonBoy" /></label>
+              <label *appCanAccess="[izin.OlcuGoruntule]"><span>{{ t('IC_TYPE_WIDTH') }} *</span><input type="number" min="1" [(ngModel)]="sablonForm.en" name="sablonEn" /></label>
+              <label *appCanAccess="[izin.OlcuGoruntule]"><span>{{ t('IC_TYPE_HEIGHT') }} *</span><input type="number" min="1" [(ngModel)]="sablonForm.yukseklik" name="sablonYukseklik" /></label>
+              <div class="form-actions"><button type="button" (click)="sablonFormunuKapat()">{{ t('IC_TYPE_CANCEL') }}</button><button class="primary-action" type="submit" [disabled]="sablonSaving()"><i class="ri-save-3-line"></i> {{ t('IC_TYPE_SAVE') }}</button></div>
             </form>
           }
 
@@ -548,11 +617,11 @@
               <div class="form-title"><strong>{{ editingKalemId() ? 'Sandığı düzenle' : 'Manuel sandık ekle' }}</strong><button type="button" (click)="kalemFormOpen.set(false)"><i class="ri-close-line"></i></button></div>
               <div class="project-context span-2"><span>Proje</span><strong>{{ plan()!.projeNo }}</strong><small>{{ plan()!.fbNo || 'FB tanımsız' }} · {{ plan()!.musteri }}</small></div>
               @if (kalemForm.tur === 3) {
-                <label class="span-2"><span>Kayıtlı İç Sandık Tipi</span><select [ngModel]="kalemForm.icSandikSablonId" (ngModelChange)="sablonuUygula($any($event))" name="sablon"><option [ngValue]="undefined">Elle gir</option>@for (sablon of icSandikSablonlari(); track sablon.id) { <option [ngValue]="sablon.id">{{ sablon.ad }} · {{ sablon.sandikTipi }}</option> }</select></label>
+                <label class="span-2"><span>Kayıtlı İç Sandık Tipi</span><select [ngModel]="kalemForm.icSandikSablonId" (ngModelChange)="sablonuUygula($any($event))" name="sablon"><option [ngValue]="undefined">Elle gir</option>@for (sablon of kalemSablonSecenekleri(); track sablon.id) { <option [ngValue]="sablon.id">{{ sablon.ad }} · {{ sablon.sandikTipi }}{{ sablon.aktif ? '' : ' ' + t('IC_TYPE_PASSIVE_SUFFIX') }}</option> }</select></label>
               }
               <label><span>Sandık No</span><input [(ngModel)]="kalemForm.sandikNo" name="sandikNo" placeholder="Boşsa otomatik verilir" /></label>
               <label><span>Sandık Adı *</span><input [(ngModel)]="kalemForm.ad" name="ad" /></label>
-              <label><span>Sandık Tipi *</span><select [(ngModel)]="kalemForm.sandikTipi" name="sandikTipi">@for (tip of sandikTipleri; track tip) { <option [ngValue]="tip">{{ tip }}</option> }</select></label>
+              <label><span>Sandık Tipi *</span><select [(ngModel)]="kalemForm.sandikTipi" name="sandikTipi">@for (tip of (kalemForm.tur === 3 ? icSandikTipiSecenekleri : sandikTipleri); track tip) { <option [ngValue]="tip">{{ tip }}</option> }</select></label>
               <label><span>Adet *</span><input type="number" min="1" [(ngModel)]="kalemForm.adet" name="adet" /></label>
               <label *appCanAccess="[izin.OlcuGoruntule]"><span>Boy (mm) *</span><input type="number" min="1" [(ngModel)]="kalemForm.boy" name="boy" /></label>
               <label *appCanAccess="[izin.OlcuGoruntule]"><span>En (mm) *</span><input type="number" min="1" [(ngModel)]="kalemForm.en" name="en" /></label>

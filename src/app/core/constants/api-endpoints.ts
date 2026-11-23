@@ -83,6 +83,8 @@ export const API = {
     SANDIK_SECENEKLERI: (projeId: number) => `${BASE}/ambalaj/projeler/${projeId}/sandik-secenekleri`,
     IC_SANDIK_SABLONLARI: `${BASE}/ambalaj/ic-sandik-sablonlari`,
     IC_SANDIK_SABLONU: (sablonId: number) => `${BASE}/ambalaj/ic-sandik-sablonlari/${sablonId}`,
+    IC_SANDIK_SABLONU_DURUM: (sablonId: number) =>
+      `${BASE}/ambalaj/ic-sandik-sablonlari/${sablonId}/durum`,
     TALEP_EDEN_KULLANICILAR: `${BASE}/ambalaj/talep-eden-kullanicilar`,
     KAYIT_DURUM: (kayitId: number) => `${BASE}/ambalaj/kayitlar/${kayitId}/durum`,
     KAYIT_GECMIS: (kayitId: number) => `${BASE}/ambalaj/kayitlar/${kayitId}/gecmis`,

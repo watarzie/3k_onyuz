@@ -130,6 +130,24 @@ export class AmbalajService {
     return this.api.post<AmbalajIcSandikSablonDto>(API.AMBALAJ.IC_SANDIK_SABLONLARI, request);
   }
 
+  /** Tipi günceller; mevcut sandık kayıtları değişmez (değerler kayda kopyalanmıştı). */
+  icSandikSablonuGuncelle(
+    sablonId: number,
+    request: AmbalajIcSandikSablonKaydetRequest,
+  ): Observable<ApiResult<AmbalajIcSandikSablonDto>> {
+    return this.api.put<AmbalajIcSandikSablonDto>(API.AMBALAJ.IC_SANDIK_SABLONU(sablonId), request);
+  }
+
+  /** Pasif tip yeni kayda/seçime atanamaz; kaydın zaten bağlı olduğu pasif tip korunur. */
+  icSandikSablonuDurumu(
+    sablonId: number,
+    aktif: boolean,
+  ): Observable<ApiResult<AmbalajIcSandikSablonDto>> {
+    return this.api.put<AmbalajIcSandikSablonDto>(API.AMBALAJ.IC_SANDIK_SABLONU_DURUM(sablonId), {
+      aktif,
+    });
+  }
+
   icSandikSablonuSil(sablonId: number): Observable<ApiResult<void>> {
     return this.api.delete<void>(API.AMBALAJ.IC_SANDIK_SABLONU(sablonId));
   }
