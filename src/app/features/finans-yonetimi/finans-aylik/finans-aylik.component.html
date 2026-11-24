@@ -1725,7 +1725,7 @@
           ><select class="form-select" [(ngModel)]="urunForm.icSandikSablonId">
             <option [ngValue]="null">Tip seçin</option>
             @for (sablon of icSandikSablonlari(); track sablon.id) {
-              <option [ngValue]="sablon.id">{{ sablon.ad }} · {{ sablon.sandikTipi }} · {{ sablon.boy }} × {{ sablon.en }} × {{ sablon.yukseklik }} mm</option>
+              <option [ngValue]="sablon.id">{{ sablon.ad }}{{ sablon.aktif ? '' : ' (' + t('INACTIVE') + ')' }} · {{ sablon.sandikTipi }} · {{ sablon.boy }} × {{ sablon.en }} × {{ sablon.yukseklik }} mm</option>
             }
           </select></label
         >

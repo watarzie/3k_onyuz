@@ -1658,7 +1658,9 @@ export class FinansYonetimiComponent implements OnInit {
   }
 
   icSandikSablonAdi(id: number): string {
-    return this.icSandikSablonlari().find(sablon => sablon.id === id)?.ad ?? 'Silinmiş İç Sandık Tipi';
+    const sablon = this.icSandikSablonlari().find(item => item.id === id);
+    if (!sablon) return 'Silinmiş İç Sandık Tipi';
+    return sablon.aktif ? sablon.ad : `${sablon.ad} (${this.t('INACTIVE')})`;
   }
 
   urunIsTuruDegisti(isTuru: number): void {

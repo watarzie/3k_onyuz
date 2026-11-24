@@ -46,11 +46,18 @@ import { AMBALAJ_YETKI } from '../../../core/constants/yetki-kodlari';
 import { projeTipiBaglami } from '../../../core/constants/proje-tipi';
 import { dosyayiKaydet } from '../../../core/services/dosya-kaydet';
 import { ConfirmService, duzMetin } from '../../../core/services/confirm.service';
+import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
+import {
+  aktifIcSandikTipleri,
+  icSandikTipiFormSecenekleri,
+  secilebilirIcSandikTipleri,
+  turunSandikTipleri,
+} from './ic-sandik-tipleri';
 
 @Component({
   selector: 'app-ambalaj-uretim-listesi',
   standalone: true,
-  imports: [BreadcrumbComponent, DatePipe, DecimalPipe, NgTemplateOutlet, FormsModule, RouterLink, ServerPagerComponent, StatCardComponent, UretimYasamDongusuComponent, CanWriteDirective, CanAccessDirective, IslemlerMenusuComponent],
+  imports: [BreadcrumbComponent, DatePipe, DecimalPipe, NgTemplateOutlet, FormsModule, RouterLink, ServerPagerComponent, StatCardComponent, StatusBadgeComponent, UretimYasamDongusuComponent, CanWriteDirective, CanAccessDirective, IslemlerMenusuComponent],
   templateUrl: './ambalaj-uretim-listesi.component.html',
   styleUrl: './ambalaj-uretim-listesi.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -150,9 +157,29 @@ export class AmbalajUretimListesiComponent implements OnInit {
   kalemForm: AmbalajKalemKaydetRequest = this.bosKalemFormu();
   sandikTipleri: SandikTipi[] = ['Ahşap Kapalı', 'Kafes Sandık', 'Kontrplak Sandık', 'Katlanır Sandık'];
   ozelSandikTipleri: SandikTipi[] = ['Kontrplak Sandık', 'Ahşap Kapalı', 'Katlanır Sandık'];
+  /** İç sandık tipi ve iç sandık kalemi formunda "İç Sandık Katlanır" de seçilebilir. */
+  readonly icSandikTipiSecenekleri = turunSandikTipleri(this.sandikTipleri, 3);
   icSandikSablonlari = signal<AmbalajIcSandikSablonDto[]>([]);
+  /** Yeni seçim/kullanım yalnız aktif tiplerle yapılır (proje planı tip kartları). */
+  aktifIcSandikSablonlari = computed(() => aktifIcSandikTipleri(this.icSandikSablonlari()));
+  /** Formu açılan kaydın bağlı olduğu tip; pasif olsa da seçimde korunur. */
+  private ozelBagliSablonId = signal<number | undefined>(undefined);
+  private kalemBagliSablonId = signal<number | undefined>(undefined);
+  ozelSablonSecenekleri = computed(() =>
+    secilebilirIcSandikTipleri(this.icSandikSablonlari(), this.ozelBagliSablonId()));
+  kalemSablonSecenekleri = computed(() =>
+    secilebilirIcSandikTipleri(this.icSandikSablonlari(), this.kalemBagliSablonId()));
+  icSandikTipleriPanelAcik = signal(false);
   sablonFormOpen = signal(false);
   sablonSaving = signal(false);
+  /** Formda düzenlenen tip; null iken form yeni tip ekler. */
+  duzenlenenSablonId = signal<number | null>(null);
+  /** Tip formunun sandık tipi seçenekleri; kullanımdaki tipte İç Sandık Katlanır geçişi listelenmez. */
+  sablonFormuSandikTipleri = computed(() => icSandikTipiFormSecenekleri(
+    this.sandikTipleri,
+    this.icSandikSablonlari().find(item => item.id === this.duzenlenenSablonId()),
+  ));
+  sablonDurumuKaydediliyor = signal<number | null>(null);
   sablonForm: AmbalajIcSandikSablonKaydetRequest = this.bosSablonFormu();
   bagimsizSandiklar = signal<AmbalajBagimsizSandikDto[]>([]);
   bagimsizYasam = signal<AmbalajBagimsizSandikDto | null>(null);
@@ -262,6 +289,11 @@ export class AmbalajUretimListesiComponent implements OnInit {
 
   aktifKuyrukDegistir(kuyruk: AmbalajKuyruk): void {
     if (this.aktifKuyruk() === kuyruk) return;
+    if (this.aktifKuyruk() === 'ozel') {
+      // Özel sekmeden çıkınca iç sandık tipleri paneli ve formu kapanır; düzenleme durumu taşınmaz.
+      this.icSandikTipleriPanelAcik.set(false);
+      this.sablonFormunuKapat();
+    }
     this.aktifKuyruk.set(kuyruk);
     if (kuyruk === 'ozel') {
       if (!this.bagimsizListeYuklendi) {
@@ -623,6 +655,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
     this.editingBagimsizSandikId.set(sandik?.id ?? null);
     this.formGerekcesi = '';
     this.secilenOzelSablonId = sandik?.icSandikSablonId;
+    this.ozelBagliSablonId.set(sandik?.icSandikSablonId);
     this.secilenBilgiKaynakSandikId.set(sandik?.tur === 2 ? sandik.kaynakSandikId : undefined);
     this.secilenTalepEdenKullaniciId.set(undefined);
     this.talepEdenManuelGirisi.set(false);
@@ -775,11 +808,15 @@ export class AmbalajUretimListesiComponent implements OnInit {
     if (kaynakTipi) this.ozelForm.sandikTipi = kaynakTipi;
   }
 
-  /** Seçilen kaynak sandığın tipi; özel sandık yapısı listesinde yoksa (ör. Kafes) yine gösterilir. */
+  /**
+   * Seçilen kaynak sandığın tipi; özel sandık yapısı listesinde yoksa (ör. Kafes) yine gösterilir. "İç Sandık
+   * Katlanır" yalnız iç sandık türünde listelenir.
+   */
   ozelYapiSecenekleri(): SandikTipi[] {
-    return this.ozelSandikTipleri.includes(this.ozelForm.sandikTipi)
-      ? this.ozelSandikTipleri
-      : [this.ozelForm.sandikTipi, ...this.ozelSandikTipleri];
+    const secenekler = turunSandikTipleri(this.ozelSandikTipleri, this.ozelForm.tur);
+    return secenekler.includes(this.ozelForm.sandikTipi)
+      ? secenekler
+      : [this.ozelForm.sandikTipi, ...secenekler];
   }
 
   ozelUstKaynakSandikDegisti(sandikId?: number): void {
@@ -1105,6 +1142,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
       talimatVeren: kalem.talimatVeren ?? '',
       aciklama: kalem.aciklama,
     } : this.bosKalemFormu(tur);
+    this.kalemBagliSablonId.set(kalem?.icSandikSablonId);
     this.formGerekcesi = '';
     this.kalemFormOpen.set(true);
   }
@@ -1166,7 +1204,7 @@ export class AmbalajUretimListesiComponent implements OnInit {
     this.ambalajService.getIcSandikSablonlari().subscribe(result => {
         if (this.onayaAlindiysaBildir(result)) return;
       if (result.isSuccess) this.icSandikSablonlari.set(result.value ?? []);
-      else this.toastService.error(result.error ?? 'İç sandık şablonları yüklenemedi.');
+      else this.toastService.error(result.error ?? this.t('IC_TYPES_LOAD_ERROR'));
     });
   }
 
@@ -1196,31 +1234,107 @@ export class AmbalajUretimListesiComponent implements OnInit {
     this.ozelForm.yukseklik = sablon.yukseklik;
   }
 
+  /** Özel Sandıklar'daki "İç sandık tipleri" paneli; açılınca kullanım sayıları güncel olsun diye liste yenilenir. */
+  icSandikTipleriPaneliniAcKapat(): void {
+    const acilacak = !this.icSandikTipleriPanelAcik();
+    this.icSandikTipleriPanelAcik.set(acilacak);
+    if (acilacak) this.icSandikSablonlariniYukle();
+    else this.sablonFormunuKapat();
+  }
+
+  /** Formu yeni tip eklemek için açar; düzenlemeden kalan değerler taşınmaz. */
+  yeniSablonFormuAc(): void {
+    if (this.duzenlenenSablonId() !== null) {
+      this.duzenlenenSablonId.set(null);
+      this.sablonForm = this.bosSablonFormu();
+    }
+    this.sablonFormOpen.set(true);
+  }
+
+  /** Proje planındaki "Tip kaydet" düğmesi: yeni tip formunu açar/kapatır. */
+  yeniSablonFormunuAcKapat(): void {
+    if (this.sablonFormOpen()) this.sablonFormunuKapat();
+    else this.yeniSablonFormuAc();
+  }
+
+  sablonuDuzenle(sablon: AmbalajIcSandikSablonDto): void {
+    this.duzenlenenSablonId.set(sablon.id);
+    this.sablonForm = {
+      ad: sablon.ad,
+      sandikTipi: sablon.sandikTipi,
+      boy: sablon.boy,
+      en: sablon.en,
+      yukseklik: sablon.yukseklik,
+    };
+    this.sablonFormOpen.set(true);
+  }
+
+  sablonFormunuKapat(): void {
+    this.sablonFormOpen.set(false);
+    if (this.duzenlenenSablonId() === null) return;
+    this.duzenlenenSablonId.set(null);
+    this.sablonForm = this.bosSablonFormu();
+  }
+
   sablonKaydet(): void {
-    if (!this.sablonForm.ad.trim() || (this.sablonForm.boy ?? 0) <= 0 || (this.sablonForm.en ?? 0) <= 0 || (this.sablonForm.yukseklik ?? 0) <= 0) {
-      this.toastService.warning('Şablon adı, sandık tipi ve ölçüler zorunludur.');
+    const duzenlenenId = this.duzenlenenSablonId();
+    // Ölçü görme izni olmayan kullanıcı ölçüleri maskeli görür; düzenlemede sunucu kayıtlı ölçüleri korur (RR Q1).
+    const olcuKorunur = duzenlenenId !== null && !this.permissions.hasAccess(AMBALAJ_YETKI.OlcuGoruntule);
+    const olcuEksik = (this.sablonForm.boy ?? 0) <= 0 || (this.sablonForm.en ?? 0) <= 0 || (this.sablonForm.yukseklik ?? 0) <= 0;
+    if (!this.sablonForm.ad.trim() || (!olcuKorunur && olcuEksik)) {
+      this.toastService.warning(this.t('IC_TYPE_REQUIRED'));
       return;
     }
+    if (this.sablonSaving()) return;
+    const islem = duzenlenenId === null
+      ? this.ambalajService.icSandikSablonuEkle(this.sablonForm)
+      : this.ambalajService.icSandikSablonuGuncelle(duzenlenenId, {
+          ...this.sablonForm,
+          // Maskeli ölçü null gelir; sunucu decimal bekler ve izinsiz kullanıcıda kayıtlı ölçüyü korur.
+          boy: this.sablonForm.boy ?? 0, en: this.sablonForm.en ?? 0, yukseklik: this.sablonForm.yukseklik ?? 0
+        });
     this.sablonSaving.set(true);
-    this.ambalajService.icSandikSablonuEkle(this.sablonForm)
+    islem
       .pipe(finalize(() => this.sablonSaving.set(false)))
       .subscribe(result => {
         if (this.onayaAlindiysaBildir(result)) return;
         if (result.isSuccess) {
-          this.toastService.success('İç sandık şablonu kaydedildi.');
+          this.toastService.success(this.t(duzenlenenId === null ? 'IC_TYPE_SAVED' : 'IC_TYPE_UPDATED'));
+          this.duzenlenenSablonId.set(null);
           this.sablonForm = this.bosSablonFormu();
           this.sablonFormOpen.set(false);
           this.icSandikSablonlariniYukle();
-        } else this.toastService.error(result.error ?? 'Şablon kaydedilemedi.');
+        } else this.toastService.error(result.error ?? this.t('IC_TYPE_SAVE_ERROR'));
+      });
+  }
+
+  /** Pasife al / aktif et. Pasif tip yeni kayda atanamaz; bağlı kayıtlar korunur (sunucu kuralı). */
+  sablonDurumuDegistir(sablon: AmbalajIcSandikSablonDto): void {
+    if (this.sablonDurumuKaydediliyor() !== null) return;
+    const aktif = !sablon.aktif;
+    this.sablonDurumuKaydediliyor.set(sablon.id);
+    this.ambalajService.icSandikSablonuDurumu(sablon.id, aktif)
+      .pipe(finalize(() => this.sablonDurumuKaydediliyor.set(null)))
+      .subscribe(result => {
+        if (this.onayaAlindiysaBildir(result)) return;
+        if (!result.isSuccess) {
+          this.toastService.error(result.error ?? this.t('IC_TYPE_STATUS_ERROR'));
+          return;
+        }
+        this.toastService.success(this.t(aktif ? 'IC_TYPE_ACTIVATED' : 'IC_TYPE_DEACTIVATED'));
+        const guncel = result.value;
+        if (guncel) this.icSandikSablonlari.update(items => items.map(item => item.id === guncel.id ? guncel : item));
+        else this.icSandikSablonlariniYukle();
       });
   }
 
   async sablonSil(sablon: AmbalajIcSandikSablonDto): Promise<void> {
     const onay = await this.confirmService.ask({
-      title: 'Şablonu Sil',
-      message: `<strong>${duzMetin(sablon.ad)}</strong> şablonunu silmek istediğinize emin misiniz?`,
-      confirmText: 'Evet, Sil',
-      cancelText: 'Vazgeç',
+      title: this.t('IC_TYPE_DELETE_TITLE'),
+      // Mesaj HTML olarak işlenir; kullanıcı verisi (tip adı) duzMetin ile kaçışlanır.
+      message: this.t('IC_TYPE_DELETE_MESSAGE').replace('{ad}', `<strong>${duzMetin(sablon.ad)}</strong>`),
+      confirmText: this.t('IC_TYPE_DELETE_CONFIRM'),
+      cancelText: this.t('IC_TYPE_CANCEL'),
       type: 'danger'
     });
     if (!onay) return;
@@ -1228,8 +1342,13 @@ export class AmbalajUretimListesiComponent implements OnInit {
       if (this.onayaAlindiysaBildir(result)) return;
       if (result.isSuccess) {
         this.icSandikSablonlari.update(items => items.filter(item => item.id !== sablon.id));
-        this.toastService.success('Şablon silindi.');
-      } else this.toastService.error(result.error ?? 'Şablon silinemedi.');
+        if (this.duzenlenenSablonId() === sablon.id) this.sablonFormunuKapat();
+        this.toastService.success(this.t('IC_TYPE_DELETED'));
+        return;
+      }
+      this.toastService.error(result.error ?? this.t('IC_TYPE_DELETE_ERROR'));
+      // Ör. 409 (tip bu arada kullanıma girdi): kullanım sayısı ve düğmeler güncellensin.
+      this.icSandikSablonlariniYukle();
     });
   }
 

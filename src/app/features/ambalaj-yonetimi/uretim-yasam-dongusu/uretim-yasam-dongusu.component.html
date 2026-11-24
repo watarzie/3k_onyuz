@@ -74,8 +74,8 @@
       <div>
         <strong>{{ t('FINANCE_TITLE') }}</strong>
         <p>{{ t(b.uretimeAlindi ? 'FINANCE_ACTIVE' : 'FINANCE_NOT_YET') }}</p>
-        @if (b.m3HesaplanabilirMi === false) {
-          <p class="ozel-finans-hacim">{{ t(b.sandikTipi === 'Katlanır Sandık' ? 'FINANCE_PRICE_MANUAL' : 'FINANCE_VOLUME_MANUAL') }}</p>
+        @if (ozelFinansNotu(); as finansNotu) {
+          <p class="ozel-finans-hacim">{{ t(finansNotu) }}</p>
         }
       </div>
     </div>

@@ -155,6 +155,15 @@ describe('Üretim V2 gerçek işlem UI sözleşmesi', () => {
       expect(el.querySelector('.ozel-finans-tarihi')).not.toBeNull();
     });
 
+    it('m³ hesaplanmayan sandıkta finans notu sandık tipine göre değişir; hesaplanırsa not yoktur', () => {
+      const not = (degisiklik: Record<string, unknown>) =>
+        ac(degisiklik).querySelector('.ozel-finans-hacim')?.textContent?.trim() ?? null;
+      expect(not({ sandikTipi: 'Kontrplak Sandık' })).toBe('URETIM_V2.FINANCE_VOLUME_MANUAL');
+      expect(not({ sandikTipi: 'Katlanır Sandık' })).toBe('URETIM_V2.FINANCE_PRICE_MANUAL');
+      expect(not({ sandikTipi: 'İç Sandık Katlanır' })).toBe('URETIM_V2.FINANCE_PRICE_INNER_FOLDING');
+      expect(not({ sandikTipi: 'Ahşap Kapalı', m3HesaplanabilirMi: true })).toBeNull();
+    });
+
     it('Finansa aktar tarihi gönderir; yanıttaki güncel sandık panelde hemen aktarıldı olarak görünür', () => {
       const changed = jasmine.createSpy('degisti');
       component.degisti.subscribe(changed);

@@ -1852,3 +1852,26 @@ td small.audit-hint {
   i { grid-row: span 2; }
   span { white-space: nowrap; }
 }
+
+// ===== Özel Sandıklar > İç sandık tipleri paneli =====
+// Liste ve form aynı kartta; tablo özel sandık tablosunun (crate-table) stilini kullanır.
+.ic-tip-panel {
+  margin: 15px 0;
+  padding: 18px;
+  border: 1px solid var(--borderColor);
+  border-radius: 10px;
+  background: var(--whiteColor);
+  .template-form { margin-bottom: 0; }
+}
+.ic-tip-table {
+  min-width: 620px;
+  th:first-child { width: auto; }
+  tbody tr.is-passive > td { color: var(--module-text-soft); }
+}
+// Kullanımdaki tip silinemez: devre dışı düğmenin ipucu sarmalayıcıda gösterilir.
+.ic-tip-delete-locked {
+  display: inline-flex;
+  cursor: not-allowed;
+  button:disabled { pointer-events: none; opacity: .45; }
+}
+.ic-tip-edit-note { margin-top: 0; font-size: 11px; }

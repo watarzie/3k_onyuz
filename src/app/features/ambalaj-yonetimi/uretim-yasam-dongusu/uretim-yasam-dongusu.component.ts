@@ -51,6 +51,17 @@ export class UretimYasamDongusuComponent {
     const g = this.ozelGuncel();
     return b && g?.id === b.id ? g : b;
   });
+  /**
+   * m³'ü Ambalaj'da hesaplanmayan özel sandığın finans notu (çeviri anahtarı): Katlanır Sandık elle fiyatlanır,
+   * İç Sandık Katlanır Finans tarifesinden (adet × iç sandık tipinin birim fiyatı), diğerleri m³ girişiyle.
+   */
+  ozelFinansNotu = computed(() => {
+    const b = this.ozel();
+    if (!b || b.m3HesaplanabilirMi !== false) return null;
+    if (b.sandikTipi === 'Katlanır Sandık') return 'FINANCE_PRICE_MANUAL';
+    if (b.sandikTipi === 'İç Sandık Katlanır') return 'FINANCE_PRICE_INNER_FOLDING';
+    return 'FINANCE_VOLUME_MANUAL';
+  });
   entegre = input(false);
   grup = input<number | null>(null);
   /**
